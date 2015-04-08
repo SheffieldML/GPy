@@ -657,6 +657,7 @@ class DescreteStateSpace(object):
                 dP_pred[:,:,j] += dP_pred[:,:,j].T            
                 dP_pred[:,:,j] += np.dot( A ,np.dot(dP, A.T)) + dQ
                 
+                dP_pred[:,:,j] = 0.5*(dP_pred[:,:,j] + dP_pred[:,:,j].T) #symmetrize
         else:
             dm_pred = None
             dP_pred = None
@@ -1439,7 +1440,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         unique_round_decimals = 8
         dt = np.empty((X.shape[0],))
         dt[1:] = np.diff(X[:,0],axis=0)
-        dt[0]  = dt[1]
+        dt[0]  = 0#dt[1]
         unique_indices = np.unique(np.round(dt, decimals=unique_round_decimals))
     
         if len(unique_indices) > 20:        
@@ -1531,13 +1532,19 @@ class ContDescrStateSpace(DescreteStateSpace):
  
             # The dynamical model
             A  = linalg.expm(F*dt) 
- 
+            if np.any( np.isnan(A)):
+                A  = linalg.expm3(F*dt) 
+            
             # The covariance matrix Q by matrix fraction decomposition ->
             Phi = np.zeros((2*n,2*n))
             Phi[:n,:n] = F
             Phi[:n,n:] = L.dot(Qc).dot(L.T)
             Phi[n:,n:] = -F.T
-            AB = linalg.expm(Phi*dt).dot(np.vstack((np.zeros((n,n)),np.eye(n))))
+            AB = linalg.expm(Phi*dt)
+            if np.any(np.isnan(AB)):
+                AB = linalg.expm3(Phi*dt)
+            AB = np.dot(AB, np.vstack((np.zeros((n,n)),np.eye(n))))
+            
             Q_noise_1 = linalg.solve(AB[n:,:].T,AB[:n,:].T)
             # The covariance matrix Q by matrix fraction decomposition <-
             

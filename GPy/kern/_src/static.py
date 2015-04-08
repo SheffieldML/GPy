@@ -60,7 +60,10 @@ class White(Static):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        self.variance.gradient = np.trace(dL_dK)
+        if X2 is None:
+            self.variance.gradient = np.trace(dL_dK)
+        else:
+            self.variance.gradient = 0.
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()

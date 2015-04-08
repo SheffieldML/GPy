@@ -19,7 +19,7 @@ class SparseGP(GP):
     This model allows (approximate) inference using variational DTC or FITC
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
     these.
-    
+
     This is not for missing data, as the implementation for missing data involves
     some inefficient optimization routine decisions.
     See missing data SparseGP implementation in py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
@@ -39,7 +39,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
+    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False):
         #pick a sensible inference method
         if inference_method is None:
@@ -53,7 +53,7 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        GP.__init__(self, X, Y, kernel, likelihood, mean_function, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
 
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
@@ -61,7 +61,7 @@ class SparseGP(GP):
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
-    
+
     def set_Z(self, Z, trigger_update=True):
         if trigger_update: self.update_model(False)
         self.unlink_parameter(self.Z)
@@ -110,8 +110,8 @@ class SparseGP(GP):
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """
-        Make a prediction for the latent function values. 
-    
+        Make a prediction for the latent function values.
+
         For certain inputs we give back a full_cov of shape NxN,
         if there is missing data, each dimension has its own full_cov of shape NxNxD, and if full_cov is of, 
         we take only the diagonal elements across N.
@@ -136,6 +136,9 @@ class SparseGP(GP):
             else:
                 Kxx = kern.Kdiag(Xnew)
                 var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
+            #add in the mean function
+            if self.mean_function is not None:
+                mu += self.mean_function.f(Xnew)
         else:
             psi0_star = self.kern.psi0(self.Z, Xnew)
             psi1_star = self.kern.psi1(self.Z, Xnew)
@@ -165,4 +168,5 @@ class SparseGP(GP):
                     var[i] = var_
                 else:
                     var[i] = np.diag(var_)+p0-t2
+
         return mu, var

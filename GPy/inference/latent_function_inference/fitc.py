@@ -18,7 +18,8 @@ class FITC(LatentFunctionInference):
     """
     const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+        assert mean_function is None, "inference with a mean function not implemented"
 
         num_inducing, _ = Z.shape
         num_data, output_dim = Y.shape

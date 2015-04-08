@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats,special
 import scipy as sp
 import link_functions
-from ..util.misc import chain_1, chain_2, chain_3
+from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
 from scipy.integrate import quad
 import warnings
 from ..core.parameterization import Parameterized
@@ -39,6 +39,7 @@ class Likelihood(Parameterized):
         assert isinstance(gp_link,link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.log_concave = False
+        self.not_block_really = False
 
     def _gradients(self,partial):
         return np.zeros(0)
@@ -177,7 +178,12 @@ class Likelihood(Parameterized):
         if np.any(np.isnan(dF_dm)) or np.any(np.isinf(dF_dm)):
             stop
 
-        dF_dtheta = None # Not yet implemented
+        if self.size:
+            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None]) # Ntheta x (orig size) x N_{quad_points}
+            dF_dtheta = np.dot(dF_dtheta, gh_w)
+            dF_dtheta = dF_dtheta.reshape(self.size, shape[0], shape[1])
+        else:
+            dF_dtheta = None # Not yet implemented
         return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), dF_dtheta
 
     def predictive_mean(self, mu, variance, Y_metadata=None):
@@ -189,20 +195,27 @@ class Likelihood(Parameterized):
 
         """
         #conditional_mean: the edpected value of y given some f, under this likelihood
+        fmin = -np.inf
+        fmax = np.inf
         def int_mean(f,m,v):
-            p = np.exp(-(0.5/v)*np.square(f - m))
+            exponent = -(0.5/v)*np.square(f - m)
+            #If exponent is under -30 then exp(exponent) will be very small, so don't exp it!)
             #If p is zero then conditional_mean will overflow
+            assert v.all() > 0
+            p = safe_exp(exponent)
+
+            #If p is zero then conditional_variance will overflow
             if p < 1e-10:
                 return 0.
             else:
                 return self.conditional_mean(f)*p
-        scaled_mean = [quad(int_mean, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        scaled_mean = [quad(int_mean, fmin, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
 
         return mean
 
     def _conditional_mean(self, f):
-        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
+        """Quadrature calculation of the conditional mean: E(Y_star|f_star)"""
         raise NotImplementedError, "implement this function to make predictions"
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
@@ -210,7 +223,7 @@ class Likelihood(Parameterized):
         Approximation to the predictive variance: V(Y_star)
 
         The following variance decomposition is used:
-        V(Y_star) = E( V(Y_star|f_star) ) + V( E(Y_star|f_star) )
+        V(Y_star) = E( V(Y_star|f_star)**2 ) + V( E(Y_star|f_star) )**2
 
         :param mu: mean of posterior
         :param sigma: standard deviation of posterior
@@ -220,15 +233,22 @@ class Likelihood(Parameterized):
         #sigma2 = sigma**2
         normalizer = np.sqrt(2*np.pi*variance)
 
+        fmin_v = -np.inf
+        fmin_m = np.inf
+        fmin = -np.inf
+        fmax = np.inf
+
+        from ..util.misc import safe_exp
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
-            p = np.exp(-(0.5/v)*np.square(f - m))
+            exponent = -(0.5/v)*np.square(f - m)
+            p = safe_exp(exponent)
             #If p is zero then conditional_variance will overflow
             if p < 1e-10:
                 return 0.
             else:
                 return self.conditional_variance(f)*p
-        scaled_exp_variance = [quad(int_var, -np.inf, np.inf,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        scaled_exp_variance = [quad(int_var, fmin_v, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
         #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
@@ -240,14 +260,15 @@ class Likelihood(Parameterized):
 
         #E( E(Y_star|f_star)**2 )
         def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            p = np.exp(-(0.5/v)*np.square(f - m))
+            exponent = -(0.5/v)*np.square(f - m)
+            p = np.exp(exponent)
             #If p is zero then conditional_mean**2 will overflow
             if p < 1e-10:
                 return 0.
             else:
                 return self.conditional_mean(f)**2*p
 
-        scaled_exp_exp2 = [quad(int_pred_mean_sq, -np.inf, np.inf,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
+        scaled_exp_exp2 = [quad(int_pred_mean_sq, fmin_m, fmax,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq
@@ -295,8 +316,18 @@ class Likelihood(Parameterized):
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        inv_link_f = self.gp_link.transf(f)
-        return self.pdf_link(inv_link_f, y, Y_metadata=Y_metadata)
+        if isinstance(self.gp_link, link_functions.Identity):
+            return self.pdf_link(f, y, Y_metadata=Y_metadata)
+        else:
+            inv_link_f = self.gp_link.transf(f)
+            return self.pdf_link(inv_link_f, y, Y_metadata=Y_metadata)
+
+    def logpdf_sum(self, f, y, Y_metadata=None):
+        """
+        Convenience function that can overridden for functions where this could
+        be computed more efficiently
+        """
+        return np.sum(self.logpdf(f, y, Y_metadata=Y_metadata))
 
     def logpdf(self, f, y, Y_metadata=None):
         """
@@ -313,8 +344,11 @@ class Likelihood(Parameterized):
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        inv_link_f = self.gp_link.transf(f)
-        return self.logpdf_link(inv_link_f, y, Y_metadata=Y_metadata)
+        if isinstance(self.gp_link, link_functions.Identity):
+            return self.logpdf_link(f, y, Y_metadata=Y_metadata)
+        else:
+            inv_link_f = self.gp_link.transf(f)
+            return self.logpdf_link(inv_link_f, y, Y_metadata=Y_metadata)
 
     def dlogpdf_df(self, f, y, Y_metadata=None):
         """
@@ -332,11 +366,15 @@ class Likelihood(Parameterized):
         :returns: derivative of log likelihood evaluated for this point
         :rtype: 1xN array
         """
-        inv_link_f = self.gp_link.transf(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
-        dlink_df = self.gp_link.dtransf_df(f)
-        return chain_1(dlogpdf_dlink, dlink_df)
+        if isinstance(self.gp_link, link_functions.Identity):
+            return self.dlogpdf_dlink(f, y, Y_metadata=Y_metadata)
+        else:
+            inv_link_f = self.gp_link.transf(f)
+            dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
+            dlink_df = self.gp_link.dtransf_df(f)
+            return chain_1(dlogpdf_dlink, dlink_df)
 
+    @blockify_hessian
     def d2logpdf_df2(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the second derivative of log likelihood using it
@@ -353,13 +391,18 @@ class Likelihood(Parameterized):
         :returns: second derivative of log likelihood evaluated for this point (diagonal only)
         :rtype: 1xN array
         """
-        inv_link_f = self.gp_link.transf(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
-        dlink_df = self.gp_link.dtransf_df(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
-        d2link_df2 = self.gp_link.d2transf_df2(f)
-        return chain_2(d2logpdf_dlink2, dlink_df, dlogpdf_dlink, d2link_df2)
+        if isinstance(self.gp_link, link_functions.Identity):
+            d2logpdf_df2 = self.d2logpdf_dlink2(f, y, Y_metadata=Y_metadata)
+        else:
+            inv_link_f = self.gp_link.transf(f)
+            d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
+            dlink_df = self.gp_link.dtransf_df(f)
+            dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
+            d2link_df2 = self.gp_link.d2transf_df2(f)
+            d2logpdf_df2 = chain_2(d2logpdf_dlink2, dlink_df, dlogpdf_dlink, d2link_df2)
+        return d2logpdf_df2
 
+    @blockify_third
     def d3logpdf_df3(self, f, y, Y_metadata=None):
         """
         Evaluates the link function link(f) then computes the third derivative of log likelihood using it
@@ -376,64 +419,96 @@ class Likelihood(Parameterized):
         :returns: third derivative of log likelihood evaluated for this point
         :rtype: float
         """
-        inv_link_f = self.gp_link.transf(f)
-        d3logpdf_dlink3 = self.d3logpdf_dlink3(inv_link_f, y, Y_metadata=Y_metadata)
-        dlink_df = self.gp_link.dtransf_df(f)
-        d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
-        d2link_df2 = self.gp_link.d2transf_df2(f)
-        dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
-        d3link_df3 = self.gp_link.d3transf_df3(f)
-        return chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
+        if isinstance(self.gp_link, link_functions.Identity):
+            d3logpdf_df3 = self.d3logpdf_dlink3(f, y, Y_metadata=Y_metadata)
+        else:
+            inv_link_f = self.gp_link.transf(f)
+            d3logpdf_dlink3 = self.d3logpdf_dlink3(inv_link_f, y, Y_metadata=Y_metadata)
+            dlink_df = self.gp_link.dtransf_df(f)
+            d2logpdf_dlink2 = self.d2logpdf_dlink2(inv_link_f, y, Y_metadata=Y_metadata)
+            d2link_df2 = self.gp_link.d2transf_df2(f)
+            dlogpdf_dlink = self.dlogpdf_dlink(inv_link_f, y, Y_metadata=Y_metadata)
+            d3link_df3 = self.gp_link.d3transf_df3(f)
+            d3logpdf_df3 = chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
+        return d3logpdf_df3
+
 
     def dlogpdf_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
         if self.size > 0:
-            inv_link_f = self.gp_link.transf(f)
-            return self.dlogpdf_link_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
+            if self.not_block_really:
+                raise NotImplementedError("Need to make a decorator for this!")
+            if isinstance(self.gp_link, link_functions.Identity):
+                return self.dlogpdf_link_dtheta(f, y, Y_metadata=Y_metadata)
+            else:
+                inv_link_f = self.gp_link.transf(f)
+                return self.dlogpdf_link_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
         else:
             # There are no parameters so return an empty array for derivatives
-            return np.zeros([1, 0])
+            return np.zeros((0, f.shape[0], f.shape[1]))
 
     def dlogpdf_df_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
         if self.size > 0:
-            inv_link_f = self.gp_link.transf(f)
-            dlink_df = self.gp_link.dtransf_df(f)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
-            return chain_1(dlogpdf_dlink_dtheta, dlink_df)
+            if self.not_block_really:
+                raise NotImplementedError("Need to make a decorator for this!")
+            if isinstance(self.gp_link, link_functions.Identity):
+                return self.dlogpdf_dlink_dtheta(f, y, Y_metadata=Y_metadata)
+            else:
+                inv_link_f = self.gp_link.transf(f)
+                dlink_df = self.gp_link.dtransf_df(f)
+                dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
+
+                dlogpdf_df_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+                #Chain each parameter of hte likelihood seperately
+                for p in range(self.size):
+                    dlogpdf_df_dtheta[p, :, :] = chain_1(dlogpdf_dlink_dtheta[p,:,:], dlink_df)
+                return dlogpdf_df_dtheta
+                #return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
             # There are no parameters so return an empty array for derivatives
-            return np.zeros([f.shape[0], 0])
+            return np.zeros((0, f.shape[0], f.shape[1]))
 
     def d2logpdf_df2_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
         """
         if self.size > 0:
-            inv_link_f = self.gp_link.transf(f)
-            dlink_df = self.gp_link.dtransf_df(f)
-            d2link_df2 = self.gp_link.d2transf_df2(f)
-            d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
-            dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
-            return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+            if self.not_block_really:
+                raise NotImplementedError("Need to make a decorator for this!")
+            if isinstance(self.gp_link, link_functions.Identity):
+                return self.d2logpdf_dlink2_dtheta(f, y, Y_metadata=Y_metadata)
+            else:
+                inv_link_f = self.gp_link.transf(f)
+                dlink_df = self.gp_link.dtransf_df(f)
+                d2link_df2 = self.gp_link.d2transf_df2(f)
+                d2logpdf_dlink2_dtheta = self.d2logpdf_dlink2_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
+                dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
+
+                d2logpdf_df2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+                #Chain each parameter of hte likelihood seperately
+                for p in range(self.size):
+                    d2logpdf_df2_dtheta[p, :, :] = chain_2(d2logpdf_dlink2_dtheta[p,:,:], dlink_df, dlogpdf_dlink_dtheta[p,:,:], d2link_df2)
+                return d2logpdf_df2_dtheta
+                #return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             # There are no parameters so return an empty array for derivatives
-            return np.zeros([f.shape[0], 0])
+            return np.zeros((0, f.shape[0], f.shape[1]))
 
     def _laplace_gradients(self, f, y, Y_metadata=None):
-        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata).sum(axis=0)
+        dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata)
         dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, Y_metadata=Y_metadata)
         d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, Y_metadata=Y_metadata)
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert len(dlogpdf_dtheta) == self.size #1 x num_param array
-        assert dlogpdf_df_dtheta.shape[1] == self.size #f x num_param matrix
-        assert d2logpdf_df2_dtheta.shape[1] == self.size #f x num_param matrix
+        assert dlogpdf_dtheta.shape[0] == self.size #f, d x num_param array
+        assert dlogpdf_df_dtheta.shape[0] == self.size #f x d x num_param matrix or just f x num_param
+        assert d2logpdf_df2_dtheta.shape[0] == self.size #f x num_param matrix or f x d x num_param matrix, f x f x num_param or f x f x d x num_param
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
@@ -454,19 +529,98 @@ class Likelihood(Parameterized):
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         #compute the quantiles by sampling!!!
-        N_samp = 1000
+        N_samp = 500
         s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
         #ss_f = s.flatten()
         #ss_y = self.samples(ss_f, Y_metadata)
+        #ss_y = self.samples(s, Y_metadata, samples=100)
         ss_y = self.samples(s, Y_metadata)
         #ss_y = ss_y.reshape(mu.shape[0], N_samp)
 
         return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
 
-    def samples(self, gp, Y_metadata=None):
+    def samples(self, gp, Y_metadata=None, samples=1):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
         :param gp: latent variable
+        :param samples: number of samples to take for each f location
         """
-        raise NotImplementedError
+        raise NotImplementedError("""May be possible to use MCMC with user-tuning, see
+                                  MCMC_pdf_samples in likelihood.py and write samples function
+                                  using this, beware this is a simple implementation
+                                  of Metropolis and will not work well for all likelihoods""")
+
+    def MCMC_pdf_samples(self, fNew, num_samples=1000, starting_loc=None, stepsize=0.1, burn_in=1000, Y_metadata=None):
+        """
+        Simple implementation of Metropolis sampling algorithm
+
+        Will run a parallel chain for each input dimension (treats each f independently)
+        Thus assumes f*_1 independant of f*_2 etc.
+
+        :param num_samples: Number of samples to take
+        :param fNew: f at which to sample around
+        :param starting_loc: Starting locations of the independant chains (usually will be conditional_mean of likelihood), often link_f
+        :param stepsize: Stepsize for the normal proposal distribution (will need modifying)
+        :param burnin: number of samples to use for burnin (will need modifying)
+        :param Y_metadata: Y_metadata for pdf
+        """
+        print "Warning, using MCMC for sampling y*, needs to be tuned!"
+        if starting_loc is None:
+            starting_loc = fNew
+        from functools import partial
+        logpdf = partial(self.logpdf, f=fNew, Y_metadata=Y_metadata)
+        pdf = lambda y_star: np.exp(logpdf(y=y_star[:, None]))
+        #Should be the link function of f is a good starting point
+        #(i.e. the point before you corrupt it with the likelihood)
+        par_chains = starting_loc.shape[0]
+        chain_values = np.zeros((par_chains, num_samples))
+        chain_values[:, 0][:,None] = starting_loc
+        #Use same stepsize for all par_chains
+        stepsize = np.ones(par_chains)*stepsize
+        accepted = np.zeros((par_chains, num_samples+burn_in))
+        accept_ratio = np.zeros(num_samples+burn_in)
+        #Whilst burning in, only need to keep the previous lot
+        burnin_cache = np.zeros(par_chains)
+        burnin_cache[:] = starting_loc.flatten()
+        burning_in = True
+        for i in xrange(burn_in+num_samples):
+            next_ind = i-burn_in
+            if burning_in:
+                old_y = burnin_cache
+            else:
+                old_y = chain_values[:,next_ind-1]
+
+            old_lik = pdf(old_y)
+            #Propose new y from Gaussian proposal
+            new_y = np.random.normal(loc=old_y, scale=stepsize)
+            new_lik = pdf(new_y)
+            #Accept using Metropolis (not hastings) acceptance
+            #Always accepts if new_lik > old_lik
+            accept_probability = np.minimum(1, new_lik/old_lik)
+            u = np.random.uniform(0,1,par_chains)
+            #print "Accept prob: ", accept_probability
+            accepts = u < accept_probability
+            if burning_in:
+                burnin_cache[accepts] = new_y[accepts]
+                burnin_cache[~accepts] = old_y[~accepts]
+                if i == burn_in:
+                    burning_in = False
+                    chain_values[:,0] = burnin_cache
+            else:
+                #If it was accepted then new_y becomes the latest sample
+                chain_values[accepts, next_ind] = new_y[accepts]
+                #Otherwise use old y as the sample
+                chain_values[~accepts, next_ind] = old_y[~accepts]
+
+            accepted[~accepts, i] = 0
+            accepted[accepts, i] = 1
+            accept_ratio[i] = np.sum(accepted[:,i])/float(par_chains)
+
+            #Show progress
+            if i % int((burn_in+num_samples)*0.1) == 0:
+                print "{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i)
+                print "Last run accept ratio: ", accept_ratio[i]
+
+        print "Average accept ratio: ", np.mean(accept_ratio)
+        return chain_values

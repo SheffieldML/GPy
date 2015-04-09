@@ -4,10 +4,10 @@
 from ....core.parameterization.parameter_core import Pickleable
 from GPy.util.caching import Cache_this
 from ....core.parameterization import variational
-import rbf_psi_comp
-import ssrbf_psi_comp
-import sslinear_psi_comp
-import linear_psi_comp
+from . import rbf_psi_comp
+from . import ssrbf_psi_comp
+from . import sslinear_psi_comp
+from . import linear_psi_comp
 
 class PSICOMP_RBF(Pickleable):
     @Cache_this(limit=2, ignore_args=(0,))
@@ -17,7 +17,7 @@ class PSICOMP_RBF(Pickleable):
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior)
         else:
-            raise ValueError, "unknown distriubtion received for psi-statistics"
+            raise ValueError("unknown distriubtion received for psi-statistics")
 
     @Cache_this(limit=2, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
@@ -26,7 +26,7 @@ class PSICOMP_RBF(Pickleable):
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         else:
-            raise ValueError, "unknown distriubtion received for psi-statistics"
+            raise ValueError("unknown distriubtion received for psi-statistics")
 
     def _setup_observers(self):
         pass
@@ -40,7 +40,7 @@ class PSICOMP_Linear(Pickleable):
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psicomputations(variance, Z, variational_posterior)
         else:
-            raise ValueError, "unknown distriubtion received for psi-statistics"
+            raise ValueError("unknown distriubtion received for psi-statistics")
 
     @Cache_this(limit=2, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
@@ -49,7 +49,7 @@ class PSICOMP_Linear(Pickleable):
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         else:
-            raise ValueError, "unknown distriubtion received for psi-statistics"
+            raise ValueError("unknown distriubtion received for psi-statistics")
 
     def _setup_observers(self):
         pass

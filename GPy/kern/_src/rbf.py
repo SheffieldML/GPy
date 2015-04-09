@@ -3,9 +3,9 @@
 
 
 import numpy as np
-from stationary import Stationary
-from psi_comp import PSICOMP_RBF
-from psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
+from .stationary import Stationary
+from .psi_comp import PSICOMP_RBF
+from .psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
 from ...util.config import *
 
 class RBF(Stationary):

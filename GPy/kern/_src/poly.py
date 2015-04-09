@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 class Poly(Kern):

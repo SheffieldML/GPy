@@ -2,9 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from kern import CombinationKernel
+from .kern import CombinationKernel
 from ...util.caching import Cache_this
 import itertools
+from functools import reduce
 
 
 def numpy_invalid_op_as_exception(func):

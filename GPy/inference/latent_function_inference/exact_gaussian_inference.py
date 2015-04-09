@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from posterior import Posterior
+from .posterior import Posterior
 from ...util.linalg import pdinv, dpotrs, tdot
 from ...util import diag
 import numpy as np

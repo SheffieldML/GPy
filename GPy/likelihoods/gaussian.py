@@ -13,8 +13,8 @@ James 11/12/13
 
 import numpy as np
 from scipy import stats, special
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 from scipy import stats
@@ -35,8 +35,8 @@ class Gaussian(Likelihood):
             gp_link = link_functions.Identity()
 
         if not isinstance(gp_link, link_functions.Identity):
-            print "Warning, Exact inference is not implemeted for non-identity link functions,\
-            if you are not already, ensure Laplace inference_method is used"
+            print("Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used")
 
         super(Gaussian, self).__init__(gp_link, name=name)
 

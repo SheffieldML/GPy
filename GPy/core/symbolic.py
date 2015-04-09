@@ -223,7 +223,7 @@ class Symbolic_core():
 
     def code_gradients_cacheable(self, function, variable):
         if variable not in self.cacheable:
-            raise RuntimeError, variable + ' must be a cacheable.'
+            raise RuntimeError(variable + ' must be a cacheable.')
         lcode = 'gradients_' + variable + ' = np.zeros_like(' + variable + ')\n'
         lcode += 'self.update_cache(' + ', '.join(self.cacheable) + ')\n'
         for i, theta in enumerate(self.variables[variable]):

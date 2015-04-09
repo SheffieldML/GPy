@@ -3,7 +3,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import sys
-from parameterization import Parameterized
+from .parameterization import Parameterized
 import numpy as np
 
 class Mapping(Parameterized):

@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, Max Zwiessele
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from gradient_descent_update_rules import FletcherReeves, \
+from .gradient_descent_update_rules import FletcherReeves, \
     PolakRibiere
 from Queue import Empty
 from multiprocessing import Value
@@ -74,7 +74,7 @@ class _Async_Optimization(Thread):
         if self.outq is not None:
             self.outq.put(self.SENTINEL)
         if self.messages:
-            print ""
+            print("")
         self.runsignal.clear()
 
     def run(self, *args, **kwargs):
@@ -213,7 +213,7 @@ class Async_Optimize(object):
 #                     # print "^C"
 #                     self.runsignal.clear()
 #                     c.join()
-            print "WARNING: callback still running, optimisation done!"
+            print("WARNING: callback still running, optimisation done!")
         return p.result
 
 class CGD(Async_Optimize):

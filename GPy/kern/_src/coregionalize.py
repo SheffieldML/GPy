@@ -1,12 +1,16 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kern import Kern
+from .kern import Kern
 import numpy as np
-from scipy import weave
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use weave
+
+try:
+    from scipy import weave
+except ImportError:
+    config.set('weave', 'working', 'False')
 
 class Coregionalize(Kern):
     """
@@ -61,7 +65,7 @@ class Coregionalize(Kern):
             try:
                 return self._K_weave(X, X2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 return self._K_numpy(X, X2)
         else:
@@ -123,7 +127,7 @@ class Coregionalize(Kern):
             try:
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
             except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
+                print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
                 config.set('weave', 'working', 'False')
                 dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
         else:
@@ -162,7 +166,7 @@ class Coregionalize(Kern):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()
-        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in xrange(self.output_dim)])
+        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in range(self.output_dim)])
         self.W.gradient = 2.*self.W*dL_dKdiag_small[:, None]
         self.kappa.gradient = dL_dKdiag_small
 

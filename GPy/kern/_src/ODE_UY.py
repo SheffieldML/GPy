@@ -1,11 +1,11 @@
 # Copyright (c) 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
-from independent_outputs import index_to_slices
+from .independent_outputs import index_to_slices
 
 class ODE_UY(Kern):
     def __init__(self, input_dim, variance_U=3., variance_Y=1., lengthscale_U=1., lengthscale_Y=1., active_dims=None, name='ode_uy'):
@@ -114,7 +114,7 @@ class ODE_UY(Kern):
                 elif i==1:
                     Kdiag[s1]+= Vu*Vy*(k1+k2+k3)
                 else:
-                    raise ValueError, "invalid input/output index"
+                    raise ValueError("invalid input/output index")
         #Kdiag[slices[0][0]]+= self.variance_U   #matern32 diag
         #Kdiag[slices[1][0]]+= self.variance_U*self.variance_Y*(k1+k2+k3)  #  diag
         return Kdiag

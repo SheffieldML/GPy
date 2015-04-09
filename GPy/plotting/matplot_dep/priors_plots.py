@@ -29,4 +29,4 @@ def plot(prior):
         pb.contour(xx, yy, zz, linewidths=2)
 
     else:
-        raise NotImplementedError, "Cannot define a frame with more than two input dimensions"
+        raise NotImplementedError("Cannot define a frame with more than two input dimensions")

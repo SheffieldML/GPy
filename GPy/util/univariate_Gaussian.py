@@ -3,7 +3,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import weave
 from scipy.special import ndtr as std_norm_cdf
 
 #define a standard normal pdf

@@ -153,19 +153,19 @@ class MiscTests(unittest.TestCase):
     def test_big_model(self):
         m = GPy.examples.dimensionality_reduction.mrd_simulation(optimize=0, plot=0, plot_sim=0)
         m.X.fix()
-        print m
+        print(m)
         m.unfix()
         m.checkgrad()
-        print m
+        print(m)
         m.fix()
-        print m
+        print(m)
         m.inducing_inputs.unfix()
-        print m
+        print(m)
         m.checkgrad()
         m.unfix()
         m.checkgrad()
         m.checkgrad()
-        print m
+        print(m)
 
     def test_model_set_params(self):
         m = GPy.models.GPRegression(self.X, self.Y)
@@ -176,7 +176,7 @@ class MiscTests(unittest.TestCase):
         m['.*var'] -= .1
         np.testing.assert_equal(m.kern.lengthscale, lengthscale)
         m.optimize()
-        print m
+        print(m)
 
     def test_model_updates(self):
         Y1 = np.random.normal(0, 1, (40, 13))
@@ -201,7 +201,7 @@ class MiscTests(unittest.TestCase):
         Y = np.sin(X) + np.random.randn(20, 1) * 0.05
         m = GPy.models.GPRegression(X, Y)
         m.optimize()
-        print m
+        print(m)
 
 class GradientTests(np.testing.TestCase):
     def setUp(self):
@@ -523,5 +523,5 @@ class GradientTests(np.testing.TestCase):
 
 
 if __name__ == "__main__":
-    print "Running unit tests, please be (very) patient..."
+    print("Running unit tests, please be (very) patient...")
     unittest.main()

@@ -3,7 +3,7 @@ A new kernel
 """
 
 import numpy as np
-from kern import Kern,CombinationKernel
+from .kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
 
@@ -104,7 +104,7 @@ class SplitKern(CombinationKernel):
             assert len(slices2)<=2, 'The Split kernel only support two different indices'
             target = np.zeros((X.shape[0], X2.shape[0]))
             # diagonal blocks
-            [[target.__setitem__((s,s2), self.kern.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[i], slices2[i])] for i in xrange(min(len(slices),len(slices2)))]
+            [[target.__setitem__((s,s2), self.kern.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[i], slices2[i])] for i in range(min(len(slices),len(slices2)))]
             if len(slices)>1:
                 [target.__setitem__((s,s2), self.kern_cross.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[1], slices2[0])]
             if len(slices2)>1:
@@ -135,7 +135,7 @@ class SplitKern(CombinationKernel):
         else:
             assert dL_dK.shape==(X.shape[0],X2.shape[0])
             slices2 = index_to_slices(X2[:,self.index_dim])
-            [[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s,s2 in itertools.product(slices[i], slices2[i])] for i in xrange(min(len(slices),len(slices2)))]
+            [[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s,s2 in itertools.product(slices[i], slices2[i])] for i in range(min(len(slices),len(slices2)))]
             if len(slices)>1:
                 [collate_grads(dL_dK[s,s2], X[s], X2[s2], True) for s,s2 in itertools.product(slices[1], slices2[0])]
             if len(slices2)>1:

@@ -1,8 +1,8 @@
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
-from independent_outputs import index_to_slices
+from .independent_outputs import index_to_slices
 
 
 class ODE_t(Kern):
@@ -85,7 +85,7 @@ class ODE_t(Kern):
                             Kdiag[s1]+= k1 + vyt+self.ubias
                             #Kdiag[s1]+= Vu*Vy*(k1+k2+k3)
                         else:
-                            raise ValueError, "invalid input/output index"
+                            raise ValueError("invalid input/output index")
 
                 return Kdiag
 

@@ -81,7 +81,7 @@ def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=Non
             last_bottom = ard_params[i,:]
             bottom += last_bottom
         else:
-            print "filtering out {}".format(kernel.parameters[i].name)
+            print("filtering out {}".format(kernel.parameters[i].name))
 
     ax.set_xlim(-.5, kernel.input_dim - .5)
     add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
@@ -132,7 +132,7 @@ def plot(kernel,x=None, fignum=None, ax=None, title=None, plot_limits=None, reso
         elif len(plot_limits) == 2:
             xmin, xmax = plot_limits
         else:
-            raise ValueError, "Bad limits for plotting"
+            raise ValueError("Bad limits for plotting")
 
         Xnew = np.linspace(xmin, xmax, resolution or 201)[:, None]
         Kx = kernel.K(Xnew, x)
@@ -154,7 +154,7 @@ def plot(kernel,x=None, fignum=None, ax=None, title=None, plot_limits=None, reso
         elif len(plot_limits) == 2:
             xmin, xmax = plot_limits
         else:
-            raise ValueError, "Bad limits for plotting"
+            raise ValueError("Bad limits for plotting")
 
         resolution = resolution or 51
         xx, yy = np.mgrid[xmin[0]:xmax[0]:1j * resolution, xmin[1]:xmax[1]:1j * resolution]
@@ -168,4 +168,4 @@ def plot(kernel,x=None, fignum=None, ax=None, title=None, plot_limits=None, reso
         ax.set_ylabel("x2")
         ax.set_title("k(x1,x2 ; %0.1f,%0.1f)" % (x[0, 0], x[0, 1]))
     else:
-        raise NotImplementedError, "Cannot plot a kernel with more than two input dimensions"
+        raise NotImplementedError("Cannot plot a kernel with more than two input dimensions")

@@ -140,6 +140,10 @@ class opt_lbfgsb(Optimizer):
         self.funct_eval = opt_result[2]['funcalls']
         self.status = rcstrings[opt_result[2]['warnflag']]
 
+        #a more helpful error message is available in opt_result in the Error case
+        if opt_result[2]['warnflag']==2:
+            self.status = 'Error' + opt_result[2]['task']
+
 class opt_simplex(Optimizer):
     def __init__(self, *args, **kwargs):
         Optimizer.__init__(self, *args, **kwargs)

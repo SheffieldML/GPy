@@ -476,7 +476,7 @@ class GradientTests(np.testing.TestCase):
         likelihood = GPy.likelihoods.MixedNoise(likelihoods_list=likelihoods_list)
         m = GPy.core.SparseGP(X, Y, X[np.random.choice(num_obs, 10)],
                               kern, likelihood,
-                              GPy.inference.latent_function_inference.VarDTC(),
+                              inference_method=GPy.inference.latent_function_inference.VarDTC(),
                               Y_metadata=Y_metadata)
         self.assertTrue(m.checkgrad())
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
+# Copyright (c) 2012-2015 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -165,6 +165,13 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
+    #only compute gh points if required
+    __gh_points = None
+    def _gh_points(self):
+        if self.__gh_points is None:
+            self.__gh_points = np.polynomial.hermite.hermgauss(20)
+        return self.__gh_points
+
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         """
         Use Gauss-Hermite Quadrature to compute
@@ -177,10 +184,9 @@ class Likelihood(Parameterized):
 
         if no gh_points are passed, we construct them using defualt options
         """
-        #May be broken
 
         if gh_points is None:
-            gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+            gh_x, gh_w = self._gh_points()
         else:
             gh_x, gh_w = gh_points
 

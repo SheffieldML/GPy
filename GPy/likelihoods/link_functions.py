@@ -1,10 +1,9 @@
-# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
+# Copyright (c) 2012-2015 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats
+from ..util.univariate_Gaussian import std_norm_cdf, std_norm_pdf
 import scipy as sp
-from GPy.util.univariate_Gaussian import std_norm_pdf,std_norm_cdf,inv_std_norm_cdf
 
 _exp_lim_val = np.finfo(np.float64).max
 _lim_val = np.log(_exp_lim_val)
@@ -64,13 +63,12 @@ class Identity(GPTransformation):
     def d3transf_df3(self,f):
         return np.zeros_like(f)
 
-
 class Probit(GPTransformation):
     """
     .. math::
 
         g(f) = \\Phi^{-1} (mu)
-    
+
     """
     def transf(self,f):
         return std_norm_cdf(f)
@@ -79,13 +77,10 @@ class Probit(GPTransformation):
         return std_norm_pdf(f)
 
     def d2transf_df2(self,f):
-        #FIXME
         return -f * std_norm_pdf(f)
 
     def d3transf_df3(self,f):
-        #FIXME
-        f2 = f**2
-        return -(1/(np.sqrt(2*np.pi)))*np.exp(-0.5*(f2))*(1-f2)
+        return (np.square(f)-1.)*std_norm_pdf(f)
 
 
 class Cloglog(GPTransformation):
@@ -98,7 +93,7 @@ class Cloglog(GPTransformation):
         or
 
         f = \log (-\log(1-p))
-    
+
     """
     def transf(self,f):
         return 1-np.exp(-np.exp(f))
@@ -123,16 +118,16 @@ class Log(GPTransformation):
 
     """
     def transf(self,f):
-        return np.exp(np.clip(f, -_lim_val, _lim_val))
+        return np.exp(np.clip(f, -np.inf, _lim_val))
 
     def dtransf_df(self,f):
-        return np.exp(np.clip(f, -_lim_val, _lim_val))
+        return np.exp(np.clip(f, -np.inf, _lim_val))
 
     def d2transf_df2(self,f):
-        return np.exp(np.clip(f, -_lim_val, _lim_val))
+        return np.exp(np.clip(f, -np.inf, _lim_val))
 
     def d3transf_df3(self,f):
-        return np.exp(np.clip(f, -_lim_val, _lim_val))
+        return np.exp(np.clip(f, -np.inf, _lim_val))
 
 class Log_ex_1(GPTransformation):
     """
@@ -174,7 +169,7 @@ class Heaviside(GPTransformation):
 
     .. math::
 
-        g(f) = I_{x \\in A}
+        g(f) = I_{x \\geq 0}
 
     """
     def transf(self,f):

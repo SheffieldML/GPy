@@ -23,7 +23,7 @@ def chain_1(df_dg, dg_dx):
     """
     if np.all(dg_dx==1.):
         return df_dg
-    if len(df_dg) > 1 and df_dg.shape[-1] > 1:
+    if len(df_dg) > 1 and len(df_dg.shape)>1 and df_dg.shape[-1] > 1:
         import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         raise NotImplementedError('Not implemented for matricies yet')
     return df_dg * dg_dx
@@ -37,7 +37,7 @@ def chain_2(d2f_dg2, dg_dx, df_dg, d2g_dx2):
     """
     if np.all(dg_dx==1.) and np.all(d2g_dx2 == 0):
         return d2f_dg2
-    if  len(d2f_dg2) > 1 and d2f_dg2.shape[-1] > 1:
+    if  len(d2f_dg2) > 1 and len(d2f_dg2.shape)>1 and d2f_dg2.shape[-1] > 1:
         raise NotImplementedError('Not implemented for matricies yet')
     #dg_dx_2 = np.clip(dg_dx, 1e-12, _lim_val_square)**2
     dg_dx_2 = dg_dx**2

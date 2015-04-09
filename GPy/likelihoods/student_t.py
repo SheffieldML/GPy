@@ -4,10 +4,10 @@
 import numpy as np
 from scipy import stats, special
 import scipy as sp
-import link_functions
+from . import link_functions
 from scipy import stats, integrate
 from scipy.special import gammaln, gamma
-from likelihood import Likelihood
+from .likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 

@@ -64,7 +64,7 @@ class InferenceXTestCase(unittest.TestCase):
         m.optimize(max_iters=10000)
         x, mi = m.infer_newX(m.Y)
 
-        print m.X.mean - mi.X.mean
+        print(m.X.mean - mi.X.mean)
         self.assertTrue(np.allclose(m.X.mean, mi.X.mean, rtol=1e-4, atol=1e-4))
         self.assertTrue(np.allclose(m.X.variance, mi.X.variance, rtol=1e-4, atol=1e-4))
 

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
-from posterior import Posterior
+from .posterior import Posterior
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 

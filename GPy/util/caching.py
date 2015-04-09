@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from ..core.parameterization.observable import Observable
 import collections, weakref
+from functools import reduce
 
 class Cacher(object):
     def __init__(self, operation, limit=5, ignore_args=(), force_kwargs=()):
@@ -148,10 +149,10 @@ class Cacher(object):
         return Cacher(self.operation, self.limit, self.ignore_args, self.force_kwargs)
 
     def __getstate__(self, memo=None):
-        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+        raise NotImplementedError("Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation)))
 
     def __setstate__(self, memo=None):
-        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+        raise NotImplementedError("Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation)))
 
     @property
     def __name__(self):

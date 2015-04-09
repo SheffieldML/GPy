@@ -50,8 +50,8 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
     
     buf = np.ones((y_size*fig_nrows+pad*(fig_nrows-1), x_size*fig_ncols+pad*(fig_ncols-1), 3),dtype=arr.dtype)
     
-    for y in xrange(fig_nrows):
-        for x in xrange(fig_ncols):
+    for y in range(fig_nrows):
+        for x in range(fig_ncols):
             if y*fig_ncols+x<fig_num:
                 buf[y*y_size+y*pad:(y+1)*y_size+y*pad, x*x_size+x*pad:(x+1)*x_size+x*pad] = arr_color[y*fig_ncols+x,:,:,:3]
     img_plot = ax.imshow(buf, interpolation=interpolation)

@@ -1,2 +1,2 @@
-from scg import SCG
-from optimization import *
+from .scg import SCG
+from .optimization import *

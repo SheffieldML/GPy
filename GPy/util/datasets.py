@@ -1,17 +1,17 @@
+from __future__ import print_function
 import csv
 import os
 import copy
 import numpy as np
 import GPy
 import scipy.io
-import cPickle as pickle
 import zipfile
 import tarfile
 import datetime
 import json
 import re
-
-from config import *
+import sys
+from .config import *
 
 ipython_available=True
 try:
@@ -19,8 +19,20 @@ try:
 except ImportError:
     ipython_available=False
 
+try:
+    #In Python 2, cPickle is faster. It does not exist in Python 3 but the underlying code is always used
+    #if available
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
-import sys, urllib2
+#A Python2/3 import handler - urllib2 changed its name in Py3 and was also reorganised
+try:
+    from urllib2 import urlopen
+    from urllib2 import URLError
+except ImportError:
+    from urllib.request import urlopen
+    from urllib.error import URLError
 
 def reporthook(a,b,c):
     # ',' at the end of the line is important!
@@ -75,7 +87,7 @@ def prompt_user(prompt):
     elif choice in no:
         return False
     else:
-        print("Your response was a " + choice)
+        print(("Your response was a " + choice))
         print("Please respond with 'yes', 'y' or 'no', 'n'")
         #return prompt_user()
 
@@ -99,7 +111,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
     """Download a file from a url and save it to disk."""
     i = url.rfind('/')
     file = url[i+1:]
-    print file
+    print(file)
     dir_name = os.path.join(data_path, store_directory)
 
     if save_name is None: save_name = os.path.join(dir_name, file)
@@ -107,12 +119,12 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
 
     if suffix is None: suffix=''
 
-    print "Downloading ", url, "->", save_name
+    print("Downloading ", url, "->", save_name)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
     try:
-        response = urllib2.urlopen(url+suffix)
-    except urllib2.URLError, e:
+        response = urlopen(url+suffix)
+    except URLError as e:
         if not hasattr(e, "code"):
             raise
         response = e
@@ -150,7 +162,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
             sys.stdout.write(status)
             sys.stdout.flush()
         sys.stdout.write(" "*(len(status)) + "\r")
-        print status
+        print(status)
     # if we wanted to get more sophisticated maybe we should check the response code here again even for successes.
     #with open(save_name, 'wb') as f:
     #    f.write(response.read())
@@ -159,32 +171,32 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
 
 def authorize_download(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set."""
-    print('Acquiring resource: ' + dataset_name)
+    print(('Acquiring resource: ' + dataset_name))
     # TODO, check resource is in dictionary!
     print('')
     dr = data_resources[dataset_name]
     print('Details of data: ')
-    print(dr['details'])
+    print((dr['details']))
     print('')
     if dr['citation']:
         print('Please cite:')
-        print(dr['citation'])
+        print((dr['citation']))
         print('')
     if dr['size']:
-        print('After downloading the data will take up ' + str(dr['size']) + ' bytes of space.')
+        print(('After downloading the data will take up ' + str(dr['size']) + ' bytes of space.'))
         print('')
-    print('Data will be stored in ' + os.path.join(data_path, dataset_name) + '.')
+    print(('Data will be stored in ' + os.path.join(data_path, dataset_name) + '.'))
     print('')
     if overide_manual_authorize:
         if dr['license']:
             print('You have agreed to the following license:')
-            print(dr['license'])
+            print((dr['license']))
             print('')
         return True
     else:
         if dr['license']:
             print('You must also agree to the following license:')
-            print(dr['license'])
+            print((dr['license']))
             print('')
         return prompt_user('Do you wish to proceed with the download? [yes/no]')
 
@@ -495,18 +507,18 @@ def google_trends(query_terms=['big data', 'machine learning', 'data science'], 
     file = 'data.csv'
     file_name = os.path.join(dir_path,file)
     if not os.path.exists(file_name) or refresh_data:
-        print "Accessing Google trends to acquire the data. Note that repeated accesses will result in a block due to a google terms of service violation. Failure at this point may be due to such blocks."
+        print("Accessing Google trends to acquire the data. Note that repeated accesses will result in a block due to a google terms of service violation. Failure at this point may be due to such blocks.")
         # quote the query terms.
         quoted_terms = []
         for term in query_terms:
             quoted_terms.append(urllib2.quote(term))
-        print "Query terms: ", ', '.join(query_terms)
+        print("Query terms: ", ', '.join(query_terms))
 
-        print "Fetching query:"
+        print("Fetching query:")
         query = 'http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3' % ",".join(quoted_terms)
 
-        data = urllib2.urlopen(query).read()
-        print "Done."
+        data = urlopen(query).read()
+        print("Done.")
         # In the notebook they did some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
         header = """// Data table response\ngoogle.visualization.Query.setResponse("""
         data = data[len(header):-2]
@@ -520,8 +532,8 @@ def google_trends(query_terms=['big data', 'machine learning', 'data science'], 
 
         df.to_csv(file_name)
     else:
-        print "Reading cached data for google trends. To refresh the cache set 'refresh_data=True' when calling this function."
-        print "Query terms: ", ', '.join(query_terms)
+        print("Reading cached data for google trends. To refresh the cache set 'refresh_data=True' when calling this function.")
+        print("Query terms: ", ', '.join(query_terms))
 
         df = pandas.read_csv(file_name, parse_dates=[0])
 
@@ -679,11 +691,11 @@ def ripley_synth(data_set='ripley_prnn_data'):
 def global_average_temperature(data_set='global_temperature', num_train=1000, refresh_data=False):
     path = os.path.join(data_path, data_set)
     if data_available(data_set) and not refresh_data:
-        print 'Using cached version of the data set, to use latest version set refresh_data to True'
+        print('Using cached version of the data set, to use latest version set refresh_data to True')
     else:
         download_data(data_set)
     data = np.loadtxt(os.path.join(data_path, data_set, 'GLBTS.long.data'))
-    print 'Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0]
+    print('Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0])
     allX = data[data[:, 3]!=-99.99, 2:3]
     allY = data[data[:, 3]!=-99.99, 3:4]
     X = allX[:num_train, 0:1]
@@ -695,11 +707,11 @@ def global_average_temperature(data_set='global_temperature', num_train=1000, re
 def mauna_loa(data_set='mauna_loa', num_train=545, refresh_data=False):
     path = os.path.join(data_path, data_set)
     if data_available(data_set) and not refresh_data:
-        print 'Using cached version of the data set, to use latest version set refresh_data to True'
+        print('Using cached version of the data set, to use latest version set refresh_data to True')
     else:
         download_data(data_set)
     data = np.loadtxt(os.path.join(data_path, data_set, 'co2_mm_mlo.txt'))
-    print 'Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0]
+    print('Most recent data observation from month ', data[-1, 1], ' in year ', data[-1, 0])
     allX = data[data[:, 3]!=-99.99, 2:3]
     allY = data[data[:, 3]!=-99.99, 3:4]
     X = allX[:num_train, 0:1]
@@ -784,7 +796,7 @@ def hapmap3(data_set='hapmap3'):
         from sys import stdout
         import bz2
     except ImportError as i:
-        raise i, "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
+        raise i("Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset")
 
     dir_path = os.path.join(data_path,'hapmap3')
     hapmap_file_name = 'hapmap3_r2_b36_fwd.consensus.qc.poly'
@@ -802,10 +814,10 @@ def hapmap3(data_set='hapmap3'):
     if not reduce(lambda a,b: a and b, map(os.path.exists, preprocessed_data_paths)):
         if not overide_manual_authorize and not prompt_user("Preprocessing requires ~25GB "
                             "of memory and can take a (very) long time, continue? [Y/n]"):
-            print "Preprocessing required for further usage."
+            print("Preprocessing required for further usage.")
             return
         status = "Preprocessing data, please be patient..."
-        print status
+        print(status)
         def write_status(message, progress, status):
             stdout.write(" "*len(status)); stdout.write("\r"); stdout.flush()
             status = r"[{perc: <{ll}}] {message: <13s}".format(message=message, ll=20,
@@ -873,13 +885,13 @@ def hapmap3(data_set='hapmap3'):
         inandf = DataFrame(index=metadf.index, data=inan, columns=mapnp[:,1])
         inandf.to_pickle(preprocessed_data_paths[2])
         status=write_status('done :)', 100, status)
-        print ''
+        print('')
     else:
-        print "loading snps..."
+        print("loading snps...")
         snpsdf = read_pickle(preprocessed_data_paths[0])
-        print "loading metainfo..."
+        print("loading metainfo...")
         metadf = read_pickle(preprocessed_data_paths[1])
-        print "loading nan entries..."
+        print("loading nan entries...")
         inandf = read_pickle(preprocessed_data_paths[2])
     snps = snpsdf.values
     populations = metadf.population.values.astype('S3')
@@ -1001,7 +1013,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     # Extract the tar file
     filename = os.path.join(dir_path, 'GSE45719_Raw.tar')
     with tarfile.open(filename, 'r') as files:
-        print "Extracting Archive {}...".format(files.name)
+        print("Extracting Archive {}...".format(files.name))
         data = None
         gene_info = None
         message = ''
@@ -1010,9 +1022,9 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
         for i, file_info in enumerate(members):
             f = files.extractfile(file_info)
             inner = read_csv(f, sep='\t', header=0, compression='gzip', index_col=0)
-            print ' '*(len(message)+1) + '\r',
+            print(' '*(len(message)+1) + '\r', end=' ')
             message = "{: >7.2%}: Extracting: {}".format(float(i+1)/overall, file_info.name[:20]+"...txt.gz")
-            print message,
+            print(message, end=' ')
             if data is None:
                 data = inner.RPKM.to_frame()
                 data.columns = [file_info.name[:-18]]
@@ -1035,8 +1047,8 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
 
     sys.stdout.write(' '*len(message) + '\r')
     sys.stdout.flush()
-    print
-    print "Read Archive {}".format(files.name)
+    print()
+    print("Read Archive {}".format(files.name))
 
     return data_details_return({'Y': data,
                                 'series_info': info,

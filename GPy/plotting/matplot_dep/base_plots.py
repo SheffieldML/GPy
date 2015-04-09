@@ -133,7 +133,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits
     else:
-        raise ValueError, "Bad limits for plotting"
+        raise ValueError("Bad limits for plotting")
 
     Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
     return Xnew, xmin, xmax
@@ -149,7 +149,7 @@ def x_frame2D(X,plot_limits=None,resolution=None):
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits
     else:
-        raise ValueError, "Bad limits for plotting"
+        raise ValueError("Bad limits for plotting")
 
     resolution = resolution or 50
     xx,yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]

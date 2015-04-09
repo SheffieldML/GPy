@@ -182,7 +182,7 @@ class Heaviside(GPTransformation):
         return np.where(f>0, 1, 0)
 
     def dtransf_df(self,f):
-        raise NotImplementedError, "This function is not differentiable!"
+        raise NotImplementedError("This function is not differentiable!")
 
     def d2transf_df2(self,f):
-        raise NotImplementedError, "This function is not differentiable!"
+        raise NotImplementedError("This function is not differentiable!")

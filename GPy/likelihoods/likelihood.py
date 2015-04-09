@@ -4,7 +4,7 @@
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import link_functions
+from . import link_functions
 from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
 from scipy.integrate import quad
 import warnings
@@ -248,8 +248,8 @@ class Likelihood(Parameterized):
         return mean
 
     def _conditional_mean(self, f):
-        """Quadrature calculation of the conditional mean: E(Y_star|f_star)"""
-        raise NotImplementedError, "implement this function to make predictions"
+        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
+        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
@@ -598,7 +598,7 @@ class Likelihood(Parameterized):
         :param burnin: number of samples to use for burnin (will need modifying)
         :param Y_metadata: Y_metadata for pdf
         """
-        print "Warning, using MCMC for sampling y*, needs to be tuned!"
+        print("Warning, using MCMC for sampling y*, needs to be tuned!")
         if starting_loc is None:
             starting_loc = fNew
         from functools import partial
@@ -652,8 +652,8 @@ class Likelihood(Parameterized):
 
             #Show progress
             if i % int((burn_in+num_samples)*0.1) == 0:
-                print "{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i)
-                print "Last run accept ratio: ", accept_ratio[i]
+                print("{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i))
+                print("Last run accept ratio: ", accept_ratio[i])
 
-        print "Average accept ratio: ", np.mean(accept_ratio)
+        print("Average accept ratio: ", np.mean(accept_ratio))
         return chain_values

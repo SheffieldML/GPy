@@ -26,11 +26,6 @@ class MappingGradChecker(GPy.core.Model):
         self.mapping.update_gradients(self.dL_dY, self.X)
 
 
-
-
-
-
-
 class MappingTests(unittest.TestCase):
 
     def test_kernelmapping(self):
@@ -68,5 +63,5 @@ class MappingTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    print "Running unit tests, please be (very) patient..."
+    print("Running unit tests, please be (very) patient...")
     unittest.main()

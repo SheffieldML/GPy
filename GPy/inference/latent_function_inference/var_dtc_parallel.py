@@ -1,7 +1,7 @@
 # Copyright (c) 2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from posterior import Posterior
+from .posterior import Posterior
 from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri,pdinv
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
@@ -92,7 +92,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         psi0_full = 0.
         YRY_full = 0.
 
-        for n_start in xrange(0,num_data,batchsize):
+        for n_start in range(0,num_data,batchsize):
             n_end = min(batchsize+n_start, num_data)
             if batchsize==num_data:
                 Y_slice = Y
@@ -170,7 +170,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         Kmm = kern.K(Z).copy()
         diag.add(Kmm, self.const_jitter)
         if not np.isfinite(Kmm).all():
-            print Kmm
+            print(Kmm)
         Lm = jitchol(Kmm)
 
         LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')

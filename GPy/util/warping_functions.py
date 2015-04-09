@@ -220,7 +220,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             y -= update
             it += 1
         if it == max_iterations:
-            print "WARNING!!! Maximum number of iterations reached in f_inv "
+            print("WARNING!!! Maximum number of iterations reached in f_inv ")
 
         return y
 

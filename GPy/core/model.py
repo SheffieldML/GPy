@@ -256,7 +256,7 @@ class Model(Parameterized):
         else:
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
-                        
+
         with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
             opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
             vo.finish(opt)
@@ -371,7 +371,12 @@ class Model(Parameterized):
                 f1 = self._objective(xx)
                 xx[xind] -= 2.*step
                 f2 = self._objective(xx)
-                df_ratio = np.abs((f1 - f2) / min(f1, f2))
+                #Avoid divide by zero, if any of the values are above 1e-15, otherwise both values are essentiall
+                #the same
+                if f1 > 1e-15 or f1 < -1e-15 or f2 > 1e-15 or f2 < -1e-15:
+                    df_ratio = np.abs((f1 - f2) / min(f1, f2))
+                else:
+                    df_ratio = 1.0
                 df_unstable = df_ratio < df_tolerance
                 numerical_gradient = (f1 - f2) / (2 * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]

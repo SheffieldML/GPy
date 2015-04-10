@@ -69,7 +69,7 @@ class BayesianGPLVM(SparseGP_MPI):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer, mpi_comm=mpi_comm,
                                            variational_prior=self.variational_prior,
-                                           Y_metadata=None
+                                           Y_metadata=Y_metadata
                                            )
         self.link_parameter(self.X, index=0)
 

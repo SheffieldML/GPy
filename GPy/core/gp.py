@@ -296,7 +296,7 @@ class GP(Model):
         :type size: int.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
-        :returns: Ysim: set of simulations
+        :returns: fsim: set of simulations
         :rtype: np.ndarray (N x samples)
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
@@ -304,11 +304,11 @@ class GP(Model):
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
-            Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
+            fsim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
         else:
-            Ysim = np.random.multivariate_normal(m.flatten(), v, size).T
+            fsim = np.random.multivariate_normal(m.flatten(), v, size).T
 
-        return Ysim
+        return fsim
 
     def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None):
         """
@@ -324,7 +324,7 @@ class GP(Model):
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
+        fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
         Ysim = self.likelihood.samples(Ysim, Y_metadata)
 
         return Ysim

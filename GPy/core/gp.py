@@ -325,7 +325,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(Ysim, Y_metadata)
+        Ysim = self.likelihood.samples(fsim, Y_metadata)
 
         return Ysim
 

@@ -19,6 +19,7 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 warnings.formatwarning = warning_on_one_line
 from scipy import optimize
 from . import LatentFunctionInference
+from scipy.integrate import quad
 
 class Laplace(LatentFunctionInference):
 
@@ -38,6 +39,67 @@ class Laplace(LatentFunctionInference):
         #to calculate things or reuse old variables
         self.first_run = True
         self._previous_Ki_fhat = None
+
+    def LOO(self, kern, X, Y, likelihood, posterior, Y_metadata=None, K=None):
+        """
+        Leave one out log predictive density as found in
+        "Bayesian leave-one-out cross-validation approximations for Gaussian latent variable models"
+        Vehtari et al. 2014.
+        """
+        Ki_f_init = np.zeros_like(Y)
+
+        if K is None:
+            K = kern.K(X)
+
+        f_hat, _ = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
+        W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+        logpdf_dfhat = likelihood.dlogpdf_df(f_hat, Y, Y_metadata=Y_metadata)
+
+        K_Wi_i, _, _, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
+
+        #Eq 37
+        posterior_cav_var = 1./(1./np.diag(Ki_W_i) - 1./np.diag(W))[:, None]
+        posterior_cav_mean = f_hat - posterior_cav_var*logpdf_dfhat
+
+        flat_y = Y.flatten()
+        flat_mu = posterior_cav_mean.flatten()
+        flat_var = posterior_cav_var.flatten()
+
+        if Y_metadata is not None:
+            #Need to zip individual elements of Y_metadata aswell
+            Y_metadata_flat = {}
+            if Y_metadata is not None:
+                for key, val in Y_metadata.items():
+                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1, 1)
+
+            zipped_values = []
+
+            for i in range(Y.shape[0]):
+                y_m = {}
+                for key, val in Y_metadata_flat.items():
+                    if np.isscalar(val) or val.shape[0] == 1:
+                        y_m[key] = val
+                    else:
+                        #Won't broadcast yet
+                        y_m[key] = val[i]
+                zipped_values.append((flat_y[i], flat_mu[i], flat_var[i], y_m))
+        else:
+            #Otherwise just pass along None's
+            zipped_values = zip(flat_y, flat_mu, flat_var, [None]*Y.shape[0])
+
+        def integral_generator(yi, mi, vi, yi_m):
+            def f(fi_star):
+                #More stable in the log space
+                return np.exp(likelihood.logpdf(fi_star, yi, yi_m)
+                              - 0.5*np.log(2*np.pi*vi)
+                              - 0.5*np.square(mi-fi_star)/vi)
+            return f
+
+        #Eq 25
+        p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf)
+                           for y, m, v, yi_m in zipped_values])
+        p_ystar = np.array(p_ystar).reshape(-1, 1)
+        return np.log(p_ystar)
 
     def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
         """

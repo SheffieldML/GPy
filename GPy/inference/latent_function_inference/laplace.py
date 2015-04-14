@@ -57,9 +57,20 @@ class Laplace(LatentFunctionInference):
 
         K_Wi_i, _, _, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
 
-        #Eq 37
-        posterior_cav_var = 1./(1./np.diag(Ki_W_i) - 1./np.diag(W))[:, None]
-        posterior_cav_mean = f_hat - posterior_cav_var*logpdf_dfhat
+        W = np.diagflat(W)
+
+        #Eq 14, and 16
+        var_site = 1./np.diag(W)[:, None]
+        mu_site = f_hat + var_site*logpdf_dfhat
+        prec_site = 1./var_site
+        #Eq 19
+        marginal_cov = Ki_W_i
+        marginal_mu = marginal_cov.dot(np.diagflat(prec_site)).dot(mu_site)
+        marginal_var = np.diag(marginal_cov)[:, None]
+        #Eq 30 with using site parameters instead of Gaussian site parameters
+        #(var_site instead of sigma^{2} )
+        posterior_cav_var = 1./(1./marginal_var - 1./var_site)
+        posterior_cav_mean = posterior_cav_var*((1./marginal_var)*marginal_mu - (1./var_site)*Y)
 
         flat_y = Y.flatten()
         flat_mu = posterior_cav_mean.flatten()
@@ -90,12 +101,13 @@ class Laplace(LatentFunctionInference):
         def integral_generator(yi, mi, vi, yi_m):
             def f(fi_star):
                 #More stable in the log space
-                return np.exp(likelihood.logpdf(fi_star, yi, yi_m)
+                p_fi = np.exp(likelihood.logpdf(fi_star, yi, yi_m)
                               - 0.5*np.log(2*np.pi*vi)
                               - 0.5*np.square(mi-fi_star)/vi)
+                return p_fi
             return f
 
-        #Eq 25
+        #Eq 30
         p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf)
                            for y, m, v, yi_m in zipped_values])
         p_ystar = np.array(p_ystar).reshape(-1, 1)

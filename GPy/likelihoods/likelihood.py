@@ -539,9 +539,9 @@ class Likelihood(Parameterized):
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert dlogpdf_dtheta.shape[0] == self.size #f, d x num_param array
-        assert dlogpdf_df_dtheta.shape[0] == self.size #f x d x num_param matrix or just f x num_param
-        assert d2logpdf_df2_dtheta.shape[0] == self.size #f x num_param matrix or f x d x num_param matrix, f x f x num_param or f x f x d x num_param
+        assert dlogpdf_dtheta.shape[0] == self.size #num_param array x f, d
+        assert dlogpdf_df_dtheta.shape[0] == self.size #num_param x f x d x matrix or just num_param x f
+        assert d2logpdf_df2_dtheta.shape[0] == self.size #num_param x f matrix or num_param x f x d x matrix, num_param x f x f or num_param x f x f x d
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 

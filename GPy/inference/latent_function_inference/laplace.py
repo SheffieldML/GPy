@@ -40,7 +40,7 @@ class Laplace(LatentFunctionInference):
         self.first_run = True
         self._previous_Ki_fhat = None
 
-    def LOO(self, kern, X, Y, likelihood, posterior, Y_metadata=None, K=None):
+    def LOO(self, kern, X, Y, likelihood, posterior, Y_metadata=None, K=None, f_hat=None, W=None, Ki_W_i=None):
         """
         Leave one out log predictive density as found in
         "Bayesian leave-one-out cross-validation approximations for Gaussian latent variable models"
@@ -51,13 +51,19 @@ class Laplace(LatentFunctionInference):
         if K is None:
             K = kern.K(X)
 
-        f_hat, _ = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
-        W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+        if f_hat is None:
+            f_hat, _ = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
+
+        if W is None:
+            W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+
+        if Ki_W_i is None:
+            _, _, _, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
+
         logpdf_dfhat = likelihood.dlogpdf_df(f_hat, Y, Y_metadata=Y_metadata)
 
-        K_Wi_i, _, _, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
-
-        W = np.diagflat(W)
+        if W.shape[1] == 1:
+            W = np.diagflat(W)
 
         #Eq 14, and 16
         var_site = 1./np.diag(W)[:, None]

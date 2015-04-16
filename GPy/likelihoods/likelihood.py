@@ -114,21 +114,24 @@ class Likelihood(Parameterized):
             #Otherwise just pass along None's
             zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None]*y_test.shape[0])
 
-        def integral_generator(y, m, v, y_m):
-            """Generate a function which can be integrated to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
-            def f(f_star):
+        def integral_generator(yi, mi, vi, yi_m):
+            """Generate a function which can be integrated
+            to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
+            def f(fi_star):
                 #exponent = np.exp(-(1./(2*v))*np.square(m-f_star))
                 #from GPy.util.misc import safe_exp
                 #exponent = safe_exp(exponent)
                 #return self.pdf(f_star, y, y_m)*exponent
 
                 #More stable in the log space
-                return np.exp(self.logpdf(f_star, y, y_m) -(1./(2*v))*np.square(m-f_star))
+                return np.exp(self.logpdf(fi_star, yi, yi_m)
+                              - 0.5*np.log(2*np.pi*vi)
+                              - 0.5*np.square(mi-fi_star)/vi)
             return f
 
-        scaled_p_ystar, accuracy = zip(*[quad(integral_generator(y, m, v, y_m), -np.inf, np.inf) for y, m, v, y_m in zipped_values])
-        scaled_p_ystar = np.array(scaled_p_ystar).reshape(-1,1)
-        p_ystar = scaled_p_ystar/np.sqrt(2*np.pi*var_star)
+        p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
+                           for yi, mi, vi, yi_m in zipped_values])
+        p_ystar = np.array(p_ystar).reshape(-1, 1)
         return np.log(p_ystar)
 
     def _moments_match_ep(self,obs,tau,v):

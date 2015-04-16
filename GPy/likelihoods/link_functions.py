@@ -4,9 +4,7 @@
 import numpy as np
 from ..util.univariate_Gaussian import std_norm_cdf, std_norm_pdf
 import scipy as sp
-
-_exp_lim_val = np.finfo(np.float64).max
-_lim_val = np.log(_exp_lim_val)
+from ..util.misc import safe_exp, safe_square, safe_cube, safe_quad, safe_three_times
 
 class GPTransformation(object):
     """
@@ -63,12 +61,13 @@ class Identity(GPTransformation):
     def d3transf_df3(self,f):
         return np.zeros_like(f)
 
+
 class Probit(GPTransformation):
     """
     .. math::
 
         g(f) = \\Phi^{-1} (mu)
-
+    
     """
     def transf(self,f):
         return std_norm_cdf(f)
@@ -80,7 +79,7 @@ class Probit(GPTransformation):
         return -f * std_norm_pdf(f)
 
     def d3transf_df3(self,f):
-        return (np.square(f)-1.)*std_norm_pdf(f)
+        return (safe_square(f)-1.)*std_norm_pdf(f)
 
 
 class Cloglog(GPTransformation):
@@ -96,19 +95,23 @@ class Cloglog(GPTransformation):
 
     """
     def transf(self,f):
-        return 1-np.exp(-np.exp(f))
+        ef = safe_exp(f)
+        return 1-np.exp(-ef)
 
     def dtransf_df(self,f):
-        return np.exp(f-np.exp(f))
+        ef = safe_exp(f)
+        return np.exp(f-ef)
 
     def d2transf_df2(self,f):
-        ef = np.exp(f)
+        ef = safe_exp(f)
         return -np.exp(f-ef)*(ef-1.)
 
     def d3transf_df3(self,f):
-        ef = np.exp(f)
-        return np.exp(f-ef)*(1.-3*ef + ef**2)
-
+        ef = safe_exp(f)
+        ef2 = safe_square(ef)
+        three_times_ef = safe_three_times(ef)
+        r_val = np.exp(f-ef)*(1.-three_times_ef + ef2)
+        return r_val
 
 class Log(GPTransformation):
     """
@@ -118,16 +121,16 @@ class Log(GPTransformation):
 
     """
     def transf(self,f):
-        return np.exp(np.clip(f, -np.inf, _lim_val))
+        return safe_exp(f)
 
     def dtransf_df(self,f):
-        return np.exp(np.clip(f, -np.inf, _lim_val))
+        return safe_exp(f)
 
     def d2transf_df2(self,f):
-        return np.exp(np.clip(f, -np.inf, _lim_val))
+        return safe_exp(f)
 
     def d3transf_df3(self,f):
-        return np.exp(np.clip(f, -np.inf, _lim_val))
+        return safe_exp(f)
 
 class Log_ex_1(GPTransformation):
     """
@@ -137,17 +140,20 @@ class Log_ex_1(GPTransformation):
 
     """
     def transf(self,f):
-        return np.log(1.+np.exp(f))
+        return np.log1p(safe_exp(f))
 
     def dtransf_df(self,f):
-        return np.exp(f)/(1.+np.exp(f))
+        ef = safe_exp(f)
+        return ef/(1.+ef)
 
     def d2transf_df2(self,f):
-        aux = np.exp(f)/(1.+np.exp(f))
+        ef = safe_exp(f)
+        aux = ef/(1.+ef)
         return aux*(1.-aux)
 
     def d3transf_df3(self,f):
-        aux = np.exp(f)/(1.+np.exp(f))
+        ef = safe_exp(f)
+        aux = ef/(1.+ef)
         daux_df = aux*(1.-aux)
         return daux_df - (2.*aux*daux_df)
 
@@ -155,14 +161,17 @@ class Reciprocal(GPTransformation):
     def transf(self,f):
         return 1./f
 
-    def dtransf_df(self,f):
-        return -1./(f**2)
+    def dtransf_df(self, f):
+        f2 = safe_square(f)
+        return -1./f2
 
-    def d2transf_df2(self,f):
-        return 2./(f**3)
+    def d2transf_df2(self, f):
+        f3 = safe_cube(f)
+        return 2./f3
 
     def d3transf_df3(self,f):
-        return -6./(f**4)
+        f4 = safe_quad(f)
+        return -6./f4
 
 class Heaviside(GPTransformation):
     """

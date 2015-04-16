@@ -20,7 +20,7 @@ try:
     from scipy import weave
 except ImportError:
     config.set('weave', 'working', 'False')
-    
+
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
 _fix_dpotri_scipy_bug = True
@@ -102,7 +102,6 @@ def jitchol(A, maxtries=5):
         num_tries = 1
         while num_tries <= maxtries and np.isfinite(jitter):
             try:
-                print(jitter)
                 L = linalg.cholesky(A + np.eye(A.shape[0]) * jitter, lower=True)
                 return L
             except:
@@ -115,7 +114,6 @@ def jitchol(A, maxtries=5):
     except:
         logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
             '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
-    import ipdb;ipdb.set_trace()
     return L
 
 # def dtrtri(L, lower=1):

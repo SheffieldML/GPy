@@ -132,10 +132,8 @@ class Gaussian(Likelihood):
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        N = y.shape[0]
         ln_det_cov = np.log(self.variance)
-
-        return -0.5*((y-link_f)**2/self.variance + ln_det_cov + np.log(2.*np.pi))
+        return -(1.0/(2*self.variance))*((y-link_f)**2) - 0.5*ln_det_cov - 0.5*np.log(2.*np.pi)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -220,7 +218,6 @@ class Gaussian(Likelihood):
         """
         e = y - link_f
         s_4 = 1.0/(self.variance**2)
-        N = y.shape[0]
         dlik_dsigma = -0.5/self.variance + 0.5*s_4*np.square(e)
         return dlik_dsigma
 

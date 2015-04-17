@@ -12,13 +12,14 @@
 
 import numpy as np
 from ...util.linalg import mdot, jitchol, dpotrs, dtrtrs, dpotri, symmetrify, pdinv
-from posterior import Posterior
+from .posterior import Posterior
 import warnings
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     return ' %s:%s: %s:%s\n' % (filename, lineno, category.__name__, message)
 warnings.formatwarning = warning_on_one_line
 from scipy import optimize
 from . import LatentFunctionInference
+from scipy.integrate import quad
 
 class Laplace(LatentFunctionInference):
 
@@ -38,6 +39,85 @@ class Laplace(LatentFunctionInference):
         #to calculate things or reuse old variables
         self.first_run = True
         self._previous_Ki_fhat = None
+
+    def LOO(self, kern, X, Y, likelihood, posterior, Y_metadata=None, K=None, f_hat=None, W=None, Ki_W_i=None):
+        """
+        Leave one out log predictive density as found in
+        "Bayesian leave-one-out cross-validation approximations for Gaussian latent variable models"
+        Vehtari et al. 2014.
+        """
+        Ki_f_init = np.zeros_like(Y)
+
+        if K is None:
+            K = kern.K(X)
+
+        if f_hat is None:
+            f_hat, _ = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
+
+        if W is None:
+            W = -likelihood.d2logpdf_df2(f_hat, Y, Y_metadata=Y_metadata)
+
+        if Ki_W_i is None:
+            _, _, _, Ki_W_i = self._compute_B_statistics(K, W, likelihood.log_concave)
+
+        logpdf_dfhat = likelihood.dlogpdf_df(f_hat, Y, Y_metadata=Y_metadata)
+
+        if W.shape[1] == 1:
+            W = np.diagflat(W)
+
+        #Eq 14, and 16
+        var_site = 1./np.diag(W)[:, None]
+        mu_site = f_hat + var_site*logpdf_dfhat
+        prec_site = 1./var_site
+        #Eq 19
+        marginal_cov = Ki_W_i
+        marginal_mu = marginal_cov.dot(np.diagflat(prec_site)).dot(mu_site)
+        marginal_var = np.diag(marginal_cov)[:, None]
+        #Eq 30 with using site parameters instead of Gaussian site parameters
+        #(var_site instead of sigma^{2} )
+        posterior_cav_var = 1./(1./marginal_var - 1./var_site)
+        posterior_cav_mean = posterior_cav_var*((1./marginal_var)*marginal_mu - (1./var_site)*Y)
+
+        flat_y = Y.flatten()
+        flat_mu = posterior_cav_mean.flatten()
+        flat_var = posterior_cav_var.flatten()
+
+        if Y_metadata is not None:
+            #Need to zip individual elements of Y_metadata aswell
+            Y_metadata_flat = {}
+            if Y_metadata is not None:
+                for key, val in Y_metadata.items():
+                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1, 1)
+
+            zipped_values = []
+
+            for i in range(Y.shape[0]):
+                y_m = {}
+                for key, val in Y_metadata_flat.items():
+                    if np.isscalar(val) or val.shape[0] == 1:
+                        y_m[key] = val
+                    else:
+                        #Won't broadcast yet
+                        y_m[key] = val[i]
+                zipped_values.append((flat_y[i], flat_mu[i], flat_var[i], y_m))
+        else:
+            #Otherwise just pass along None's
+            zipped_values = zip(flat_y, flat_mu, flat_var, [None]*Y.shape[0])
+
+        def integral_generator(yi, mi, vi, yi_m):
+            def f(fi_star):
+                #More stable in the log space
+                p_fi = np.exp(likelihood.logpdf(fi_star, yi, yi_m)
+                              - 0.5*np.log(2*np.pi*vi)
+                              - 0.5*np.square(mi-fi_star)/vi)
+                return p_fi
+            return f
+
+        #Eq 30
+        p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf)
+                           for y, m, v, yi_m in zipped_values])
+        p_ystar = np.array(p_ystar).reshape(-1, 1)
+        return np.log(p_ystar)
 
     def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
         """

@@ -84,7 +84,7 @@ except:
 
 
 if __name__ == "__main__":
-    print "Running unit tests, please be (very) patient..."
+    print("Running unit tests, please be (very) patient...")
     try:
         import mpi4py
         unittest.main()

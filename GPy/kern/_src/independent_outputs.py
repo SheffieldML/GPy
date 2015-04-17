@@ -2,13 +2,13 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kern import Kern, CombinationKernel
+from .kern import Kern, CombinationKernel
 import numpy as np
 import itertools
 
 def index_to_slices(index):
     """
-    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index. 
+    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.
 
     e.g.
     >>> index = np.asarray([0,0,0,1,1,1,2,2,2])
@@ -79,10 +79,10 @@ class IndependentOutputs(CombinationKernel):
 
     def update_gradients_full(self,dL_dK,X,X2=None):
         slices = index_to_slices(X[:,self.index_dim])
-        if self.single_kern: 
+        if self.single_kern:
             target = np.zeros(self.kern.size)
             kerns = itertools.repeat(self.kern)
-        else: 
+        else:
             kerns = self.kern
             target = [np.zeros(kern.size) for kern, _ in zip(kerns, slices)]
         def collate_grads(kern, i, dL, X, X2):
@@ -94,20 +94,24 @@ class IndependentOutputs(CombinationKernel):
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             [[[collate_grads(kern, i, dL_dK[s,s2],X[s],X2[s2]) for s in slices_i] for s2 in slices_j] for i,(kern,slices_i,slices_j) in enumerate(zip(kerns,slices,slices2))]
-        if self.single_kern: kern.gradient = target
-        else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
+        if self.single_kern:
+            self.kern.gradient = target
+        else:
+            [kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
     def gradients_X(self,dL_dK, X, X2=None):
         target = np.zeros(X.shape)
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         if X2 is None:
             # TODO: make use of index_to_slices
+            # FIXME: Broken as X is already sliced out
+            print "Warning, gradients_X may not be working, I believe X has already been sliced out by the slicer!"
             values = np.unique(X[:,self.index_dim])
             slices = [X[:,self.index_dim]==i for i in values]
             [target.__setitem__(s, kern.gradients_X(dL_dK[s,s],X[s],None))
               for kern, s in zip(kerns, slices)]
             #slices = index_to_slices(X[:,self.index_dim])
-            #[[np.add(target[s], kern.gradients_X(dL_dK[s,s], X[s]), out=target[s]) 
+            #[[np.add(target[s], kern.gradients_X(dL_dK[s,s], X[s]), out=target[s])
             #  for s in slices_i] for kern, slices_i in zip(kerns, slices)]
             #import ipdb;ipdb.set_trace()
             #[[(np.add(target[s ], kern.gradients_X(dL_dK[s ,ss],X[s ], X[ss]), out=target[s ]),
@@ -142,7 +146,7 @@ class IndependentOutputs(CombinationKernel):
             if self.single_kern: target[:] += kern.gradient
             else: target[i][:] += kern.gradient
         [[collate_grads(kern, i, dL_dKdiag[s], X[s,:]) for s in slices_i] for i, (kern, slices_i) in enumerate(zip(kerns, slices))]
-        if self.single_kern: kern.gradient = target
+        if self.single_kern: self.kern.gradient = target
         else:[kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices))]
 
 class Hierarchical(CombinationKernel):

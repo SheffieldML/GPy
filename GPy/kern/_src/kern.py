@@ -4,17 +4,20 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from kernel_slice_operations import KernCallsViaSlicerMeta
+from .kernel_slice_operations import KernCallsViaSlicerMeta
 from ...util.caching import Cache_this
 from GPy.core.parameterization.observable_array import ObsAr
+from functools import reduce
+import six
 
-
-
+@six.add_metaclass(KernCallsViaSlicerMeta)
 class Kern(Parameterized):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
-    __metaclass__ = KernCallsViaSlicerMeta
+    # __meataclass__ is ignored in Python 3 - needs to be put in the function definiton
+    #__metaclass__ = KernCallsViaSlicerMeta
+    #Here, we use the Python module six to support Py3 and Py2 simultaneously
     #===========================================================================
     _support_GPU=False
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):
@@ -178,7 +181,7 @@ class Kern(Parameterized):
 
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
-        from add import Add
+        from .add import Add
         return Add([self, other], name=name)
 
     def __mul__(self, other):
@@ -210,7 +213,7 @@ class Kern(Parameterized):
 
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."
-        from prod import Prod
+        from .prod import Prod
         #kernels = []
         #if isinstance(self, Prod): kernels.extend(self.parameters)
         #else: kernels.append(self)

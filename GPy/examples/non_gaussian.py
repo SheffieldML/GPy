@@ -37,7 +37,7 @@ def student_t_approx(optimize=True, plot=True):
 
     #Add student t random noise to datapoints
     deg_free = 1
-    print "Real noise: ", real_std
+    print("Real noise: ", real_std)
     initial_var_guess = 0.5
     edited_real_sd = initial_var_guess
 
@@ -73,7 +73,7 @@ def student_t_approx(optimize=True, plot=True):
     m4['.*t_scale2'].constrain_bounded(1e-6, 10.)
     m4['.*white'].constrain_fixed(1e-5)
     m4.randomize()
-    print m4
+    print(m4)
     debug=True
     if debug:
         m4.optimize(messages=1)
@@ -81,18 +81,18 @@ def student_t_approx(optimize=True, plot=True):
         pb.plot(m4.X, m4.inference_method.f_hat)
         pb.plot(m4.X, m4.Y, 'rx')
         m4.plot()
-        print m4
+        print(m4)
         return m4
 
     if optimize:
         optimizer='scg'
-        print "Clean Gaussian"
+        print("Clean Gaussian")
         m1.optimize(optimizer, messages=1)
-        print "Corrupt Gaussian"
+        print("Corrupt Gaussian")
         m2.optimize(optimizer, messages=1)
-        print "Clean student t"
+        print("Clean student t")
         m3.optimize(optimizer, messages=1)
-        print "Corrupt student t"
+        print("Corrupt student t")
         m4.optimize(optimizer, messages=1)
 
     if plot:
@@ -151,7 +151,7 @@ def boston_example(optimize=True, plot=True):
 
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
-        print "Fold {}".format(n)
+        print("Fold {}".format(n))
 
         noise = 1e-1 #np.exp(-2)
         rbf_len = 0.5
@@ -163,21 +163,21 @@ def boston_example(optimize=True, plot=True):
         score_folds[0, n] = rmse(Y_test, np.mean(Y_train))
 
         #Gaussian GP
-        print "Gauss GP"
+        print("Gauss GP")
         mgp = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelgp.copy())
         mgp.constrain_fixed('.*white', 1e-5)
         mgp['.*len'] = rbf_len
         mgp['.*noise'] = noise
-        print mgp
+        print(mgp)
         if optimize:
             mgp.optimize(optimizer=optimizer, messages=messages)
         Y_test_pred = mgp.predict(X_test)
         score_folds[1, n] = rmse(Y_test, Y_test_pred[0])
         pred_density[1, n] = np.mean(mgp.log_predictive_density(X_test, Y_test))
-        print mgp
-        print pred_density
+        print(mgp)
+        print(pred_density)
 
-        print "Gaussian Laplace GP"
+        print("Gaussian Laplace GP")
         N, D = Y_train.shape
         g_distribution = GPy.likelihoods.noise_model_constructors.gaussian(variance=noise, N=N, D=D)
         g_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), g_distribution)
@@ -186,18 +186,18 @@ def boston_example(optimize=True, plot=True):
         mg.constrain_fixed('.*white', 1e-5)
         mg['rbf_len'] = rbf_len
         mg['noise'] = noise
-        print mg
+        print(mg)
         if optimize:
             mg.optimize(optimizer=optimizer, messages=messages)
         Y_test_pred = mg.predict(X_test)
         score_folds[2, n] = rmse(Y_test, Y_test_pred[0])
         pred_density[2, n] = np.mean(mg.log_predictive_density(X_test, Y_test))
-        print pred_density
-        print mg
+        print(pred_density)
+        print(mg)
 
         for stu_num, df in enumerate(degrees_freedoms):
             #Student T
-            print "Student-T GP {}df".format(df)
+            print("Student-T GP {}df".format(df))
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(X_train.copy(), Y_train.copy(), kernel=kernelstu.copy(), likelihood=stu_t_likelihood)
@@ -205,14 +205,14 @@ def boston_example(optimize=True, plot=True):
             mstu_t.constrain_bounded('.*t_scale2', 0.0001, 1000)
             mstu_t['rbf_len'] = rbf_len
             mstu_t['.*t_scale2'] = noise
-            print mstu_t
+            print(mstu_t)
             if optimize:
                 mstu_t.optimize(optimizer=optimizer, messages=messages)
             Y_test_pred = mstu_t.predict(X_test)
             score_folds[3+stu_num, n] = rmse(Y_test, Y_test_pred[0])
             pred_density[3+stu_num, n] = np.mean(mstu_t.log_predictive_density(X_test, Y_test))
-            print pred_density
-            print mstu_t
+            print(pred_density)
+            print(mstu_t)
 
     if plot:
         plt.figure()
@@ -230,8 +230,8 @@ def boston_example(optimize=True, plot=True):
         plt.scatter(X_test[:, data_axis_plot], Y_test, c='r', marker='x')
         plt.title('Stu t {}df'.format(df))
 
-    print "Average scores: {}".format(np.mean(score_folds, 1))
-    print "Average pred density: {}".format(np.mean(pred_density, 1))
+    print("Average scores: {}".format(np.mean(score_folds, 1)))
+    print("Average pred density: {}".format(np.mean(pred_density, 1)))
 
     if plot:
         #Plotting

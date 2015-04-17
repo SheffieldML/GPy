@@ -1,6 +1,5 @@
 # GPy
 
-
 A Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
@@ -10,6 +9,27 @@ A Gaussian processes framework in Python.
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
+
+### Python 3 Compatibility
+Work is underway to make GPy run on Python 3.
+
+* Python 2.x compatibility is currently broken in this fork
+* All tests in the testsuite now run on Python3. 
+
+To see this for yourself, in Ubuntu 14.04, you can do
+
+    git clone https://github.com/mikecroucher/GPy.git
+    cd GPy
+    git checkout devel
+    nosetests3 GPy/testing
+
+nosetests3 is Ubuntu's way of reffering to the Python 3 version of nosetests. You install it with 
+
+    sudo apt-get install python3-nose
+
+* Test coverage is less than 100% so it is expected that there is still more work to be done. We need more tests and examples to try out.
+* All weave functions not covered by the test suite are *simply commented out*. Can add equivalents later as test functions become available
+* A set of benchmarks would be useful! 
 
 ### Citation
 
@@ -105,14 +125,12 @@ Ensure nose is installed via pip:
 
 Run nosetests from the root directory of the repository:
 
-    nosetests -v
+    nosetests -v GPy/testing
 
 or from within IPython
 
     import GPy; GPy.tests()
-
-
-
+		    
 ## Funding Acknowledgements
 
 

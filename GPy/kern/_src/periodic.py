@@ -3,11 +3,12 @@
 
 
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...util.linalg import mdot
 from ...util.decorators import silence_errors
 from ...core.parameterization.param import Param
 from ...core.parameterization.transformations import Logexp
+from functools import reduce
 
 class Periodic(Kern):
     def __init__(self, input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name):

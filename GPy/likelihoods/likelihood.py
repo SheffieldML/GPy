@@ -1,10 +1,10 @@
-# Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
+# Copyright (c) 2012-2015 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import link_functions
+from . import link_functions
 from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
 from scipy.integrate import quad
 import warnings
@@ -70,7 +70,7 @@ class Likelihood(Parameterized):
         """
         raise NotImplementedError
 
-    def log_predictive_density(self, y_test, mu_star, var_star):
+    def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
         """
         Calculation of the log predictive density
 
@@ -87,15 +87,51 @@ class Likelihood(Parameterized):
         assert y_test.shape==mu_star.shape
         assert y_test.shape==var_star.shape
         assert y_test.shape[1] == 1
-        def integral_generator(y, m, v):
-            """Generate a function which can be integrated to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
-            def f(f_star):
-                return self.pdf(f_star, y)*np.exp(-(1./(2*v))*np.square(m-f_star))
+
+        flat_y_test = y_test.flatten()
+        flat_mu_star = mu_star.flatten()
+        flat_var_star = var_star.flatten()
+
+        if Y_metadata is not None:
+            #Need to zip individual elements of Y_metadata aswell
+            Y_metadata_flat = {}
+            if Y_metadata is not None:
+                for key, val in Y_metadata.items():
+                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1,1)
+
+            zipped_values = []
+
+            for i in range(y_test.shape[0]):
+                y_m = {}
+                for key, val in Y_metadata_flat.items():
+                    if np.isscalar(val) or val.shape[0] == 1:
+                        y_m[key] = val
+                    else:
+                        #Won't broadcast yet
+                        y_m[key] = val[i]
+                zipped_values.append((flat_y_test[i], flat_mu_star[i], flat_var_star[i], y_m))
+        else:
+            #Otherwise just pass along None's
+            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None]*y_test.shape[0])
+
+        def integral_generator(yi, mi, vi, yi_m):
+            """Generate a function which can be integrated
+            to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
+            def f(fi_star):
+                #exponent = np.exp(-(1./(2*v))*np.square(m-f_star))
+                #from GPy.util.misc import safe_exp
+                #exponent = safe_exp(exponent)
+                #return self.pdf(f_star, y, y_m)*exponent
+
+                #More stable in the log space
+                return np.exp(self.logpdf(fi_star, yi, yi_m)
+                              - 0.5*np.log(2*np.pi*vi)
+                              - 0.5*np.square(mi-fi_star)/vi)
             return f
 
-        scaled_p_ystar, accuracy = zip(*[quad(integral_generator(y, m, v), -np.inf, np.inf) for y, m, v in zip(y_test.flatten(), mu_star.flatten(), var_star.flatten())])
-        scaled_p_ystar = np.array(scaled_p_ystar).reshape(-1,1)
-        p_ystar = scaled_p_ystar/np.sqrt(2*np.pi*var_star)
+        p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
+                           for yi, mi, vi, yi_m in zipped_values])
+        p_ystar = np.array(p_ystar).reshape(-1, 1)
         return np.log(p_ystar)
 
     def _moments_match_ep(self,obs,tau,v):
@@ -132,6 +168,13 @@ class Likelihood(Parameterized):
 
         return z, mean, variance
 
+    #only compute gh points if required
+    __gh_points = None
+    def _gh_points(self):
+        if self.__gh_points is None:
+            self.__gh_points = np.polynomial.hermite.hermgauss(20)
+        return self.__gh_points
+
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         """
         Use Gauss-Hermite Quadrature to compute
@@ -144,10 +187,9 @@ class Likelihood(Parameterized):
 
         if no gh_points are passed, we construct them using defualt options
         """
-        #May be broken
 
         if gh_points is None:
-            gh_x, gh_w = np.polynomial.hermite.hermgauss(20)
+            gh_x, gh_w = self._gh_points()
         else:
             gh_x, gh_w = gh_points
 
@@ -215,8 +257,8 @@ class Likelihood(Parameterized):
         return mean
 
     def _conditional_mean(self, f):
-        """Quadrature calculation of the conditional mean: E(Y_star|f_star)"""
-        raise NotImplementedError, "implement this function to make predictions"
+        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
+        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
@@ -506,9 +548,9 @@ class Likelihood(Parameterized):
 
         #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert dlogpdf_dtheta.shape[0] == self.size #f, d x num_param array
-        assert dlogpdf_df_dtheta.shape[0] == self.size #f x d x num_param matrix or just f x num_param
-        assert d2logpdf_df2_dtheta.shape[0] == self.size #f x num_param matrix or f x d x num_param matrix, f x f x num_param or f x f x d x num_param
+        assert dlogpdf_dtheta.shape[0] == self.size #num_param array x f, d
+        assert dlogpdf_df_dtheta.shape[0] == self.size #num_param x f x d x matrix or just num_param x f
+        assert d2logpdf_df2_dtheta.shape[0] == self.size #num_param x f matrix or num_param x f x d x matrix, num_param x f x f or num_param x f x f x d
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
@@ -565,7 +607,7 @@ class Likelihood(Parameterized):
         :param burnin: number of samples to use for burnin (will need modifying)
         :param Y_metadata: Y_metadata for pdf
         """
-        print "Warning, using MCMC for sampling y*, needs to be tuned!"
+        print("Warning, using MCMC for sampling y*, needs to be tuned!")
         if starting_loc is None:
             starting_loc = fNew
         from functools import partial
@@ -619,8 +661,8 @@ class Likelihood(Parameterized):
 
             #Show progress
             if i % int((burn_in+num_samples)*0.1) == 0:
-                print "{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i)
-                print "Last run accept ratio: ", accept_ratio[i]
+                print("{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i))
+                print("Last run accept ratio: ", accept_ratio[i])
 
-        print "Average accept ratio: ", np.mean(accept_ratio)
+        print("Average accept ratio: ", np.mean(accept_ratio))
         return chain_values

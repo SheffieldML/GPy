@@ -1,1 +1,1 @@
-from hmc import HMC
+from .hmc import HMC

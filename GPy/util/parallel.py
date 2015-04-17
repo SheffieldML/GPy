@@ -27,7 +27,7 @@ def divide_data(datanum, rank, size):
     
     residue = (datanum)%size
     datanum_list = np.empty((size),dtype=np.int32)
-    for i in xrange(size):
+    for i in range(size):
         if i<residue:
             datanum_list[i] = int(datanum/size)+1
         else:

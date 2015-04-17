@@ -4,14 +4,15 @@
 import numpy as np
 import sys
 from .. import kern
-from model import Model
-from mapping import Mapping
-from parameterization import ObsAr
+from .model import Model
+from .parameterization import ObsAr
+from .mapping import Mapping
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from parameterization.variational import VariationalPosterior
+from .parameterization.variational import VariationalPosterior
 
 import logging
+import warnings
 from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
@@ -63,10 +64,14 @@ class GP(Model):
             self.Y = ObsAr(Y)
             self.Y_normalized = self.Y
 
-        assert Y.shape[0] == self.num_data
+        if Y.shape[0] != self.num_data:
+            #There can be cases where we want inputs than outputs, for example if we have multiple latent
+            #function values
+            warnings.warn("There are more rows in your input data X, \
+                         than in your output data Y, be VERY sure this is what you want")
         _, self.output_dim = self.Y.shape
 
-        #TODO: check the type of this is okay?
+        assert ((Y_metadata is None) or isinstance(Y_metadata, dict))
         self.Y_metadata = Y_metadata
 
         assert isinstance(kernel, kern.Kern)
@@ -92,7 +97,7 @@ class GP(Model):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
-                print "defaulting to ", inference_method, "for latent function inference"
+                print("defaulting to ", inference_method, "for latent function inference")
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
@@ -296,7 +301,7 @@ class GP(Model):
         :type size: int.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
-        :returns: Ysim: set of simulations
+        :returns: fsim: set of simulations
         :rtype: np.ndarray (N x samples)
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
@@ -304,11 +309,11 @@ class GP(Model):
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
-            Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
+            fsim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
         else:
-            Ysim = np.random.multivariate_normal(m.flatten(), v, size).T
+            fsim = np.random.multivariate_normal(m.flatten(), v, size).T
 
-        return Ysim
+        return fsim
 
     def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None):
         """
@@ -324,16 +329,16 @@ class GP(Model):
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(Ysim, Y_metadata)
-
+        fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
+        Ysim = self.likelihood.samples(fsim, Y_metadata)
         return Ysim
 
     def plot_f(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=True,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx'):
+        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx',
+        apply_link=False):
         """
         Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
         This is a call to plot with plot_raw=True.
@@ -370,6 +375,8 @@ class GP(Model):
         :type Y_metadata: dict
         :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
         :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*
+        :type apply_link: boolean
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -382,7 +389,7 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, **kw)
+                                     data_symbol=data_symbol, apply_link=apply_link, **kw)
 
     def plot(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
@@ -461,7 +468,7 @@ class GP(Model):
         try:
             super(GP, self).optimize(optimizer, start, **kwargs)
         except KeyboardInterrupt:
-            print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
+            print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()
             raise
 

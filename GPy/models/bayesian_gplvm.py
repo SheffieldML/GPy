@@ -24,7 +24,7 @@ class BayesianGPLVM(SparseGP_MPI):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', mpi_comm=None, normalizer=None,
-                 missing_data=False, stochastic=False, batchsize=1):
+                 missing_data=False, stochastic=False, batchsize=1, Y_metadata=None):
 
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:
@@ -69,6 +69,7 @@ class BayesianGPLVM(SparseGP_MPI):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer, mpi_comm=mpi_comm,
                                            variational_prior=self.variational_prior,
+                                           Y_metadata=Y_metadata
                                            )
         self.link_parameter(self.X, index=0)
 
@@ -83,7 +84,7 @@ class BayesianGPLVM(SparseGP_MPI):
     def parameters_changed(self):
         super(BayesianGPLVM,self).parameters_changed()
         if isinstance(self.inference_method, VarDTC_minibatch):
-            return        
+            return
 
         kl_fctr = 1.
         self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)

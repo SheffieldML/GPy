@@ -19,3 +19,5 @@ from _src.trunclinear import TruncLinear,TruncLinear_inf
 from _src.splitKern import SplitKern,DEtime
 from _src.splitKern import DEtime as DiffGenomeKern
 
+from _src.basis_funcs import LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel
+

@@ -109,7 +109,7 @@ class Fixed(Static):
         return self.variance * self.fixed_K
 
     def Kdiag(self, X):
-        return self.variance * self.fixed_K.diag()
+        return self.variance * self.fixed_K.diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)

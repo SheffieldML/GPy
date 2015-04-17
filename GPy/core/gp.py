@@ -98,6 +98,8 @@ class GP(Model):
         logger.info("adding kernel and likelihood as parameters")
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
+        self.posterior = None
+
 
     def set_XY(self, X=None, Y=None, trigger_update=True):
         """

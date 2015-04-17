@@ -4,6 +4,7 @@ Classes in this module enhance Matern covariance functions with the
 Stochastic Differential Equation (SDE) functionality.
 """
 from .stationary import Matern32
+from .stationary import Matern52
 import numpy as np
 
 class sde_Matern32(Matern32):
@@ -16,7 +17,7 @@ class sde_Matern32(Matern32):
 
     .. math::
 
-       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \sigma^2 (1 + \sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \text{ where  } r = \sqrt{\sum_{i=1}^{input dim} \frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
 
@@ -55,4 +56,31 @@ class sde_Matern32(Matern32):
         dPinf[:,:,0] = dPinfvariance 
         dPinf[:,:,1] = dPinflengthscale 
 
-        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)  
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)
+
+class sde_Matern52(Matern52):
+    """
+    
+    Class provide extra functionality to transfer this covariance function into
+    SDE forrm.
+    
+    Matern 5/2 kernel:
+
+    .. math::
+
+       k(r) = \sigma^2 (1 + \sqrt{5} r + \frac{5}{3}r^2) \exp(- \sqrt{5} r) \\ \\ \\ \\  \text{ where  } r = \sqrt{\sum_{i=1}^{input dim} \frac{(x_i-y_i)^2}{\ell_i^2} }
+
+    """
+
+    def sde(self): 
+        """ 
+        Return the state space representation of the covariance. 
+        """ 
+        
+        # Arno, insert your code here
+
+        # Params to use:
+        # self.lengthscale
+        # self.variance
+
+        #return (F, L, Qc, H, Pinf, dF, dQc, dPinf)  

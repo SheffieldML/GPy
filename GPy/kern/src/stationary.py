@@ -320,18 +320,18 @@ class Exponential(Stationary):
     def dK_dr(self, r):
         return -0.5*self.K_of_r(r)
 
-    def sde(self): 
-        """ 
-        Return the state space representation of the covariance. 
-        """ 
-        F  = np.array([[-1/self.lengthscale]]) 
-        L  = np.array([[1]]) 
-        Qc = np.array([[2*self.variance/self.lengthscale]]) 
-        H = np.array([[1]]) 
-        Pinf = np.array([[self.variance]]) 
-        # TODO: return the derivatives as well 
-        
-        return (F, L, Qc, H, Pinf)  
+#    def sde(self): 
+#        """ 
+#        Return the state space representation of the covariance. 
+#        """ 
+#        F  = np.array([[-1/self.lengthscale]]) 
+#        L  = np.array([[1]]) 
+#        Qc = np.array([[2*self.variance/self.lengthscale]]) 
+#        H = np.array([[1]]) 
+#        Pinf = np.array([[self.variance]]) 
+#        # TODO: return the derivatives as well 
+#        
+#        return (F, L, Qc, H, Pinf)  
 
 
 

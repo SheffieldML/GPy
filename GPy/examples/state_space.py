@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 
 import GPy.models.state_space_new as SS_new
 
-#X = np.linspace(0, 10, 2000)[:, None]
-#Y = np.sin(X) + np.random.randn(*X.shape)*0.1
+X = np.linspace(0, 10, 4000)[:, None]
+Y = np.sin(X) + np.random.randn(*X.shape)*0.1
 
 # Need to run these lines when X and Y are imported ->
-X.shape = (X.shape[0],1)
-Y.shape = (Y.shape[0],1)
+#X.shape = (X.shape[0],1)
+#Y.shape = (Y.shape[0],1)
 # Need to run these lines when X and Y are imported <-
 
 ## Generation of minimal example data ->

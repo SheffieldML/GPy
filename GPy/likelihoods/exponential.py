@@ -5,8 +5,8 @@
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 
 class Exponential(Likelihood):
     """
@@ -57,9 +57,8 @@ class Exponential(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         log_objective = np.log(link_f) - y*link_f
-        return np.sum(log_objective)
+        return log_objective
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -77,7 +76,6 @@ class Exponential(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         grad = 1./link_f - y
         #grad = y/(link_f**2) - 1./link_f
         return grad
@@ -103,7 +101,6 @@ class Exponential(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         hess = -1./(link_f**2)
         #hess = -2*y/(link_f**3) + 1/(link_f**2)
         return hess
@@ -123,7 +120,6 @@ class Exponential(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3lik_dlink3 = 2./(link_f**3)
         #d3lik_dlink3 = 6*y/(link_f**4) - 2./(link_f**3)
         return d3lik_dlink3

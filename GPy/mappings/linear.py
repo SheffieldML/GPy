@@ -1,43 +1,39 @@
 # Copyright (c) 2013, 2014 GPy authors (see AUTHORS.txt).
+# Copyright (c) 2015, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core.mapping import Bijective_mapping
+from ..core.mapping import Mapping
 from ..core.parameterization import Param
 
-class Linear(Bijective_mapping):
+class Linear(Mapping):
     """
-    Mapping based on a linear model.
+    A Linear mapping.
 
     .. math::
 
-       f(\mathbf{x}*) = \mathbf{W}\mathbf{x}^* + \mathbf{b}
+       F(\mathbf{x}) = \mathbf{A} \mathbf{x})
 
-    :param X: input observations
-    :type X: ndarray
+
+    :param input_dim: dimension of input.
+    :type input_dim: int
     :param output_dim: dimension of output.
     :type output_dim: int
+    :param kernel: a GPy kernel, defaults to GPy.kern.RBF
+    :type kernel: GPy.kern.kern
 
     """
 
-    def __init__(self, input_dim=1, output_dim=1, name='linear'):
-        Bijective_mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
-        self.W = Param('W',np.array((self.input_dim, self.output_dim)))
-        self.bias = Param('bias',np.array(self.output_dim))
-        self.link_parameters(self.W, self.bias)
+    def __init__(self, input_dim, output_dim, name='linmap'):
+        Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
+        self.A = Param('A', np.random.randn(self.input_dim, self.output_dim))
+        self.link_parameter(self.A)
 
     def f(self, X):
-        return np.dot(X,self.W) + self.bias
+        return np.dot(X, self.A)
 
-    def g(self, f):
-        V = np.linalg.solve(np.dot(self.W.T, self.W), W.T)
-        return np.dot(f-self.bias, V)  
+    def update_gradients(self, dL_dF, X):
+        self.A.gradient = np.dot( X.T, dL_dF)
 
-    def df_dtheta(self, dL_df, X):
-        df_dW = (dL_df[:, :, None]*X[:, None, :]).sum(0).T
-        df_dbias = (dL_df.sum(0))
-        return np.hstack((df_dW.flatten(), df_dbias))
-
-    def dL_dX(self, partial, X):
-        """The gradient of L with respect to the inputs to the mapping, where L is a function that is dependent on the output of the mapping, f."""
-        return (partial[:, None, :]*self.W[None, :, :]).sum(2)
+    def gradients_X(self, dL_dF, X):
+        return np.dot(dL_dF, self.A.T)

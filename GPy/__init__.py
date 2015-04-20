@@ -3,23 +3,23 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-import core
-from core.parameterization import transformations, priors
+from . import core
+from .core.parameterization import transformations, priors
 constraints = transformations
-import models
-import mappings
-import inference
-import util
-import examples
-import likelihoods
-import testing
+from . import models
+from . import mappings
+from . import inference
+from . import util
+from . import examples
+from . import likelihoods
+from . import testing
 from numpy.testing import Tester
-import kern
-import plotting
+from . import kern
+from . import plotting
 
 # Direct imports for convenience:
-from core import Model
-from core.parameterization import Param, Parameterized, ObsAr
+from .core import Model
+from .core.parameterization import Param, Parameterized, ObsAr
 
 #@nottest
 try:

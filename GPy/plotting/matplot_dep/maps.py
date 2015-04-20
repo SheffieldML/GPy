@@ -6,7 +6,11 @@ try:
     from matplotlib.patches import Polygon
     from matplotlib.collections import PatchCollection
     #from matplotlib import cm
-    pb.ion()
+    try:
+        __IPYTHON__
+        pb.ion()
+    except NameError:
+        pass
 except:
     pass
 import re
@@ -34,7 +38,7 @@ def plot(shape_records,facecolor='w',edgecolor='k',linewidths=.5, ax=None,xlims=
         par = list(sparts) + [points.shape[0]]
 
         polygs = []
-        for pj in xrange(len(sparts)):
+        for pj in range(len(sparts)):
             polygs.append(Polygon(points[par[pj]:par[pj+1]]))
         ax.add_collection(PatchCollection(polygs,facecolor=facecolor,edgecolor=edgecolor, linewidths=linewidths))
 
@@ -159,10 +163,10 @@ def new_shape_string(sf,name,regex,field=2,type=None):
 
         newshp.line(parts=_parts)
         newshp.records.append(sr.record)
-        print len(sr.record)
+        print(len(sr.record))
 
     newshp.save(name)
-    print index
+    print(index)
 
 def apply_bbox(sf,ax):
     """

@@ -19,10 +19,10 @@ class SSMRD(Model):
                                name='model_'+str(i)) for i,y in enumerate(Ylist)]
         self.add_parameters(*(self.models))
         
-        [[[self.models[m].X.mean[i,j:j+1].tie('mean_'+str(i)+'_'+str(j)) for m in xrange(len(self.models))] for j in xrange(self.models[0].X.mean.shape[1])] 
-         for i in xrange(self.models[0].X.mean.shape[0])]
-        [[[self.models[m].X.variance[i,j:j+1].tie('var_'+str(i)+'_'+str(j)) for m in xrange(len(self.models))] for j in xrange(self.models[0].X.variance.shape[1])] 
-         for i in xrange(self.models[0].X.variance.shape[0])]
+        [[[self.models[m].X.mean[i,j:j+1].tie('mean_'+str(i)+'_'+str(j)) for m in range(len(self.models))] for j in range(self.models[0].X.mean.shape[1])] 
+         for i in range(self.models[0].X.mean.shape[0])]
+        [[[self.models[m].X.variance[i,j:j+1].tie('var_'+str(i)+'_'+str(j)) for m in range(len(self.models))] for j in range(self.models[0].X.variance.shape[1])] 
+         for i in range(self.models[0].X.variance.shape[0])]
         
         self.updates = True
         

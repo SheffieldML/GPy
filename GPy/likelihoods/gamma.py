@@ -6,8 +6,8 @@ import numpy as np
 from scipy import stats,special
 import scipy as sp
 from ..core.parameterization import Param
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 
 class Gamma(Likelihood):
     """
@@ -66,12 +66,11 @@ class Gamma(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         #alpha = self.gp_link.transf(gp)*self.beta
         #return (1. - alpha)*np.log(obs) + self.beta*obs - alpha * np.log(self.beta) + np.log(special.gamma(alpha))
         alpha = link_f*self.beta
         log_objective = alpha*np.log(self.beta) - np.log(special.gamma(alpha)) + (alpha - 1)*np.log(y) - self.beta*y
-        return np.sum(log_objective)
+        return log_objective
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -90,7 +89,6 @@ class Gamma(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         grad = self.beta*np.log(self.beta*y) - special.psi(self.beta*link_f)*self.beta
         #old
         #return -self.gp_link.dtransf_df(gp)*self.beta*np.log(obs) + special.psi(self.gp_link.transf(gp)*self.beta) * self.gp_link.dtransf_df(gp)*self.beta
@@ -118,7 +116,6 @@ class Gamma(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         hess = -special.polygamma(1, self.beta*link_f)*(self.beta**2)
         #old
         #return -self.gp_link.d2transf_df2(gp)*self.beta*np.log(obs) + special.polygamma(1,self.gp_link.transf(gp)*self.beta)*(self.gp_link.dtransf_df(gp)*self.beta)**2 + special.psi(self.gp_link.transf(gp)*self.beta)*self.gp_link.d2transf_df2(gp)*self.beta
@@ -140,6 +137,5 @@ class Gamma(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3lik_dlink3 = -special.polygamma(2, self.beta*link_f)*(self.beta**3)
         return d3lik_dlink3

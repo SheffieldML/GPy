@@ -4,13 +4,15 @@
 import numpy as np
 import sys
 from .. import kern
-from model import Model
-from parameterization import ObsAr
+from .model import Model
+from .parameterization import ObsAr
+from .mapping import Mapping
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from parameterization.variational import VariationalPosterior
+from .parameterization.variational import VariationalPosterior
 
 import logging
+import warnings
 from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
@@ -34,7 +36,7 @@ class GP(Model):
 
 
     """
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None, name='gp', Y_metadata=None, normalizer=False):
+    def __init__(self, X, Y, kernel, likelihood, mean_function=None, inference_method=None, name='gp', Y_metadata=None, normalizer=False):
         super(GP, self).__init__(name)
 
         assert X.ndim == 2
@@ -62,10 +64,14 @@ class GP(Model):
             self.Y = ObsAr(Y)
             self.Y_normalized = self.Y
 
-        assert Y.shape[0] == self.num_data
+        if Y.shape[0] != self.num_data:
+            #There can be cases where we want inputs than outputs, for example if we have multiple latent
+            #function values
+            warnings.warn("There are more rows in your input data X, \
+                         than in your output data Y, be VERY sure this is what you want")
         _, self.output_dim = self.Y.shape
 
-        #TODO: check the type of this is okay?
+        assert ((Y_metadata is None) or isinstance(Y_metadata, dict))
         self.Y_metadata = Y_metadata
 
         assert isinstance(kernel, kern.Kern)
@@ -75,6 +81,15 @@ class GP(Model):
         assert isinstance(likelihood, likelihoods.Likelihood)
         self.likelihood = likelihood
 
+        #handle the mean function
+        self.mean_function = mean_function
+        if mean_function is not None:
+            assert isinstance(self.mean_function, Mapping)
+            assert mean_function.input_dim == self.input_dim
+            assert mean_function.output_dim == self.output_dim
+            self.link_parameter(mean_function)
+
+
         #find a sensible inference method
         logger.info("initializing inference method")
         if inference_method is None:
@@ -82,14 +97,16 @@ class GP(Model):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
-                print "defaulting to ", inference_method, "for latent function inference"
+                print("defaulting to ", inference_method, "for latent function inference")
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
+        self.posterior = None
 
-    def set_XY(self, X=None, Y=None):
+
+    def set_XY(self, X=None, Y=None, trigger_update=True):
         """
         Set the input / output data of the model
         This is useful if we wish to change our existing data but maintain the same model
@@ -99,7 +116,7 @@ class GP(Model):
         :param Y: output observations
         :type Y: np.ndarray
         """
-        self.update_model(False)
+        if trigger_update: self.update_model(False)
         if Y is not None:
             if self.normalizer is not None:
                 self.normalizer.scale_by(Y)
@@ -123,26 +140,26 @@ class GP(Model):
                     self.link_parameters(self.X)
             else:
                 self.X = ObsAr(X)
-        self.update_model(True)
-        self._trigger_params_changed()
+        if trigger_update: self.update_model(True)
+        if trigger_update: self._trigger_params_changed()
 
-    def set_X(self,X):
+    def set_X(self,X, trigger_update=True):
         """
         Set the input data of the model
 
         :param X: input observations
         :type X: np.ndarray
         """
-        self.set_XY(X=X)
+        self.set_XY(X=X, trigger_update=trigger_update)
 
-    def set_Y(self,Y):
+    def set_Y(self,Y, trigger_update=True):
         """
         Set the output data of the model
 
         :param X: output observations
         :type X: np.ndarray
         """
-        self.set_XY(Y=Y)
+        self.set_XY(Y=Y, trigger_update=trigger_update)
 
     def parameters_changed(self):
         """
@@ -153,9 +170,11 @@ class GP(Model):
             This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
             this method yourself, there may be unexpected consequences.
         """
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.mean_function, self.Y_metadata)
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         self.kern.update_gradients_full(self.grad_dict['dL_dK'], self.X)
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dm'], self.X)
 
     def log_likelihood(self):
         """
@@ -192,6 +211,10 @@ class GP(Model):
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]
+
+        #add the mean function in
+        if not self.mean_function is None:
+            mu += self.mean_function.f(_Xnew)
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -241,11 +264,13 @@ class GP(Model):
 
     def predictive_gradients(self, Xnew):
         """
-        Compute the derivatives of the latent function with respect to X*
+        Compute the derivatives of the predicted latent function with respect to X*
 
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
          dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+
+        Note that this is not the same as computing the mean and variance of the derivative of the function!
 
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
         :param X: The points at which to get the predictive gradients
@@ -276,7 +301,7 @@ class GP(Model):
         :type size: int.
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
-        :returns: Ysim: set of simulations
+        :returns: fsim: set of simulations
         :rtype: np.ndarray (N x samples)
         """
         m, v = self._raw_predict(X,  full_cov=full_cov)
@@ -284,11 +309,11 @@ class GP(Model):
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         v = v.reshape(m.size,-1) if len(v.shape)==3 else v
         if not full_cov:
-            Ysim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
+            fsim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
         else:
-            Ysim = np.random.multivariate_normal(m.flatten(), v, size).T
+            fsim = np.random.multivariate_normal(m.flatten(), v, size).T
 
-        return Ysim
+        return fsim
 
     def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None):
         """
@@ -304,16 +329,16 @@ class GP(Model):
         :type noise_model: integer.
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
-        Ysim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(Ysim, Y_metadata)
-
+        fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
+        Ysim = self.likelihood.samples(fsim, Y_metadata)
         return Ysim
 
     def plot_f(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=True,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx'):
+        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx',
+        apply_link=False):
         """
         Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
         This is a call to plot with plot_raw=True.
@@ -350,6 +375,8 @@ class GP(Model):
         :type Y_metadata: dict
         :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
         :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*
+        :type apply_link: boolean
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -362,7 +389,7 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, **kw)
+                                     data_symbol=data_symbol, apply_link=apply_link, **kw)
 
     def plot(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
@@ -441,7 +468,7 @@ class GP(Model):
         try:
             super(GP, self).optimize(optimizer, start, **kwargs)
         except KeyboardInterrupt:
-            print "KeyboardInterrupt caught, calling on_optimization_end() to round things up"
+            print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()
             raise
 

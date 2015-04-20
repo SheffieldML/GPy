@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, Max Zwiessele.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
+from __future__ import print_function
 import numpy as np
 import sys
 import time
@@ -11,7 +11,7 @@ def exponents(fnow, current_grad):
     return np.sign(exps) * np.log10(exps).astype(int)
 
 class VerboseOptimization(object):
-    def __init__(self, model, opt, maxiters, verbose=False, current_iteration=0, ipython_notebook=True):
+    def __init__(self, model, opt, maxiters, verbose=False, current_iteration=0, ipython_notebook=True, clear_after_finish=False):
         self.verbose = verbose
         if self.verbose:
             self.model = model
@@ -22,55 +22,59 @@ class VerboseOptimization(object):
             self.opt_name = opt.opt_name
             self.model.add_observer(self, self.print_status)
             self.status = 'running'
+            self.clear = clear_after_finish
 
             self.update()
 
             try:
                 from IPython.display import display
-                from IPython.html.widgets import FloatProgressWidget, HTMLWidget, ContainerWidget
-                self.text = HTMLWidget()
-                self.progress = FloatProgressWidget()
-                self.model_show = HTMLWidget()
+                from IPython.html.widgets import IntProgress, HTML, Box, VBox, HBox, FlexBox
+                self.text = HTML(width='100%')
+                self.progress = IntProgress(min=0, max=maxiters)
+                #self.progresstext = Text(width='100%', disabled=True, value='0/{}'.format(maxiters))
+                self.model_show = HTML()
                 self.ipython_notebook = ipython_notebook
             except:
                 # Not in Ipython notebook
                 self.ipython_notebook = False
 
             if self.ipython_notebook:
-                self.text.set_css('width', '100%')
-                #self.progress.set_css('width', '100%')
+                left_col = VBox(children=[self.progress, self.text], padding=2, width='40%')
+                right_col = Box(children=[self.model_show], padding=2, width='60%')
+                self.hor_align = FlexBox(children = [left_col, right_col], width='100%', orientation='horizontal')
 
-                left_col = ContainerWidget(children = [self.progress, self.text])
-                right_col = ContainerWidget(children = [self.model_show])
-                hor_align = ContainerWidget(children = [left_col, right_col])
+                display(self.hor_align)
+                                
+                try:
+                    self.text.set_css('width', '100%')
+                    left_col.set_css({
+                             'padding': '2px',
+                             'width': "100%",
+                             })
+    
+                    right_col.set_css({
+                             'padding': '2px',
+                             })
+    
+                    self.hor_align.set_css({
+                             'width': "100%",
+                             })
 
-                display(hor_align)
+                    self.hor_align.remove_class('vbox')
+                    self.hor_align.add_class('hbox')
+    
+                    left_col.add_class("box-flex1")
+                    right_col.add_class('box-flex0')
 
-                left_col.set_css({
-                         'padding': '2px',
-                         'width': "100%",
-                         })
-
-                right_col.set_css({
-                         'padding': '2px',
-                         })
-
-                hor_align.set_css({
-                         'width': "100%",
-                         })
-
-                hor_align.remove_class('vbox')
-                hor_align.add_class('hbox')
-
-                left_col.add_class("box-flex1")
-                right_col.add_class('box-flex0')
+                except:
+                    pass
 
                 #self.text.add_class('box-flex2')
                 #self.progress.add_class('box-flex1')
             else:
                 self.exps = exponents(self.fnow, self.current_gradient)
-                print 'Running {} Code:'.format(self.opt_name)
-                print ' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters)
+                print('Running {} Code:'.format(self.opt_name))
+                print(' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters))
 
     def __enter__(self):
         self.start = time.time()
@@ -102,7 +106,8 @@ class VerboseOptimization(object):
                 html_body += "<td class='tg-right'>{}</td>".format(val)
                 html_body += "</tr>"
             self.text.value = html_begin + html_body + html_end
-            self.progress.value = 100*(self.iteration+1)/self.maxiters
+            self.progress.value = (self.iteration+1)
+            #self.progresstext.value = '0/{}'.format((self.iteration+1))
             self.model_show.value = self.model._repr_html_()
         else:
             n_exps = exponents(self.fnow, self.current_gradient)
@@ -111,11 +116,11 @@ class VerboseOptimization(object):
                 b = np.any(n_exps < self.exps)
                 if a or b:
                     self.p_iter = self.iteration
-                    print ''
+                    print('')
                 if b:
                     self.exps = n_exps
-            print '\r',
-            print '{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+            print('\r', end=' ')
+            print('{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
     def print_status(self, me, which=None):
@@ -144,7 +149,9 @@ class VerboseOptimization(object):
             self.print_out()
 
             if not self.ipython_notebook:
-                print ''
-                print 'Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start)
-                print 'Optimization status: {0:.5g}'.format(self.status)
-                print
+                print()
+                print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
+                print('Optimization status: {0}'.format(self.status))             
+                print()
+            elif self.clear:
+                self.hor_align.close()

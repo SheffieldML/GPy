@@ -1,7 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from posterior import Posterior
+from .posterior import Posterior
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 from ...util import diag
 from ...core.parameterization.variational import VariationalPosterior
@@ -170,7 +170,7 @@ class VarDTC(LatentFunctionInference):
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf # == Cpsi1V
         else:
-            print 'foobar'
+            print('foobar')
             import ipdb; ipdb.set_trace()
             psi1V = np.dot(Y.T*beta, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
@@ -213,7 +213,7 @@ def _compute_dL_dR(likelihood, het_noise, uncertain_inputs, LB, _LBi_Lmi_psi1Vf,
         dL_dR = None
     elif het_noise:
         if uncertain_inputs:
-            raise NotImplementedError, "heteroscedatic derivates with uncertain inputs not implemented"
+            raise NotImplementedError("heteroscedatic derivates with uncertain inputs not implemented")
         else:
             #from ...util.linalg import chol_inv
             #LBi = chol_inv(LB)

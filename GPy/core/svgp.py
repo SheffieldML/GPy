@@ -3,13 +3,13 @@
 
 import numpy as np
 from ..util import choleskies
-from sparse_gp import SparseGP
-from parameterization.param import Param
+from .sparse_gp import SparseGP
+from .parameterization.param import Param
 from ..inference.latent_function_inference import SVGP as svgp_inf
 
 
 class SVGP(SparseGP):
-    def __init__(self, X, Y, Z, kernel, likelihood, name='SVGP', Y_metadata=None, batchsize=None):
+    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, name='SVGP', Y_metadata=None, batchsize=None):
         """
         Stochastic Variational GP.
 
@@ -25,25 +25,20 @@ class SVGP(SparseGP):
 
         Hensman, Matthews and Ghahramani, Scalable Variational GP Classification, ArXiv 1411.2005
         """
-        if batchsize is None:
-            batchsize = X.shape[0]
-
-        self.X_all, self.Y_all = X, Y
-        # how to rescale the batch likelihood in case of minibatches
         self.batchsize = batchsize
-        batch_scale = float(self.X_all.shape[0])/float(self.batchsize)
-        #KL_scale = 1./np.float64(self.mpi_comm.size)
-        KL_scale = 1.0
-
-        import climin.util
-        #Make a climin slicer to make drawing minibatches much quicker. Annoyingly, this doesn;t pickle.
-        self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
-        X_batch, Y_batch = self.new_batch()
+        self.X_all, self.Y_all = X, Y
+        if batchsize is None:
+            X_batch, Y_batch = X, Y
+        else:
+            import climin.util
+            #Make a climin slicer to make drawing minibatches much quicker
+            self.slicer = climin.util.draw_mini_slices(self.X_all.shape[0], self.batchsize)
+            X_batch, Y_batch = self.new_batch()
 
         #create the SVI inference method
         inf_method = svgp_inf()
 
-        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, inference_method=inf_method,
+        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
                  name=name, Y_metadata=Y_metadata, normalizer=False)
 
         self.m = Param('q_u_mean', np.zeros((self.num_inducing, Y.shape[1])))
@@ -53,22 +48,30 @@ class SVGP(SparseGP):
         self.link_parameter(self.m)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata, KL_scale=1.0, batch_scale=float(self.X_all.shape[0])/float(self.X.shape[0]))
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.q_u_mean, self.q_u_chol, self.kern, self.X, self.Z, self.likelihood, self.Y, self.mean_function, self.Y_metadata, KL_scale=1.0, batch_scale=float(self.X_all.shape[0])/float(self.X.shape[0]))
 
         #update the kernel gradients
         self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z)
         grad = self.kern.gradient.copy()
         self.kern.update_gradients_full(self.grad_dict['dL_dKmn'], self.Z, self.X)
-        grad += self.kern.gradient
+        grad += self.kern.gradient.copy()
         self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
         self.kern.gradient += grad
         if not self.Z.is_fixed:# only compute these expensive gradients if we need them
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z) + self.kern.gradients_X(self.grad_dict['dL_dKmn'], self.Z, self.X)
 
+
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
         #update the variational parameter gradients:
         self.m.gradient = self.grad_dict['dL_dm']
         self.chol.gradient = self.grad_dict['dL_dchol']
+
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dmfX'], self.X)
+            g = self.mean_function.gradient[:].copy()
+            self.mean_function.update_gradients(self.grad_dict['dL_dmfZ'], self.Z)
+            self.mean_function.gradient[:] += g
+            self.Z.gradient[:] += self.mean_function.gradients_X(self.grad_dict['dL_dmfZ'], self.Z)
 
     def set_data(self, X, Y):
         """

@@ -4,10 +4,10 @@
 import numpy as np
 from scipy import stats, special
 import scipy as sp
-import link_functions
+from . import link_functions
 from scipy import stats, integrate
 from scipy.special import gammaln, gamma
-from likelihood import Likelihood
+from .likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 
@@ -35,8 +35,8 @@ class StudentT(Likelihood):
 
         self.log_concave = False
 
-    def parameters_changed(self):
-        self.variance = (self.v / float(self.v - 2)) * self.sigma2
+    #def parameters_changed(self):
+        #self.variance = (self.v / float(self.v - 2)) * self.sigma2
 
     def update_gradients(self, grads):
         """
@@ -86,7 +86,6 @@ class StudentT(Likelihood):
         :rtype: float
 
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         #FIXME:
         #Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
@@ -97,7 +96,7 @@ class StudentT(Likelihood):
                     - 0.5*np.log(self.sigma2 * self.v * np.pi)
                     - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
                     )
-        return np.sum(objective)
+        return objective
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -115,7 +114,6 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
 
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
         return grad
@@ -141,7 +139,6 @@ class StudentT(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         return hess
@@ -161,7 +158,6 @@ class StudentT(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
                        ((e**2 + self.sigma2*self.v)**3)
@@ -183,10 +179,10 @@ class StudentT(Likelihood):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: float
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
-        dlogpdf_dvar = self.v*(e**2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e**2))
-        return np.sum(dlogpdf_dvar)
+        e2 = np.square(e)
+        dlogpdf_dvar = self.v*(e2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e2))
+        return dlogpdf_dvar
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
         """
@@ -203,7 +199,6 @@ class StudentT(Likelihood):
         :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
         return dlogpdf_dlink_dvar
@@ -223,7 +218,6 @@ class StudentT(Likelihood):
         :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
         d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
                               / ((self.sigma2*self.v + (e**2))**3)
@@ -233,20 +227,21 @@ class StudentT(Likelihood):
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dv = np.zeros_like(dlogpdf_dvar) #FIXME: Not done yet
-        return np.hstack((dlogpdf_dvar, dlogpdf_dv))
+        return np.array((dlogpdf_dvar, dlogpdf_dv))
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dlink_dv = np.zeros_like(dlogpdf_dlink_dvar) #FIXME: Not done yet
-        return np.hstack((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
+        return np.array((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
         d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
         d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
-        return np.hstack((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
+
+        return np.array((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
-        # The comment here confuses mean and median. 
+        # The comment here confuses mean and median.
         return self.gp_link.transf(mu) # only true if link is monotonic, which it is.
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):

@@ -21,14 +21,13 @@
 #      OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #      POSSIBILITY OF SUCH DAMAGE.
 
-
+from __future__ import print_function
 import numpy as np
 import sys
 
-
 def print_out(len_maxiters, fnow, current_grad, beta, iteration):
-    print '\r',
-    print '{0:>0{mi}g}  {1:> 12e}  {2:< 12.6e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+    print('\r', end=' ')
+    print('{0:>0{mi}g}  {1:> 12e}  {2:< 12.6e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
     sys.stdout.flush()
 
 def exponents(fnow, current_grad):
@@ -80,7 +79,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
 
     len_maxiters = len(str(maxiters))
     if display:
-        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters)
+        print(' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters))
         exps = exponents(fnow, current_grad)
         p_iter = iteration
 
@@ -140,7 +139,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 b = np.any(n_exps < exps)
                 if a or b:
                     p_iter = iteration
-                    print ''
+                    print('')
                 if b:
                     exps = n_exps
 
@@ -189,6 +188,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
 
     if display:
         print_out(len_maxiters, fnow, current_grad, beta, iteration)
-        print ""
-        print status
+        print("")
+        print(status)
     return x, flog, function_eval, status

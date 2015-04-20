@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from sparse_gp import SparseGP
+from .sparse_gp import SparseGP
 from numpy.linalg.linalg import LinAlgError
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 
@@ -56,7 +56,7 @@ class SparseGP_MPI(SparseGP):
             self.N_range = (N_start, N_end)
             self.N_list = np.array(N_list)
             self.Y_local = self.Y[N_start:N_end]
-            print 'MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range)
+            print('MPI RANK '+str(self.mpi_comm.rank)+' with the data range '+str(self.N_range))
             mpi_comm.Bcast(self.param_array, root=0)
         self.update_model(True)
 

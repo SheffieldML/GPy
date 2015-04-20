@@ -81,7 +81,7 @@ class LinearSlopeBasisFuncKernel(BasisFuncKernel):
     def phi(self, X):
         phi = np.where(X < self.start, self.start, X)
         phi = np.where(phi > self.stop, self.stop, phi)
-        return ((phi-self.start)/(self.stop-self.start))-.5
+        return ((phi-(self.stop+self.start)/2.))#/(.5*(self.stop-self.start)))-1.
         return self.concatenate_offset(phi)  # ((phi-self.start)/(self.stop-self.start))-.5
     
 class ChangePointBasisFuncKernel(BasisFuncKernel):

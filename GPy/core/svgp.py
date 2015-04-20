@@ -56,8 +56,7 @@ class SVGP(SparseGP):
         self.kern.update_gradients_full(self.grad_dict['dL_dKmn'], self.Z, self.X)
         grad += self.kern.gradient.copy()
         self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
-        grad += self.kern.gradient.copy()
-        self.kern.gradient = grad
+        self.kern.gradient += grad
         if not self.Z.is_fixed:# only compute these expensive gradients if we need them
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z) + self.kern.gradients_X(self.grad_dict['dL_dKmn'], self.Z, self.X)
 

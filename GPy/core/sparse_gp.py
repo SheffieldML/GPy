@@ -10,6 +10,7 @@ from .parameterization.variational import VariationalPosterior, NormalPosterior
 from ..util.linalg import mdot
 
 import logging
+import itertools
 logger = logging.getLogger("sparse gp")
 
 class SparseGP(GP):
@@ -135,7 +136,13 @@ class SparseGP(GP):
                 var = var
             else:
                 Kxx = kern.Kdiag(Xnew)
-                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
+                if self.posterior.woodbury_inv.ndim == 2:
+                    var = Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0)
+                elif self.posterior.woodbury_inv.ndim == 3:
+                    var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+                    for i in range(var.shape[1]):
+                        var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+                var = var
             #add in the mean function
             if self.mean_function is not None:
                 mu += self.mean_function.f(Xnew)

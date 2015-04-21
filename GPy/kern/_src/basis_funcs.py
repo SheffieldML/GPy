@@ -26,7 +26,7 @@ class BasisFuncKernel(Kern):
     
     def parameters_changed(self):
         self.alpha = np.sqrt(self.variance)
-        #self.beta = 1./self.variance
+        self.beta = 1./self.variance
     
     @Cache_this(limit=3, ignore_args=())
     def phi(self, X):
@@ -50,14 +50,14 @@ class BasisFuncKernel(Kern):
                 phi2 = self.phi(X2)
                 self.variance.gradient = np.einsum('ij,iq,jq->q', dL_dK, phi1, phi2)
         else:
-            self.variance.gradient = np.einsum('ij,ij', dL_dK, self._K(X, X2))
+            self.variance.gradient = np.einsum('ij,ij', dL_dK, self._K(X, X2)) * self.beta
         
     def update_gradients_diag(self, dL_dKdiag, X):
         if self.ARD:
             phi1 = self.phi(X)
             self.variance.gradient = np.einsum('i,iq,iq->q', dL_dKdiag, phi1, phi1)
         else:
-            self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.Kdiag(X))
+            self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.Kdiag(X)) * self.beta
         
     def concatenate_offset(self, X):
         return np.c_[np.ones((X.shape[0], 1)), X]
@@ -118,7 +118,6 @@ class LinearSlopeBasisFuncKernel(BasisFuncKernel):
         phi = np.where(X < self.start, self.start, X)
         phi = np.where(phi > self.stop, self.stop, phi)
         return ((phi-(self.stop+self.start)/2.))#/(.5*(self.stop-self.start)))-1.
-        return self.concatenate_offset(phi)  # ((phi-self.start)/(self.stop-self.start))-.5
     
 class ChangePointBasisFuncKernel(BasisFuncKernel):
     def __init__(self, input_dim, changepoint, variance=1., active_dims=None, ARD=False, name='changepoint'):
@@ -127,7 +126,7 @@ class ChangePointBasisFuncKernel(BasisFuncKernel):
     
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        return self.concatenate_offset(np.where((X < self.changepoint), -1, 1))
+        return np.where((X < self.changepoint), -1, 1)
 
 class DomainKernel(LinearSlopeBasisFuncKernel):
     def __init__(self, input_dim, start, stop, variance=1., active_dims=None, ARD=False, name='constant_domain'):
@@ -135,6 +134,5 @@ class DomainKernel(LinearSlopeBasisFuncKernel):
     
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        phi = np.where((X>self.start)*(X<self.stop), 1., 0.)
+        phi = np.where((X>self.start)*(X<self.stop), 1, 0)
         return phi#((phi-self.start)/(self.stop-self.start))-.5
-        return self.concatenate_offset(phi)  # ((phi-self.start)/(self.stop-self.start))-.5

@@ -68,8 +68,6 @@ class Periodic(Kern):
         return np.diag(self.K(X))
 
 
-
-
 class PeriodicExponential(Periodic):
     """
     Kernel of the periodic subspace (up to a given frequency) of a exponential

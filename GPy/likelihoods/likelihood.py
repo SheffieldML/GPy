@@ -170,9 +170,9 @@ class Likelihood(Parameterized):
 
     #only compute gh points if required
     __gh_points = None
-    def _gh_points(self):
+    def _gh_points(self, T=20):
         if self.__gh_points is None:
-            self.__gh_points = np.polynomial.hermite.hermgauss(20)
+            self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
@@ -211,9 +211,11 @@ class Likelihood(Parameterized):
         #d2logp_dx2 = np.clip(d2logp_dx2,-1e9,1e9)
 
         #average over the gird to get derivatives of the Gaussian's parameters
-        F = np.dot(logp, gh_w)
-        dF_dm = np.dot(dlogp_dx, gh_w)
-        dF_dv = np.dot(d2logp_dx2, gh_w)/2.
+        #division by pi comes from fact that for each quadrature we need to scale by 1/sqrt(pi)
+        F = np.dot(logp, gh_w)/np.sqrt(np.pi)
+        dF_dm = np.dot(dlogp_dx, gh_w)/np.sqrt(np.pi)
+        dF_dv = np.dot(d2logp_dx2, gh_w)/np.sqrt(np.pi)
+        dF_dv /= 2.
 
         if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
             stop

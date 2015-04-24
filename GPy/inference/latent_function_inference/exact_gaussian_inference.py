@@ -52,7 +52,7 @@ class ExactGaussianInference(LatentFunctionInference):
         K = kern.K(X)
 
         Ky = K.copy()
-        diag.add(Ky, likelihood.gaussian_variance(Y_metadata))
+        diag.add(Ky, likelihood.gaussian_variance(Y_metadata)+1e-8)
         Wi, LW, LWi, W_logdet = pdinv(Ky)
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)

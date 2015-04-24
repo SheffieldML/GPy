@@ -395,7 +395,7 @@ class GP(Model):
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx'):
+        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx', predict_kw=None):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -444,7 +444,7 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, **kw)
+                                     data_symbol=data_symbol, predict_kw=predict_kw, **kw)
 
     def input_sensitivity(self, summarize=True):
         """

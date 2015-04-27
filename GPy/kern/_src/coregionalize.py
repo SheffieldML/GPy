@@ -6,6 +6,7 @@ import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use weave
+import coregionalize_cython
 
 try:
     from scipy import weave
@@ -169,9 +170,9 @@ class Coregionalize(Kern):
                 dL_dK_small[j,i] = tmp1[:,index2==j].sum()
         return dL_dK_small
 
-    def gradient_reduce_cython(self, dL_dK, index, index2):
+    def _gradient_reduce_cython(self, dL_dK, index, index2):
         index, index2 = index[:,0], index2[:,0]
-        return coregionalize_cython.gradient_reduce(self.output_dim, dL_dK, index, index2
+        return coregionalize_cython.gradient_reduce(self.B.shape[0], dL_dK, index, index2)
 
 
     def update_gradients_diag(self, dL_dKdiag, X):

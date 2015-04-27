@@ -11,7 +11,8 @@ version = '0.6.1'
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-compile_flags = ["-march=native", '-fopenmp', '-O3', ]
+#compile_flags = ["-march=native", '-fopenmp', '-O3', ]
+compile_flags = [ '-fopenmp', '-O3', ]
 
 ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
                       sources=['GPy/kern/_src/stationary_cython.c','GPy/kern/_src/stationary_utils.c'],

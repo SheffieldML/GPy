@@ -6,7 +6,6 @@ from numpy.lib.function_base import vectorize
 from .lists_and_dicts import IntArrayDict
 from functools import reduce
 from transformations import Transformation
-from priors import Prior
 
 def extract_properties_to_index(index, props):
     prop_index = dict()
@@ -146,7 +145,6 @@ class ParameterIndexOperations(object):
         return prop_index
 
     def add(self, prop, indices):
-        #assert isinstance(prop, (Transformation, Prior)), "invalid key"
         self._properties[prop] = combine_indices(self._properties[prop], indices)
 
     def remove(self, prop, indices):

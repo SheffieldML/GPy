@@ -730,7 +730,7 @@ class DGPLVM(Prior):
 
 # ******************************************
 
-from parameterized import Parameterized
+from .. import Parameterized
 from .. import Param
 class DGPLVM_Lamda(Prior, Parameterized):
     """

@@ -5,7 +5,7 @@ cimport numpy as np
 
 from . import linalg
 
-def flat_to_triang(np.ndarray[double, ndim=3] flat, int M):
+def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
     """take a matrix N x D and return a M X M x D array where
 
     N = M(M+1)/2
@@ -16,11 +16,11 @@ def flat_to_triang(np.ndarray[double, ndim=3] flat, int M):
     cdef int N = flat.shape[0]
     cdef int D = flat.shape[1]
     cdef int count = 0
-    cdef np.ndarray[double, ndim=2] ret = np.empty((M, M, D))
+    cdef np.ndarray[double, ndim=3] ret = np.zeros((M, M, D))
     for d in range(D):
         count = 0
         for m in range(M):
-            for mm in range(m):
+            for mm in range(m+1):
                 ret[m, mm, d] = flat[count,d]
                 count += 1
     return ret
@@ -34,7 +34,7 @@ def triang_to_flat(np.ndarray[double, ndim=3] L):
     for d in range(D):
         count = 0
         for m in range(M):
-            for mm in range(m):
+            for mm in range(m+1):
                 flat[count,d] = L[m, mm, d]
                 count += 1
     return flat

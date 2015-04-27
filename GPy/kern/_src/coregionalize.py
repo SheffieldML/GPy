@@ -111,6 +111,11 @@ class Coregionalize(Kern):
             weave.inline(code, ['target', 'index', 'index2', 'N', 'num_inducing', 'B', 'output_dim'])
         return target
 
+    def _K_cython(self, X, X2=None):
+        if X2 is None:
+            return coregionalize_cython.K_symmetric(self.B, X[:,0])
+        return coregionalize_cython.K_asymmetric(self.B, X[:,0], X2[:,0])
+
 
     def Kdiag(self, X):
         return np.diag(self.B)[np.asarray(X, dtype=np.int).flatten()]
@@ -163,6 +168,11 @@ class Coregionalize(Kern):
             for j in range(self.output_dim):
                 dL_dK_small[j,i] = tmp1[:,index2==j].sum()
         return dL_dK_small
+
+    def gradient_reduce_cython(self, dL_dK, index, index2):
+        index, index2 = index[:,0], index2[:,0]
+        return coregionalize_cython.gradient_reduce(self.output_dim, dL_dK, index, index2
+
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()

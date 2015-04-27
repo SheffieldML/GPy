@@ -17,7 +17,11 @@ ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
                       sources=['GPy/kern/_src/stationary_cython.c','GPy/kern/_src/stationary_utils.c'],
                       include_dirs=[np.get_include()],
                       extra_compile_args=compile_flags,
-                      extra_link_args = ['-lgomp'])]
+                      extra_link_args = ['-lgomp']),
+            Extension(name='GPy.kern._src.coregionalize_cython',
+                      sources=['GPy/kern/_src/coregionalize_cython.c','GPy/kern/_src/coregionalize_cython.c'],
+                      include_dirs=[np.get_include()],
+                      extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',
       version = version,

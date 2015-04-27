@@ -13,8 +13,23 @@ for(d=0;d<D;d++){
 }
 } //grad_X
 
-//#weave_options = {'headers'           : ['<omp.h>'],
-         //'extra_compile_args': ['-fopenmp -O3'], # -march=native'],
-         //'extra_link_args'   : ['-lgomp']}
+
+void _lengthscale_grads(int N, int M, int Q, double* tmp, double* X, double* X2, double* grad){
+int n,m,q;
+double gradq, dist;
+#pragma omp parallel for private(n,m, gradq, dist)
+for(q=0; q<Q; q++){
+  gradq = 0;
+  for(n=0; n<N; n++){
+    for(m=0; m<M; m++){
+        dist = X[n*Q+q]-X2[m*Q+q];
+        gradq += tmp[n*M+m]*dist*dist;
+    }
+  }
+  grad[q] = gradq;
+}
+} //lengthscale_grads
+
+
 
 

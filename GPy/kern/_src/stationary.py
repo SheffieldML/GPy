@@ -212,6 +212,17 @@ class Stationary(Kern):
         weave.inline(code, ['tmp', 'X', 'X2', 'grads', 'N', 'M', 'Q'], type_converters=weave.converters.blitz, support_code="#include <math.h>")
         return -grads/self.lengthscale**3
 
+    def cython_lengthscale_grads(self, tmp, X, X2):
+        N,M = tmp.shape
+        Q = X.shape[1]
+        if hasattr(X, 'values'):X = X.values
+        if hasattr(X2, 'values'):X2 = X2.values
+        grads = np.zeros(self.input_dim)
+        stationary_cython.lengthscale_grads(N, M, Q, tmp, X, X2, grads)
+        return -grads/self.lengthscale**3
+
+
+
     def gradients_X(self, dL_dK, X, X2=None):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X

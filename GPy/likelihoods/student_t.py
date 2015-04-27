@@ -10,6 +10,7 @@ from scipy.special import gammaln, gamma
 from .likelihood import Likelihood
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
+from scipy.special import psi as digamma
 
 class StudentT(Likelihood):
     """
@@ -28,10 +29,10 @@ class StudentT(Likelihood):
         super(StudentT, self).__init__(gp_link, name='Student_T')
         # sigma2 is not a noise parameter, it is a squared scale.
         self.sigma2 = Param('t_scale2', float(sigma2), Logexp())
-        self.v = Param('deg_free', float(deg_free))
+        self.v = Param('deg_free', float(deg_free), Logexp())
         self.link_parameter(self.sigma2)
         self.link_parameter(self.v)
-        self.v.constrain_fixed()
+        #self.v.constrain_fixed()
 
         self.log_concave = False
 
@@ -224,20 +225,47 @@ class StudentT(Likelihood):
                            )
         return d2logpdf_dlink2_dvar
 
+    def dlogpdf_link_dv(self, inv_link_f, y, Y_metadata=None):
+        e = y - inv_link_f
+        e2 = np.square(e)
+        df = float(self.v[:])
+        s2 = float(self.sigma2[:])
+        dlogpdf_dv =  0.5*digamma(0.5*(df+1)) - 0.5*digamma(0.5*df) - 1.0/(2*df)
+        dlogpdf_dv += (1.0/(2*df))*(df+1)*e/(e2 + s2*df)
+        dlogpdf_dv -= np.log(1 + e2/(s2*df))
+        return dlogpdf_dv
+
+    def dlogpdf_dlink_dv(self, inv_link_f, y, Y_metadata=None):
+        e = y - inv_link_f
+        e2 = np.square(e)
+        df = float(self.v[:])
+        s2 = float(self.sigma2[:])
+        dlogpdf_df_dv = e*(e2 - self.sigma2)/(e2 + s2*df)**2
+        return dlogpdf_df_dv
+
+    def d2logpdf_dlink2_dv(self, inv_link_f, y, Y_metadata=None):
+        e = y - inv_link_f
+        e2 = np.square(e)
+        df = float(self.v[:])
+        s2 = float(self.sigma2[:])
+        #derivative of hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
+        e2_s2v = e**2 + s2*df
+        d2logpdf_df2_dv = (e2 - s2*df - s2*(df + 1))/e2_s2v**2 - 2*s2*(df+1)*(e2 - s2*df)/e2_s2v
+        return d2logpdf_df2_dv
+
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
-        dlogpdf_dv = np.zeros_like(dlogpdf_dvar) #FIXME: Not done yet
+        dlogpdf_dv = self.dlogpdf_link_dv(f, y, Y_metadata=Y_metadata)
         return np.array((dlogpdf_dvar, dlogpdf_dv))
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
-        dlogpdf_dlink_dv = np.zeros_like(dlogpdf_dlink_dvar) #FIXME: Not done yet
+        dlogpdf_dlink_dv = self.dlogpdf_dlink_dv(f, y, Y_metadata=Y_metadata)
         return np.array((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
         d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
-        d2logpdf_dlink2_dv = np.zeros_like(d2logpdf_dlink2_dvar) #FIXME: Not done yet
-
+        d2logpdf_dlink2_dv = self.d2logpdf_dlink2_dv(f, y, Y_metadata=Y_metadata)
         return np.array((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):

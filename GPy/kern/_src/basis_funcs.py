@@ -136,7 +136,7 @@ class DomainKernel(LinearSlopeBasisFuncKernel):
     def _phi(self, X):
         phi = np.where((X>self.start)*(X<self.stop), 1, 0)
         return phi#((phi-self.start)/(self.stop-self.start))-.5
-    
+
 class LogisticBasisFuncKernel(BasisFuncKernel):
     def __init__(self, input_dim, centers, variance=1., slope=1., active_dims=None, ARD=False, ARD_slope=True, name='logistic'):
         self.centers = np.atleast_2d(centers)

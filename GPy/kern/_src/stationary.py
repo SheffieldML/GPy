@@ -155,7 +155,7 @@ class Stationary(Kern):
         (dL_dK), compute the gradient wrt the parameters of this kernel,
         and store in the parameters object as e.g. self.variance.gradient
         """
-        self.variance.gradient = np.einsum('ij,ij,i', self.K(X, X2), dL_dK, 1./self.variance)
+        self.variance.gradient = np.sum(self.K(X, X2)* dL_dK)/self.variance
 
         #now the lengthscale gradient(s)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
@@ -166,7 +166,7 @@ class Stationary(Kern):
             if config.getboolean('cython', 'working'):
                 self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
-                self.lengthscale.gradient = np.array([np.einsum('ij,ij,...', tmp, np.square(X[:,q:q+1] - X2[:,q:q+1].T), -1./self.lengthscale[q]**3) for q in range(self.input_dim)])
+                self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
@@ -180,6 +180,9 @@ class Stationary(Kern):
         """
         dist = self._scaled_dist(X, X2).copy()
         return 1./np.where(dist != 0., dist, np.inf)
+
+    def _lengthscale_grads_pure(self, tmp, X, X2):
+        return -np.array([np.sum(tmp * np.square(X[:,q:q+1] - X2[:,q:q+1].T)) for q in range(self.input_dim)])/self.lengthscale**3
 
     def _lengthscale_grads_cython(self, tmp, X, X2):
         N,M = tmp.shape

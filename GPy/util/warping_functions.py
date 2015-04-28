@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from GPy.core.parameterization import Parameterized, Param
+from ..core.parameterization import Parameterized, Param
 from ..core.parameterization.transformations import Logexp
 
 class WarpingFunction(Parameterized):

@@ -1,5 +1,5 @@
-#cython: boundscheck=False
-#cython: wraparound=False
+#cython: boundscheck=True
+#cython: wraparound=True
 import cython
 import numpy as np
 cimport numpy as np
@@ -25,9 +25,9 @@ def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64
         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
         cdef int N = index.size
         cdef int M = index2.size
-        for i in range(M):
-            for j in range(N):
-                dL_dK_small[index[j],index2[i]] += dL_dK[i,j];
+        for i in range(N):
+            for j in range(M):
+                dL_dK_small[index2[j],index[i]] += dL_dK[i,j];
         return dL_dK_small
 
 

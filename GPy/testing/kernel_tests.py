@@ -366,9 +366,9 @@ class KernelTestsNonContinuous(unittest.TestCase):
         X2 = self.X2[self.X2[:,-1]!=2]
         self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
 
-class Coregionalize_weave_test(unittest.TestCase):
+class Coregionalize_cython_test(unittest.TestCase):
     """
-    Make sure that the coregionalize kernel work with and without weave enabled
+    Make sure that the coregionalize kernel work with and without cython enabled
     """
     def setUp(self):
         self.k = GPy.kern.Coregionalize(1, output_dim=12)
@@ -378,36 +378,42 @@ class Coregionalize_weave_test(unittest.TestCase):
 
     def test_sym(self):
         dL_dK = np.random.randn(self.N1, self.N1)
-        GPy.util.config.config.set('weave', 'working', 'True')
-        K_weave = self.k.K(self.X)
+        GPy.util.config.config.set('cython', 'working', 'True')
+        K_cython = self.k.K(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
-        grads_weave = self.k.gradient.copy()
+        grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('weave', 'working', 'False')
+        GPy.util.config.config.set('cython', 'working', 'False')
         K_numpy = self.k.K(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
         grads_numpy = self.k.gradient.copy()
 
-        self.assertTrue(np.allclose(K_numpy, K_weave))
-        self.assertTrue(np.allclose(grads_numpy, grads_weave))
+        self.assertTrue(np.allclose(K_numpy, K_cython))
+        self.assertTrue(np.allclose(grads_numpy, grads_cython))
+
+        #reset the cython state for any other tests
+        GPy.util.config.config.set('cython', 'working', 'true')
 
     def test_nonsym(self):
         dL_dK = np.random.randn(self.N1, self.N2)
-        GPy.util.config.config.set('weave', 'working', 'True')
-        K_weave = self.k.K(self.X, self.X2)
+        GPy.util.config.config.set('cython', 'working', 'True')
+        K_cython = self.k.K(self.X, self.X2)
+        self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
-        grads_weave = self.k.gradient.copy()
+        grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('weave', 'working', 'False')
+        GPy.util.config.config.set('cython', 'working', 'False')
         K_numpy = self.k.K(self.X, self.X2)
+        self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
         grads_numpy = self.k.gradient.copy()
 
-        self.assertTrue(np.allclose(K_numpy, K_weave))
-        self.assertTrue(np.allclose(grads_numpy, grads_weave))
+        self.assertTrue(np.allclose(K_numpy, K_cython))
+        self.assertTrue(np.allclose(grads_numpy, grads_cython))
 
-    #reset the weave state for any other tests
-    GPy.util.config.config.set('weave', 'working', 'False')
+        #reset the cython state for any other tests
+        GPy.util.config.config.set('cython', 'working', 'true')
+
 
 
 class KernelTestsProductWithZeroValues(unittest.TestCase):

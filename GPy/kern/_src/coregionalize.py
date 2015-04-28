@@ -73,8 +73,8 @@ class Coregionalize(Kern):
 
     def _K_cython(self, X, X2=None):
         if X2 is None:
-            return coregionalize_cython.K_symmetric(self.B, X[:,0])
-        return coregionalize_cython.K_asymmetric(self.B, X[:,0], X2[:,0])
+            return coregionalize_cython.K_symmetric(self.B, np.asarray(X, dtype=np.int64)[:,0])
+        return coregionalize_cython.K_asymmetric(self.B, np.asarray(X, dtype=np.int64)[:,0], np.asarray(X2, dtype=np.int64)[:,0])
 
 
     def Kdiag(self, X):

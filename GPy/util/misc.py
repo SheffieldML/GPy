@@ -133,10 +133,11 @@ def kmm_init(X, m = 10):
 ### make a parameter to its corresponding array:
 def param_to_array(*param):
     """
-Convert an arbitrary number of parameters to :class:ndarray class objects. This is for
-converting parameter objects to numpy arrays, when using scipy.weave.inline routine.
-In scipy.weave.blitz there is no automatic array detection (even when the array inherits
-from :class:ndarray)"""
+    Convert an arbitrary number of parameters to :class:ndarray class objects.
+    This is for converting parameter objects to numpy arrays, when using
+    scipy.weave.inline routine.  In scipy.weave.blitz there is no automatic
+    array detection (even when the array inherits from :class:ndarray)
+    """
     import warnings
     warnings.warn("Please use param.values, as this function will be deprecated in the next release.", DeprecationWarning)
     assert len(param) > 0, "At least one parameter needed"

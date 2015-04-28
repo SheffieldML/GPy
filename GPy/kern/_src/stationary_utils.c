@@ -1,7 +1,7 @@
 void _grad_X(int N, int D, int M, double* X, double* X2, double* tmp, double* grad){
 int n,m,d;
 double retnd;
-#pragma omp parallel for private(n,d, retnd, m)
+//#pragma omp parallel for private(n,d, retnd, m)
 for(d=0;d<D;d++){
   for(n=0;n<N;n++){
     retnd = 0.0;

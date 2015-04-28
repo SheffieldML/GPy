@@ -226,9 +226,8 @@ class Stationary(Kern):
         if X2 is None:
             tmp = tmp + tmp.T
             X2 = X
-        grad = np.zeros_like(X)
-        if hasattr(X, 'values'):X = X.values #remove the GPy wrapping to make passing into weave safe
-        if hasattr(X2, 'values'):X2 = X2.values
+        X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
+        grad = np.zeros(X.shape)
         stationary_cython.grad_X(X.shape[0], X.shape[1], X2.shape[0], X, X2, tmp, grad)
         return grad/self.lengthscale**2
 

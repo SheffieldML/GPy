@@ -11,7 +11,6 @@ def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
     N = M(M+1)/2
 
     the lower triangluar portion of the d'th slice of the result is filled by the d'th column of flat.
-    This is the weave implementation
     """
     cdef int N = flat.shape[0]
     cdef int D = flat.shape[1]

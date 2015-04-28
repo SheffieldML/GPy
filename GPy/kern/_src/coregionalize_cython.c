@@ -1042,7 +1042,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, cha
 
 /* Module declarations from 'GPy.kern._src.coregionalize_cython' */
 static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
-static __Pyx_TypeInfo __Pyx_TypeInfo_int = { "int", NULL, sizeof(int), { 0 }, 0, IS_UNSIGNED(int) ? 'U' : 'I', IS_UNSIGNED(int), 0 };
+static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t = { "int64_t", NULL, sizeof(__pyx_t_5numpy_int64_t), { 0 }, 0, IS_UNSIGNED(__pyx_t_5numpy_int64_t) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_5numpy_int64_t), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_double_t = { "double_t", NULL, sizeof(__pyx_t_5numpy_double_t), { 0 }, 0, 'R', 0, 0 };
 #define __Pyx_MODULE_NAME "GPy.kern._src.coregionalize_cython"
 int __pyx_module_is_main_GPy__kern___src__coregionalize_cython = 0;
@@ -1101,7 +1101,7 @@ static char __pyx_k_K_asymmetric[] = "K_asymmetric";
 static char __pyx_k_RuntimeError[] = "RuntimeError";
 static char __pyx_k_gradient_reduce[] = "gradient_reduce";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
-static char __pyx_k_Users_james_work_GPy_GPy_kern[] = "/Users/james/work/GPy/GPy/kern/_src/coregionalize_cython.pyx";
+static char __pyx_k_home_james_work_GPy_GPy_kern__s[] = "/home/james/work/GPy/GPy/kern/_src/coregionalize_cython.pyx";
 static char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
 static char __pyx_k_Format_string_allocated_too_shor[] = "Format string allocated too short, see comment in numpy.pxd";
 static char __pyx_k_GPy_kern__src_coregionalize_cyth[] = "GPy.kern._src.coregionalize_cython";
@@ -1120,7 +1120,6 @@ static PyObject *__pyx_n_s_M;
 static PyObject *__pyx_n_s_N;
 static PyObject *__pyx_kp_u_Non_native_byte_order_not_suppor;
 static PyObject *__pyx_n_s_RuntimeError;
-static PyObject *__pyx_kp_s_Users_james_work_GPy_GPy_kern;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_X;
 static PyObject *__pyx_n_s_X2;
@@ -1128,6 +1127,7 @@ static PyObject *__pyx_n_s_dL_dK;
 static PyObject *__pyx_n_s_dL_dK_small;
 static PyObject *__pyx_n_s_empty;
 static PyObject *__pyx_n_s_gradient_reduce;
+static PyObject *__pyx_kp_s_home_james_work_GPy_GPy_kern__s;
 static PyObject *__pyx_n_s_i;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_index;
@@ -1161,7 +1161,7 @@ static PyObject *__pyx_codeobj__12;
 /* "GPy/kern/_src/coregionalize_cython.pyx":7
  * cimport numpy as np
  * 
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):             # <<<<<<<<<<<<<<
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))
  */
@@ -1259,8 +1259,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
   int __pyx_t_10;
   int __pyx_t_11;
   int __pyx_t_12;
-  int __pyx_t_13;
-  int __pyx_t_14;
+  __pyx_t_5numpy_int64_t __pyx_t_13;
+  __pyx_t_5numpy_int64_t __pyx_t_14;
   int __pyx_t_15;
   int __pyx_t_16;
   int __pyx_lineno = 0;
@@ -1286,13 +1286,13 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
   __pyx_pybuffernd_B.diminfo[0].strides = __pyx_pybuffernd_B.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_B.diminfo[0].shape = __pyx_pybuffernd_B.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_B.diminfo[1].strides = __pyx_pybuffernd_B.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_B.diminfo[1].shape = __pyx_pybuffernd_B.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X.rcbuffer->pybuffer, (PyObject*)__pyx_v_X, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X.rcbuffer->pybuffer, (PyObject*)__pyx_v_X, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_X.diminfo[0].strides = __pyx_pybuffernd_X.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_X.diminfo[0].shape = __pyx_pybuffernd_X.rcbuffer->pybuffer.shape[0];
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":8
  * 
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):
  *     cdef int N = X.size             # <<<<<<<<<<<<<<
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))
  *     for n in range(N):
@@ -1304,7 +1304,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
   __pyx_v_N = __pyx_t_2;
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":9
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):
  *     cdef int N = X.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))             # <<<<<<<<<<<<<<
  *     for n in range(N):
@@ -1398,8 +1398,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
  */
       __pyx_t_11 = __pyx_v_n;
       __pyx_t_12 = __pyx_v_m;
-      __pyx_t_13 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_X.diminfo[0].strides));
-      __pyx_t_14 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_12, __pyx_pybuffernd_X.diminfo[0].strides));
+      __pyx_t_13 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_X.diminfo[0].strides));
+      __pyx_t_14 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_12, __pyx_pybuffernd_X.diminfo[0].strides));
       __pyx_t_15 = __pyx_v_n;
       __pyx_t_16 = __pyx_v_m;
       *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_double_t *, __pyx_pybuffernd_K.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_K.diminfo[0].strides, __pyx_t_16, __pyx_pybuffernd_K.diminfo[1].strides) = (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_B.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_B.diminfo[0].strides, __pyx_t_14, __pyx_pybuffernd_B.diminfo[1].strides));
@@ -1411,7 +1411,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
  *             K[n,m] = B[X[n],X[m]]
  *     return K             # <<<<<<<<<<<<<<
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(((PyObject *)__pyx_v_K));
@@ -1421,7 +1421,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
   /* "GPy/kern/_src/coregionalize_cython.pyx":7
  * cimport numpy as np
  * 
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):             # <<<<<<<<<<<<<<
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))
  */
@@ -1456,7 +1456,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_K_symmetric(CY
 /* "GPy/kern/_src/coregionalize_cython.pyx":15
  *     return K
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):             # <<<<<<<<<<<<<<
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef int M = X2.size
  */
@@ -1567,8 +1567,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
   int __pyx_t_10;
   int __pyx_t_11;
   int __pyx_t_12;
-  int __pyx_t_13;
-  int __pyx_t_14;
+  __pyx_t_5numpy_int64_t __pyx_t_13;
+  __pyx_t_5numpy_int64_t __pyx_t_14;
   int __pyx_t_15;
   int __pyx_t_16;
   int __pyx_lineno = 0;
@@ -1598,18 +1598,18 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
   __pyx_pybuffernd_B.diminfo[0].strides = __pyx_pybuffernd_B.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_B.diminfo[0].shape = __pyx_pybuffernd_B.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_B.diminfo[1].strides = __pyx_pybuffernd_B.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_B.diminfo[1].shape = __pyx_pybuffernd_B.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X.rcbuffer->pybuffer, (PyObject*)__pyx_v_X, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X.rcbuffer->pybuffer, (PyObject*)__pyx_v_X, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_X.diminfo[0].strides = __pyx_pybuffernd_X.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_X.diminfo[0].shape = __pyx_pybuffernd_X.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X2.rcbuffer->pybuffer, (PyObject*)__pyx_v_X2, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_X2.rcbuffer->pybuffer, (PyObject*)__pyx_v_X2, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_X2.diminfo[0].strides = __pyx_pybuffernd_X2.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_X2.diminfo[0].shape = __pyx_pybuffernd_X2.rcbuffer->pybuffer.shape[0];
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":16
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):
  *     cdef int N = X.size             # <<<<<<<<<<<<<<
  *     cdef int M = X2.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, M))
@@ -1621,7 +1621,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
   __pyx_v_N = __pyx_t_2;
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":17
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):
  *     cdef int N = X.size
  *     cdef int M = X2.size             # <<<<<<<<<<<<<<
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, M))
@@ -1728,8 +1728,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
  */
       __pyx_t_11 = __pyx_v_n;
       __pyx_t_12 = __pyx_v_m;
-      __pyx_t_13 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_X.diminfo[0].strides));
-      __pyx_t_14 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X2.rcbuffer->pybuffer.buf, __pyx_t_12, __pyx_pybuffernd_X2.diminfo[0].strides));
+      __pyx_t_13 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_X.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_X.diminfo[0].strides));
+      __pyx_t_14 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_X2.rcbuffer->pybuffer.buf, __pyx_t_12, __pyx_pybuffernd_X2.diminfo[0].strides));
       __pyx_t_15 = __pyx_v_n;
       __pyx_t_16 = __pyx_v_m;
       *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_double_t *, __pyx_pybuffernd_K.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_K.diminfo[0].strides, __pyx_t_16, __pyx_pybuffernd_K.diminfo[1].strides) = (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_B.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_B.diminfo[0].strides, __pyx_t_14, __pyx_pybuffernd_B.diminfo[1].strides));
@@ -1741,7 +1741,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
  *             K[n,m] = B[X[n],X2[m]]
  *     return K             # <<<<<<<<<<<<<<
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(((PyObject *)__pyx_v_K));
@@ -1751,7 +1751,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
   /* "GPy/kern/_src/coregionalize_cython.pyx":15
  *     return K
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):             # <<<<<<<<<<<<<<
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef int M = X2.size
  */
@@ -1788,7 +1788,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_2K_asymmetric(
 /* "GPy/kern/_src/coregionalize_cython.pyx":24
  *     return K
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):             # <<<<<<<<<<<<<<
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):             # <<<<<<<<<<<<<<
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
  *         cdef int N = index.size
  */
@@ -1910,8 +1910,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_4gradient_redu
   int __pyx_t_12;
   int __pyx_t_13;
   int __pyx_t_14;
-  int __pyx_t_15;
-  int __pyx_t_16;
+  __pyx_t_5numpy_int64_t __pyx_t_15;
+  __pyx_t_5numpy_int64_t __pyx_t_16;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1939,18 +1939,18 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_4gradient_redu
   __pyx_pybuffernd_dL_dK.diminfo[0].strides = __pyx_pybuffernd_dL_dK.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_dL_dK.diminfo[0].shape = __pyx_pybuffernd_dL_dK.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_dL_dK.diminfo[1].strides = __pyx_pybuffernd_dL_dK.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_dL_dK.diminfo[1].shape = __pyx_pybuffernd_dL_dK.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_index.rcbuffer->pybuffer, (PyObject*)__pyx_v_index, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_index.rcbuffer->pybuffer, (PyObject*)__pyx_v_index, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_index.diminfo[0].strides = __pyx_pybuffernd_index.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_index.diminfo[0].shape = __pyx_pybuffernd_index.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_index2.rcbuffer->pybuffer, (PyObject*)__pyx_v_index2, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_index2.rcbuffer->pybuffer, (PyObject*)__pyx_v_index2, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_index2.diminfo[0].strides = __pyx_pybuffernd_index2.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_index2.diminfo[0].shape = __pyx_pybuffernd_index2.rcbuffer->pybuffer.shape[0];
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":25
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))             # <<<<<<<<<<<<<<
  *         cdef int N = index.size
  *         cdef int M = index2.size
@@ -2013,7 +2013,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_4gradient_redu
   __pyx_t_1 = 0;
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":26
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
  *         cdef int N = index.size             # <<<<<<<<<<<<<<
  *         cdef int M = index2.size
@@ -2071,8 +2071,8 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_4gradient_redu
       __pyx_t_12 = __pyx_v_j;
       __pyx_t_13 = __pyx_v_j;
       __pyx_t_14 = __pyx_v_i;
-      __pyx_t_15 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_index.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_index.diminfo[0].strides));
-      __pyx_t_16 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_index2.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_index2.diminfo[0].strides));
+      __pyx_t_15 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_index.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_index.diminfo[0].strides));
+      __pyx_t_16 = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_int64_t *, __pyx_pybuffernd_index2.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_index2.diminfo[0].strides));
       *__Pyx_BufPtrStrided2d(__pyx_t_5numpy_double_t *, __pyx_pybuffernd_dL_dK_small.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_dL_dK_small.diminfo[0].strides, __pyx_t_16, __pyx_pybuffernd_dL_dK_small.diminfo[1].strides) += (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_dL_dK.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_dL_dK.diminfo[0].strides, __pyx_t_12, __pyx_pybuffernd_dL_dK.diminfo[1].strides));
     }
   }
@@ -2092,7 +2092,7 @@ static PyObject *__pyx_pf_3GPy_4kern_4_src_20coregionalize_cython_4gradient_redu
   /* "GPy/kern/_src/coregionalize_cython.pyx":24
  *     return K
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):             # <<<<<<<<<<<<<<
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):             # <<<<<<<<<<<<<<
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
  *         cdef int N = index.size
  */
@@ -4175,7 +4175,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_N, __pyx_k_N, sizeof(__pyx_k_N), 0, 0, 1, 1},
   {&__pyx_kp_u_Non_native_byte_order_not_suppor, __pyx_k_Non_native_byte_order_not_suppor, sizeof(__pyx_k_Non_native_byte_order_not_suppor), 0, 1, 0, 0},
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
-  {&__pyx_kp_s_Users_james_work_GPy_GPy_kern, __pyx_k_Users_james_work_GPy_GPy_kern, sizeof(__pyx_k_Users_james_work_GPy_GPy_kern), 0, 0, 1, 0},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_X, __pyx_k_X, sizeof(__pyx_k_X), 0, 0, 1, 1},
   {&__pyx_n_s_X2, __pyx_k_X2, sizeof(__pyx_k_X2), 0, 0, 1, 1},
@@ -4183,6 +4182,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_dL_dK_small, __pyx_k_dL_dK_small, sizeof(__pyx_k_dL_dK_small), 0, 0, 1, 1},
   {&__pyx_n_s_empty, __pyx_k_empty, sizeof(__pyx_k_empty), 0, 0, 1, 1},
   {&__pyx_n_s_gradient_reduce, __pyx_k_gradient_reduce, sizeof(__pyx_k_gradient_reduce), 0, 0, 1, 1},
+  {&__pyx_kp_s_home_james_work_GPy_GPy_kern__s, __pyx_k_home_james_work_GPy_GPy_kern__s, sizeof(__pyx_k_home_james_work_GPy_GPy_kern__s), 0, 0, 1, 0},
   {&__pyx_n_s_i, __pyx_k_i, sizeof(__pyx_k_i), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_index, __pyx_k_index, sizeof(__pyx_k_index), 0, 0, 1, 1},
@@ -4284,38 +4284,38 @@ static int __Pyx_InitCachedConstants(void) {
   /* "GPy/kern/_src/coregionalize_cython.pyx":7
  * cimport numpy as np
  * 
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):             # <<<<<<<<<<<<<<
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))
  */
   __pyx_tuple__7 = PyTuple_Pack(6, __pyx_n_s_B, __pyx_n_s_X, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_n, __pyx_n_s_m); if (unlikely(!__pyx_tuple__7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
-  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(2, 0, 6, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_Users_james_work_GPy_GPy_kern, __pyx_n_s_K_symmetric, 7, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(2, 0, 6, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_james_work_GPy_GPy_kern__s, __pyx_n_s_K_symmetric, 7, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":15
  *     return K
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):             # <<<<<<<<<<<<<<
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef int M = X2.size
  */
   __pyx_tuple__9 = PyTuple_Pack(8, __pyx_n_s_B, __pyx_n_s_X, __pyx_n_s_X2, __pyx_n_s_N, __pyx_n_s_M, __pyx_n_s_K, __pyx_n_s_n, __pyx_n_s_m); if (unlikely(!__pyx_tuple__9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
-  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(3, 0, 8, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_Users_james_work_GPy_GPy_kern, __pyx_n_s_K_asymmetric, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(3, 0, 8, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_james_work_GPy_GPy_kern__s, __pyx_n_s_K_asymmetric, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "GPy/kern/_src/coregionalize_cython.pyx":24
  *     return K
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):             # <<<<<<<<<<<<<<
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):             # <<<<<<<<<<<<<<
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
  *         cdef int N = index.size
  */
   __pyx_tuple__11 = PyTuple_Pack(9, __pyx_n_s_D, __pyx_n_s_dL_dK, __pyx_n_s_index, __pyx_n_s_index2, __pyx_n_s_dL_dK_small, __pyx_n_s_N, __pyx_n_s_M, __pyx_n_s_i, __pyx_n_s_j); if (unlikely(!__pyx_tuple__11)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__11);
   __Pyx_GIVEREF(__pyx_tuple__11);
-  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(4, 0, 9, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_Users_james_work_GPy_GPy_kern, __pyx_n_s_gradient_reduce, 24, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(4, 0, 9, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_james_work_GPy_GPy_kern__s, __pyx_n_s_gradient_reduce, 24, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4442,7 +4442,7 @@ PyMODINIT_FUNC PyInit_coregionalize_cython(void)
   /* "GPy/kern/_src/coregionalize_cython.pyx":7
  * cimport numpy as np
  * 
- * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X):             # <<<<<<<<<<<<<<
+ * def K_symmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef np.ndarray[np.double_t, ndim=2] K = np.empty((N, N))
  */
@@ -4454,7 +4454,7 @@ PyMODINIT_FUNC PyInit_coregionalize_cython(void)
   /* "GPy/kern/_src/coregionalize_cython.pyx":15
  *     return K
  * 
- * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[int, ndim=1] X, np.ndarray[int, ndim=1] X2):             # <<<<<<<<<<<<<<
+ * def K_asymmetric(np.ndarray[double, ndim=2] B, np.ndarray[np.int64_t, ndim=1] X, np.ndarray[np.int64_t, ndim=1] X2):             # <<<<<<<<<<<<<<
  *     cdef int N = X.size
  *     cdef int M = X2.size
  */
@@ -4466,7 +4466,7 @@ PyMODINIT_FUNC PyInit_coregionalize_cython(void)
   /* "GPy/kern/_src/coregionalize_cython.pyx":24
  *     return K
  * 
- * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[int, ndim=1] index, np.ndarray[int, ndim=1] index2):             # <<<<<<<<<<<<<<
+ * def gradient_reduce(int D, np.ndarray[double, ndim=2] dL_dK, np.ndarray[np.int64_t, ndim=1] index, np.ndarray[np.int64_t, ndim=1] index2):             # <<<<<<<<<<<<<<
  *         cdef np.ndarray[np.double_t, ndim=2] dL_dK_small = np.zeros((D, D))
  *         cdef int N = index.size
  */

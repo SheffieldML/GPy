@@ -141,6 +141,13 @@ class VerboseOptimization(object):
 
     def finish(self, opt):
         self.status = opt.status
+        if self.verbose and self.ipython_notebook:
+            if 'conv' in self.status.lower():
+                self.progress.bar_style = 'success'
+            elif self.iteration >= self.maxiters:
+                self.progress.bar_style = 'warning'
+            else:
+                self.progress.bar_style = 'danger'
 
     def __exit__(self, type, value, traceback):
         if self.verbose:

@@ -132,12 +132,14 @@ class SparseGP(GP):
                 if self.posterior.woodbury_inv.ndim == 2:
                     var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
                 elif self.posterior.woodbury_inv.ndim == 3:
-                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
+                    var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+                    for i in range(var.shape[1]):
+                        var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
                 var = var
             else:
                 Kxx = kern.Kdiag(Xnew)
                 if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0)
+                    var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
                 elif self.posterior.woodbury_inv.ndim == 3:
                     var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
                     for i in range(var.shape[1]):
@@ -147,9 +149,9 @@ class SparseGP(GP):
             if self.mean_function is not None:
                 mu += self.mean_function.f(Xnew)
         else:
-            psi0_star = self.kern.psi0(self.Z, Xnew)
-            psi1_star = self.kern.psi1(self.Z, Xnew)
-            #psi2_star = self.kern.psi2(self.Z, Xnew) # Only possible if we get NxMxM psi2 out of the code.
+            psi0_star = kern.psi0(self.Z, Xnew)
+            psi1_star = kern.psi1(self.Z, Xnew)
+            #psi2_star = kern.psi2(self.Z, Xnew) # Only possible if we get NxMxM psi2 out of the code.
             la = self.posterior.woodbury_vector
             mu = np.dot(psi1_star, la) # TODO: dimensions?
             
@@ -161,7 +163,7 @@ class SparseGP(GP):
                 
             for i in range(Xnew.shape[0]):
                 _mu, _var = Xnew.mean.values[[i]], Xnew.variance.values[[i]]
-                psi2_star = self.kern.psi2(self.Z, NormalPosterior(_mu, _var))
+                psi2_star = kern.psi2(self.Z, NormalPosterior(_mu, _var))
                 tmp = (psi2_star[:, :] - psi1_star[[i]].T.dot(psi1_star[[i]]))
 
                 var_ = mdot(la.T, tmp, la)

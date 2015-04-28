@@ -136,3 +136,48 @@ class DomainKernel(LinearSlopeBasisFuncKernel):
     def _phi(self, X):
         phi = np.where((X>self.start)*(X<self.stop), 1, 0)
         return phi#((phi-self.start)/(self.stop-self.start))-.5
+
+class LogisticBasisFuncKernel(BasisFuncKernel):
+    def __init__(self, input_dim, centers, variance=1., slope=1., active_dims=None, ARD=False, ARD_slope=True, name='logistic'):
+        self.centers = np.atleast_2d(centers)
+        self.ARD_slope = ARD_slope
+        if self.ARD_slope:
+            self.slope = Param('slope', slope * np.ones(self.centers.size), Logexp())
+        else:
+            self.slope = Param('slope', slope, Logexp())
+        super(LogisticBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
+        self.link_parameter(self.slope)
+    
+    @Cache_this(limit=3, ignore_args=())
+    def _phi(self, X):
+        import scipy as sp
+        phi = 1/(1+np.exp(-((X-self.centers)*self.slope)))
+        return np.where(np.isnan(phi), 0, phi)#((phi-self.start)/(self.stop-self.start))-.5
+
+    def parameters_changed(self):
+        BasisFuncKernel.parameters_changed(self)
+    
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(LogisticBasisFuncKernel, self).update_gradients_full(dL_dK, X, X2)
+        if X2 is None or X is X2:
+            phi1 = self.phi(X)
+            if phi1.ndim != 2:
+                phi1 = phi1[:, None]
+            dphi1_dl = (phi1**2) * (np.exp(-((X-self.centers)*self.slope)) * (X-self.centers))
+            if self.ARD_slope:
+                self.slope.gradient = self.variance * 2 * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi1_dl)
+            else:
+                self.slope.gradient = self.variance * 2 * (dL_dK * phi1.dot(dphi1_dl.T)).sum()
+        else:
+            phi1 = self.phi(X)
+            phi2 = self.phi(X2)
+            if phi1.ndim != 2:
+                phi1 = phi1[:, None]
+                phi2 = phi2[:, None]
+            dphi1_dl = (phi1**2) * (np.exp(-((X-self.centers)*self.slope)) * (X-self.centers))
+            dphi2_dl = (phi2**2) * (np.exp(-((X2-self.centers)*self.slope)) * (X2-self.centers))
+            if self.ARD_slope:
+                self.slope.gradient = (self.variance * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi2_dl) + np.einsum('ij,iq,jq->q', dL_dK, phi2, dphi1_dl))
+            else:
+                self.slope.gradient = self.variance * (dL_dK * phi1.dot(dphi2_dl.T)).sum() + (dL_dK * phi2.dot(dphi1_dl.T)).sum()
+        self.slope.gradient = np.where(np.isnan(self.slope.gradient), 0, self.slope.gradient)

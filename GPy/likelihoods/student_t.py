@@ -36,9 +36,6 @@ class StudentT(Likelihood):
 
         self.log_concave = False
 
-    #def parameters_changed(self):
-        #self.variance = (self.v / float(self.v - 2)) * self.sigma2
-
     def update_gradients(self, grads):
         """
         Pull out the gradients, be careful as the order must match the order
@@ -231,8 +228,8 @@ class StudentT(Likelihood):
         df = float(self.v[:])
         s2 = float(self.sigma2[:])
         dlogpdf_dv =  0.5*digamma(0.5*(df+1)) - 0.5*digamma(0.5*df) - 1.0/(2*df)
-        dlogpdf_dv += (1.0/(2*df))*(df+1)*e/(e2 + s2*df)
-        dlogpdf_dv -= np.log(1 + e2/(s2*df))
+        dlogpdf_dv += 0.5*(df+1)*e2/(df*(e2 + s2*df))
+        dlogpdf_dv -= 0.5*np.log1p(e2/(s2*df))
         return dlogpdf_dv
 
     def dlogpdf_dlink_dv(self, inv_link_f, y, Y_metadata=None):
@@ -248,9 +245,8 @@ class StudentT(Likelihood):
         e2 = np.square(e)
         df = float(self.v[:])
         s2 = float(self.sigma2[:])
-        #derivative of hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
         e2_s2v = e**2 + s2*df
-        d2logpdf_df2_dv = (e2 - s2*df - s2*(df + 1))/e2_s2v**2 - 2*s2*(df+1)*(e2 - s2*df)/e2_s2v
+        d2logpdf_df2_dv = (-s2*(df+1) + e2 - s2*df)/e2_s2v**2 - 2*s2*(df+1)*(e2 - s2*df)/e2_s2v**3
         return d2logpdf_df2_dv
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):

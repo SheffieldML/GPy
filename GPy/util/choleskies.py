@@ -1,4 +1,4 @@
-# Copyright James Hensman and Max Zwiessele 2014
+# Copyright James Hensman and Max Zwiessele 2014, 2015
 # Licensed under the GNU GPL version 3.0
 
 import numpy as np
@@ -48,6 +48,28 @@ def _triang_to_flat_pure(L):
 def _triang_to_flat_cython(L):
     return choleskies_cython.triang_to_flat(L)
 
+def _backprop_gradient_pure(dL, L):
+    """
+    Given the derivative of an objective fn with respect to the cholesky L,
+    compute the derivate with respect to the original matrix K, defined as
+
+        K = LL^T
+
+    where L was obtained by Cholesky decomposition
+    """
+    dL_dK = np.tril(dL).copy()
+    N = L.shape[0]
+    for k in xrange(N - 1, -1, -1):
+        for j in xrange(k + 1, N):
+            for i in xrange(j, N):
+                dL_dK[i, k] -= dL_dK[i, j] * L[j, k]
+                dL_dK[j, k] -= dL_dK[i, j] * L[i, k]
+        for j in xrange(k + 1, N):
+            dL_dK[j, k] /= L[k, k]
+            dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
+        dL_dK[k, k] /= (2 * L[k, k])
+    return dL_dK
+
 def triang_to_cov(L):
     return np.dstack([np.dot(L[:,:,i], L[:,:,i].T) for i in range(L.shape[-1])])
 
@@ -78,7 +100,8 @@ def indexes_to_fix_for_low_rank(rank, size):
 if config.getboolean('cython', 'working'):
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
+    backprop_gradient = choleskies_cython.backprop_gradient
 else:
+    backprop_gradient = _backprop_gradient_pure
     triang_to_flat =  _triang_to_flat_pure
     flat_to_triang = _flat_to_triang_pure
-

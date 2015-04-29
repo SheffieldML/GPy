@@ -19,7 +19,7 @@ before_install:
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.7 scipy=0.12 matplotlib nose sphinx pip nose
   #- pip install . 
-  - python setup.py --build_ext --inplace
+  - python setup.py build_ext --inplace
   #--use-mirrors
   #
 # command to run tests, e.g. python setup.py test

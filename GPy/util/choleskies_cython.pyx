@@ -1,9 +1,10 @@
 # Copyright James Hensman and Alan Saul 2015
+#cython: wraparaound(False)
+#cython: boundscheck(False)
+#cython: nonecheck(False)
 
 import numpy as np
 cimport numpy as np
-
-from . import linalg
 
 def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
     """take a matrix N x D and return a M X M x D array where
@@ -39,3 +40,17 @@ def triang_to_flat(np.ndarray[double, ndim=3] L):
     return flat
 
 
+def backprop_gradient(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
+    cdef np.ndarray[double, ndim=2] dL_dK = np.tril(dL).copy()
+    cdef int N = L.shape[0]
+    cdef int k, j, i
+    for k in range(N - 1, -1, -1):
+        for j in range(k + 1, N):
+            for i in range(j, N):
+                dL_dK[i, k] -= dL_dK[i, j] * L[j, k]
+                dL_dK[j, k] -= dL_dK[i, j] * L[i, k]
+        for j in range(k + 1, N):
+            dL_dK[j, k] /= L[k, k]
+            dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
+        dL_dK[k, k] /= (2. * L[k, k])
+    return dL_dK

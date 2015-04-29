@@ -49,6 +49,14 @@ class test_stationary(np.testing.TestCase):
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
         np.testing.assert_allclose(g1, g2)
 
+class test_choleskies_backprop(np.testing.TestCase):
+    def setUp(self):
+        self.dL, self.L = np.random.randn(2, 100, 100)
+    def test(self):
+        r1 = GPy.util.choleskies._backprop_gradient_pure(self.dL, self.L)
+        r2 = GPy.util.choleskies.choleskies_cython.backprop_gradient(self.dL, self.L)
+        np.testing.assert_allclose(r1, r2)
+
 
 
 

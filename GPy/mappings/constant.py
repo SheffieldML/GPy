@@ -20,7 +20,7 @@ class Constant(Mapping):
 
     """
 
-    def __init__(self, input_dim, output_dim, value=0., name='linmap'):
+    def __init__(self, input_dim, output_dim, value=0., name='constmap'):
         Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
         value = np.atleast_1d(value)
         if not len(value.shape) ==1:

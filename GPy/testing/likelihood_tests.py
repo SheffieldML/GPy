@@ -141,54 +141,63 @@ class TestNoiseModels(object):
         self.noise_models = {"Student_t_default": {
             "model": GPy.likelihoods.StudentT(deg_free=self.deg_free, sigma2=self.var),
             "grad_params": {
-                "names": [".*t_scale2", ".*deg_free"],
-                "vals": [self.var, self.deg_free],
-                "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                "names": [".*t_scale2"],
+                "vals": [self.var],
+                "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
             },
             "laplace": True
             },
+            #"Student_t_deg_free": {
+                #"model": GPy.likelihoods.StudentT(deg_free=self.deg_free, sigma2=self.var),
+                #"grad_params": {
+                    #"names": [".*deg_free"],
+                    #"vals": [self.deg_free],
+                    #"constraints": [(".*t_scale2", self.constrain_fixed), (".*deg_free", self.constrain_positive)]
+                #},
+                #"laplace": True
+            #},
             "Student_t_1_var": {
                 "model": GPy.likelihoods.StudentT(deg_free=self.deg_free, sigma2=self.var),
                 "grad_params": {
-                    "names": [".*t_scale2", ".*deg_free"],
-                    "vals": [1.0, 8.0],
-                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                    "names": [".*t_scale2"],
+                    "vals": [1.0],
+                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
                 },
                 "laplace": True
             },
             "Student_t_small_deg_free": {
                 "model": GPy.likelihoods.StudentT(deg_free=1.5, sigma2=self.var),
                 "grad_params": {
-                    "names": [".*t_scale2", ".*deg_free"],
-                    "vals": [self.var, 1.5],
-                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                    "names": [".*t_scale2"],
+                    "vals": [self.var],
+                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
                 },
                 "laplace": True
             },
             "Student_t_small_var": {
                 "model": GPy.likelihoods.StudentT(deg_free=self.deg_free, sigma2=self.var),
                 "grad_params": {
-                    "names": [".*t_scale2", ".*deg_free"],
-                    "vals": [0.001, self.deg_free],
-                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                    "names": [".*t_scale2"],
+                    "vals": [0.001],
+                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
                 },
                 "laplace": True
             },
             "Student_t_large_var": {
                 "model": GPy.likelihoods.StudentT(deg_free=self.deg_free, sigma2=self.var),
                 "grad_params": {
-                    "names": [".*t_scale2", ".*deg_free"],
-                    "vals": [10.0, self.deg_free],
-                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                    "names": [".*t_scale2"],
+                    "vals": [10.0],
+                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
                 },
                 "laplace": True
             },
             "Student_t_approx_gauss": {
                 "model": GPy.likelihoods.StudentT(deg_free=1000, sigma2=self.var),
                 "grad_params": {
-                    "names": [".*t_scale2", ".*deg_free"],
-                    "vals": [self.var, 1000],
-                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_positive)]
+                    "names": [".*t_scale2"],
+                    "vals": [self.var],
+                    "constraints": [(".*t_scale2", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
                 },
                 "laplace": True
             },

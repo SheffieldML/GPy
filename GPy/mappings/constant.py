@@ -34,7 +34,7 @@ class Constant(Mapping):
         return np.tile(self.C.values[None,:], (X.shape[0], 1))
 
     def update_gradients(self, dL_dF, X):
-        self.C.gradient = 0.
+        self.C.gradient = dL_dF.sum(0)
 
     def gradients_X(self, dL_dF, X):
-        return dL_dF.sum(0)
+        return np.zeros_like(X)

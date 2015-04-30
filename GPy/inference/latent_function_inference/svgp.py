@@ -8,8 +8,8 @@ class SVGP(LatentFunctionInference):
 
     def inference(self, q_u_mean, q_u_chol, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, KL_scale=1.0, batch_scale=1.0):
 
-        num_inducing = Z.shape[0]
-        num_data, num_outputs = Y.shape
+        num_data, _ = Y.shape
+        num_inducing, num_outputs = q_u_mean.shape
 
         #expand cholesky representation
         L = choleskies.flat_to_triang(q_u_chol)

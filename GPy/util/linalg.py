@@ -465,3 +465,14 @@ def ijk_jlk_to_il(A, B):
     res = np.zeros((A.shape[0], B.shape[1]))
     [np.add(np.dot(A[:,:,k], B[:,:,k]), res, res) for k in range(B.shape[-1])]
     return res
+
+def ijk_ljk_to_ilk(A, B):
+    """
+    Faster version of einsum np.einsum('ijk,ljk->ilk', A, B)
+
+    I.e A.dot(B.T) for every dimension
+    """
+    res = np.empty((A.shape[0], B.shape[0], A.shape[-1]))
+    [np.dot(A[:,:,i], B[:,:,i].T, res[i,:,:]) for i in range(A.shape[0])]
+    res = res.swapaxes(0,2)
+    return res

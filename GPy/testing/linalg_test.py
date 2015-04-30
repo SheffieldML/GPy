@@ -50,3 +50,11 @@ class LinalgTests(np.testing.TestCase):
         pure = np.einsum('ijk,jlk->il', A, B)
         quick = GPy.util.linalg.ijk_jlk_to_il(A,B)
         np.testing.assert_allclose(pure, quick)
+
+    def test_einsum_ijk_ljk_to_ilk(self):
+        A = np.random.randn(150, 20, 5)
+        B = np.random.randn(150, 20, 5)
+        #B = A.copy()
+        pure = np.einsum('ijk,ljk->ilk', A, B)
+        quick = GPy.util.linalg.ijk_ljk_to_ilk(A,B)
+        np.testing.assert_allclose(pure, quick)

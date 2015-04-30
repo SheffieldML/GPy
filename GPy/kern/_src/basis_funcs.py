@@ -121,7 +121,7 @@ class LinearSlopeBasisFuncKernel(BasisFuncKernel):
     
 class ChangePointBasisFuncKernel(BasisFuncKernel):
     def __init__(self, input_dim, changepoint, variance=1., active_dims=None, ARD=False, name='changepoint'):
-        self.changepoint = changepoint
+        self.changepoint = np.array(changepoint)
         super(ChangePointBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
     
     @Cache_this(limit=3, ignore_args=())

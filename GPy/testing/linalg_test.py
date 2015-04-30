@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-from ..util.linalg import jitchol
+from ..util.linalg import jitchol,trace_dot
 
 class LinalgTests(np.testing.TestCase):
     def setUp(self):
@@ -33,3 +33,13 @@ class LinalgTests(np.testing.TestCase):
             return False
         except sp.linalg.LinAlgError:
             return True
+
+    def test_trace_dot(self):
+        N = 5
+        A = np.random.rand(N,N)
+        B = np.random.rand(N,N)
+        trace = np.trace(A.dot(B))
+        test_trace = trace_dot(A,B)
+        np.testing.assert_allclose(trace,test_trace,atol=1e-13)
+
+

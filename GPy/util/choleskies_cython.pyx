@@ -1,7 +1,8 @@
+#cython: wraparaound=False
+#cython: boundscheck=False
+#cython: nonecheck=False
+
 # Copyright James Hensman and Alan Saul 2015
-#cython: wraparaound(False)
-#cython: boundscheck(False)
-#cython: nonecheck(False)
 
 import numpy as np
 cimport numpy as np
@@ -17,6 +18,7 @@ def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
     cdef int D = flat.shape[1]
     cdef int count = 0
     cdef np.ndarray[double, ndim=3] ret = np.zeros((M, M, D))
+    cdef int d, m, mm
     for d in range(D):
         count = 0
         for m in range(M):
@@ -31,6 +33,7 @@ def triang_to_flat(np.ndarray[double, ndim=3] L):
     cdef int N = M*(M+1)/2
     cdef int count = 0
     cdef np.ndarray[double, ndim=2] flat = np.empty((N, D))
+    cdef int d, m, mm
     for d in range(D):
         count = 0
         for m in range(M):

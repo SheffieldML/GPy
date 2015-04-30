@@ -13,7 +13,12 @@ class SVGP(LatentFunctionInference):
 
         #expand cholesky representation
         L = choleskies.flat_to_triang(q_u_chol)
-        S = np.einsum('ijk,ljk->ilk', L, L) #L.dot(L.T)
+
+
+        S_ein = np.einsum('ijk,ljk->ilk', L, L) #L.dot(L.T)
+        S = np.empty((num_outputs, num_inducing, num_inducing))
+        [np.dot(L[:,:,i], L[:,:,i].T, S[i,:,:]) for i in range(num_outputs)]
+        S = S.swapaxes(0,2)
         #Si,_ = linalg.dpotri(np.asfortranarray(L), lower=1)
         Si = choleskies.multiple_dpotri(L)
         logdetS = np.array([2.*np.sum(np.log(np.abs(np.diag(L[:,:,i])))) for i in range(L.shape[-1])])

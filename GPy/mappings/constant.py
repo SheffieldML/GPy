@@ -37,4 +37,4 @@ class Constant(Mapping):
         self.C.gradient = 0.
 
     def gradients_X(self, dL_dF, X):
-        return np.zeros_like(X)
+        return dL_dF.sum(0)

@@ -452,3 +452,16 @@ def backsub_both_sides(L, X, transpose='left'):
         tmp, _ = dtrtrs(L, X, lower=1, trans=0)
         return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
 
+def ij_jlk_to_ilk(A, B):
+    """
+    Faster version of einsum 'ij,jlk->ilk'
+    """
+    return A.dot(B.reshape(B.shape[0], -1)).reshape(A.shape[0], B.shape[1], B.shape[2])
+
+def ijk_jlk_to_il(A, B):
+    """
+    Faster version of einsum einsum('ijk,jlk->il', A,B)
+    """
+    res = np.zeros((A.shape[0], B.shape[1]))
+    [np.add(np.dot(A[:,:,k], B[:,:,k]), res, res) for k in range(B.shape[-1])]
+    return res

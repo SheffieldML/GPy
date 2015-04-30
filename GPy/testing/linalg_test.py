@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
-from ..util.linalg import jitchol
+from GPy.util.linalg import jitchol
+import GPy
 
 class LinalgTests(np.testing.TestCase):
     def setUp(self):
@@ -35,3 +36,17 @@ class LinalgTests(np.testing.TestCase):
             return False
         except sp.linalg.LinAlgError:
             return True
+
+    def test_einsum_ijk_jlk_to_il(self):
+        A = np.random.randn(50, 150, 5)
+        B = np.random.randn(150, 100, 5)
+        pure = np.einsum('ijk,jlk->il', A, B)
+        quick = GPy.util.linalg.ijk_jlk_to_il(A, B)
+        np.testing.assert_allclose(pure, quick)
+
+    def test_einsum_ij_jlk_to_ilk(self):
+        A = np.random.randn(15, 150, 5)
+        B = np.random.randn(150, 50, 5)
+        pure = np.einsum('ijk,jlk->il', A, B)
+        quick = GPy.util.linalg.ijk_jlk_to_il(A,B)
+        np.testing.assert_allclose(pure, quick)

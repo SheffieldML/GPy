@@ -15,11 +15,7 @@ import warnings
 import os
 from .config import config
 import logging
-
-try:
-    from scipy import weave
-except ImportError:
-    config.set('weave', 'working', 'False')
+import linalg_cython
 
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])
@@ -422,114 +418,33 @@ def DSYR(*args, **kwargs):
 
 def symmetrify(A, upper=False):
     """
-    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+    Take the square matrix A and make it symmetrical by copting elements from
+    the lower half to the upper
 
     works IN PLACE.
 
-    note: tries to use weave, falls back to a slower numpy version
+    note: tries to use cython, falls back to a slower numpy version
     """
-    if config.getboolean('weave', 'working'):
-        try:
-            symmetrify_weave(A, upper)
-        except:
-            print("\n Weave compilation failed. Falling back to (slower) numpy implementation\n")
-            config.set('weave', 'working', 'False')
-            symmetrify_numpy(A, upper)
+    if config.getboolean('cython', 'working'):
+        _symmetrify_cython(A, upper)
     else:
-        symmetrify_numpy(A, upper)
+        _symmetrify_numpy(A, upper)
 
 
-def symmetrify_weave(A, upper=False):
-    """
-    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+def _symmetrify_cython(A, upper=False):
+    return linalg_cython.symmetrify(A, upper)
 
-    works IN PLACE.
-
-
-    """
-    N, M = A.shape
-    assert N == M
-
-    c_contig_code = """
-    int iN;
-    for (int i=1; i<N; i++){
-      iN = i*N;
-      for (int j=0; j<i; j++){
-        A[i+j*N] = A[iN+j];
-      }
-    }
-    """
-    f_contig_code = """
-    int iN;
-    for (int i=1; i<N; i++){
-      iN = i*N;
-      for (int j=0; j<i; j++){
-        A[iN+j] = A[i+j*N];
-      }
-    }
-    """
-
-    N = int(N) # for safe type casting
-    if A.flags['C_CONTIGUOUS'] and upper:
-        weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['C_CONTIGUOUS'] and not upper:
-        weave.inline(c_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['F_CONTIGUOUS'] and upper:
-        weave.inline(c_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['F_CONTIGUOUS'] and not upper:
-        weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    else:
-        if upper:
-            tmp = np.tril(A.T)
-        else:
-            tmp = np.tril(A)
-        A[:] = 0.0
-        A += tmp
-        A += np.tril(tmp, -1).T
-
-
-def symmetrify_numpy(A, upper=False):
-    """
-    Force a matrix to be symmetric
-    """
+def _symmetrify_numpy(A, upper=False):
     triu = np.triu_indices_from(A,k=1)
     if upper:
         A.T[triu] = A[triu]
     else:
         A[triu] = A.T[triu]
 
-#This function appears to be unused. It's use of weave makes it problematic
-#Commenting out for now
-#def cholupdate(L, x):
-#    """
-#    update the LOWER cholesky factor of a pd matrix IN PLACE
-#
-#    if L is the lower chol. of K, then this function computes L\_
-#    where L\_ is the lower chol of K + x*x^T
-#    """
-#    support_code = """
-#    #include <math.h>
-#    """
-#    code = """
-#    double r,c,s;
-#    int j,i;
-#    for(j=0; j<N; j++){
-#      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
-#      c = r / L(j,j);
-#      s = x(j) / L(j,j);
-#      L(j,j) = r;
-#      for (i=j+1; i<N; i++){
-#        L(i,j) = (L(i,j) + s*x(i))/c;
-#        x(i) = c*x(i) - s*L(i,j);
-#      }
-#    }
-#    """
-#    x = x.copy()
-#    N = x.size
-#    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
-
 def backsub_both_sides(L, X, transpose='left'):
-    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
+    """
+    Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky
+    """
     if transpose == 'left':
         tmp, _ = dtrtrs(L, X, lower=1, trans=1)
         return dtrtrs(L, tmp.T, lower=1, trans=1)[0].T
@@ -537,3 +452,16 @@ def backsub_both_sides(L, X, transpose='left'):
         tmp, _ = dtrtrs(L, X, lower=1, trans=0)
         return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
 
+def ij_jlk_to_ilk(A, B):
+    """
+    Faster version of einsum 'ij,jlk->ilk'
+    """
+    return A.dot(B.reshape(B.shape[0], -1)).reshape(A.shape[0], B.shape[1], B.shape[2])
+
+def ijk_jlk_to_il(A, B):
+    """
+    Faster version of einsum einsum('ijk,jlk->il', A,B)
+    """
+    res = np.zeros((A.shape[0], B.shape[1]))
+    [np.add(np.dot(A[:,:,k], B[:,:,k]), res, res) for k in range(B.shape[-1])]
+    return res

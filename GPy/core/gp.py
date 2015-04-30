@@ -485,3 +485,38 @@ class GP(Model):
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)
+
+    def log_predictive_density(self, x_test, y_test, Y_metadata=None):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test locations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param Y_metadata: metadata associated with the test points
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+
+    def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
+        """
+        Calculation of the log predictive density by sampling
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test locations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param Y_metadata: metadata associated with the test points
+        :param num_samples: number of samples to use in monte carlo integration
+        :type num_samples: int
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+

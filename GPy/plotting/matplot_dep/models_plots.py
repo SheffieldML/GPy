@@ -219,7 +219,7 @@ def plot_fit_f(model, *args, **kwargs):
     kwargs['plot_raw'] = True
     plot_fit(model,*args, **kwargs)
 
-def fixed_inputs(model, non_fixed_inputs, fix_routine='median'):
+def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True):
     """
     Convenience function for returning back fixed_inputs where the other inputs
     are fixed using fix_routine
@@ -229,6 +229,8 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median'):
     :type non_fixed_inputs: list
     :param fix_routine: fixing routine to use, 'mean', 'median', 'zero'
     :type fix_routine: string
+    :param as_list: if true, will return a list of tuples with (dimension, fixed_val) otherwise it will create the corresponding X matrix
+    :type as_list: boolean
     """
     f_inputs = []
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
@@ -241,6 +243,11 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median'):
                 f_inputs.append( (i, np.mean(X[:,i])) )
             if fix_routine == 'median':
                 f_inputs.append( (i, np.median(X[:,i])) )
-            elif fix_routine == 'zero':
+            else: # set to zero zero
                 f_inputs.append( (i, 0) )
-    return f_inputs
+            if not as_list:
+                X[:,i] = f_inputs[-1][1]
+    if as_list:
+        return f_inputs
+    else:
+        return X

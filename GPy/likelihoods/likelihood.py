@@ -41,6 +41,14 @@ class Likelihood(Parameterized):
         self.log_concave = False
         self.not_block_really = False
 
+    def request_num_latent_functions(self, Y):
+        """
+        The likelihood should infer how many latent functions are needed for the likelihood
+
+        Default is the number of outputs
+        """
+        return Y.shape[1]
+
     def _gradients(self,partial):
         return np.zeros(0)
 
@@ -118,21 +126,55 @@ class Likelihood(Parameterized):
             """Generate a function which can be integrated
             to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
             def f(fi_star):
-                #exponent = np.exp(-(1./(2*v))*np.square(m-f_star))
+                #exponent = np.exp(-(1./(2*vi))*np.square(mi-fi_star))
                 #from GPy.util.misc import safe_exp
                 #exponent = safe_exp(exponent)
-                #return self.pdf(f_star, y, y_m)*exponent
+                #res = safe_exp(self.logpdf(fi_star, yi, yi_m))*exponent
 
                 #More stable in the log space
-                return np.exp(self.logpdf(fi_star, yi, yi_m)
+                res = np.exp(self.logpdf(fi_star, yi, yi_m)
                               - 0.5*np.log(2*np.pi*vi)
-                              - 0.5*np.square(mi-fi_star)/vi)
+                              - 0.5*np.square(fi_star-mi)/vi)
+                if not np.isfinite(res):
+                    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+                return res
+
             return f
 
         p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
                            for yi, mi, vi, yi_m in zipped_values])
         p_ystar = np.array(p_ystar).reshape(-1, 1)
         return np.log(p_ystar)
+
+    def log_predictive_density_sampling(self, y_test, mu_star, var_star, Y_metadata=None, num_samples=1000):
+        """
+        Calculation of the log predictive density via sampling
+
+        .. math:
+            log p(y_{*}|D) = log 1/num_samples prod^{S}_{s=1} p(y_{*}|f_{*s})
+            f_{*s} ~ p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+        :param num_samples: num samples of p(f_{*}|mu_{*}, var_{*}) to take
+        :type num_samples: int
+        """
+        assert y_test.shape==mu_star.shape
+        assert y_test.shape==var_star.shape
+        assert y_test.shape[1] == 1
+
+        #Take samples of p(f*|y)
+        #fi_samples = np.random.randn(num_samples)*np.sqrt(var_star) + mu_star
+        fi_samples = np.random.normal(mu_star, np.sqrt(var_star), size=(mu_star.shape[0], num_samples))
+
+        from scipy.misc import logsumexp
+        log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
+        return log_p_ystar
+
 
     def _moments_match_ep(self,obs,tau,v):
         """

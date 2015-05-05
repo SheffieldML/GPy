@@ -100,10 +100,8 @@ class SVGP(LatentFunctionInference):
 
 
         #sum (gradients of) expected likelihood and KL part
-        log_marginal = F.sum()
-        dL_dm, dL_dS, dL_dKmm, dL_dKmn = dF_dm - dKL_dm*0, dF_dS- dKL_dS*0, dF_dKmm- dKL_dKmm*0, dF_dKmn
-        #log_marginal = F.sum() - KL
-        #dL_dm, dL_dS, dL_dKmm, dL_dKmn = dF_dm - dKL_dm, dF_dS- dKL_dS, dF_dKmm- dKL_dKmm, dF_dKmn
+        log_marginal = F.sum() - KL
+        dL_dm, dL_dS, dL_dKmm, dL_dKmn = dF_dm - dKL_dm, dF_dS- dKL_dS, dF_dKmm- dKL_dKmm, dF_dKmn
 
         dL_dchol = 2.*np.array([np.dot(a,b) for a, b in zip(dL_dS, L) ])
         dL_dchol = choleskies.triang_to_flat(dL_dchol)

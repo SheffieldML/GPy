@@ -2,18 +2,18 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import linalg
-import misc
-import squashers
-import warping_functions
-import datasets
-import mocap
-import decorators
-import classification
-import subarray_and_sorting
-import caching
-import diag
-import initialization
-import multioutput
-import linalg_gpu
+from . import linalg
+from . import misc
+from . import squashers
+from . import warping_functions
+from . import datasets
+from . import mocap
+from . import decorators
+from . import classification
+from . import subarray_and_sorting
+from . import caching
+from . import diag
+from . import initialization
+from . import multioutput
+from . import linalg_gpu
 

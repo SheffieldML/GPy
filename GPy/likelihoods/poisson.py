@@ -5,8 +5,8 @@ from __future__ import division
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-import link_functions
-from likelihood import Likelihood
+from . import link_functions
+from .likelihood import Likelihood
 
 class Poisson(Likelihood):
     """
@@ -105,7 +105,7 @@ class Poisson(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        return -y/(link_f**2) 
+        return -y/(link_f**2)
 
     def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
         """
@@ -122,7 +122,6 @@ class Poisson(Likelihood):
         :returns: third derivative of likelihood evaluated at points f
         :rtype: Nx1 array
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
 

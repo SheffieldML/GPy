@@ -30,7 +30,7 @@ class SparseGPMissing(StochasticStorage):
         Thus, we can just make sure the loop goes over self.d every
         time.
         """
-        self.d = xrange(model.Y_normalized.shape[1])
+        self.d = range(model.Y_normalized.shape[1])
 
 class SparseGPStochastics(StochasticStorage):
     """

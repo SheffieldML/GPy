@@ -1,7 +1,7 @@
 # Check Matthew Rocklin's blog post.
 import sympy as sym
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...core.symbolic import Symbolic_core
 
 
@@ -11,7 +11,7 @@ class Symbolic(Kern, Symbolic_core):
     def __init__(self, input_dim, k=None, output_dim=1, name='symbolic', parameters=None, active_dims=None, operators=None, func_modules=[]):
 
         if k is None:
-            raise ValueError, "You must provide an argument for the covariance function."
+            raise ValueError("You must provide an argument for the covariance function.")
 
         Kern.__init__(self, input_dim, active_dims, name=name)
         kdiag = k

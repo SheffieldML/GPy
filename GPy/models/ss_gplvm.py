@@ -39,7 +39,10 @@ class SSGPLVM(SparseGP_MPI):
             X_variance = np.random.uniform(0,.1,X.shape)
             
         if Gamma is None:
-            gamma = np.random.randn(X.shape[0], input_dim)
+            gamma = np.empty_like(X) # The posterior probabilities of the binary variable in the variational approximation
+            gamma[:] = 0.5 + 0.1 * np.random.randn(X.shape[0], input_dim)
+            gamma[gamma>1.-1e-9] = 1.-1e-9
+            gamma[gamma<1e-9] = 1e-9
         else:
             gamma = Gamma.copy()
                 
@@ -71,7 +74,7 @@ class SSGPLVM(SparseGP_MPI):
         self.link_parameter(self.X, index=0)
                 
         if self.group_spike:
-            [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in xrange(self.X.gamma.shape[1])] # Tie columns together
+            [self.X.gamma[:,i].tie('tieGamma'+str(i)) for i in range(self.X.gamma.shape[1])] # Tie columns together
         
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""

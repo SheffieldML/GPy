@@ -1,9 +1,10 @@
 # Copyright (c) 2013, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2015, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
 from ..core.mapping import Mapping
-import GPy
+from ..core import Param
 
 class Kernel(Mapping):
     """
@@ -11,50 +12,41 @@ class Kernel(Mapping):
 
     .. math::
 
-       f(\mathbf{x}*) = \mathbf{A}\mathbf{k}(\mathbf{X}, \mathbf{x}^*) + \mathbf{b}
+       f(\mathbf{x}) = \sum_i \alpha_i k(\mathbf{z}_i, \mathbf{x})
 
-    :param X: input observations containing :math:`\mathbf{X}`
-    :type X: ndarray
+    or for multple outputs
+
+    .. math::
+
+       f_i(\mathbf{x}) = \sum_j \alpha_{i,j} k(\mathbf{z}_i, \mathbf{x})
+
+
+    :param input_dim: dimension of input.
+    :type input_dim: int
     :param output_dim: dimension of output.
     :type output_dim: int
+    :param Z: input observations containing :math:`\mathbf{Z}`
+    :type Z: ndarray
     :param kernel: a GPy kernel, defaults to GPy.kern.RBF
     :type kernel: GPy.kern.kern
 
     """
 
-    def __init__(self, X, output_dim=1, kernel=None):
-        Mapping.__init__(self, input_dim=X.shape[1], output_dim=output_dim)
-        if kernel is None:
-            kernel = GPy.kern.RBF(self.input_dim)
+    def __init__(self, input_dim, output_dim, Z, kernel, name='kernmap'):
+        Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
         self.kern = kernel
-        self.X = X
-        self.num_data = X.shape[0]
-        self.num_params = self.output_dim*(self.num_data + 1)
-        self.A = np.array((self.num_data, self.output_dim))
-        self.bias = np.array(self.output_dim)
-        self.randomize()
-        self.name = 'kernel'
-    def _get_param_names(self):
-        return sum([['A_%i_%i' % (n, d) for d in range(self.output_dim)] for n in range(self.num_data)], []) + ['bias_%i' % d for d in range(self.output_dim)]
-
-    def _get_params(self):
-        return np.hstack((self.A.flatten(), self.bias))
-
-    def _set_params(self, x):
-        self.A = x[:self.num_data * self.output_dim].reshape(self.num_data, self.output_dim).copy()
-        self.bias = x[self.num_data*self.output_dim:].copy()
-
-    def randomize(self):
-        self.A = np.random.randn(self.num_data, self.output_dim)/np.sqrt(self.num_data+1)
-        self.bias = np.random.randn(self.output_dim)/np.sqrt(self.num_data+1)
+        self.Z = Z
+        self.num_bases, Zdim = Z.shape
+        assert Zdim == self.input_dim
+        self.A = Param('A', np.random.randn(self.num_bases, self.output_dim))
+        self.link_parameter(self.A)
 
     def f(self, X):
-        return np.dot(self.kern.K(X, self.X),self.A) + self.bias
+        return np.dot(self.kern.K(X, self.Z), self.A)
 
-    def df_dtheta(self, dL_df, X):
-        self._df_dA = (dL_df[:, :, None]*self.kern.K(X, self.X)[:, None, :]).sum(0).T
-        self._df_dbias = (dL_df.sum(0))
-        return np.hstack((self._df_dA.flatten(), self._df_dbias))
+    def update_gradients(self, dL_dF, X):
+        self.kern.update_gradients_full(np.dot(dL_dF, self.A.T), X, self.Z)
+        self.A.gradient = np.dot( self.kern.K(self.Z, X), dL_dF)
 
-    def df_dX(self, dL_df, X):
-        return self.kern.gradients_X((dL_df[:, None, :]*self.A[None, :, :]).sum(2), X, self.X)
+    def gradients_X(self, dL_dF, X):
+        return self.kern.gradients_X(np.dot(dL_dF, self.A.T), X, self.Z)

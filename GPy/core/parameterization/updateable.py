@@ -3,7 +3,7 @@ Created on 11 Nov 2014
 
 @author: maxz
 '''
-from observable import Observable
+from .observable import Observable
 
 
 class Updateable(Observable):
@@ -35,7 +35,7 @@ class Updateable(Observable):
         self.trigger_update()
 
     def toggle_update(self):
-        print "deprecated: toggle_update was renamed to update_toggle for easier access"
+        print("deprecated: toggle_update was renamed to update_toggle for easier access")
         self.update_toggle()
     def update_toggle(self):
         self.update_model(not self.update_model())

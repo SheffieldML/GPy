@@ -32,7 +32,7 @@ class ArrayList(list):
             if el is item:
                 return index
             index += 1
-        raise ValueError, "{} is not in list".format(item)
+        raise ValueError("{} is not in list".format(item))
     pass
 
 class ObserverList(object):
@@ -75,7 +75,7 @@ class ObserverList(object):
 
     def __str__(self):
         from . import ObsAr, Param
-        from parameter_core import Parameterizable
+        from .parameter_core import Parameterizable
         ret = []
         curr_p = None
         

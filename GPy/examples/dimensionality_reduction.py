@@ -335,7 +335,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     m.likelihood.variance = .1
 
     if optimize:
-        print "Optimizing model:"
+        print("Optimizing model:")
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
@@ -360,7 +360,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     m.likelihood.variance = .1
 
     if optimize:
-        print "Optimizing model:"
+        print("Optimizing model:")
         m.optimize('scg', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
@@ -390,7 +390,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     m.Yreal = Y
 
     if optimize:
-        print "Optimizing model:"
+        print("Optimizing model:")
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
@@ -414,7 +414,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     m['.*noise'] = [Y.var() / 40. for Y in Ylist]
 
     if optimize:
-        print "Optimizing Model:"
+        print("Optimizing Model:")
         m.optimize(messages=verbose, max_iters=8e3)
     if plot:
         m.X.plot("MRD Latent Space 1D")
@@ -442,7 +442,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
             initx="random", initz='permute', **kw)
 
     if optimize:
-        print "Optimizing Model:"
+        print("Optimizing Model:")
         m.optimize('bfgs', messages=verbose, max_iters=8e3, gtol=.1)
     if plot:
         m.X.plot("MRD Latent Space 1D")
@@ -607,7 +607,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     try:
         if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
     except KeyboardInterrupt:
-        print "Keyboard interrupt, continuing to plot and return"
+        print("Keyboard interrupt, continuing to plot and return")
 
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
@@ -658,7 +658,7 @@ def ssgplvm_simulation_linear():
     def sample_X(Q, pi):
         x = np.empty(Q)
         dies = np.random.rand(Q)
-        for q in xrange(Q):
+        for q in range(Q):
             if dies[q] < pi:
                 x[q] = np.random.randn()
             else:
@@ -668,7 +668,7 @@ def ssgplvm_simulation_linear():
     Y = np.empty((N, D))
     X = np.empty((N, Q))
     # Generate data from random sampled weight matrices
-    for n in xrange(N):
+    for n in range(N):
         X[n] = sample_X(Q, pi)
         w = np.random.randn(D, Q)
         Y[n] = np.dot(w, X[n])

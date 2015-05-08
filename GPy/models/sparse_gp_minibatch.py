@@ -1,6 +1,7 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+from __future__ import print_function
 import numpy as np
 from ..core.parameterization.param import Param
 from ..core.sparse_gp import SparseGP
@@ -43,14 +44,15 @@ class SparseGPMiniBatch(SparseGP):
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False,
                  missing_data=False, stochastic=False, batchsize=1):
-        #pick a sensible inference method
+        
+        # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
+                inference_method = var_dtc.VarDTC(limit=1 if not missing_data else Y.shape[1])
             else:
                 #inference_method = ??
-                raise NotImplementedError, "what to do what to do?"
-            print "defaulting to ", inference_method, "for latent function inference"
+                raise NotImplementedError("what to do what to do?")
+            print("defaulting to ", inference_method, "for latent function inference")
 
         self.kl_factr = 1.
         self.Z = Param('inducing inputs', Z)
@@ -80,13 +82,13 @@ class SparseGPMiniBatch(SparseGP):
             overall = self.Y_normalized.shape[1]
             m_f = lambda i: "Precomputing Y for missing data: {: >7.2%}".format(float(i+1)/overall)
             message = m_f(-1)
-            print message,
-            for d in xrange(overall):
+            print(message, end=' ')
+            for d in range(overall):
                 self.Ylist.append(self.Y_normalized[self.ninan[:, d], d][:, None])
-                print ' '*(len(message)+1) + '\r',
+                print(' '*(len(message)+1) + '\r', end=' ')
                 message = m_f(d)
-                print message,
-            print ''
+                print(message, end=' ')
+            print('')
 
         self.posterior = None
 
@@ -181,11 +183,11 @@ class SparseGPMiniBatch(SparseGP):
             full_values[key][value_indices[key]] += current_values[key]
         """
         for key in current_values.keys():
-            if value_indices is not None and value_indices.has_key(key):
+            if value_indices is not None and key in value_indices:
                 index = value_indices[key]
             else:
                 index = slice(None)
-            if full_values.has_key(key):
+            if key in full_values:
                 full_values[key][index] += current_values[key]
             else:
                 full_values[key] = current_values[key]
@@ -241,15 +243,15 @@ class SparseGPMiniBatch(SparseGP):
         if not self.stochastics:
             m_f = lambda i: "Inference with missing_data: {: >7.2%}".format(float(i+1)/self.output_dim)
             message = m_f(-1)
-            print message,
+            print(message, end=' ')
 
         for d in self.stochastics.d:
             ninan = self.ninan[:, d]
 
             if not self.stochastics:
-                print ' '*(len(message)) + '\r',
+                print(' '*(len(message)) + '\r', end=' ')
                 message = m_f(d)
-                print message,
+                print(message, end=' ')
 
             posterior, log_marginal_likelihood, \
                 grad_dict, current_values, value_indices = self._inner_parameters_changed(
@@ -268,7 +270,7 @@ class SparseGPMiniBatch(SparseGP):
             woodbury_vector[:, d:d+1] = posterior.woodbury_vector
             self._log_marginal_likelihood += log_marginal_likelihood
         if not self.stochastics:
-            print ''
+            print('')
 
         if self.posterior is None:
             self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,

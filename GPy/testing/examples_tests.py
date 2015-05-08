@@ -46,20 +46,20 @@ def test_models():
     for loader, module_name, is_pkg in pkgutil.iter_modules([examples_path]):
         # Load examples
         module_examples = loader.find_module(module_name).load_module(module_name)
-        print "MODULE", module_examples
-        print "Before"
-        print inspect.getmembers(module_examples, predicate=inspect.isfunction)
+        print("MODULE", module_examples)
+        print("Before")
+        print(inspect.getmembers(module_examples, predicate=inspect.isfunction))
         functions = [ func for func in inspect.getmembers(module_examples, predicate=inspect.isfunction) if func[0].startswith('_') is False ][::-1]
-        print "After"
-        print functions
+        print("After")
+        print(functions)
         for example in functions:
             if example[0] in ['epomeo_gpx']:
                 #These are the edge cases that we might want to handle specially
                 if example[0] == 'epomeo_gpx' and not GPy.util.datasets.gpxpy_available:
-                    print "Skipping as gpxpy is not available to parse GPS"
+                    print("Skipping as gpxpy is not available to parse GPS")
                     continue
 
-            print "Testing example: ", example[0]
+            print("Testing example: ", example[0])
             # Generate model
 
             try:
@@ -69,7 +69,7 @@ def test_models():
             except Exception as e:
                 failing_models[example[0]] = "Cannot make model: \n{e}".format(e=e)
             else:
-                print models
+                print(models)
                 model_checkgrads.description = 'test_checkgrads_%s' % example[0]
                 try:
                     for model in models:
@@ -89,17 +89,17 @@ def test_models():
             #yield model_checkgrads, model
             #yield model_instance, model
 
-        print "Finished checking module {m}".format(m=module_name)
+        print("Finished checking module {m}".format(m=module_name))
         if len(failing_models.keys()) > 0:
-            print "Failing models: "
-            print failing_models
+            print("Failing models: ")
+            print(failing_models)
 
     if len(failing_models.keys()) > 0:
-        print failing_models
+        print(failing_models)
         raise Exception(failing_models)
 
 
 if __name__ == "__main__":
-    print "Running unit tests, please be (very) patient..."
+    print("Running unit tests, please be (very) patient...")
     # unittest.main()
     test_models()

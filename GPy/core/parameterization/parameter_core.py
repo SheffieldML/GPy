@@ -13,11 +13,12 @@ Observable Pattern for patameterization
 
 """
 
-from transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
+from .transformations import Transformation,Logexp, NegativeLogexp, Logistic, __fixed__, FIXED, UNFIXED
 import numpy as np
 import re
 import logging
-from updateable import Updateable
+from .updateable import Updateable
+from functools import reduce
 
 class HierarchyError(Exception):
     """
@@ -36,7 +37,7 @@ def adjust_name_for_printing(name):
         name = name.replace("/", "_l_").replace("@", '_at_')
         name = name.replace("(", "_of_").replace(")", "")
         if re.match(r'^[a-zA-Z_][a-zA-Z0-9-_]*$', name) is None:
-            raise NameError, "name {} converted to {} cannot be further converted to valid python variable name!".format(name2, name)
+            raise NameError("name {} converted to {} cannot be further converted to valid python variable name!".format(name2, name))
         return name
     return ''
 
@@ -65,13 +66,13 @@ class Parentable(object):
         Gets called, when the parent changed, so we can adjust our
         inner attributes according to the new parent.
         """
-        raise NotImplementedError, "shouldnt happen, Parentable objects need to be able to change their parent"
+        raise NotImplementedError("shouldnt happen, Parentable objects need to be able to change their parent")
 
     def _disconnect_parent(self, *args, **kw):
         """
         Disconnect this object from its parent
         """
-        raise NotImplementedError, "Abstract superclass"
+        raise NotImplementedError("Abstract superclass")
 
     @property
     def _highest_parent_(self):
@@ -109,7 +110,10 @@ class Pickleable(object):
                   it properly.
         :param protocol: pickling protocol to use, python-pickle for details.
         """
-        import cPickle as pickle
+        try: #Py2
+            import cPickle as pickle
+        except ImportError: #Py3
+            import pickle
         if isinstance(f, str):
             with open(f, 'wb') as f:
                 pickle.dump(self, f, protocol)
@@ -138,9 +142,9 @@ class Pickleable(object):
             which = self
         which.traverse_parents(parents.append) # collect parents
         for p in parents:
-            if not memo.has_key(id(p)):memo[id(p)] = None # set all parents to be None, so they will not be copied
-        if not memo.has_key(id(self.gradient)):memo[id(self.gradient)] = None # reset the gradient
-        if not memo.has_key(id(self._fixes_)):memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
+            if not id(p) in memo :memo[id(p)] = None # set all parents to be None, so they will not be copied
+        if not id(self.gradient) in memo:memo[id(self.gradient)] = None # reset the gradient
+        if not id(self._fixes_) in memo :memo[id(self._fixes_)] = None # fixes have to be reset, as this is now highest parent
         copy = copy.deepcopy(self, memo) # and start the copy
         copy._parent_index_ = None
         copy._trigger_params_changed()
@@ -163,14 +167,16 @@ class Pickleable(object):
                        '_Cacher_wrap__cachers', # never pickle cachers
                        ]
         dc = dict()
-        for k,v in self.__dict__.iteritems():
+        #py3 fix
+        #for k,v in self.__dict__.iteritems():
+        for k,v in self.__dict__.items():
             if k not in ignore_list:
                 dc[k] = v
         return dc
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        from lists_and_dicts import ObserverList
+        from .lists_and_dicts import ObserverList
         self.observers = ObserverList()
         self._setup_observers()
         self._optimizer_copy_transformed = False
@@ -214,7 +220,7 @@ class Gradcheckable(Pickleable, Parentable):
         Perform the checkgrad on the model.
         TODO: this can be done more efficiently, when doing it inside here
         """
-        raise HierarchyError, "This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!"
+        raise HierarchyError("This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!")
 
 class Nameable(Gradcheckable):
     """
@@ -268,7 +274,7 @@ class Indexable(Nameable, Updateable):
     def __init__(self, name, default_constraint=None, *a, **kw):
         super(Indexable, self).__init__(name=name, *a, **kw)
         self._default_constraint_ = default_constraint
-        from index_operations import ParameterIndexOperations
+        from .index_operations import ParameterIndexOperations
         self.constraints = ParameterIndexOperations()
         self.priors = ParameterIndexOperations()
         if self._default_constraint_ is not None:
@@ -310,7 +316,7 @@ class Indexable(Nameable, Updateable):
         that is an int array, containing the indexes for the flattened
         param inside this parameterized logic.
         """
-        from param import ParamConcatenation
+        from .param import ParamConcatenation
         if isinstance(param, ParamConcatenation):
             return np.hstack((self._raveled_index_for(p) for p in param.params))
         return param._raveled_index() + self._offset_for(param)
@@ -407,7 +413,7 @@ class Indexable(Nameable, Updateable):
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning)
 
-        from domains import _REAL, _POSITIVE, _NEGATIVE
+        from .domains import _REAL, _POSITIVE, _NEGATIVE
         if prior.domain is _POSITIVE:
             self.constrain_positive(warning)
         elif prior.domain is _NEGATIVE:
@@ -426,7 +432,9 @@ class Indexable(Nameable, Updateable):
         """evaluate the prior"""
         if self.priors.size > 0:
             x = self.param_array
-            return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
+            #py3 fix
+            #return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
+            return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.items()), 0)
         return 0.
 
     def _log_prior_gradients(self):
@@ -434,7 +442,9 @@ class Indexable(Nameable, Updateable):
         if self.priors.size > 0:
             x = self.param_array
             ret = np.zeros(x.size)
-            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
+            #py3 fix
+            #[np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
+            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.items()]
             return ret
         return 0.
 
@@ -536,7 +546,7 @@ class Indexable(Nameable, Updateable):
         update the constraints and priors view, so that
         constraining is automized for the parent.
         """
-        from index_operations import ParameterIndexOperationsView
+        from .index_operations import ParameterIndexOperationsView
         #if getattr(self, "_in_init_"):
             #import ipdb;ipdb.set_trace()
             #self.constraints.update(param.constraints, start)
@@ -558,7 +568,7 @@ class Indexable(Nameable, Updateable):
         """
         if warning and reconstrained.size > 0:
             # TODO: figure out which parameters have changed and only print those
-            print "WARNING: reconstraining parameters {}".format(self.hierarchy_name() or self.name)
+            print("WARNING: reconstraining parameters {}".format(self.hierarchy_name() or self.name))
         index = self._raveled_index()
         which.add(what, index)
         return index
@@ -571,7 +581,7 @@ class Indexable(Nameable, Updateable):
         if len(transforms) == 0:
             transforms = which.properties()
         removed = np.empty((0,), dtype=int)
-        for t in transforms:
+        for t in list(transforms):
             unconstrained = which.remove(t, self._raveled_index())
             removed = np.union1d(removed, unconstrained)
             if t is __fixed__:
@@ -612,7 +622,9 @@ class OptimizationHandlable(Indexable):
 
         if not self._optimizer_copy_transformed:
             self._optimizer_copy_.flat = self.param_array.flat
-            [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+            #py3 fix
+            #[np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.iteritems() if c != __fixed__]
+            [np.put(self._optimizer_copy_, ind, c.finv(self.param_array[ind])) for c, ind in self.constraints.items() if c != __fixed__]
             if self.has_parent() and (self.constraints[__fixed__].size != 0 or self._has_ties()):
                 fixes = np.ones(self.size).astype(bool)
                 fixes[self.constraints[__fixed__]] = FIXED
@@ -641,21 +653,25 @@ class OptimizationHandlable(Indexable):
         if f is None:
             self.param_array.flat = p
             [np.put(self.param_array, ind, c.f(self.param_array.flat[ind]))
-             for c, ind in self.constraints.iteritems() if c != __fixed__]
+             #py3 fix
+             #for c, ind in self.constraints.iteritems() if c != __fixed__]
+             for c, ind in self.constraints.items() if c != __fixed__]
         else:
             self.param_array.flat[f] = p
             [np.put(self.param_array, ind[f[ind]], c.f(self.param_array.flat[ind[f[ind]]]))
-             for c, ind in self.constraints.iteritems() if c != __fixed__]
+             #py3 fix
+             #for c, ind in self.constraints.iteritems() if c != __fixed__]
+             for c, ind in self.constraints.items() if c != __fixed__]
         #self._highest_parent_.tie.propagate_val()
 
         self._optimizer_copy_transformed = False
         self.trigger_update()
 
     def _get_params_transformed(self):
-        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning("_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!")
 #
     def _set_params_transformed(self, p):
-        raise DeprecationWarning, "_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!"
+        raise DeprecationWarning("_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!")
 
     def _trigger_params_changed(self, trigger_parent=True):
         """
@@ -680,7 +696,9 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
-        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        #py3 fix
+        #[np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor(self.param_array[i], g[i])) for c, i in self.constraints.items() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -690,7 +708,9 @@ class OptimizationHandlable(Indexable):
         constraint to it.
         """
         self._highest_parent_.tie.collate_gradient()
-        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        #py3 fix
+        #[np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.iteritems() if c != __fixed__]
+        [np.put(g, i, c.gradfactor_non_natural(self.param_array[i], g[i])) for c, i in self.constraints.items() if c != __fixed__]
         if self._has_fixes(): return g[self._fixes_]
         return g
 
@@ -701,7 +721,7 @@ class OptimizationHandlable(Indexable):
         Return the number of parameters of this parameter_handle.
         Param objects will always return 0.
         """
-        raise NotImplemented, "Abstract, please implement in respective classes"
+        raise NotImplemented("Abstract, please implement in respective classes")
 
     def parameter_names(self, add_self=False, adjust_for_printing=False, recursive=True):
         """
@@ -750,7 +770,9 @@ class OptimizationHandlable(Indexable):
         self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
         # now draw from prior where possible
         x = self.param_array.copy()
-        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        #Py3 fix
+        #[np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.iteritems() if not p is None]
+        [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.items() if not p is None]
         unfixlist = np.ones((self.size,),dtype=np.bool)
         unfixlist[self.constraints[__fixed__]] = False
         self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]
@@ -947,7 +969,7 @@ class Parameterizable(OptimizationHandlable):
             self._add_parameter_name(param, ignore_added_names)
         # and makes sure to not delete programmatically added parameters
         for other in self.parameters[::-1]:
-            if other is not param and other.name.startswith(param.name):
+            if other is not param and other.name == param.name:
                 warn_and_retry(param, _name_digit.match(other.name))
                 return
         if pname not in dir(self):

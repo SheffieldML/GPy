@@ -1,17 +1,18 @@
 void _grad_X(int N, int D, int M, double* X, double* X2, double* tmp, double* grad){
-int n,m,d;
 double retnd;
-//#pragma omp parallel for private(n,d, retnd, m)
-for(d=0;d<D;d++){
-  for(n=0;n<N;n++){
-    retnd = 0.0;
-    for(m=0;m<M;m++){
-      retnd += tmp[n*M+m]*(X[n*D+d]-X2[m*D+d]);
-    }
-    grad[n*D+d] = retnd;
+int n,d,nd,m;
+#pragma omp parallel for private(nd,n,d, retnd, m)
+for(nd=0;nd<(D*N);nd++){
+  n = nd/D;
+  d = nd%D;
+  retnd = 0.0;
+  for(m=0;m<M;m++){
+    retnd += tmp[n*M+m]*(X[nd]-X2[m*D+d]);
   }
+  grad[nd] = retnd;
 }
 } //grad_X
+
 
 
 void _lengthscale_grads(int N, int M, int Q, double* tmp, double* X, double* X2, double* grad){

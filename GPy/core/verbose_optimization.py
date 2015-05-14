@@ -84,18 +84,20 @@ class VerboseOptimization(object):
 
     def print_out(self, seconds):
         if seconds<60:
-            self.timestring = "{:0>5.2f}".format(seconds)
+            ms = (seconds%1)*100
+            self.timestring = "{s:0>2d}s{ms:0>2d}".format(s=int(seconds), ms=int(ms))
         else:
             m, s = divmod(seconds, 60)
             if m>59:
                 h, m = divmod(m, 60)
                 if h>23:
                     d, h = divmod(h, 24)
-                    self.timestring = '{d:0>2d}/{h:0>2d}:{m:0>2d}'.format(m=int(m), h=int(h), d=int(d))
+                    self.timestring = '{d:0>2d}d{h:0>2d}h{m:0>2d}'.format(m=int(m), h=int(h), d=int(d))
                 else:
-                    self.timestring = '{h:0>2d}:{m:0>2d}:{s:0>2d}'.format(m=int(m), s=int(s), h=int(h))
+                    self.timestring = '{h:0>2d}h{m:0>2d}m{s:0>2d}'.format(m=int(m), s=int(s), h=int(h))
             else:
-                self.timestring = '{m:0>2d}:{s:0>5.2f}'.format(m=int(m), s=s)
+                ms = (seconds%1)*100
+                self.timestring = '{m:0>2d}m{s:0>2d}s{ms:0>2d}'.format(m=int(m), s=int(s), ms=int(ms))
         if self.ipython_notebook:
             names_vals = [['optimizer', "{:s}".format(self.opt_name)],
                           ['runtime', "{:>s}".format(self.timestring)],

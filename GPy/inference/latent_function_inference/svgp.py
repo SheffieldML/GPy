@@ -3,7 +3,7 @@ from ...util import linalg
 from ...util import choleskies
 import numpy as np
 from .posterior import Posterior
-from scipy.linalg.blas import dgemm
+from scipy.linalg.blas import dgemm, dsymm, dtrmm
 
 class SVGP(LatentFunctionInference):
 
@@ -46,6 +46,13 @@ class SVGP(LatentFunctionInference):
         A = np.dot(Kmmi, Kmn)
         mu = prior_mean_f + np.dot(A.T, q_u_mean - prior_mean_u)
         LA = L.reshape(-1, num_inducing).dot(A).reshape(num_outputs, num_inducing, num_data)
+        #LA = np.empty((num_outputs, num_inducing, num_data))
+        #Af = np.asfortranarray(A)
+        #for Li, LAi in zip(L, LA):
+            #LAi[:,:] = dtrmm(1., Li.T, Af, side=0, lower=0, trans_a=1, overwrite_b=0)
+            #stop
+        #assert np.allclose(LA, LA_)
+
         v = (Knn_diag - np.sum(A*Kmn,0))[:,None] + np.sum(np.square(LA),1).T
 
 
@@ -83,22 +90,18 @@ class SVGP(LatentFunctionInference):
         #derivatives of expected likelihood, assuming zero mean function
         Adv = A[None,:,:]*dF_dv.T[:,None,:] # As if dF_Dv is diagonal, D, M, N
         Admu = A.dot(dF_dmu)
-        #AdvA_ = np.dot(Adv, A) # D, M, M
+        Adv = np.ascontiguousarray(Adv) # makes for faster operations later...
         AdvA = np.dot(Adv.reshape(-1, num_data),A.T).reshape(num_outputs, num_inducing, num_inducing )
-        #assert np.allclose(AdvA, AdvA_, 1e-9)
-
         tmp = np.sum([np.dot(a,s) for a, s in zip(AdvA, S)],0).dot(Kmmi)
         dF_dKmm = -Admu.dot(Kmmim.T) + AdvA.sum(0) - tmp - tmp.T
         dF_dKmm = 0.5*(dF_dKmm + dF_dKmm.T) # necessary? GPy bug?
         tmp = S.reshape(-1, num_inducing).dot(Kmmi).reshape(num_outputs, num_inducing , num_inducing )
-        #tmp_ = S.dot(Kmmi).swapaxes(1,2)
         tmp = 2.*(tmp - np.eye(num_inducing)[None, :,:])
 
-        #dF_dKmn_ = np.sum([np.dot(a,b) for a,b in zip(tmp, Adv)],0) + Kmmim.dot(dF_dmu.T)
         dF_dKnm = Kmmim.dot(dF_dmu.T).T
-        assert dF_dKnm.flags['F_CONTIGUOUS'] # needed for dgemm in place call:
+        assert dF_dKnm.flags['F_CONTIGUOUS'] # needed for dsymm in place call:
         for a,b in zip(tmp, Adv):
-            dgemm(1.0, b.T, a.T, beta=1., c=dF_dKnm, overwrite_c=True)
+            dsymm(1.0, a.T, b.T, beta=1., side=1, c=dF_dKnm, overwrite_c=True)
         dF_dKmn = dF_dKnm.T
 
         dF_dm = Admu

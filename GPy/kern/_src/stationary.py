@@ -15,7 +15,7 @@ from ...util.caching import Cache_this
 try:
     import stationary_cython
 except ImportError:
-    print('warning: failed to import cython module: falling back to numpy')
+    print('warning in sationary: failed to import cython module: falling back to numpy')
     config.set('cython', 'working', 'false')
 
 

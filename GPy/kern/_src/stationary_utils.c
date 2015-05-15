@@ -14,6 +14,22 @@ for(nd=0;nd<(D*N);nd++){
 } //grad_X
 
 
+void _lengthscale_grads_unsafe(int N, int M, int Q, double* tmp, double* X, double* X2, double* grad){
+int n,m,nm,q,nQ,mQ;
+double dist;
+#pragma omp parallel for private(n,m,nm,q,nQ,mQ,dist)
+for(nm=0; nm<(N*M); nm++){
+  n = nm/M;
+  m = nm%M; 
+  nQ = n*Q;
+  mQ = m*Q;
+  for(q=0; q<Q; q++){
+    dist = X[nQ+q]-X2[mQ+q];
+    grad[q] += tmp[nm]*dist*dist;
+  }
+}
+} //lengthscale_grads
+
 
 void _lengthscale_grads(int N, int M, int Q, double* tmp, double* X, double* X2, double* grad){
 int n,m,q;
@@ -30,6 +46,8 @@ for(q=0; q<Q; q++){
   grad[q] = gradq;
 }
 } //lengthscale_grads
+
+
 
 
 

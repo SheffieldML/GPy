@@ -15,19 +15,19 @@ def safe_root(N):
     return j
 
 def _flat_to_triang_pure(flat_mat):
-    D, N = flat_mat.shape
+    N, D = flat_mat.shape
     M = (-1 + safe_root(8*N+1))//2
     ret = np.zeros((D, M, M))
     for d in range(D):
         count = 0
         for m in range(M):
             for mm in range(m+1):
-              ret[d,m, mm] = flat_mat[d, count];
+              ret[d,m, mm] = flat_mat[count, d];
               count = count+1
     return ret
 
 def _flat_to_triang_cython(flat_mat):
-    D, N = flat_mat.shape
+    N, D = flat_mat.shape
     M = (-1 + safe_root(8*N+1))//2
     return choleskies_cython.flat_to_triang(flat_mat, M)
 
@@ -36,12 +36,12 @@ def _triang_to_flat_pure(L):
     D, _, M = L.shape
 
     N = M*(M+1)//2
-    flat = np.empty((D, N))
+    flat = np.empty((N, D))
     for d in range(D):
         count = 0;
         for m in range(M):
             for mm in range(m+1):
-                flat[d,count] = L[d, m, mm]
+                flat[count,d] = L[d, m, mm]
                 count = count +1
     return flat
 

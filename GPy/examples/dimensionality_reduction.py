@@ -359,7 +359,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
 
     if optimize:
         print("Optimizing model:")
-        m.optimize('scg', messages=verbose, max_iters=max_iters,
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
         m.X.plot("SSGPLVM Latent Space 1D")

@@ -179,15 +179,15 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             n.parameters[dc['variance']._parent_index_] = dc['variance']
             n.parameters[dc['binary_prob']._parent_index_] = dc['binary_prob']
             n._gradient_array_ = None
-            oversize = self.size - self.mean.size - self.variance.size
-            n.size = n.mean.size + n.variance.size + oversize
+            oversize = self.size - self.mean.size - self.variance.size - self.gamma.size
+            n.size = n.mean.size + n.variance.size + n.gamma.size + oversize
             n.ndim = n.mean.ndim
             n.shape = n.mean.shape
             n.num_data = n.mean.shape[0]
             n.input_dim = n.mean.shape[1] if n.ndim != 1 else 1
             return n
         else:
-            return super(VariationalPrior, self).__getitem__(s)
+            return super(SpikeAndSlabPosterior, self).__getitem__(s)
 
     def plot(self, *args, **kwargs):
         """

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import GPy.models.state_space_new as SS_new
 
-X = np.linspace(0, 10, 4000)[:, None]
+X = np.linspace(0, 10, 2000)[:, None]
 Y = np.sin(X) + np.random.randn(*X.shape)*0.1
 
 # Need to run these lines when X and Y are imported ->
@@ -23,14 +23,14 @@ Y = np.sin(X) + np.random.randn(*X.shape)*0.1
 #plt.plot( X, Y)
 #plt.show()
 
-#kernel = GPy.kern.Matern32(X.shape[1])
-#m = GPy.models.StateSpace(X,Y, kernel)
+kernel = GPy.kern.Matern32(X.shape[1])
+m = GPy.models.StateSpace(X,Y, kernel)
+
+print m
 #
-#print m
-##
-#m.optimize(optimizer='bfgs',messages=True)
-##
-#print m
+m.optimize(optimizer='bfgs',messages=True)
+#
+print m
 
 kernel1 = GPy.kern.Matern32(X.shape[1])
 m1  = GPy.models.GPRegression(X,Y, kernel1)

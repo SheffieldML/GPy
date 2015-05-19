@@ -25,6 +25,7 @@ import pylab as pb
 from GPy.core.parameterization.param import Param
 
 import GPy
+from .. import likelihoods
 import GPy.models.state_space_main as ssm
 #import state_space_main as ssm
 reload(ssm)
@@ -45,17 +46,16 @@ class StateSpace(Model):
         self.Y = Y[sort_index]
 
         # Noise variance
-        self.sigma2 = Param('Gaussian_noise', sigma2)
-        self.link_parameter(self.sigma2)
-
+        self.likelihood = likelihoods.Gaussian()
+        
         # Default kernel
         if kernel is None:
             self.kern = kern.Matern32(1)
         else:
             self.kern = kernel
         self.link_parameter(self.kern)
-
-        self.sigma2.constrain_positive()
+        self.link_parameter(self.likelihood)
+        self.posterior = None
 
         # Assert that the kernel is supported
         if not hasattr(self.kern, 'sde'):
@@ -98,7 +98,7 @@ class StateSpace(Model):
         grad_calc_params['dR'] = dR
         
         (filter_means, filter_covs, log_likelihood, 
-         grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,self.sigma2,P_inf,self.X,self.Y,m_init=None,
+         grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,self.Gaussian_noise.variance,P_inf,self.X,self.Y,m_init=None,
                                       P_init=None, calc_log_likelihood=True, 
                                       calc_grad_log_likelihood=True, 
                                       grad_params_no=grad_params_no, 
@@ -106,9 +106,10 @@ class StateSpace(Model):
                       
         self._log_marginal_likelihood = log_likelihood
         #gradients  = self.compute_gradients()
-        self.sigma2.gradient_full[:] = grad_log_likelihood[-1,0]
-        self.kern.gradient_full[:] = grad_log_likelihood[:-1,0]
-
+        self.likelihood.update_gradients(grad_log_likelihood[-1,0])
+        
+        self.kern.sde_update_gradient_full(grad_log_likelihood[:-1,0])
+        
     def log_likelihood(self):
         return self._log_marginal_likelihood
 

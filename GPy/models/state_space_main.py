@@ -723,7 +723,7 @@ class DescreteStateSpace(object):
                                          v*v / S)
                      log_likelihood_update = log_likelihood_update[0,0] # to make int
                      if np.isnan(log_likelihood_update):
-                         pass
+                         raise ValueError("Errrrr 1")
                  LL = None; islower = None
              else:
                  LL,islower = linalg.cho_factor(S)
@@ -806,7 +806,7 @@ class DescreteStateSpace(object):
              P_upd = K.dot(S).dot(K.T)
              P_upd = 0.5*(P_upd + P_upd.T)
              P_upd =  P_pred - P_upd# this update matrix is symmetric
-        
+         
              return m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update
     
     @staticmethod
@@ -1278,7 +1278,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             dQc = None
             dH = None
             dR = None
-        
+            
             
         # TODO: Defaults for m_init, P_init, dm_init, dP_init. !!!
         # Also for dH, dR and probably for all derivatives

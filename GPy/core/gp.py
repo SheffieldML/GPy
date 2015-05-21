@@ -208,8 +208,7 @@ class GP(Model):
             Kxx = kern.Kdiag(_Xnew)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
-
-        var[var<0.] = 0.
+            var[var<0.] = 0.
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]

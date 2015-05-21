@@ -353,9 +353,9 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     # k = kern.RBF(Q, ARD=True, lengthscale=10.)
-    m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
+    m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
     m.X.variance[:] = _np.random.uniform(0, .01, m.X.shape)
-    m.likelihood.variance = .1
+    m.likelihood.variance = .01
 
     if optimize:
         print("Optimizing model:")

@@ -7,7 +7,7 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import kern
 from ..core.parameterization import Param
 from ..likelihoods import Gaussian
-from ..core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior
+from ..core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..kern._src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 
@@ -15,13 +15,13 @@ class IBPPosterior(SpikeAndSlabPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
     '''
-    def __init__(self, means, variances, binary_prob, tau,   name='latent space'):
+    def __init__(self, means, variances, binary_prob, tau=None,   name='latent space'):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        from ..core.parameterization.transformations import Logexp, __fixed__
-        super(IBPPosterior, self).__init__(means, variances, name)
-        self.tau   = Param("tau",SpikeAndSlabPosterior, Logexp)
+        from ..core.parameterization.transformations import Logexp
+        super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
+        self.tau = Param("tau_", np.ones((self.gamma_group.shape[0],2)), Logexp())
         self.link_parameter(self.tau)
 
     def set_gradients(self, grad):
@@ -35,7 +35,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
             dc['mean'] = self.mean[s]
             dc['variance'] = self.variance[s]
             dc['binary_prob'] = self.binary_prob[s]
-            dc['tau'] = self.tau[s]
+            dc['tau'] = self.tau
             dc['parameters'] = copy.copy(self.parameters)
             n.__dict__.update(dc)
             n.parameters[dc['mean']._parent_index_] = dc['mean']
@@ -53,16 +53,17 @@ class IBPPosterior(SpikeAndSlabPosterior):
         else:
             return super(IBPPosterior, self).__getitem__(s)
 
-class IBPPrior(SpikeAndSlabPrior):
+class IBPPrior(VariationalPrior):
     def __init__(self, input_dim, alpha =2., name='IBPPrior', **kw):
-        super(SpikeAndSlabPrior, self).__init__(name=name, **kw)
+        super(IBPPrior, self).__init__(name=name, **kw)
         from ..core.parameterization.transformations import Logexp, __fixed__  
         self.input_dim = input_dim
+        self.variance = 1.
         self.alpha = Param('alpha', alpha, __fixed__)
         self.link_parameter(self.alpha)
 
     def KL_divergence(self, variational_posterior):
-        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
+        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma_group.values, variational_posterior.tau.values
             
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
@@ -77,18 +78,17 @@ class IBPPrior(SpikeAndSlabPrior):
         return part1+part2
 
     def update_gradients_KL(self, variational_posterior):
-        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
+        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma_group.values, variational_posterior.tau.values
 
-        variational_posterior.binary_prob.gradient -= ((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
-        mu.gradient -= gamma*mu/self.variance
-        S.gradient -= (1./self.variance - 1./S) * gamma /2.
-        if self.learnPi:
-            if len(self.pi)==1:
-                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
-            elif len(self.pi.shape)==1:
-                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
-            else:
-                self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))
+        variational_posterior.mean.gradient -= gamma*mu/self.variance
+        variational_posterior.variance.gradient -= (1./self.variance - 1./S) * gamma /2.
+        from scipy.special import digamma,polygamma
+        dgamma = (np.log(gamma/(1.-gamma))+ digamma(tau[:,1])-digamma(tau[:,0]))/mu.shape[0]
+        variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        ad = self.alpha/self.input_dim
+        common = (ad+2-tau[:,0]-tau[:,1])*polygamma(1,tau.sum(axis=1))
+        variational_posterior.tau.gradient[:,0] = -((tau[:,0]-gamma-ad)*polygamma(1,tau[:,0])+common)
+        variational_posterior.tau.gradient[:,1] = -((tau[:,1]+gamma-2)*polygamma(1,tau[:,1])+common)
 
 class SSGPLVM(SparseGP_MPI):
     """
@@ -103,7 +103,7 @@ class SSGPLVM(SparseGP_MPI):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, mpi_comm=None, pi=None, learnPi=False,normalizer=False, **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False, alpha=2., tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, **kwargs):
 
         self.group_spike = group_spike
         
@@ -144,10 +144,14 @@ class SSGPLVM(SparseGP_MPI):
         if pi is None:
             pi = np.empty((input_dim))
             pi[:] = 0.5
-        self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike) # the prior probability of the latent binary variable b
-        
-        X = SpikeAndSlabPosterior(X, X_variance, gamma, group_spike=group_spike)
-                
+            
+        if IBP:
+            self.variational_prior = IBPPrior(input_dim=input_dim, alpha=alpha)
+            X = IBPPosterior(X, X_variance, gamma, tau=tau)
+        else:
+            self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike) # the prior probability of the latent binary variable b
+            X = SpikeAndSlabPosterior(X, X_variance, gamma, group_spike=group_spike)
+
         super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
         self.link_parameter(self.X, index=0)
         

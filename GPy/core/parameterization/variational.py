@@ -172,11 +172,11 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.group_spike = group_spike
         if group_spike:
-            self.gamma_group = Param("binary_prob_group",binary_prob.mean(axis=0),Logistic(0.,1.))
+            self.gamma_group = Param("binary_prob_group",binary_prob.mean(axis=0),Logistic(1e-6,1.-1e-6))
             self.gamma = Param("binary_prob",binary_prob, __fixed__)
             self.link_parameters(self.gamma_group,self.gamma)
         else:
-            self.gamma = Param("binary_prob",binary_prob,Logistic(0.,1.))
+            self.gamma = Param("binary_prob",binary_prob,Logistic(1e-6,1.-1e-6))
             self.link_parameter(self.gamma)
             
     def propogate_val(self):

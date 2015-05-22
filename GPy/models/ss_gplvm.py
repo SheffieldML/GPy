@@ -15,12 +15,16 @@ class IBPPosterior(SpikeAndSlabPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
     '''
-    def __init__(self, means, variances, binary_prob, tau=None,   name='latent space'):
+    def __init__(self, means, variances, binary_prob, tau=None,  sharedX=False, name='latent space'):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
         from ..core.parameterization.transformations import Logexp
         super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
+        self.sharedX = sharedX
+        if sharedX:
+            self.mean.fix(warning=False)
+            self.variance.fix(warning=False)
         self.tau = Param("tau_", np.ones((self.gamma_group.shape[0],2)), Logexp())
         self.link_parameter(self.tau)
 
@@ -83,7 +87,7 @@ class IBPPrior(VariationalPrior):
         variational_posterior.mean.gradient -= gamma*mu/self.variance
         variational_posterior.variance.gradient -= (1./self.variance - 1./S) * gamma /2.
         from scipy.special import digamma,polygamma
-        dgamma = (np.log(gamma/(1.-gamma))+ digamma(tau[:,1])-digamma(tau[:,0]))/mu.shape[0]
+        dgamma = (np.log(gamma/(1.-gamma))+ digamma(tau[:,1])-digamma(tau[:,0]))/variational_posterior.num_data
         variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         ad = self.alpha/self.input_dim
         common = (ad+2-tau[:,0]-tau[:,1])*polygamma(1,tau.sum(axis=1))
@@ -103,17 +107,17 @@ class SSGPLVM(SparseGP_MPI):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False, alpha=2., tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, **kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False, alpha=2., tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, sharedX=False, variational_prior=None,**kwargs):
 
         self.group_spike = group_spike
+        self.init = init
+        self.sharedX = sharedX
         
         if X == None:
             from ..util.initialization import initialize_latent
             X, fracs = initialize_latent(init, input_dim, Y)
         else:
             fracs = np.ones(input_dim)
-
-        self.init = init
 
         if X_variance is None: # The variance of the variational approximation (S)
             X_variance = np.random.uniform(0,.1,X.shape)
@@ -146,11 +150,11 @@ class SSGPLVM(SparseGP_MPI):
             pi[:] = 0.5
             
         if IBP:
-            self.variational_prior = IBPPrior(input_dim=input_dim, alpha=alpha)
-            X = IBPPosterior(X, X_variance, gamma, tau=tau)
+            self.variational_prior = IBPPrior(input_dim=input_dim, alpha=alpha) if variational_prior is None else variational_prior
+            X = IBPPosterior(X, X_variance, gamma, tau=tau,sharedX=sharedX)
         else:
-            self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike) # the prior probability of the latent binary variable b
-            X = SpikeAndSlabPosterior(X, X_variance, gamma, group_spike=group_spike)
+            self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike)  if variational_prior is None else variational_prior
+            X = SpikeAndSlabPosterior(X, X_variance, gamma, group_spike=group_spike,sharedX=sharedX)
 
         super(SSGPLVM,self).__init__(X, Y, Z, kernel, likelihood, variational_prior=self.variational_prior, inference_method=inference_method, name=name, mpi_comm=mpi_comm, normalizer=normalizer, **kwargs)
         self.link_parameter(self.X, index=0)
@@ -163,8 +167,12 @@ class SSGPLVM(SparseGP_MPI):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient, X.binary_prob.gradient
 
+    def _propogate_X_val(self):
+        pass
+
     def parameters_changed(self):
         self.X.propogate_val()
+        if self.sharedX: self._highest_parent_._propogate_X_val()
         super(SSGPLVM,self).parameters_changed()
         if isinstance(self.inference_method, VarDTC_minibatch):
             self.X.collate_gradient()

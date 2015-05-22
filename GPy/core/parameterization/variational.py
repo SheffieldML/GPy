@@ -80,7 +80,7 @@ class SpikeAndSlabPrior(VariationalPrior):
             pi = self.pi
 
         if self.group_spike:
-            dgamma = np.log((1-pi)/pi*gamma/(1.-gamma))/mu.shape[0]
+            dgamma = np.log((1-pi)/pi*gamma/(1.-gamma))/variational_posterior.num_data
         else:
             dgamma = np.log((1-pi)/pi*gamma/(1.-gamma))
         variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
@@ -165,12 +165,16 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
     '''
-    def __init__(self, means, variances, binary_prob, group_spike=False, name='latent space'):
+    def __init__(self, means, variances, binary_prob, group_spike=False, sharedX=False, name='latent space'):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.group_spike = group_spike
+        self.sharedX = sharedX
+        if sharedX:
+            self.mean.fix(warning=False)
+            self.variance.fix(warning=False)
         if group_spike:
             self.gamma_group = Param("binary_prob_group",binary_prob.mean(axis=0),Logistic(1e-6,1.-1e-6))
             self.gamma = Param("binary_prob",binary_prob, __fixed__)
@@ -181,7 +185,7 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             
     def propogate_val(self):
         if self.group_spike:
-            self.gamma.param_array.values.reshape(self.gamma.shape)[:] = self.gamma_group.values
+            self.gamma.values[:] = self.gamma_group.values
     
     def collate_gradient(self):
         if self.group_spike:

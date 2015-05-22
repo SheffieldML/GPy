@@ -143,7 +143,7 @@ class Likelihood(Parameterized):
 
         p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
                            for yi, mi, vi, yi_m in zipped_values])
-        p_ystar = np.array(p_ystar).reshape(-1, 1)
+        p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
 
     def log_predictive_density_sampling(self, y_test, mu_star, var_star, Y_metadata=None, num_samples=1000):
@@ -173,6 +173,7 @@ class Likelihood(Parameterized):
 
         from scipy.misc import logsumexp
         log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
+        log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
 
 

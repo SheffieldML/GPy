@@ -208,6 +208,7 @@ class GP(Model):
             Kxx = kern.Kdiag(_Xnew)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
+            var[var<0.] = 0.
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]
@@ -229,13 +230,14 @@ class GP(Model):
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
-        :returns: (mean, var, lower_upper):
+        :returns: (mean, var):
             mean: posterior mean, a Numpy array, Nnew x self.input_dim
             var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-            lower_upper: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
+
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
@@ -255,7 +257,7 @@ class GP(Model):
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
         :returns: list of quantiles for each X and predictive quantiles for interval combination
-        :rtype: [np.ndarray (Xnew x self.input_dim), np.ndarray (Xnew x self.input_dim)]
+        :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
         m, v = self._raw_predict(X,  full_cov=False)
         if self.normalizer is not None:

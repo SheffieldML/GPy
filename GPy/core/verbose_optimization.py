@@ -5,9 +5,10 @@ from __future__ import print_function
 import numpy as np
 import sys
 import time
+import datetime
 
 def exponents(fnow, current_grad):
-    exps = [np.abs(np.float(fnow)), current_grad]
+    exps = [np.abs(np.float(fnow)), 1 if current_grad is np.nan else current_grad]
     return np.sign(exps) * np.log10(exps).astype(int)
 
 class VerboseOptimization(object):
@@ -23,6 +24,7 @@ class VerboseOptimization(object):
             self.model.add_observer(self, self.print_status)
             self.status = 'running'
             self.clear = clear_after_finish
+            self.deltat = .2
 
             self.update()
 
@@ -44,25 +46,25 @@ class VerboseOptimization(object):
                 self.hor_align = FlexBox(children = [left_col, right_col], width='100%', orientation='horizontal')
 
                 display(self.hor_align)
-                                
+
                 try:
                     self.text.set_css('width', '100%')
                     left_col.set_css({
                              'padding': '2px',
                              'width': "100%",
                              })
-    
+
                     right_col.set_css({
                              'padding': '2px',
                              })
-    
+
                     self.hor_align.set_css({
                              'width': "100%",
                              })
 
                     self.hor_align.remove_class('vbox')
                     self.hor_align.add_class('hbox')
-    
+
                     left_col.add_class("box-flex1")
                     right_col.add_class('box-flex0')
 
@@ -74,16 +76,31 @@ class VerboseOptimization(object):
             else:
                 self.exps = exponents(self.fnow, self.current_gradient)
                 print('Running {} Code:'.format(self.opt_name))
-                print(' {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "secs", mi=self.len_maxiters))
+                print('  {3:7s}   {0:{mi}s}   {1:11s}    {2:11s}'.format("i", "f", "|g|", "runtime", mi=self.len_maxiters))
 
     def __enter__(self):
         self.start = time.time()
         return self
 
-    def print_out(self):
+    def print_out(self, seconds):
+        if seconds<60:
+            ms = (seconds%1)*100
+            self.timestring = "{s:0>2d}s{ms:0>2d}".format(s=int(seconds), ms=int(ms))
+        else:
+            m, s = divmod(seconds, 60)
+            if m>59:
+                h, m = divmod(m, 60)
+                if h>23:
+                    d, h = divmod(h, 24)
+                    self.timestring = '{d:0>2d}d{h:0>2d}h{m:0>2d}'.format(m=int(m), h=int(h), d=int(d))
+                else:
+                    self.timestring = '{h:0>2d}h{m:0>2d}m{s:0>2d}'.format(m=int(m), s=int(s), h=int(h))
+            else:
+                ms = (seconds%1)*100
+                self.timestring = '{m:0>2d}m{s:0>2d}s{ms:0>2d}'.format(m=int(m), s=int(s), ms=int(ms))
         if self.ipython_notebook:
             names_vals = [['optimizer', "{:s}".format(self.opt_name)],
-                          ['runtime [s]', "{:> g}".format(time.time()-self.start)],
+                          ['runtime', "{:>s}".format(self.timestring)],
                           ['evaluation', "{:>0{l}}".format(self.iteration, l=self.len_maxiters)],
                           ['objective', "{: > 12.3E}".format(self.fnow)],
                           ['||gradient||', "{: >+12.3E}".format(float(self.current_gradient))],
@@ -120,14 +137,18 @@ class VerboseOptimization(object):
                 if b:
                     self.exps = n_exps
             print('\r', end=' ')
-            print('{3:> 7.2g}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), time.time()-self.start, mi=self.len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+            print('{3:}  {0:>0{mi}g}  {1:> 12e}  {2:> 12e}'.format(self.iteration, float(self.fnow), float(self.current_gradient), "{:>8s}".format(self.timestring), mi=self.len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
             sys.stdout.flush()
 
     def print_status(self, me, which=None):
         self.update()
 
+        seconds = time.time()-self.start
         #sys.stdout.write(" "*len(self.message))
-        self.print_out()
+        self.deltat += seconds
+        if self.deltat > .2:
+            self.print_out(seconds)
+            self.deltat = 0
 
         self.iteration += 1
 
@@ -153,12 +174,12 @@ class VerboseOptimization(object):
         if self.verbose:
             self.stop = time.time()
             self.model.remove_observer(self)
-            self.print_out()
+            self.print_out(self.stop - self.start)
 
             if not self.ipython_notebook:
                 print()
-                print('Optimization finished in {0:.5g} Seconds'.format(self.stop-self.start))
-                print('Optimization status: {0}'.format(self.status))             
+                print('Runtime: {}'.format("{:>9s}".format(self.timestring)))
+                print('Optimization status: {0}'.format(self.status))
                 print()
             elif self.clear:
                 self.hor_align.close()

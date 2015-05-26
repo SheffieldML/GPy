@@ -9,8 +9,8 @@ These tests make sure that the opure python and cython codes work the same
 
 class CythonTestChols(np.testing.TestCase):
     def setUp(self):
-        self.flat = np.random.randn(45, 5)
-        self.triang = np.dstack([np.eye(20)[:,:,None] for i in range(3)])
+        self.flat = np.random.randn(45,5)
+        self.triang = np.array([np.eye(20) for i in range(3)])
     def test_flat_to_triang(self):
         L1 = choleskies._flat_to_triang_pure(self.flat)
         L2 = choleskies._flat_to_triang_cython(self.flat)

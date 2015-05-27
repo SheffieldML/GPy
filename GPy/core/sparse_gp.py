@@ -133,7 +133,7 @@ class SparseGP(GP):
                     var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
                 elif self.posterior.woodbury_inv.ndim == 3:
                     var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
-                    for i in range(var.shape[1]):
+                    for i in range(var.shape[2]):
                         var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
                 var = var
             else:

@@ -430,23 +430,37 @@ class Indexable(Nameable, Updateable):
 
     def log_prior(self):
         """evaluate the prior"""
-        if self.priors.size > 0:
-            x = self.param_array
-            #py3 fix
-            #return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.iteritems()), 0)
-            return reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.items()), 0)
-        return 0.
+        if self.priors.size == 0:
+            return 0.
+        x = self.param_array
+	#evaluate the prior log densities
+        log_p = reduce(lambda a, b: a + b, (p.lnpdf(x[ind]).sum() for p, ind in self.priors.items()), 0)
 
+	#account for the transformation by evaluating the log Jacobian (where things are transformed)
+	log_j = 0.
+	priored_indexes = np.hstack([i for p, i in self.priors.items()])
+        for c,j in self.constraints.items():
+            for jj in j:
+                if jj in priored_indexes:
+                    log_j += c.log_jacobian(x[jj])
+	return log_p + log_j
+
+	    
     def _log_prior_gradients(self):
         """evaluate the gradients of the priors"""
-        if self.priors.size > 0:
-            x = self.param_array
-            ret = np.zeros(x.size)
-            #py3 fix
-            #[np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.iteritems()]
-            [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.items()]
-            return ret
-        return 0.
+        if self.priors.size == 0:
+            return 0.
+        x = self.param_array
+        ret = np.zeros(x.size)
+	#compute derivate of prior density
+        [np.put(ret, ind, p.lnpdf_grad(x[ind])) for p, ind in self.priors.items()]
+	#add in jacobian derivatives if transformed
+	priored_indexes = np.hstack([i for p, i in self.priors.items()])
+        for c,j in self.constraints.items():
+            for jj in j:
+                if jj in priored_indexes:
+                    ret[jj] += c.log_jacobian_grad(x[jj])
+	return ret
 
     #===========================================================================
     # Tie parameters together

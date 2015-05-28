@@ -89,7 +89,6 @@ class GP(Model):
             assert mean_function.output_dim == self.output_dim
             self.link_parameter(mean_function)
 
-
         #find a sensible inference method
         logger.info("initializing inference method")
         if inference_method is None:

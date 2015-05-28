@@ -22,8 +22,8 @@ class SVGP(LatentFunctionInference):
         Sv = np.zeros((num_outputs, num_inducing, num_inducing))
         for i in range(num_outputs):
             Sv[i] = Lv[i].dot(Lv[i].T)
-        logdetS = np.array([2.*np.sum(np.log(np.abs(np.diag(Lv[i,:,:])))) for i in range(Lv.shape[0])])
-        traceS = np.array([np.sum(np.square(np.diag(Lv[i,:,:]))) for i in range(Lv.shape[0])])
+        logdetS = np.array([2.*np.sum(np.log(np.abs(np.diag(Lv[i])))) for i in range(num_outputs)])
+        traceS = np.array([np.sum(np.square(np.diag(Lv[i]))) for i in range(num_outputs)])
 
 
         #compute kernel related stuff
@@ -43,7 +43,7 @@ class SVGP(LatentFunctionInference):
         var += (Knn_diag - np.sum(np.square(A),1))[:,None]
 
         #compute the KL term
-        KL = -0.5*logdetS.sum() + 0.5*np.sum(np.square(q_v_mean)) + 0.5*traceS.sum()
+        KL = -0.5*logdetS.sum() + 0.5*np.sum(np.square(q_v_mean)) + 0.5*traceS.sum() - 0.5*num_inducing*output_dim
         dL_dmv = -q_v_mean*1
         dL_dL = np.zeros_like(Lv)
         for i in range(num_outputs):
@@ -75,7 +75,7 @@ class SVGP(LatentFunctionInference):
 
         #L
         for i in range(num_outputs):
-            dL_dL[i] += 2*np.dot(Lv[i].T, A.T).dot(A*dF_dv[:,i][:,None]).T
+            dL_dL[i] += 2.*np.dot(Lv[i].T, A.T).dot(A*dF_dv[:,i][:,None]).T
 
         #R
         dL_dR,_ = linalg.dtrtrs(R, -dL_dA_via_v.T.dot(A), trans=1, lower=1)

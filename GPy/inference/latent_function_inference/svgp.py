@@ -44,59 +44,61 @@ class SVGP(LatentFunctionInference):
 
         #compute the KL term
         KL = -0.5*logdetS.sum() + 0.5*np.sum(np.square(q_v_mean)) + 0.5*traceS.sum()
-        dL_dmv = q_v_mean*1
+        dL_dmv = -q_v_mean*1
         dL_dL = np.zeros_like(Lv)
-        for k in range(num_outputs):
+        for i in range(num_outputs):
             Lii = np.diagonal(Lv[i])
-            diag = np.diagonal(dL_dL[i])
-            diag = Lii - 1./Lii # write in place, need numpy 1.9+
+            dL_dL[i] -= np.diag(Lii - 1./Lii)
 
         #quadrature for the likelihood
         F, dF_dmu, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, mu, var, Y_metadata=Y_metadata)
 
         #rescale the F term if working on a batch
         F, dF_dmu, dF_dv =  F*batch_scale, dF_dmu*batch_scale, dF_dv*batch_scale
+
+        #sum over the data for the gradients of the likelihood parameters
         if dF_dthetaL is not None:
             dF_dthetaL =  dF_dthetaL.sum(1).sum(1)*batch_scale
 
         #mv
         dL_dmv += A.T.dot(dF_dmu)
 
+        # A
+        dL_dA_via_v = np.zeros(A.shape)
+        for i in range(num_outputs):
+            dL_dA_via_v += -2*(np.eye(num_inducing) - Sv[i]).dot(A.T * dF_dv[:,i]).T
+
         #Kfu
         RiTm, _ = linalg.dtrtrs(R, q_v_mean, lower=1, trans=1)
-        dL_dKmn = np.zeros((num_inducing, num_data))
-        for i in range(num_outputs):
-            tmp, _ = linalg.dtrtrs(R, np.eye(num_inducing)-Sv[i], trans=1, lower=1)
-            dL_dKmn += -2*np.dot(tmp, A.T*dF_dv[:,i])
+        dL_dKmn, _ = linalg.dtrtrs(R, dL_dA_via_v.T, trans=1, lower=1)
         dL_dKmn += np.dot(RiTm, dF_dmu.T)
 
         #L
         for i in range(num_outputs):
-            dL_dL[i] += np.dot(Lv[i].T, A.T).dot(A*dF_dv[:,i][:,None])
+            dL_dL[i] += 2*np.dot(Lv[i].T, A.T).dot(A*dF_dv[:,i][:,None]).T
 
         #R
-        dL_dR = np.zeros((num_inducing, num_inducing))
-        for i in range(num_outputs):
-            tmp = np.eye(num_inducing) - Sv[i]
-            tmp = np.dot(tmp, A.T)
-            tmp = np.dot(tmp, A*dF_dv[:,i][:,None])
-            tmp, _ = linalg.dtrtrs(R, tmp, trans=1, lower=1)
-            dL_dR += 2*tmp.T
-        dL_dR -= A.T.dot(dF_dmu).dot(RiTm.T)
+        dL_dR,_ = linalg.dtrtrs(R, -dL_dA_via_v.T.dot(A), trans=1, lower=1)
+        dL_dR -= A.T.dot(dF_dmu).dot(RiTm.T).T
 
         #backprop dL_dR for dL_dKmm
         dL_dKmm = choleskies.backprop_gradient(dL_dR, R)
 
+        dL_dKdiag = dF_dv.sum(1)
 
         #sum (gradients of) expected likelihood and KL part
         log_marginal = F.sum() - KL
 
         dL_dchol = choleskies.triang_to_flat(dL_dL)
 
-        grad_dict = {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dF_dv.sum(1), 'dL_dm':dL_dmv, 'dL_dchol':dL_dchol, 'dL_dthetaL':dF_dthetaL}
-        if mean_function is not None:
-            grad_dict['dL_dmfZ'] = dF_dmfZ - dKL_dmfZ
-            grad_dict['dL_dmfX'] = dF_dmfX
+        grad_dict = {'dL_dKmm':dL_dKmm, 'dL_dKmn':dL_dKmn, 'dL_dKdiag': dL_dKdiag, 'dL_dm':dL_dmv, 'dL_dchol':dL_dchol, 'dL_dthetaL':dF_dthetaL}
 
+        #get the posterior in terms of u for GPy compat.
         q_u_mean = np.dot(R, q_v_mean)
-        return Posterior(mean=q_u_mean, cov=Sv.T, K=Kmm, prior_mean=0.), log_marginal, grad_dict
+
+        Su = Sv.copy()
+        for i in range(num_outputs):
+            Su[i] = np.dot(R, Sv[i]).dot(R.T)
+
+
+        return Posterior(mean=q_u_mean, cov=Su.T, K=Kmm, prior_mean=0.), log_marginal, grad_dict

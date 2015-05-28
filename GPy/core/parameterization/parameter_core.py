@@ -440,6 +440,7 @@ class Indexable(Nameable, Updateable):
 	log_j = 0.
 	priored_indexes = np.hstack([i for p, i in self.priors.items()])
         for c,j in self.constraints.items():
+            if c is 'fixed':continue
             for jj in j:
                 if jj in priored_indexes:
                     log_j += c.log_jacobian(x[jj])

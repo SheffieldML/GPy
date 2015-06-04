@@ -31,6 +31,16 @@ class Transformation(object):
         raise NotImplementedError
     def finv(self, model_param):
         raise NotImplementedError
+    def log_jacobian(self, model_param):
+        """
+        compute the log of the jacobian of f, evaluated at f(x)= model_param
+        """
+	raise NotImplementedError
+    def log_jacobian_grad(self, model_param):
+        """
+        compute the drivative of the log of the jacobian of f, evaluated at f(x)= model_param
+        """
+	raise NotImplementedError
     def gradfactor(self, model_param, dL_dmodel_param):
         """ df(opt_param)_dopt_param evaluated at self.f(opt_param)=model_param, times the gradient dL_dmodel_param,
 
@@ -74,8 +84,32 @@ class Logexp(Transformation):
         if np.any(f < 0.):
             print("Warning: changing parameters to satisfy constraints")
         return np.abs(f)
+    def log_jacobian(self, model_param):
+        return np.where(model_param>_lim_val, model_param, np.log(np.exp(model_param+1e-20) - 1.)) - model_param
+    def log_jacobian_grad(self, model_param):
+        return 1./(np.exp(model_param)-1.)
     def __str__(self):
         return '+ve'
+
+class Exponent(Transformation):
+    domain = _POSITIVE
+    def f(self, x):
+        return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
+    def finv(self, x):
+        return np.log(x)
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, f)
+    def initialize(self, f):
+        if np.any(f < 0.):
+            print("Warning: changing parameters to satisfy constraints")
+        return np.abs(f)
+    def log_jacobian(self, model_param):
+        return np.log(model_param)
+    def log_jacobian_grad(self, model_param):
+        return 1./model_param
+    def __str__(self):
+        return '+ve'
+
 
 
 class NormalTheta(Transformation):
@@ -416,22 +450,6 @@ class LogexpClipped(Logexp):
         return np.abs(f)
     def __str__(self):
         return '+ve_c'
-
-class Exponent(Transformation):
-    # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.
-    domain = _POSITIVE
-    def f(self, x):
-        return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
-    def finv(self, x):
-        return np.log(x)
-    def gradfactor(self, f, df):
-        return np.einsum('i,i->i', df, f)
-    def initialize(self, f):
-        if np.any(f < 0.):
-            print("Warning: changing parameters to satisfy constraints")
-        return np.abs(f)
-    def __str__(self):
-        return '+ve'
 
 class NegativeExponent(Exponent):
     domain = _NEGATIVE

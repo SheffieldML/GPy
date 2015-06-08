@@ -100,7 +100,7 @@ def indexes_to_fix_for_low_rank(rank, size):
 if config.getboolean('cython', 'working'):
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
-    backprop_gradient = choleskies_cython.backprop_gradient
+    backprop_gradient = choleskies_cython.backprop_gradient_par_c
 else:
     backprop_gradient = _backprop_gradient_pure
     triang_to_flat =  _triang_to_flat_pure

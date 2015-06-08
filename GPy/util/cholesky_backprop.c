@@ -1,22 +1,32 @@
+#include <omp.h>
+double mydot(int n, double* a,  int stride_a, double* b, int stride_b){
+    double ret = 0;	
+    for(int i=0; i<n; i++){
+	ret += a[i*stride_a]*b[i*stride_b];
+    }
+    return ret;
+}
 
-void chol_backprop(int N, double* dL, double* L){
+
+void chol_backprop(int N, double* dL, double* U){
     //at the input to this fn, dL is df_dL. after this fn is complet, dL is df_dK
-    int i,j,k;
-    for(k=N-1;k>(-1);k--){
-        #pragma omp parallel for private(i,j)
-        for(i=k+1;i<N; i++){
-            for(j=k+1;j<(i+1);j++){
-                dL[i*N + k] -= dL[i *N + j] * L[j*N + k];
-	    }
-            for(j=i;j<N;j++){
-                dL[i*N + k] -= dL[j*N + i] * L[j*N +k];
-	    }
+    int iN, kN;
+    for(int k=N-1;k>(-1);k--){
+	kN = k*N;
+        #pragma omp parallel for private(iN)
+        for(int i=k+1; i<N; i++){
+	    iN = i*N;
+	    dL[iN+k] -= mydot(i-k, &dL[iN+k+1], 1, &U[kN+k+1], 1);
+	    dL[iN+k] -= mydot(N-i, &dL[iN+i], N, &U[kN+i],  1);
+
 	}
-        for(i=k + 1; i<N; i++){
-            dL[i*N + k] /= L[k*N + k];
-            dL[k*N + k] -= L[i*N + k] * dL[i*N + k];
+        for(int i=(k + 1); i<N; i++){
+	    iN = i*N;
+            dL[iN + k] /= U[kN + k];
+            dL[kN + k] -= U[kN + i] * dL[iN + k];
 	}
-        dL[k*N + k] /= (2. * L[k*N + k]);
+
+        dL[kN + k] /= (2. * U[kN + k]);
     }
 }
 

@@ -87,25 +87,21 @@ def backprop_gradient_par_c(np.ndarray[double, ndim=2] dL, np.ndarray[double, nd
         chol_backprop(N, <double*> dL_dK.data, <double*> L.data)
     return dL_dK
 
+cdef extern from "cholesky_backprop.h" nogil:
+    void old_chol_backprop(int N, double* dL, double* L)
 
-# TODO: with the next release of cython, cimport scipy.linalg.cython_blas as blas, then blas the hell out of this.
-def backprop_gradient_par2(double[:,:] dL, double[:,:] L):
-    """
-    a very slow implementation, but the clearest I hope
-    """
-    cdef double[:,:] dL_dK = np.tril(dL).copy()
+def backprop_gradient_par_c_old(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
+    cdef np.ndarray[double, ndim=2] dL_dK = np.tril(dL) # makes a copy, c-contig
     cdef int N = L.shape[0]
-    cdef int k, j, i, iN, kN
-    for k in range(N - 1, -1, -1):
-        #pragma this loop:
-        for i in range(k+1, N):
-            dL_dK[i,+k] -= np.dot(dL_dK[i,k+1:], L[k+1:,k])
-            dL_dK[i,+k] -= np.dot(dL_dK[i:,i], L[i:,k])
+    with nogil:
+        old_chol_backprop(N, <double*> dL_dK.data, <double*> L.data)
+    return dL_dK
 
-        for i in range(k+1, N):
-            dL_dK[i, k] /= L[k, k];
-            dL_dK[k, k] -= L[i, k] * dL_dK[i, k];
 
-        dL_dK[k, k] /= (2. * L[k, k]);
-    return np.asarray(dL_dK)
+
+
+
+
+
+
 

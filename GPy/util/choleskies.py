@@ -5,7 +5,7 @@ import numpy as np
 from . import linalg
 from .config import config
 
-import choleskies_cython
+from . import choleskies_cython
 
 def safe_root(N):
     i = np.sqrt(N)
@@ -59,12 +59,12 @@ def _backprop_gradient_pure(dL, L):
     """
     dL_dK = np.tril(dL).copy()
     N = L.shape[0]
-    for k in xrange(N - 1, -1, -1):
-        for j in xrange(k + 1, N):
-            for i in xrange(j, N):
+    for k in range(N - 1, -1, -1):
+        for j in range(k + 1, N):
+            for i in range(j, N):
                 dL_dK[i, k] -= dL_dK[i, j] * L[j, k]
                 dL_dK[j, k] -= dL_dK[i, j] * L[i, k]
-        for j in xrange(k + 1, N):
+        for j in range(k + 1, N):
             dL_dK[j, k] /= L[k, k]
             dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
         dL_dK[k, k] /= (2 * L[k, k])

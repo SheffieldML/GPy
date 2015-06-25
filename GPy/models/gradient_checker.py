@@ -228,14 +228,14 @@ class HessianChecker(GradientChecker):
 
         if verbose:
             if block_indices:
-                print "\nBlock {}".format(block_indices)
+                print("\nBlock {}".format(block_indices))
             else:
-                print "\nAll blocks"
+                print("\nAll blocks")
 
             header = ['Checked', 'Max-Ratio', 'Min-Ratio', 'Min-Difference', 'Max-Difference']
             header_string = map(lambda x: ' | '.join(header), [header])
             separator = '-' * len(header_string[0])
-            print '\n'.join([header_string[0], separator])
+            print('\n'.join([header_string[0], separator]))
             min_r = '%.6f' % float(numpy.min(ratio))
             max_r = '%.6f' % float(numpy.max(ratio))
             max_d = '%.6f' % float(numpy.max(difference))
@@ -248,7 +248,7 @@ class HessianChecker(GradientChecker):
                 checked = "\033[91m  False \033[0m"
 
             grad_string = "{} | {}  | {} |    {}    |   {} ".format(checked, cols[0], cols[1], cols[2], cols[3])
-            print grad_string
+            print(grad_string)
 
             if plot:
                 import pylab as pb
@@ -348,7 +348,7 @@ class SkewChecker(HessianChecker):
             numeric_hess_partial = nd.Jacobian(self._df, vectorized=True)
             numeric_hess = numeric_hess_partial(x)
 
-            print "Done making numerical hessian"
+            print("Done making numerical hessian")
             if analytic_hess.dtype is np.dtype('object'):
                 #Blockify numeric_hess aswell
                 blocksizes, pagesizes = get_block_shapes_3d(analytic_hess)
@@ -365,7 +365,7 @@ class SkewChecker(HessianChecker):
                 #Unless super_plot is set, just plot the first one
                 p = True if (plot and block_ind == numeric_hess.shape[2]-1) or super_plot else False
                 if verbose:
-                    print "Checking derivative of hessian wrt parameter number {}".format(block_ind)
+                    print("Checking derivative of hessian wrt parameter number {}".format(block_ind))
                 check_passed[block_ind] = self.checkgrad_block(analytic_hess[:,:,block_ind], numeric_hess[:,:,block_ind], verbose=verbose, step=step, tolerance=tolerance, block_indices=block_indices, plot=p)
 
             current_index += current_size

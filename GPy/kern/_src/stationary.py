@@ -13,7 +13,7 @@ from ...util.config import config # for assesing whether to use cython
 from ...util.caching import Cache_this
 
 try:
-    import stationary_cython
+    from . import stationary_cython
 except ImportError:
     print('warning in sationary: failed to import cython module: falling back to numpy')
     config.set('cython', 'working', 'false')

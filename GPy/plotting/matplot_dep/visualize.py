@@ -451,7 +451,7 @@ class mocap_data_show(matplotlib_show):
         self.initialize_axes_modify()
         self.draw_vertices()
         self.initialize_axes()
-        self.finalize_axes_modify()
+        #self.finalize_axes_modify()
         self.draw_edges()
         self.axes.figure.canvas.draw()
 
@@ -470,12 +470,20 @@ class mocap_data_show(matplotlib_show):
         self.line_handle[0].remove()
 
     def finalize_axes(self):
-        self.axes.set_xlim(self.x_lim)
-        self.axes.set_ylim(self.y_lim)
-        self.axes.set_zlim(self.z_lim)
-        self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
+#         self.axes.set_xlim(self.x_lim)
+#         self.axes.set_ylim(self.y_lim)
+#         self.axes.set_zlim(self.z_lim)
+#         self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
 
-#        self.axes.set_aspect('equal')
+        extents = np.array([getattr(self.axes, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+        sz = extents[:,1] - extents[:,0]
+        centers = np.mean(extents, axis=1)
+        maxsize = max(abs(sz))
+        r = maxsize/2
+        for ctr, dim in zip(centers, 'xyz'):
+            getattr(self.axes, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+        
+#         self.axes.set_aspect('equal')
 #         self.axes.autoscale(enable=False)
 
     def finalize_axes_modify(self):

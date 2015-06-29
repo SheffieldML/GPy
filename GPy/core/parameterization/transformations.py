@@ -35,12 +35,12 @@ class Transformation(object):
         """
         compute the log of the jacobian of f, evaluated at f(x)= model_param
         """
-	raise NotImplementedError
+        raise NotImplementedError
     def log_jacobian_grad(self, model_param):
         """
         compute the drivative of the log of the jacobian of f, evaluated at f(x)= model_param
         """
-	raise NotImplementedError
+        raise NotImplementedError
     def gradfactor(self, model_param, dL_dmodel_param):
         """ df(opt_param)_dopt_param evaluated at self.f(opt_param)=model_param, times the gradient dL_dmodel_param,
 

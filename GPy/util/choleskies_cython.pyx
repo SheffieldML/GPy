@@ -5,6 +5,7 @@
 # Copyright James Hensman and Alan Saul 2015
 
 import numpy as np
+from cython.parallel import prange, parallel
 cimport numpy as np
 
 def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
@@ -57,3 +58,50 @@ def backprop_gradient(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] 
             dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
         dL_dK[k, k] /= (2. * L[k, k])
     return dL_dK
+
+def backprop_gradient_par(double[:,:] dL, double[:,:] L):
+    cdef double[:,:] dL_dK = np.tril(dL).copy()
+    cdef int N = L.shape[0]
+    cdef int k, j, i
+    for k in range(N - 1, -1, -1):
+        with nogil, parallel():
+            for i in prange(k + 1, N):
+                for j in range(k+1, i+1):
+                    dL_dK[i, k] -= dL_dK[i, j] * L[j, k]
+                for j in range(i, N):
+                    dL_dK[i, k] -= dL_dK[j, i] * L[j, k]
+        for j in range(k + 1, N):
+            dL_dK[j, k] /= L[k, k]
+            dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
+        dL_dK[k, k] /= (2. * L[k, k])
+    return dL_dK
+
+#here's a pure C version...
+cdef extern from "cholesky_backprop.h" nogil:
+    void chol_backprop(int N, double* dL, double* L)
+
+def backprop_gradient_par_c(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
+    cdef np.ndarray[double, ndim=2] dL_dK = np.tril(dL) # makes a copy, c-contig
+    cdef int N = L.shape[0]
+    with nogil:
+        chol_backprop(N, <double*> dL_dK.data, <double*> L.data)
+    return dL_dK
+
+cdef extern from "cholesky_backprop.h" nogil:
+    void old_chol_backprop(int N, double* dL, double* L)
+
+def backprop_gradient_par_c_old(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
+    cdef np.ndarray[double, ndim=2] dL_dK = np.tril(dL) # makes a copy, c-contig
+    cdef int N = L.shape[0]
+    with nogil:
+        old_chol_backprop(N, <double*> dL_dK.data, <double*> L.data)
+    return dL_dK
+
+
+
+
+
+
+
+
+

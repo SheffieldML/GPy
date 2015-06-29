@@ -440,7 +440,7 @@ class Indexable(Nameable, Updateable):
         log_j = 0.
         priored_indexes = np.hstack([i for p, i in self.priors.items()])
         for c,j in self.constraints.items():
-            if c is 'fixed':continue
+            if not isinstance(c, Transformation):continue
             for jj in j:
                 if jj in priored_indexes:
                     log_j += c.log_jacobian(x[jj])
@@ -457,6 +457,7 @@ class Indexable(Nameable, Updateable):
         #add in jacobian derivatives if transformed
         priored_indexes = np.hstack([i for p, i in self.priors.items()])
         for c,j in self.constraints.items():
+            if not isinstance(c, Transformation):continue
             for jj in j:
                 if jj in priored_indexes:
                     ret[jj] += c.log_jacobian_grad(x[jj])

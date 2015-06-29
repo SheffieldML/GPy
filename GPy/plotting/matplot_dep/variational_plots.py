@@ -22,7 +22,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
     lines = []
     fills = []
     bg_lines = []
-    means, variances = parameterized.mean, parameterized.variance
+    means, variances = parameterized.mean.values, parameterized.variance.values
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
         if ax is None:

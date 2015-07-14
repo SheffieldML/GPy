@@ -75,7 +75,7 @@ class sde_StdPeriodic(StdPeriodic):
         Qc   = np.zeros((2*(N+1), 2*(N+1)))
         P_inf = np.kron(np.diag(q2),np.eye(2))
         H    = np.kron(np.ones((1,N+1)),np.array((1,0)) )
-        
+        P0 = P_inf.copy()
         
         # Derivatives
         dF = np.empty((F.shape[0], F.shape[1], 3))
@@ -96,9 +96,9 @@ class sde_StdPeriodic(StdPeriodic):
         dF[:,:,2] = np.zeros(F.shape)
         dQc[:,:,2] = np.zeros(Qc.shape)
         dP_inf[:,:,2] = np.kron(np.diag(dq2l),np.eye(2))
-        
+        dP0 = dP_inf.copy()
 
-        return (F, L, Qc, H, P_inf, dF, dQc, dP_inf)
+        return (F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf, dP0)
         
         
         

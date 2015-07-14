@@ -290,23 +290,26 @@ class Add(CombinationKernel):
         Qc    = None
         H     = None
         Pinf  = None
+        P0    = None
         dF    = None
         dQc   = None
-        dPinf = None    
+        dPinf = None
+        dP0   = None
         n = 0
         nq = 0
         nd = 0
 
          # Assign models
         for p in self.parts:
-            (Ft,Lt,Qct,Ht,Pinft,dFt,dQct,dPinft) = p.sde()
+            (Ft,Lt,Qct,Ht,Pinft,P0t,dFt,dQct,dPinft,dP0t) = p.sde()
             F = la.block_diag(F,Ft) if (F is not None) else Ft
             L = la.block_diag(L,Lt) if (L is not None) else Lt
             Qc = la.block_diag(Qc,Qct) if (Qc is not None) else Qct
             H = np.hstack((H,Ht)) if (H is not None) else Ht
              
             Pinf = la.block_diag(Pinf,Pinft) if (Pinf is not None) else Pinft
-             
+            P0 = la.block_diag(P0,P0t) if (P0 is not None) else P0t
+            
             if dF is not None:
                 dF = np.pad(dF,((0,dFt.shape[0]),(0,dFt.shape[1]),(0,dFt.shape[2])),
                         'constant', constant_values=0)
@@ -327,7 +330,14 @@ class Add(CombinationKernel):
                 dPinf[-dPinft.shape[0]:,-dPinft.shape[1]:,-dPinft.shape[2]:] = dPinft
             else:
                 dPinf = dPinft
-             
+                
+            if dP0 is not None:
+                dP0 = np.pad(dP0,((0,dP0t.shape[0]),(0,dP0t.shape[1]),(0,dP0t.shape[2])),
+                        'constant', constant_values=0)
+                dP0[-dP0t.shape[0]:,-dP0t.shape[1]:,-dP0t.shape[2]:] = dP0t
+            else:
+                dP0 = dP0t
+                
             n += Ft.shape[0]
             nq += Qct.shape[0]
             nd += dFt.shape[2]
@@ -336,9 +346,11 @@ class Add(CombinationKernel):
         assert (L.shape[0] == n and L.shape[1]==nq), "SDE add: Check of L Dimensions failed"
         assert (Qc.shape[0] == nq and Qc.shape[1]==nq), "SDE add: Check of Qc Dimensions failed"
         assert (H.shape[0] == 1 and H.shape[1]==n), "SDE add: Check of H Dimensions failed"
-        assert (Pinf.shape[0] == n and Pinf.shape[1]==n), "SDE add: Check of Pinf Dimensions failed"        
+        assert (Pinf.shape[0] == n and Pinf.shape[1]==n), "SDE add: Check of Pinf Dimensions failed"
+        assert (P0.shape[0] == n and P0.shape[1]==n), "SDE add: Check of P0 Dimensions failed"        
         assert (dF.shape[0] == n and dF.shape[1]==n and dF.shape[2]==nd), "SDE add: Check of dF Dimensions failed"
         assert (dQc.shape[0] == nq and dQc.shape[1]==nq and dQc.shape[2]==nd), "SDE add: Check of dQc Dimensions failed"
         assert (dPinf.shape[0] == n and dPinf.shape[1]==n and dPinf.shape[2]==nd), "SDE add: Check of dPinf Dimensions failed"
+        assert (dP0.shape[0] == n and dP0.shape[1]==n and dP0.shape[2]==nd), "SDE add: Check of dP0 Dimensions failed"
         
-        return (F,L,Qc,H,Pinf,dF,dQc,dPinf)
+        return (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)

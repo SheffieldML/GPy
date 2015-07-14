@@ -126,13 +126,15 @@ class Prod(CombinationKernel):
         Qc     = np.array((1,), ndmin=2)
         H      = np.array((1,), ndmin=2)
         Pinf   = np.array((1,), ndmin=2)
+        P0   = np.array((1,), ndmin=2)
         dF     = None
         dQc    = None
         dPinf  = None
-          
+        dP0  = None
+        
          # Assign models
         for p in self.parts:
-            (Ft,Lt,Qct,Ht,P_inft,dFt,dQct,dP_inft) = p.sde()
+            (Ft,Lt,Qct,Ht,P_inft, P0t, dFt,dQct,dP_inft,dP0t) = p.sde()
             
             # check derivative dimensions ->
             number_of_parameters = len(p.param_array)            
@@ -149,14 +151,16 @@ class Prod(CombinationKernel):
             dF    = dkron(F,dF,Ft,dFt,'sum')
             dQc   = dkron(Qc,dQc,Qct,dQct,'prod')
             dPinf = dkron(Pinf,dPinf,P_inft,dP_inft,'prod')
-             
+            dP0 = dkron(P0,dP0,P0t,dP0t,'prod')
+            
             F    = np.kron(F,np.eye(Ft.shape[0])) + np.kron(np.eye(F.shape[0]),Ft)
             L    = np.kron(L,Lt)
             Qc   = np.kron(Qc,Qct)
             Pinf = np.kron(Pinf,P_inft)
+            P0 = np.kron(P0,P_inft)
             H    = np.kron(H,Ht)
             
-        return (F,L,Qc,H,Pinf,dF,dQc,dPinf)
+        return (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)
 
 def dkron(A,dA,B,dB, operation='prod'):
     """

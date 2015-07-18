@@ -64,9 +64,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
             self.logger.debug("creating inference_method var_dtc")
             inference_method = VarDTC(limit=1 if not missing_data else Y.shape[1])
 
-        if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
-            kernel.psicomp.GPU_direct = True
-
         super(BayesianGPLVMMiniBatch,self).__init__(X, Y, Z, kernel, likelihood=likelihood,
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer,

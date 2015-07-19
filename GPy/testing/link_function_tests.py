@@ -49,7 +49,7 @@ class LinkFunctionTests(np.testing.TestCase):
         self.assertTrue(grad3.checkgrad(verbose=True))
 
         if test_lim:
-            print "Testing limits"
+            print("Testing limits")
             #Remove some otherwise we are too close to the limit for gradcheck to work effectively
             lim_of_inf = lim_of_inf - 1e-4
             grad = GradientChecker(link_func.transf, link_func.dtransf_df, x0=lim_of_inf)

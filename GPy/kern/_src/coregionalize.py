@@ -6,7 +6,7 @@ import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use cython
-import coregionalize_cython
+from . import coregionalize_cython
 
 class Coregionalize(Kern):
     """

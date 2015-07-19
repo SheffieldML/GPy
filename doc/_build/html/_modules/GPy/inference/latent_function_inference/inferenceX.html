@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference.inferenceX &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy.inference.latent_function_inference" href="../latent_function_inference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" accesskey="U">GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference.inferenceX</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, Zhenwen Dai</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...core</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization</span> <span class="kn">import</span> <span class="n">variational</span>
+
+<div class="viewcode-block" id="infer_newX"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.inferenceX.infer_newX">[docs]</a><span class="k">def</span> <span class="nf">infer_newX</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Y_new</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s">&#39;L2&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Infer the distribution of X for the new observed data *Y_new*.</span>
+
+<span class="sd">    :param model: the GPy model used in inference</span>
+<span class="sd">    :type model: GPy.core.Model</span>
+<span class="sd">    :param Y_new: the new observed data for inference</span>
+<span class="sd">    :type Y_new: numpy.ndarray</span>
+<span class="sd">    :param optimize: whether to optimize the location of new X (True by default)</span>
+<span class="sd">    :type optimize: boolean</span>
+<span class="sd">    :return: a tuple containing the estimated posterior distribution of X and the model that optimize X</span>
+<span class="sd">    :rtype: (GPy.core.parameterization.variational.VariationalPosterior, GPy.core.Model)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">infr_m</span> <span class="o">=</span> <span class="n">InferenceX</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Y_new</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="n">init</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+        <span class="n">infr_m</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">infr_m</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">infr_m</span>
+</div>
+<div class="viewcode-block" id="InferenceX"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.inferenceX.InferenceX">[docs]</a><span class="k">class</span> <span class="nc">InferenceX</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The class for inference of new X with given new Y. (do_test_latent)</span>
+
+<span class="sd">    :param model: the GPy model used in inference</span>
+<span class="sd">    :type model: GPy.core.Model</span>
+<span class="sd">    :param Y: the new observed data for inference</span>
+<span class="sd">    :type Y: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;inferenceX&#39;</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s">&#39;L2&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;missing_data&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;The current implementation of inference X only support one data point at a time with missing data!&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ninan</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;ninan&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InferenceX</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kern</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">useGPU</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">...models</span> <span class="kn">import</span> <span class="n">SSGPLVM</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">SSGPLVM</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">GPU_SSRBF</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">GPU</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;variational_prior&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;inducing_inputs&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sparse_gp</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sparse_gp</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_X</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="n">init</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compute_dL</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">Y_new</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s">&#39;L2&#39;</span><span class="p">):</span>
+        <span class="c"># Initialize the new X by finding the nearest point in Y space.</span>
+
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Y</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span><span class="p">:</span>
+            <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="p">]</span>
+            <span class="n">Y_new</span> <span class="o">=</span> <span class="n">Y_new</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="p">]</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.</span><span class="o">*</span><span class="n">Y_new</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Y_new</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="bp">None</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">init</span><span class="o">==</span><span class="s">&#39;L2&#39;</span><span class="p">:</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.</span><span class="o">*</span><span class="n">Y_new</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Y_new</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="bp">None</span><span class="p">,:]</span>
+            <span class="k">elif</span> <span class="n">init</span><span class="o">==</span><span class="s">&#39;NCC&#39;</span><span class="p">:</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">Y_new</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">init</span><span class="o">==</span><span class="s">&#39;rand&#39;</span><span class="p">:</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">Y_new</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="kn">from</span> <span class="nn">...models</span> <span class="kn">import</span> <span class="n">SSGPLVM</span>
+        <span class="kn">from</span> <span class="nn">...util.misc</span> <span class="kn">import</span> <span class="n">param_to_array</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">SSGPLVM</span><span class="p">):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">variational</span><span class="o">.</span><span class="n">SpikeAndSlabPosterior</span><span class="p">(</span><span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">variance</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">group_spike</span><span class="p">:</span>
+                <span class="n">X</span><span class="o">.</span><span class="n">gamma</span><span class="o">.</span><span class="n">fix</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_gp</span><span class="p">:</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">variational</span><span class="o">.</span><span class="n">NormalPosterior</span><span class="p">(</span><span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">variance</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="kn">from</span> <span class="nn">...core</span> <span class="kn">import</span> <span class="n">Param</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;latent mean&#39;</span><span class="p">,</span><span class="n">param_to_array</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">X</span>
+
+<div class="viewcode-block" id="InferenceX.compute_dL"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.inferenceX.InferenceX.compute_dL">[docs]</a>    <span class="k">def</span> <span class="nf">compute_dL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Common computation</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">fmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">variance</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">wv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_vector</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span><span class="p">:</span>
+            <span class="n">wv</span> <span class="o">=</span> <span class="n">wv</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="p">]</span>
+            <span class="n">output_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ninan</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span> <span class="o">=</span> <span class="n">beta</span><span class="o">/</span><span class="mf">2.</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="p">[:,:,</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;md,od-&gt;mo&#39;</span><span class="p">,</span><span class="n">wv</span><span class="p">,</span> <span class="n">wv</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="bp">None</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span> <span class="o">=</span> <span class="n">beta</span><span class="o">/</span><span class="mf">2.</span><span class="o">*</span><span class="p">(</span><span class="n">output_dim</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;md,od-&gt;mo&#39;</span><span class="p">,</span><span class="n">wv</span><span class="p">,</span> <span class="n">wv</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi1</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dim</span><span class="p">],</span> <span class="n">wv</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi0</span> <span class="o">=</span> <span class="o">-</span> <span class="n">beta</span><span class="o">/</span><span class="mf">2.</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">output_dim</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;md,od-&gt;mo&#39;</span><span class="p">,</span><span class="n">wv</span><span class="p">,</span> <span class="n">wv</span><span class="p">))</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi1</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">wv</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi0</span> <span class="o">=</span> <span class="o">-</span><span class="n">beta</span><span class="o">/</span><span class="mf">2.</span><span class="o">*</span><span class="n">output_dim</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="InferenceX.parameters_changed"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.inferenceX.InferenceX.parameters_changed">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span><span class="p">:</span>
+            <span class="n">psi0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">psi0</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">psi1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">psi1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">psi2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">psi2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">psi0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">psi1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+            <span class="n">psi2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">psi1</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">psi1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span><span class="o">*</span><span class="n">psi2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">+</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi1</span><span class="o">*</span><span class="n">psi1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">+</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi0</span><span class="o">*</span><span class="n">psi0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span><span class="p">:</span>
+            <span class="n">X_grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_qX_expectations</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">set_gradients</span><span class="p">(</span><span class="n">X_grad</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dpsi1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi1</span> <span class="o">+</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">psi1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi2</span><span class="p">)</span>
+            <span class="n">X_grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_X_diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">X_grad</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">X_grad</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_input</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">...core.parameterization.variational</span> <span class="kn">import</span> <span class="n">SpikeAndSlabPrior</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span><span class="p">,</span> <span class="n">SpikeAndSlabPrior</span><span class="p">):</span>
+                <span class="c"># Update Log-likelihood</span>
+                <span class="n">KL_div</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">KL_divergence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="c"># update for the KL divergence</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">update_gradients_KL</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># Update Log-likelihood</span>
+                <span class="n">KL_div</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">KL_divergence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+                <span class="c"># update for the KL divergence</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">update_gradients_KL</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">+=</span> <span class="o">-</span><span class="n">KL_div</span>
+</div>
+<div class="viewcode-block" id="InferenceX.log_likelihood"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.inferenceX.InferenceX.log_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" >GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

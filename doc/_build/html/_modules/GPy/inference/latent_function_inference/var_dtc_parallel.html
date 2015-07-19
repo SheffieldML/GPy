@@ -1,0 +1,575 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference.var_dtc_parallel &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy.inference.latent_function_inference" href="../latent_function_inference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" accesskey="U">GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference.var_dtc_parallel</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">from</span> <span class="nn">posterior</span> <span class="kn">import</span> <span class="n">Posterior</span>
+<span class="kn">from</span> <span class="nn">...util.linalg</span> <span class="kn">import</span> <span class="n">jitchol</span><span class="p">,</span> <span class="n">backsub_both_sides</span><span class="p">,</span> <span class="n">tdot</span><span class="p">,</span> <span class="n">dtrtrs</span><span class="p">,</span> <span class="n">dtrtri</span><span class="p">,</span><span class="n">pdinv</span>
+<span class="kn">from</span> <span class="nn">...util</span> <span class="kn">import</span> <span class="n">diag</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization.variational</span> <span class="kn">import</span> <span class="n">VariationalPosterior</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">LatentFunctionInference</span>
+<span class="n">log_2_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="VarDTC_minibatch"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.VarDTC_minibatch">[docs]</a><span class="k">class</span> <span class="nc">VarDTC_minibatch</span><span class="p">(</span><span class="n">LatentFunctionInference</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An object for inference when the likelihood is Gaussian, but we want to do sparse inference.</span>
+
+<span class="sd">    The function self.inference returns a Posterior object, which summarizes</span>
+<span class="sd">    the posterior.</span>
+
+<span class="sd">    For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">const_jitter</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span> <span class="o">=</span> <span class="n">batchsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">=</span> <span class="n">mpi_comm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+
+        <span class="c"># Cache functions</span>
+        <span class="kn">from</span> <span class="nn">...util.caching</span> <span class="kn">import</span> <span class="n">Cacher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_trYYT</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_trYYT</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_YYTfactor</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_pos</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># the starting position of the current mini-batch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># Replace Y with the cholesky factor of YY.T, but the computation of posterior object will be skipped.</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># has to be overridden, as Cacher objects cannot be pickled.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="c"># has to be overridden, as Cacher objects cannot be pickled.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="kn">from</span> <span class="nn">...util.caching</span> <span class="kn">import</span> <span class="n">Cacher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_trYYT</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_trYYT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_YYTfactor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VarDTC_minibatch.set_limit"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.VarDTC_minibatch.set_limit">[docs]</a>    <span class="k">def</span> <span class="nf">set_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_trYYT</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+</div>
+    <span class="k">def</span> <span class="nf">_get_trYYT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_get_YYTfactor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        find a matrix L which satisfies LLT = YYT.</span>
+
+<span class="sd">        Note that L may have fewer columns than Y.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">N</span><span class="o">&gt;=</span><span class="n">D</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Y</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">jitchol</span><span class="p">(</span><span class="n">tdot</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+
+<div class="viewcode-block" id="VarDTC_minibatch.gatherPsiStat"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.VarDTC_minibatch.gatherPsiStat">[docs]</a>    <span class="k">def</span> <span class="nf">gatherPsiStat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">uncertain_inputs</span><span class="p">):</span>
+
+        <span class="n">het_noise</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        
+        <span class="k">assert</span> <span class="n">beta</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">trYYT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_trYYT</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">Y</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+
+        <span class="n">num_inducing</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_data</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">batchsize</span> <span class="o">=</span> <span class="n">num_data</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span>
+
+        <span class="n">psi2_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_inducing</span><span class="p">,</span><span class="n">num_inducing</span><span class="p">))</span> <span class="c"># MxM</span>
+        <span class="n">psi1Y_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">output_dim</span><span class="p">,</span><span class="n">num_inducing</span><span class="p">))</span> <span class="c"># DxM</span>
+        <span class="n">psi0_full</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">YRY_full</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">n_start</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">num_data</span><span class="p">,</span><span class="n">batchsize</span><span class="p">):</span>
+            <span class="n">n_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batchsize</span><span class="o">+</span><span class="n">n_start</span><span class="p">,</span> <span class="n">num_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">batchsize</span><span class="o">==</span><span class="n">num_data</span><span class="p">:</span>
+                <span class="n">Y_slice</span> <span class="o">=</span> <span class="n">Y</span>
+                <span class="n">X_slice</span> <span class="o">=</span> <span class="n">X</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Y_slice</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">n_start</span><span class="p">:</span><span class="n">n_end</span><span class="p">]</span>
+                <span class="n">X_slice</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">n_start</span><span class="p">:</span><span class="n">n_end</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">beta</span><span class="p">[</span><span class="n">n_start</span><span class="p">]</span>
+                <span class="n">YRY_full</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">inner</span><span class="p">(</span><span class="n">Y_slice</span><span class="p">,</span> <span class="n">Y_slice</span><span class="p">)</span><span class="o">*</span><span class="n">b</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">beta</span>
+
+            <span class="k">if</span> <span class="n">uncertain_inputs</span><span class="p">:</span>
+                <span class="n">psi0</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi0</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+                <span class="n">psi1</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi1</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+                <span class="n">psi2_full</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi2</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span><span class="o">*</span><span class="n">b</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">psi0</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="n">X_slice</span><span class="p">)</span>
+                <span class="n">psi1</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X_slice</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+                <span class="n">psi2_full</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">psi1</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">psi1</span><span class="p">)</span><span class="o">*</span><span class="n">b</span>
+
+            <span class="n">psi0_full</span> <span class="o">+=</span> <span class="n">psi0</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">*</span><span class="n">b</span>
+            <span class="n">psi1Y_full</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y_slice</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">psi1</span><span class="p">)</span><span class="o">*</span><span class="n">b</span> <span class="c"># DxM</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">YRY_full</span> <span class="o">=</span> <span class="n">trYYT</span><span class="o">*</span><span class="n">beta</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">psi0_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">psi0_full</span><span class="p">)</span>
+            <span class="n">psi1Y_all</span> <span class="o">=</span> <span class="n">psi1Y_full</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">psi2_all</span> <span class="o">=</span> <span class="n">psi2_full</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">YRY_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">YRY_full</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">psi0_full</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">psi0_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">psi1Y_full</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">psi1Y_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">psi2_full</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">psi2_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">YRY_full</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">YRY_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">psi0_all</span><span class="p">,</span> <span class="n">psi1Y_all</span><span class="p">,</span> <span class="n">psi2_all</span><span class="p">,</span> <span class="n">YRY_all</span>
+
+        <span class="k">return</span> <span class="n">psi0_full</span><span class="p">,</span> <span class="n">psi1Y_full</span><span class="p">,</span> <span class="n">psi2_full</span><span class="p">,</span> <span class="n">YRY_full</span>
+</div>
+<div class="viewcode-block" id="VarDTC_minibatch.inference_likelihood"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.VarDTC_minibatch.inference_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">inference_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The first phase of inference:</span>
+<span class="sd">        Compute: log-likelihood, dL_dKmm</span>
+
+<span class="sd">        Cached intermediate results: Kmm, KmmInv,</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">num_data</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">num_data_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">num_data</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">num_data</span><span class="p">),</span> <span class="n">MPI</span><span class="o">.</span><span class="n">INT</span><span class="p">],</span> <span class="p">[</span><span class="n">num_data_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">INT</span><span class="p">])</span>
+            <span class="n">num_data</span> <span class="o">=</span> <span class="n">num_data_all</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+            <span class="n">uncertain_inputs</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">uncertain_inputs</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c">#see whether we&#39;ve got a different noise variance for each datum</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">fmax</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">variance</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">het_noise</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">psi0_full</span><span class="p">,</span> <span class="n">psi1Y_full</span><span class="p">,</span> <span class="n">psi2_full</span><span class="p">,</span> <span class="n">YRY_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gatherPsiStat</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">uncertain_inputs</span><span class="p">)</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute Common Components</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="n">Kmm</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">diag</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Kmm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">const_jitter</span><span class="p">)</span>
+        <span class="n">Lm</span> <span class="o">=</span> <span class="n">jitchol</span><span class="p">(</span><span class="n">Kmm</span><span class="p">,</span> <span class="n">maxtries</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+        <span class="n">LmInvPsi2LmInvT</span> <span class="o">=</span> <span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span><span class="n">psi2_full</span><span class="p">,</span><span class="n">transpose</span><span class="o">=</span><span class="s">&#39;right&#39;</span><span class="p">)</span>
+        <span class="n">Lambda</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">Kmm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="n">LmInvPsi2LmInvT</span>
+        <span class="n">LL</span> <span class="o">=</span> <span class="n">jitchol</span><span class="p">(</span><span class="n">Lambda</span><span class="p">,</span> <span class="n">maxtries</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">logdet_L</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">LL</span><span class="p">)))</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">dtrtrs</span><span class="p">(</span><span class="n">LL</span><span class="p">,</span><span class="n">dtrtrs</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span><span class="n">psi1Y_full</span><span class="o">.</span><span class="n">T</span><span class="p">)[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">bbt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">dtrtrs</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span><span class="n">dtrtrs</span><span class="p">(</span><span class="n">LL</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">trans</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">trans</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">tmp</span>  <span class="o">=</span> <span class="o">-</span><span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">LL</span><span class="p">,</span> <span class="n">tdot</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">+</span><span class="n">output_dim</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">input_dim</span><span class="p">),</span> <span class="n">transpose</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">)</span>
+        <span class="n">dL_dpsi2R</span> <span class="o">=</span> <span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span> <span class="n">tmp</span><span class="o">+</span><span class="n">output_dim</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">input_dim</span><span class="p">),</span> <span class="n">transpose</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+
+        <span class="c"># Cache intermediate results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;dL_dpsi2R&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dL_dpsi2R</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;v&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute log-likelihood</span>
+        <span class="c">#======================================================================</span>
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">logL_R</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logL_R</span> <span class="o">=</span> <span class="o">-</span><span class="n">num_data</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span>
+        <span class="n">logL</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">output_dim</span><span class="o">*</span><span class="p">(</span><span class="n">num_data</span><span class="o">*</span><span class="n">log_2_pi</span><span class="o">+</span><span class="n">logL_R</span><span class="o">+</span><span class="n">psi0_full</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">LmInvPsi2LmInvT</span><span class="p">))</span><span class="o">+</span><span class="n">YRY_full</span><span class="o">-</span><span class="n">bbt</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="o">-</span><span class="n">output_dim</span><span class="o">*</span><span class="n">logdet_L</span><span class="o">/</span><span class="mf">2.</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute dL_dKmm</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="n">dL_dKmm</span> <span class="o">=</span>  <span class="n">dL_dpsi2R</span> <span class="o">-</span> <span class="n">output_dim</span><span class="o">*</span><span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span> <span class="n">LmInvPsi2LmInvT</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute the Posterior distribution of inducing points p(u|Y)</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span> <span class="ow">or</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">wd_inv</span> <span class="o">=</span> <span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">Lm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">input_dim</span><span class="p">)</span><span class="o">-</span> <span class="n">backsub_both_sides</span><span class="p">(</span><span class="n">LL</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">input_dim</span><span class="p">),</span> <span class="n">transpose</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">),</span> <span class="n">transpose</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">)</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_inv</span><span class="o">=</span><span class="n">wd_inv</span><span class="p">,</span> <span class="n">woodbury_vector</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">Kmm</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">K_chol</span><span class="o">=</span><span class="n">Lm</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute dL_dthetaL for uncertian input and non-heter noise</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="p">(</span><span class="n">YRY_full</span><span class="o">*</span><span class="n">beta</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="n">output_dim</span><span class="o">*</span><span class="n">psi0_full</span> <span class="o">-</span> <span class="n">num_data</span><span class="o">*</span><span class="n">output_dim</span><span class="o">*</span><span class="n">beta</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span> <span class="o">-</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">dL_dpsi2R</span><span class="o">*</span><span class="n">psi2_full</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">psi1Y_full</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dL_dthetaL</span>
+
+        <span class="k">return</span> <span class="n">logL</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">post</span>
+</div>
+<div class="viewcode-block" id="VarDTC_minibatch.inference_minibatch"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.VarDTC_minibatch.inference_minibatch">[docs]</a>    <span class="k">def</span> <span class="nf">inference_minibatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The second phase of inference: Computing the derivatives over a minibatch of Y</span>
+<span class="sd">        Compute: dL_dpsi0, dL_dpsi1, dL_dpsi2, dL_dthetaL</span>
+<span class="sd">        return a flag showing whether it reached the end of Y (isEnd)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">num_data</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+            <span class="n">uncertain_inputs</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">uncertain_inputs</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c">#see whether we&#39;ve got a different noise variance for each datum</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">fmax</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">variance</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">het_noise</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="c"># VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!</span>
+        <span class="c">#self.YYTfactor = beta*self.get_YYTfactor(Y)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_speedup</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">YYT_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">YYT_factor</span> <span class="o">=</span> <span class="n">Y</span>
+
+        <span class="n">n_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_pos</span>
+        <span class="n">batchsize</span> <span class="o">=</span> <span class="n">num_data</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">batchsize</span>
+        <span class="n">n_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batchsize</span><span class="o">+</span><span class="n">n_start</span><span class="p">,</span> <span class="n">num_data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_end</span><span class="o">==</span><span class="n">num_data</span><span class="p">:</span>
+            <span class="n">isEnd</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">isEnd</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_pos</span> <span class="o">=</span> <span class="n">n_end</span>
+
+        <span class="k">if</span> <span class="n">batchsize</span><span class="o">==</span><span class="n">num_data</span><span class="p">:</span>
+            <span class="n">Y_slice</span> <span class="o">=</span> <span class="n">YYT_factor</span>
+            <span class="n">X_slice</span> <span class="o">=</span><span class="n">X</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Y_slice</span> <span class="o">=</span> <span class="n">YYT_factor</span><span class="p">[</span><span class="n">n_start</span><span class="p">:</span><span class="n">n_end</span><span class="p">]</span>
+            <span class="n">X_slice</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">n_start</span><span class="p">:</span><span class="n">n_end</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">uncertain_inputs</span><span class="p">:</span>
+            <span class="n">psi0</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="n">X_slice</span><span class="p">)</span>
+            <span class="n">psi1</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X_slice</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+            <span class="n">psi2</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">betapsi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;n,nm-&gt;nm&#39;</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">psi1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">psi0</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi0</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+            <span class="n">psi1</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi1</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+            <span class="n">psi2</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi2</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+            <span class="n">betapsi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;n,nm-&gt;nm&#39;</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">psi1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="p">[</span><span class="n">n_start</span><span class="p">]</span> <span class="c"># assuming batchsize==1</span>
+
+        <span class="n">betaY</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="n">Y_slice</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Load Intermediate Results</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="n">dL_dpsi2R</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;dL_dpsi2R&#39;</span><span class="p">]</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;v&#39;</span><span class="p">]</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute dL_dpsi</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="n">dL_dpsi0</span> <span class="o">=</span> <span class="o">-</span><span class="n">output_dim</span> <span class="o">*</span> <span class="p">(</span><span class="n">beta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n_end</span><span class="o">-</span><span class="n">n_start</span><span class="p">,)))</span><span class="o">/</span><span class="mf">2.</span>
+
+        <span class="n">dL_dpsi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">betaY</span><span class="p">,</span><span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">uncertain_inputs</span><span class="p">:</span>
+            <span class="n">dL_dpsi2</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span> <span class="n">dL_dpsi2R</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dpsi1</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">betapsi1</span><span class="p">,</span><span class="n">dL_dpsi2R</span><span class="p">)</span><span class="o">*</span><span class="mf">2.</span>
+            <span class="n">dL_dpsi2</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c">#======================================================================</span>
+        <span class="c"># Compute dL_dthetaL</span>
+        <span class="c">#======================================================================</span>
+
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">uncertain_inputs</span><span class="p">:</span>
+                <span class="n">psiR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,mo-&gt;&#39;</span><span class="p">,</span><span class="n">dL_dpsi2R</span><span class="p">,</span><span class="n">psi2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">psiR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,no,mo-&gt;&#39;</span><span class="p">,</span><span class="n">psi1</span><span class="p">,</span><span class="n">psi1</span><span class="p">,</span><span class="n">dL_dpsi2R</span><span class="p">)</span>
+
+            <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">betaY</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">output_dim</span><span class="o">*</span><span class="n">psi0</span><span class="p">)</span><span class="o">-</span><span class="n">output_dim</span><span class="o">*</span><span class="n">beta</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">psiR</span><span class="o">-</span> <span class="p">(</span><span class="n">betaY</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">betapsi1</span><span class="p">,</span><span class="n">v</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">isEnd</span><span class="p">:</span>
+                <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">midRes</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">if</span> <span class="n">uncertain_inputs</span><span class="p">:</span>
+            <span class="n">grad_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">:</span><span class="n">dL_dpsi0</span><span class="p">,</span>
+                         <span class="s">&#39;dL_dpsi1&#39;</span><span class="p">:</span><span class="n">dL_dpsi1</span><span class="p">,</span>
+                         <span class="s">&#39;dL_dpsi2&#39;</span><span class="p">:</span><span class="n">dL_dpsi2</span><span class="p">,</span>
+                         <span class="s">&#39;dL_dthetaL&#39;</span><span class="p">:</span><span class="n">dL_dthetaL</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">grad_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;dL_dKdiag&#39;</span><span class="p">:</span><span class="n">dL_dpsi0</span><span class="p">,</span>
+                         <span class="s">&#39;dL_dKnm&#39;</span><span class="p">:</span><span class="n">dL_dpsi1</span><span class="p">,</span>
+                         <span class="s">&#39;dL_dthetaL&#39;</span><span class="p">:</span><span class="n">dL_dthetaL</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">isEnd</span><span class="p">,</span> <span class="p">(</span><span class="n">n_start</span><span class="p">,</span><span class="n">n_end</span><span class="p">),</span> <span class="n">grad_dict</span>
+
+</div></div>
+<div class="viewcode-block" id="update_gradients"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.update_gradients">[docs]</a><span class="k">def</span> <span class="nf">update_gradients</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">mpi_comm</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Y</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Y_local</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference_likelihood</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+    <span class="n">het_noise</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+
+    <span class="n">kern_grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">kern_grad</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="n">isEnd</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">isEnd</span><span class="p">:</span>
+        <span class="n">isEnd</span><span class="p">,</span> <span class="n">n_range</span><span class="p">,</span> <span class="n">grad_dict</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference_minibatch</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">X_slice</span> <span class="o">=</span> <span class="n">X</span>
+            <span class="k">elif</span> <span class="n">mpi_comm</span> <span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">X_slice</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">X_slice</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+            <span class="c">#gradients w.r.t. kernel</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_expectations</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">=</span><span class="n">X_slice</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">],</span> <span class="n">dL_dpsi1</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">],</span> <span class="n">dL_dpsi2</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">])</span>
+            <span class="n">kern_grad</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+
+            <span class="c">#gradients w.r.t. Z</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_Z_expectations</span><span class="p">(</span>
+                               <span class="n">dL_dpsi0</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">],</span> <span class="n">dL_dpsi1</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">],</span> <span class="n">dL_dpsi2</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">],</span> <span class="n">Z</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">=</span><span class="n">X_slice</span><span class="p">)</span>
+
+            <span class="c">#gradients w.r.t. posterior parameters of X</span>
+            <span class="n">X_grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_qX_expectations</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">=</span><span class="n">X_slice</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">],</span> <span class="n">dL_dpsi1</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">],</span> <span class="n">dL_dpsi2</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">])</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">set_X_gradients</span><span class="p">(</span><span class="n">X_slice</span><span class="p">,</span> <span class="n">X_grad</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+                <span class="n">dL_dthetaL</span><span class="p">[</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dL_dthetaL</span> <span class="o">+=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span>
+
+    <span class="c"># Gather the gradients from multiple MPI nodes</span>
+    <span class="k">if</span> <span class="n">mpi_comm</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="s">&quot;het_noise not implemented!&quot;</span>
+        <span class="n">kern_grad_all</span> <span class="o">=</span> <span class="n">kern_grad</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">Z_grad_all</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">kern_grad</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">kern_grad_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+        <span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">Z_grad_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+        <span class="n">kern_grad</span> <span class="o">=</span> <span class="n">kern_grad_all</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">Z_grad_all</span>
+
+    <span class="c">#gradients w.r.t. kernel</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">kern_grad</span>
+
+    <span class="c">#gradients w.r.t. Z</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+
+    <span class="c"># Update Log-likelihood</span>
+    <span class="n">KL_div</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">KL_divergence</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="c"># update for the KL divergence</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">variational_prior</span><span class="o">.</span><span class="n">update_gradients_KL</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mpi_comm</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">KL_div_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">KL_div</span><span class="p">)</span>
+        <span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">KL_div</span><span class="p">),</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">KL_div_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+        <span class="n">KL_div</span> <span class="o">=</span> <span class="n">KL_div_all</span>
+        <span class="p">[</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allgatherv</span><span class="p">([</span><span class="n">pp</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">pa</span><span class="p">,</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">N_list</span><span class="o">*</span><span class="n">pa</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">None</span><span class="p">),</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span> <span class="k">for</span> <span class="n">pp</span><span class="p">,</span><span class="n">pa</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_X_gradients</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="n">model</span><span class="o">.</span><span class="n">get_X_gradients</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">))]</span>
+<span class="c">#         from ...models import SSGPLVM</span>
+<span class="c">#         if isinstance(model, SSGPLVM):</span>
+<span class="c">#             grad_pi = np.array(model.variational_prior.pi.gradient)</span>
+<span class="c">#             mpi_comm.Allreduce([grad_pi.copy(), MPI.DOUBLE], [model.variational_prior.pi.gradient, MPI.DOUBLE])</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">-=</span> <span class="n">KL_div</span>
+
+    <span class="c"># dL_dthetaL</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">update_gradients</span><span class="p">(</span><span class="n">dL_dthetaL</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="update_gradients_sparsegp"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.var_dtc_parallel.update_gradients_sparsegp">[docs]</a><span class="k">def</span> <span class="nf">update_gradients_sparsegp</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">mpi_comm</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Y</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Y_local</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference_likelihood</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    
+    <span class="n">het_noise</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+    
+    <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+    
+    <span class="n">kern_grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">kern_grad</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="mf">0.</span>
+    
+    <span class="n">isEnd</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">isEnd</span><span class="p">:</span>
+        <span class="n">isEnd</span><span class="p">,</span> <span class="n">n_range</span><span class="p">,</span> <span class="n">grad_dict</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference_minibatch</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">X_slice</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="k">elif</span> <span class="n">mpi_comm</span> <span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">X_slice</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X_slice</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">model</span><span class="o">.</span><span class="n">N_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+                
+        <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_diag</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKdiag&#39;</span><span class="p">],</span> <span class="n">X_slice</span><span class="p">)</span>
+        <span class="n">kern_grad</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKnm&#39;</span><span class="p">],</span> <span class="n">X_slice</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+        <span class="n">kern_grad</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+            
+        <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKnm&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">X_slice</span><span class="p">)</span>
+                
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="n">dL_dthetaL</span><span class="p">[</span><span class="n">n_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">n_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dthetaL</span> <span class="o">+=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">]</span>
+    
+    <span class="c"># Gather the gradients from multiple MPI nodes</span>
+    <span class="k">if</span> <span class="n">mpi_comm</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">het_noise</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="s">&quot;het_noise not implemented!&quot;</span>
+        <span class="n">kern_grad_all</span> <span class="o">=</span> <span class="n">kern_grad</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">Z_grad_all</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">kern_grad</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">kern_grad_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+        <span class="n">mpi_comm</span><span class="o">.</span><span class="n">Allreduce</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">],</span> <span class="p">[</span><span class="n">Z_grad_all</span><span class="p">,</span> <span class="n">MPI</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">])</span>
+        <span class="n">kern_grad</span> <span class="o">=</span> <span class="n">kern_grad_all</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">Z_grad_all</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">kern_grad</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">model</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+
+    <span class="c"># dL_dthetaL</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">update_gradients</span><span class="p">(</span><span class="n">dL_dthetaL</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" >GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

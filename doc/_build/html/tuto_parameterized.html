@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Parameterization handling &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="parameterization-handling">
+<span id="parameterized"></span><h1>Parameterization handling<a class="headerlink" href="#parameterization-handling" title="Permalink to this headline">¶</a></h1>
+<p>Parameterization in GPy is done through so called parameter handles. The parameter handles are handles to parameters of a model of any kind. A parameter handle can be constrained, fixed, randomized and others. All parameters in GPy have a name, with which they can be accessed in the model. The most common way of accesssing a parameter programmatically though, is by variable name.</p>
+<div class="section" id="parameter-handles">
+<h2>Parameter handles<a class="headerlink" href="#parameter-handles" title="Permalink to this headline">¶</a></h2>
+<p>A parameter handle in GPy is a handle on a parameter, as the name suggests. A parameter can be constrained, fixed, randomized and more (See e.g. <cite>working with models</cite>). This gives the freedom to the model to handle parameter distribution and model updates as efficiently as possible. All parameter handles share a common memory space, which is just a flat numpy array, stored in the highest parent of a model hierarchy.
+In the following we will introduce and elucidate the different parameter handles which exist in GPy.</p>
+</div>
+<div class="section" id="id1">
+<h2><a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.parameterized.Parameterized" title="GPy.core.parameterization.parameterized.Parameterized"><code class="xref py py-class docutils literal"><span class="pre">Parameterized</span></code></a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>A parameterized object itself holds parameter handles and is just a summarization of the parameters below. It can use those parameters to change the internal state of the model and GPy ensures those parameters to allways hold the right value when in an optimization routine or any other update.</p>
+</div>
+<div class="section" id="param">
+<h2><a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.param.Param" title="GPy.core.parameterization.param.Param"><code class="xref py py-class docutils literal"><span class="pre">Param</span></code></a><a class="headerlink" href="#param" title="Permalink to this headline">¶</a></h2>
+<p>The lowest level of parameter is a numpy array. This Param class inherits all functionality of a numpy array and can simply be used as if it where a numpy array. These parameters can be accessed in the same way as a numpy array is indexed.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Parameterization handling</a><ul>
+<li><a class="reference internal" href="#parameter-handles">Parameter handles</a></li>
+<li><a class="reference internal" href="#id1"><code class="docutils literal"><span class="pre">Parameterized</span></code></a></li>
+<li><a class="reference internal" href="#param"><code class="docutils literal"><span class="pre">Param</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tuto_parameterized.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

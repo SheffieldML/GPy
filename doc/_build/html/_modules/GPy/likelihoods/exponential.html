@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.likelihoods.exponential &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.likelihoods.exponential</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014 GPy Authors</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span><span class="p">,</span><span class="n">special</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">link_functions</span>
+<span class="kn">from</span> <span class="nn">likelihood</span> <span class="kn">import</span> <span class="n">Likelihood</span>
+
+<div class="viewcode-block" id="Exponential"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential">[docs]</a><span class="k">class</span> <span class="nc">Exponential</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Expoential likelihood</span>
+<span class="sd">    Y is expected to take values in {0,1,2,...}</span>
+<span class="sd">    -----</span>
+<span class="sd">    $$</span>
+<span class="sd">    L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!</span>
+<span class="sd">    $$</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">gp_link</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">gp_link</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">gp_link</span> <span class="o">=</span> <span class="n">link_functions</span><span class="o">.</span><span class="n">Log</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Exponential</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">gp_link</span><span class="p">,</span> <span class="s">&#39;ExpLikelihood&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Exponential.pdf_link"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.pdf_link">[docs]</a>    <span class="k">def</span> <span class="nf">pdf_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Likelihood function given link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})\\exp (-y\\lambda(f_{i}))</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata which is not used in exponential distribution</span>
+<span class="sd">        :returns: likelihood evaluated for this point</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">log_objective</span> <span class="o">=</span> <span class="n">link_f</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">y</span><span class="o">*</span><span class="n">link_f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">log_objective</span><span class="p">)))</span>
+</div>
+<div class="viewcode-block" id="Exponential.logpdf_link"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.logpdf_link">[docs]</a>    <span class="k">def</span> <span class="nf">logpdf_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log Likelihood Function given link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\lambda(f_{i}) - y_{i}\\lambda(f_{i})</span>
+
+<span class="sd">        :param link_f: latent variables (link(f))</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata which is not used in exponential distribution</span>
+<span class="sd">        :returns: likelihood evaluated for this point</span>
+<span class="sd">        :rtype: float</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">log_objective</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="o">*</span><span class="n">link_f</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_objective</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Exponential.dlogpdf_dlink"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.dlogpdf_dlink">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_dlink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gradient of the log likelihood function at y, given link(f) w.r.t link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\lambda(f)} - y_{i}</span>
+
+<span class="sd">        :param link_f: latent variables (f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata which is not used in exponential distribution</span>
+<span class="sd">        :returns: gradient of likelihood evaluated at points</span>
+<span class="sd">        :rtype: Nx1 array</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">link_f</span> <span class="o">-</span> <span class="n">y</span>
+        <span class="c">#grad = y/(link_f**2) - 1./link_f</span>
+        <span class="k">return</span> <span class="n">grad</span>
+</div>
+<div class="viewcode-block" id="Exponential.d2logpdf_dlink2"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.d2logpdf_dlink2">[docs]</a>    <span class="k">def</span> <span class="nf">d2logpdf_dlink2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Hessian at y, given link(f), w.r.t link(f)</span>
+<span class="sd">        i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)</span>
+<span class="sd">        The hessian will be 0 unless i == j</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\frac{1}{\\lambda(f_{i})^{2}}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata which is not used in exponential distribution</span>
+<span class="sd">        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)</span>
+<span class="sd">        :rtype: Nx1 array</span>
+
+<span class="sd">        .. Note::</span>
+<span class="sd">            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases</span>
+<span class="sd">            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">link_f</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c">#hess = -2*y/(link_f**3) + 1/(link_f**2)</span>
+        <span class="k">return</span> <span class="n">hess</span>
+</div>
+<div class="viewcode-block" id="Exponential.d3logpdf_dlink3"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.d3logpdf_dlink3">[docs]</a>    <span class="k">def</span> <span class="nf">d3logpdf_dlink3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2}{\\lambda(f_{i})^{3}}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata which is not used in exponential distribution</span>
+<span class="sd">        :returns: third derivative of likelihood evaluated at points f</span>
+<span class="sd">        :rtype: Nx1 array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">d3lik_dlink3</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">link_f</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="c">#d3lik_dlink3 = 6*y/(link_f**4) - 2./(link_f**3)</span>
+        <span class="k">return</span> <span class="n">d3lik_dlink3</span>
+</div>
+<div class="viewcode-block" id="Exponential.samples"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.exponential.Exponential.samples">[docs]</a>    <span class="k">def</span> <span class="nf">samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a set of samples of observations based on a given value of the latent variable.</span>
+
+<span class="sd">        :param gp: latent variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">orig_shape</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">Ysim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">gp_link</span><span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="n">gp</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Ysim</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">orig_shape</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

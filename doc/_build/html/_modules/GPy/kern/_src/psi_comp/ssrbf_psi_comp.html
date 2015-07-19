@@ -1,0 +1,490 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.psi_comp.ssrbf_psi_comp &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../../index.html" />
+    <link rel="up" title="GPy.kern._src.psi_comp" href="../psi_comp.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" accesskey="U">GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.psi_comp.ssrbf_psi_comp</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The package for the psi statistics computation</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">weave</span>
+     
+    <span class="k">def</span> <span class="nf">_psicomputations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi0, psi1 and psi2</span>
+        <span class="c"># Produced intermediate results:</span>
+        <span class="c"># _psi1                NxM</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+         
+        <span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span> <span class="o">=</span> <span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+        <span class="n">log_denom1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span><span class="o">/</span><span class="n">l2</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">log_denom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">S</span><span class="o">/</span><span class="n">l2</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">log_gamma</span><span class="p">,</span><span class="n">log_gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_log_prob</span><span class="p">()</span>
+        <span class="n">variance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span>
+        <span class="n">psi0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="n">psi0</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">variance</span>
+        <span class="n">psi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">))</span>
+        <span class="n">psi2n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">M</span><span class="p">))</span>
+         
+        <span class="kn">from</span> <span class="nn">....util.misc</span> <span class="kn">import</span> <span class="n">param_to_array</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+         
+        <span class="n">support_code</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">        #include &lt;math.h&gt;</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">        for(int n=0; n&lt;N; n++) {</span>
+<span class="s">            for(int m1=0;m1&lt;M;m1++) {</span>
+<span class="s">                double log_psi1=0;</span>
+<span class="s">                for(int m2=0;m2&lt;=m1;m2++) {</span>
+<span class="s">                    double log_psi2_n=0;</span>
+<span class="s">                    for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">                        double Snq = S(n,q);</span>
+<span class="s">                        double lq = l2(q);</span>
+<span class="s">                        double Zm1q = Z(m1,q);</span>
+<span class="s">                        double Zm2q = Z(m2,q);</span>
+<span class="s">                         </span>
+<span class="s">                        if(m2==0) {</span>
+<span class="s">                            // Compute Psi_1</span>
+<span class="s">                            double muZ = mu(n,q)-Z(m1,q);</span>
+<span class="s">                             </span>
+<span class="s">                            double psi1_exp1 = log_gamma(n,q) - (muZ*muZ/(Snq+lq) +log_denom1(n,q))/2.;</span>
+<span class="s">                            double psi1_exp2 = log_gamma1(n,q) -Zm1q*Zm1q/(2.*lq);</span>
+<span class="s">                            log_psi1 += (psi1_exp1&gt;psi1_exp2)?psi1_exp1+log1p(exp(psi1_exp2-psi1_exp1)):psi1_exp2+log1p(exp(psi1_exp1-psi1_exp2));</span>
+<span class="s">                        }</span>
+<span class="s">                        // Compute Psi_2</span>
+<span class="s">                        double muZhat = mu(n,q) - (Zm1q+Zm2q)/2.;</span>
+<span class="s">                        double Z2 = Zm1q*Zm1q+ Zm2q*Zm2q;</span>
+<span class="s">                        double dZ = Zm1q - Zm2q;</span>
+<span class="s">                         </span>
+<span class="s">                        double psi2_exp1 = dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_denom2(n,q)/2. + log_gamma(n,q);</span>
+<span class="s">                        double psi2_exp2 = log_gamma1(n,q) - Z2/(2.*lq);</span>
+<span class="s">                        log_psi2_n += (psi2_exp1&gt;psi2_exp2)?psi2_exp1+log1p(exp(psi2_exp2-psi2_exp1)):psi2_exp2+log1p(exp(psi2_exp1-psi2_exp2));                    </span>
+<span class="s">                    }</span>
+<span class="s">                    double exp_psi2_n = exp(log_psi2_n);</span>
+<span class="s">                    psi2n(n,m1,m2) = variance*variance*exp_psi2_n;</span>
+<span class="s">                    if(m1!=m2) { psi2n(n,m2,m1) = variance*variance*exp_psi2_n;}</span>
+<span class="s">                }</span>
+<span class="s">                psi1(n,m1) = variance*exp(log_psi1);</span>
+<span class="s">            }</span>
+<span class="s">        }</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">weave</span><span class="o">.</span><span class="n">inline</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">support_code</span><span class="o">=</span><span class="n">support_code</span><span class="p">,</span> <span class="n">arg_names</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;psi1&#39;</span><span class="p">,</span><span class="s">&#39;psi2n&#39;</span><span class="p">,</span><span class="s">&#39;N&#39;</span><span class="p">,</span><span class="s">&#39;M&#39;</span><span class="p">,</span><span class="s">&#39;Q&#39;</span><span class="p">,</span><span class="s">&#39;variance&#39;</span><span class="p">,</span><span class="s">&#39;l2&#39;</span><span class="p">,</span><span class="s">&#39;Z&#39;</span><span class="p">,</span><span class="s">&#39;mu&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">,</span><span class="s">&#39;log_denom1&#39;</span><span class="p">,</span><span class="s">&#39;log_denom2&#39;</span><span class="p">,</span><span class="s">&#39;log_gamma&#39;</span><span class="p">,</span><span class="s">&#39;log_gamma1&#39;</span><span class="p">],</span> <span class="n">type_converters</span><span class="o">=</span><span class="n">weave</span><span class="o">.</span><span class="n">converters</span><span class="o">.</span><span class="n">blitz</span><span class="p">)</span>
+     
+        <span class="n">psi2</span> <span class="o">=</span> <span class="n">psi2n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">psi0</span><span class="p">,</span><span class="n">psi1</span><span class="p">,</span><span class="n">psi2</span><span class="p">,</span><span class="n">psi2n</span>
+     
+    <span class="kn">from</span> <span class="nn">GPy.util.caching</span> <span class="kn">import</span> <span class="n">Cacher</span>
+    <span class="n">psicomputations</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="n">_psicomputations</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+     
+    <span class="k">def</span> <span class="nf">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">ARD</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">)</span>
+         
+        <span class="n">_</span><span class="p">,</span><span class="n">psi1</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">psi2n</span> <span class="o">=</span> <span class="n">psicomputations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)</span>
+     
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span> <span class="o">=</span> <span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+        <span class="n">log_denom1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span><span class="o">/</span><span class="n">l2</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">log_denom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">S</span><span class="o">/</span><span class="n">l2</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">log_gamma</span><span class="p">,</span><span class="n">log_gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_log_prob</span><span class="p">()</span>
+        <span class="n">gamma</span><span class="p">,</span> <span class="n">gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_probabilities</span><span class="p">()</span>
+        <span class="n">variance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span>
+     
+        <span class="n">dvar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">dmu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">))</span>
+        <span class="n">dS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">))</span>
+        <span class="n">dgamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">))</span>
+        <span class="n">dl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>
+        <span class="n">dZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span><span class="p">))</span>
+        <span class="n">dvar</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">)</span>
+         
+        <span class="kn">from</span> <span class="nn">....util.misc</span> <span class="kn">import</span> <span class="n">param_to_array</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+         
+        <span class="n">support_code</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">        #include &lt;math.h&gt;</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">        for(int n=0; n&lt;N; n++) {</span>
+<span class="s">            for(int m1=0;m1&lt;M;m1++) {</span>
+<span class="s">                double log_psi1=0;</span>
+<span class="s">                for(int m2=0;m2&lt;M;m2++) {</span>
+<span class="s">                    double log_psi2_n=0;</span>
+<span class="s">                    for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">                        double Snq = S(n,q);</span>
+<span class="s">                        double lq = l2(q);</span>
+<span class="s">                        double Zm1q = Z(m1,q);</span>
+<span class="s">                        double Zm2q = Z(m2,q);</span>
+<span class="s">                        double gnq = gamma(n,q);</span>
+<span class="s">                        double g1nq = gamma1(n,q);</span>
+<span class="s">                        double mu_nq = mu(n,q);</span>
+<span class="s">                         </span>
+<span class="s">                        if(m2==0) {</span>
+<span class="s">                            // Compute Psi_1                        </span>
+<span class="s">                            double lpsi1 = psi1(n,m1)*dL_dpsi1(n,m1);</span>
+<span class="s">                            if(q==0) {dvar(0) += lpsi1/variance;}</span>
+<span class="s">                             </span>
+<span class="s">                            double Zmu = Zm1q - mu_nq;</span>
+<span class="s">                            double denom = Snq+lq;</span>
+<span class="s">                            double Zmu2_denom = Zmu*Zmu/denom;</span>
+<span class="s">                             </span>
+<span class="s">                            double exp1 = log_gamma(n,q)-(Zmu*Zmu/(Snq+lq)+log_denom1(n,q))/(2.);</span>
+<span class="s">                            double exp2 = log_gamma1(n,q)-Zm1q*Zm1q/(2.*lq);</span>
+<span class="s">                            double d_exp1,d_exp2;</span>
+<span class="s">                            if(exp1&gt;exp2) {</span>
+<span class="s">                                d_exp1 = 1.;</span>
+<span class="s">                                d_exp2 = exp(exp2-exp1);</span>
+<span class="s">                            } else {</span>
+<span class="s">                                d_exp1 = exp(exp1-exp2);</span>
+<span class="s">                                d_exp2 = 1.;</span>
+<span class="s">                            }</span>
+<span class="s">                            double exp_sum = d_exp1+d_exp2;</span>
+<span class="s">                             </span>
+<span class="s">                            dmu(n,q) += lpsi1*Zmu*d_exp1/(denom*exp_sum);</span>
+<span class="s">                            dS(n,q) += lpsi1*(Zmu2_denom-1.)*d_exp1/(denom*exp_sum)/2.;</span>
+<span class="s">                            dgamma(n,q) += lpsi1*(d_exp1*g1nq-d_exp2*gnq)/exp_sum;</span>
+<span class="s">                            dl(q) += lpsi1*((Zmu2_denom+Snq/lq)/denom*d_exp1+Zm1q*Zm1q/(lq*lq)*d_exp2)/(2.*exp_sum);</span>
+<span class="s">                            dZ(m1,q) += lpsi1*(-Zmu/denom*d_exp1-Zm1q/lq*d_exp2)/exp_sum;</span>
+<span class="s">                        }</span>
+<span class="s">                        // Compute Psi_2</span>
+<span class="s">                        double lpsi2 = psi2n(n,m1,m2)*dL_dpsi2(m1,m2);</span>
+<span class="s">                        if(q==0) {dvar(0) += lpsi2*2/variance;}</span>
+<span class="s">                         </span>
+<span class="s">                        double dZm1m2 = Zm1q - Zm2q;</span>
+<span class="s">                        double Z2 = Zm1q*Zm1q+Zm2q*Zm2q;</span>
+<span class="s">                        double muZhat =  mu_nq - (Zm1q + Zm2q)/2.;</span>
+<span class="s">                        double denom = 2.*Snq+lq;</span>
+<span class="s">                        double muZhat2_denom = muZhat*muZhat/denom;</span>
+<span class="s">                         </span>
+<span class="s">                        double exp1 = dZm1m2*dZm1m2/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) - log_denom2(n,q)/2. + log_gamma(n,q);</span>
+<span class="s">                        double exp2 = log_gamma1(n,q) - Z2/(2.*lq);</span>
+<span class="s">                        double d_exp1,d_exp2;</span>
+<span class="s">                        if(exp1&gt;exp2) {</span>
+<span class="s">                            d_exp1 = 1.;</span>
+<span class="s">                            d_exp2 = exp(exp2-exp1);</span>
+<span class="s">                        } else {</span>
+<span class="s">                            d_exp1 = exp(exp1-exp2);</span>
+<span class="s">                            d_exp2 = 1.;</span>
+<span class="s">                        }</span>
+<span class="s">                        double exp_sum = d_exp1+d_exp2;</span>
+<span class="s">                         </span>
+<span class="s">                        dmu(n,q) += -2.*lpsi2*muZhat/denom*d_exp1/exp_sum;</span>
+<span class="s">                        dS(n,q) += lpsi2*(2.*muZhat2_denom-1.)/denom*d_exp1/exp_sum;</span>
+<span class="s">                        dgamma(n,q) += lpsi2*(d_exp1*g1nq-d_exp2*gnq)/exp_sum;</span>
+<span class="s">                        dl(q) += lpsi2*(((Snq/lq+muZhat2_denom)/denom+dZm1m2*dZm1m2/(4.*lq*lq))*d_exp1+Z2/(2.*lq*lq)*d_exp2)/exp_sum;</span>
+<span class="s">                        dZ(m1,q) += 2.*lpsi2*((muZhat/denom-dZm1m2/(2*lq))*d_exp1-Zm1q/lq*d_exp2)/exp_sum;                   </span>
+<span class="s">                    }</span>
+<span class="s">                }</span>
+<span class="s">            }</span>
+<span class="s">        }</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">weave</span><span class="o">.</span><span class="n">inline</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">support_code</span><span class="o">=</span><span class="n">support_code</span><span class="p">,</span> <span class="n">arg_names</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">,</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">,</span><span class="s">&#39;psi1&#39;</span><span class="p">,</span><span class="s">&#39;psi2n&#39;</span><span class="p">,</span><span class="s">&#39;N&#39;</span><span class="p">,</span><span class="s">&#39;M&#39;</span><span class="p">,</span><span class="s">&#39;Q&#39;</span><span class="p">,</span><span class="s">&#39;variance&#39;</span><span class="p">,</span><span class="s">&#39;l2&#39;</span><span class="p">,</span><span class="s">&#39;Z&#39;</span><span class="p">,</span><span class="s">&#39;mu&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">,</span><span class="s">&#39;gamma&#39;</span><span class="p">,</span><span class="s">&#39;gamma1&#39;</span><span class="p">,</span><span class="s">&#39;log_denom1&#39;</span><span class="p">,</span><span class="s">&#39;log_denom2&#39;</span><span class="p">,</span><span class="s">&#39;log_gamma&#39;</span><span class="p">,</span><span class="s">&#39;log_gamma1&#39;</span><span class="p">,</span><span class="s">&#39;dvar&#39;</span><span class="p">,</span><span class="s">&#39;dl&#39;</span><span class="p">,</span><span class="s">&#39;dmu&#39;</span><span class="p">,</span><span class="s">&#39;dS&#39;</span><span class="p">,</span><span class="s">&#39;dgamma&#39;</span><span class="p">,</span><span class="s">&#39;dZ&#39;</span><span class="p">],</span> <span class="n">type_converters</span><span class="o">=</span><span class="n">weave</span><span class="o">.</span><span class="n">converters</span><span class="o">.</span><span class="n">blitz</span><span class="p">)</span>
+     
+        <span class="n">dl</span> <span class="o">*=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">lengthscale</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ARD</span><span class="p">:</span>
+            <span class="n">dl</span> <span class="o">=</span> <span class="n">dl</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+         
+        <span class="k">return</span> <span class="n">dvar</span><span class="p">,</span> <span class="n">dl</span><span class="p">,</span> <span class="n">dZ</span><span class="p">,</span> <span class="n">dmu</span><span class="p">,</span> <span class="n">dS</span><span class="p">,</span> <span class="n">dgamma</span>
+
+<span class="k">except</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">psicomputations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi0, psi1 and psi2</span>
+        <span class="c"># Produced intermediate results:</span>
+        <span class="c"># _psi1                NxM</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">binary_prob</span>
+         
+        <span class="n">psi0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">psi0</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">variance</span>
+        <span class="n">psi1</span> <span class="o">=</span> <span class="n">_psi1computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
+        <span class="n">psi2</span> <span class="o">=</span> <span class="n">_psi2computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">psi0</span><span class="p">,</span> <span class="n">psi1</span><span class="p">,</span> <span class="n">psi2</span>
+    
+    <span class="k">def</span> <span class="nf">_psi1computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi1</span>
+        <span class="c"># Produced intermediate results:</span>
+        <span class="c"># _psi1                NxM</span>
+    
+        <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+    
+        <span class="c"># psi1</span>
+        <span class="n">_psi1_denom</span> <span class="o">=</span> <span class="n">S</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="n">lengthscale2</span> <span class="o">+</span> <span class="mf">1.</span>  <span class="c"># Nx1xQ</span>
+        <span class="n">_psi1_denom_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_psi1_denom</span><span class="p">)</span> <span class="c">#Nx1xQ</span>
+        <span class="n">_psi1_dist</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">mu</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span>  <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_dist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi1_dist</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">lengthscale2</span> <span class="o">*</span> <span class="n">_psi1_denom</span><span class="p">)</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_common</span> <span class="o">=</span> <span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span> <span class="o">/</span> <span class="p">(</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi1_denom</span><span class="o">*</span><span class="n">_psi1_denom_sqrt</span><span class="p">)</span> <span class="c">#Nx1xQ</span>
+        <span class="n">_psi1_exponent1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span> <span class="p">(</span><span class="n">_psi1_dist_sq</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">_psi1_denom</span><span class="p">))</span><span class="o">/</span><span class="mf">2.</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_exponent2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:])</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_exponent_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_psi1_exponent1</span><span class="p">,</span><span class="n">_psi1_exponent2</span><span class="p">)</span>
+        <span class="n">_psi1_exponent</span> <span class="o">=</span> <span class="n">_psi1_exponent_max</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exponent1</span><span class="o">-</span><span class="n">_psi1_exponent_max</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exponent2</span><span class="o">-</span><span class="n">_psi1_exponent_max</span><span class="p">))</span> <span class="c">#NxMxQ</span>
+        <span class="n">_psi1_exp_sum</span> <span class="o">=</span> <span class="n">_psi1_exponent</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c">#NxM</span>
+        <span class="n">_psi1</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exp_sum</span><span class="p">)</span> <span class="c"># NxM</span>
+    
+        <span class="k">return</span> <span class="n">_psi1</span>
+    
+    <span class="k">def</span> <span class="nf">_psi2computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi2</span>
+        <span class="c"># Produced intermediate results:</span>
+        <span class="c"># _psi2                MxM</span>
+        
+        <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+        
+        <span class="n">_psi2_Zhat</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Zdist</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Zdist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi2_Zdist</span> <span class="o">/</span> <span class="n">lengthscale</span><span class="p">)</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Z_sq_sum</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]))</span><span class="o">/</span><span class="n">lengthscale2</span> <span class="c"># MxMxQ</span>
+    
+        <span class="c"># psi2</span>
+        <span class="n">_psi2_denom</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">S</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="n">lengthscale2</span> <span class="o">+</span> <span class="mf">1.</span> <span class="c"># Nx1x1xQ</span>
+        <span class="n">_psi2_denom_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_psi2_denom</span><span class="p">)</span>
+        <span class="n">_psi2_mudist</span> <span class="o">=</span> <span class="n">mu</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">-</span><span class="n">_psi2_Zhat</span> <span class="c">#N,M,M,Q</span>
+        <span class="n">_psi2_mudist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi2_mudist</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi2_denom</span><span class="p">)</span>
+        <span class="n">_psi2_common</span> <span class="o">=</span> <span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">/</span><span class="p">(</span><span class="n">lengthscale2</span> <span class="o">*</span> <span class="n">_psi2_denom</span> <span class="o">*</span> <span class="n">_psi2_denom_sqrt</span><span class="p">)</span> <span class="c"># Nx1x1xQ</span>
+        <span class="n">_psi2_exponent1</span> <span class="o">=</span> <span class="o">-</span><span class="n">_psi2_Zdist_sq</span> <span class="o">-</span><span class="n">_psi2_mudist_sq</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">_psi2_denom</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span> <span class="c">#N,M,M,Q</span>
+        <span class="n">_psi2_exponent2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">_psi2_Z_sq_sum</span><span class="p">)</span> <span class="c"># NxMxMxQ</span>
+        <span class="n">_psi2_exponent_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_psi2_exponent1</span><span class="p">,</span> <span class="n">_psi2_exponent2</span><span class="p">)</span>
+        <span class="n">_psi2_exponent</span> <span class="o">=</span> <span class="n">_psi2_exponent_max</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exponent1</span><span class="o">-</span><span class="n">_psi2_exponent_max</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exponent2</span><span class="o">-</span><span class="n">_psi2_exponent_max</span><span class="p">))</span>
+        <span class="n">_psi2_exp_sum</span> <span class="o">=</span> <span class="n">_psi2_exponent</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c">#NxM</span>
+        <span class="n">_psi2</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">variance</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exp_sum</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="c"># MxM</span>
+    
+        <span class="k">return</span> <span class="n">_psi2</span>
+    
+<div class="viewcode-block" id="psiDerivativecomputations"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.ssrbf_psi_comp.psiDerivativecomputations">[docs]</a>    <span class="k">def</span> <span class="nf">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">ARD</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">)</span>
+         
+        <span class="n">dvar_psi1</span><span class="p">,</span> <span class="n">dl_psi1</span><span class="p">,</span> <span class="n">dZ_psi1</span><span class="p">,</span> <span class="n">dmu_psi1</span><span class="p">,</span> <span class="n">dS_psi1</span><span class="p">,</span> <span class="n">dgamma_psi1</span> <span class="o">=</span> <span class="n">_psi1compDer</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">binary_prob</span><span class="p">)</span>
+        <span class="n">dvar_psi2</span><span class="p">,</span> <span class="n">dl_psi2</span><span class="p">,</span> <span class="n">dZ_psi2</span><span class="p">,</span> <span class="n">dmu_psi2</span><span class="p">,</span> <span class="n">dS_psi2</span><span class="p">,</span> <span class="n">dgamma_psi2</span> <span class="o">=</span> <span class="n">_psi2compDer</span><span class="p">(</span><span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">binary_prob</span><span class="p">)</span>
+     
+        <span class="n">dL_dvar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">)</span> <span class="o">+</span> <span class="n">dvar_psi1</span> <span class="o">+</span> <span class="n">dvar_psi2</span>
+         
+        <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">dl_psi1</span> <span class="o">+</span> <span class="n">dl_psi2</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ARD</span><span class="p">:</span>
+            <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">dL_dlengscale</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+     
+        <span class="n">dL_dgamma</span> <span class="o">=</span> <span class="n">dgamma_psi1</span> <span class="o">+</span> <span class="n">dgamma_psi2</span>
+        <span class="n">dL_dmu</span> <span class="o">=</span> <span class="n">dmu_psi1</span> <span class="o">+</span> <span class="n">dmu_psi2</span>
+        <span class="n">dL_dS</span> <span class="o">=</span> <span class="n">dS_psi1</span> <span class="o">+</span> <span class="n">dS_psi2</span>
+        <span class="n">dL_dZ</span> <span class="o">=</span> <span class="n">dZ_psi1</span> <span class="o">+</span> <span class="n">dZ_psi2</span>
+         
+        <span class="k">return</span> <span class="n">dL_dvar</span><span class="p">,</span> <span class="n">dL_dlengscale</span><span class="p">,</span> <span class="n">dL_dZ</span><span class="p">,</span> <span class="n">dL_dmu</span><span class="p">,</span> <span class="n">dL_dS</span><span class="p">,</span> <span class="n">dL_dgamma</span>
+    </div>
+    <span class="k">def</span> <span class="nf">_psi1compDer</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        dL_dpsi1 - NxM</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi1</span>
+        <span class="c"># Produced intermediate results: dL_dparams w.r.t. psi1</span>
+        <span class="c"># _dL_dvariance     1</span>
+        <span class="c"># _dL_dlengthscale  Q</span>
+        <span class="c"># _dL_dZ            MxQ</span>
+        <span class="c"># _dL_dgamma        NxQ</span>
+        <span class="c"># _dL_dmu           NxQ</span>
+        <span class="c"># _dL_dS            NxQ</span>
+        
+        <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+    
+        <span class="c"># psi1</span>
+        <span class="n">_psi1_denom</span> <span class="o">=</span> <span class="n">S</span> <span class="o">/</span> <span class="n">lengthscale2</span> <span class="o">+</span> <span class="mf">1.</span>  <span class="c"># NxQ</span>
+        <span class="n">_psi1_denom_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_psi1_denom</span><span class="p">)</span> <span class="c">#NxQ</span>
+        <span class="n">_psi1_dist</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">mu</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span>  <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_dist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi1_dist</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">lengthscale2</span> <span class="o">*</span> <span class="n">_psi1_denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_common</span> <span class="o">=</span> <span class="n">gamma</span> <span class="o">/</span> <span class="p">(</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi1_denom</span><span class="o">*</span><span class="n">_psi1_denom_sqrt</span><span class="p">)</span> <span class="c">#NxQ</span>
+        <span class="n">_psi1_exponent1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">_psi1_dist_sq</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">_psi1_denom</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,:]))</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_exponent2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:])</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_exponent_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_psi1_exponent1</span><span class="p">,</span><span class="n">_psi1_exponent2</span><span class="p">)</span>
+        <span class="n">_psi1_exponent</span> <span class="o">=</span> <span class="n">_psi1_exponent_max</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exponent1</span><span class="o">-</span><span class="n">_psi1_exponent_max</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exponent2</span><span class="o">-</span><span class="n">_psi1_exponent_max</span><span class="p">))</span> <span class="c">#NxMxQ</span>
+        <span class="n">_psi1_exp_sum</span> <span class="o">=</span> <span class="n">_psi1_exponent</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c">#NxM</span>
+        <span class="n">_psi1_exp_dist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">_psi1_dist_sq</span><span class="p">)</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1_exp_Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:])</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)</span> <span class="c"># 1xMxQ</span>
+        <span class="n">_psi1_q</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exp_sum</span><span class="p">[:,:,</span><span class="bp">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">_psi1_exponent</span><span class="p">)</span> <span class="c"># NxMxQ</span>
+        <span class="n">_psi1</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_exp_sum</span><span class="p">)</span> <span class="c"># NxM</span>
+        <span class="n">_dL_dvariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nm-&gt;&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">_psi1</span><span class="p">)</span><span class="o">/</span><span class="n">variance</span> <span class="c"># 1</span>
+        <span class="n">_dL_dgamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nmq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">_psi1_q</span><span class="p">,</span> <span class="p">(</span><span class="n">_psi1_exp_dist_sq</span><span class="o">/</span><span class="n">_psi1_denom_sqrt</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">-</span><span class="n">_psi1_exp_Z</span><span class="p">))</span> <span class="c"># NxQ</span>
+        <span class="n">_dL_dmu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm, nmq, nmq, nmq, nq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span><span class="n">_psi1_q</span><span class="p">,</span><span class="n">_psi1_exp_dist_sq</span><span class="p">,</span><span class="n">_psi1_dist</span><span class="p">,</span><span class="n">_psi1_common</span><span class="p">)</span>  <span class="c"># NxQ</span>
+        <span class="n">_dL_dS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nmq,nq,nmq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span><span class="n">_psi1_q</span><span class="p">,</span><span class="n">_psi1_exp_dist_sq</span><span class="p">,</span><span class="n">_psi1_common</span><span class="p">,(</span><span class="n">_psi1_dist_sq</span><span class="o">-</span><span class="mf">1.</span><span class="p">))</span><span class="o">/</span><span class="mf">2.</span>  <span class="c"># NxQ</span>
+        <span class="n">_dL_dZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nmq-&gt;mq&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span><span class="n">_psi1_q</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span> <span class="n">_psi1_common</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span> <span class="o">*</span> <span class="n">_psi1_dist</span> <span class="o">*</span> <span class="n">_psi1_exp_dist_sq</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]</span><span class="o">*</span><span class="n">_psi1_exp_Z</span><span class="p">))</span>
+        <span class="n">_dL_dlengthscale</span> <span class="o">=</span> <span class="n">lengthscale</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nmq-&gt;q&#39;</span><span class="p">,</span><span class="n">dL_dpsi1</span><span class="p">,</span><span class="n">_psi1_q</span><span class="p">,(</span><span class="n">_psi1_common</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="n">S</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span><span class="n">_psi1_dist_sq</span><span class="p">)</span><span class="o">*</span><span class="n">_psi1_exp_dist_sq</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)</span><span class="o">*</span><span class="n">_psi1_exp_Z</span><span class="p">))</span>
+    
+        <span class="k">return</span> <span class="n">_dL_dvariance</span><span class="p">,</span> <span class="n">_dL_dlengthscale</span><span class="p">,</span> <span class="n">_dL_dZ</span><span class="p">,</span> <span class="n">_dL_dmu</span><span class="p">,</span> <span class="n">_dL_dS</span><span class="p">,</span> <span class="n">_dL_dgamma</span> 
+    
+    <span class="k">def</span> <span class="nf">_psi2compDer</span><span class="p">(</span><span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        gamma - NxQ</span>
+<span class="sd">        dL_dpsi2 - MxM</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># here are the &quot;statistics&quot; for psi2</span>
+        <span class="c"># Produced the derivatives w.r.t. psi2:</span>
+        <span class="c"># _dL_dvariance      1</span>
+        <span class="c"># _dL_dlengthscale   Q</span>
+        <span class="c"># _dL_dZ             MxQ</span>
+        <span class="c"># _dL_dgamma         NxQ</span>
+        <span class="c"># _dL_dmu            NxQ</span>
+        <span class="c"># _dL_dS             NxQ</span>
+        
+        <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+        
+        <span class="n">_psi2_Zhat</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Zdist</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Zdist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi2_Zdist</span> <span class="o">/</span> <span class="n">lengthscale</span><span class="p">)</span> <span class="c"># M,M,Q</span>
+        <span class="n">_psi2_Z_sq_sum</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]))</span><span class="o">/</span><span class="n">lengthscale2</span> <span class="c"># MxMxQ</span>
+    
+        <span class="c"># psi2</span>
+        <span class="n">_psi2_denom</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">S</span> <span class="o">/</span> <span class="n">lengthscale2</span> <span class="o">+</span> <span class="mf">1.</span> <span class="c"># NxQ</span>
+        <span class="n">_psi2_denom_sqrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_psi2_denom</span><span class="p">)</span>
+        <span class="n">_psi2_mudist</span> <span class="o">=</span> <span class="n">mu</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">-</span><span class="n">_psi2_Zhat</span> <span class="c">#N,M,M,Q</span>
+        <span class="n">_psi2_mudist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_psi2_mudist</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi2_denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span>
+        <span class="n">_psi2_common</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">/</span><span class="p">(</span><span class="n">lengthscale2</span> <span class="o">*</span> <span class="n">_psi2_denom</span> <span class="o">*</span> <span class="n">_psi2_denom_sqrt</span><span class="p">)</span> <span class="c"># NxQ</span>
+        <span class="n">_psi2_exponent1</span> <span class="o">=</span> <span class="o">-</span><span class="n">_psi2_Zdist_sq</span> <span class="o">-</span><span class="n">_psi2_mudist_sq</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">_psi2_denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span> <span class="c">#N,M,M,Q</span>
+        <span class="n">_psi2_exponent2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">_psi2_Z_sq_sum</span><span class="p">)</span> <span class="c"># NxMxMxQ</span>
+        <span class="n">_psi2_exponent_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_psi2_exponent1</span><span class="p">,</span> <span class="n">_psi2_exponent2</span><span class="p">)</span>
+        <span class="n">_psi2_exponent</span> <span class="o">=</span> <span class="n">_psi2_exponent_max</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exponent1</span><span class="o">-</span><span class="n">_psi2_exponent_max</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exponent2</span><span class="o">-</span><span class="n">_psi2_exponent_max</span><span class="p">))</span>
+        <span class="n">_psi2_exp_sum</span> <span class="o">=</span> <span class="n">_psi2_exponent</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c">#NxM</span>
+        <span class="n">_psi2_q</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">variance</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exp_sum</span><span class="p">[:,:,:,</span><span class="bp">None</span><span class="p">]</span><span class="o">-</span><span class="n">_psi2_exponent</span><span class="p">)</span> <span class="c"># NxMxMxQ </span>
+        <span class="n">_psi2_exp_dist_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">_psi2_Zdist_sq</span> <span class="o">-</span><span class="n">_psi2_mudist_sq</span><span class="p">)</span> <span class="c"># NxMxMxQ</span>
+        <span class="n">_psi2_exp_Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">_psi2_Z_sq_sum</span><span class="p">)</span> <span class="c"># MxMxQ</span>
+        <span class="n">_psi2</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">variance</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_exp_sum</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="c"># MxM</span>
+        <span class="n">_dL_dvariance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,mo-&gt;&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2</span><span class="p">)</span><span class="o">*</span><span class="mf">2.</span><span class="o">/</span><span class="n">variance</span>
+        <span class="n">_dL_dgamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,nmoq,nmoq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2_q</span><span class="p">,(</span><span class="n">_psi2_exp_dist_sq</span><span class="o">/</span><span class="n">_psi2_denom_sqrt</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span> <span class="o">-</span> <span class="n">_psi2_exp_Z</span><span class="p">))</span>
+        <span class="n">_dL_dmu</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,nmoq,nq,nmoq,nmoq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2_q</span><span class="p">,</span><span class="n">_psi2_common</span><span class="p">,</span><span class="n">_psi2_mudist</span><span class="p">,</span><span class="n">_psi2_exp_dist_sq</span><span class="p">)</span>
+        <span class="n">_dL_dS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,nmoq,nq,nmoq,nmoq-&gt;nq&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2_q</span><span class="p">,</span> <span class="n">_psi2_common</span><span class="p">,</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">_psi2_mudist_sq</span><span class="o">-</span><span class="mf">1.</span><span class="p">),</span> <span class="n">_psi2_exp_dist_sq</span><span class="p">)</span>
+        <span class="n">_dL_dZ</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,nmoq,nmoq-&gt;mq&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2_q</span><span class="p">,(</span><span class="n">_psi2_common</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">_psi2_Zdist</span><span class="o">*</span><span class="n">_psi2_denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">+</span><span class="n">_psi2_mudist</span><span class="p">)</span><span class="o">*</span><span class="n">_psi2_exp_dist_sq</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">*</span><span class="n">Z</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi2_exp_Z</span><span class="p">))</span>
+        <span class="n">_dL_dlengthscale</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">lengthscale</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;mo,nmoq,nmoq-&gt;q&#39;</span><span class="p">,</span><span class="n">dL_dpsi2</span><span class="p">,</span><span class="n">_psi2_q</span><span class="p">,(</span><span class="n">_psi2_common</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="n">S</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span><span class="n">_psi2_Zdist_sq</span><span class="o">*</span><span class="n">_psi2_denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">+</span><span class="n">_psi2_mudist_sq</span><span class="p">)</span><span class="o">*</span><span class="n">_psi2_exp_dist_sq</span><span class="o">+</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,:])</span><span class="o">*</span><span class="n">_psi2_Z_sq_sum</span><span class="o">*</span><span class="mf">0.5</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">_psi2_exp_Z</span><span class="p">))</span>
+    
+        <span class="k">return</span> <span class="n">_dL_dvariance</span><span class="p">,</span> <span class="n">_dL_dlengthscale</span><span class="p">,</span> <span class="n">_dL_dZ</span><span class="p">,</span> <span class="n">_dL_dmu</span><span class="p">,</span> <span class="n">_dL_dS</span><span class="p">,</span> <span class="n">_dL_dgamma</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" >GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

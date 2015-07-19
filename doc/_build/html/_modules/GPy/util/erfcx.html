@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.util.erfcx &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.util.erfcx</h1><div class="highlight"><pre>
+<span class="c">## Copyright (C) 2010 Soren Hauberg</span>
+<span class="c">##</span>
+<span class="c">## Copyright James Hensman 2011</span>
+<span class="c">## </span>
+<span class="c">## This program is free software; you can redistribute it and/or modify it</span>
+<span class="c">## under the terms of the GNU General Public License as published by</span>
+<span class="c">## the Free Software Foundation; either version 3 of the License, or (at</span>
+<span class="c">## your option) any later version.</span>
+<span class="c">##</span>
+<span class="c">## This program is distributed in the hope that it will be useful, but</span>
+<span class="c">## WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</span>
+<span class="c">## General Public License for more details.</span>
+<span class="c">##</span>
+<span class="c">## You should have received a copy of the GNU General Public License</span>
+<span class="c">## along with this program; see the file COPYING.  If not, see</span>
+<span class="c">## &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="erfcx"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.erfcx.erfcx">[docs]</a><span class="k">def</span> <span class="nf">erfcx</span> <span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+	<span class="n">arg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+	<span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isreal</span><span class="p">(</span><span class="n">arg</span><span class="p">)),</span><span class="s">&quot;erfcx: input must be real&quot;</span><span class="p">)</span>
+
+	<span class="c">## Get precision dependent thresholds -- or not :p</span>
+	<span class="n">xneg</span> <span class="o">=</span> <span class="o">-</span><span class="mf">26.628</span><span class="p">;</span>
+	<span class="n">xmax</span> <span class="o">=</span> <span class="mf">2.53e+307</span><span class="p">;</span>
+
+	<span class="c">## Allocate output</span>
+	<span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span> <span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+	<span class="c">## Find values where erfcx can be evaluated</span>
+	<span class="n">idx_neg</span> <span class="o">=</span> <span class="p">(</span><span class="n">arg</span> <span class="o">&lt;</span> <span class="n">xneg</span><span class="p">);</span>
+	<span class="n">idx_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">arg</span> <span class="o">&gt;</span> <span class="n">xmax</span><span class="p">);</span>
+	<span class="n">idx</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">idx_neg</span> <span class="o">|</span> <span class="n">idx_max</span><span class="p">);</span>
+
+	<span class="n">arg</span> <span class="o">=</span> <span class="n">arg</span> <span class="p">[</span><span class="n">idx</span><span class="p">];</span>
+
+	<span class="c">## Perform the actual computation</span>
+	<span class="n">t</span> <span class="o">=</span> <span class="mf">3.97886080735226</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span> <span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">+</span> <span class="mf">3.97886080735226</span><span class="p">);</span>
+	<span class="n">u</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="p">(((((((((</span><span class="n">u</span> <span class="o">*</span> <span class="mf">0.00127109764952614092</span> <span class="o">+</span> <span class="mf">1.19314022838340944e-4</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> \
+	    <span class="o">-</span> <span class="mf">0.003963850973605135</span><span class="p">)</span>   <span class="o">*</span> <span class="n">u</span> <span class="o">-</span> <span class="mf">8.70779635317295828e-4</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span>     \
+	      <span class="mf">0.00773672528313526668</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">0.00383335126264887303</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">-</span>     \
+	      <span class="mf">0.0127223813782122755</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">-</span> <span class="mf">0.0133823644533460069</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span>     \
+	      <span class="mf">0.0161315329733252248</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">0.0390976845588484035</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span>     \
+	      <span class="mf">0.00249367200053503304</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="p">((((((((((((</span><span class="n">y</span> <span class="o">*</span> <span class="n">u</span> <span class="o">-</span> <span class="mf">0.0838864557023001992</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">-</span>           \
+	      <span class="mf">0.119463959964325415</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">0.0166207924969367356</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> \
+	      <span class="mf">0.357524274449531043</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">0.805276408752910567</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> \
+	      <span class="mf">1.18902982909273333</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">1.37040217682338167</span><span class="p">)</span>   <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> \
+	      <span class="mf">1.31314653831023098</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">1.07925515155856677</span><span class="p">)</span>   <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> \
+	      <span class="mf">0.774368199119538609</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="mf">0.490165080585318424</span><span class="p">)</span>  <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> \
+	      <span class="mf">0.275374741597376782</span><span class="p">)</span> <span class="o">*</span> <span class="n">t</span><span class="p">;</span>
+
+	<span class="n">y</span> <span class="p">[</span><span class="n">arg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span> <span class="p">(</span><span class="n">arg</span> <span class="p">[</span><span class="n">arg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span> <span class="p">[</span><span class="n">arg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">];</span>
+
+	<span class="c">## Put the results back into something with the same size is the original input</span>
+	<span class="n">result</span> <span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">;</span>
+	<span class="n">result</span> <span class="p">[</span><span class="n">idx_neg</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">;</span>
+	<span class="c">## result (idx_max) = 0; # not needed as we initialise with zeros</span>
+	<span class="k">return</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

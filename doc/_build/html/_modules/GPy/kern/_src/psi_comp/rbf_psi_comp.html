@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.psi_comp.rbf_psi_comp &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../../index.html" />
+    <link rel="up" title="GPy.kern._src.psi_comp" href="../psi_comp.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" accesskey="U">GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.psi_comp.rbf_psi_comp</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The module for psi-statistics for RBF kernel</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">GPy.util.caching</span> <span class="kn">import</span> <span class="n">Cacher</span>
+
+<div class="viewcode-block" id="psicomputations"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_comp.psicomputations">[docs]</a><span class="k">def</span> <span class="nf">psicomputations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Z - MxQ</span>
+<span class="sd">    mu - NxQ</span>
+<span class="sd">    S - NxQ</span>
+<span class="sd">    gamma - NxQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># here are the &quot;statistics&quot; for psi0, psi1 and psi2</span>
+    <span class="c"># Produced intermediate results:</span>
+    <span class="c"># _psi1                NxM</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+
+    <span class="n">psi0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">mu</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">psi0</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">variance</span>
+    <span class="n">psi1</span> <span class="o">=</span> <span class="n">_psi1computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+    <span class="n">psi2</span> <span class="o">=</span> <span class="n">_psi2computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">psi0</span><span class="p">,</span> <span class="n">psi1</span><span class="p">,</span> <span class="n">psi2</span>
+</div>
+<span class="k">def</span> <span class="nf">__psi1computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Z - MxQ</span>
+<span class="sd">    mu - NxQ</span>
+<span class="sd">    S - NxQ</span>
+<span class="sd">    gamma - NxQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># here are the &quot;statistics&quot; for psi1</span>
+    <span class="c"># Produced intermediate results:</span>
+    <span class="c"># _psi1                NxM</span>
+
+    <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="c"># psi1</span>
+    <span class="n">_psi1_logdenom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span><span class="mf">1.</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># N</span>
+    <span class="n">_psi1_log</span> <span class="o">=</span> <span class="p">(</span><span class="n">_psi1_logdenom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmq,nq-&gt;nm&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">-</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]),</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">S</span><span class="o">+</span><span class="n">lengthscale2</span><span class="p">)))</span><span class="o">/</span><span class="p">(</span><span class="o">-</span><span class="mf">2.</span><span class="p">)</span>
+    <span class="n">_psi1</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi1_log</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_psi1</span>
+
+<span class="k">def</span> <span class="nf">__psi2computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Z - MxQ</span>
+<span class="sd">    mu - NxQ</span>
+<span class="sd">    S - NxQ</span>
+<span class="sd">    gamma - NxQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># here are the &quot;statistics&quot; for psi2</span>
+    <span class="c"># Produced intermediate results:</span>
+    <span class="c"># _psi2                MxM</span>
+
+    <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="n">_psi2_logdenom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">S</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span><span class="mf">1.</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="o">-</span><span class="mf">2.</span><span class="p">)</span> <span class="c"># N</span>
+    <span class="n">_psi2_exp1</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">-</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:])</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="o">-</span><span class="mf">4.</span><span class="p">)</span> <span class="c">#MxM</span>
+    <span class="n">Z_hat</span> <span class="o">=</span> <span class="p">(</span><span class="n">Z</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span><span class="o">+</span><span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:])</span><span class="o">/</span><span class="mf">2.</span> <span class="c">#MxMxQ</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">S</span><span class="o">+</span><span class="n">lengthscale2</span><span class="p">)</span>
+    <span class="n">_psi2_exp2</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">denom</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nq,moq,nq-&gt;nmo&#39;</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">Z_hat</span><span class="p">,</span><span class="n">denom</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;moq,nq-&gt;nmo&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Z_hat</span><span class="p">),</span><span class="n">denom</span><span class="p">)</span>
+    <span class="n">_psi2</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">variance</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_psi2_logdenom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span><span class="n">_psi2_exp1</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]</span><span class="o">+</span><span class="n">_psi2_exp2</span><span class="p">)</span>
+
+
+    <span class="k">return</span> <span class="n">_psi2</span>
+
+<div class="viewcode-block" id="psiDerivativecomputations"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_comp.psiDerivativecomputations">[docs]</a><span class="k">def</span> <span class="nf">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+    <span class="n">ARD</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">dvar_psi1</span><span class="p">,</span> <span class="n">dl_psi1</span><span class="p">,</span> <span class="n">dZ_psi1</span><span class="p">,</span> <span class="n">dmu_psi1</span><span class="p">,</span> <span class="n">dS_psi1</span> <span class="o">=</span> <span class="n">_psi1compDer</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+    <span class="n">dvar_psi2</span><span class="p">,</span> <span class="n">dl_psi2</span><span class="p">,</span> <span class="n">dZ_psi2</span><span class="p">,</span> <span class="n">dmu_psi2</span><span class="p">,</span> <span class="n">dS_psi2</span> <span class="o">=</span> <span class="n">_psi2compDer</span><span class="p">(</span><span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+
+    <span class="n">dL_dvar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">)</span> <span class="o">+</span> <span class="n">dvar_psi1</span> <span class="o">+</span> <span class="n">dvar_psi2</span>
+
+    <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">dl_psi1</span> <span class="o">+</span> <span class="n">dl_psi2</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ARD</span><span class="p">:</span>
+        <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">dL_dlengscale</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="n">dL_dmu</span> <span class="o">=</span> <span class="n">dmu_psi1</span> <span class="o">+</span> <span class="n">dmu_psi2</span>
+    <span class="n">dL_dS</span> <span class="o">=</span> <span class="n">dS_psi1</span> <span class="o">+</span> <span class="n">dS_psi2</span>
+    <span class="n">dL_dZ</span> <span class="o">=</span> <span class="n">dZ_psi1</span> <span class="o">+</span> <span class="n">dZ_psi2</span>
+
+    <span class="k">return</span> <span class="n">dL_dvar</span><span class="p">,</span> <span class="n">dL_dlengscale</span><span class="p">,</span> <span class="n">dL_dZ</span><span class="p">,</span> <span class="n">dL_dmu</span><span class="p">,</span> <span class="n">dL_dS</span>
+</div>
+<span class="k">def</span> <span class="nf">_psi1compDer</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    dL_dpsi1 - NxM</span>
+<span class="sd">    Z - MxQ</span>
+<span class="sd">    mu - NxQ</span>
+<span class="sd">    S - NxQ</span>
+<span class="sd">    gamma - NxQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># here are the &quot;statistics&quot; for psi1</span>
+    <span class="c"># Produced intermediate results: dL_dparams w.r.t. psi1</span>
+    <span class="c"># _dL_dvariance     1</span>
+    <span class="c"># _dL_dlengthscale  Q</span>
+    <span class="c"># _dL_dZ            MxQ</span>
+    <span class="c"># _dL_dgamma        NxQ</span>
+    <span class="c"># _dL_dmu           NxQ</span>
+    <span class="c"># _dL_dS            NxQ</span>
+
+    <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="n">_psi1</span> <span class="o">=</span> <span class="n">_psi1computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+    <span class="n">Lpsi1</span> <span class="o">=</span> <span class="n">dL_dpsi1</span><span class="o">*</span><span class="n">_psi1</span>
+    <span class="n">Zmu</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:]</span><span class="o">-</span><span class="n">mu</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span> <span class="c"># NxMxQ</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">S</span><span class="o">+</span><span class="n">lengthscale2</span><span class="p">)</span>
+    <span class="n">Zmu2_denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">Zmu</span><span class="p">)</span><span class="o">*</span><span class="n">denom</span><span class="p">[:,</span><span class="bp">None</span><span class="p">,:]</span> <span class="c">#NxMxQ</span>
+    <span class="n">_dL_dvar</span> <span class="o">=</span> <span class="n">Lpsi1</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="n">variance</span>
+    <span class="n">_dL_dmu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nq-&gt;nq&#39;</span><span class="p">,</span><span class="n">Lpsi1</span><span class="p">,</span><span class="n">Zmu</span><span class="p">,</span><span class="n">denom</span><span class="p">)</span>
+    <span class="n">_dL_dS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nq-&gt;nq&#39;</span><span class="p">,</span><span class="n">Lpsi1</span><span class="p">,(</span><span class="n">Zmu2_denom</span><span class="o">-</span><span class="mf">1.</span><span class="p">),</span><span class="n">denom</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+    <span class="n">_dL_dZ</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nq-&gt;mq&#39;</span><span class="p">,</span><span class="n">Lpsi1</span><span class="p">,</span><span class="n">Zmu</span><span class="p">,</span><span class="n">denom</span><span class="p">)</span>
+    <span class="n">_dL_dl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nm,nmq,nq-&gt;q&#39;</span><span class="p">,</span><span class="n">Lpsi1</span><span class="p">,(</span><span class="n">Zmu2_denom</span><span class="o">+</span><span class="p">(</span><span class="n">S</span><span class="o">/</span><span class="n">lengthscale2</span><span class="p">)[:,</span><span class="bp">None</span><span class="p">,:]),</span><span class="n">denom</span><span class="o">*</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_dL_dvar</span><span class="p">,</span> <span class="n">_dL_dl</span><span class="p">,</span> <span class="n">_dL_dZ</span><span class="p">,</span> <span class="n">_dL_dmu</span><span class="p">,</span> <span class="n">_dL_dS</span>
+
+<span class="k">def</span> <span class="nf">_psi2compDer</span><span class="p">(</span><span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Z - MxQ</span>
+<span class="sd">    mu - NxQ</span>
+<span class="sd">    S - NxQ</span>
+<span class="sd">    gamma - NxQ</span>
+<span class="sd">    dL_dpsi2 - MxM</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># here are the &quot;statistics&quot; for psi2</span>
+    <span class="c"># Produced the derivatives w.r.t. psi2:</span>
+    <span class="c"># _dL_dvariance      1</span>
+    <span class="c"># _dL_dlengthscale   Q</span>
+    <span class="c"># _dL_dZ             MxQ</span>
+    <span class="c"># _dL_dgamma         NxQ</span>
+    <span class="c"># _dL_dmu            NxQ</span>
+    <span class="c"># _dL_dS             NxQ</span>
+
+    <span class="n">lengthscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">S</span><span class="o">+</span><span class="n">lengthscale2</span><span class="p">)</span>
+    <span class="n">denom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span>
+
+    <span class="n">_psi2</span> <span class="o">=</span> <span class="n">_psi2computations</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span> <span class="c"># NxMxM</span>
+    <span class="n">Lpsi2</span> <span class="o">=</span> <span class="n">dL_dpsi2</span><span class="o">*</span><span class="n">_psi2</span> <span class="c"># dL_dpsi2 is MxM, using broadcast to multiply N out</span>
+    <span class="n">Lpsi2sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo-&gt;n&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">)</span> <span class="c">#N</span>
+    <span class="n">Lpsi2Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,oq-&gt;nq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span> <span class="c">#NxQ</span>
+    <span class="n">Lpsi2Z2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,oq,oq-&gt;nq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span> <span class="c">#NxQ</span>
+    <span class="n">Lpsi2Z2p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,mq,oq-&gt;nq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span> <span class="c">#NxQ</span>
+    <span class="n">Lpsi2Zhat</span> <span class="o">=</span> <span class="n">Lpsi2Z</span>
+    <span class="n">Lpsi2Zhat2</span> <span class="o">=</span> <span class="p">(</span><span class="n">Lpsi2Z2</span><span class="o">+</span><span class="n">Lpsi2Z2p</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="n">_dL_dvar</span> <span class="o">=</span> <span class="n">Lpsi2sum</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">*</span><span class="mi">2</span><span class="o">/</span><span class="n">variance</span>
+    <span class="n">_dL_dmu</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">denom</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu</span><span class="o">*</span><span class="n">Lpsi2sum</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">-</span><span class="n">Lpsi2Zhat</span><span class="p">)</span>
+    <span class="n">_dL_dS</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">denom</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">Lpsi2sum</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mu</span><span class="o">*</span><span class="n">Lpsi2Zhat</span><span class="o">+</span><span class="n">Lpsi2Zhat2</span><span class="p">)</span> <span class="o">-</span> <span class="n">denom</span><span class="o">*</span><span class="n">Lpsi2sum</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span>
+    <span class="n">_dL_dZ</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,oq-&gt;oq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,oq-&gt;mq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">+</span> \
+             <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,nq,nq-&gt;mq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">denom</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,nq,mq-&gt;mq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">denom</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;nmo,oq,nq-&gt;mq&#39;</span><span class="p">,</span><span class="n">Lpsi2</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">denom</span><span class="p">)</span>
+    <span class="n">_dL_dl</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">lengthscale</span><span class="o">*</span> <span class="p">((</span><span class="n">S</span><span class="o">/</span><span class="n">lengthscale2</span><span class="o">*</span><span class="n">denom</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="o">*</span><span class="n">denom</span><span class="p">))</span><span class="o">*</span><span class="n">Lpsi2sum</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">Lpsi2Z2</span><span class="o">-</span><span class="n">Lpsi2Z2p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">lengthscale2</span><span class="p">))</span><span class="o">-</span>
+                             <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">mu</span><span class="o">*</span><span class="n">denom2</span><span class="p">)</span><span class="o">*</span><span class="n">Lpsi2Zhat</span><span class="o">+</span><span class="n">denom2</span><span class="o">*</span><span class="n">Lpsi2Zhat2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_dL_dvar</span><span class="p">,</span> <span class="n">_dL_dl</span><span class="p">,</span> <span class="n">_dL_dZ</span><span class="p">,</span> <span class="n">_dL_dmu</span><span class="p">,</span> <span class="n">_dL_dS</span>
+
+<span class="n">_psi1computations</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="n">__psi1computations</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">_psi2computations</span> <span class="o">=</span> <span class="n">Cacher</span><span class="p">(</span><span class="n">__psi2computations</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" >GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

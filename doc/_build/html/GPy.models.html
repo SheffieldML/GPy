@@ -1,0 +1,1048 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.models package &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" />
+    <link rel="up" title="GPy package" href="GPy.html" />
+    <link rel="next" title="GPy.plotting package" href="GPy.plotting.html" />
+    <link rel="prev" title="GPy.mappings package" href="GPy.mappings.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.plotting.html" title="GPy.plotting package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GPy.mappings.html" title="GPy.mappings package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" accesskey="U">GPy package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gpy-models-package">
+<h1>GPy.models package<a class="headerlink" href="#gpy-models-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.models.bayesian_gplvm">
+<span id="gpy-models-bayesian-gplvm-module"></span><h2>GPy.models.bayesian_gplvm module<a class="headerlink" href="#module-GPy.models.bayesian_gplvm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM">
+<em class="property">class </em><code class="descclassname">GPy.models.bayesian_gplvm.</code><code class="descname">BayesianGPLVM</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>X=None</em>, <em>X_variance=None</em>, <em>init='PCA'</em>, <em>num_inducing=10</em>, <em>Z=None</em>, <em>kernel=None</em>, <em>inference_method=None</em>, <em>likelihood=None</em>, <em>name='bayesian gplvm'</em>, <em>mpi_comm=None</em>, <em>normalizer=None</em>, <em>missing_data=False</em>, <em>stochastic=False</em>, <em>batchsize=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp_mpi.SparseGP_MPI" title="GPy.core.sparse_gp_mpi.SparseGP_MPI"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp_mpi.SparseGP_MPI</span></code></a></p>
+<p>Bayesian Gaussian Process Latent Variable Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>np.ndarray| GPy.likelihood instance</em>) &#8211; observed data (np.ndarray) or GPy.likelihood</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>init</strong> (<em>&#8216;PCA&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for the latent space</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.dmu_dX">
+<code class="descname">dmu_dX</code><span class="sig-paren">(</span><em>Xnew</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.dmu_dX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.dmu_dX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gradient of the prediction at Xnew w.r.t Xnew.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.dmu_dXnew">
+<code class="descname">dmu_dXnew</code><span class="sig-paren">(</span><em>Xnew</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.dmu_dXnew"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.dmu_dXnew" title="Permalink to this definition">¶</a></dt>
+<dd><p>Individual gradient of prediction at Xnew w.r.t. each sample in Xnew</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.do_test_latents">
+<code class="descname">do_test_latents</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.do_test_latents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.do_test_latents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the latent representation for a set of new points Y</p>
+<p>Notes:
+This will only work with a univariate Gaussian likelihood (for now)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.get_X_gradients">
+<code class="descname">get_X_gradients</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.get_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.get_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>labels=None</em>, <em>which_indices=None</em>, <em>resolution=50</em>, <em>ax=None</em>, <em>marker='o'</em>, <em>s=40</em>, <em>fignum=None</em>, <em>plot_inducing=True</em>, <em>legend=True</em>, <em>plot_limits=None</em>, <em>aspect='auto'</em>, <em>updates=False</em>, <em>predict_kwargs={}</em>, <em>imshow_kwargs={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.plot_steepest_gradient_map">
+<code class="descname">plot_steepest_gradient_map</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.plot_steepest_gradient_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.plot_steepest_gradient_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>See GPy.plotting.matplot_dep.dim_reduction_plots.plot_steepest_gradient_map</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm.BayesianGPLVM.set_X_gradients">
+<code class="descname">set_X_gradients</code><span class="sig-paren">(</span><em>X</em>, <em>X_grad</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#BayesianGPLVM.set_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.BayesianGPLVM.set_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.models.bayesian_gplvm.latent_cost_and_grad">
+<code class="descclassname">GPy.models.bayesian_gplvm.</code><code class="descname">latent_cost_and_grad</code><span class="sig-paren">(</span><em>mu_S</em>, <em>input_dim</em>, <em>kern</em>, <em>Z</em>, <em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm.html#latent_cost_and_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm.latent_cost_and_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>objective function for fitting the latent variables for test points
+(negative log-likelihood: should be minimised!)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.bayesian_gplvm_minibatch">
+<span id="gpy-models-bayesian-gplvm-minibatch-module"></span><h2>GPy.models.bayesian_gplvm_minibatch module<a class="headerlink" href="#module-GPy.models.bayesian_gplvm_minibatch" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch">
+<em class="property">class </em><code class="descclassname">GPy.models.bayesian_gplvm_minibatch.</code><code class="descname">BayesianGPLVMMiniBatch</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>X=None</em>, <em>X_variance=None</em>, <em>init='PCA'</em>, <em>num_inducing=10</em>, <em>Z=None</em>, <em>kernel=None</em>, <em>inference_method=None</em>, <em>likelihood=None</em>, <em>name='bayesian gplvm'</em>, <em>normalizer=None</em>, <em>missing_data=False</em>, <em>stochastic=False</em>, <em>batchsize=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch" title="GPy.models.sparse_gp_minibatch.SparseGPMiniBatch"><code class="xref py py-class docutils literal"><span class="pre">GPy.models.sparse_gp_minibatch.SparseGPMiniBatch</span></code></a></p>
+<p>Bayesian Gaussian Process Latent Variable Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>np.ndarray| GPy.likelihood instance</em>) &#8211; observed data (np.ndarray) or GPy.likelihood</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>init</strong> (<em>&#8216;PCA&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for the latent space</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.dmu_dX">
+<code class="descname">dmu_dX</code><span class="sig-paren">(</span><em>Xnew</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.dmu_dX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.dmu_dX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gradient of the prediction at Xnew w.r.t Xnew.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.dmu_dXnew">
+<code class="descname">dmu_dXnew</code><span class="sig-paren">(</span><em>Xnew</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.dmu_dXnew"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.dmu_dXnew" title="Permalink to this definition">¶</a></dt>
+<dd><p>Individual gradient of prediction at Xnew w.r.t. each sample in Xnew</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.do_test_latents">
+<code class="descname">do_test_latents</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.do_test_latents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.do_test_latents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the latent representation for a set of new points Y</p>
+<p>Notes:
+This will only work with a univariate Gaussian likelihood (for now)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.get_X_gradients">
+<code class="descname">get_X_gradients</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.get_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.get_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>labels=None</em>, <em>which_indices=None</em>, <em>resolution=50</em>, <em>ax=None</em>, <em>marker='o'</em>, <em>s=40</em>, <em>fignum=None</em>, <em>plot_inducing=True</em>, <em>legend=True</em>, <em>plot_limits=None</em>, <em>aspect='auto'</em>, <em>updates=False</em>, <em>predict_kwargs={}</em>, <em>imshow_kwargs={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map">
+<code class="descname">plot_steepest_gradient_map</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.plot_steepest_gradient_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>See GPy.plotting.matplot_dep.dim_reduction_plots.plot_steepest_gradient_map</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.set_X_gradients">
+<code class="descname">set_X_gradients</code><span class="sig-paren">(</span><em>X</em>, <em>X_grad</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#BayesianGPLVMMiniBatch.set_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.set_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.models.bayesian_gplvm_minibatch.latent_cost_and_grad">
+<code class="descclassname">GPy.models.bayesian_gplvm_minibatch.</code><code class="descname">latent_cost_and_grad</code><span class="sig-paren">(</span><em>mu_S</em>, <em>input_dim</em>, <em>kern</em>, <em>Z</em>, <em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bayesian_gplvm_minibatch.html#latent_cost_and_grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bayesian_gplvm_minibatch.latent_cost_and_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>objective function for fitting the latent variables for test points
+(negative log-likelihood: should be minimised!)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.bcgplvm">
+<span id="gpy-models-bcgplvm-module"></span><h2>GPy.models.bcgplvm module<a class="headerlink" href="#module-GPy.models.bcgplvm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.bcgplvm.BCGPLVM">
+<em class="property">class </em><code class="descclassname">GPy.models.bcgplvm.</code><code class="descname">BCGPLVM</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>init='PCA'</em>, <em>X=None</em>, <em>kernel=None</em>, <em>normalize_Y=False</em>, <em>mapping=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/bcgplvm.html#BCGPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.bcgplvm.BCGPLVM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.models.gplvm.GPLVM" title="GPy.models.gplvm.GPLVM"><code class="xref py py-class docutils literal"><span class="pre">GPy.models.gplvm.GPLVM</span></code></a></p>
+<p>Back constrained Gaussian Process Latent Variable Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>np.ndarray</em>) &#8211; observed data</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>init</strong> (<em>&#8216;PCA&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for the latent space</li>
+<li><strong>mapping</strong> (<em>GPy.core.Mapping object</em>) &#8211; mapping for back constraint</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gp_classification">
+<span id="gpy-models-gp-classification-module"></span><h2>GPy.models.gp_classification module<a class="headerlink" href="#module-GPy.models.gp_classification" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_classification.GPClassification">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_classification.</code><code class="descname">GPClassification</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em>, <em>Y_metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_classification.html#GPClassification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_classification.GPClassification" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<p>Gaussian Process classification</p>
+<p>This is a thin wrapper around the models.GP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> &#8211; input observations</li>
+<li><strong>Y</strong> &#8211; observed values, can be None if likelihood is not None</li>
+<li><strong>kernel</strong> &#8211; a GPy kernel, defaults to rbf</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Multiple independent outputs are allowed using columns of Y</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gp_coregionalized_regression">
+<span id="gpy-models-gp-coregionalized-regression-module"></span><h2>GPy.models.gp_coregionalized_regression module<a class="headerlink" href="#module-GPy.models.gp_coregionalized_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_coregionalized_regression.GPCoregionalizedRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_coregionalized_regression.</code><code class="descname">GPCoregionalizedRegression</code><span class="sig-paren">(</span><em>X_list</em>, <em>Y_list</em>, <em>kernel=None</em>, <em>likelihoods_list=None</em>, <em>name='GPCR'</em>, <em>W_rank=1</em>, <em>kernel_name='coreg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_coregionalized_regression.html#GPCoregionalizedRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_coregionalized_regression.GPCoregionalizedRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<p>Gaussian Process model for heteroscedastic multioutput regression</p>
+<p>This is a thin wrapper around the models.GP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X_list</strong> (<em>list of numpy arrays</em>) &#8211; list of input observations corresponding to each output</li>
+<li><strong>Y_list</strong> (<em>list of numpy arrays</em>) &#8211; list of observed values related to the different noise models</li>
+<li><strong>kernel</strong> (<em>None | GPy.kernel defaults</em>) &#8211; a GPy kernel, defaults to RBF ** Coregionalized</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; model name</li>
+<li><strong>W_rank</strong> (<em>integer</em>) &#8211; number tuples of the corregionalization parameters &#8216;W&#8217; (see coregionalize kernel documentation)</li>
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; name of the kernel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Likelihoods_list:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">a list of likelihoods, defaults to list of Gaussian likelihoods</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gp_heteroscedastic_regression">
+<span id="gpy-models-gp-heteroscedastic-regression-module"></span><h2>GPy.models.gp_heteroscedastic_regression module<a class="headerlink" href="#module-GPy.models.gp_heteroscedastic_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_heteroscedastic_regression.GPHeteroscedasticRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_heteroscedastic_regression.</code><code class="descname">GPHeteroscedasticRegression</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em>, <em>Y_metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_heteroscedastic_regression.html#GPHeteroscedasticRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_heteroscedastic_regression.GPHeteroscedasticRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<p>Gaussian Process model for heteroscedastic regression</p>
+<p>This is a thin wrapper around the models.GP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> &#8211; input observations</li>
+<li><strong>Y</strong> &#8211; observed values</li>
+<li><strong>kernel</strong> &#8211; a GPy kernel, defaults to rbf</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.models.gp_heteroscedastic_regression.GPHeteroscedasticRegression.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_heteroscedastic_regression.html#GPHeteroscedasticRegression.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_heteroscedastic_regression.GPHeteroscedasticRegression.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gp_kronecker_gaussian_regression">
+<span id="gpy-models-gp-kronecker-gaussian-regression-module"></span><h2>GPy.models.gp_kronecker_gaussian_regression module<a class="headerlink" href="#module-GPy.models.gp_kronecker_gaussian_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_kronecker_gaussian_regression.</code><code class="descname">GPKroneckerGaussianRegression</code><span class="sig-paren">(</span><em>X1</em>, <em>X2</em>, <em>Y</em>, <em>kern1</em>, <em>kern2</em>, <em>noise_var=1.0</em>, <em>name='KGPR'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_kronecker_gaussian_regression.html#GPKroneckerGaussianRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.model.Model" title="GPy.core.model.Model"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.model.Model</span></code></a></p>
+<p>Kronecker GP regression</p>
+<p>Take two kernels computed on separate spaces K1(X1), K2(X2), and a data
+matrix Y which is f size (N1, N2).</p>
+<p>The effective covaraince is np.kron(K2, K1)
+The effective data is vec(Y) = Y.flatten(order=&#8217;F&#8217;)</p>
+<p>The noise must be iid Gaussian.</p>
+<p>See Stegle et al.
+&#64;inproceedings{stegle2011efficient,</p>
+<blockquote>
+<div>title={Efficient inference in matrix-variate gaussian models with $backslash$ iid observation noise},
+author={Stegle, Oliver and Lippert, Christoph and Mooij, Joris M and Lawrence, Neil D and Borgwardt, Karsten M},
+booktitle={Advances in Neural Information Processing Systems},
+pages={630&#8211;638},
+year={2011}</div></blockquote>
+<p>}</p>
+<dl class="method">
+<dt id="GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_kronecker_gaussian_regression.html#GPKroneckerGaussianRegression.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_kronecker_gaussian_regression.html#GPKroneckerGaussianRegression.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>X1new</em>, <em>X2new</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_kronecker_gaussian_regression.html#GPKroneckerGaussianRegression.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_kronecker_gaussian_regression.GPKroneckerGaussianRegression.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the predictive mean and variance at a series of new points X1new, X2new
+Only returns the diagonal of the predictive variance, for now.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X1new</strong> (<em>np.ndarray, Nnew x self.input_dim1</em>) &#8211; The points at which to make a prediction</li>
+<li><strong>X2new</strong> (<em>np.ndarray, Nnew x self.input_dim2</em>) &#8211; The points at which to make a prediction</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="gpy-models-gp-multioutput-regression-module">
+<h2>GPy.models.gp_multioutput_regression module<a class="headerlink" href="#gpy-models-gp-multioutput-regression-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.models.gp_regression">
+<span id="gpy-models-gp-regression-module"></span><h2>GPy.models.gp_regression module<a class="headerlink" href="#module-GPy.models.gp_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_regression.GPRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_regression.</code><code class="descname">GPRegression</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em>, <em>Y_metadata=None</em>, <em>normalizer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_regression.html#GPRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_regression.GPRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<p>Gaussian Process model for regression</p>
+<p>This is a thin wrapper around the models.GP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> &#8211; input observations</li>
+<li><strong>Y</strong> &#8211; observed values</li>
+<li><strong>kernel</strong> &#8211; a GPy kernel, defaults to rbf</li>
+<li><strong>normalizer</strong> (<a class="reference internal" href="GPy.util.html#GPy.util.normalizer.Norm" title="GPy.util.normalizer.Norm"><em>Norm</em></a>) &#8211; <p>[False]</p>
+<p>Normalize Y with the norm given.
+If normalizer is False, no normalization will be done
+If it is None, we use GaussianNorm(alization)</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Multiple independent outputs are allowed using columns of Y</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gp_var_gauss">
+<span id="gpy-models-gp-var-gauss-module"></span><h2>GPy.models.gp_var_gauss module<a class="headerlink" href="#module-GPy.models.gp_var_gauss" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gp_var_gauss.GPVariationalGaussianApproximation">
+<em class="property">class </em><code class="descclassname">GPy.models.gp_var_gauss.</code><code class="descname">GPVariationalGaussianApproximation</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_var_gauss.html#GPVariationalGaussianApproximation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.model.Model" title="GPy.core.model.Model"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.model.Model</span></code></a></p>
+<p>The Variational Gaussian Approximation revisited implementation for regression</p>
+<dl class="docutils">
+<dt>&#64;article{Opper:2009,</dt>
+<dd>title = {The Variational Gaussian Approximation Revisited},
+author = {Opper, Manfred and Archambeau, C{&#8216;e}dric},
+journal = {Neural Comput.},
+year = {2009},
+pages = {786&#8211;792},</dd>
+</dl>
+<p>}</p>
+<dl class="method">
+<dt id="GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.likelihood_quadrature">
+<code class="descname">likelihood_quadrature</code><span class="sig-paren">(</span><em>m</em>, <em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_var_gauss.html#GPVariationalGaussianApproximation.likelihood_quadrature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.likelihood_quadrature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform Gauss-Hermite quadrature over the log of the likelihood, with a fixed weight</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_var_gauss.html#GPVariationalGaussianApproximation.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marginal log likelihood evaluation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_var_gauss.html#GPVariationalGaussianApproximation.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gp_var_gauss.html#GPVariationalGaussianApproximation.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the function(s) at the new point(s) Xnew.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Xnew</strong> (<em>np.ndarray, Nnew x self.input_dim</em>) &#8211; The points at which to make a prediction</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gplvm">
+<span id="gpy-models-gplvm-module"></span><h2>GPy.models.gplvm module<a class="headerlink" href="#module-GPy.models.gplvm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gplvm.GPLVM">
+<em class="property">class </em><code class="descclassname">GPy.models.gplvm.</code><code class="descname">GPLVM</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>init='PCA'</em>, <em>X=None</em>, <em>kernel=None</em>, <em>name='gplvm'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<p>Gaussian Process Latent Variable Model</p>
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.jacobian">
+<code class="descname">jacobian</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.jacobian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.jacobian" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.magnification">
+<code class="descname">magnification</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.magnification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.magnification" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>labels=None</em>, <em>which_indices=None</em>, <em>resolution=50</em>, <em>ax=None</em>, <em>marker='o'</em>, <em>s=40</em>, <em>fignum=None</em>, <em>legend=True</em>, <em>plot_limits=None</em>, <em>aspect='auto'</em>, <em>updates=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.gplvm.GPLVM.plot_magnification">
+<code class="descname">plot_magnification</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gplvm.html#GPLVM.plot_magnification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gplvm.GPLVM.plot_magnification" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.gradient_checker">
+<span id="gpy-models-gradient-checker-module"></span><h2>GPy.models.gradient_checker module<a class="headerlink" href="#module-GPy.models.gradient_checker" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.gradient_checker.GradientChecker">
+<em class="property">class </em><code class="descclassname">GPy.models.gradient_checker.</code><code class="descname">GradientChecker</code><span class="sig-paren">(</span><em>f</em>, <em>df</em>, <em>x0</em>, <em>names=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gradient_checker.html#GradientChecker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gradient_checker.GradientChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.model.Model" title="GPy.core.model.Model"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.model.Model</span></code></a></p>
+<dl class="method">
+<dt id="GPy.models.gradient_checker.GradientChecker.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gradient_checker.html#GradientChecker.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gradient_checker.GradientChecker.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.models.gradient_checker.at_least_one_element">
+<code class="descclassname">GPy.models.gradient_checker.</code><code class="descname">at_least_one_element</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gradient_checker.html#at_least_one_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gradient_checker.at_least_one_element" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.models.gradient_checker.flatten_if_needed">
+<code class="descclassname">GPy.models.gradient_checker.</code><code class="descname">flatten_if_needed</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gradient_checker.html#flatten_if_needed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gradient_checker.flatten_if_needed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.models.gradient_checker.get_shape">
+<code class="descclassname">GPy.models.gradient_checker.</code><code class="descname">get_shape</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/gradient_checker.html#get_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.gradient_checker.get_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.mrd">
+<span id="gpy-models-mrd-module"></span><h2>GPy.models.mrd module<a class="headerlink" href="#module-GPy.models.mrd" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.mrd.MRD">
+<em class="property">class </em><code class="descclassname">GPy.models.mrd.</code><code class="descname">MRD</code><span class="sig-paren">(</span><em>Ylist</em>, <em>input_dim</em>, <em>X=None</em>, <em>X_variance=None</em>, <em>initx='PCA'</em>, <em>initz='permute'</em>, <em>num_inducing=10</em>, <em>Z=None</em>, <em>kernel=None</em>, <em>inference_method=None</em>, <em>likelihoods=None</em>, <em>name='mrd'</em>, <em>Ynames=None</em>, <em>normalizer=False</em>, <em>stochastic=False</em>, <em>batchsize=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch" title="GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch"><code class="xref py py-class docutils literal"><span class="pre">GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch</span></code></a></p>
+<p>!WARNING: This is bleeding edge code and still in development.
+Functionality may change fundamentally during development!</p>
+<p>Apply MRD to all given datasets Y in Ylist.</p>
+<p>Y_i in [n x p_i]</p>
+<p>If Ylist is a dictionary, the keys of the dictionary are the names, and the
+values are the different datasets to compare.</p>
+<p>The samples n in the datasets need
+to match up, whereas the dimensionality p_d can differ.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Ylist</strong> (<em>[array-like]</em>) &#8211; List of datasets to apply MRD on</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>X</strong> (<em>array-like</em>) &#8211; mean of starting latent space q in [n x q]</li>
+<li><strong>X_variance</strong> (<em>array-like</em>) &#8211; variance of starting latent space q in [n x q]</li>
+<li><strong>initx</strong> (<em>[&#8216;concat&#8217;|&#8217;single&#8217;|&#8217;random&#8217;]</em>) &#8211; <p>initialisation method for the latent space :</p>
+<ul>
+<li>&#8216;concat&#8217; - PCA on concatenation of all datasets</li>
+<li>&#8216;single&#8217; - Concatenation of PCA on datasets, respectively</li>
+<li>&#8216;random&#8217; - Random draw from a Normal(0,1)</li>
+</ul>
+</li>
+<li><strong>initz</strong> (<em>&#8216;permute&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for inducing inputs</li>
+<li><strong>num_inducing</strong> &#8211; number of inducing inputs to use</li>
+<li><strong>Z</strong> &#8211; initial inducing inputs</li>
+<li><strong>kernel</strong> (<em>[GPy.kernels.kernels] | GPy.kernels.kernels | None (default)</em>) &#8211; list of kernels or kernel to copy for each output</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>:param :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>~GPy.inference.latent_function_inference inference_method:</dt>
+<dd>InferenceMethodList of inferences, or one inference method for all</dd>
+</dl>
+<p>:param <code class="xref py py-class docutils literal"><span class="pre">likelihoods</span></code> likelihoods: the likelihoods to use
+:param str name: the name of this model
+:param [str] Ynames: the names for the datasets given, must be of equal length as Ylist or None
+:param bool|Norm normalizer: How to normalize the data?
+:param bool stochastic: Should this model be using stochastic gradient descent over the dimensions?
+:param bool|[bool] batchsize: either one batchsize for all, or one batchsize per dataset.</p>
+<dl class="method">
+<dt id="GPy.models.mrd.MRD.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.mrd.MRD.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.mrd.MRD.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>labels=None</em>, <em>which_indices=None</em>, <em>resolution=50</em>, <em>ax=None</em>, <em>marker='o'</em>, <em>s=40</em>, <em>fignum=None</em>, <em>plot_inducing=True</em>, <em>legend=True</em>, <em>plot_limits=None</em>, <em>aspect='auto'</em>, <em>updates=False</em>, <em>predict_kwargs={}</em>, <em>imshow_kwargs={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd><p>see plotting.matplot_dep.dim_reduction_plots.plot_latent
+if predict_kwargs is None, will plot latent spaces for 0th dataset (and kernel), otherwise give
+predict_kwargs=dict(Yindex=&#8217;index&#8217;) for plotting only the latent space of dataset with &#8216;index&#8217;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.mrd.MRD.plot_scales">
+<code class="descname">plot_scales</code><span class="sig-paren">(</span><em>fignum=None</em>, <em>ax=None</em>, <em>titles=None</em>, <em>sharex=False</em>, <em>sharey=True</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD.plot_scales"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD.plot_scales" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO: Explain other parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>titles</strong> &#8211; titles for axes of datasets</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.mrd.MRD.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>full_cov=False</em>, <em>Y_metadata=None</em>, <em>kern=None</em>, <em>Yindex=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/mrd.html#MRD.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.mrd.MRD.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prediction for data set Yindex[default=0].
+This predicts the output mean and variance for the dataset given in Ylist[Yindex]</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.sparse_gp_classification">
+<span id="gpy-models-sparse-gp-classification-module"></span><h2>GPy.models.sparse_gp_classification module<a class="headerlink" href="#module-GPy.models.sparse_gp_classification" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.sparse_gp_classification.SparseGPClassification">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gp_classification.</code><code class="descname">SparseGPClassification</code><span class="sig-paren">(</span><em>X</em>, <em>Y=None</em>, <em>likelihood=None</em>, <em>kernel=None</em>, <em>Z=None</em>, <em>num_inducing=10</em>, <em>Y_metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_classification.html#SparseGPClassification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_classification.SparseGPClassification" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp.SparseGP" title="GPy.core.sparse_gp.SparseGP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp.SparseGP</span></code></a></p>
+<p>sparse Gaussian Process model for classification</p>
+<p>This is a thin wrapper around the sparse_GP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; input observations</li>
+<li><strong>Y</strong> &#8211; observed values</li>
+<li><strong>likelihood</strong> &#8211; a GPy likelihood, defaults to Binomial with probit link_function</li>
+<li><strong>kernel</strong> &#8211; a GPy kernel, defaults to rbf+white</li>
+<li><strong>normalize_X</strong> (<em>False|True</em>) &#8211; whether to normalize the input data before computing (predictions will be in original scales)</li>
+<li><strong>normalize_Y</strong> (<em>False|True</em>) &#8211; whether to normalize the input data before computing (predictions will be in original scales)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">model object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.sparse_gp_coregionalized_regression">
+<span id="gpy-models-sparse-gp-coregionalized-regression-module"></span><h2>GPy.models.sparse_gp_coregionalized_regression module<a class="headerlink" href="#module-GPy.models.sparse_gp_coregionalized_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.sparse_gp_coregionalized_regression.SparseGPCoregionalizedRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gp_coregionalized_regression.</code><code class="descname">SparseGPCoregionalizedRegression</code><span class="sig-paren">(</span><em>X_list</em>, <em>Y_list</em>, <em>Z_list=[]</em>, <em>kernel=None</em>, <em>likelihoods_list=None</em>, <em>num_inducing=10</em>, <em>X_variance=None</em>, <em>name='SGPCR'</em>, <em>W_rank=1</em>, <em>kernel_name='coreg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_coregionalized_regression.html#SparseGPCoregionalizedRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_coregionalized_regression.SparseGPCoregionalizedRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp.SparseGP" title="GPy.core.sparse_gp.SparseGP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp.SparseGP</span></code></a></p>
+<p>Sparse Gaussian Process model for heteroscedastic multioutput regression</p>
+<p>This is a thin wrapper around the SparseGP class, with a set of sensible defaults</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X_list</strong> (<em>list of numpy arrays</em>) &#8211; list of input observations corresponding to each output</li>
+<li><strong>Y_list</strong> (<em>list of numpy arrays</em>) &#8211; list of observed values related to the different noise models</li>
+<li><strong>Z_list</strong> (<em>empty list | list of numpy arrays</em>) &#8211; list of inducing inputs (optional)</li>
+<li><strong>kernel</strong> (<em>None | GPy.kernel defaults</em>) &#8211; a GPy kernel, defaults to RBF ** Coregionalized</li>
+<li><strong>num_inducing</strong> (<em>integer | list of integers</em>) &#8211; number of inducing inputs, defaults to 10 per output (ignored if Z_list is not empty)</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; model name</li>
+<li><strong>W_rank</strong> (<em>integer</em>) &#8211; number tuples of the corregionalization parameters &#8216;W&#8217; (see coregionalize kernel documentation)</li>
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; name of the kernel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Likelihoods_list:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">a list of likelihoods, defaults to list of Gaussian likelihoods</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.sparse_gp_minibatch">
+<span id="gpy-models-sparse-gp-minibatch-module"></span><h2>GPy.models.sparse_gp_minibatch module<a class="headerlink" href="#module-GPy.models.sparse_gp_minibatch" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.sparse_gp_minibatch.SparseGPMiniBatch">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gp_minibatch.</code><code class="descname">SparseGPMiniBatch</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>Z</em>, <em>kernel</em>, <em>likelihood</em>, <em>inference_method=None</em>, <em>name='sparse gp'</em>, <em>Y_metadata=None</em>, <em>normalizer=False</em>, <em>missing_data=False</em>, <em>stochastic=False</em>, <em>batchsize=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_minibatch.html#SparseGPMiniBatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<blockquote>
+<div>A general purpose Sparse GP model</div></blockquote>
+<p>&#8216;&#8217;&#8217;
+Created on 3 Nov 2014</p>
+<p>&#64;author: maxz
+&#8216;&#8217;&#8216;</p>
+<blockquote>
+<div><p>This model allows (approximate) inference using variational DTC or FITC
+(Gaussian likelihoods) as well as non-conjugate sparse methods based on
+these.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param X:</th><td class="field-body">inputs</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type X:</th><td class="field-body">np.ndarray (num_data x input_dim)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param likelihood:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">a likelihood instance, containing the observed data</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type likelihood:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">GPy.likelihood.(Gaussian | EP | Laplace)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param kernel:</th><td class="field-body">the kernel (covariance function). See link kernels</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type kernel:</th><td class="field-body">a GPy.kern.kern instance</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param X_variance:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">The uncertainty in the measurements of X (Gaussian variance)</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type X_variance:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">np.ndarray (num_data x input_dim) | None</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param Z:</th><td class="field-body">inducing inputs</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type Z:</th><td class="field-body">np.ndarray (num_inducing x input_dim)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param num_inducing:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Number of inducing points (optional, default 10. Ignored if Z is not None)</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type num_inducing:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<dl class="method">
+<dt id="GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.has_uncertain_inputs">
+<code class="descname">has_uncertain_inputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_minibatch.html#SparseGPMiniBatch.has_uncertain_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.has_uncertain_inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_minibatch.html#SparseGPMiniBatch.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="gpy-models-sparse-gp-multioutput-regression-module">
+<h2>GPy.models.sparse_gp_multioutput_regression module<a class="headerlink" href="#gpy-models-sparse-gp-multioutput-regression-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.models.sparse_gp_regression">
+<span id="gpy-models-sparse-gp-regression-module"></span><h2>GPy.models.sparse_gp_regression module<a class="headerlink" href="#module-GPy.models.sparse_gp_regression" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.sparse_gp_regression.SparseGPRegression">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gp_regression.</code><code class="descname">SparseGPRegression</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em>, <em>Z=None</em>, <em>num_inducing=10</em>, <em>X_variance=None</em>, <em>normalizer=None</em>, <em>mpi_comm=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_regression.html#SparseGPRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_regression.SparseGPRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp_mpi.SparseGP_MPI" title="GPy.core.sparse_gp_mpi.SparseGP_MPI"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp_mpi.SparseGP_MPI</span></code></a></p>
+<p>Gaussian Process model for regression</p>
+<p>This is a thin wrapper around the SparseGP class, with a set of sensible defalts</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; input observations</li>
+<li><strong>Y</strong> &#8211; observed values</li>
+<li><strong>kernel</strong> &#8211; a GPy kernel, defaults to rbf+white</li>
+<li><strong>Z</strong> (<em>np.ndarray (num_inducing x input_dim) | None</em>) &#8211; inducing inputs (optional, see note)</li>
+<li><strong>num_inducing</strong> (<em>int</em>) &#8211; number of inducing points (ignored if Z is passed, see note)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">model object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If no Z array is passed, num_inducing (default 10) points are selected from the data. Other wise num_inducing is ignored</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Multiple independent outputs are allowed using columns of Y</p>
+</div>
+<dl class="method">
+<dt id="GPy.models.sparse_gp_regression.SparseGPRegression.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_regression.html#SparseGPRegression.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_regression.SparseGPRegression.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.models.sparse_gp_regression.SparseGPRegressionUncertainInput">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gp_regression.</code><code class="descname">SparseGPRegressionUncertainInput</code><span class="sig-paren">(</span><em>X</em>, <em>X_variance</em>, <em>Y</em>, <em>kernel=None</em>, <em>Z=None</em>, <em>num_inducing=10</em>, <em>normalizer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gp_regression.html#SparseGPRegressionUncertainInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gp_regression.SparseGPRegressionUncertainInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp.SparseGP" title="GPy.core.sparse_gp.SparseGP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp.SparseGP</span></code></a></p>
+<p>Gaussian Process model for regression with Gaussian variance on the inputs (X_variance)</p>
+<p>This is a thin wrapper around the SparseGP class, with a set of sensible defalts</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.sparse_gplvm">
+<span id="gpy-models-sparse-gplvm-module"></span><h2>GPy.models.sparse_gplvm module<a class="headerlink" href="#module-GPy.models.sparse_gplvm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.sparse_gplvm.SparseGPLVM">
+<em class="property">class </em><code class="descclassname">GPy.models.sparse_gplvm.</code><code class="descname">SparseGPLVM</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>X=None</em>, <em>kernel=None</em>, <em>init='PCA'</em>, <em>num_inducing=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gplvm.html#SparseGPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gplvm.SparseGPLVM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.models.sparse_gp_regression.SparseGPRegression" title="GPy.models.sparse_gp_regression.SparseGPRegression"><code class="xref py py-class docutils literal"><span class="pre">GPy.models.sparse_gp_regression.SparseGPRegression</span></code></a></p>
+<p>Sparse Gaussian Process Latent Variable Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>np.ndarray</em>) &#8211; observed data</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>init</strong> (<em>&#8216;PCA&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for the latent space</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.models.sparse_gplvm.SparseGPLVM.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gplvm.html#SparseGPLVM.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gplvm.SparseGPLVM.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.sparse_gplvm.SparseGPLVM.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>labels=None</em>, <em>which_indices=None</em>, <em>resolution=50</em>, <em>ax=None</em>, <em>marker='o'</em>, <em>s=40</em>, <em>fignum=None</em>, <em>plot_inducing=True</em>, <em>legend=True</em>, <em>plot_limits=None</em>, <em>aspect='auto'</em>, <em>updates=False</em>, <em>predict_kwargs={}</em>, <em>imshow_kwargs={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/sparse_gplvm.html#SparseGPLVM.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.sparse_gplvm.SparseGPLVM.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.ss_gplvm">
+<span id="gpy-models-ss-gplvm-module"></span><h2>GPy.models.ss_gplvm module<a class="headerlink" href="#module-GPy.models.ss_gplvm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.ss_gplvm.SSGPLVM">
+<em class="property">class </em><code class="descclassname">GPy.models.ss_gplvm.</code><code class="descname">SSGPLVM</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em>, <em>X=None</em>, <em>X_variance=None</em>, <em>Gamma=None</em>, <em>init='PCA'</em>, <em>num_inducing=10</em>, <em>Z=None</em>, <em>kernel=None</em>, <em>inference_method=None</em>, <em>likelihood=None</em>, <em>name='Spike_and_Slab GPLVM'</em>, <em>group_spike=False</em>, <em>mpi_comm=None</em>, <em>pi=None</em>, <em>learnPi=True</em>, <em>normalizer=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.sparse_gp_mpi.SparseGP_MPI" title="GPy.core.sparse_gp_mpi.SparseGP_MPI"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.sparse_gp_mpi.SparseGP_MPI</span></code></a></p>
+<p>Spike-and-Slab Gaussian Process Latent Variable Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>np.ndarray| GPy.likelihood instance</em>) &#8211; observed data (np.ndarray) or GPy.likelihood</li>
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; latent dimensionality</li>
+<li><strong>init</strong> (<em>&#8216;PCA&#8217;|&#8217;random&#8217;</em>) &#8211; initialisation method for the latent space</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.models.ss_gplvm.SSGPLVM.get_X_gradients">
+<code class="descname">get_X_gradients</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM.get_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM.get_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.ss_gplvm.SSGPLVM.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.ss_gplvm.SSGPLVM.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.ss_gplvm.SSGPLVM.plot_latent">
+<code class="descname">plot_latent</code><span class="sig-paren">(</span><em>plot_inducing=True</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM.plot_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM.plot_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.ss_gplvm.SSGPLVM.set_X_gradients">
+<code class="descname">set_X_gradients</code><span class="sig-paren">(</span><em>X</em>, <em>X_grad</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_gplvm.html#SSGPLVM.set_X_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_gplvm.SSGPLVM.set_X_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradients of the posterior distribution of X in its specific form.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models.ss_mrd">
+<span id="gpy-models-ss-mrd-module"></span><h2>GPy.models.ss_mrd module<a class="headerlink" href="#module-GPy.models.ss_mrd" title="Permalink to this headline">¶</a></h2>
+<p>The Maniforld Relevance Determination model with the spike-and-slab prior</p>
+<dl class="class">
+<dt id="GPy.models.ss_mrd.SSMRD">
+<em class="property">class </em><code class="descclassname">GPy.models.ss_mrd.</code><code class="descname">SSMRD</code><span class="sig-paren">(</span><em>Ylist</em>, <em>input_dim</em>, <em>X=None</em>, <em>X_variance=None</em>, <em>initx='PCA'</em>, <em>initz='permute'</em>, <em>num_inducing=10</em>, <em>Z=None</em>, <em>kernel=None</em>, <em>inference_method=None</em>, <em>likelihoods=None</em>, <em>name='ss_mrd'</em>, <em>Ynames=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_mrd.html#SSMRD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_mrd.SSMRD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.model.Model" title="GPy.core.model.Model"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.model.Model</span></code></a></p>
+<dl class="method">
+<dt id="GPy.models.ss_mrd.SSMRD.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_mrd.html#SSMRD.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_mrd.SSMRD.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.ss_mrd.SSMRD.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/ss_mrd.html#SSMRD.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.ss_mrd.SSMRD.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="gpy-models-svigp-regression-module">
+<h2>GPy.models.svigp_regression module<a class="headerlink" href="#gpy-models-svigp-regression-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.models.warped_gp">
+<span id="gpy-models-warped-gp-module"></span><h2>GPy.models.warped_gp module<a class="headerlink" href="#module-GPy.models.warped_gp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.models.warped_gp.WarpedGP">
+<em class="property">class </em><code class="descclassname">GPy.models.warped_gp.</code><code class="descname">WarpedGP</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>kernel=None</em>, <em>warping_function=None</em>, <em>warping_terms=3</em>, <em>normalize_X=False</em>, <em>normalize_Y=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.html#GPy.core.gp.GP" title="GPy.core.gp.GP"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.gp.GP</span></code></a></p>
+<dl class="method">
+<dt id="GPy.models.warped_gp.WarpedGP.log_likelihood">
+<code class="descname">log_likelihood</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.warped_gp.WarpedGP.plot_warping">
+<code class="descname">plot_warping</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP.plot_warping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP.plot_warping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.warped_gp.WarpedGP.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>which_parts='all'</em>, <em>full_cov=False</em>, <em>pred_init=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.warped_gp.WarpedGP.transform_data">
+<code class="descname">transform_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP.transform_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP.transform_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.models.warped_gp.WarpedGP.warping_function_gradients">
+<code class="descname">warping_function_gradients</code><span class="sig-paren">(</span><em>Kiy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/models/warped_gp.html#WarpedGP.warping_function_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.models.warped_gp.WarpedGP.warping_function_gradients" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.models">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-GPy.models" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GPy.models package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-GPy.models.bayesian_gplvm">GPy.models.bayesian_gplvm module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.bayesian_gplvm_minibatch">GPy.models.bayesian_gplvm_minibatch module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.bcgplvm">GPy.models.bcgplvm module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_classification">GPy.models.gp_classification module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_coregionalized_regression">GPy.models.gp_coregionalized_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_heteroscedastic_regression">GPy.models.gp_heteroscedastic_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_kronecker_gaussian_regression">GPy.models.gp_kronecker_gaussian_regression module</a></li>
+<li><a class="reference internal" href="#gpy-models-gp-multioutput-regression-module">GPy.models.gp_multioutput_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_regression">GPy.models.gp_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gp_var_gauss">GPy.models.gp_var_gauss module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gplvm">GPy.models.gplvm module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.gradient_checker">GPy.models.gradient_checker module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.mrd">GPy.models.mrd module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.sparse_gp_classification">GPy.models.sparse_gp_classification module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.sparse_gp_coregionalized_regression">GPy.models.sparse_gp_coregionalized_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.sparse_gp_minibatch">GPy.models.sparse_gp_minibatch module</a></li>
+<li><a class="reference internal" href="#gpy-models-sparse-gp-multioutput-regression-module">GPy.models.sparse_gp_multioutput_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.sparse_gp_regression">GPy.models.sparse_gp_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.sparse_gplvm">GPy.models.sparse_gplvm module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.ss_gplvm">GPy.models.ss_gplvm module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.ss_mrd">GPy.models.ss_mrd module</a></li>
+<li><a class="reference internal" href="#gpy-models-svigp-regression-module">GPy.models.svigp_regression module</a></li>
+<li><a class="reference internal" href="#module-GPy.models.warped_gp">GPy.models.warped_gp module</a></li>
+<li><a class="reference internal" href="#module-GPy.models">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GPy.mappings.html"
+                        title="previous chapter">GPy.mappings package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GPy.plotting.html"
+                        title="next chapter">GPy.plotting package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/GPy.models.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.plotting.html" title="GPy.plotting package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GPy.mappings.html" title="GPy.mappings package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

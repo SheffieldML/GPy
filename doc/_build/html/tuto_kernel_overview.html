@@ -1,0 +1,315 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>tutorial : A kernel overview &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tutorial-a-kernel-overview">
+<h1>tutorial : A kernel overview<a class="headerlink" href="#tutorial-a-kernel-overview" title="Permalink to this headline">¶</a></h1>
+<p>The aim of this tutorial is to give a better understanding of the kernel objects in GPy and to list the ones that are already implemented. The code shown in this tutorial can be obtained at GPy/examples/tutorials.py or by running <code class="docutils literal"><span class="pre">GPy.examples.tutorials.tuto_kernel_overview()</span></code>.</p>
+<p>First we import the libraries we will need</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">GPy</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For most kernels, the dimension is the only mandatory parameter to define a kernel object. However, it is also possible to specify the values of the parameters. For example, the three following commands are valid for defining a squared exponential kernel (ie rbf or Gaussian)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ker1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># Equivalent to ker1 = GPy.kern.RBF(input_dim=1, variance=1., lengthscale=1.)</span>
+<span class="n">ker2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">variance</span> <span class="o">=</span> <span class="o">.</span><span class="mi">75</span><span class="p">,</span> <span class="n">lengthscale</span><span class="o">=</span><span class="mf">2.</span><span class="p">)</span>
+<span class="n">ker3</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A <code class="docutils literal"><span class="pre">print</span></code> and a <code class="docutils literal"><span class="pre">plot</span></code> functions are implemented to represent kernel objects. The commands</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="n">ker2</span>
+
+<span class="n">ker1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">ker2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">ker3</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>return:</p>
+<div class="highlight-python"><div class="highlight"><pre>       Name        |  Value   |  Constraints  |  Ties
+-------------------------------------------------------
+   rbf_variance    |  0.7500  |               |
+  rbf_lengthscale  |  2.0000  |               |
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_basicplot.png"><img alt="_images/tuto_kern_overview_basicplot.png" src="_images/tuto_kern_overview_basicplot.png" style="height: 300px;" /></a>
+</div>
+<div class="section" id="implemented-kernels">
+<h2>Implemented kernels<a class="headerlink" href="#implemented-kernels" title="Permalink to this headline">¶</a></h2>
+<p>Many kernels are already implemented in GPy. The following figure gives a summary of most of them (a comprehensive list can be list can be found <a class="reference external" href="kernel_implementation.html">here</a>):</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_allkern.png"><img alt="_images/tuto_kern_overview_allkern.png" src="_images/tuto_kern_overview_allkern.png" style="height: 800px;" /></a>
+</div>
+<p>On the other hand, it is possible to use the <cite>sympy</cite> package to build new kernels. This will be the subject of another tutorial.</p>
+</div>
+<div class="section" id="operations-to-combine-kernels">
+<h2>Operations to combine kernels<a class="headerlink" href="#operations-to-combine-kernels" title="Permalink to this headline">¶</a></h2>
+<p>In <code class="docutils literal"><span class="pre">GPy</span></code>, kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels <img class="math" src="_images/math/8fb292d863fb6fc858ea26b35516ef78fc853543.png" alt="k_1,\ k_2"/> over <img class="math" src="_images/math/4323a5c5edaef294453f24e767d1772c0bc233ca.png" alt="\mathbb{R} \times \mathbb{R}"/> to create</p>
+<blockquote>
+<div><ul class="simple">
+<li>a kernel over <img class="math" src="_images/math/4323a5c5edaef294453f24e767d1772c0bc233ca.png" alt="\mathbb{R} \times \mathbb{R}"/>:  <img class="math" src="_images/math/98a5b90f5f53332b472e7f022af254db7c92c86c.png" alt="k(x,y) = k_1(x,y) \times k_2(x,y)"/>.</li>
+</ul>
+</div></blockquote>
+<p>This is available in GPy via the <code class="docutils literal"><span class="pre">add</span></code> and <code class="docutils literal"><span class="pre">prod</span></code> functions. Here is a quick example</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">k1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">)</span>
+<span class="n">k2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Matern32</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+
+<span class="c"># Product of kernels</span>
+<span class="n">k_prod</span> <span class="o">=</span> <span class="n">k1</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">k2</span><span class="p">)</span>
+
+<span class="c"># Sum of kernels</span>
+<span class="n">k_add</span> <span class="o">=</span> <span class="n">k1</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">k2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_multadd.png"><img alt="_images/tuto_kern_overview_multadd.png" src="_images/tuto_kern_overview_multadd.png" style="height: 500px;" /></a>
+</div>
+<p>A shortcut for <code class="docutils literal"><span class="pre">add</span></code> and <code class="docutils literal"><span class="pre">prod</span></code> is provided by the usual <code class="docutils literal"><span class="pre">+</span></code> and <code class="docutils literal"><span class="pre">*</span></code> operators. Here is another example where we create a periodic kernel with some decay</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">k1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">k2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">PeriodicMatern52</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">variance</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">lengthscale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">period</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mf">5.</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="n">k</span> <span class="o">=</span> <span class="n">k1</span> <span class="o">*</span> <span class="n">k2</span>  <span class="c"># equivalent to k = k1.prod(k2)</span>
+<span class="k">print</span> <span class="n">k</span>
+
+<span class="c"># Simulate sample paths</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">501</span><span class="p">)[:,</span><span class="bp">None</span><span class="p">]</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">501</span><span class="p">),</span><span class="n">k</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_multperdecay.png"><img alt="_images/tuto_kern_overview_multperdecay.png" src="_images/tuto_kern_overview_multperdecay.png" style="height: 300px;" /></a>
+</div>
+<p>In general, <code class="docutils literal"><span class="pre">kern</span></code> objects can be seen as a sum of <code class="docutils literal"><span class="pre">kernparts</span></code> objects, where the later are covariance functions defined on the same space. For example, the following code</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">k</span> <span class="o">=</span> <span class="p">(</span><span class="n">k1</span><span class="o">+</span><span class="n">k2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">k1</span><span class="o">+</span><span class="n">k2</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">k</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>returns ::</dt>
+<dd>add_1
+add_2
+rbf
+periodic_Matern52</dd>
+</dl>
+</div>
+<div class="section" id="constraining-the-parameters">
+<h2>Constraining the parameters<a class="headerlink" href="#constraining-the-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Various constrains can be applied to the parameters of a kernel</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">constrain_fixed</span></code> to fix the value of a parameter (the value will not be modified during optimisation)</li>
+<li><code class="docutils literal"><span class="pre">constrain_positive</span></code> to make sure the parameter is greater than 0.</li>
+<li><code class="docutils literal"><span class="pre">constrain_bounded</span></code> to impose the parameter to be in a given range.</li>
+<li><code class="docutils literal"><span class="pre">tie_params</span></code> to impose the value of two (or more) parameters to be equal.</li>
+</ul>
+</div></blockquote>
+<p>When calling one of these functions, the parameters to constrain can either by specified by a regular expression that matches its name or by a number that corresponds to the rank of the parameter. Here is an example</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">k1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">k2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Matern32</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">k3</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">k</span> <span class="o">=</span> <span class="n">k1</span> <span class="o">+</span> <span class="n">k2</span> <span class="o">+</span> <span class="n">k3</span>
+<span class="k">print</span> <span class="n">k</span>
+
+<span class="n">k</span><span class="o">.</span><span class="n">constrain_positive</span><span class="p">(</span><span class="s">&#39;.*var&#39;</span><span class="p">)</span>
+<span class="n">k</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">]),</span><span class="mf">1.75</span><span class="p">)</span>
+<span class="n">k</span><span class="o">.</span><span class="n">tie_params</span><span class="p">(</span><span class="s">&#39;.*len&#39;</span><span class="p">)</span>
+<span class="n">k</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">(</span><span class="s">&#39;white&#39;</span><span class="p">)</span>
+<span class="n">k</span><span class="o">.</span><span class="n">constrain_bounded</span><span class="p">(</span><span class="s">&#39;white&#39;</span><span class="p">,</span><span class="n">lower</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span><span class="n">upper</span><span class="o">=.</span><span class="mi">5</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">k</span>
+</pre></div>
+</div>
+<p>with output:</p>
+<div class="highlight-python"><div class="highlight"><pre>        Name         |  Value   |  Constraints  |  Ties
+---------------------------------------------------------
+    rbf_variance     |  1.0000  |               |
+   rbf_lengthscale   |  1.0000  |               |
+   Mat32_variance    |  1.0000  |               |
+  Mat32_lengthscale  |  1.0000  |               |
+   white_variance    |  1.0000  |               |
+
+
+        Name         |  Value   |  Constraints   |  Ties
+----------------------------------------------------------
+    rbf_variance     |  1.0000  |     (+ve)      |
+   rbf_lengthscale   |  1.7500  |     Fixed      |  (0)
+   Mat32_variance    |  1.0000  |     (+ve)      |
+  Mat32_lengthscale  |  1.7500  |                |  (0)
+   white_variance    |  0.3655  |  (1e-05, 0.5)  |
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-building-an-anova-kernel">
+<h2>Example : Building an ANOVA kernel<a class="headerlink" href="#example-building-an-anova-kernel" title="Permalink to this headline">¶</a></h2>
+<p>In two dimensions ANOVA kernels have the following form:</p>
+<div class="math">
+<p><img src="_images/math/d65e31c763326e79ede203940e047624c0428f2c.png" alt="k_{ANOVA}(x,y) = \prod_{i=1}^2 (1 + k_i(x_i,y_i)) = 1 + k_1(x_1,y_1) + k_2(x_2,y_2) + k_1(x_1,y_1) \times k_2(x_2,y_2)."/></p>
+</div><p>Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel for <img class="math" src="_images/math/812f92da6db61fb4e16c0060582e4cab04c5cb60.png" alt="k_i"/>. As seen previously, we can define this kernel as follows</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">k_cst</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Bias</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">variance</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="n">k_mat</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Matern52</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">variance</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span><span class="n">lengthscale</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">Kanova</span> <span class="o">=</span> <span class="p">(</span><span class="n">k_cst</span> <span class="o">+</span> <span class="n">k_mat</span><span class="p">)</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">k_cst</span> <span class="o">+</span> <span class="n">k_mat</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">Kanova</span>
+</pre></div>
+</div>
+<p>Printing the resulting kernel outputs the following</p>
+<div class="highlight-python"><div class="highlight"><pre>                 Name                  |  Value   |  Constraints  |  Ties
+---------------------------------------------------------------------------
+     bias&lt;times&gt;bias_bias_variance     |  1.0000  |               |  (0)
+     bias&lt;times&gt;bias_bias_variance     |  1.0000  |               |  (3)
+    bias&lt;times&gt;Mat52_bias_variance     |  1.0000  |               |  (0)
+    bias&lt;times&gt;Mat52_Mat52_variance    |  1.0000  |               |  (4)
+  bias&lt;times&gt;Mat52_Mat52_lengthscale   |  3.0000  |               |  (5)
+    Mat52&lt;times&gt;bias_Mat52_variance    |  1.0000  |               |  (1)
+  Mat52&lt;times&gt;bias_Mat52_lengthscale   |  3.0000  |               |  (2)
+    Mat52&lt;times&gt;bias_bias_variance     |  1.0000  |               |  (3)
+   Mat52&lt;times&gt;Mat52_Mat52_variance    |  1.0000  |               |  (1)
+  Mat52&lt;times&gt;Mat52_Mat52_lengthscale  |  3.0000  |               |  (2)
+   Mat52&lt;times&gt;Mat52_Mat52_variance    |  1.0000  |               |  (4)
+  Mat52&lt;times&gt;Mat52_Mat52_lengthscale  |  3.0000  |               |  (5)
+</pre></div>
+</div>
+<p>Note the ties between the parameters of <code class="docutils literal"><span class="pre">Kanova</span></code> that reflect the links between the parameters of the kernparts objects. We can illustrate the use of this kernel on a toy example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># sample inputs and outputs</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.</span><span class="p">,</span><span class="mf">3.</span><span class="p">,(</span><span class="mi">40</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">X</span><span class="p">[:,:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">X</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">[:,:</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:])</span>
+
+<span class="c"># Create GP regression model</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">Kanova</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_mANOVA.png"><img alt="_images/tuto_kern_overview_mANOVA.png" src="_images/tuto_kern_overview_mANOVA.png" style="height: 300px;" /></a>
+</div>
+<p>As <img class="math" src="_images/math/cea5452e08d6d9f15b2b63894d4554bfeb9d951d.png" alt="k_{ANOVA}"/> corresponds to the sum of 4 kernels, the best predictor can be splited in a sum of 4 functions</p>
+<div class="math">
+<p><img src="_images/math/62acd55b473d8ea01ea4c1533bb6b4d9b652423a.png" alt="bp(x) &amp; = k(x)^t K^{-1} Y \\
+      &amp; = (1 + k_1(x_1) +  k_2(x_2) +  k_1(x_1)k_2(x_2))^t K^{-1} Y \\
+      &amp; = 1^t K^{-1} Y + k_1(x_1)^t K^{-1} Y + k_2(x_2)^t K^{-1} Y + (k_1(x_1)k_2(x_2))^t K^{-1} Y"/></p>
+</div><p>The submodels can be represented with the option <code class="docutils literal"><span class="pre">which_function</span></code> of <code class="docutils literal"><span class="pre">plot</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pb</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">axs</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">)</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;=   &quot;</span><span class="p">,</span><span class="n">rotation</span><span class="o">=</span><span class="s">&#39;horizontal&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s">&#39;30&#39;</span><span class="p">)</span>
+<span class="n">axs</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">,</span> <span class="n">which_parts</span><span class="o">=</span><span class="p">[</span><span class="bp">False</span><span class="p">,</span><span class="bp">True</span><span class="p">,</span><span class="bp">False</span><span class="p">,</span><span class="bp">False</span><span class="p">])</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;cst          +&quot;</span><span class="p">,</span><span class="n">rotation</span><span class="o">=</span><span class="s">&#39;horizontal&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s">&#39;30&#39;</span><span class="p">)</span>
+<span class="n">axs</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">,</span> <span class="n">which_parts</span><span class="o">=</span><span class="p">[</span><span class="bp">False</span><span class="p">,</span><span class="bp">False</span><span class="p">,</span><span class="bp">True</span><span class="p">,</span><span class="bp">False</span><span class="p">])</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;+   &quot;</span><span class="p">,</span><span class="n">rotation</span><span class="o">=</span><span class="s">&#39;horizontal&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s">&#39;30&#39;</span><span class="p">)</span>
+<span class="n">axs</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;+   &quot;</span><span class="p">,</span><span class="n">rotation</span><span class="o">=</span><span class="s">&#39;horizontal&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="s">&#39;30&#39;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">,</span> <span class="n">which_parts</span><span class="o">=</span><span class="p">[</span><span class="bp">False</span><span class="p">,</span><span class="bp">False</span><span class="p">,</span><span class="bp">False</span><span class="p">,</span><span class="bp">True</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/tuto_kern_overview_mANOVAdec.png"><img alt="_images/tuto_kern_overview_mANOVAdec.png" src="_images/tuto_kern_overview_mANOVAdec.png" style="height: 250px;" /></a>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">tutorial : A kernel overview</a><ul>
+<li><a class="reference internal" href="#implemented-kernels">Implemented kernels</a></li>
+<li><a class="reference internal" href="#operations-to-combine-kernels">Operations to combine kernels</a></li>
+<li><a class="reference internal" href="#constraining-the-parameters">Constraining the parameters</a></li>
+<li><a class="reference internal" href="#example-building-an-anova-kernel">Example : Building an ANOVA kernel</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tuto_kernel_overview.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

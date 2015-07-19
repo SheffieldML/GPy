@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.models.sparse_gp_minibatch &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.models.sparse_gp_minibatch</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization.param</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">..core.gp</span> <span class="kn">import</span> <span class="n">GP</span>
+<span class="kn">from</span> <span class="nn">..inference.latent_function_inference</span> <span class="kn">import</span> <span class="n">var_dtc</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">likelihoods</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization.variational</span> <span class="kn">import</span> <span class="n">VariationalPosterior</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">GPy.inference.latent_function_inference.posterior</span> <span class="kn">import</span> <span class="n">Posterior</span>
+<span class="kn">from</span> <span class="nn">GPy.inference.optimization.stochastics</span> <span class="kn">import</span> <span class="n">SparseGPStochastics</span><span class="p">,</span>\
+    <span class="n">SparseGPMissing</span>
+<span class="c">#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\</span>
+    <span class="c">#SparseGPMissing</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&quot;sparse gp&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SparseGPMiniBatch"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch">[docs]</a><span class="k">class</span> <span class="nc">SparseGPMiniBatch</span><span class="p">(</span><span class="n">GP</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A general purpose Sparse GP model</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on 3 Nov 2014</span>
+
+<span class="sd">@author: maxz</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    This model allows (approximate) inference using variational DTC or FITC</span>
+<span class="sd">    (Gaussian likelihoods) as well as non-conjugate sparse methods based on</span>
+<span class="sd">    these.</span>
+
+<span class="sd">    :param X: inputs</span>
+<span class="sd">    :type X: np.ndarray (num_data x input_dim)</span>
+<span class="sd">    :param likelihood: a likelihood instance, containing the observed data</span>
+<span class="sd">    :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)</span>
+<span class="sd">    :param kernel: the kernel (covariance function). See link kernels</span>
+<span class="sd">    :type kernel: a GPy.kern.kern instance</span>
+<span class="sd">    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)</span>
+<span class="sd">    :type X_variance: np.ndarray (num_data x input_dim) | None</span>
+<span class="sd">    :param Z: inducing inputs</span>
+<span class="sd">    :type Z: np.ndarray (num_inducing x input_dim)</span>
+<span class="sd">    :param num_inducing: Number of inducing points (optional, default 10. Ignored if Z is not None)</span>
+<span class="sd">    :type num_inducing: int</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">inference_method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s">&#39;sparse gp&#39;</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">normalizer</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">missing_data</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">stochastic</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">batchsize</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c">#pick a sensible inference method</span>
+        <span class="k">if</span> <span class="n">inference_method</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">likelihoods</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">):</span>
+                <span class="n">inference_method</span> <span class="o">=</span> <span class="n">var_dtc</span><span class="o">.</span><span class="n">VarDTC</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="k">else</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c">#inference_method = ??</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;what to do what to do?&quot;</span>
+            <span class="k">print</span> <span class="s">&quot;defaulting to &quot;</span><span class="p">,</span> <span class="n">inference_method</span><span class="p">,</span> <span class="s">&quot;for latent function inference&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kl_factr</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;inducing inputs&#39;</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">GP</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">inference_method</span><span class="o">=</span><span class="n">inference_method</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">,</span> <span class="n">normalizer</span><span class="o">=</span><span class="n">normalizer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="n">missing_data</span>
+
+        <span class="k">if</span> <span class="n">stochastic</span> <span class="ow">and</span> <span class="n">missing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ninan</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span> <span class="o">=</span> <span class="n">SparseGPStochastics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stochastic</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">missing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span> <span class="o">=</span> <span class="n">SparseGPStochastics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batchsize</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">missing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ninan</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span> <span class="o">=</span> <span class="n">SparseGPMissing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Adding Z as parameter&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Ylist</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">overall</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_normalized</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">m_f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="s">&quot;Precomputing Y for missing data: {: &gt;7.2%}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">overall</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">m_f</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">message</span><span class="p">,</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">overall</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Ylist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y_normalized</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ninan</span><span class="p">[:,</span> <span class="n">d</span><span class="p">],</span> <span class="n">d</span><span class="p">][:,</span> <span class="bp">None</span><span class="p">])</span>
+                <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">,</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">m_f</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="k">print</span> <span class="n">message</span><span class="p">,</span>
+            <span class="k">print</span> <span class="s">&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="SparseGPMiniBatch.has_uncertain_inputs"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.has_uncertain_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">has_uncertain_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_inner_parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">,</span> <span class="n">Lm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">subset_indices</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is the standard part, which usually belongs in parameters_changed.</span>
+
+<span class="sd">        For automatic handling of subsampling (such as missing_data, stochastics etc.), we need to put this into an inner</span>
+<span class="sd">        loop, in order to ensure a different handling of gradients etc of different</span>
+<span class="sd">        subsets of data.</span>
+
+<span class="sd">        The dict in current_values will be passed aroung as current_values for</span>
+<span class="sd">        the rest of the algorithm, so this is the place to store current values,</span>
+<span class="sd">        such as subsets etc, if necessary.</span>
+
+<span class="sd">        If Lm and dL_dKmm can be precomputed (or only need to be computed once)</span>
+<span class="sd">        pass them in here, so they will be passed to the inference_method.</span>
+
+<span class="sd">        subset_indices is a dictionary of indices. you can put the indices however you</span>
+<span class="sd">        like them into this dictionary for inner use of the indices inside the</span>
+<span class="sd">        algorithm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">,</span> <span class="n">log_marginal_likelihood</span><span class="p">,</span> <span class="n">grad_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">,</span> <span class="n">Lm</span><span class="o">=</span><span class="n">Lm</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">,</span> <span class="n">log_marginal_likelihood</span><span class="p">,</span> <span class="n">grad_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="n">current_values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">likelihood</span><span class="o">.</span><span class="n">update_gradients</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dthetaL&#39;</span><span class="p">])</span>
+        <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;likgrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">subset_indices</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">subset_indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+            <span class="c">#gradients wrt kernel</span>
+            <span class="n">dL_dKmm</span> <span class="o">=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKmm&#39;</span><span class="p">]</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_expectations</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
+                                                    <span class="n">Z</span><span class="o">=</span><span class="n">Z</span><span class="p">,</span>
+                                                    <span class="n">dL_dpsi0</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">],</span>
+                                                    <span class="n">dL_dpsi1</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">],</span>
+                                                    <span class="n">dL_dpsi2</span><span class="o">=</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">])</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+
+            <span class="c">#gradients wrt Z</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;Zgrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dKmm</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;Zgrad&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_Z_expectations</span><span class="p">(</span>
+                               <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi0&#39;</span><span class="p">],</span>
+                               <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi1&#39;</span><span class="p">],</span>
+                               <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dpsi2&#39;</span><span class="p">],</span>
+                               <span class="n">Z</span><span class="o">=</span><span class="n">Z</span><span class="p">,</span>
+                               <span class="n">variational_posterior</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c">#gradients wrt kernel</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_diag</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKdiag&#39;</span><span class="p">],</span> <span class="n">X</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKnm&#39;</span><span class="p">],</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKmm&#39;</span><span class="p">],</span> <span class="n">Z</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+            <span class="c">#gradients wrt Z</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;Zgrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKmm&#39;</span><span class="p">],</span> <span class="n">Z</span><span class="p">)</span>
+            <span class="n">current_values</span><span class="p">[</span><span class="s">&#39;Zgrad&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKnm&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">posterior</span><span class="p">,</span> <span class="n">log_marginal_likelihood</span><span class="p">,</span> <span class="n">grad_dict</span><span class="p">,</span> <span class="n">current_values</span><span class="p">,</span> <span class="n">subset_indices</span>
+
+    <span class="k">def</span> <span class="nf">_inner_take_over_or_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">full_values</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">current_values</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">value_indices</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is for automatic updates of values in the inner loop of missing</span>
+<span class="sd">        data handling. Both arguments are dictionaries and the values in</span>
+<span class="sd">        full_values will be updated by the current_gradients.</span>
+
+<span class="sd">        If a key from current_values does not exist in full_values, it will be</span>
+<span class="sd">        initialized to the value in current_values.</span>
+
+<span class="sd">        If there is indices needed for the update, value_indices can be used for</span>
+<span class="sd">        that. If value_indices has the same key, as current_values, the update</span>
+<span class="sd">        in full_values will be indexed by the indices in value_indices.</span>
+
+<span class="sd">        grads:</span>
+<span class="sd">            dictionary of standing gradients (you will have to carefully make sure, that</span>
+<span class="sd">            the ordering is right!). The values in here will be updated such that</span>
+<span class="sd">            full_values[key] += current_values[key]  forall key in full_gradients.keys()</span>
+
+<span class="sd">        gradients:</span>
+<span class="sd">            dictionary of gradients in the current set of parameters.</span>
+
+<span class="sd">        value_indices:</span>
+<span class="sd">            dictionary holding indices for the update in full_values.</span>
+<span class="sd">            if the key exists the update rule is:def df(x):</span>
+<span class="sd">            full_values[key][value_indices[key]] += current_values[key]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">current_values</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value_indices</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">value_indices</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">value_indices</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">full_values</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="n">full_values</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">+=</span> <span class="n">current_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">full_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_inner_values_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This exists if there is more to do with the current values.</span>
+<span class="sd">        It will be called allways in the inner loop, so that</span>
+<span class="sd">        you can do additional inner updates for the inside of the missing data</span>
+<span class="sd">        loop etc. This can also be used for stochastic updates, when only working on</span>
+<span class="sd">        one dimension of the output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_outer_values_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">full_values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Here you put the values, which were collected before in the right places.</span>
+<span class="sd">        E.g. set the gradients of parameters, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">full_values</span><span class="p">[</span><span class="s">&#39;likgrad&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">full_values</span><span class="p">[</span><span class="s">&#39;kerngrad&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">full_values</span><span class="p">[</span><span class="s">&#39;Zgrad&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_outer_init_full_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If full_values has indices in values_indices, we might want to initialize</span>
+<span class="sd">        the full_values differently, so that subsetting is possible.</span>
+
+<span class="sd">        Here you can initialize the full_values for the values needed.</span>
+
+<span class="sd">        Keep in mind, that if a key does not exist in full_values when updating</span>
+<span class="sd">        values, it will be set (so e.g. for Z there is no need to initialize Zgrad,</span>
+<span class="sd">        as there is no subsetting needed. For X in BGPLVM on the other hand we probably need</span>
+<span class="sd">        to initialize the gradients for the mean and the variance in order to</span>
+<span class="sd">        have the full gradient for indexing)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_outer_loop_for_missing_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Lm</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">dL_dKmm</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_init_full_values</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">woodbury_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+            <span class="n">woodbury_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">woodbury_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">_woodbury_inv</span>
+            <span class="n">woodbury_vector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">_woodbury_vector</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="p">:</span>
+            <span class="n">m_f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="s">&quot;Inference with missing_data: {: &gt;7.2%}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">m_f</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">message</span><span class="p">,</span>
+
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="o">.</span><span class="n">d</span><span class="p">:</span>
+            <span class="n">ninan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ninan</span><span class="p">[:,</span> <span class="n">d</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">,</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">m_f</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="k">print</span> <span class="n">message</span><span class="p">,</span>
+
+            <span class="n">posterior</span><span class="p">,</span> <span class="n">log_marginal_likelihood</span><span class="p">,</span> \
+                <span class="n">grad_dict</span><span class="p">,</span> <span class="n">current_values</span><span class="p">,</span> <span class="n">value_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_parameters_changed</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">ninan</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Ylist</span><span class="p">[</span><span class="n">d</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_metadata</span><span class="p">,</span>
+                                <span class="n">Lm</span><span class="p">,</span> <span class="n">dL_dKmm</span><span class="p">,</span>
+                                <span class="n">subset_indices</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">ninan</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inner_take_over_or_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">,</span> <span class="n">current_values</span><span class="p">,</span> <span class="n">value_indices</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inner_values_update</span><span class="p">(</span><span class="n">current_values</span><span class="p">)</span>
+
+            <span class="n">Lm</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">K_chol</span>
+            <span class="n">dL_dKmm</span> <span class="o">=</span> <span class="n">grad_dict</span><span class="p">[</span><span class="s">&#39;dL_dKmm&#39;</span><span class="p">]</span>
+            <span class="n">woodbury_inv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span>
+            <span class="n">woodbury_vector</span><span class="p">[:,</span> <span class="n">d</span><span class="p">:</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_vector</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">+=</span> <span class="n">log_marginal_likelihood</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_inv</span><span class="o">=</span><span class="n">woodbury_inv</span><span class="p">,</span> <span class="n">woodbury_vector</span><span class="o">=</span><span class="n">woodbury_vector</span><span class="p">,</span>
+                                   <span class="n">K</span><span class="o">=</span><span class="n">posterior</span><span class="o">.</span><span class="n">_K</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">K_chol</span><span class="o">=</span><span class="n">posterior</span><span class="o">.</span><span class="n">K_chol</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_values_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_outer_loop_without_missing_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">woodbury_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+            <span class="n">woodbury_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_inducing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">woodbury_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">_woodbury_inv</span>
+            <span class="n">woodbury_vector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">_woodbury_vector</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="o">.</span><span class="n">d</span>
+        <span class="n">posterior</span><span class="p">,</span> <span class="n">log_marginal_likelihood</span><span class="p">,</span> \
+            <span class="n">grad_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_parameters_changed</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Y_normalized</span><span class="p">[:,</span> <span class="n">d</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grad_dict</span> <span class="o">=</span> <span class="n">grad_dict</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span> <span class="o">+=</span> <span class="n">log_marginal_likelihood</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_values_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">)</span>
+
+        <span class="n">woodbury_inv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">woodbury_vector</span><span class="p">[:,</span> <span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_vector</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_inv</span><span class="o">=</span><span class="n">woodbury_inv</span><span class="p">,</span> <span class="n">woodbury_vector</span><span class="o">=</span><span class="n">woodbury_vector</span><span class="p">,</span>
+                                   <span class="n">K</span><span class="o">=</span><span class="n">posterior</span><span class="o">.</span><span class="n">_K</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">K_chol</span><span class="o">=</span><span class="n">posterior</span><span class="o">.</span><span class="n">K_chol</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SparseGPMiniBatch.parameters_changed"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.sparse_gp_minibatch.SparseGPMiniBatch.parameters_changed">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_outer_loop_for_missing_data</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">stochastics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_outer_loop_without_missing_data</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_marginal_likelihood</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grad_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_normalized</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Y_metadata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_outer_values_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_values</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_raw_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">full_cov</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">kern</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a prediction for the latent function values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">kern</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">kern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+            <span class="n">Kx</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">)</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kx</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_vector</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">full_cov</span><span class="p">:</span>
+                <span class="n">Kxx</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">Xnew</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">var</span> <span class="o">=</span> <span class="n">Kxx</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kx</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="p">,</span> <span class="n">Kx</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="n">var</span> <span class="o">=</span> <span class="n">Kxx</span><span class="p">[:,:,</span><span class="bp">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_3d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Kx</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Kx</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">var</span> <span class="o">=</span> <span class="n">var</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Kxx</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="n">Xnew</span><span class="p">)</span>
+                <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">Kxx</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_3d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_inv</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Kx</span><span class="p">)</span> <span class="o">*</span> <span class="n">Kx</span><span class="p">[</span><span class="bp">None</span><span class="p">,:,:],</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Kx</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">)</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="o">.</span><span class="n">woodbury_vector</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">full_cov</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;TODO&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Kxx</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi0</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">)</span>
+                <span class="n">psi2</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">psi2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">)</span>
+                <span class="n">var</span> <span class="o">=</span> <span class="n">Kxx</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">psi2</span> <span class="o">*</span> <span class="n">Kmmi_LmiBLmi</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">var</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

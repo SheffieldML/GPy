@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.mcmc.samplers &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.mcmc.samplers</h1><div class="highlight"><pre>
+<span class="c"># ## Copyright (c) 2014, Zhenwen Dai</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">linalg</span><span class="p">,</span> <span class="n">optimize</span>
+<span class="kn">import</span> <span class="nn">Tango</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">numdifftools</span> <span class="kn">as</span> <span class="nn">ndt</span>
+<span class="kn">import</span> <span class="nn">pdb</span>
+<span class="kn">import</span> <span class="nn">cPickle</span>
+
+
+<div class="viewcode-block" id="Metropolis_Hastings"><a class="viewcode-back" href="../../../../GPy.inference.mcmc.html#GPy.inference.mcmc.samplers.Metropolis_Hastings">[docs]</a><span class="k">class</span> <span class="nc">Metropolis_Hastings</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model</span><span class="p">,</span><span class="n">cov</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Metropolis Hastings, with tunings according to Gelman et al. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_params_transformed</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chains</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">cov</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Laplace_covariance</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">cov</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mf">2.4</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">new_chain</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Metropolis_Hastings.new_chain"><a class="viewcode-back" href="../../../../GPy.inference.mcmc.html#GPy.inference.mcmc.samplers.Metropolis_Hastings.new_chain">[docs]</a>    <span class="k">def</span> <span class="nf">new_chain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chains</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_set_params_transformed</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+
+
+</div>
+<div class="viewcode-block" id="Metropolis_Hastings.sample"><a class="viewcode-back" href="../../../../GPy.inference.mcmc.html#GPy.inference.mcmc.samplers.Metropolis_Hastings.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Ntotal</span><span class="p">,</span> <span class="n">Nburn</span><span class="p">,</span> <span class="n">Nthin</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tune_throughout</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">tune_interval</span><span class="o">=</span><span class="mi">400</span><span class="p">):</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_params_transformed</span><span class="p">()</span>
+        <span class="n">fcurrent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">log_prior</span><span class="p">()</span>
+        <span class="n">accepted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Ntotal</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ntotal</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;sample </span><span class="si">%d</span><span class="s"> of </span><span class="si">%d</span><span class="se">\r</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">it</span><span class="p">,</span><span class="n">Ntotal</span><span class="p">),</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_set_params_transformed</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+            <span class="n">fprop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">log_prior</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">fprop</span><span class="o">&gt;</span><span class="n">fcurrent</span><span class="p">:</span><span class="c">#sample accepted, going &#39;uphill&#39;</span>
+                <span class="n">accepted</span><span class="p">[</span><span class="n">it</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">current</span> <span class="o">=</span> <span class="n">prop</span>
+                <span class="n">fcurrent</span> <span class="o">=</span> <span class="n">fprop</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">fprop</span><span class="o">-</span><span class="n">fcurrent</span><span class="p">)</span><span class="o">&gt;</span><span class="n">u</span><span class="p">:</span><span class="c">#sample accepted downhill</span>
+                    <span class="n">accepted</span><span class="p">[</span><span class="n">it</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="n">current</span> <span class="o">=</span> <span class="n">prop</span>
+                    <span class="n">fcurrent</span> <span class="o">=</span> <span class="n">fprop</span>
+
+            <span class="c">#store current value</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">&gt;</span> <span class="n">Nburn</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">it</span><span class="o">%</span><span class="n">Nthin</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">chains</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+
+            <span class="c">#tuning!</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">it</span><span class="o">%</span><span class="n">tune_interval</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">tune</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">it</span><span class="o">&lt;</span><span class="n">Nburn</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">tune_throughout</span><span class="p">)):</span>
+                <span class="n">pc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">accepted</span><span class="p">[</span><span class="n">it</span><span class="o">-</span><span class="n">tune_interval</span><span class="p">:</span><span class="n">it</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chains</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="n">tune_interval</span><span class="p">:])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pc</span> <span class="o">&gt;</span> <span class="o">.</span><span class="mi">25</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*=</span> <span class="mf">1.1</span>
+                <span class="k">if</span> <span class="n">pc</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">15</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">/=</span> <span class="mf">1.1</span>
+</div>
+<div class="viewcode-block" id="Metropolis_Hastings.predict"><a class="viewcode-back" href="../../../../GPy.inference.mcmc.html#GPy.inference.mcmc.samplers.Metropolis_Hastings.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">function</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a prediction for the function, to which we will pass the additional arguments&quot;&quot;&quot;</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_params</span><span class="p">()</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_set_params</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">fs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_set_params</span><span class="p">(</span><span class="n">param</span><span class="p">)</span><span class="c"># reset model to starting state</span>
+        <span class="k">return</span> <span class="n">fs</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

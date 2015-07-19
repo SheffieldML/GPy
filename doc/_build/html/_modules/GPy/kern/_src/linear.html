@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.linear &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.linear</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">kern</span> <span class="kn">import</span> <span class="n">Kern</span>
+<span class="kn">from</span> <span class="nn">...util.linalg</span> <span class="kn">import</span> <span class="n">tdot</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization.transformations</span> <span class="kn">import</span> <span class="n">Logexp</span>
+<span class="kn">from</span> <span class="nn">...util.caching</span> <span class="kn">import</span> <span class="n">Cache_this</span>
+<span class="kn">from</span> <span class="nn">...util.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.psi_comp</span> <span class="kn">import</span> <span class="n">PSICOMP_Linear</span>
+
+<div class="viewcode-block" id="Linear"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear">[docs]</a><span class="k">class</span> <span class="nc">Linear</span><span class="p">(</span><span class="n">Kern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Linear kernel</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i x_iy_i</span>
+
+<span class="sd">    :param input_dim: the number of input dimensions</span>
+<span class="sd">    :type input_dim: int</span>
+<span class="sd">    :param variances: the vector of variances :math:`\sigma^2_i`</span>
+<span class="sd">    :type variances: array or list of the appropriate size (or float if there</span>
+<span class="sd">                     is only one variance parameter)</span>
+<span class="sd">    :param ARD: Auto Relevance Determination. If False, the kernel has only one</span>
+<span class="sd">                variance parameter \sigma^2, otherwise there is one variance</span>
+<span class="sd">                parameter per dimension.</span>
+<span class="sd">    :type ARD: Boolean</span>
+<span class="sd">    :rtype: kernel object</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">variances</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ARD</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">active_dims</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Linear</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">active_dims</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ARD</span> <span class="o">=</span> <span class="n">ARD</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ARD</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">variances</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">variances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variances</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">variances</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Only one variance needed for non-ARD kernel&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">variances</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">variances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variances</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">variances</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="s">&quot;bad number of variances, need one ARD variance per input_dim&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variances</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;variances&#39;</span><span class="p">,</span> <span class="n">variances</span><span class="p">,</span> <span class="n">Logexp</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span> <span class="o">=</span> <span class="n">PSICOMP_Linear</span><span class="p">()</span>
+
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<div class="viewcode-block" id="Linear.K"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.K">[docs]</a>    <span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ARD</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">tdot</span><span class="p">(</span><span class="n">X</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">*</span><span class="n">rv</span><span class="p">,</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">rv</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dot_product</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span>
+</div>
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ignore_args</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
+    <span class="k">def</span> <span class="nf">_dot_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tdot</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Linear.Kdiag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.Kdiag">[docs]</a>    <span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Linear.update_gradients_full"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.update_gradients_full">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ARD</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="c">#self.variances.gradient = np.array([np.sum(dL_dK * tdot(X[:, i:i + 1])) for i in range(self.input_dim)])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,iq,jq-&gt;q&#39;</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c">#product = X[:, None, :] * X2[None, :, :]</span>
+                <span class="c">#self.variances.gradient = (dL_dK[:, :, None] * product).sum(0).sum(0)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,iq,jq-&gt;q&#39;</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dot_product</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dL_dK</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Linear.update_gradients_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.update_gradients_diag">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">dL_dKdiag</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ARD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+</div>
+<div class="viewcode-block" id="Linear.gradients_X"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.gradients_X">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;jq,q,ij-&gt;iq&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c">#return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;jq,q,ij-&gt;iq&#39;</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Linear.gradients_X_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.gradients_X_diag">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">2.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">*</span><span class="n">dL_dKdiag</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">X</span>
+</div>
+<div class="viewcode-block" id="Linear.input_sensitivity"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.input_sensitivity">[docs]</a>    <span class="k">def</span> <span class="nf">input_sensitivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">summarize</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span>
+
+    <span class="c">#---------------------------------------#</span>
+    <span class="c">#             PSI statistics            #</span>
+    <span class="c">#---------------------------------------#</span>
+</div>
+<div class="viewcode-block" id="Linear.psi0"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.psi0">[docs]</a>    <span class="k">def</span> <span class="nf">psi0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psicomputations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Linear.psi1"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.psi1">[docs]</a>    <span class="k">def</span> <span class="nf">psi1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psicomputations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Linear.psi2"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.psi2">[docs]</a>    <span class="k">def</span> <span class="nf">psi2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psicomputations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Linear.update_gradients_expectations"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.update_gradients_expectations">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_expectations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">dL_dvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ARD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dL_dvar</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dL_dvar</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Linear.gradients_Z_expectations"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.gradients_Z_expectations">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_Z_expectations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Linear.gradients_qX_expectations"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.Linear.gradients_qX_expectations">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_qX_expectations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psicomp</span><span class="o">.</span><span class="n">psiDerivativecomputations</span><span class="p">(</span><span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)[</span><span class="mi">2</span><span class="p">:]</span>
+</div></div>
+<div class="viewcode-block" id="LinearFull"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull">[docs]</a><span class="k">class</span> <span class="nc">LinearFull</span><span class="p">(</span><span class="n">Kern</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">W</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">active_dims</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;linear_full&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LinearFull</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">active_dims</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">W</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">kappa</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">kappa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">input_dim</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">kappa</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">input_dim</span><span class="p">,)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;kappa&#39;</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">Logexp</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LinearFull.K"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.K">[docs]</a>    <span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,jk,lk-&gt;il&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">X</span> <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">X2</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearFull.update_gradients_full"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.update_gradients_full">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,ik,kj-&gt;j&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span> <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">X2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,kl,ik,lm-&gt;jm&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X</span> <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">X2</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">gradient</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,kl,ik,jm-&gt;lm&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X</span> <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">X2</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearFull.Kdiag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.Kdiag">[docs]</a>    <span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,jk,ik-&gt;i&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearFull.update_gradients_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.update_gradients_diag">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,i-&gt;j&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dL_dKdiag</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,ik,jl,i-&gt;kl&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearFull.gradients_X"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.gradients_X">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,jk,kl-&gt;il&#39;</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;ij,jk,kl-&gt;il&#39;</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearFull.gradients_X_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.linear.LinearFull.gradients_X_diag">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">&#39;jk,i,ij-&gt;ik&#39;</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference.laplace &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy.inference.latent_function_inference" href="../latent_function_inference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" accesskey="U">GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference.laplace</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2013, 2014 Alan Saul</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+<span class="c">#</span>
+<span class="c">#Parts of this file were influenced by the Matlab GPML framework written by</span>
+<span class="c">#Carl Edward Rasmussen &amp; Hannes Nickisch, however all bugs are our own.</span>
+<span class="c">#</span>
+<span class="c">#The GPML code is released under the FreeBSD License.</span>
+<span class="c">#Copyright (c) 2005-2013 Carl Edward Rasmussen &amp; Hannes Nickisch. All rights reserved.</span>
+<span class="c">#</span>
+<span class="c">#The code and associated documentation is available from</span>
+<span class="c">#http://gaussianprocess.org/gpml/code.</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...util.linalg</span> <span class="kn">import</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">jitchol</span><span class="p">,</span> <span class="n">dpotrs</span><span class="p">,</span> <span class="n">dtrtrs</span><span class="p">,</span> <span class="n">dpotri</span><span class="p">,</span> <span class="n">symmetrify</span><span class="p">,</span> <span class="n">pdinv</span>
+<span class="kn">from</span> <span class="nn">posterior</span> <span class="kn">import</span> <span class="n">Posterior</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<div class="viewcode-block" id="warning_on_one_line"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.laplace.warning_on_one_line">[docs]</a><span class="k">def</span> <span class="nf">warning_on_one_line</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&#39; </span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">category</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+<span class="n">warnings</span><span class="o">.</span><span class="n">formatwarning</span> <span class="o">=</span> <span class="n">warning_on_one_line</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">LatentFunctionInference</span>
+
+<div class="viewcode-block" id="Laplace"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.laplace.Laplace">[docs]</a><span class="k">class</span> <span class="nc">Laplace</span><span class="p">(</span><span class="n">LatentFunctionInference</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Laplace Approximation</span>
+
+<span class="sd">        Find the moments \hat{f} and the hessian at this point</span>
+<span class="sd">        (using Newton-Raphson) of the unnormalised posterior</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_tolerance</span> <span class="o">=</span> <span class="mf">1e-7</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_max_iter</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c">#Store whether it is the first run of the inference so that we can choose whether we need</span>
+        <span class="c">#to calculate things or reuse old variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_run</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_previous_Ki_fhat</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="Laplace.inference"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.laplace.Laplace.inference">[docs]</a>    <span class="k">def</span> <span class="nf">inference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Posterior class containing essential quantities of the posterior</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># Compute K</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="c">#Find mode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_run</span><span class="p">:</span>
+            <span class="n">Ki_f_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+            <span class="n">first_run</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Ki_f_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_Ki_fhat</span>
+
+        <span class="n">f_hat</span><span class="p">,</span> <span class="n">Ki_fhat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rasm_mode</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Ki_f_init</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_hat</span> <span class="o">=</span> <span class="n">f_hat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ki_fhat</span> <span class="o">=</span>  <span class="n">Ki_fhat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c">#Compute hessian and other variables at mode</span>
+        <span class="n">log_marginal</span><span class="p">,</span> <span class="n">woodbury_inv</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_computations</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">Ki_fhat</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_previous_Ki_fhat</span> <span class="o">=</span> <span class="n">Ki_fhat</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_vector</span><span class="o">=</span><span class="n">Ki_fhat</span><span class="p">,</span> <span class="n">woodbury_inv</span><span class="o">=</span><span class="n">woodbury_inv</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">),</span> <span class="n">log_marginal</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;dL_dK&#39;</span><span class="p">:</span><span class="n">dL_dK</span><span class="p">,</span> <span class="s">&#39;dL_dthetaL&#39;</span><span class="p">:</span><span class="n">dL_dthetaL</span><span class="p">}</span>
+</div>
+<div class="viewcode-block" id="Laplace.rasm_mode"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.laplace.Laplace.rasm_mode">[docs]</a>    <span class="k">def</span> <span class="nf">rasm_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Ki_f_init</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rasmussen&#39;s numerically stable mode finding</span>
+<span class="sd">        For nomenclature see Rasmussen &amp; Williams 2006</span>
+<span class="sd">        Influenced by GPML (BSD) code, all errors are our own</span>
+
+<span class="sd">        :param K: Covariance matrix evaluated at locations X</span>
+<span class="sd">        :type K: NxD matrix</span>
+<span class="sd">        :param Y: The data</span>
+<span class="sd">        :type Y: np.ndarray</span>
+<span class="sd">        :param likelihood: the likelihood of the latent function value for the given data</span>
+<span class="sd">        :type likelihood: a GPy.likelihood object</span>
+<span class="sd">        :param Ki_f_init: the initial guess at the mode</span>
+<span class="sd">        :type Ki_f_init: np.ndarray</span>
+<span class="sd">        :param Y_metadata: information about the data, e.g. which likelihood to take from a multi-likelihood object</span>
+<span class="sd">        :type Y_metadata: np.ndarray | None</span>
+<span class="sd">        :returns: f_hat, mode on which to make laplace approxmiation</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Ki_f</span> <span class="o">=</span> <span class="n">Ki_f_init</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">Ki_f</span><span class="p">)</span>
+
+        <span class="c">#define the objective function (to be maximised)</span>
+        <span class="k">def</span> <span class="nf">obj</span><span class="p">(</span><span class="n">Ki_f</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ki_f</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">f</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">))</span>
+
+        <span class="n">difference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">difference</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_tolerance</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_max_iter</span><span class="p">:</span>
+            <span class="n">W</span> <span class="o">=</span> <span class="o">-</span><span class="n">likelihood</span><span class="o">.</span><span class="n">d2logpdf_df2</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">W</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;One or more element(s) of W is NaN&#39;</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">dlogpdf_df</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">grad</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;One or more element(s) of grad is NaN&#39;</span><span class="p">)</span>
+
+            <span class="n">W_f</span> <span class="o">=</span> <span class="n">W</span><span class="o">*</span><span class="n">f</span>
+
+            <span class="n">b</span> <span class="o">=</span> <span class="n">W_f</span> <span class="o">+</span> <span class="n">grad</span> <span class="c"># R+W p46 line 6.</span>
+            <span class="n">W12BiW12</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_B_statistics</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">log_concave</span><span class="p">)</span>
+            <span class="n">W12BiW12Kb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">W12BiW12</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+
+            <span class="c">#Work out the DIRECTION that we want to move in, but don&#39;t choose the stepsize yet</span>
+            <span class="n">full_step_Ki_f</span> <span class="o">=</span> <span class="n">b</span> <span class="o">-</span> <span class="n">W12BiW12Kb</span> <span class="c"># full_step_Ki_f = a in R&amp;W p46 line 6.</span>
+            <span class="n">dKi_f</span> <span class="o">=</span> <span class="n">full_step_Ki_f</span> <span class="o">-</span> <span class="n">Ki_f</span>
+
+            <span class="c">#define an objective for the line search (minimize this one)</span>
+            <span class="k">def</span> <span class="nf">inner_obj</span><span class="p">(</span><span class="n">step_size</span><span class="p">):</span>
+                <span class="n">Ki_f_trial</span> <span class="o">=</span> <span class="n">Ki_f</span> <span class="o">+</span> <span class="n">step_size</span><span class="o">*</span><span class="n">dKi_f</span>
+                <span class="n">f_trial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">Ki_f_trial</span><span class="p">)</span>
+                <span class="k">return</span> <span class="o">-</span><span class="n">obj</span><span class="p">(</span><span class="n">Ki_f_trial</span><span class="p">,</span> <span class="n">f_trial</span><span class="p">)</span>
+
+            <span class="c">#use scipy for the line search, the compute new values of f, Ki_f</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">brent</span><span class="p">(</span><span class="n">inner_obj</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+            <span class="n">Ki_f_new</span> <span class="o">=</span> <span class="n">Ki_f</span> <span class="o">+</span> <span class="n">step</span><span class="o">*</span><span class="n">dKi_f</span>
+            <span class="n">f_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">Ki_f_new</span><span class="p">)</span>
+
+            <span class="n">difference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">f_new</span> <span class="o">-</span> <span class="n">f</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Ki_f_new</span> <span class="o">-</span> <span class="n">Ki_f</span><span class="p">))</span>
+            <span class="n">Ki_f</span> <span class="o">=</span> <span class="n">Ki_f_new</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f_new</span>
+            <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c">#Warn of bad fits</span>
+        <span class="k">if</span> <span class="n">difference</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_tolerance</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Not perfect mode found (f_hat). difference: {}, iteration: {} out of max {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">difference</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_max_iter</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bad_fhat</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;f_hat now fine again. difference: {}, iteration: {} out of max {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">difference</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode_finding_max_iter</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">Ki_f</span>
+</div>
+<div class="viewcode-block" id="Laplace.mode_computations"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.laplace.Laplace.mode_computations">[docs]</a>    <span class="k">def</span> <span class="nf">mode_computations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_hat</span><span class="p">,</span> <span class="n">Ki_f</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        At the mode, compute the hessian and effective covariance matrix.</span>
+
+<span class="sd">        returns: logZ : approximation to the marginal likelihood</span>
+<span class="sd">                 woodbury_inv : variable required for calculating the approximation to the covariance matrix</span>
+<span class="sd">                 dL_dthetaL : array of derivatives (1 x num_kernel_params)</span>
+<span class="sd">                 dL_dthetaL : array of derivatives (1 x num_likelihood_params)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#At this point get the hessian matrix (or vector as W is diagonal)</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="o">-</span><span class="n">likelihood</span><span class="o">.</span><span class="n">d2logpdf_df2</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">W</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;One or more element(s) of W is NaN&#39;</span><span class="p">)</span>
+
+        <span class="n">K_Wi_i</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">LiW12</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_B_statistics</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">log_concave</span><span class="p">)</span>
+
+        <span class="c">#compute vital matrices</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">LiW12</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
+        <span class="n">Ki_W_i</span>  <span class="o">=</span> <span class="n">K</span> <span class="o">-</span> <span class="n">C</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+
+        <span class="c">#compute the log marginal</span>
+        <span class="n">log_marginal</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ki_f</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">f_hat</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">L</span><span class="p">)))</span>
+
+        <span class="c"># Compute matrices for derivatives</span>
+        <span class="n">dW_df</span> <span class="o">=</span> <span class="o">-</span><span class="n">likelihood</span><span class="o">.</span><span class="n">d3logpdf_df3</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span> <span class="c"># -d3lik_d3fhat</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dW_df</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;One or more element(s) of dW_df is NaN&#39;</span><span class="p">)</span>
+
+        <span class="n">dL_dfhat</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Ki_W_i</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">dW_df</span><span class="p">)</span> <span class="c"># s2 in R&amp;W p126 line 9.</span>
+        <span class="c">#BiK, _ = dpotrs(L, K, lower=1)</span>
+        <span class="c">#dL_dfhat = 0.5*np.diag(BiK)[:, None]*dW_df</span>
+        <span class="n">I_KW_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">K_Wi_i</span><span class="p">)</span>
+
+        <span class="c">####################</span>
+        <span class="c">#  compute dL_dK   #</span>
+        <span class="c">####################</span>
+        <span class="k">if</span> <span class="n">kern</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kern</span><span class="o">.</span><span class="n">is_fixed</span><span class="p">:</span>
+            <span class="c">#Explicit</span>
+            <span class="n">explicit_part</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ki_f</span><span class="p">,</span> <span class="n">Ki_f</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">-</span> <span class="n">K_Wi_i</span><span class="p">)</span>
+
+            <span class="c">#Implicit</span>
+            <span class="n">implicit_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ki_f</span><span class="p">,</span> <span class="n">dL_dfhat</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">I_KW_i</span><span class="p">)</span>
+
+            <span class="n">dL_dK</span> <span class="o">=</span> <span class="n">explicit_part</span> <span class="o">+</span> <span class="n">implicit_part</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dK</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="c">####################</span>
+        <span class="c">#compute dL_dthetaL#</span>
+        <span class="c">####################</span>
+        <span class="k">if</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">is_fixed</span><span class="p">:</span>
+            <span class="n">dlik_dthetaL</span><span class="p">,</span> <span class="n">dlik_grad_dthetaL</span><span class="p">,</span> <span class="n">dlik_hess_dthetaL</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">_laplace_gradients</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+
+            <span class="n">num_params</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">size</span>
+            <span class="c"># make space for one derivative for each likelihood parameter</span>
+            <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_params</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">thetaL_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_params</span><span class="p">):</span>
+                <span class="c">#Explicit</span>
+                <span class="n">dL_dthetaL_exp</span> <span class="o">=</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dlik_dthetaL</span><span class="p">[</span><span class="n">thetaL_i</span><span class="p">])</span>
+                                <span class="c"># The + comes from the fact that dlik_hess_dthetaL == -dW_dthetaL</span>
+                                <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Ki_W_i</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">*</span><span class="n">dlik_hess_dthetaL</span><span class="p">[:,</span> <span class="n">thetaL_i</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+                                <span class="p">)</span>
+
+                <span class="c">#Implicit</span>
+                <span class="n">dfhat_dthetaL</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">I_KW_i</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dlik_grad_dthetaL</span><span class="p">[:,</span> <span class="n">thetaL_i</span><span class="p">])</span>
+                <span class="c">#dfhat_dthetaL = mdot(Ki_W_i, dlik_grad_dthetaL[:, thetaL_i])</span>
+                <span class="n">dL_dthetaL_imp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">dL_dfhat</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dfhat_dthetaL</span><span class="p">)</span>
+                <span class="n">dL_dthetaL</span><span class="p">[</span><span class="n">thetaL_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dL_dthetaL_exp</span> <span class="o">+</span> <span class="n">dL_dthetaL_imp</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">log_marginal</span><span class="p">,</span> <span class="n">K_Wi_i</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">dL_dthetaL</span>
+</div>
+    <span class="k">def</span> <span class="nf">_compute_B_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">log_concave</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rasmussen suggests the use of a numerically stable positive definite matrix B</span>
+<span class="sd">        Which has a positive diagonal elements and can be easily inverted</span>
+
+<span class="sd">        :param K: Prior Covariance matrix evaluated at locations X</span>
+<span class="sd">        :type K: NxN matrix</span>
+<span class="sd">        :param W: Negative hessian at a point (diagonal matrix)</span>
+<span class="sd">        :type W: Vector of diagonal values of Hessian (1xN)</span>
+<span class="sd">        :returns: (W12BiW12, L_B, Li_W12)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">log_concave</span><span class="p">:</span>
+            <span class="c">#print &quot;Under 1e-10: {}&quot;.format(np.sum(W &lt; 1e-6))</span>
+            <span class="n">W</span><span class="p">[</span><span class="n">W</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-6</span>
+            <span class="c"># NOTE: when setting a parameter inside parameters_changed it will allways come to closed update circles!!!</span>
+            <span class="c">#W.__setitem__(W &lt; 1e-6, 1e-6, update=False)  # FIXME-HACK: This is a hack since GPy can&#39;t handle negative variances which can occur</span>
+                                <span class="c"># If the likelihood is non-log-concave. We wan&#39;t to say that there is a negative variance</span>
+                                <span class="c"># To cause the posterior to become less certain than the prior and likelihood,</span>
+                                <span class="c"># This is a property only held by non-log-concave likelihoods</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">W</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;One or more element(s) of W is NaN&#39;</span><span class="p">)</span>
+        <span class="c">#W is diagonal so its sqrt is just the sqrt of the diagonal elements</span>
+        <span class="n">W_12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">W_12</span><span class="o">*</span><span class="n">K</span><span class="o">*</span><span class="n">W_12</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">jitchol</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+
+        <span class="n">LiW12</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dtrtrs</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">diagflat</span><span class="p">(</span><span class="n">W_12</span><span class="p">),</span> <span class="n">lower</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">trans</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">K_Wi_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">LiW12</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">LiW12</span><span class="p">)</span> <span class="c"># R = W12BiW12, in R&amp;W p 126, eq 5.25</span>
+
+        <span class="c">#here&#39;s a better way to compute the required matrix.</span>
+        <span class="c"># you could do the model finding witha backsub, instead of a dot...</span>
+        <span class="c">#L2 = L/W_12</span>
+        <span class="c">#K_Wi_i_2 , _= dpotri(L2)</span>
+        <span class="c">#symmetrify(K_Wi_i_2)</span>
+
+        <span class="k">return</span> <span class="n">K_Wi_i</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">LiW12</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" >GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

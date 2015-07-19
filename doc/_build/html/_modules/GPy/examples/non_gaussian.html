@@ -1,0 +1,389 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.examples.non_gaussian &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.examples.non_gaussian</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, Alan Saul</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">GPy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">GPy.util</span> <span class="kn">import</span> <span class="n">datasets</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="student_t_approx"><a class="viewcode-back" href="../../../GPy.examples.html#GPy.examples.non_gaussian.student_t_approx">[docs]</a><span class="k">def</span> <span class="nf">student_t_approx</span><span class="p">(</span><span class="n">optimize</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Example of regressing with a student t likelihood using Laplace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">real_std</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="c">#Start a function, any function</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">*</span><span class="n">real_std</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">/</span><span class="n">Y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">Yc</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">X_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="mi">500</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
+    <span class="n">Y_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X_full</span><span class="p">)</span>
+    <span class="n">Y_full</span> <span class="o">=</span> <span class="n">Y_full</span><span class="o">/</span><span class="n">Y_full</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="c">#Slightly noisy data</span>
+    <span class="n">Yc</span><span class="p">[</span><span class="mi">75</span><span class="p">:</span><span class="mi">80</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c">#Very noisy data</span>
+    <span class="c">#Yc[10] += 100</span>
+    <span class="c">#Yc[25] += 10</span>
+    <span class="c">#Yc[23] += 10</span>
+    <span class="c">#Yc[26] += 1000</span>
+    <span class="c">#Yc[24] += 10</span>
+    <span class="c">#Yc = Yc/Yc.max()</span>
+
+    <span class="c">#Add student t random noise to datapoints</span>
+    <span class="n">deg_free</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">print</span> <span class="s">&quot;Real noise: &quot;</span><span class="p">,</span> <span class="n">real_std</span>
+    <span class="n">initial_var_guess</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">edited_real_sd</span> <span class="o">=</span> <span class="n">initial_var_guess</span>
+
+    <span class="c"># Kernel object</span>
+    <span class="n">kernel1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">kernel2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">kernel3</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">kernel4</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c">#Gaussian GP model on clean data</span>
+    <span class="n">m1</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel1</span><span class="p">)</span>
+    <span class="c"># optimize</span>
+    <span class="n">m1</span><span class="p">[</span><span class="s">&#39;.*white&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">m1</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+
+    <span class="c">#Gaussian GP model on corrupt data</span>
+    <span class="n">m2</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Yc</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel2</span><span class="p">)</span>
+    <span class="n">m2</span><span class="p">[</span><span class="s">&#39;.*white&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">m2</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+
+    <span class="c">#Student t GP model on clean data</span>
+    <span class="n">t_distribution</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">StudentT</span><span class="p">(</span><span class="n">deg_free</span><span class="o">=</span><span class="n">deg_free</span><span class="p">,</span> <span class="n">sigma2</span><span class="o">=</span><span class="n">edited_real_sd</span><span class="p">)</span>
+    <span class="n">laplace_inf</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">latent_function_inference</span><span class="o">.</span><span class="n">Laplace</span><span class="p">()</span>
+    <span class="n">m3</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel3</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">=</span><span class="n">t_distribution</span><span class="p">,</span> <span class="n">inference_method</span><span class="o">=</span><span class="n">laplace_inf</span><span class="p">)</span>
+    <span class="n">m3</span><span class="p">[</span><span class="s">&#39;.*t_scale2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_bounded</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
+    <span class="n">m3</span><span class="p">[</span><span class="s">&#39;.*white&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">m3</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+
+    <span class="c">#Student t GP model on corrupt data</span>
+    <span class="n">t_distribution</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">StudentT</span><span class="p">(</span><span class="n">deg_free</span><span class="o">=</span><span class="n">deg_free</span><span class="p">,</span> <span class="n">sigma2</span><span class="o">=</span><span class="n">edited_real_sd</span><span class="p">)</span>
+    <span class="n">laplace_inf</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">latent_function_inference</span><span class="o">.</span><span class="n">Laplace</span><span class="p">()</span>
+    <span class="n">m4</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Yc</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel4</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">=</span><span class="n">t_distribution</span><span class="p">,</span> <span class="n">inference_method</span><span class="o">=</span><span class="n">laplace_inf</span><span class="p">)</span>
+    <span class="n">m4</span><span class="p">[</span><span class="s">&#39;.*t_scale2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_bounded</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
+    <span class="n">m4</span><span class="p">[</span><span class="s">&#39;.*white&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">m4</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">m4</span>
+    <span class="n">debug</span><span class="o">=</span><span class="bp">True</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="n">m4</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">messages</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+        <span class="n">pb</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">m4</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">m4</span><span class="o">.</span><span class="n">inference_method</span><span class="o">.</span><span class="n">f_hat</span><span class="p">)</span>
+        <span class="n">pb</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">m4</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">m4</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="s">&#39;rx&#39;</span><span class="p">)</span>
+        <span class="n">m4</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+        <span class="k">print</span> <span class="n">m4</span>
+        <span class="k">return</span> <span class="n">m4</span>
+
+    <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+        <span class="n">optimizer</span><span class="o">=</span><span class="s">&#39;scg&#39;</span>
+        <span class="k">print</span> <span class="s">&quot;Clean Gaussian&quot;</span>
+        <span class="n">m1</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Corrupt Gaussian&quot;</span>
+        <span class="n">m2</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Clean student t&quot;</span>
+        <span class="n">m3</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Corrupt student t&quot;</span>
+        <span class="n">m4</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">&#39;Gaussian likelihood&#39;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+        <span class="n">m1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_full</span><span class="p">,</span> <span class="n">Y_full</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Gaussian clean&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="n">m2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_full</span><span class="p">,</span> <span class="n">Y_full</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Gaussian corrupt&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">&#39;Student-t likelihood&#39;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+        <span class="n">m3</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_full</span><span class="p">,</span> <span class="n">Y_full</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Student-t rasm clean&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="n">m4</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_full</span><span class="p">,</span> <span class="n">Y_full</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Student-t rasm corrupt&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">m3</span><span class="p">,</span> <span class="n">m4</span>
+</div>
+<div class="viewcode-block" id="boston_example"><a class="viewcode-back" href="../../../GPy.examples.html#GPy.examples.non_gaussian.boston_example">[docs]</a><span class="k">def</span> <span class="nf">boston_example</span><span class="p">(</span><span class="n">optimize</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Needs updating&quot;</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">sklearn</span>
+    <span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">KFold</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="s">&#39;bfgs&#39;</span>
+    <span class="n">messages</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">boston_housing</span><span class="p">()</span>
+    <span class="n">degrees_freedoms</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;X&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;Y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">-</span><span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">/</span><span class="n">X</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">-</span><span class="n">Y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">/</span><span class="n">Y</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+    <span class="n">num_folds</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">kf</span> <span class="o">=</span> <span class="n">KFold</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="n">n_folds</span><span class="o">=</span><span class="n">num_folds</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">num_models</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">degrees_freedoms</span><span class="p">)</span> <span class="o">+</span> <span class="mi">3</span> <span class="c">#3 for baseline, gaussian, gaussian laplace approx</span>
+    <span class="n">score_folds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_models</span><span class="p">,</span> <span class="n">num_folds</span><span class="p">))</span>
+    <span class="n">pred_density</span> <span class="o">=</span> <span class="n">score_folds</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">rmse</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">Ystar</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">Y</span><span class="o">-</span><span class="n">Ystar</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">kf</span><span class="p">):</span>
+        <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">Y_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">train</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">test</span><span class="p">],</span> <span class="n">Y</span><span class="p">[</span><span class="n">train</span><span class="p">],</span> <span class="n">Y</span><span class="p">[</span><span class="n">test</span><span class="p">]</span>
+        <span class="k">print</span> <span class="s">&quot;Fold {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="n">noise</span> <span class="o">=</span> <span class="mf">1e-1</span> <span class="c">#np.exp(-2)</span>
+        <span class="n">rbf_len</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="n">data_axis_plot</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">kernelstu</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">white</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">bias</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">kernelgp</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">white</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">bias</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c">#Baseline</span>
+        <span class="n">score_folds</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmse</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">Y_train</span><span class="p">))</span>
+
+        <span class="c">#Gaussian GP</span>
+        <span class="k">print</span> <span class="s">&quot;Gauss GP&quot;</span>
+        <span class="n">mgp</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">Y_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernelgp</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+        <span class="n">mgp</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="s">&#39;.*white&#39;</span><span class="p">,</span> <span class="mf">1e-5</span><span class="p">)</span>
+        <span class="n">mgp</span><span class="p">[</span><span class="s">&#39;.*len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rbf_len</span>
+        <span class="n">mgp</span><span class="p">[</span><span class="s">&#39;.*noise&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="k">print</span> <span class="n">mgp</span>
+        <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+            <span class="n">mgp</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">)</span>
+        <span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">mgp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+        <span class="n">score_folds</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmse</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">pred_density</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mgp</span><span class="o">.</span><span class="n">log_predictive_density</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">))</span>
+        <span class="k">print</span> <span class="n">mgp</span>
+        <span class="k">print</span> <span class="n">pred_density</span>
+
+        <span class="k">print</span> <span class="s">&quot;Gaussian Laplace GP&quot;</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">Y_train</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">g_distribution</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">noise_model_constructors</span><span class="o">.</span><span class="n">gaussian</span><span class="p">(</span><span class="n">variance</span><span class="o">=</span><span class="n">noise</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="n">D</span><span class="p">)</span>
+        <span class="n">g_likelihood</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">Laplace</span><span class="p">(</span><span class="n">Y_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">g_distribution</span><span class="p">)</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">Y_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernelstu</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">likelihood</span><span class="o">=</span><span class="n">g_likelihood</span><span class="p">)</span>
+        <span class="n">mg</span><span class="o">.</span><span class="n">constrain_positive</span><span class="p">(</span><span class="s">&#39;noise_variance&#39;</span><span class="p">)</span>
+        <span class="n">mg</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="s">&#39;.*white&#39;</span><span class="p">,</span> <span class="mf">1e-5</span><span class="p">)</span>
+        <span class="n">mg</span><span class="p">[</span><span class="s">&#39;rbf_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rbf_len</span>
+        <span class="n">mg</span><span class="p">[</span><span class="s">&#39;noise&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="k">print</span> <span class="n">mg</span>
+        <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+            <span class="n">mg</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">)</span>
+        <span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+        <span class="n">score_folds</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmse</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">pred_density</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mg</span><span class="o">.</span><span class="n">log_predictive_density</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">))</span>
+        <span class="k">print</span> <span class="n">pred_density</span>
+        <span class="k">print</span> <span class="n">mg</span>
+
+        <span class="k">for</span> <span class="n">stu_num</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">degrees_freedoms</span><span class="p">):</span>
+            <span class="c">#Student T</span>
+            <span class="k">print</span> <span class="s">&quot;Student-T GP {}df&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">t_distribution</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">noise_model_constructors</span><span class="o">.</span><span class="n">student_t</span><span class="p">(</span><span class="n">deg_free</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">sigma2</span><span class="o">=</span><span class="n">noise</span><span class="p">)</span>
+            <span class="n">stu_t_likelihood</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">likelihoods</span><span class="o">.</span><span class="n">Laplace</span><span class="p">(</span><span class="n">Y_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">t_distribution</span><span class="p">)</span>
+            <span class="n">mstu_t</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">Y_train</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernelstu</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">likelihood</span><span class="o">=</span><span class="n">stu_t_likelihood</span><span class="p">)</span>
+            <span class="n">mstu_t</span><span class="o">.</span><span class="n">constrain_fixed</span><span class="p">(</span><span class="s">&#39;.*white&#39;</span><span class="p">,</span> <span class="mf">1e-5</span><span class="p">)</span>
+            <span class="n">mstu_t</span><span class="o">.</span><span class="n">constrain_bounded</span><span class="p">(</span><span class="s">&#39;.*t_scale2&#39;</span><span class="p">,</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+            <span class="n">mstu_t</span><span class="p">[</span><span class="s">&#39;rbf_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rbf_len</span>
+            <span class="n">mstu_t</span><span class="p">[</span><span class="s">&#39;.*t_scale2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">noise</span>
+            <span class="k">print</span> <span class="n">mstu_t</span>
+            <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+                <span class="n">mstu_t</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">)</span>
+            <span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">mstu_t</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+            <span class="n">score_folds</span><span class="p">[</span><span class="mi">3</span><span class="o">+</span><span class="n">stu_num</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmse</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">pred_density</span><span class="p">[</span><span class="mi">3</span><span class="o">+</span><span class="n">stu_num</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mstu_t</span><span class="o">.</span><span class="n">log_predictive_density</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">))</span>
+            <span class="k">print</span> <span class="n">pred_density</span>
+            <span class="k">print</span> <span class="n">mstu_t</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;GP gauss&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Lap gauss&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X_test</span><span class="p">[:,</span> <span class="n">data_axis_plot</span><span class="p">],</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Stu t {}df&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+
+    <span class="k">print</span> <span class="s">&quot;Average scores: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">score_folds</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&quot;Average pred density: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pred_density</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="c">#Plotting</span>
+        <span class="n">stu_t_legends</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Student T, df={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">degrees_freedoms</span><span class="p">]</span>
+        <span class="n">legends</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Baseline&#39;</span><span class="p">,</span> <span class="s">&#39;Gaussian&#39;</span><span class="p">,</span> <span class="s">&#39;Laplace Approx Gaussian&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">stu_t_legends</span>
+
+        <span class="c">#Plot boxplots for RMSE density</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;RMSE&#39;</span><span class="p">)</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">score_folds</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">notch</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sym</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">vert</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">whis</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;whiskers&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;fliers&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">)</span>
+        <span class="n">xtickNames</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xticklabels</span><span class="o">=</span><span class="n">legends</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">xtickNames</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;RMSE&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Distribution&#39;</span><span class="p">)</span>
+        <span class="c">#Make grid and put it below boxes</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;lightgrey&#39;</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_axisbelow</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="c">#Plot boxplots for predictive density</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Predictive density&#39;</span><span class="p">)</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">pred_density</span><span class="p">[</span><span class="mi">1</span><span class="p">:,:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">notch</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sym</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">vert</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">whis</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;whiskers&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bp</span><span class="p">[</span><span class="s">&#39;fliers&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">)</span>
+        <span class="n">xtickNames</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xticklabels</span><span class="o">=</span><span class="n">legends</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">xtickNames</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Mean Log probability P(Y*|Y)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Distribution&#39;</span><span class="p">)</span>
+        <span class="c">#Make grid and put it below boxes</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;lightgrey&#39;</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_axisbelow</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mstu_t</span>
+
+<span class="c">#def precipitation_example():</span>
+    <span class="c">#import sklearn</span>
+    <span class="c">#from sklearn.cross_validation import KFold</span>
+    <span class="c">#data = datasets.boston_housing()</span>
+    <span class="c">#X = data[&#39;X&#39;].copy()</span>
+    <span class="c">#Y = data[&#39;Y&#39;].copy()</span>
+    <span class="c">#X = X-X.mean(axis=0)</span>
+    <span class="c">#X = X/X.std(axis=0)</span>
+    <span class="c">#Y = Y-Y.mean()</span>
+    <span class="c">#Y = Y/Y.std()</span>
+    <span class="c">#import ipdb; ipdb.set_trace()  # XXX BREAKPOINT</span>
+    <span class="c">#num_folds = 10</span>
+    <span class="c">#kf = KFold(len(Y), n_folds=num_folds, indices=True)</span>
+    <span class="c">#score_folds = np.zeros((4, num_folds))</span>
+    <span class="c">#def rmse(Y, Ystar):</span>
+        <span class="c">#return np.sqrt(np.mean((Y-Ystar)**2))</span>
+    <span class="c">##for train, test in kf:</span>
+    <span class="c">#for n, (train, test) in enumerate(kf):</span>
+        <span class="c">#X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]</span>
+        <span class="c">#print &quot;Fold {}&quot;.format(n)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

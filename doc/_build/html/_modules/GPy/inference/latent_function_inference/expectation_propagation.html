@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference.expectation_propagation &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy.inference.latent_function_inference" href="../latent_function_inference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" accesskey="U">GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference.expectation_propagation</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...util.linalg</span> <span class="kn">import</span> <span class="n">pdinv</span><span class="p">,</span><span class="n">jitchol</span><span class="p">,</span><span class="n">DSYR</span><span class="p">,</span><span class="n">tdot</span><span class="p">,</span><span class="n">dtrtrs</span><span class="p">,</span> <span class="n">dpotrs</span>
+<span class="kn">from</span> <span class="nn">posterior</span> <span class="kn">import</span> <span class="n">Posterior</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">LatentFunctionInference</span>
+<span class="n">log_2_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EP"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP">[docs]</a><span class="k">class</span> <span class="nc">EP</span><span class="p">(</span><span class="n">LatentFunctionInference</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">eta</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The expectation-propagation algorithm.</span>
+<span class="sd">        For nomenclature see Rasmussen &amp; Williams 2006.</span>
+
+<span class="sd">        :param epsilon: Convergence criterion, maximum squared difference allowed between mean updates to stop iterations (float)</span>
+<span class="sd">        :type epsilon: float</span>
+<span class="sd">        :param eta: parameter for fractional EP updates.</span>
+<span class="sd">        :type eta: float64</span>
+<span class="sd">        :param delta: damping EP updates factor.</span>
+<span class="sd">        :type delta: float64</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">epsilon</span><span class="p">,</span> <span class="n">eta</span><span class="p">,</span> <span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EP.reset"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">old_mutilde</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_vtilde</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ep_approximation</span> <span class="o">=</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="EP.on_optimization_start"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP.on_optimization_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ep_approximation</span> <span class="o">=</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="EP.on_optimization_end"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP.on_optimization_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># TODO: update approximation in the end as well? Maybe even with a switch?</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="EP.inference"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP.inference">[docs]</a>    <span class="k">def</span> <span class="nf">inference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">num_data</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">output_dim</span> <span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;ep in 1D only (for now!)&quot;</span>
+
+        <span class="n">K</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ep_approximation</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">tau_tilde</span><span class="p">,</span> <span class="n">Z_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ep_approximation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expectation_propagation</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">tau_tilde</span><span class="p">,</span> <span class="n">Z_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ep_approximation</span>
+
+        <span class="n">Wi</span><span class="p">,</span> <span class="n">LW</span><span class="p">,</span> <span class="n">LWi</span><span class="p">,</span> <span class="n">W_logdet</span> <span class="o">=</span> <span class="n">pdinv</span><span class="p">(</span><span class="n">K</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">tau_tilde</span><span class="p">))</span>
+
+        <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dpotrs</span><span class="p">(</span><span class="n">LW</span><span class="p">,</span> <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">log_marginal</span> <span class="o">=</span>  <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">num_data</span> <span class="o">*</span> <span class="n">log_2_pi</span> <span class="o">-</span> <span class="n">W_logdet</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">mu_tilde</span><span class="p">))</span> <span class="c"># TODO: add log Z_hat??</span>
+
+        <span class="n">dL_dK</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">tdot</span><span class="p">(</span><span class="n">alpha</span><span class="p">[:,</span><span class="bp">None</span><span class="p">])</span> <span class="o">-</span> <span class="n">Wi</span><span class="p">)</span>
+
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">likelihood</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="c">#TODO: derivatives of the likelihood parameters</span>
+
+        <span class="k">return</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_inv</span><span class="o">=</span><span class="n">Wi</span><span class="p">,</span> <span class="n">woodbury_vector</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">),</span> <span class="n">log_marginal</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;dL_dK&#39;</span><span class="p">:</span><span class="n">dL_dK</span><span class="p">,</span> <span class="s">&#39;dL_dthetaL&#39;</span><span class="p">:</span><span class="n">dL_dthetaL</span><span class="p">}</span>
+</div>
+<div class="viewcode-block" id="EP.expectation_propagation"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.expectation_propagation.EP.expectation_propagation">[docs]</a>    <span class="k">def</span> <span class="nf">expectation_propagation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="p">):</span>
+
+        <span class="n">num_data</span><span class="p">,</span> <span class="n">data_dim</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">data_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;This EP methods only works for 1D outputs&quot;</span>
+
+
+        <span class="c">#Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_data</span><span class="p">)</span>
+        <span class="n">Sigma</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c">#Initial values - Marginal moments</span>
+        <span class="n">Z_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_data</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">mu_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_data</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">sigma2_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_data</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="c">#initial values - Gaussian factors</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_mutilde</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">tau_tilde</span><span class="p">,</span> <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">v_tilde</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">num_data</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">old_mutilde</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">num_data</span><span class="p">,</span> <span class="s">&quot;data size mis-match: did you change the data? try resetting!&quot;</span>
+            <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">v_tilde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_mutilde</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_vtilde</span>
+            <span class="n">tau_tilde</span> <span class="o">=</span> <span class="n">v_tilde</span><span class="o">/</span><span class="n">mu_tilde</span>
+
+        <span class="c">#Approximation</span>
+        <span class="n">tau_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">+</span> <span class="mf">1.</span>
+        <span class="n">v_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">+</span> <span class="mf">1.</span>
+       	<span class="n">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">tau_diff</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">v_diff</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">):</span>
+            <span class="n">update_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">num_data</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">update_order</span><span class="p">:</span>
+                <span class="c">#Cavity distribution parameters</span>
+                <span class="n">tau_cav</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">Sigma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">*</span><span class="n">tau_tilde</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">v_cav</span> <span class="o">=</span> <span class="n">mu</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Sigma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">*</span><span class="n">v_tilde</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="c">#Marginal moments</span>
+                <span class="n">Z_hat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mu_hat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sigma2_hat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">moments_match_ep</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tau_cav</span><span class="p">,</span> <span class="n">v_cav</span><span class="p">)</span><span class="c">#, Y_metadata=None)#=(None if Y_metadata is None else Y_metadata[i]))</span>
+                <span class="c">#Site parameters update</span>
+                <span class="n">delta_tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">sigma2_hat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.</span><span class="o">/</span><span class="n">Sigma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">delta_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">*</span><span class="p">(</span><span class="n">mu_hat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">sigma2_hat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">mu</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Sigma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">tau_tilde</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">delta_tau</span>
+                <span class="n">v_tilde</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">delta_v</span>
+                <span class="c">#Posterior distribution parameters update</span>
+                <span class="n">DSYR</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">-</span><span class="n">delta_tau</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span> <span class="n">delta_tau</span><span class="o">*</span><span class="n">Sigma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span>
+                <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">v_tilde</span><span class="p">)</span>
+
+            <span class="c">#(re) compute Sigma and mu using full Cholesky decompy</span>
+            <span class="n">tau_tilde_root</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tau_tilde</span><span class="p">)</span>
+            <span class="n">Sroot_tilde_K</span> <span class="o">=</span> <span class="n">tau_tilde_root</span><span class="p">[:,</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">K</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">num_data</span><span class="p">)</span> <span class="o">+</span> <span class="n">Sroot_tilde_K</span> <span class="o">*</span> <span class="n">tau_tilde_root</span><span class="p">[</span><span class="bp">None</span><span class="p">,:]</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">jitchol</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+            <span class="n">V</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dtrtrs</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">Sroot_tilde_K</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">Sigma</span> <span class="o">=</span> <span class="n">K</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">V</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">V</span><span class="p">)</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span><span class="n">v_tilde</span><span class="p">)</span>
+
+            <span class="c">#monitor convergence</span>
+            <span class="k">if</span> <span class="n">iterations</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">tau_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tau_tilde</span><span class="o">-</span><span class="n">tau_tilde_old</span><span class="p">))</span>
+                <span class="n">v_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">v_tilde</span><span class="o">-</span><span class="n">v_tilde_old</span><span class="p">))</span>
+            <span class="n">tau_tilde_old</span> <span class="o">=</span> <span class="n">tau_tilde</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">v_tilde_old</span> <span class="o">=</span> <span class="n">v_tilde</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="n">iterations</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">mu_tilde</span> <span class="o">=</span> <span class="n">v_tilde</span><span class="o">/</span><span class="n">tau_tilde</span>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">mu_tilde</span><span class="p">,</span> <span class="n">tau_tilde</span><span class="p">,</span> <span class="n">Z_hat</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" >GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

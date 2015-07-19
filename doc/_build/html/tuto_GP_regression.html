@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Gaussian process regression tutorial &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gaussian-process-regression-tutorial">
+<h1>Gaussian process regression tutorial<a class="headerlink" href="#gaussian-process-regression-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>We will see in this tutorial the basics for building a 1 dimensional and a 2 dimensional Gaussian process regression model, also known as a kriging model. The code shown in this tutorial can be obtained at GPy/examples/tutorials.py, or by running <code class="docutils literal"><span class="pre">GPy.examples.tutorials.tuto_GP_regression()</span></code>.</p>
+<p>We first import the libraries we will need:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">GPy</span>
+</pre></div>
+</div>
+<div class="section" id="dimensional-model">
+<h2>1-dimensional model<a class="headerlink" href="#dimensional-model" title="Permalink to this headline">¶</a></h2>
+<p>For this toy example, we assume we have the following inputs and outputs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.</span><span class="p">,</span><span class="mf">3.</span><span class="p">,(</span><span class="mi">20</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.05</span>
+</pre></div>
+</div>
+<p>Note that the observations Y include some noise.</p>
+<p>The first step is to define the covariance kernel we want to use for the model. We choose here a kernel based on Gaussian kernel (i.e. rbf or square exponential):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">kernel</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">lengthscale</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameter <code class="docutils literal"><span class="pre">input_dim</span></code> stands for the dimension of the input space. The parameters <code class="docutils literal"><span class="pre">variance</span></code> and <code class="docutils literal"><span class="pre">lengthscale</span></code> are optional. Many other kernels are implemented such as:</p>
+<ul class="simple">
+<li>linear (<code class="xref py py-class docutils literal"><span class="pre">Linear</span></code>)</li>
+<li>exponential kernel (<code class="xref py py-class docutils literal"><span class="pre">GPy.kern.Exponential</span></code>)</li>
+<li>Matern 3/2 (<code class="xref py py-class docutils literal"><span class="pre">GPy.kern.Matern32</span></code>)</li>
+<li>Matern 5/2 (<code class="xref py py-class docutils literal"><span class="pre">GPy.kern.Matern52</span></code>)</li>
+<li>spline (<code class="xref py py-class docutils literal"><span class="pre">GPy.kern.Spline</span></code>)</li>
+<li>and many others...</li>
+</ul>
+<p>The inputs required for building the model are the observations and the kernel:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">m</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">kernel</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default, some observation noise is added to the modle. The functions <code class="docutils literal"><span class="pre">print</span></code> and <code class="docutils literal"><span class="pre">plot</span></code> give an insight of the model we have just build. The code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="n">m</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>gives the following output:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name                 : GP regression
+Log-likelihood       : -22.8178418808
+Number of Parameters : 3
+Parameters:
+  GP_regression.           |  Value  |  Constraint  |  Prior  |  Tied to
+  rbf.variance             |    1.0  |     +ve      |         |
+  rbf.lengthscale          |    1.0  |     +ve      |         |
+  Gaussian_noise.variance  |    1.0  |     +ve      |         |
+</pre></div>
+</div>
+<div class="figure align-center" id="id1">
+<a class="reference internal image-reference" href="_images/tuto_GP_regression_m1.png"><img alt="_images/tuto_GP_regression_m1.png" src="_images/tuto_GP_regression_m1.png" style="height: 350px;" /></a>
+<p class="caption"><span class="caption-text">GP regression model before optimization of the parameters. The shaded region corresponds to ~95% confidence intervals (ie +/- 2 standard deviation).</span></p>
+</div>
+<p>The default values of the kernel parameters may not be relevant for
+the current data (for example, the confidence intervals seems too wide
+on the previous figure). A common approach is to find the values of
+the parameters that maximize the likelihood of the data. It as easy as
+calling <code class="docutils literal"><span class="pre">m.optimize</span></code> in GPy:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If we want to perform some restarts to try to improve the result of the optimization, we can use the <code class="docutils literal"><span class="pre">optimize_restart</span></code> function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">m</span><span class="o">.</span><span class="n">optimize_restarts</span><span class="p">(</span><span class="n">num_restarts</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once again, we can use <code class="docutils literal"><span class="pre">print(m)</span></code> and <code class="docutils literal"><span class="pre">m.plot()</span></code> to look at the resulting model  resulting model:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name                 : GP regression
+Log-likelihood       : 11.947469082
+Number of Parameters : 3
+Parameters:
+  GP_regression.           |       Value        |  Constraint  |  Prior  |  Tied to
+  rbf.variance             |     0.74229417323  |     +ve      |         |
+  rbf.lengthscale          |     1.43020495724  |     +ve      |         |
+  Gaussian_noise.variance  |  0.00325654460991  |     +ve      |         |
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<a class="reference internal image-reference" href="_images/tuto_GP_regression_m2.png"><img alt="_images/tuto_GP_regression_m2.png" src="_images/tuto_GP_regression_m2.png" style="height: 350px;" /></a>
+<p class="caption"><span class="caption-text">GP regression model after optimization of the parameters.</span></p>
+</div>
+</div>
+<div class="section" id="dimensional-example">
+<h2>2-dimensional example<a class="headerlink" href="#dimensional-example" title="Permalink to this headline">¶</a></h2>
+<p>Here is a 2 dimensional example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+<span class="n">pb</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">GPy</span>
+
+<span class="c"># sample inputs and outputs</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.</span><span class="p">,</span><span class="mf">3.</span><span class="p">,(</span><span class="mi">50</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mf">0.05</span>
+
+<span class="c"># define kernel</span>
+<span class="n">ker</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Matern52</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">ARD</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">+</span> <span class="n">GPy</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># create simple GP model</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GPRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">ker</span><span class="p">)</span>
+
+<span class="c"># optimize and plot</span>
+<span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">max_f_eval</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The flag <code class="docutils literal"><span class="pre">ARD=True</span></code> in the definition of the Matern kernel specifies that we want one lengthscale parameter per dimension (ie the GP is not isotropic). The output of the last two lines is:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name                 : GP regression
+Log-likelihood       : 26.787156248
+Number of Parameters : 5
+Parameters:
+  GP_regression.           |        Value        |  Constraint  |  Prior  |  Tied to
+  add.Mat52.variance       |     0.385463739076  |     +ve      |         |
+  add.Mat52.lengthscale    |               (2,)  |     +ve      |         |
+  add.white.variance       |  0.000835329608514  |     +ve      |         |
+  Gaussian_noise.variance  |  0.000835329608514  |     +ve      |         |
+</pre></div>
+</div>
+<p>If you want to see the <code class="docutils literal"><span class="pre">ARD</span></code> parameters explicitly print them
+directly:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">m</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Mat52</span><span class="o">.</span><span class="n">lengthscale</span>
+<span class="go">  Index  |  GP_regression.add.Mat52.lengthscale  |  Constraint  |   Prior   |  Tied to</span>
+<span class="go">   [0]   |                            1.9575587  |     +ve      |           |    N/A</span>
+<span class="go">   [1]   |                            1.9689948  |     +ve      |           |    N/A</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="_images/tuto_GP_regression_m3.png"><img alt="_images/tuto_GP_regression_m3.png" src="_images/tuto_GP_regression_m3.png" style="height: 350px;" /></a>
+<p class="caption"><span class="caption-text">Contour plot of the best predictor (posterior mean).</span></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Gaussian process regression tutorial</a><ul>
+<li><a class="reference internal" href="#dimensional-model">1-dimensional model</a></li>
+<li><a class="reference internal" href="#dimensional-example">2-dimensional example</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tuto_GP_regression.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

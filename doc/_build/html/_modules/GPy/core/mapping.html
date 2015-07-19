@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.core.mapping &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.core.mapping</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2013,2014, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">parameterization</span> <span class="kn">import</span> <span class="n">Parameterized</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="Mapping"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping">[docs]</a><span class="k">class</span> <span class="nc">Mapping</span><span class="p">(</span><span class="n">Parameterized</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base model for shared behavior between models that can act like a mapping.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;mapping&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Mapping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Mapping.f"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping.f">[docs]</a>    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+<div class="viewcode-block" id="Mapping.df_dX"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping.df_dX">[docs]</a>    <span class="k">def</span> <span class="nf">df_dX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_df</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate derivatives of mapping outputs with respect to inputs.</span>
+
+<span class="sd">        :param dL_df: gradient of the objective with respect to the function.</span>
+<span class="sd">        :type dL_df: ndarray (num_data x output_dim)</span>
+<span class="sd">        :param X: the input locations where derivatives are to be evaluated.</span>
+<span class="sd">        :type X: ndarray (num_data x input_dim)</span>
+<span class="sd">        :returns: matrix containing gradients of the function with respect to the inputs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+<div class="viewcode-block" id="Mapping.df_dtheta"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping.df_dtheta">[docs]</a>    <span class="k">def</span> <span class="nf">df_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_df</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The gradient of the outputs of the mapping with respect to each of the parameters.</span>
+
+<span class="sd">        :param dL_df: gradient of the objective with respect to the function.</span>
+<span class="sd">        :type dL_df: ndarray (num_data x output_dim)</span>
+<span class="sd">        :param X: input locations where the function is evaluated.</span>
+<span class="sd">        :type X: ndarray (num_data x input_dim)</span>
+<span class="sd">        :returns: Matrix containing gradients with respect to parameters of each output for each input data.</span>
+<span class="sd">        :rtype: ndarray (num_params length)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+<div class="viewcode-block" id="Mapping.plot"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots the mapping associated with the model.</span>
+<span class="sd">          - In one dimension, the function is plotted.</span>
+<span class="sd">          - In two dimensions, a contour-plot shows the function</span>
+<span class="sd">          - In higher dimensions, we&#39;ve not implemented this yet !TODO!</span>
+
+<span class="sd">        Can plot only part of the data and part of the posterior functions</span>
+<span class="sd">        using which_data and which_functions</span>
+
+<span class="sd">        This is a convenience function: arguments are passed to</span>
+<span class="sd">        GPy.plotting.matplot_dep.models_plots.plot_mapping</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="s">&quot;matplotlib&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">..plotting.matplot_dep</span> <span class="kn">import</span> <span class="n">models_plots</span>
+            <span class="n">mapping_plots</span><span class="o">.</span><span class="n">plot_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">,</span> <span class="s">&quot;matplotlib package has not been imported.&quot;</span>
+</div></div>
+<div class="viewcode-block" id="Bijective_mapping"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Bijective_mapping">[docs]</a><span class="k">class</span> <span class="nc">Bijective_mapping</span><span class="p">(</span><span class="n">Mapping</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a mapping that is bijective, i.e. you can go from X to f and</span>
+<span class="sd">    also back from f to X. The inverse mapping is called g().</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;bijective_mapping&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Bijective_apping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Bijective_mapping.g"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Bijective_mapping.g">[docs]</a>    <span class="k">def</span> <span class="nf">g</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inverse mapping from output domain of the function to the inputs.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div></div>
+<span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<div class="viewcode-block" id="Mapping_check_model"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping_check_model">[docs]</a><span class="k">class</span> <span class="nc">Mapping_check_model</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a dummy model class used as a base class for checking that the</span>
+<span class="sd">    gradients of a given mapping are implemented correctly. It enables</span>
+<span class="sd">    checkgradient() to be called independently on each mapping.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dL_df</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="k">if</span> <span class="n">mapping</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">mapping</span> <span class="o">=</span> <span class="n">GPy</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">X</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">mapping</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dL_df</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">dL_df</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">mapping</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">=</span><span class="n">mapping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dL_df</span> <span class="o">=</span> <span class="n">dL_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">num_params</span>
+        <span class="n">Model</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">_get_params</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_param_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">_get_param_names</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">_set_params</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Mapping_check_model.log_likelihood"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping_check_model.log_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_df</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_log_likelihood_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;This needs to be implemented to use the Mapping_check_model class.&quot;</span>
+</div>
+<div class="viewcode-block" id="Mapping_check_df_dtheta"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping_check_df_dtheta">[docs]</a><span class="k">class</span> <span class="nc">Mapping_check_df_dtheta</span><span class="p">(</span><span class="n">Mapping_check_model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class allows gradient checks for the gradient of a mapping with respect to parameters. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dL_df</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">Mapping_check_model</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mapping</span><span class="o">=</span><span class="n">mapping</span><span class="p">,</span><span class="n">dL_df</span><span class="o">=</span><span class="n">dL_df</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_log_likelihood_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">df_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Mapping_check_df_dX"><a class="viewcode-back" href="../../../GPy.core.html#GPy.core.mapping.Mapping_check_df_dX">[docs]</a><span class="k">class</span> <span class="nc">Mapping_check_df_dX</span><span class="p">(</span><span class="n">Mapping_check_model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class allows gradient checks for the gradient of a mapping with respect to X. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dL_df</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">Mapping_check_model</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mapping</span><span class="o">=</span><span class="n">mapping</span><span class="p">,</span><span class="n">dL_df</span><span class="o">=</span><span class="n">dL_df</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dL_df</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">dL_df</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">output_dim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">input_dim</span>
+
+    <span class="k">def</span> <span class="nf">_log_likelihood_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">df_dX</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dL_df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_param_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">&#39;X_&#39;</span>  <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;,&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+    <span class="k">def</span> <span class="nf">_get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

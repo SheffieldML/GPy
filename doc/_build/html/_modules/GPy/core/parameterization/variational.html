@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.core.parameterization.variational &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.core.parameterization.variational</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on 6 Nov 2013</span>
+
+<span class="sd">@author: maxz</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">parameterized</span> <span class="kn">import</span> <span class="n">Parameterized</span>
+<span class="kn">from</span> <span class="nn">param</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">transformations</span> <span class="kn">import</span> <span class="n">Logexp</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">,</span><span class="n">__fixed__</span>
+<span class="kn">from</span> <span class="nn">GPy.util.misc</span> <span class="kn">import</span> <span class="n">param_to_array</span>
+<span class="kn">from</span> <span class="nn">GPy.util.caching</span> <span class="kn">import</span> <span class="n">Cache_this</span>
+
+<div class="viewcode-block" id="VariationalPrior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPrior">[docs]</a><span class="k">class</span> <span class="nc">VariationalPrior</span><span class="p">(</span><span class="n">Parameterized</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;latent space&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VariationalPrior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VariationalPrior.KL_divergence"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPrior.KL_divergence">[docs]</a>    <span class="k">def</span> <span class="nf">KL_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;override this for variational inference of latent space&quot;</span>
+</div>
+<div class="viewcode-block" id="VariationalPrior.update_gradients_KL"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPrior.update_gradients_KL">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_KL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        updates the gradients for mean and variance **in place**</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;override this for variational inference of latent space&quot;</span>
+</div></div>
+<div class="viewcode-block" id="NormalPrior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.NormalPrior">[docs]</a><span class="k">class</span> <span class="nc">NormalPrior</span><span class="p">(</span><span class="n">VariationalPrior</span><span class="p">):</span>
+<div class="viewcode-block" id="NormalPrior.KL_divergence"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.NormalPrior.KL_divergence">[docs]</a>    <span class="k">def</span> <span class="nf">KL_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">var_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">var_S</span> <span class="o">=</span> <span class="p">(</span><span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_mean</span> <span class="o">+</span> <span class="n">var_S</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">*</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">num_data</span>
+</div>
+<div class="viewcode-block" id="NormalPrior.update_gradients_KL"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.NormalPrior.update_gradients_KL">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_KL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="c"># dL:</span>
+        <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">gradient</span> <span class="o">-=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">gradient</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">)))</span> <span class="o">*</span> <span class="mf">0.5</span>
+</div></div>
+<div class="viewcode-block" id="SpikeAndSlabPrior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPrior">[docs]</a><span class="k">class</span> <span class="nc">SpikeAndSlabPrior</span><span class="p">(</span><span class="n">VariationalPrior</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pi</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">learnPi</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">variance</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;SpikeAndSlabPrior&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeAndSlabPrior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;variance&#39;</span><span class="p">,</span><span class="n">variance</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnPi</span> <span class="o">=</span> <span class="n">learnPi</span>
+        <span class="k">if</span> <span class="n">learnPi</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pi</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;Pi&#39;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">,</span><span class="mf">1.</span><span class="o">-</span><span class="mf">1e-10</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pi</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;Pi&#39;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">__fixed__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SpikeAndSlabPrior.KL_divergence"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPrior.KL_divergence">[docs]</a>    <span class="k">def</span> <span class="nf">KL_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">gamma</span><span class="p">,</span><span class="n">gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_probabilities</span><span class="p">()</span>
+        <span class="n">log_gamma</span><span class="p">,</span><span class="n">log_gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_log_prob</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">gamma</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span><span class="o">/</span><span class="n">gamma</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi</span>
+            
+        <span class="n">var_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">var_S</span> <span class="o">=</span> <span class="p">(</span><span class="n">S</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span><span class="p">))</span>
+        <span class="n">var_gamma</span> <span class="o">=</span> <span class="p">(</span><span class="n">gamma</span><span class="o">*</span><span class="p">(</span><span class="n">log_gamma</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">+</span><span class="p">(</span><span class="n">gamma1</span><span class="o">*</span><span class="p">(</span><span class="n">log_gamma1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">pi</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">var_gamma</span><span class="o">+</span> <span class="p">(</span><span class="n">gamma</span><span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span> <span class="o">+</span><span class="n">var_mean</span> <span class="o">+</span> <span class="n">var_S</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="mf">2.</span>
+</div>
+<div class="viewcode-block" id="SpikeAndSlabPrior.update_gradients_KL"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPrior.update_gradients_KL">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_KL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">gamma</span><span class="p">,</span><span class="n">gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_probabilities</span><span class="p">()</span>
+        <span class="n">log_gamma</span><span class="p">,</span><span class="n">log_gamma1</span> <span class="o">=</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">gamma_log_prob</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">gamma</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span><span class="o">/</span><span class="n">gamma</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="n">variational_posterior</span><span class="o">.</span><span class="n">binary_prob</span><span class="o">.</span><span class="n">gradient</span> <span class="o">-=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">pi</span><span class="p">)</span><span class="o">/</span><span class="n">pi</span><span class="p">)</span><span class="o">+</span><span class="n">log_gamma</span><span class="o">-</span><span class="n">log_gamma1</span><span class="o">+</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">+</span><span class="n">S</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">*</span><span class="n">gamma</span><span class="o">*</span><span class="n">gamma1</span>
+        <span class="n">mu</span><span class="o">.</span><span class="n">gradient</span> <span class="o">-=</span> <span class="n">gamma</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+        <span class="n">S</span><span class="o">.</span><span class="n">gradient</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">-</span> <span class="mf">1.</span><span class="o">/</span><span class="n">S</span><span class="p">)</span> <span class="o">*</span> <span class="n">gamma</span> <span class="o">/</span><span class="mf">2.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnPi</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="p">(</span><span class="n">gamma</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="p">(</span><span class="n">gamma</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="p">(</span><span class="n">gamma</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+</div></div>
+<div class="viewcode-block" id="VariationalPosterior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPosterior">[docs]</a><span class="k">class</span> <span class="nc">VariationalPosterior</span><span class="p">(</span><span class="n">Parameterized</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">means</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">variances</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;latent space&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VariationalPosterior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&quot;mean&quot;</span><span class="p">,</span> <span class="n">means</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&quot;variance&quot;</span><span class="p">,</span> <span class="n">variances</span><span class="p">,</span> <span class="n">Logexp</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">ndim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_uncertain_inputs</span><span class="p">():</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">&quot;need one variance per sample and dimenion&quot;</span>
+
+<div class="viewcode-block" id="VariationalPosterior.set_gradients"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPosterior.set_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">set_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">gradient</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">grad</span>
+</div>
+    <span class="k">def</span> <span class="nf">_raveled_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">index</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span><span class="o">+</span><span class="n">size</span><span class="p">))</span>
+            <span class="n">size</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">_realsize_</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s">&#39;_realsize_&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">p</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">return</span> <span class="n">index</span>
+
+<div class="viewcode-block" id="VariationalPosterior.has_uncertain_inputs"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.VariationalPosterior.has_uncertain_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">has_uncertain_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="ow">is</span> <span class="bp">None</span>
+</div>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="kn">import</span> <span class="nn">copy</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">dc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">_gradient_array_</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">oversize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">oversize</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">ndim</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">num_data</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">n</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VariationalPosterior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NormalPosterior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.NormalPosterior">[docs]</a><span class="k">class</span> <span class="nc">NormalPosterior</span><span class="p">(</span><span class="n">VariationalPosterior</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    NormalPosterior distribution for variational approximations.</span>
+
+<span class="sd">    holds the means and variances for a factorizing multivariate normal distribution</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="NormalPosterior.plot"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.NormalPosterior.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot latent space X in 1D:</span>
+
+<span class="sd">        See  GPy.plotting.matplot_dep.variational_plots</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">assert</span> <span class="s">&quot;matplotlib&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span> <span class="s">&quot;matplotlib package has not been imported.&quot;</span>
+        <span class="kn">from</span> <span class="nn">...plotting.matplot_dep</span> <span class="kn">import</span> <span class="n">variational_plots</span>
+        <span class="kn">import</span> <span class="nn">matplotlib</span>
+        <span class="k">return</span> <span class="n">variational_plots</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</div></div>
+<div class="viewcode-block" id="SpikeAndSlabPosterior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPosterior">[docs]</a><span class="k">class</span> <span class="nc">SpikeAndSlabPosterior</span><span class="p">(</span><span class="n">VariationalPosterior</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The SpikeAndSlab distribution for variational approximations.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">variances</span><span class="p">,</span> <span class="n">binary_prob</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;latent space&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        binary_prob : the probability of the distribution on the slab part.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeAndSlabPosterior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">means</span><span class="p">,</span> <span class="n">variances</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&quot;binary_prob&quot;</span><span class="p">,</span><span class="n">binary_prob</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span>
+        
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">gamma_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">param_to_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">))</span>
+        <span class="n">prob</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">&gt;-</span><span class="mi">710</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">&gt;-</span><span class="mi">710</span><span class="p">]))</span>
+        <span class="n">prob1</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">param_to_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">))</span>
+        <span class="n">prob1</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">&lt;</span><span class="mi">710</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">&lt;</span><span class="mi">710</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">prob</span><span class="p">,</span> <span class="n">prob1</span>
+    
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">gamma_log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">loggamma</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">loggamma</span><span class="p">[</span><span class="n">loggamma</span><span class="o">&gt;-</span><span class="mi">40</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log1p</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">loggamma</span><span class="p">[</span><span class="n">loggamma</span><span class="o">&gt;-</span><span class="mi">40</span><span class="p">]))</span>
+        <span class="n">loggamma1</span> <span class="o">=</span> <span class="o">-</span><span class="n">param_to_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">loggamma1</span><span class="p">[</span><span class="n">loggamma1</span><span class="o">&gt;-</span><span class="mi">40</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log1p</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">loggamma1</span><span class="p">[</span><span class="n">loggamma1</span><span class="o">&gt;-</span><span class="mi">40</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">loggamma</span><span class="p">,</span><span class="n">loggamma1</span>
+
+<div class="viewcode-block" id="SpikeAndSlabPosterior.set_gradients"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPosterior.set_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">set_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">gradient</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">gradient</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">grad</span>
+</div>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="kn">import</span> <span class="nn">copy</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">dc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;binary_prob&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_prob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">dc</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="p">[</span><span class="s">&#39;variance&#39;</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">dc</span><span class="p">[</span><span class="s">&#39;binary_prob&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="p">[</span><span class="s">&#39;binary_prob&#39;</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">_gradient_array_</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">oversize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">oversize</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">ndim</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">num_data</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">n</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">n</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VariationalPrior</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SpikeAndSlabPosterior.plot"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.variational.SpikeAndSlabPosterior.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot latent space X in 1D:</span>
+
+<span class="sd">        See  GPy.plotting.matplot_dep.variational_plots</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">assert</span> <span class="s">&quot;matplotlib&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span> <span class="s">&quot;matplotlib package has not been imported.&quot;</span>
+        <span class="kn">from</span> <span class="nn">...plotting.matplot_dep</span> <span class="kn">import</span> <span class="n">variational_plots</span>
+        <span class="k">return</span> <span class="n">variational_plots</span><span class="o">.</span><span class="n">plot_SpikeSlab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

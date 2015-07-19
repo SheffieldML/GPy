@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.psi_comp package &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" />
+    <link rel="up" title="GPy.kern._src package" href="GPy.kern._src.html" />
+    <link rel="next" title="GPy.likelihoods package" href="GPy.likelihoods.html" />
+    <link rel="prev" title="GPy.kern._src package" href="GPy.kern._src.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.likelihoods.html" title="GPy.likelihoods package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern._src.html" title="GPy.kern._src package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="GPy.kern.html" >GPy.kern package</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="GPy.kern._src.html" accesskey="U">GPy.kern._src package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gpy-kern-src-psi-comp-package">
+<h1>GPy.kern._src.psi_comp package<a class="headerlink" href="#gpy-kern-src-psi-comp-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.linear_psi_comp">
+<span id="gpy-kern-src-psi-comp-linear-psi-comp-module"></span><h2>GPy.kern._src.psi_comp.linear_psi_comp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.linear_psi_comp" title="Permalink to this headline">¶</a></h2>
+<p>The package for the Psi statistics computation of the linear kernel for Bayesian GPLVM</p>
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.linear_psi_comp.psiDerivativecomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.linear_psi_comp.</code><code class="descname">psiDerivativecomputations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>variance</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/linear_psi_comp.html#psiDerivativecomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.linear_psi_comp.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.linear_psi_comp.psicomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.linear_psi_comp.</code><code class="descname">psicomputations</code><span class="sig-paren">(</span><em>variance</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/linear_psi_comp.html#psicomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.linear_psi_comp.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute psi-statistics for ss-linear kernel</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.rbf_psi_comp">
+<span id="gpy-kern-src-psi-comp-rbf-psi-comp-module"></span><h2>GPy.kern._src.psi_comp.rbf_psi_comp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.rbf_psi_comp" title="Permalink to this headline">¶</a></h2>
+<p>The module for psi-statistics for RBF kernel</p>
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_comp.psiDerivativecomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.rbf_psi_comp.</code><code class="descname">psiDerivativecomputations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>variance</em>, <em>lengthscale</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_comp.html#psiDerivativecomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_comp.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_comp.psicomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.rbf_psi_comp.</code><code class="descname">psicomputations</code><span class="sig-paren">(</span><em>variance</em>, <em>lengthscale</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_comp.html#psicomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_comp.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Z - MxQ
+mu - NxQ
+S - NxQ
+gamma - NxQ</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.rbf_psi_gpucomp">
+<span id="gpy-kern-src-psi-comp-rbf-psi-gpucomp-module"></span><h2>GPy.kern._src.psi_comp.rbf_psi_gpucomp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.rbf_psi_gpucomp" title="Permalink to this headline">¶</a></h2>
+<p>The module for psi-statistics for RBF kernel</p>
+<dl class="class">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.psi_comp.rbf_psi_gpucomp.</code><code class="descname">PSICOMP_RBF_GPU</code><span class="sig-paren">(</span><em>threadnum=128</em>, <em>blocknum=15</em>, <em>GPU_direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_gpucomp.html#PSICOMP_RBF_GPU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.psi_comp.PSICOMP_RBF" title="GPy.kern._src.psi_comp.PSICOMP_RBF"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.psi_comp.PSICOMP_RBF</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.get_dimensions">
+<code class="descname">get_dimensions</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_gpucomp.html#PSICOMP_RBF_GPU.get_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.get_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.psiDerivativecomputations">
+<code class="descname">psiDerivativecomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.psicomputations">
+<code class="descname">psicomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.reset_derivative">
+<code class="descname">reset_derivative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_gpucomp.html#PSICOMP_RBF_GPU.reset_derivative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.reset_derivative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.sync_params">
+<code class="descname">sync_params</code><span class="sig-paren">(</span><em>lengthscale</em>, <em>Z</em>, <em>mu</em>, <em>S</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/rbf_psi_gpucomp.html#PSICOMP_RBF_GPU.sync_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.sync_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.sslinear_psi_comp">
+<span id="gpy-kern-src-psi-comp-sslinear-psi-comp-module"></span><h2>GPy.kern._src.psi_comp.sslinear_psi_comp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.sslinear_psi_comp" title="Permalink to this headline">¶</a></h2>
+<p>The package for the Psi statistics computation of the linear kernel for SSGPLVM</p>
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.sslinear_psi_comp.psiDerivativecomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.sslinear_psi_comp.</code><code class="descname">psiDerivativecomputations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>variance</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/sslinear_psi_comp.html#psiDerivativecomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.sslinear_psi_comp.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.sslinear_psi_comp.psicomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.sslinear_psi_comp.</code><code class="descname">psicomputations</code><span class="sig-paren">(</span><em>variance</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/sslinear_psi_comp.html#psicomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.sslinear_psi_comp.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute psi-statistics for ss-linear kernel</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.ssrbf_psi_comp">
+<span id="gpy-kern-src-psi-comp-ssrbf-psi-comp-module"></span><h2>GPy.kern._src.psi_comp.ssrbf_psi_comp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.ssrbf_psi_comp" title="Permalink to this headline">¶</a></h2>
+<p>The package for the psi statistics computation</p>
+<dl class="function">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_comp.psiDerivativecomputations">
+<code class="descclassname">GPy.kern._src.psi_comp.ssrbf_psi_comp.</code><code class="descname">psiDerivativecomputations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>variance</em>, <em>lengthscale</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/ssrbf_psi_comp.html#psiDerivativecomputations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_comp.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp.ssrbf_psi_gpucomp">
+<span id="gpy-kern-src-psi-comp-ssrbf-psi-gpucomp-module"></span><h2>GPy.kern._src.psi_comp.ssrbf_psi_gpucomp module<a class="headerlink" href="#module-GPy.kern._src.psi_comp.ssrbf_psi_gpucomp" title="Permalink to this headline">¶</a></h2>
+<p>The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM</p>
+<dl class="class">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.</code><code class="descname">PSICOMP_SSRBF_GPU</code><span class="sig-paren">(</span><em>threadnum=128</em>, <em>blocknum=15</em>, <em>GPU_direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/ssrbf_psi_gpucomp.html#PSICOMP_SSRBF_GPU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.psi_comp.PSICOMP_RBF" title="GPy.kern._src.psi_comp.PSICOMP_RBF"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.psi_comp.PSICOMP_RBF</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.get_dimensions">
+<code class="descname">get_dimensions</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/ssrbf_psi_gpucomp.html#PSICOMP_SSRBF_GPU.get_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.get_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.psiDerivativecomputations">
+<code class="descname">psiDerivativecomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.psicomputations">
+<code class="descname">psicomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.reset_derivative">
+<code class="descname">reset_derivative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/ssrbf_psi_gpucomp.html#PSICOMP_SSRBF_GPU.reset_derivative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.reset_derivative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.sync_params">
+<code class="descname">sync_params</code><span class="sig-paren">(</span><em>lengthscale</em>, <em>Z</em>, <em>mu</em>, <em>S</em>, <em>gamma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp/ssrbf_psi_gpucomp.html#PSICOMP_SSRBF_GPU.sync_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.ssrbf_psi_gpucomp.PSICOMP_SSRBF_GPU.sync_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.psi_comp">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-GPy.kern._src.psi_comp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_Linear">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.psi_comp.</code><code class="descname">PSICOMP_Linear</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp.html#PSICOMP_Linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_Linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Pickleable" title="GPy.core.parameterization.parameter_core.Pickleable"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.parameterization.parameter_core.Pickleable</span></code></a></p>
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_Linear.psiDerivativecomputations">
+<code class="descname">psiDerivativecomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_Linear.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_Linear.psicomputations">
+<code class="descname">psicomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_Linear.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_RBF">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.psi_comp.</code><code class="descname">PSICOMP_RBF</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/psi_comp.html#PSICOMP_RBF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_RBF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Pickleable" title="GPy.core.parameterization.parameter_core.Pickleable"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.parameterization.parameter_core.Pickleable</span></code></a></p>
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_RBF.psiDerivativecomputations">
+<code class="descname">psiDerivativecomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_RBF.psiDerivativecomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.psi_comp.PSICOMP_RBF.psicomputations">
+<code class="descname">psicomputations</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.psi_comp.PSICOMP_RBF.psicomputations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GPy.kern._src.psi_comp package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.linear_psi_comp">GPy.kern._src.psi_comp.linear_psi_comp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.rbf_psi_comp">GPy.kern._src.psi_comp.rbf_psi_comp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.rbf_psi_gpucomp">GPy.kern._src.psi_comp.rbf_psi_gpucomp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.sslinear_psi_comp">GPy.kern._src.psi_comp.sslinear_psi_comp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.ssrbf_psi_comp">GPy.kern._src.psi_comp.ssrbf_psi_comp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp.ssrbf_psi_gpucomp">GPy.kern._src.psi_comp.ssrbf_psi_gpucomp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.psi_comp">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GPy.kern._src.html"
+                        title="previous chapter">GPy.kern._src package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GPy.likelihoods.html"
+                        title="next chapter">GPy.likelihoods package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/GPy.kern._src.psi_comp.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.likelihoods.html" title="GPy.likelihoods package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern._src.html" title="GPy.kern._src package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="GPy.kern.html" >GPy.kern package</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="GPy.kern._src.html" >GPy.kern._src package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

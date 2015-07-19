@@ -1,0 +1,506 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.psi_comp.rbf_psi_gpucomp &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../../index.html" />
+    <link rel="up" title="GPy.kern._src.psi_comp" href="../psi_comp.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" accesskey="U">GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.psi_comp.rbf_psi_gpucomp</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The module for psi-statistics for RBF kernel</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">....util.caching</span> <span class="kn">import</span> <span class="n">Cache_this</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">PSICOMP_RBF</span>
+<span class="kn">from</span> <span class="nn">....util</span> <span class="kn">import</span> <span class="n">gpu_init</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pycuda.gpuarray</span> <span class="kn">as</span> <span class="nn">gpuarray</span>
+    <span class="kn">from</span> <span class="nn">pycuda.compiler</span> <span class="kn">import</span> <span class="n">SourceModule</span>
+    <span class="kn">from</span> <span class="nn">....util.linalg_gpu</span> <span class="kn">import</span> <span class="n">sum_axis</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>    
+
+<span class="n">gpu_code</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">    // define THREADNUM</span>
+
+<span class="s">    #define IDX_NMQ(n,m,q) ((q*M+m)*N+n)</span>
+<span class="s">    #define IDX_NMM(n,m1,m2) ((m2*M+m1)*N+n)</span>
+<span class="s">    #define IDX_NQ(n,q) (q*N+n)</span>
+<span class="s">    #define IDX_NM(n,m) (m*N+n)</span>
+<span class="s">    #define IDX_MQ(m,q) (q*M+m)</span>
+<span class="s">    #define IDX_MM(m1,m2) (m2*M+m1)</span>
+<span class="s">    #define IDX_NQB(n,q,b) ((b*Q+q)*N+n)</span>
+<span class="s">    #define IDX_QB(q,b) (b*Q+q)</span>
+
+<span class="s">    // Divide data evenly</span>
+<span class="s">    __device__ void divide_data(int total_data, int psize, int pidx, int *start, int *end) {</span>
+<span class="s">        int residue = (total_data)%psize;</span>
+<span class="s">        if(pidx&lt;residue) {</span>
+<span class="s">            int size = total_data/psize+1;</span>
+<span class="s">            *start = size*pidx;</span>
+<span class="s">            *end = *start+size;</span>
+<span class="s">        } else {</span>
+<span class="s">            int size = total_data/psize;</span>
+<span class="s">            *start = size*pidx+residue;</span>
+<span class="s">            *end = *start+size;</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+<span class="s">    </span>
+<span class="s">    __device__ void reduce_sum(double* array, int array_size) {</span>
+<span class="s">        int s;</span>
+<span class="s">        if(array_size &gt;= blockDim.x) {</span>
+<span class="s">            for(int i=blockDim.x+threadIdx.x; i&lt;array_size; i+= blockDim.x) {</span>
+<span class="s">                array[threadIdx.x] += array[i];</span>
+<span class="s">            }</span>
+<span class="s">            array_size = blockDim.x;</span>
+<span class="s">        }</span>
+<span class="s">        __syncthreads();</span>
+<span class="s">        for(int i=1; i&lt;=array_size;i*=2) {s=i;}</span>
+<span class="s">        if(threadIdx.x &lt; array_size-s) {array[threadIdx.x] += array[s+threadIdx.x];}</span>
+<span class="s">        __syncthreads();</span>
+<span class="s">        for(s=s/2;s&gt;=1;s=s/2) {</span>
+<span class="s">            if(threadIdx.x &lt; s) {array[threadIdx.x] += array[s+threadIdx.x];}</span>
+<span class="s">            __syncthreads();</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+
+<span class="s">    __global__ void compDenom(double *log_denom1, double *log_denom2, double *l, double *S, int N, int Q)</span>
+<span class="s">    {</span>
+<span class="s">        int n_start, n_end;</span>
+<span class="s">        divide_data(N, gridDim.x, blockIdx.x, &amp;n_start, &amp;n_end);</span>
+<span class="s">        </span>
+<span class="s">        for(int i=n_start*Q+threadIdx.x; i&lt;n_end*Q; i+=blockDim.x) {</span>
+<span class="s">            int n=i/Q;</span>
+<span class="s">            int q=i%Q;</span>
+
+<span class="s">            double Snq = S[IDX_NQ(n,q)];</span>
+<span class="s">            double lq = l[q]*l[q];</span>
+<span class="s">            log_denom1[IDX_NQ(n,q)] = log(Snq/lq+1.);</span>
+<span class="s">            log_denom2[IDX_NQ(n,q)] = log(2.*Snq/lq+1.);</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+
+<span class="s">    __global__ void psi1computations(double *psi1, double *log_denom1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)</span>
+<span class="s">    {</span>
+<span class="s">        int m_start, m_end;</span>
+<span class="s">        divide_data(M, gridDim.x, blockIdx.x, &amp;m_start, &amp;m_end);</span>
+<span class="s">        </span>
+<span class="s">        for(int m=m_start; m&lt;m_end; m++) {</span>
+<span class="s">            for(int n=threadIdx.x; n&lt;N; n+= blockDim.x) {            </span>
+<span class="s">                double log_psi1 = 0;</span>
+<span class="s">                for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">                    double muZ = mu[IDX_NQ(n,q)]-Z[IDX_MQ(m,q)];</span>
+<span class="s">                    double Snq = S[IDX_NQ(n,q)];</span>
+<span class="s">                    double lq = l[q]*l[q];</span>
+<span class="s">                    log_psi1 += (muZ*muZ/(Snq+lq)+log_denom1[IDX_NQ(n,q)])/(-2.);</span>
+<span class="s">                }</span>
+<span class="s">                psi1[IDX_NM(n,m)] = var*exp(log_psi1);</span>
+<span class="s">            }</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+<span class="s">    </span>
+<span class="s">    __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)</span>
+<span class="s">    {</span>
+<span class="s">        int psi2_idx_start, psi2_idx_end;</span>
+<span class="s">        __shared__ double psi2_local[THREADNUM];</span>
+<span class="s">        divide_data((M+1)*M/2, gridDim.x, blockIdx.x, &amp;psi2_idx_start, &amp;psi2_idx_end);</span>
+<span class="s">        </span>
+<span class="s">        for(int psi2_idx=psi2_idx_start; psi2_idx&lt;psi2_idx_end; psi2_idx++) {</span>
+<span class="s">            int m1 = int((sqrt(8.*psi2_idx+1.)-1.)/2.);</span>
+<span class="s">            int m2 = psi2_idx - (m1+1)*m1/2;</span>
+<span class="s">            </span>
+<span class="s">            psi2_local[threadIdx.x] = 0;</span>
+<span class="s">            for(int n=threadIdx.x;n&lt;N;n+=blockDim.x) {</span>
+<span class="s">                double log_psi2_n = 0;</span>
+<span class="s">                for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">                    double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];</span>
+<span class="s">                    double muZhat = mu[IDX_NQ(n,q)]- (Z[IDX_MQ(m1,q)]+Z[IDX_MQ(m2,q)])/2.;</span>
+<span class="s">                    double Snq = S[IDX_NQ(n,q)];</span>
+<span class="s">                    double lq = l[q]*l[q];</span>
+<span class="s">                    log_psi2_n += dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) + log_denom2[IDX_NQ(n,q)]/(-2.);</span>
+<span class="s">                }</span>
+<span class="s">                double exp_psi2_n = exp(log_psi2_n);</span>
+<span class="s">                psi2n[IDX_NMM(n,m1,m2)] = var*var*exp_psi2_n;</span>
+<span class="s">                if(m1!=m2) { psi2n[IDX_NMM(n,m2,m1)] = var*var*exp_psi2_n;}</span>
+<span class="s">                psi2_local[threadIdx.x] += exp_psi2_n;</span>
+<span class="s">            }</span>
+<span class="s">            __syncthreads();</span>
+<span class="s">            reduce_sum(psi2_local, THREADNUM);</span>
+<span class="s">            if(threadIdx.x==0) {</span>
+<span class="s">                psi2[IDX_MM(m1,m2)] = var*var*psi2_local[0];</span>
+<span class="s">                if(m1!=m2) { psi2[IDX_MM(m2,m1)] = var*var*psi2_local[0]; }</span>
+<span class="s">            }</span>
+<span class="s">            __syncthreads();</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+<span class="s">    </span>
+<span class="s">    __global__ void psi1compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi1, double *psi1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)</span>
+<span class="s">    {</span>
+<span class="s">        int m_start, m_end;</span>
+<span class="s">        __shared__ double g_local[THREADNUM];</span>
+<span class="s">        divide_data(M, gridDim.x, blockIdx.x, &amp;m_start, &amp;m_end);</span>
+<span class="s">        int P = int(ceil(double(N)/THREADNUM));</span>
+
+<span class="s">        double dvar_local = 0;</span>
+<span class="s">        for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">            double lq_sqrt = l[q];</span>
+<span class="s">            double lq = lq_sqrt*lq_sqrt;</span>
+<span class="s">            double dl_local = 0;</span>
+<span class="s">            for(int p=0;p&lt;P;p++) {</span>
+<span class="s">                int n = p*THREADNUM + threadIdx.x;</span>
+<span class="s">                double dmu_local = 0;</span>
+<span class="s">                double dS_local = 0;</span>
+<span class="s">                double Snq,mu_nq;</span>
+<span class="s">                if(n&lt;N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)];}</span>
+<span class="s">                for(int m=m_start; m&lt;m_end; m++) {</span>
+<span class="s">                    if(n&lt;N) {</span>
+<span class="s">                        double lpsi1 = psi1[IDX_NM(n,m)]*dL_dpsi1[IDX_NM(n,m)];</span>
+<span class="s">                        if(q==0) {dvar_local += lpsi1;}</span>
+<span class="s">                        </span>
+<span class="s">                        double Zmu = Z[IDX_MQ(m,q)] - mu_nq;</span>
+<span class="s">                        double denom = Snq+lq;</span>
+<span class="s">                        double Zmu2_denom = Zmu*Zmu/denom;</span>
+<span class="s">                        </span>
+<span class="s">                        dmu_local += lpsi1*Zmu/denom;</span>
+<span class="s">                        dS_local += lpsi1*(Zmu2_denom-1.)/denom;</span>
+<span class="s">                        dl_local += lpsi1*(Zmu2_denom+Snq/lq)/denom;</span>
+<span class="s">                        g_local[threadIdx.x] = -lpsi1*Zmu/denom;</span>
+<span class="s">                    }</span>
+<span class="s">                    __syncthreads();</span>
+<span class="s">                    reduce_sum(g_local, p&lt;P-1?THREADNUM:N-(P-1)*THREADNUM);</span>
+<span class="s">                    if(threadIdx.x==0) {dZ[IDX_MQ(m,q)] += g_local[0];}</span>
+<span class="s">                }</span>
+<span class="s">                if(n&lt;N) {</span>
+<span class="s">                    dmu[IDX_NQB(n,q,blockIdx.x)] += dmu_local;</span>
+<span class="s">                    dS[IDX_NQB(n,q,blockIdx.x)] += dS_local/2.;</span>
+<span class="s">                }</span>
+<span class="s">                __threadfence_block();</span>
+<span class="s">            }</span>
+<span class="s">            g_local[threadIdx.x] = dl_local*lq_sqrt;</span>
+<span class="s">            __syncthreads();</span>
+<span class="s">            reduce_sum(g_local, THREADNUM);</span>
+<span class="s">            if(threadIdx.x==0) {dl[IDX_QB(q,blockIdx.x)] += g_local[0];}</span>
+<span class="s">        }</span>
+<span class="s">        g_local[threadIdx.x] = dvar_local;</span>
+<span class="s">        __syncthreads();</span>
+<span class="s">        reduce_sum(g_local, THREADNUM);</span>
+<span class="s">        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}        </span>
+<span class="s">    }</span>
+<span class="s">    </span>
+<span class="s">    __global__ void psi2compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi2, double *psi2n, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)</span>
+<span class="s">    {</span>
+<span class="s">        int m_start, m_end;</span>
+<span class="s">        __shared__ double g_local[THREADNUM];</span>
+<span class="s">        divide_data(M, gridDim.x, blockIdx.x, &amp;m_start, &amp;m_end);</span>
+<span class="s">        int P = int(ceil(double(N)/THREADNUM));</span>
+
+<span class="s">        double dvar_local = 0;</span>
+<span class="s">        for(int q=0;q&lt;Q;q++) {</span>
+<span class="s">            double lq_sqrt = l[q];</span>
+<span class="s">            double lq = lq_sqrt*lq_sqrt;</span>
+<span class="s">            double dl_local = 0;</span>
+<span class="s">            for(int p=0;p&lt;P;p++) {</span>
+<span class="s">                int n = p*THREADNUM + threadIdx.x;</span>
+<span class="s">                double dmu_local = 0;</span>
+<span class="s">                double dS_local = 0;</span>
+<span class="s">                double Snq,mu_nq;</span>
+<span class="s">                if(n&lt;N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)];}</span>
+<span class="s">                for(int m1=m_start; m1&lt;m_end; m1++) {</span>
+<span class="s">                    g_local[threadIdx.x] = 0;</span>
+<span class="s">                    for(int m2=0;m2&lt;M;m2++) {</span>
+<span class="s">                        if(n&lt;N) {</span>
+<span class="s">                            double lpsi2 = psi2n[IDX_NMM(n,m1,m2)]*dL_dpsi2[IDX_MM(m1,m2)];</span>
+<span class="s">                            if(q==0) {dvar_local += lpsi2;}</span>
+<span class="s">                            </span>
+<span class="s">                            double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];</span>
+<span class="s">                            double muZhat =  mu_nq - (Z[IDX_MQ(m1,q)] + Z[IDX_MQ(m2,q)])/2.;</span>
+<span class="s">                            double denom = 2.*Snq+lq;</span>
+<span class="s">                            double muZhat2_denom = muZhat*muZhat/denom;</span>
+<span class="s">                            </span>
+<span class="s">                            dmu_local += lpsi2*muZhat/denom;</span>
+<span class="s">                            dS_local += lpsi2*(2.*muZhat2_denom-1.)/denom;</span>
+<span class="s">                            dl_local += lpsi2*((Snq/lq+muZhat2_denom)/denom+dZ*dZ/(4.*lq*lq));</span>
+<span class="s">                            g_local[threadIdx.x] += 2.*lpsi2*(muZhat/denom-dZ/(2*lq));</span>
+<span class="s">                        }</span>
+<span class="s">                    }</span>
+<span class="s">                    __syncthreads();</span>
+<span class="s">                    reduce_sum(g_local, p&lt;P-1?THREADNUM:N-(P-1)*THREADNUM);</span>
+<span class="s">                    if(threadIdx.x==0) {dZ[IDX_MQ(m1,q)] += g_local[0];}</span>
+<span class="s">                }</span>
+<span class="s">                if(n&lt;N) {</span>
+<span class="s">                    dmu[IDX_NQB(n,q,blockIdx.x)] += -2.*dmu_local;</span>
+<span class="s">                    dS[IDX_NQB(n,q,blockIdx.x)] += dS_local;</span>
+<span class="s">                }</span>
+<span class="s">                __threadfence_block();</span>
+<span class="s">            }</span>
+<span class="s">            g_local[threadIdx.x] = dl_local*2.*lq_sqrt;</span>
+<span class="s">            __syncthreads();</span>
+<span class="s">            reduce_sum(g_local, THREADNUM);</span>
+<span class="s">            if(threadIdx.x==0) {dl[IDX_QB(q,blockIdx.x)] += g_local[0];}</span>
+<span class="s">        }</span>
+<span class="s">        g_local[threadIdx.x] = dvar_local;</span>
+<span class="s">        __syncthreads();</span>
+<span class="s">        reduce_sum(g_local, THREADNUM);</span>
+<span class="s">        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]*2/var;}</span>
+<span class="s">    }</span>
+<span class="s">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PSICOMP_RBF_GPU"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU">[docs]</a><span class="k">class</span> <span class="nc">PSICOMP_RBF_GPU</span><span class="p">(</span><span class="n">PSICOMP_RBF</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threadnum</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">blocknum</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">GPU_direct</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">GPU_direct</span> <span class="o">=</span> <span class="n">GPU_direct</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span> <span class="o">=</span> <span class="n">threadnum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span> <span class="o">=</span> <span class="n">blocknum</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">SourceModule</span><span class="p">(</span><span class="s">&quot;#define THREADNUM &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">+</span><span class="n">gpu_code</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1computations</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s">&#39;psi1computations&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1computations</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="s">&#39;PPdPPPPiii&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2computations</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s">&#39;psi2computations&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2computations</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="s">&#39;PPPdPPPPiii&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1compDer</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s">&#39;psi1compDer&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1compDer</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="s">&#39;PPPPPPPdPPPPiii&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2compDer</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s">&#39;psi2compDer&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2compDer</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="s">&#39;PPPPPPPdPPPPiii&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_compDenom</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s">&#39;compDenom&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_compDenom</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="s">&#39;PPPPii&#39;</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">PSICOMP_RBF_GPU</span><span class="p">(</span><span class="n">threadnum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span> <span class="n">blocknum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span> <span class="n">GPU_direct</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">GPU_direct</span><span class="p">)</span>
+        <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">s</span> 
+        <span class="k">return</span> <span class="n">s</span>
+    
+    <span class="k">def</span> <span class="nf">_initGPUCache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">Q</span><span class="p">):</span>            
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span> <span class="o">=</span> <span class="p">{</span>
+                             <span class="s">&#39;l_gpu&#39;</span>                <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">Q</span><span class="p">,),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;Z_gpu&#39;</span>                <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;mu_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;S_gpu&#39;</span>                <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;psi1_gpu&#39;</span>             <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;psi2_gpu&#39;</span>             <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">M</span><span class="p">,</span><span class="n">M</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;psi2n_gpu&#39;</span>            <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">M</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dL_dpsi1_gpu&#39;</span>         <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dL_dpsi2_gpu&#39;</span>         <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">M</span><span class="p">,</span><span class="n">M</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;log_denom1_gpu&#39;</span>       <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;log_denom2_gpu&#39;</span>       <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="c"># derivatives</span>
+                             <span class="s">&#39;dvar_gpu&#39;</span>             <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dl_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dZ_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dmu_gpu&#39;</span>              <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;dS_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="c"># grad</span>
+                             <span class="s">&#39;grad_l_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">Q</span><span class="p">,),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;grad_mu_gpu&#39;</span>              <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">,),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="s">&#39;grad_S_gpu&#39;</span>               <span class="p">:</span><span class="n">gpuarray</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">Q</span><span class="p">,),</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;F&#39;</span><span class="p">),</span>
+                             <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">N</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;mu_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="n">M</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;Z_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="n">Q</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+<div class="viewcode-block" id="PSICOMP_RBF_GPU.sync_params"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.sync_params">[docs]</a>    <span class="k">def</span> <span class="nf">sync_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;Z_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">Z</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;mu_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;S_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">S</span><span class="p">))</span>
+        <span class="n">N</span><span class="p">,</span><span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;S_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c"># t=self.g_compDenom(self.gpuCache[&#39;log_denom1_gpu&#39;],self.gpuCache[&#39;log_denom2_gpu&#39;],self.gpuCache[&#39;l_gpu&#39;],self.gpuCache[&#39;S_gpu&#39;], np.int32(N), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)</span>
+        <span class="c"># print &#39;g_compDenom &#39;+str(t)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_compDenom</span><span class="o">.</span><span class="n">prepared_call</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span><span class="mi">1</span><span class="p">),(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;log_denom1_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;log_denom2_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;S_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+        </div>
+<div class="viewcode-block" id="PSICOMP_RBF_GPU.reset_derivative"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.reset_derivative">[docs]</a>    <span class="k">def</span> <span class="nf">reset_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dvar_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dl_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dZ_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dmu_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dS_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_l_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_mu_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_S_gpu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="PSICOMP_RBF_GPU.get_dimensions"><a class="viewcode-back" href="../../../../../GPy.kern._src.psi_comp.html#GPy.kern._src.psi_comp.rbf_psi_gpucomp.PSICOMP_RBF_GPU.get_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">get_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ignore_args</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
+    <span class="k">def</span> <span class="nf">psicomputations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Z - MxQ</span>
+<span class="sd">        mu - NxQ</span>
+<span class="sd">        S - NxQ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dimensions</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initGPUCache</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sync_params</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+        
+        <span class="n">psi1_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;psi1_gpu&#39;</span><span class="p">]</span>
+        <span class="n">psi2_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;psi2_gpu&#39;</span><span class="p">]</span>
+        <span class="n">psi2n_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;psi2n_gpu&#39;</span><span class="p">]</span>
+        <span class="n">l_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span>
+        <span class="n">Z_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;Z_gpu&#39;</span><span class="p">]</span>
+        <span class="n">mu_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;mu_gpu&#39;</span><span class="p">]</span>
+        <span class="n">S_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;S_gpu&#39;</span><span class="p">]</span>
+        <span class="n">log_denom1_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;log_denom1_gpu&#39;</span><span class="p">]</span>
+        <span class="n">log_denom2_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;log_denom2_gpu&#39;</span><span class="p">]</span>
+
+        <span class="n">psi0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">N</span><span class="p">,))</span>
+        <span class="n">psi0</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">variance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1computations</span><span class="o">.</span><span class="n">prepared_call</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span><span class="mi">1</span><span class="p">),(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">psi1_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">log_denom1_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">variance</span><span class="p">),</span><span class="n">l_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">Z_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">mu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">S_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2computations</span><span class="o">.</span><span class="n">prepared_call</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span><span class="mi">1</span><span class="p">),(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">psi2_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">psi2n_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">log_denom2_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">variance</span><span class="p">),</span><span class="n">l_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">Z_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">mu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">S_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+        <span class="c"># t = self.g_psi1computations(psi1_gpu, log_denom1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)</span>
+        <span class="c"># print &#39;g_psi1computations &#39;+str(t)</span>
+        <span class="c"># t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)</span>
+        <span class="c"># print &#39;g_psi2computations &#39;+str(t)</span>
+         
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GPU_direct</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">psi0</span><span class="p">,</span> <span class="n">psi1_gpu</span><span class="p">,</span> <span class="n">psi2_gpu</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">psi0</span><span class="p">,</span> <span class="n">psi1_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">psi2_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="nd">@Cache_this</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ignore_args</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">psiDerivativecomputations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dpsi0</span><span class="p">,</span> <span class="n">dL_dpsi1</span><span class="p">,</span> <span class="n">dL_dpsi2</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">):</span>
+        <span class="n">ARD</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dimensions</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">variational_posterior</span><span class="p">)</span>
+        <span class="n">psi1_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;psi1_gpu&#39;</span><span class="p">]</span>
+        <span class="n">psi2n_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;psi2n_gpu&#39;</span><span class="p">]</span>
+        <span class="n">l_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;l_gpu&#39;</span><span class="p">]</span>
+        <span class="n">Z_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;Z_gpu&#39;</span><span class="p">]</span>
+        <span class="n">mu_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;mu_gpu&#39;</span><span class="p">]</span>
+        <span class="n">S_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;S_gpu&#39;</span><span class="p">]</span>
+        <span class="n">dvar_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dvar_gpu&#39;</span><span class="p">]</span>
+        <span class="n">dl_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dl_gpu&#39;</span><span class="p">]</span>
+        <span class="n">dZ_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dZ_gpu&#39;</span><span class="p">]</span>
+        <span class="n">dmu_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dmu_gpu&#39;</span><span class="p">]</span>
+        <span class="n">dS_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dS_gpu&#39;</span><span class="p">]</span>
+        <span class="n">grad_l_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_l_gpu&#39;</span><span class="p">]</span>
+        <span class="n">grad_mu_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_mu_gpu&#39;</span><span class="p">]</span>
+        <span class="n">grad_S_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;grad_S_gpu&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GPU_direct</span><span class="p">:</span>
+            <span class="n">dL_dpsi1_gpu</span> <span class="o">=</span> <span class="n">dL_dpsi1</span>
+            <span class="n">dL_dpsi2_gpu</span> <span class="o">=</span> <span class="n">dL_dpsi2</span>
+            <span class="n">dL_dpsi0_sum</span> <span class="o">=</span> <span class="n">dL_dpsi0</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="c">#gpuarray.sum(dL_dpsi0).get()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dpsi1_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dL_dpsi1_gpu&#39;</span><span class="p">]</span>
+            <span class="n">dL_dpsi2_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gpuCache</span><span class="p">[</span><span class="s">&#39;dL_dpsi2_gpu&#39;</span><span class="p">]</span>
+            <span class="n">dL_dpsi1_gpu</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">dL_dpsi1</span><span class="p">))</span>
+            <span class="n">dL_dpsi2_gpu</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">dL_dpsi2</span><span class="p">))</span>
+            <span class="n">dL_dpsi0_sum</span> <span class="o">=</span> <span class="n">dL_dpsi0</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_derivative</span><span class="p">()</span>
+        <span class="c"># t=self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)</span>
+        <span class="c"># print &#39;g_psi1compDer &#39;+str(t)</span>
+        <span class="c"># t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)</span>
+        <span class="c"># print &#39;g_psi2compDer &#39;+str(t)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi1compDer</span><span class="o">.</span><span class="n">prepared_call</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span><span class="mi">1</span><span class="p">),(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dvar_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dl_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dZ_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dmu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dS_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dL_dpsi1_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">psi1_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">variance</span><span class="p">),</span><span class="n">l_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">Z_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">mu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">S_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_psi2compDer</span><span class="o">.</span><span class="n">prepared_call</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">,</span><span class="mi">1</span><span class="p">),(</span><span class="bp">self</span><span class="o">.</span><span class="n">threadnum</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dvar_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dl_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dZ_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dmu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dS_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">dL_dpsi2_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">psi2n_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">variance</span><span class="p">),</span><span class="n">l_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">Z_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">mu_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span><span class="n">S_gpu</span><span class="o">.</span><span class="n">gpudata</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+
+        <span class="n">dL_dvar</span> <span class="o">=</span> <span class="n">dL_dpsi0_sum</span> <span class="o">+</span> <span class="n">dvar_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="c">#gpuarray.sum(dvar_gpu).get()</span>
+        <span class="n">sum_axis</span><span class="p">(</span><span class="n">grad_mu_gpu</span><span class="p">,</span><span class="n">dmu_gpu</span><span class="p">,</span><span class="n">N</span><span class="o">*</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">)</span>
+        <span class="n">dL_dmu</span> <span class="o">=</span> <span class="n">grad_mu_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">sum_axis</span><span class="p">(</span><span class="n">grad_S_gpu</span><span class="p">,</span><span class="n">dS_gpu</span><span class="p">,</span><span class="n">N</span><span class="o">*</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">)</span>
+        <span class="n">dL_dS</span> <span class="o">=</span> <span class="n">grad_S_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">dL_dZ</span> <span class="o">=</span> <span class="n">dZ_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ARD</span><span class="p">:</span>
+            <span class="n">sum_axis</span><span class="p">(</span><span class="n">grad_l_gpu</span><span class="p">,</span><span class="n">dl_gpu</span><span class="p">,</span><span class="n">Q</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">blocknum</span><span class="p">)</span>
+            <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">grad_l_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dlengscale</span> <span class="o">=</span> <span class="n">dl_gpu</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="c">#gpuarray.sum(dl_gpu).get()</span>
+            
+        <span class="k">return</span> <span class="n">dL_dvar</span><span class="p">,</span> <span class="n">dL_dlengscale</span><span class="p">,</span> <span class="n">dL_dZ</span><span class="p">,</span> <span class="n">dL_dmu</span><span class="p">,</span> <span class="n">dL_dS</span>
+    
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../psi_comp.html" >GPy.kern._src.psi_comp</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

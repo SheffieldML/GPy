@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, James Hensman</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="n">__doc__</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">Inference over Gaussian process latent functions</span>
+
+<span class="s">In all our GP models, the consistency propery means that we have a Gaussian</span>
+<span class="s">prior over a finite set of points f. This prior is</span>
+
+<span class="s">  math:: N(f | 0, K)</span>
+
+<span class="s">where K is the kernel matrix.</span>
+
+<span class="s">We also have a likelihood (see GPy.likelihoods) which defines how the data are</span>
+<span class="s">related to the latent function: p(y | f).  If the likelihood is also a Gaussian,</span>
+<span class="s">the inference over f is tractable (see exact_gaussian_inference.py).</span>
+
+<span class="s">If the likelihood object is something other than Gaussian, then exact inference</span>
+<span class="s">is not tractable. We then resort to a Laplace approximation (laplace.py) or</span>
+<span class="s">expectation propagation (ep.py).</span>
+
+<span class="s">The inference methods return a</span>
+<span class="s">:class:`~GPy.inference.latent_function_inference.posterior.Posterior`</span>
+<span class="s">instance, which is a simple</span>
+<span class="s">structure which contains a summary of the posterior. The model classes can then</span>
+<span class="s">use this posterior object for making predictions, optimizing hyper-parameters,</span>
+<span class="s">etc.</span>
+
+<span class="s">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LatentFunctionInference"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.LatentFunctionInference">[docs]</a><span class="k">class</span> <span class="nc">LatentFunctionInference</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="LatentFunctionInference.on_optimization_start"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.LatentFunctionInference.on_optimization_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function gets called, just before the optimization loop to start.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="LatentFunctionInference.on_optimization_end"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.LatentFunctionInference.on_optimization_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function gets called, just after the optimization loop ended.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div></div>
+<div class="viewcode-block" id="InferenceMethodList"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.InferenceMethodList">[docs]</a><span class="k">class</span> <span class="nc">InferenceMethodList</span><span class="p">(</span><span class="n">LatentFunctionInference</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+
+<div class="viewcode-block" id="InferenceMethodList.on_optimization_start"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.InferenceMethodList.on_optimization_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">inf</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">inf</span><span class="o">.</span><span class="n">on_optimization_start</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="InferenceMethodList.on_optimization_end"><a class="viewcode-back" href="../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.InferenceMethodList.on_optimization_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_optimization_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">inf</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">inf</span><span class="o">.</span><span class="n">on_optimization_end</span><span class="p">()</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">inf</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span>
+    
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">inf</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inf</span><span class="p">)</span>
+</div>
+<span class="kn">from</span> <span class="nn">exact_gaussian_inference</span> <span class="kn">import</span> <span class="n">ExactGaussianInference</span>
+<span class="kn">from</span> <span class="nn">laplace</span> <span class="kn">import</span> <span class="n">Laplace</span>
+<span class="kn">from</span> <span class="nn">GPy.inference.latent_function_inference.var_dtc</span> <span class="kn">import</span> <span class="n">VarDTC</span>
+<span class="kn">from</span> <span class="nn">expectation_propagation</span> <span class="kn">import</span> <span class="n">EP</span>
+<span class="kn">from</span> <span class="nn">expectation_propagation_dtc</span> <span class="kn">import</span> <span class="n">EPDTC</span>
+<span class="kn">from</span> <span class="nn">dtc</span> <span class="kn">import</span> <span class="n">DTC</span>
+<span class="kn">from</span> <span class="nn">fitc</span> <span class="kn">import</span> <span class="n">FITC</span>
+<span class="kn">from</span> <span class="nn">var_dtc_parallel</span> <span class="kn">import</span> <span class="n">VarDTC_minibatch</span>
+
+<span class="c"># class FullLatentFunctionData(object):</span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="c"># class EMLikeLatentFunctionInference(LatentFunctionInference):</span>
+<span class="c">#     def update_approximation(self):</span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#         This function gets called when the </span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#     </span>
+<span class="c">#     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):</span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#         Do inference on the latent functions given a covariance function `kern`,</span>
+<span class="c">#         inputs and outputs `X` and `Y`, inducing_inputs `Z`, and a likelihood `likelihood`.</span>
+<span class="c">#         Additional metadata for the outputs `Y` can be given in `Y_metadata`.</span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#         raise NotImplementedError, &quot;Abstract base class for full inference&quot;</span>
+<span class="c"># </span>
+<span class="c"># class VariationalLatentFunctionInference(LatentFunctionInference):</span>
+<span class="c">#     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None):</span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#         Do inference on the latent functions given a covariance function `kern`,</span>
+<span class="c">#         inputs and outputs `X` and `Y`, inducing_inputs `Z`, and a likelihood `likelihood`.</span>
+<span class="c">#         Additional metadata for the outputs `Y` can be given in `Y_metadata`.</span>
+<span class="c">#         &quot;&quot;&quot;</span>
+<span class="c">#         raise NotImplementedError, &quot;Abstract base class for full inference&quot;</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

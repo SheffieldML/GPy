@@ -1,0 +1,411 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.likelihoods.gaussian &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.likelihoods.gaussian</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+<span class="c">#TODO</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A lot of this code assumes that the link function is the identity.</span>
+
+<span class="sd">I think laplace code is okay, but I&#39;m quite sure that the EP moments will only work if the link is identity.</span>
+
+<span class="sd">Furthermore, exact Guassian inference can only be done for the identity link, so we should be asserting so for all calls which relate to that.</span>
+
+<span class="sd">James 11/12/13</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span><span class="p">,</span> <span class="n">special</span>
+<span class="kn">import</span> <span class="nn">link_functions</span>
+<span class="kn">from</span> <span class="nn">likelihood</span> <span class="kn">import</span> <span class="n">Likelihood</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization.transformations</span> <span class="kn">import</span> <span class="n">Logexp</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+
+<div class="viewcode-block" id="Gaussian"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian">[docs]</a><span class="k">class</span> <span class="nc">Gaussian</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gaussian likelihood</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}</span>
+
+<span class="sd">    :param variance: variance value of the Gaussian distribution</span>
+<span class="sd">    :param N: Number of data points</span>
+<span class="sd">    :type N: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gp_link</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;Gaussian_noise&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">gp_link</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">gp_link</span> <span class="o">=</span> <span class="n">link_functions</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gp_link</span><span class="p">,</span> <span class="n">link_functions</span><span class="o">.</span><span class="n">Identity</span><span class="p">),</span> <span class="s">&quot;the likelihood only implemented for the identity link&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Gaussian</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">gp_link</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;variance&#39;</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">Logexp</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gp_link</span><span class="p">,</span> <span class="n">link_functions</span><span class="o">.</span><span class="n">Identity</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_concave</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Gaussian.betaY"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.betaY">[docs]</a>    <span class="k">def</span> <span class="nf">betaY</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c">#TODO: ~Ricardo this does not live here</span>
+        <span class="k">return</span> <span class="n">Y</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">gaussian_variance</span><span class="p">(</span><span class="n">Y_metadata</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Gaussian.gaussian_variance"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.gaussian_variance">[docs]</a>    <span class="k">def</span> <span class="nf">gaussian_variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+</div>
+<div class="viewcode-block" id="Gaussian.update_gradients"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.update_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">grad</span>
+</div>
+<div class="viewcode-block" id="Gaussian.exact_inference_gradients"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.exact_inference_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">exact_inference_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span><span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dL_dKdiag</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_preprocess_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the values of the observations correspond to the values</span>
+<span class="sd">        assumed by the likelihood function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Y</span>
+
+    <span class="k">def</span> <span class="nf">_moments_match_ep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_i</span><span class="p">,</span> <span class="n">tau_i</span><span class="p">,</span> <span class="n">v_i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Moments match of the marginal approximation in EP algorithm</span>
+
+<span class="sd">        :param i: number of observation (int)</span>
+<span class="sd">        :param tau_i: precision of the cavity distribution (float)</span>
+<span class="sd">        :param v_i: mean/variance of the cavity distribution (float)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sigma2_hat</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">tau_i</span><span class="p">)</span>
+        <span class="n">mu_hat</span> <span class="o">=</span> <span class="n">sigma2_hat</span><span class="o">*</span><span class="p">(</span><span class="n">data_i</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">v_i</span><span class="p">)</span>
+        <span class="n">sum_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="mf">1.</span><span class="o">/</span><span class="n">tau_i</span>
+        <span class="n">Z_hat</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">sum_var</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-.</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="n">data_i</span> <span class="o">-</span> <span class="n">v_i</span><span class="o">/</span><span class="n">tau_i</span><span class="p">)</span><span class="o">**</span><span class="mf">2.</span><span class="o">/</span><span class="n">sum_var</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Z_hat</span><span class="p">,</span> <span class="n">mu_hat</span><span class="p">,</span> <span class="n">sigma2_hat</span>
+
+<div class="viewcode-block" id="Gaussian.predictive_values"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.predictive_values">[docs]</a>    <span class="k">def</span> <span class="nf">predictive_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">full_cov</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">full_cov</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">var</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">var</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_3d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">var</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">var</span>
+</div>
+<div class="viewcode-block" id="Gaussian.predictive_mean"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.predictive_mean">[docs]</a>    <span class="k">def</span> <span class="nf">predictive_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">mu</span>
+</div>
+<div class="viewcode-block" id="Gaussian.predictive_variance"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.predictive_variance">[docs]</a>    <span class="k">def</span> <span class="nf">predictive_variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">predictive_mean</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span>
+</div>
+<div class="viewcode-block" id="Gaussian.predictive_quantiles"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.predictive_quantiles">[docs]</a>    <span class="k">def</span> <span class="nf">predictive_quantiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span>  <span class="p">[</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">q</span><span class="o">/</span><span class="mf">100.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span> <span class="o">+</span> <span class="n">mu</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Gaussian.pdf_link"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.pdf_link">[docs]</a>    <span class="k">def</span> <span class="nf">pdf_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Likelihood function given link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: likelihood evaluated for this point</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#Assumes no covariance, exp, sum, log for numerical stability</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)))))</span>
+</div>
+<div class="viewcode-block" id="Gaussian.logpdf_link"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.logpdf_link">[docs]</a>    <span class="k">def</span> <span class="nf">logpdf_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log likelihood function given link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\ln p(y_{i}|\\lambda(f_{i})) = -\\frac{N \\ln 2\\pi}{2} - \\frac{\\ln |K|}{2} - \\frac{(y_{i} - \\lambda(f_{i}))^{T}\\sigma^{-2}(y_{i} - \\lambda(f_{i}))}{2}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: log likelihood evaluated for this point</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ln_det_cov</span> <span class="o">=</span> <span class="n">N</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y</span><span class="o">-</span><span class="n">link_f</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span> <span class="o">+</span> <span class="n">ln_det_cov</span> <span class="o">+</span> <span class="n">N</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Gaussian.dlogpdf_dlink"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.dlogpdf_dlink">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_dlink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gradient of the pdf at y, given link(f) w.r.t link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\sigma^{2}}(y_{i} - \\lambda(f_{i}))</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: gradient of log likelihood evaluated at points link(f)</span>
+<span class="sd">        :rtype: Nx1 array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">s2_i</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">s2_i</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="n">s2_i</span><span class="o">*</span><span class="n">link_f</span>
+        <span class="k">return</span> <span class="n">grad</span>
+</div>
+<div class="viewcode-block" id="Gaussian.d2logpdf_dlink2"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.d2logpdf_dlink2">[docs]</a>    <span class="k">def</span> <span class="nf">d2logpdf_dlink2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Hessian at y, given link_f, w.r.t link_f.</span>
+<span class="sd">        i.e. second derivative logpdf at y given link(f_i) link(f_j)  w.r.t link(f_i) and link(f_j)</span>
+
+<span class="sd">        The hessian will be 0 unless i == j</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}f} = -\\frac{1}{\\sigma^{2}}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))</span>
+<span class="sd">        :rtype: Nx1 array</span>
+
+<span class="sd">        .. Note::</span>
+<span class="sd">            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases</span>
+<span class="sd">            (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">hess</span>
+</div>
+<div class="viewcode-block" id="Gaussian.d3logpdf_dlink3"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.d3logpdf_dlink3">[docs]</a>    <span class="k">def</span> <span class="nf">d3logpdf_dlink3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Third order derivative log-likelihood function at y given link(f) w.r.t link(f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = 0</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: third derivative of log likelihood evaluated at points link(f)</span>
+<span class="sd">        :rtype: Nx1 array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d3logpdf_dlink3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">d3logpdf_dlink3</span>
+</div>
+<div class="viewcode-block" id="Gaussian.dlogpdf_link_dvar"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.dlogpdf_link_dvar">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_link_dvar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gradient of the log-likelihood function at y given link(f), w.r.t variance parameter (noise_variance)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\sigma^{2}} = -\\frac{N}{2\\sigma^{2}} + \\frac{(y_{i} - \\lambda(f_{i}))^{2}}{2\\sigma^{4}}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">link_f</span>
+        <span class="n">s_4</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dlik_dsigma</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">N</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">s_4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dlik_dsigma</span><span class="p">)</span> <span class="c"># Sure about this sum?</span>
+</div>
+<div class="viewcode-block" id="Gaussian.dlogpdf_dlink_dvar"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.dlogpdf_dlink_dvar">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_dlink_dvar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Derivative of the dlogpdf_dlink w.r.t variance parameter (noise_variance)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)}) = \\frac{1}{\\sigma^{4}}(-y_{i} + \\lambda(f_{i}))</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter</span>
+<span class="sd">        :rtype: Nx1 array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">s_4</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">dlik_grad_dsigma</span> <span class="o">=</span> <span class="o">-</span><span class="n">s_4</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">s_4</span><span class="o">*</span><span class="n">link_f</span>
+        <span class="k">return</span> <span class="n">dlik_grad_dsigma</span>
+</div>
+<div class="viewcode-block" id="Gaussian.d2logpdf_dlink2_dvar"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.d2logpdf_dlink2_dvar">[docs]</a>    <span class="k">def</span> <span class="nf">d2logpdf_dlink2_dvar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (noise_variance)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)}) = \\frac{1}{\\sigma^{4}}</span>
+
+<span class="sd">        :param link_f: latent variables link(f)</span>
+<span class="sd">        :type link_f: Nx1 array</span>
+<span class="sd">        :param y: data</span>
+<span class="sd">        :type y: Nx1 array</span>
+<span class="sd">        :param Y_metadata: Y_metadata not used in gaussian</span>
+<span class="sd">        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter</span>
+<span class="sd">        :rtype: Nx1 array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">link_f</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">s_4</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d2logpdf_dlink2_dvar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">*</span><span class="n">s_4</span>
+        <span class="k">return</span> <span class="n">d2logpdf_dlink2_dvar</span>
+</div>
+<div class="viewcode-block" id="Gaussian.dlogpdf_link_dtheta"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.dlogpdf_link_dtheta">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_link_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">dlogpdf_dvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogpdf_link_dvar</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="n">dlogpdf_dvar</span><span class="p">]])</span>
+</div>
+<div class="viewcode-block" id="Gaussian.dlogpdf_dlink_dtheta"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.dlogpdf_dlink_dtheta">[docs]</a>    <span class="k">def</span> <span class="nf">dlogpdf_dlink_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">dlogpdf_dlink_dvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogpdf_dlink_dvar</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dlogpdf_dlink_dvar</span>
+</div>
+<div class="viewcode-block" id="Gaussian.d2logpdf_dlink2_dtheta"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.d2logpdf_dlink2_dtheta">[docs]</a>    <span class="k">def</span> <span class="nf">d2logpdf_dlink2_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">d2logpdf_dlink2_dvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d2logpdf_dlink2_dvar</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="n">Y_metadata</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d2logpdf_dlink2_dvar</span>
+</div>
+    <span class="k">def</span> <span class="nf">_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Expected value of y under the Mass (or density) function p(y|f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            E_{p(y|f)}[y]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gp_link</span><span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Variance of y under the Mass (or density) function p(y|f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            Var_{p(y|f)}[y]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+
+<div class="viewcode-block" id="Gaussian.samples"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.samples">[docs]</a>    <span class="k">def</span> <span class="nf">samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gp</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a set of samples of observations based on a given value of the latent variable.</span>
+
+<span class="sd">        :param gp: latent variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">orig_shape</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="c">#orig_shape = gp.shape</span>
+        <span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">Ysim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gp_link</span><span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="n">gpj</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">gpj</span> <span class="ow">in</span> <span class="n">gp</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">Ysim</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">orig_shape</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Gaussian.log_predictive_density"><a class="viewcode-back" href="../../../GPy.likelihoods.html#GPy.likelihoods.gaussian.Gaussian.log_predictive_density">[docs]</a>    <span class="k">def</span> <span class="nf">log_predictive_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">mu_star</span><span class="p">,</span> <span class="n">var_star</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        assumes independence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">var_star</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">y_test</span> <span class="o">-</span> <span class="n">mu_star</span><span class="p">)</span><span class="o">/</span><span class="n">v</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

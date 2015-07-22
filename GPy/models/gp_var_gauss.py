@@ -9,6 +9,7 @@ from ..core.parameterization import ObsAr
 from .. import kern
 from ..core.parameterization.param import Param
 from ..util.linalg import pdinv
+from ..likelihoods import Gaussian
 
 log_2_pi = np.log(2*np.pi)
 
@@ -25,8 +26,10 @@ class GPVariationalGaussianApproximation(Model):
         pages = {786--792},
     }
     """
-    def __init__(self, X, Y, kernel, likelihood,Y_metadata=None):
-        Model.__init__(self,'Variational GP classification')
+    def __init__(self, X, Y, kernel, likelihood=None, Y_metadata=None):
+        Model.__init__(self,'Variational GP')
+        if likelihood is None:
+            likelihood = Gaussian()
         # accept the construction arguments
         self.X = ObsAr(X)
         self.Y = Y

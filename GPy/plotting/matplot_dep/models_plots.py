@@ -107,11 +107,13 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 upper = m + 2*np.sqrt(v)
         else:
             if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
-                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
-            else:
-                meta = None
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta, **predict_kw)
-            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=meta)
+                extra_data = Xgrid[:,-1:].astype(np.int)
+                if Y_metadata is None:
+                    Y_metadata = {'output_index': extra_data}
+                else:
+                    Y_metadata['output_index'] = extra_data
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
+            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=Y_metadata)
 
 
         for d in which_data_ycols:
@@ -120,7 +122,9 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples)
+            Ysim = model.posterior_samples(Xgrid, samples, Y_metadata=Y_metadata)
+            print Ysim.shape
+            print Xnew.shape
             for yi in Ysim.T:
                 plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
@@ -185,10 +189,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, _ = model._raw_predict(Xgrid, **predict_kw)
         else:
             if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
-                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
-            else:
-                meta = None
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta, **predict_kw)
+                extra_data = Xgrid[:,-1:].astype(np.int)
+                if Y_metadata is None:
+                    Y_metadata = {'output_index': extra_data}
+                else:
+                    Y_metadata['output_index'] = extra_data
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)

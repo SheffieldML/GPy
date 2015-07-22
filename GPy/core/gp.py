@@ -244,7 +244,7 @@ class GP(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
+        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
@@ -261,7 +261,7 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=False)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
     def predictive_gradients(self, Xnew):
         """
@@ -331,7 +331,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(fsim, Y_metadata)
+        Ysim = self.likelihood.samples(fsim, Y_metadata=Y_metadata)
         return Ysim
 
     def plot_f(self, plot_limits=None, which_data_rows='all',

@@ -843,7 +843,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
 
     # Calculating beta and Bi for Sb
     def compute_sig_beta_Bi(self, data_idx, M_i, M_0, lst_idx_all):
-        import pdb
+        # import pdb
         # pdb.set_trace()
         B_i = np.zeros((self.classnum, self.dim))
         Sig_beta_B_i_all = np.zeros((self.datanum, self.dim))
@@ -909,8 +909,8 @@ class DGPLVM_Lamda(Prior, Parameterized):
         Sw = self.compute_Sw(cls, M_i)
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.5))[0]
+	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.9)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
@@ -933,8 +933,8 @@ class DGPLVM_Lamda(Prior, Parameterized):
         # Calculating inverse of Sb and its transpose and minus
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.5))[0]
+	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.9)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)

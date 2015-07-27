@@ -137,7 +137,9 @@ class SparseGP(GP):
             else:
                 Kxx = kern.Kdiag(Xnew)
                 if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0)
+		    var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T 
+		    #For plot_latent, the below code doesn't work!
+                    #var = Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0)
                 elif self.posterior.woodbury_inv.ndim == 3:
                     var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
                     for i in range(var.shape[1]):

@@ -522,16 +522,9 @@ class DGPLVM(Prior):
 
     """
     domain = _REAL
-    # _instances = []
-    # def __new__(cls, mu, sigma): # Singleton:
-    #     if cls._instances:
-    #         cls._instances[:] = [instance for instance in cls._instances if instance()]
-    #         for instance in cls._instances:
-    #             if instance().mu == mu and instance().sigma == sigma:
-    #                 return instance()
-    #     o = super(Prior, cls).__new__(cls, mu, sigma)
-    #     cls._instances.append(weakref.ref(o))
-    #     return cls._instances[-1]()
+    
+    def __new__(cls, sigma2, lbl, x_shape): 
+        return super(Prior, cls).__new__(cls, sigma2, lbl, x_shape)
 
     def __init__(self, sigma2, lbl, x_shape):
         self.sigma2 = sigma2

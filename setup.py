@@ -2,13 +2,36 @@
 # -*- coding: utf-8 -*-
 
 import os
-from setuptools import setup
+from setuptools import setup, Extension
+import numpy as np
 
 # Version number
 version = '0.6.1'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+#compile_flags = ["-march=native", '-fopenmp', '-O3', ]
+compile_flags = [ '-fopenmp', '-O3', ]
+
+ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
+                      sources=['GPy/kern/_src/stationary_cython.c','GPy/kern/_src/stationary_utils.c'],
+                      include_dirs=[np.get_include()],
+                      extra_compile_args=compile_flags,
+                      extra_link_args = ['-lgomp']),
+            Extension(name='GPy.util.choleskies_cython',
+                      sources=['GPy/util/choleskies_cython.c', 'GPy/util/cholesky_backprop.c'],
+                      include_dirs=[np.get_include()],
+                      extra_link_args = ['-lgomp', '-lblas'],
+                      extra_compile_args=compile_flags+['-std=c99']),
+            Extension(name='GPy.util.linalg_cython',
+                      sources=['GPy/util/linalg_cython.c'],
+                      include_dirs=[np.get_include()],
+                      extra_compile_args=compile_flags),
+            Extension(name='GPy.kern._src.coregionalize_cython',
+                      sources=['GPy/kern/_src/coregionalize_cython.c'],
+                      include_dirs=[np.get_include()],
+                      extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',
       version = version,
@@ -18,6 +41,7 @@ setup(name = 'GPy',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
+      ext_modules = ext_mods,
       packages = ["GPy.models",
                   "GPy.inference.optimization",
                   "GPy.inference.mcmc",

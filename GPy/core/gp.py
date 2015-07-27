@@ -89,7 +89,6 @@ class GP(Model):
             assert mean_function.output_dim == self.output_dim
             self.link_parameter(mean_function)
 
-
         #find a sensible inference method
         logger.info("initializing inference method")
         if inference_method is None:
@@ -208,6 +207,7 @@ class GP(Model):
             Kxx = kern.Kdiag(_Xnew)
             var = Kxx - np.sum(WiKx*Kx, 0)
             var = var.reshape(-1, 1)
+            var[var<0.] = 0.
 
         #force mu to be a column vector
         if len(mu.shape)==1: mu = mu[:,None]
@@ -229,13 +229,14 @@ class GP(Model):
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
-        :returns: (mean, var, lower_upper):
+        :returns: (mean, var):
             mean: posterior mean, a Numpy array, Nnew x self.input_dim
             var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
-            lower_upper: lower and upper boundaries of the 95% confidence intervals, Numpy arrays,  Nnew x self.input_dim
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
+
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
@@ -243,7 +244,7 @@ class GP(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
+        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
@@ -255,12 +256,12 @@ class GP(Model):
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
         :returns: list of quantiles for each X and predictive quantiles for interval combination
-        :rtype: [np.ndarray (Xnew x self.input_dim), np.ndarray (Xnew x self.input_dim)]
+        :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
         m, v = self._raw_predict(X,  full_cov=False)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
     def predictive_gradients(self, Xnew):
         """
@@ -330,7 +331,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(fsim, Y_metadata)
+        Ysim = self.likelihood.samples(fsim, Y_metadata=Y_metadata)
         return Ysim
 
     def plot_f(self, plot_limits=None, which_data_rows='all',
@@ -395,7 +396,7 @@ class GP(Model):
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx'):
+        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx', predict_kw=None):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -444,7 +445,7 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, **kw)
+                                     data_symbol=data_symbol, predict_kw=predict_kw, **kw)
 
     def input_sensitivity(self, summarize=True):
         """
@@ -472,16 +473,51 @@ class GP(Model):
             self.inference_method.on_optimization_end()
             raise
 
-    def infer_newX(self, Y_new, optimize=True, ):
+    def infer_newX(self, Y_new, optimize=True):
         """
-        Infer the distribution of X for the new observed data *Y_new*.
+        Infer X for the new observed data *Y_new*.
 
         :param Y_new: the new observed data for inference
         :type Y_new: numpy.ndarray
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
-        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` or numpy.ndarray, :class:`~GPy.core.model.Model`)
+        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)
+
+    def log_predictive_density(self, x_test, y_test, Y_metadata=None):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test locations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param Y_metadata: metadata associated with the test points
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+
+    def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
+        """
+        Calculation of the log predictive density by sampling
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test locations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param Y_metadata: metadata associated with the test points
+        :param num_samples: number of samples to use in monte carlo integration
+        :type num_samples: int
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+

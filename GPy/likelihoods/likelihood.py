@@ -41,6 +41,14 @@ class Likelihood(Parameterized):
         self.log_concave = False
         self.not_block_really = False
 
+    def request_num_latent_functions(self, Y):
+        """
+        The likelihood should infer how many latent functions are needed for the likelihood
+
+        Default is the number of outputs
+        """
+        return Y.shape[1]
+
     def _gradients(self,partial):
         return np.zeros(0)
 
@@ -118,21 +126,56 @@ class Likelihood(Parameterized):
             """Generate a function which can be integrated
             to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
             def f(fi_star):
-                #exponent = np.exp(-(1./(2*v))*np.square(m-f_star))
+                #exponent = np.exp(-(1./(2*vi))*np.square(mi-fi_star))
                 #from GPy.util.misc import safe_exp
                 #exponent = safe_exp(exponent)
-                #return self.pdf(f_star, y, y_m)*exponent
+                #res = safe_exp(self.logpdf(fi_star, yi, yi_m))*exponent
 
                 #More stable in the log space
-                return np.exp(self.logpdf(fi_star, yi, yi_m)
+                res = np.exp(self.logpdf(fi_star, yi, yi_m)
                               - 0.5*np.log(2*np.pi*vi)
-                              - 0.5*np.square(mi-fi_star)/vi)
+                              - 0.5*np.square(fi_star-mi)/vi)
+                if not np.isfinite(res):
+                    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+                return res
+
             return f
 
         p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
                            for yi, mi, vi, yi_m in zipped_values])
-        p_ystar = np.array(p_ystar).reshape(-1, 1)
+        p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
+
+    def log_predictive_density_sampling(self, y_test, mu_star, var_star, Y_metadata=None, num_samples=1000):
+        """
+        Calculation of the log predictive density via sampling
+
+        .. math:
+            log p(y_{*}|D) = log 1/num_samples prod^{S}_{s=1} p(y_{*}|f_{*s})
+            f_{*s} ~ p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type mu_star: (Nx1) array
+        :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
+        :type var_star: (Nx1) array
+        :param num_samples: num samples of p(f_{*}|mu_{*}, var_{*}) to take
+        :type num_samples: int
+        """
+        assert y_test.shape==mu_star.shape
+        assert y_test.shape==var_star.shape
+        assert y_test.shape[1] == 1
+
+        #Take samples of p(f*|y)
+        #fi_samples = np.random.randn(num_samples)*np.sqrt(var_star) + mu_star
+        fi_samples = np.random.normal(mu_star, np.sqrt(var_star), size=(mu_star.shape[0], num_samples))
+
+        from scipy.misc import logsumexp
+        log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
+        log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
+        return log_p_ystar
+
 
     def _moments_match_ep(self,obs,tau,v):
         """
@@ -170,9 +213,9 @@ class Likelihood(Parameterized):
 
     #only compute gh points if required
     __gh_points = None
-    def _gh_points(self):
+    def _gh_points(self, T=20):
         if self.__gh_points is None:
-            self.__gh_points = np.polynomial.hermite.hermgauss(20)
+            self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
@@ -211,9 +254,11 @@ class Likelihood(Parameterized):
         #d2logp_dx2 = np.clip(d2logp_dx2,-1e9,1e9)
 
         #average over the gird to get derivatives of the Gaussian's parameters
-        F = np.dot(logp, gh_w)
-        dF_dm = np.dot(dlogp_dx, gh_w)
-        dF_dv = np.dot(d2logp_dx2, gh_w)/2.
+        #division by pi comes from fact that for each quadrature we need to scale by 1/sqrt(pi)
+        F = np.dot(logp, gh_w)/np.sqrt(np.pi)
+        dF_dm = np.dot(dlogp_dx, gh_w)/np.sqrt(np.pi)
+        dF_dv = np.dot(d2logp_dx2, gh_w)/np.sqrt(np.pi)
+        dF_dv /= 2.
 
         if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
             stop
@@ -221,8 +266,8 @@ class Likelihood(Parameterized):
             stop
 
         if self.size:
-            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None]) # Ntheta x (orig size) x N_{quad_points}
-            dF_dtheta = np.dot(dF_dtheta, gh_w)
+            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None], Y_metadata=Y_metadata) # Ntheta x (orig size) x N_{quad_points}
+            dF_dtheta = np.dot(dF_dtheta, gh_w)/np.sqrt(np.pi)
             dF_dtheta = dF_dtheta.reshape(self.size, shape[0], shape[1])
         else:
             dF_dtheta = None # Not yet implemented
@@ -253,12 +298,7 @@ class Likelihood(Parameterized):
                 return self.conditional_mean(f)*p
         scaled_mean = [quad(int_mean, fmin, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
-
         return mean
-
-    def _conditional_mean(self, f):
-        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
-        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
@@ -563,23 +603,30 @@ class Likelihood(Parameterized):
         :param full_cov: whether to use the full covariance or just the diagonal
         :type full_cov: Boolean
         """
-
-        pred_mean = self.predictive_mean(mu, var, Y_metadata)
-        pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata)
+        try:
+            pred_mean = self.predictive_mean(mu, var, Y_metadata=Y_metadata)
+            pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata=Y_metadata)
+        except NotImplementedError:
+            print "Finding predictive mean and variance via sampling rather than quadrature"
+            Nf_samp = 300
+            Ny_samp = 1
+            s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
+            ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+            pred_mean = np.mean(ss_y, axis=1)[:, None]
+            pred_var = np.var(ss_y, axis=1)[:, None]
 
         return pred_mean, pred_var
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         #compute the quantiles by sampling!!!
-        N_samp = 500
-        s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
-        #ss_f = s.flatten()
-        #ss_y = self.samples(ss_f, Y_metadata)
-        #ss_y = self.samples(s, Y_metadata, samples=100)
-        ss_y = self.samples(s, Y_metadata)
-        #ss_y = ss_y.reshape(mu.shape[0], N_samp)
+        Nf_samp = 300
+        Ny_samp = 1
+        s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
+        ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+        #ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
 
-        return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
+        pred_quantiles = [np.percentile(ss_y, q, axis=1)[:,None] for q in quantiles]
+        return pred_quantiles
 
     def samples(self, gp, Y_metadata=None, samples=1):
         """

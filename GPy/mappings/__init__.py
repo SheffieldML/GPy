@@ -6,4 +6,5 @@ from .linear import Linear
 from .mlp import MLP
 from .additive import Additive
 from .compound import Compound
+from .constant import Constant
 

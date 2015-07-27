@@ -38,6 +38,11 @@ class Param(Parameterizable, ObsAr):
     Fixing parameters will fix them to the value they are right now. If you change
     the fixed value, it will be fixed to the new value!
 
+    Important Note:
+    Multilevel indexing (e.g. self[:2][1:]) is not supported and might lead to unexpected behaviour.
+    Try to index in one go, using boolean indexing or the numpy builtin
+    np.index function.
+    
     See :py:class:`GPy.core.parameterized.Parameterized` for more details on constraining etc.
 
     """

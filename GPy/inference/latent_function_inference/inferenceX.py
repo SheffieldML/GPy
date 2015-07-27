@@ -27,12 +27,19 @@ def infer_newX(model, Y_new, optimize=True, init='L2'):
 
 class InferenceX(Model):
     """
-    The class for inference of new X with given new Y. (do_test_latent)
+    The model class for inference of new X with given new Y. (replacing the "do_test_latent" in Bayesian GPLVM)
+    It is a tiny inference model created from the original GP model. The kernel, likelihood (only Gaussian is supported at the moment) 
+    and posterior distribution are taken from the original model.
+    For Regression models and GPLVM, a point estimate of the latent variable X will be inferred. 
+    For Bayesian GPLVM, the variational posterior of X will be inferred. 
+    X is inferred through a gradient optimization of the inference model.
 
     :param model: the GPy model used in inference
     :type model: GPy.core.Model
     :param Y: the new observed data for inference
     :type Y: numpy.ndarray
+    :param init: the distance metric of Y for initializing X with the nearest neighbour.
+    :type init: 'L2', 'NCC' and 'rand'
     """
     def __init__(self, model, Y, name='inferenceX', init='L2'):
         if np.isnan(Y).any() or getattr(model, 'missing_data', False):
@@ -45,17 +52,23 @@ class InferenceX(Model):
         super(InferenceX, self).__init__(name)
         self.likelihood = model.likelihood.copy()
         self.kern = model.kern.copy()
-        if model.kern.useGPU:
-            from ...models import SSGPLVM
-            if isinstance(model, SSGPLVM):
-                self.kern.GPU_SSRBF(True)
-            else:
-                self.kern.GPU(True)
+#         if model.kern.useGPU:
+#             from ...models import SSGPLVM
+#             if isinstance(model, SSGPLVM):
+#                 self.kern.GPU_SSRBF(True)
+#             else:
+#                 self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
         if hasattr(model, 'variational_prior'):
             self.uncertain_input = True
-            self.variational_prior = model.variational_prior.copy()
+            from ...models.ss_gplvm import IBPPrior
+            from ...models.ss_mrd import IBPPrior_SSMRD
+            if isinstance(model.variational_prior, IBPPrior) or isinstance(model.variational_prior, IBPPrior_SSMRD):
+                from ...core.parameterization.variational import SpikeAndSlabPrior
+                self.variational_prior = SpikeAndSlabPrior(pi=05,learnPi=False, group_spike=False)
+            else:
+                self.variational_prior = model.variational_prior.copy()
         else:
             self.uncertain_input = False
         if hasattr(model, 'inducing_inputs'):
@@ -147,9 +160,9 @@ class InferenceX(Model):
             from ...core.parameterization.variational import SpikeAndSlabPrior
             if isinstance(self.variational_prior, SpikeAndSlabPrior):
                 # Update Log-likelihood
-                KL_div = self.variational_prior.KL_divergence(self.X, N=self.Y.shape[0])
+                KL_div = self.variational_prior.KL_divergence(self.X)
                 # update for the KL divergence
-                self.variational_prior.update_gradients_KL(self.X, N=self.Y.shape[0])
+                self.variational_prior.update_gradients_KL(self.X)
             else:
                 # Update Log-likelihood
                 KL_div = self.variational_prior.KL_divergence(self.X)

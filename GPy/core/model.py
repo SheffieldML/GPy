@@ -76,7 +76,7 @@ class Model(Parameterized):
                 jobs = []
                 pool = mp.Pool(processes=num_processes)
                 for i in range(num_restarts):
-                    self.randomize()
+                    if i>0: self.randomize()
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
@@ -90,7 +90,7 @@ class Model(Parameterized):
         for i in range(num_restarts):
             try:
                 if not parallel:
-                    self.randomize()
+                    if i>0: self.randomize()
                     self.optimize(**kwargs)
                 else:
                     self.optimization_runs.append(jobs[i].get())

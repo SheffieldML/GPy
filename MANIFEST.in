@@ -6,3 +6,6 @@ include *.cfg
 recursive-include doc *.cfg
 include *.json
 recursive-include doc *.json
+recursive-include GPy *.c
+recursive-include GPy *.so
+recursive-include GPy *.pyx

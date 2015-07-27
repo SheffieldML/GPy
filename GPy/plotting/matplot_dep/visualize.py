@@ -408,12 +408,13 @@ class mocap_data_show_vpython(vpython_show):
 class mocap_data_show(matplotlib_show):
     """Base class for visualizing motion capture data."""
 
-    def __init__(self, vals, axes=None, connect=None):
+    def __init__(self, vals, axes=None, connect=None, color='b'):
         if axes==None:
             fig = plt.figure()
             axes = fig.add_subplot(111, projection='3d', aspect='equal')
         matplotlib_show.__init__(self, vals, axes)
 
+        self.color = color
         self.connect = connect
         self.process_values()
         self.initialize_axes()
@@ -423,7 +424,7 @@ class mocap_data_show(matplotlib_show):
         self.axes.figure.canvas.draw()
 
     def draw_vertices(self):
-        self.points_handle = self.axes.scatter(self.vals[:, 0], self.vals[:, 1], self.vals[:, 2])
+        self.points_handle = self.axes.scatter(self.vals[:, 0], self.vals[:, 1], self.vals[:, 2], color=self.color)
 
     def draw_edges(self):
         self.line_handle = []
@@ -442,7 +443,7 @@ class mocap_data_show(matplotlib_show):
                 z.append(self.vals[i, 2])
                 z.append(self.vals[j, 2])
                 z.append(np.NaN)
-            self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), 'b-')
+            self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), '-', color=self.color)
 
     def modify(self, vals):
         self.vals = vals.copy()
@@ -450,7 +451,7 @@ class mocap_data_show(matplotlib_show):
         self.initialize_axes_modify()
         self.draw_vertices()
         self.initialize_axes()
-        self.finalize_axes_modify()
+        #self.finalize_axes_modify()
         self.draw_edges()
         self.axes.figure.canvas.draw()
 
@@ -469,12 +470,20 @@ class mocap_data_show(matplotlib_show):
         self.line_handle[0].remove()
 
     def finalize_axes(self):
-        self.axes.set_xlim(self.x_lim)
-        self.axes.set_ylim(self.y_lim)
-        self.axes.set_zlim(self.z_lim)
-        self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
+#         self.axes.set_xlim(self.x_lim)
+#         self.axes.set_ylim(self.y_lim)
+#         self.axes.set_zlim(self.z_lim)
+#         self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
 
-#        self.axes.set_aspect('equal')
+        extents = np.array([getattr(self.axes, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+        sz = extents[:,1] - extents[:,0]
+        centers = np.mean(extents, axis=1)
+        maxsize = max(abs(sz))
+        r = maxsize/2
+        for ctr, dim in zip(centers, 'xyz'):
+            getattr(self.axes, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+        
+#         self.axes.set_aspect('equal')
 #         self.axes.autoscale(enable=False)
 
     def finalize_axes_modify(self):
@@ -494,7 +503,7 @@ class stick_show(mocap_data_show):
 
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""
-    def __init__(self, vals, skel, axes=None, padding=0):
+    def __init__(self, vals, skel, axes=None, padding=0, color='b'):
         """data_show class for visualizing motion capture data encoded as a skeleton with angles.
         :param vals: set of modeled angles to use for printing in the axis when it's first created.
         :type vals: np.array
@@ -506,7 +515,7 @@ class skeleton_show(mocap_data_show):
         self.skel = skel
         self.padding = padding
         connect = skel.connection_matrix()
-        mocap_data_show.__init__(self, vals, axes=axes, connect=connect)
+        mocap_data_show.__init__(self, vals, axes=axes, connect=connect, color=color)
     def process_values(self):
         """Takes a set of angles and converts them to the x,y,z coordinates in the internal prepresentation of the class, ready for plotting.
 

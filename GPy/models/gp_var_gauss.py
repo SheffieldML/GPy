@@ -9,13 +9,14 @@ from ..core.parameterization import ObsAr
 from .. import kern
 from ..core.parameterization.param import Param
 from ..util.linalg import pdinv
+from ..likelihoods import Gaussian
 
 log_2_pi = np.log(2*np.pi)
 
 
 class GPVariationalGaussianApproximation(Model):
     """
-    The Variational Gaussian Approximation revisited implementation for regression
+    The Variational Gaussian Approximation revisited
 
     @article{Opper:2009,
         title = {The Variational Gaussian Approximation Revisited},
@@ -25,43 +26,28 @@ class GPVariationalGaussianApproximation(Model):
         pages = {786--792},
     }
     """
-    def __init__(self, X, Y, kernel=None):
-        Model.__init__(self,'Variational GP classification')
+    def __init__(self, X, Y, kernel, likelihood=None, Y_metadata=None):
+        Model.__init__(self,'Variational GP')
+        if likelihood is None:
+            likelihood = Gaussian()
         # accept the construction arguments
         self.X = ObsAr(X)
-        if kernel is None:
-            kernel = kern.RBF(X.shape[1]) + kern.White(X.shape[1], 0.01)
-        self.kern = kernel
-        self.link_parameter(self.kern)
+        self.Y = Y
         self.num_data, self.input_dim = self.X.shape
+        self.Y_metadata = Y_metadata
 
-        self.alpha = Param('alpha', np.zeros(self.num_data))
+        self.kern = kernel
+        self.likelihood = likelihood
+        self.link_parameter(self.kern)
+        self.link_parameter(self.likelihood)
+
+        self.alpha = Param('alpha', np.zeros((self.num_data,1))) # only one latent fn for now.
         self.beta = Param('beta', np.ones(self.num_data))
         self.link_parameter(self.alpha)
         self.link_parameter(self.beta)
 
-        self.gh_x, self.gh_w = np.polynomial.hermite.hermgauss(20)
-        self.Ysign = np.where(Y==1, 1, -1).flatten()
-
     def log_likelihood(self):
-        """
-        Marginal log likelihood evaluation
-        """
         return self._log_lik
-
-    def likelihood_quadrature(self, m, v):
-        """
-        Perform Gauss-Hermite quadrature over the log of the likelihood, with a fixed weight
-        """
-        # assume probit for now.
-        X = self.gh_x[None, :]*np.sqrt(2.*v[:, None]) + (m*self.Ysign)[:, None]
-        p = stats.norm.cdf(X)
-        N = stats.norm.pdf(X)
-        F = np.log(p).dot(self.gh_w)
-        NoverP = N/p
-        dF_dm = (NoverP*self.Ysign[:,None]).dot(self.gh_w)
-        dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(self.gh_w)
-        return F, dF_dm, dF_dv
 
     def parameters_changed(self):
         K = self.kern.K(self.X)
@@ -71,13 +57,14 @@ class GPVariationalGaussianApproximation(Model):
         A = np.eye(self.num_data) + BKB
         Ai, LA, _, Alogdet = pdinv(A)
         Sigma = np.diag(self.beta**-2) - Ai/self.beta[:, None]/self.beta[None, :]  # posterior coavairance: need full matrix for gradients
-        var = np.diag(Sigma)
+        var = np.diag(Sigma).reshape(-1,1)
 
-        F, dF_dm, dF_dv = self.likelihood_quadrature(m, var)
+        F, dF_dm, dF_dv, dF_dthetaL = self.likelihood.variational_expectations(self.Y, m, var, Y_metadata=self.Y_metadata)
+        self.likelihood.gradient = dF_dthetaL.sum(1).sum(1)
         dF_da = np.dot(K, dF_dm)
         SigmaB = Sigma*self.beta
-        dF_db = -np.diag(Sigma.dot(np.diag(dF_dv)).dot(SigmaB))*2
-        KL = 0.5*(Alogdet + np.trace(Ai) - self.num_data + m.dot(self.alpha))
+        dF_db = -np.diag(Sigma.dot(np.diag(dF_dv.flatten())).dot(SigmaB))*2
+        KL = 0.5*(Alogdet + np.trace(Ai) - self.num_data + np.sum(m*self.alpha))
         dKL_da = m
         A_A2 = Ai - Ai.dot(Ai)
         dKL_db = np.diag(np.dot(KB.T, A_A2))
@@ -86,12 +73,12 @@ class GPVariationalGaussianApproximation(Model):
         self.beta.gradient = dF_db - dKL_db
 
         # K-gradients
-        dKL_dK = 0.5*(self.alpha[None, :]*self.alpha[:, None] + self.beta[:, None]*self.beta[None, :]*A_A2)
+        dKL_dK = 0.5*(self.alpha*self.alpha.T + self.beta[:, None]*self.beta[None, :]*A_A2)
         tmp = Ai*self.beta[:, None]/self.beta[None, :]
-        dF_dK = self.alpha[:, None]*dF_dm[None, :] + np.dot(tmp*dF_dv, tmp.T)
+        dF_dK = self.alpha*dF_dm.T + np.dot(tmp*dF_dv, tmp.T)
         self.kern.update_gradients_full(dF_dK - dKL_dK, self.X)
 
-    def predict(self, Xnew):
+    def _raw_predict(self, Xnew):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -105,4 +92,4 @@ class GPVariationalGaussianApproximation(Model):
         Kxx = self.kern.Kdiag(Xnew)
         var = Kxx - np.sum(WiKux*Kux, 0)
 
-        return 0.5*(1+erf(mu/np.sqrt(2.*(var+1))))
+        return mu, var.reshape(-1,1)

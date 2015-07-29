@@ -72,10 +72,10 @@ class SparseGPStochastics(StochasticStorage):
             bdict = {}
             for d in self.d:
                 inan = np.isnan(self.Y[:, d])
-                arr_str = np.array2string(inan, 
+                arr_str = int(np.array2string(inan, 
                                           np.inf, 0, 
                                           True, '', 
-                                          formatter={'bool':lambda x: '1' if x else '0'})
+                                          formatter={'bool':lambda x: '1' if x else '0'}), 2)
                 try:
                     bdict[arr_str][0].append(d)
                 except:

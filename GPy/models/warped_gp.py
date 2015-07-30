@@ -23,7 +23,7 @@ class WarpedGP(GP):
         self.scale_data = False
         if self.scale_data:
             Y = self._scale_data(Y)
-        self.has_uncertain_inputs = False
+        #self.has_uncertain_inputs = False
         self.Y_untransformed = Y.copy()
         self.predict_in_warped_space = False
         likelihood = likelihoods.Gaussian()

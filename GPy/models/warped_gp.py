@@ -69,7 +69,7 @@ class WarpedGP(GP):
     def plot_warping(self):
         self.warping_function.plot(self.Y_untransformed.min(), self.Y_untransformed.max())
 
-    def predict(self, Xnew, which_parts='all', pred_init=None):
+    def predict(self, Xnew, which_parts='all', pred_init=None, Y_metadata=None, full_cov=False):
         # normalize X values
         # Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         mu, var = GP._raw_predict(self, Xnew)

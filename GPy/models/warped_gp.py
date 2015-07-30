@@ -69,7 +69,7 @@ class WarpedGP(GP):
     def plot_warping(self):
         self.warping_function.plot(self.Y_untransformed.min(), self.Y_untransformed.max())
 
-    def predict(self, Xnew, which_parts='all', pred_init=None, Y_metadata=None, full_cov=False):
+    def predict(self, Xnew, which_parts='all', pred_init=None, full_cov=False, Y_metadata=None):
         # normalize X values
         # Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
         mu, var = GP._raw_predict(self, Xnew)
@@ -85,6 +85,27 @@ class WarpedGP(GP):
             mean = self._unscale_data(mean)
 
         return mean, var
+
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+        """
+        Get the predictive quantiles around the prediction at X
+
+        :param X: The points at which to make a prediction
+        :type X: np.ndarray (Xnew x self.input_dim)
+        :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
+        :type quantiles: tuple
+        :returns: list of quantiles for each X and predictive quantiles for interval combination
+        :rtype: [np.ndarray (Xnew x self.input_dim), np.ndarray (Xnew x self.input_dim)]
+        """
+        m, v = self._raw_predict(X,  full_cov=False)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
+        a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        #print a.shape
+        new_a = self.warping_function.f_inv(a)
+        new_b = self.warping_function.f_inv(b)
+        return [new_a, new_b]
+        #return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 
 if __name__ == '__main__':
     X = np.random.randn(100, 1)

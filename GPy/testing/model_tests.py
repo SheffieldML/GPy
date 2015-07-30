@@ -203,6 +203,13 @@ class MiscTests(unittest.TestCase):
         m.optimize()
         print(m)
 
+    def test_warped_gp(self):
+        k = GPy.kern.RBF(1)
+        m = GPy.models.WarpedGP(self.X, self.Y, kernel=k)
+        m.randomize()
+        m.optimize()
+        print(m)
+
 class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################

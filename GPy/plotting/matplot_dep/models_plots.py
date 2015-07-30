@@ -10,6 +10,7 @@ import numpy as np
 from base_plots import gpplot, x_frame1D, x_frame2D
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
+from ...models.warped_gp import WarpedGP
 from scipy import sparse
 from ...core.parameterization.variational import VariationalPosterior
 
@@ -73,6 +74,10 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     else:
         X = model.X
     Y = model.Y
+
+    if isinstance(model, WarpedGP):
+        Y = model.Y_untransformed
+
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
 
     if hasattr(model, 'Z'): Z = model.Z

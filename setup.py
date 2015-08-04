@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 from setuptools import setup, Extension
 import numpy as np
 
@@ -21,7 +22,7 @@ ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
                       extra_link_args = ['-lgomp']),
             Extension(name='GPy.util.choleskies_cython',
                       sources=['GPy/util/choleskies_cython.c', 'GPy/util/cholesky_backprop.c'],
-                      include_dirs=[np.get_include()],
+                      include_dirs=[np.get_include()]+(['/System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/Versions/Current/Headers'] if sys.platform=='darwin' else []),
                       extra_link_args = ['-lgomp', '-lblas'],
                       extra_compile_args=compile_flags+['-std=c99']),
             Extension(name='GPy.util.linalg_cython',

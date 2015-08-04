@@ -45,6 +45,7 @@ class WarpingFunction(Parameterized):
         plt.xlabel('y')
         plt.ylabel('f(y)')
         plt.title('warping function')
+        plt.show()
 
 class TanhWarpingFunction(WarpingFunction):
 

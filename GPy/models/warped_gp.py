@@ -64,10 +64,16 @@ class WarpedGP(GP):
     def log_likelihood(self):
         ll = GP.log_likelihood(self)
         jacobian = self.warping_function.fgrad_y(self.Y_untransformed)
+        print np.log(jacobian)
         return ll + np.log(jacobian).sum()
 
     def plot_warping(self):
         self.warping_function.plot(self.Y_untransformed.min(), self.Y_untransformed.max())
+
+    def _get_warped_term(self, mean, var, gh_samples, pred_init=None):
+        arg1 = gh_samples.dot(var.T) * np.sqrt(2)
+        arg2 = np.ones(shape=gh_samples.shape).dot(mean.T)
+        return self.warping_function.f_inv(arg1 + arg2, y=pred_init)
 
     def _get_warped_mean(self, mean, var, pred_init=None, deg_gauss_hermite=100):
         """
@@ -76,9 +82,17 @@ class WarpedGP(GP):
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
         gh_samples = gh_samples[:,None]
         gh_weights = gh_weights[None,:]
-        arg1 = gh_samples.dot(var.T) * np.sqrt(2)
-        arg2 = np.ones(shape=gh_samples.shape).dot(mean.T)
-        return gh_weights.dot(self.warping_function.f_inv(arg1 + arg2, y=pred_init)) / np.sqrt(np.pi)
+        return gh_weights.dot(self._get_warped_term(mean, var, gh_samples)) / np.sqrt(np.pi)
+
+    def _get_warped_variance(self, mean, var, pred_init=None, deg_gauss_hermite=100):
+        gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
+        gh_samples = gh_samples[:,None]
+        gh_weights = gh_weights[None,:]
+        arg1 = gh_weights.dot(self._get_warped_term(mean, var, gh_samples, 
+                                                    pred_init=pred_init) ** 2) / np.sqrt(np.pi)
+        arg2 = self._get_warped_mean(mean, var, pred_init=pred_init,
+                                     deg_gauss_hermite=deg_gauss_hermite)
+        return arg1 - (arg2 ** 2)
 
     def predict(self, Xnew, which_parts='all', pred_init=None, full_cov=False, Y_metadata=None,
                 median=False, deg_gauss_hermite=100):
@@ -91,16 +105,24 @@ class WarpedGP(GP):
 
         if self.predict_in_warped_space:
             if median:
-                pred = self.warping_function.f_inv(mean,  y=pred_init)
+                #print 'MEDIAN!'
+                wmean = self.warping_function.f_inv(mean,  y=pred_init)
             else:
-                pred = self._get_warped_mean(mean, var, pred_init=pred_init,
+                #print 'MEAN!'
+                wmean = self._get_warped_mean(mean, var, pred_init=pred_init,
+                                              deg_gauss_hermite=deg_gauss_hermite).T
+            #var = self.warping_function.f_inv(var)
+            wvar = self._get_warped_variance(mean, var, pred_init=pred_init,
                                              deg_gauss_hermite=deg_gauss_hermite).T
-            var = self.warping_function.f_inv(var)
+        else:
+            wmean = mean
+            #wvar = var
+            wvar = self.warping_function.f_inv(var)
 
         if self.scale_data:
             pred = self._unscale_data(pred)
 
-        return pred, var
+        return wmean, wvar
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
         """

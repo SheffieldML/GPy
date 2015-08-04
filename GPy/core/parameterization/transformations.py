@@ -31,6 +31,13 @@ class Transformation(object):
         raise NotImplementedError
     def finv(self, model_param):
         raise NotImplementedError
+    def jacobianfactor(self, model_param):
+        """
+        Return log|det J| where J is the Jacobian of the inverse of the
+        transformation.
+        """
+        return np.abs([self.gradfactor(np.array([theta]), np.ones((1,)))[0]
+                       for theta in model_param])
     def gradfactor(self, model_param, dL_dmodel_param):
         """ df(opt_param)_dopt_param evaluated at self.f(opt_param)=model_param, times the gradient dL_dmodel_param,
 
@@ -67,7 +74,7 @@ class Logexp(Transformation):
         return np.where(x>_lim_val, x, np.log1p(np.exp(np.clip(x, -_lim_val, _lim_val)))) + epsilon
         #raises overflow warning: return np.where(x>_lim_val, x, np.log(1. + np.exp(x)))
     def finv(self, f):
-        return np.where(f>_lim_val, f, np.log(np.exp(f+1e-20) - 1.))
+        return np.where(f>_lim_val, f, np.log(np.exp(f+epsilon) - 1.))
     def gradfactor(self, f, df):
         return np.einsum('i,i->i', df, np.where(f>_lim_val, 1., 1. - np.exp(-f)))
     def initialize(self, f):

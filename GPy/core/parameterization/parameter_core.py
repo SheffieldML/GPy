@@ -684,6 +684,16 @@ class OptimizationHandlable(Indexable):
         if self._has_fixes(): return g[self._fixes_]
         return g
 
+    def _log_det_jacobian(self):
+        """
+        Return the logarithm of the Jacobian needed for a proper change of
+        variables.
+        """
+        J = np.ones(self.param_array.shape)
+        [np.put(J, i, c.jacobianfactor(self.param_array[i]))
+         for c, i in self.constraints.iteritems() if c != __fixed__]
+        return np.log(J).sum()
+
     @property
     def num_params(self):
         """

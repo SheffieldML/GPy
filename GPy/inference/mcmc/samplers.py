@@ -4,23 +4,18 @@
 
 import numpy as np
 from scipy import linalg, optimize
-import Tango
 import sys
-import re
-import numdifftools as ndt
-import pdb
-import cPickle
 
 
 class Metropolis_Hastings:
     def __init__(self,model,cov=None):
         """Metropolis Hastings, with tunings according to Gelman et al. """
         self.model = model
-        current = self.model._get_params_transformed()
+        current = self.model.optimizer_array
         self.D = current.size
         self.chains = []
         if cov is None:
-            self.cov = model.Laplace_covariance()
+            self.cov = np.eye(self.D)
         else:
             self.cov = cov
         self.scale = 2.4/np.sqrt(self.D)
@@ -31,20 +26,20 @@ class Metropolis_Hastings:
         if start is None:
             self.model.randomize()
         else:
-            self.model._set_params_transformed(start)
+            self.model.optimizer_array = start
 
-
-
-    def sample(self, Ntotal, Nburn, Nthin, tune=True, tune_throughout=False, tune_interval=400):
-        current = self.model._get_params_transformed()
-        fcurrent = self.model.log_likelihood() + self.model.log_prior()
+    def sample(self, Ntotal=10000, Nburn=1000, Nthin=10, tune=True, tune_throughout=False, tune_interval=400):
+        current = self.model.optimizer_array
+        fcurrent = self.model.log_likelihood() + self.model.log_prior() + \
+                   self.model._log_det_jacobian()
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
             print "sample %d of %d\r"%(it,Ntotal),
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
-            self.model._set_params_transformed(prop)
-            fprop = self.model.log_likelihood() + self.model.log_prior()
+            self.model.optimizer_array = prop
+            fprop = self.model.log_likelihood() + self.model.log_prior() + \
+                    self.model._log_det_jacobian()
 
             if fprop>fcurrent:#sample accepted, going 'uphill'
                 accepted[it] = True
@@ -72,10 +67,11 @@ class Metropolis_Hastings:
 
     def predict(self,function,args):
         """Make a prediction for the function, to which we will pass the additional arguments"""
-        param = self.model._get_params()
+        param = self.model.param_array
         fs = []
         for p in self.chain:
-            self.model._set_params(p)
+            self.model.param_array = p
             fs.append(function(*args))
-        self.model._set_params(param)# reset model to starting state
+        # reset model to starting state
+        self.model.param_array = param
         return fs

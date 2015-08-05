@@ -205,7 +205,8 @@ class MiscTests(unittest.TestCase):
 
     def test_warped_gp(self):
         k = GPy.kern.RBF(1)
-        m = GPy.models.WarpedGP(self.X, self.Y, kernel=k)
+        warp = GPy.util.warping_functions.IdentityFunction()
+        m = GPy.models.WarpedGP(self.X, self.Y, kernel=k, warping_function=warp)
         m.randomize()
         m.optimize()
         print(m)

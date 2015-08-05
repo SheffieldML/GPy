@@ -301,17 +301,26 @@ class IdentityFunction(WarpingFunction):
     and should not be used in practice.
     """
     def __init__(self):
-        self.num_parameters = 0
+        self.num_parameters = 4
+        self.psi = Param('psi', np.zeros((1,3)))
+        self.d = Param('%s' % ('d'), 1.0, Logexp())
         super(IdentityFunction, self).__init__(name='identity')
+        self.link_parameter(self.psi)
+        self.link_parameter(self.d)
+
         
     def f(self, y):
         return y
 
     def fgrad_y(self, y):
-        return 1.0
+        return np.ones(y.shape)
 
-    def fgrad_y_psi(self,y):
-        return 1.0
+    def fgrad_y_psi(self, y, return_covar_chain=False):
+        gradients = np.ones((y.shape[0], y.shape[1], len(self.psi), 4))
+        if return_covar_chain:
+            return gradients, gradients
+        return gradients
+        
 
     def f_inv(self,z):
         return z

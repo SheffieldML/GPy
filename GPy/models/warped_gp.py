@@ -64,7 +64,6 @@ class WarpedGP(GP):
     def log_likelihood(self):
         ll = GP.log_likelihood(self)
         jacobian = self.warping_function.fgrad_y(self.Y_untransformed)
-        print np.log(jacobian)
         return ll + np.log(jacobian).sum()
 
     def plot_warping(self):

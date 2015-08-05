@@ -16,7 +16,7 @@ class WarpedGP(GP):
 
         if warping_function == None:
             self.warping_function = TanhWarpingFunction_d(warping_terms)
-            self.warping_params = (np.random.randn(self.warping_function.n_terms * 3 + 1,) * 1)
+            self.warping_params = (np.random.randn(self.warping_function.n_terms * 3 + 1) * 1)
         else:
             self.warping_function = warping_function
 
@@ -56,7 +56,6 @@ class WarpedGP(GP):
         self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
         self.warping_function.d.gradient[:] = warping_grads[0, -1]
 
-
     def transform_data(self):
         Y = self.warping_function.f(self.Y_untransformed.copy()).copy()
         return Y
@@ -84,6 +83,9 @@ class WarpedGP(GP):
         return gh_weights.dot(self._get_warped_term(mean, std, gh_samples)) / np.sqrt(np.pi)
 
     def _get_warped_variance(self, mean, std, pred_init=None, deg_gauss_hermite=100):
+        """
+        Calculate the warped variance by using Gauss-Hermite quadrature.
+        """
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
         gh_samples = gh_samples[:,None]
         gh_weights = gh_weights[None,:]
@@ -105,13 +107,10 @@ class WarpedGP(GP):
         if self.predict_in_warped_space:
             std = np.sqrt(var)
             if median:
-                #print 'MEDIAN!'
                 wmean = self.warping_function.f_inv(mean, y=pred_init)
             else:
-                #print 'MEAN!'
                 wmean = self._get_warped_mean(mean, std, pred_init=pred_init,
                                               deg_gauss_hermite=deg_gauss_hermite).T
-            #var = self.warping_function.f_inv(var)
             wvar = self._get_warped_variance(mean, std, pred_init=pred_init,
                                              deg_gauss_hermite=deg_gauss_hermite).T
         else:
@@ -146,6 +145,7 @@ class WarpedGP(GP):
 
         return [new_a, new_b]
         #return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+
 
 if __name__ == '__main__':
     X = np.random.randn(100, 1)

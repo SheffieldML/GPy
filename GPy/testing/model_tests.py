@@ -221,7 +221,7 @@ class MiscTests(unittest.TestCase):
  
         np.testing.assert_almost_equal(preds, warp_preds)
 
-    @unittest.skip('Comment this to plot the modified sine function')
+    #@unittest.skip('Comment this to plot the modified sine function')
     def test_warped_gp_sine(self):
         """
         A test replicating the sine regression problem from

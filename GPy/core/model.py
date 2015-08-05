@@ -104,7 +104,7 @@ class Model(Parameterized):
                     raise e
 
         if len(self.optimization_runs):
-            i = np.argmin([o.f_opt for o in self.optimization_runs])
+            i = np.nanargmin([o.f_opt for o in self.optimization_runs])
             self.optimizer_array = self.optimization_runs[i].x_opt
         else:
             self.optimizer_array = initial_parameters

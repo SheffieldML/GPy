@@ -293,3 +293,25 @@ class TanhWarpingFunction_d(WarpingFunction):
         names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] for q in range(self.n_terms)],[])
         names.append('warp_tanh_d')
         return names
+
+
+class IdentityFunction(WarpingFunction):
+    """
+    Identity warping function. This is for testing and sanity check purposes
+    and should not be used in practice.
+    """
+    def __init__(self):
+        self.num_parameters = 0
+        super(IdentityFunction, self).__init__(name='identity')
+        
+    def f(self, y):
+        return y
+
+    def fgrad_y(self, y):
+        return 1.0
+
+    def fgrad_y_psi(self,y):
+        return 1.0
+
+    def f_inv(self,z):
+        return z

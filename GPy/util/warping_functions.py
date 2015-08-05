@@ -211,17 +211,24 @@ class TanhWarpingFunction_d(WarpingFunction):
 
         z = z.copy()
         if y is None:
-            y = np.ones_like(z)
+            y = np.ones_like(z) * 0.1
+            #y = np.zeros_like(z)
 
         it = 0
         update = np.inf
+        #import ipdb; ipdb.set_trace()
 
         while it == 0 or (np.abs(update).sum() > 1e-10 and it < max_iterations):
-            update = (self.f(y) - z)/self.fgrad_y(y)
+            fy = self.f(y)
+            fgrady = self.fgrad_y(y)
+            update = (fy - z)/fgrady
             y -= update
             it += 1
+            #print it
+            #print y
         if it == max_iterations:
             print("WARNING!!! Maximum number of iterations reached in f_inv ")
+            #print np.abs(update)
 
         return y
 
@@ -265,7 +272,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         mpsi = self.psi
 
         w, s, r, d = self.fgrad_y(y, return_precalc = True)
-
+        #print s
         gradients = np.zeros((y.shape[0], y.shape[1], len(mpsi), 4))
         for i in range(len(mpsi)):
             a,b,c  = mpsi[i]
@@ -316,11 +323,10 @@ class IdentityFunction(WarpingFunction):
         return np.ones(y.shape)
 
     def fgrad_y_psi(self, y, return_covar_chain=False):
-        gradients = np.ones((y.shape[0], y.shape[1], len(self.psi), 4))
+        gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
         if return_covar_chain:
             return gradients, gradients
         return gradients
         
-
-    def f_inv(self,z):
+    def f_inv(self, z, y=None):
         return z

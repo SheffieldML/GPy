@@ -69,27 +69,27 @@ class WarpedGP(GP):
     def plot_warping(self):
         self.warping_function.plot(self.Y_untransformed.min(), self.Y_untransformed.max())
 
-    def _get_warped_term(self, mean, var, gh_samples, pred_init=None):
-        arg1 = gh_samples.dot(var.T) * np.sqrt(2)
+    def _get_warped_term(self, mean, std, gh_samples, pred_init=None):
+        arg1 = gh_samples.dot(std.T) * np.sqrt(2)
         arg2 = np.ones(shape=gh_samples.shape).dot(mean.T)
         return self.warping_function.f_inv(arg1 + arg2, y=pred_init)
 
-    def _get_warped_mean(self, mean, var, pred_init=None, deg_gauss_hermite=100):
+    def _get_warped_mean(self, mean, std, pred_init=None, deg_gauss_hermite=100):
         """
         Calculate the warped mean by using Gauss-Hermite quadrature.
         """
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
         gh_samples = gh_samples[:,None]
         gh_weights = gh_weights[None,:]
-        return gh_weights.dot(self._get_warped_term(mean, var, gh_samples)) / np.sqrt(np.pi)
+        return gh_weights.dot(self._get_warped_term(mean, std, gh_samples)) / np.sqrt(np.pi)
 
-    def _get_warped_variance(self, mean, var, pred_init=None, deg_gauss_hermite=100):
+    def _get_warped_variance(self, mean, std, pred_init=None, deg_gauss_hermite=100):
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
         gh_samples = gh_samples[:,None]
         gh_weights = gh_weights[None,:]
-        arg1 = gh_weights.dot(self._get_warped_term(mean, var, gh_samples, 
+        arg1 = gh_weights.dot(self._get_warped_term(mean, std, gh_samples, 
                                                     pred_init=pred_init) ** 2) / np.sqrt(np.pi)
-        arg2 = self._get_warped_mean(mean, var, pred_init=pred_init,
+        arg2 = self._get_warped_mean(mean, std, pred_init=pred_init,
                                      deg_gauss_hermite=deg_gauss_hermite)
         return arg1 - (arg2 ** 2)
 
@@ -103,20 +103,20 @@ class WarpedGP(GP):
         mean, var = self.likelihood.predictive_values(mu, var)
 
         if self.predict_in_warped_space:
+            std = np.sqrt(var)
             if median:
                 #print 'MEDIAN!'
-                wmean = self.warping_function.f_inv(mean,  y=pred_init)
+                wmean = self.warping_function.f_inv(mean, y=pred_init)
             else:
                 #print 'MEAN!'
-                wmean = self._get_warped_mean(mean, var, pred_init=pred_init,
+                wmean = self._get_warped_mean(mean, std, pred_init=pred_init,
                                               deg_gauss_hermite=deg_gauss_hermite).T
             #var = self.warping_function.f_inv(var)
-            wvar = self._get_warped_variance(mean, var, pred_init=pred_init,
+            wvar = self._get_warped_variance(mean, std, pred_init=pred_init,
                                              deg_gauss_hermite=deg_gauss_hermite).T
         else:
             wmean = mean
-            #wvar = var
-            wvar = self.warping_function.f_inv(var)
+            wvar = var
 
         if self.scale_data:
             pred = self._unscale_data(pred)
@@ -138,9 +138,12 @@ class WarpedGP(GP):
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        if not self.predict_in_warped_space:
+            return [a, b]
         #print a.shape
         new_a = self.warping_function.f_inv(a)
         new_b = self.warping_function.f_inv(b)
+
         return [new_a, new_b]
         #return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
 

@@ -75,7 +75,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         X = model.X
     Y = model.Y
 
-    if isinstance(model, WarpedGP):
+    if isinstance(model, WarpedGP) and model.predict_in_warped_space:
         Y = model.Y_untransformed
 
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
@@ -117,7 +117,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                     Y_metadata = {'output_index': extra_data}
                 else:
                     Y_metadata['output_index'] = extra_data
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
+            if isinstance(model, WarpedGP):
+                m, v = model.predict(Xgrid, full_cov=False, median=True, Y_metadata=Y_metadata, **predict_kw)
+                #print np.concatenate((Xgrid, m), axis=1)
+            else:
+                m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
             lower, upper = model.predict_quantiles(Xgrid, Y_metadata=Y_metadata)
 
 

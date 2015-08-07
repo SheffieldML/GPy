@@ -60,9 +60,11 @@ class GP(Model):
             self.normalizer.scale_by(Y)
             self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
             self.Y = Y
-        else:
+        elif isinstance(Y, np.ndarray):
             self.Y = ObsAr(Y)
             self.Y_normalized = self.Y
+        else:
+            self.Y = Y
 
         if Y.shape[0] != self.num_data:
             #There can be cases where we want inputs than outputs, for example if we have multiple latent

@@ -56,19 +56,20 @@ class sde_StdPeriodic(StdPeriodic):
         
         
         w0 = 2*np.pi/self.wavelengths # frequency
+        lengthscales = 2*self.lengthscales         
         
-        [q2,dq2l] = seriescoeff(N,2*self.lengthscales,self.variance)        
+        [q2,dq2l] = seriescoeff(N,lengthscales,self.variance)        
         # lengthscale is multiplied by 2 because of slightly different
         # formula for periodic covariance function.
         # For the same reason:
         
         dq2l = 2*dq2l
         
-        if np.any( np.isnan(q2)):
-            raise ValueError("SDE periodic covariance error1")
+        if np.any( np.isfinite(q2) == False):
+            raise ValueError("SDE periodic covariance error 1")
         
-        if np.any( np.isnan(dq2l)):
-            raise ValueError("SDE periodic covariance error1")
+        if np.any( np.isfinite(dq2l) == False):
+            raise ValueError("SDE periodic covariance error 2")
         
         F    = np.kron(np.diag(range(0,N+1)),np.array( ((0, -w0), (w0, 0)) ) )
         L    = np.eye(2*(N+1))
@@ -159,8 +160,9 @@ def seriescoeff(m=6,lengthScale=1.0,magnSigma2=1.0, true_covariance=False):
         
     else:
         coeffs = 2*magnSigma2*sp.exp( -lengthScale**(-2) ) * special.iv(range(0,m+1),1.0/lengthScale**(2))
-        if np.any( np.isnan(coeffs)):
-            pass
+        if np.any( np.isfinite(coeffs) == False):
+            raise ValueError("sde_standard_periodic: Coefficients are not finite!")
+            #import pdb; pdb.set_trace()
         coeffs[0] = 0.5*coeffs[0]
         
         # Derivatives wrt (lengthScale)

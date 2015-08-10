@@ -31,7 +31,7 @@ from .. import likelihoods
 from . import state_space_main as ssm
 
 class StateSpace(Model):
-    def __init__(self, X, Y, kernel=None, sigma2=1.0, name='StateSpace'):
+    def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', name='StateSpace'):
         super(StateSpace, self).__init__(name=name)
         self.num_data, input_dim = X.shape
         assert input_dim==1, "State space methods for time only"
@@ -42,13 +42,15 @@ class StateSpace(Model):
         assert num_data_Y == self.num_data, "X and Y data don't match"
         assert self.output_dim == 1, "State space methods for single outputs only"
 
+        self.kalman_filter_type = kalman_filter_type
+        
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
         self.X = X[sort_index]
         self.Y = Y[sort_index]
 
         # Noise variance
-        self.likelihood = likelihoods.Gaussian()
+        self.likelihood = likelihoods.Gaussian(variance=noise_var)
         
         # Default kernel
         if kernel is None:
@@ -68,6 +70,7 @@ class StateSpace(Model):
         """
         Parameters have now changed
         """
+
         
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dFt,dQct,dP_inft, dP0t) = self.kern.sde()
@@ -92,9 +95,10 @@ class StateSpace(Model):
         dR = np.zeros([measurement_dim,measurement_dim,grad_params_no])
         dR[:,:,-1] = np.eye(measurement_dim)
 
-        #(F,L,Qc,H,P_inf,dF,dQc,dP_inf) = ssm.balance_ss_model(F,L,Qc,H,P_inf,dF,dQc,dP_inf)
-        # Use the Kalman filter to evaluate the likelihood
+        # Balancing
+        #(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf,dP0) = ssm.balance_ss_model(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf, dP0)
         
+        # Use the Kalman filter to evaluate the likelihood        
         grad_calc_params = {}
         grad_calc_params['dP_inf'] = dP_inf
         grad_calc_params['dF'] = dF
@@ -102,10 +106,12 @@ class StateSpace(Model):
         grad_calc_params['dR'] = dR
         grad_calc_params['dP_init'] = dP0
         
+        kalman_filter_type = self.kalman_filter_type
+        
         (filter_means, filter_covs, log_likelihood, 
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
                                       float(self.Gaussian_noise.variance),P_inf,self.X,self.Y,m_init=None,
-                                      P_init=P0, calc_log_likelihood=True, 
+                                      P_init=P0, p_kalman_filter_type = kalman_filter_type, calc_log_likelihood=True, 
                                       calc_grad_log_likelihood=True, 
                                       grad_params_no=grad_params_no, 
                                       grad_calc_params=grad_calc_params)
@@ -120,7 +126,7 @@ class StateSpace(Model):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, Xnew, Ynew=None, filteronly=False):
+    def _raw_predict(self, Xnew=None, Ynew=None, filteronly=False):
         """
         Performs the actual prediction for new X points.
         Inner function. It is called only from inside this class.
@@ -154,9 +160,15 @@ class StateSpace(Model):
             Ynew = self.Y
 
         # Make a single matrix containing training and testing points
-        X = np.vstack((self.X, Xnew))
-        Y = np.vstack((Ynew, np.nan*np.zeros(Xnew.shape)))
-
+        if Xnew is not None:
+            X = np.vstack((self.X, Xnew))
+            Y = np.vstack((Ynew, np.nan*np.zeros(Xnew.shape)))
+            predict_only_training = False
+        else:
+            X = self.X
+            Y = Ynew
+            predict_only_training = True            
+            
         # Sort the matrix (save the order)
         _, return_index, return_inverse = np.unique(X,True,True)
         X = X[return_index] # TODO they are not used
@@ -170,10 +182,14 @@ class StateSpace(Model):
         #Y = self.Y[:, 0,0]
         # Run the Kalman filter
         #import pdb; pdb.set_trace()
+        
+        kalman_filter_type = self.kalman_filter_type
+        
         (M, P, log_likelihood, 
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(
                                       F,L,Qc,H,float(self.Gaussian_noise.variance),P_inf,self.X,Y,m_init=None,
-                                      P_init=P0, calc_log_likelihood=False, 
+                                      P_init=P0, p_kalman_filter_type = kalman_filter_type, 
+                                      calc_log_likelihood=False, 
                                       calc_grad_log_likelihood=False)                              
         # Run the Rauch-Tung-Striebel smoother
         if not filteronly:
@@ -189,8 +205,9 @@ class StateSpace(Model):
         P = P[return_inverse,:,:]
 
         # Only return the values for Xnew
-        M = M[self.num_data:,:]
-        P = P[self.num_data:,:,:]
+        if not predict_only_training:
+            M = M[self.num_data:,:]
+            P = P[self.num_data:,:,:]
 
         # Calculate the mean and variance
         m = np.dot(M,H.T)
@@ -201,7 +218,7 @@ class StateSpace(Model):
         # Return the posterior of the state
         return (m, V)
 
-    def predict(self, Xnew, filteronly=False):
+    def predict(self, Xnew=None, filteronly=False):
 
         # Run the Kalman filter to get the state
         (m, V) = self._raw_predict(Xnew,filteronly=filteronly)
@@ -216,7 +233,7 @@ class StateSpace(Model):
         # Return mean and variance
         return (m, V, lower, upper)
         
-    def predict_quantiles(self, Xnew, quantiles=(2.5, 97.5)):
+    def predict_quantiles(self, Xnew=None, quantiles=(2.5, 97.5)):
         mu, var = self._raw_predict(Xnew)
         #import pdb; pdb.set_trace()
         return  [stats.norm.ppf(q/100.)*np.sqrt(var + float(self.Gaussian_noise.variance)) + mu for q in quantiles]

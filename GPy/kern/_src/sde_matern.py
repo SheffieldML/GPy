@@ -38,11 +38,11 @@ class sde_Matern32(Matern32):
         lengthscale = float(self.lengthscale.values)
         
         foo  = np.sqrt(3.)/lengthscale 
-        F    = np.array(((0, 1), (-foo**2, -2*foo))) 
-        L    = np.array(( (0,), (1,) ))
+        F    = np.array(((0, 1.0), (-foo**2, -2*foo))) 
+        L    = np.array(( (0,), (1.0,) ))
         Qc   = np.array(((12.*np.sqrt(3) / lengthscale**3 * variance,),)) 
-        H    = np.array(((1, 0),)) 
-        Pinf = np.array(((variance, 0), (0, 3.*variance/(lengthscale**2))))
+        H    = np.array(((1.0, 0),)) 
+        Pinf = np.array(((variance, 0.0), (0.0, 3.*variance/(lengthscale**2))))
         P0 = Pinf.copy()
         
         # Allocate space for the derivatives 

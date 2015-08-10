@@ -68,7 +68,7 @@ class sde_RBF(RBF):
         
         # Infinite covariance:
         Pinf = sp.linalg.solve_lyapunov(F, -np.dot(L,np.dot( Qc[0,0],L.T)))
-        
+        Pinf = 0.5*(Pinf + Pinf.T)
         # Allocating space for derivatives        
         dF    = np.empty([F.shape[0],F.shape[1],2])
         dQc   = np.empty([Qc.shape[0],Qc.shape[1],2]) 
@@ -96,12 +96,13 @@ class sde_RBF(RBF):
         dPinf[:,:,0] = dPinf_variance 
         dPinf[:,:,1] = dPinf_lengthscale
         
-        # Benefits of this are unjustified
-        #import GPy.models.state_space_main as ssm
-        #(F, L, Qc, H, Pinf, dF, dQc, dPinf,T) = ssm.balance_ss_model(F, L, Qc, H, Pinf, dF, dQc, dPinf)
-        
         P0 = Pinf.copy()
         dP0 = dPinf.copy()
+        
+        # Benefits of this are not very sound. Helps only in one case:
+        # SVD Kalman + RBF kernel
+        import GPy.models.state_space_main as ssm
+        (F, L, Qc, H, Pinf, P0, dF, dQc, dPinf,dP0, T) = ssm.balance_ss_model(F, L, Qc, H, Pinf, P0, dF, dQc, dPinf, dP0 )
         
         return (F, L, Qc, H, Pinf, P0, dF, dQc, dPinf, dP0)
 

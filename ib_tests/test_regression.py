@@ -34,3 +34,4 @@ if __name__ == '__main__':
         ax = fig.add_subplot(samples.shape[1], 1, i + 1)
         ax.plot(samples[:, i], linewidth=1.5)
     plt.show(block=True)
+

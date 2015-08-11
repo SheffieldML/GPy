@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from domains import _POSITIVE,_NEGATIVE, _BOUNDED
+from .domains import _POSITIVE,_NEGATIVE, _BOUNDED
 import weakref
 
 import sys
@@ -31,6 +31,16 @@ class Transformation(object):
         raise NotImplementedError
     def finv(self, model_param):
         raise NotImplementedError
+    def log_jacobian(self, model_param):
+        """
+        compute the log of the jacobian of f, evaluated at f(x)= model_param
+        """
+        raise NotImplementedError
+    def log_jacobian_grad(self, model_param):
+        """
+        compute the drivative of the log of the jacobian of f, evaluated at f(x)= model_param
+        """
+        raise NotImplementedError
     def gradfactor(self, model_param, dL_dmodel_param):
         """ df(opt_param)_dopt_param evaluated at self.f(opt_param)=model_param, times the gradient dL_dmodel_param,
 
@@ -42,6 +52,8 @@ class Transformation(object):
             \frac{\frac{\partial L}{\partial f}\left(\left.\partial f(x)}{\partial x}\right|_{x=f^{-1}(f)\right)}
         """
         raise NotImplementedError
+    def gradfactor_non_natural(self, model_param, dL_dmodel_param):
+        return self.gradfactor(model_param, dL_dmodel_param)
     def initialize(self, f):
         """ produce a sensible initial value for f(x)"""
         raise NotImplementedError
@@ -50,7 +62,7 @@ class Transformation(object):
         import matplotlib.pyplot as plt
         from ...plotting.matplot_dep import base_plots
         x = np.linspace(-8,8)
-        base_plots.meanplot(x, self.f(x),axes=axes*args,**kw)
+        base_plots.meanplot(x, self.f(x), *args, ax=axes, **kw)
         axes = plt.gca()
         axes.set_xlabel(xlabel)
         axes.set_ylabel(ylabel)
@@ -70,15 +82,41 @@ class Logexp(Transformation):
         return np.einsum('i,i->i', df, np.where(f>_lim_val, 1., 1. - np.exp(-f)))
     def initialize(self, f):
         if np.any(f < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
         return np.abs(f)
+    def log_jacobian(self, model_param):
+        return np.where(model_param>_lim_val, model_param, np.log(np.exp(model_param+1e-20) - 1.)) - model_param
+    def log_jacobian_grad(self, model_param):
+        return 1./(np.exp(model_param)-1.)
+    def __str__(self):
+        return '+ve'
+
+class Exponent(Transformation):
+    domain = _POSITIVE
+    def f(self, x):
+        return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
+    def finv(self, x):
+        return np.log(x)
+    def gradfactor(self, f, df):
+        return np.einsum('i,i->i', df, f)
+    def initialize(self, f):
+        if np.any(f < 0.):
+            print("Warning: changing parameters to satisfy constraints")
+        return np.abs(f)
+    def log_jacobian(self, model_param):
+        return np.log(model_param)
+    def log_jacobian_grad(self, model_param):
+        return 1./model_param
     def __str__(self):
         return '+ve'
 
 
+
 class NormalTheta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -98,6 +136,7 @@ class NormalTheta(Transformation):
         # that the values are ok
         # Before:
         theta[self.var_indices] = np.abs(-.5/theta[self.var_indices])
+        #theta[self.var_indices] = np.exp(-.5/theta[self.var_indices])
         theta[self.mu_indices] *= theta[self.var_indices]
         return theta # which is now {mu, var}
 
@@ -106,6 +145,7 @@ class NormalTheta(Transformation):
         varp = muvar[self.var_indices]
         muvar[self.mu_indices] /= varp
         muvar[self.var_indices] = -.5/varp
+        #muvar[self.var_indices] = -.5/np.log(varp)
 
         return muvar # which is now {theta1, theta2}
 
@@ -124,7 +164,7 @@ class NormalTheta(Transformation):
 
     def initialize(self, f):
         if np.any(f[self.var_indices] < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
             f[self.var_indices] = np.abs(f[self.var_indices])
         return f
 
@@ -139,9 +179,10 @@ class NormalTheta(Transformation):
         self.var_indices = state[1]
 
 class NormalNaturalAntti(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    _logexp = Logexp()
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -170,7 +211,7 @@ class NormalNaturalAntti(NormalTheta):
 
     def initialize(self, f):
         if np.any(f[self.var_indices] < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
             f[self.var_indices] = np.abs(f[self.var_indices])
         return f
 
@@ -178,8 +219,10 @@ class NormalNaturalAntti(NormalTheta):
         return "natantti"
 
 class NormalEta(Transformation):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -211,7 +254,7 @@ class NormalEta(Transformation):
 
     def initialize(self, f):
         if np.any(f[self.var_indices] < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
             f[self.var_indices] = np.abs(f[self.var_indices])
         return f
 
@@ -219,8 +262,10 @@ class NormalEta(Transformation):
         return "eta"
 
 class NormalNaturalThroughTheta(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -250,13 +295,28 @@ class NormalNaturalThroughTheta(NormalTheta):
         #=======================================================================
         return dmuvar # which is now the gradient multiplicator
 
+    def gradfactor_non_natural(self, muvar, dmuvar):
+        mu = muvar[self.mu_indices]
+        var = muvar[self.var_indices]
+        #=======================================================================
+        # theta gradients
+        # This works and the gradient checks!
+        dmuvar[self.mu_indices] *= var
+        dmuvar[self.var_indices] *= 2*(var)**2
+        dmuvar[self.var_indices] += 2*dmuvar[self.mu_indices]*mu
+        #=======================================================================
+
+        return dmuvar # which is now the gradient multiplicator for {theta1, theta2}
+
     def __str__(self):
         return "natgrad"
 
 
 class NormalNaturalWhooot(NormalTheta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -290,8 +350,10 @@ class NormalNaturalWhooot(NormalTheta):
         return "natgrad"
 
 class NormalNaturalThroughEta(NormalEta):
+    "Do not use, not officially supported!"
     _instances = []
-    def __new__(cls, mu_indices, var_indices):
+    def __new__(cls, mu_indices=None, var_indices=None):
+        "Do not use, not officially supported!"
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
@@ -332,7 +394,7 @@ class LogexpNeg(Transformation):
         return np.einsum('i,i->i', df, np.where(f>_lim_val, -1, -1 + np.exp(-f)))
     def initialize(self, f):
         if np.any(f < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
         return np.abs(f)
     def __str__(self):
         return '+ve'
@@ -384,26 +446,10 @@ class LogexpClipped(Logexp):
         return np.einsum('i,i->i', df, gf) # np.where(f < self.lower, 0, gf)
     def initialize(self, f):
         if np.any(f < 0.):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
         return np.abs(f)
     def __str__(self):
         return '+ve_c'
-
-class Exponent(Transformation):
-    # TODO: can't allow this to go to zero, need to set a lower bound. Similar with negative Exponent below. See old MATLAB code.
-    domain = _POSITIVE
-    def f(self, x):
-        return np.where(x<_lim_val, np.where(x>-_lim_val, np.exp(x), np.exp(-_lim_val)), np.exp(_lim_val))
-    def finv(self, x):
-        return np.log(x)
-    def gradfactor(self, f, df):
-        return np.einsum('i,i->i', df, f)
-    def initialize(self, f):
-        if np.any(f < 0.):
-            print "Warning: changing parameters to satisfy constraints"
-        return np.abs(f)
-    def __str__(self):
-        return '+ve'
 
 class NegativeExponent(Exponent):
     domain = _NEGATIVE
@@ -440,7 +486,11 @@ class Logistic(Transformation):
             for instance in cls._instances:
                 if instance().lower == lower and instance().upper == upper:
                     return instance()
-        o = super(Transformation, cls).__new__(cls, lower, upper, *args, **kwargs)
+        newfunc = super(Transformation, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, lower, upper, *args, **kwargs)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
     def __init__(self, lower, upper):
@@ -458,7 +508,7 @@ class Logistic(Transformation):
         return np.einsum('i,i->i', df, (f - self.lower) * (self.upper - f) / self.difference)
     def initialize(self, f):
         if np.any(np.logical_or(f < self.lower, f > self.upper)):
-            print "Warning: changing parameters to satisfy constraints"
+            print("Warning: changing parameters to satisfy constraints")
         #return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(f * 0.), f)
         #FIXME: Max, zeros_like right?
         return np.where(np.logical_or(f < self.lower, f > self.upper), self.f(np.zeros_like(f)), f)

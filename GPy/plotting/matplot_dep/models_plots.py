@@ -17,12 +17,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
-<<<<<<< HEAD
         linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None, data_symbol='kx',
         apply_link=False, samples_f=0, plot_uncertain_inputs=True, predict_kw=None):
-=======
-        linecol='#3300FF',fillcol='#00FFFF', Y_metadata=None, data_symbol='kx'):
->>>>>>> e115778d743c8979af2a10143e33861b88fb883a
     """
     Plot the posterior of the GP.
       - In one dimension, the function is plotted with a shaded region identifying two standard deviations.

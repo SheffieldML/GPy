@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 try:
-    import Tango
+#    import Tango
     import pylab as pb
 except:
     pass
@@ -17,8 +17,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
+<<<<<<< HEAD
         linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None, data_symbol='kx',
         apply_link=False, samples_f=0, plot_uncertain_inputs=True, predict_kw=None):
+=======
+        linecol='#3300FF',fillcol='#00FFFF', Y_metadata=None, data_symbol='kx'):
+>>>>>>> e115778d743c8979af2a10143e33861b88fb883a
     """
     Plot the posterior of the GP.
       - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -126,7 +130,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             print Ysim.shape
             print Xnew.shape
             for yi in Ysim.T:
-                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], '#3300FF', linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
         if samples_f: #NOTE not tested with fixed_inputs

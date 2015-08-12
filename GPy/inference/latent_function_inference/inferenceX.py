@@ -66,7 +66,7 @@ class InferenceX(Model):
             from ...models.ss_mrd import IBPPrior_SSMRD
             if isinstance(model.variational_prior, IBPPrior) or isinstance(model.variational_prior, IBPPrior_SSMRD):
                 from ...core.parameterization.variational import SpikeAndSlabPrior
-                self.variational_prior = SpikeAndSlabPrior(pi=05,learnPi=False, group_spike=False)
+                self.variational_prior = SpikeAndSlabPrior(pi=0.5, learnPi=False, group_spike=False)
             else:
                 self.variational_prior = model.variational_prior.copy()
         else:

@@ -7,6 +7,6 @@ from .parameterization.param import Param, ParamConcatenation
 from .parameterization.observable_array import ObsAr
 
 from .gp import GP
-#from .svgp import SVGP
+from .svgp import SVGP
 from .sparse_gp import SparseGP
 from .mapping import *

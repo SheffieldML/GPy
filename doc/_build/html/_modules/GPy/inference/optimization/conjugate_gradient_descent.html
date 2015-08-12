@@ -1,0 +1,378 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.optimization.conjugate_gradient_descent &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.optimization.conjugate_gradient_descent</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014, Max Zwiessele</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">from</span> <span class="nn">gradient_descent_update_rules</span> <span class="kn">import</span> <span class="n">FletcherReeves</span><span class="p">,</span> \
+    <span class="n">PolakRibiere</span>
+<span class="kn">from</span> <span class="nn">Queue</span> <span class="kn">import</span> <span class="n">Empty</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Value</span>
+<span class="kn">from</span> <span class="nn">multiprocessing.queues</span> <span class="kn">import</span> <span class="n">Queue</span>
+<span class="kn">from</span> <span class="nn">multiprocessing.synchronize</span> <span class="kn">import</span> <span class="n">Event</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize.linesearch</span> <span class="kn">import</span> <span class="n">line_search_wolfe1</span><span class="p">,</span> <span class="n">line_search_wolfe2</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Thread</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">RUNNING</span> <span class="o">=</span> <span class="s">&quot;running&quot;</span>
+<span class="n">CONVERGED</span> <span class="o">=</span> <span class="s">&quot;converged&quot;</span>
+<span class="n">MAXITER</span> <span class="o">=</span> <span class="s">&quot;maximum number of iterations reached&quot;</span>
+<span class="n">MAX_F_EVAL</span> <span class="o">=</span> <span class="s">&quot;maximum number of function calls reached&quot;</span>
+<span class="n">LINE_SEARCH</span> <span class="o">=</span> <span class="s">&quot;line search failed&quot;</span>
+<span class="n">KBINTERRUPT</span> <span class="o">=</span> <span class="s">&quot;interrupted&quot;</span>
+
+<span class="k">class</span> <span class="nc">_Async_Optimization</span><span class="p">(</span><span class="n">Thread</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">update_rule</span><span class="p">,</span> <span class="n">runsignal</span><span class="p">,</span> <span class="n">SENTINEL</span><span class="p">,</span>
+                 <span class="n">report_every</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span> <span class="n">max_f_eval</span><span class="o">=</span><span class="mf">15e3</span><span class="p">,</span>
+                 <span class="n">gtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">outqueue</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper Process class for async optimization</span>
+<span class="sd">        </span>
+<span class="sd">        f_call and df_call are Multiprocessing Values, for synchronized assignment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span> <span class="o">=</span> <span class="n">Value</span><span class="p">(</span><span class="s">&#39;i&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_call</span> <span class="o">=</span> <span class="n">Value</span><span class="p">(</span><span class="s">&#39;i&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_wrapper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_call</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_rule</span> <span class="o">=</span> <span class="n">update_rule</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">report_every</span> <span class="o">=</span> <span class="n">report_every</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">messages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxiter</span> <span class="o">=</span> <span class="n">maxiter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span> <span class="o">=</span> <span class="n">max_f_eval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="o">=</span> <span class="n">gtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SENTINEL</span> <span class="o">=</span> <span class="n">SENTINEL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span> <span class="o">=</span> <span class="n">runsignal</span>
+<span class="c">#         self.parent = parent</span>
+<span class="c">#         self.result = None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outq</span> <span class="o">=</span> <span class="n">outqueue</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_Async_Optimization</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+                                            <span class="n">name</span><span class="o">=</span><span class="s">&quot;CG Optimization&quot;</span><span class="p">,</span>
+                                            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+<span class="c">#     def __enter__(self):</span>
+<span class="c">#         return self</span>
+<span class="c">#</span>
+<span class="c">#     def __exit__(self, type, value, traceback):</span>
+<span class="c">#         return isinstance(value, TypeError)</span>
+
+    <span class="k">def</span> <span class="nf">f_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">counter</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">f_w</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">counter</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f_w</span>
+
+    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">outq</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="c">#         self.parent and self.parent.callback(*a, **kw)</span>
+        <span class="k">pass</span>
+        <span class="c"># print &quot;callback done&quot;</span>
+
+    <span class="k">def</span> <span class="nf">callback_return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">outq</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SENTINEL</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Overwrite this with optimization (for async use)&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">_CGDAsync</span><span class="p">(</span><span class="n">_Async_Optimization</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">gi</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">si</span> <span class="o">=</span> <span class="n">gi</span>
+        <span class="n">ur</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_rule</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gi</span><span class="p">,</span> <span class="n">ur</span><span class="p">,</span> <span class="n">si</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">RUNNING</span>
+
+        <span class="n">fi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">fi_old</span> <span class="o">=</span> <span class="n">fi</span> <span class="o">+</span> <span class="mi">5000</span>
+
+        <span class="n">gi</span><span class="p">,</span> <span class="n">ur</span><span class="p">,</span> <span class="n">si</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x0</span>
+        <span class="n">xi_old</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">it</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxiter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="k">break</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">MAX_F_EVAL</span>
+
+            <span class="n">gi</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">gi</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">gi</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">CONVERGED</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">gi</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">gi</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">xi_old</span><span class="p">)):</span>
+                    <span class="n">status</span> <span class="o">=</span> <span class="n">CONVERGED</span>
+                    <span class="k">break</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">xi_old</span><span class="p">)</span>
+
+            <span class="n">gammai</span> <span class="o">=</span> <span class="n">ur</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">gammai</span> <span class="o">&lt;</span> <span class="mf">1e-6</span> <span class="ow">or</span> <span class="n">it</span> <span class="o">%</span> <span class="n">xi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">gi</span><span class="p">,</span> <span class="n">ur</span><span class="p">,</span> <span class="n">si</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+            <span class="n">si</span> <span class="o">=</span> <span class="n">gi</span> <span class="o">+</span> <span class="n">gammai</span> <span class="o">*</span> <span class="n">si</span>
+            <span class="n">alphai</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">fi2</span><span class="p">,</span> <span class="n">fi_old2</span><span class="p">,</span> <span class="n">gfi</span> <span class="o">=</span> <span class="n">line_search_wolfe1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span>
+                                                                 <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span>
+                                                                 <span class="n">xi</span><span class="p">,</span>
+                                                                 <span class="n">si</span><span class="p">,</span> <span class="n">gi</span><span class="p">,</span>
+                                                                 <span class="n">fi</span><span class="p">,</span> <span class="n">fi_old</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">alphai</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">alphai</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">fi2</span><span class="p">,</span> <span class="n">fi_old2</span><span class="p">,</span> <span class="n">gfi</span> <span class="o">=</span> \
+                         <span class="n">line_search_wolfe2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span>
+                                            <span class="n">xi</span><span class="p">,</span> <span class="n">si</span><span class="p">,</span> <span class="n">gi</span><span class="p">,</span>
+                                            <span class="n">fi</span><span class="p">,</span> <span class="n">fi_old</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">alphai</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="c"># This line search also failed to find a better solution.</span>
+                    <span class="n">status</span> <span class="o">=</span> <span class="n">LINE_SEARCH</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">fi2</span> <span class="o">&lt;</span> <span class="n">fi</span><span class="p">:</span>
+                <span class="n">fi</span><span class="p">,</span> <span class="n">fi_old</span> <span class="o">=</span> <span class="n">fi2</span><span class="p">,</span> <span class="n">fi_old2</span>
+            <span class="k">if</span> <span class="n">gfi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">gi</span> <span class="o">=</span> <span class="n">gfi</span>
+
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fi</span><span class="p">)</span> <span class="ow">or</span> <span class="n">fi_old</span> <span class="o">&lt;</span> <span class="n">fi</span><span class="p">:</span>
+                <span class="n">gi</span><span class="p">,</span> <span class="n">ur</span><span class="p">,</span> <span class="n">si</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">xi</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">alphai</span><span class="p">,</span> <span class="n">si</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">:</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;iteration: {0:&gt; 6g}  f:{1:&gt; 12e}  |g|:{2:&gt; 12e}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">fi</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">gi</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">gi</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="n">it</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">report_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">fi</span><span class="p">,</span> <span class="n">gi</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+            <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">MAXITER</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callback_return</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">fi</span><span class="p">,</span> <span class="n">gi</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">xi</span><span class="p">,</span> <span class="n">fi</span><span class="p">,</span> <span class="n">gi</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_call</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">status</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Async_Optimize"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.Async_Optimize">[docs]</a><span class="k">class</span> <span class="nc">Async_Optimize</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">callback</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">x</span><span class="p">:</span> <span class="bp">None</span>
+    <span class="n">runsignal</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+    <span class="n">SENTINEL</span> <span class="o">=</span> <span class="s">&quot;SENTINEL&quot;</span>
+
+<div class="viewcode-block" id="Async_Optimize.async_callback_collect"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.Async_Optimize.async_callback_collect">[docs]</a>    <span class="k">def</span> <span class="nf">async_callback_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ret</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">SENTINEL</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="o">*</span><span class="n">ret</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">Empty</span><span class="p">:</span>
+                <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Async_Optimize.opt_async"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.Async_Optimize.opt_async">[docs]</a>    <span class="k">def</span> <span class="nf">opt_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">PolakRibiere</span><span class="p">,</span>
+                   <span class="n">messages</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span> <span class="n">max_f_eval</span><span class="o">=</span><span class="mf">15e3</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+                   <span class="n">report_every</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">outqueue</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">outqueue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">callback</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">async_callback_collect</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">outqueue</span><span class="p">,))</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">_CGDAsync</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">update_rule</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SENTINEL</span><span class="p">,</span>
+                 <span class="n">report_every</span><span class="o">=</span><span class="n">report_every</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">maxiter</span><span class="p">,</span>
+                 <span class="n">max_f_eval</span><span class="o">=</span><span class="n">max_f_eval</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="n">gtol</span><span class="p">,</span> <span class="n">outqueue</span><span class="o">=</span><span class="n">outqueue</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span>
+</div>
+<div class="viewcode-block" id="Async_Optimize.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.Async_Optimize.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">FletcherReeves</span><span class="p">,</span>
+                   <span class="n">messages</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span> <span class="n">max_f_eval</span><span class="o">=</span><span class="mf">15e3</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+                   <span class="n">report_every</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">p</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_async</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">update_rule</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span>
+                            <span class="n">maxiter</span><span class="p">,</span> <span class="n">max_f_eval</span><span class="p">,</span> <span class="n">gtol</span><span class="p">,</span>
+                            <span class="n">report_every</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+                <span class="c"># print &quot;^C&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">runsignal</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+<span class="c">#             self.runsignal.set()</span>
+<span class="c">#             while self.runsignal.is_set():</span>
+<span class="c">#                 try:</span>
+<span class="c">#                     c.join(.1)</span>
+<span class="c">#                 except KeyboardInterrupt:</span>
+<span class="c">#                     # print &quot;^C&quot;</span>
+<span class="c">#                     self.runsignal.clear()</span>
+<span class="c">#                     c.join()</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: callback still running, optimisation done!&quot;</span>
+        <span class="k">return</span> <span class="n">p</span><span class="o">.</span><span class="n">result</span>
+</div></div>
+<div class="viewcode-block" id="CGD"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.CGD">[docs]</a><span class="k">class</span> <span class="nc">CGD</span><span class="p">(</span><span class="n">Async_Optimize</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Conjugate gradient descent algorithm to minimize</span>
+<span class="sd">    function f with gradients df, starting at x0</span>
+<span class="sd">    with update rule update_rule</span>
+<span class="sd">    </span>
+<span class="sd">    if df returns tuple (grad, natgrad) it will optimize according </span>
+<span class="sd">    to natural gradient rules</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;Conjugate Gradient Descent&quot;</span>
+
+<div class="viewcode-block" id="CGD.opt_async"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.CGD.opt_async">[docs]</a>    <span class="k">def</span> <span class="nf">opt_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        opt_async(self, f, df, x0, callback, update_rule=FletcherReeves,</span>
+<span class="sd">               messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,</span>
+<span class="sd">               report_every=10, \*args, \*\*kwargs)</span>
+<span class="sd">        </span>
+<span class="sd">        callback gets called every `report_every` iterations</span>
+
+<span class="sd">            callback(xi, fi, gi, iteration, function_calls, gradient_calls, status_message)</span>
+<span class="sd">        </span>
+<span class="sd">        if df returns tuple (grad, natgrad) it will optimize according </span>
+<span class="sd">        to natural gradient rules</span>
+<span class="sd">    </span>
+<span class="sd">        f, and df will be called with</span>
+<span class="sd">            </span>
+<span class="sd">            f(xi, \*args, \*\*kwargs)</span>
+<span class="sd">            df(xi, \*args, \*\*kwargs)</span>
+<span class="sd">        </span>
+<span class="sd">        **Returns:**</span>
+<span class="sd">        </span>
+<span class="sd">            Started `Process` object, optimizing asynchronously </span>
+<span class="sd">        </span>
+<span class="sd">        **Calls:** </span>
+<span class="sd">        </span>
+<span class="sd">            callback(x_opt, f_opt, g_opt, iteration, function_calls, gradient_calls, status_message)</span>
+<span class="sd">        </span>
+<span class="sd">        at end of optimization!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">CGD</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">opt_async</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="CGD.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.conjugate_gradient_descent.CGD.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        opt(self, f, df, x0, callback=None, update_rule=FletcherReeves,</span>
+<span class="sd">               messages=0, maxiter=5e3, max_f_eval=15e3, gtol=1e-6,</span>
+<span class="sd">               report_every=10, \*args, \*\*kwargs)</span>
+<span class="sd">        </span>
+<span class="sd">        Minimize f, calling callback every `report_every` iterations with following syntax:</span>
+<span class="sd">        </span>
+<span class="sd">            callback(xi, fi, gi, iteration, function_calls, gradient_calls, status_message)</span>
+<span class="sd">        </span>
+<span class="sd">        if df returns tuple (grad, natgrad) it will optimize according </span>
+<span class="sd">        to natural gradient rules</span>
+<span class="sd">    </span>
+<span class="sd">        f, and df will be called with</span>
+<span class="sd">            </span>
+<span class="sd">            f(xi, \*args, \*\*kwargs)</span>
+<span class="sd">            df(xi, \*args, \*\*kwargs)</span>
+<span class="sd">                </span>
+<span class="sd">        **returns** </span>
+<span class="sd">        </span>
+<span class="sd">            x_opt, f_opt, g_opt, iteration, function_calls, gradient_calls, status_message</span>
+<span class="sd">        </span>
+<span class="sd">        at end of optimization</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">CGD</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

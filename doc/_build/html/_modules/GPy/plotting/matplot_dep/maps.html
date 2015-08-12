@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.plotting.matplot_dep.maps &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.plotting.matplot_dep.maps</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Polygon</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.collections</span> <span class="kn">import</span> <span class="n">PatchCollection</span>
+    <span class="c">#from matplotlib import cm</span>
+    <span class="n">pb</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<div class="viewcode-block" id="plot"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.plot">[docs]</a><span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="n">shape_records</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="s">&#39;w&#39;</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span><span class="n">linewidths</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">xlims</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">ylims</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the geometry of a shapefile</span>
+
+<span class="sd">    :param shape_records: geometry and attributes list</span>
+<span class="sd">    :type shape_records: ShapeRecord object (output of a shapeRecords() method)</span>
+<span class="sd">    :param facecolor: color to be used to fill in polygons</span>
+<span class="sd">    :param edgecolor: color to be used for lines</span>
+<span class="sd">    :param ax: axes to plot on.</span>
+<span class="sd">    :type ax: axes handle</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#Axes handle</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span>     <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span>      <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="c">#Iterate over shape_records</span>
+    <span class="k">for</span> <span class="n">srec</span> <span class="ow">in</span> <span class="n">shape_records</span><span class="p">:</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">srec</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">sparts</span> <span class="o">=</span> <span class="n">srec</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">parts</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sparts</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="n">polygs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pj</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sparts</span><span class="p">)):</span>
+            <span class="n">polygs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Polygon</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">par</span><span class="p">[</span><span class="n">pj</span><span class="p">]:</span><span class="n">par</span><span class="p">[</span><span class="n">pj</span><span class="o">+</span><span class="mi">1</span><span class="p">]]))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">polygs</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="n">linewidths</span><span class="p">))</span>
+
+    <span class="c">#Plot limits</span>
+    <span class="n">_box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">srec</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">bbox</span> <span class="k">for</span> <span class="n">srec</span> <span class="ow">in</span> <span class="n">shape_records</span><span class="p">])</span>
+    <span class="n">minx</span><span class="p">,</span><span class="n">miny</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">_box</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">maxx</span><span class="p">,</span><span class="n">maxy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">_box</span><span class="p">[:,</span><span class="mi">2</span><span class="p">:],</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">xlims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">minx</span><span class="p">,</span><span class="n">maxx</span> <span class="o">=</span> <span class="n">xlims</span>
+    <span class="k">if</span> <span class="n">ylims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">miny</span><span class="p">,</span><span class="n">maxy</span> <span class="o">=</span> <span class="n">ylims</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="string_match"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.string_match">[docs]</a><span class="k">def</span> <span class="nf">string_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">regex</span><span class="p">,</span><span class="n">field</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the geometry and attributes of a shapefile whose fields match a regular expression given</span>
+
+<span class="sd">    :param sf: shapefile</span>
+<span class="sd">    :type sf: shapefile object</span>
+<span class="sd">    :regex: regular expression to match</span>
+<span class="sd">    :type regex: string</span>
+<span class="sd">    :field: field number to be matched with the regex</span>
+<span class="sd">    :type field: integer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">shape_records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">shapeRecords</span><span class="p">()):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span><span class="n">rec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">record</span><span class="p">[</span><span class="n">field</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">shape_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">index</span><span class="p">,</span><span class="n">shape_records</span>
+</div>
+<div class="viewcode-block" id="bbox_match"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.bbox_match">[docs]</a><span class="k">def</span> <span class="nf">bbox_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">bbox</span><span class="p">,</span><span class="n">inside_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the geometry and attributes of a shapefile that lie within (or intersect) a bounding box</span>
+
+<span class="sd">    :param sf: shapefile</span>
+<span class="sd">    :type sf: shapefile object</span>
+<span class="sd">    :param bbox: bounding box</span>
+<span class="sd">    :type bbox: list of floats [x_min,y_min,x_max,y_max]</span>
+<span class="sd">    :inside_only: True if the objects returned are those that lie within the bbox and False if the objects returned are any that intersect the bbox</span>
+<span class="sd">    :type inside_only: Boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span> <span class="o">=</span> <span class="n">bbox</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">shape_records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">shapeRecords</span><span class="p">()):</span>
+        <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">d</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">bbox</span>
+        <span class="k">if</span> <span class="n">inside_only</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">A</span> <span class="o">&lt;=</span> <span class="n">a</span> <span class="ow">and</span> <span class="n">B</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="ow">and</span> <span class="n">C</span> <span class="o">&gt;=</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">D</span> <span class="o">&gt;=</span> <span class="n">d</span><span class="p">:</span>
+                <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">shape_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cond1</span> <span class="o">=</span> <span class="n">A</span> <span class="o">&lt;=</span> <span class="n">a</span> <span class="ow">and</span> <span class="n">B</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="ow">and</span> <span class="n">C</span> <span class="o">&gt;=</span> <span class="n">a</span> <span class="ow">and</span> <span class="n">D</span> <span class="o">&gt;=</span> <span class="n">b</span>
+            <span class="n">cond2</span> <span class="o">=</span> <span class="n">A</span> <span class="o">&lt;=</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">B</span> <span class="o">&lt;=</span> <span class="n">d</span> <span class="ow">and</span> <span class="n">C</span> <span class="o">&gt;=</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">D</span> <span class="o">&gt;=</span> <span class="n">d</span>
+            <span class="n">cond3</span> <span class="o">=</span> <span class="n">A</span> <span class="o">&lt;=</span> <span class="n">a</span> <span class="ow">and</span> <span class="n">D</span> <span class="o">&gt;=</span> <span class="n">d</span> <span class="ow">and</span> <span class="n">C</span> <span class="o">&gt;=</span> <span class="n">a</span> <span class="ow">and</span> <span class="n">B</span> <span class="o">&lt;=</span> <span class="n">d</span>
+            <span class="n">cond4</span> <span class="o">=</span> <span class="n">A</span> <span class="o">&lt;=</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">D</span> <span class="o">&gt;=</span> <span class="n">b</span> <span class="ow">and</span> <span class="n">C</span> <span class="o">&gt;=</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">B</span> <span class="o">&lt;=</span> <span class="n">b</span>
+            <span class="n">cond5</span> <span class="o">=</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">C</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="n">B</span> <span class="ow">and</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="n">D</span>
+            <span class="n">cond6</span> <span class="o">=</span> <span class="n">c</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="n">B</span> <span class="ow">and</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="n">D</span>
+            <span class="n">cond7</span> <span class="o">=</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">B</span> <span class="ow">and</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">&gt;=</span> <span class="n">C</span>
+            <span class="n">cond8</span> <span class="o">=</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="n">D</span> <span class="ow">and</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">A</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">&gt;=</span> <span class="n">C</span>
+            <span class="k">if</span> <span class="n">cond1</span> <span class="ow">or</span> <span class="n">cond2</span> <span class="ow">or</span> <span class="n">cond3</span> <span class="ow">or</span> <span class="n">cond4</span> <span class="ow">or</span> <span class="n">cond5</span> <span class="ow">or</span> <span class="n">cond6</span> <span class="ow">or</span> <span class="n">cond7</span> <span class="ow">or</span> <span class="n">cond8</span><span class="p">:</span>
+                <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">shape_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">index</span><span class="p">,</span><span class="n">shape_records</span>
+
+</div>
+<div class="viewcode-block" id="plot_bbox"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.plot_bbox">[docs]</a><span class="k">def</span> <span class="nf">plot_bbox</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">bbox</span><span class="p">,</span><span class="n">inside_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the geometry of a shapefile within a bbox</span>
+
+<span class="sd">    :param sf: shapefile</span>
+<span class="sd">    :type sf: shapefile object</span>
+<span class="sd">    :param bbox: bounding box</span>
+<span class="sd">    :type bbox: list of floats [x_min,y_min,x_max,y_max]</span>
+<span class="sd">    :inside_only: True if the objects returned are those that lie within the bbox and False if the objects returned are any that intersect the bbox</span>
+<span class="sd">    :type inside_only: Boolean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index</span><span class="p">,</span><span class="n">shape_records</span> <span class="o">=</span> <span class="n">bbox_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">bbox</span><span class="p">,</span><span class="n">inside_only</span><span class="p">)</span>
+    <span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span> <span class="o">=</span> <span class="n">bbox</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">shape_records</span><span class="p">,</span><span class="n">xlims</span><span class="o">=</span><span class="p">[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="n">ylims</span><span class="o">=</span><span class="p">[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span>
+</div>
+<div class="viewcode-block" id="plot_string_match"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.plot_string_match">[docs]</a><span class="k">def</span> <span class="nf">plot_string_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">regex</span><span class="p">,</span><span class="n">field</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the geometry of a shapefile whose fields match a regular expression given</span>
+
+<span class="sd">    :param sf: shapefile</span>
+<span class="sd">    :type sf: shapefile object</span>
+<span class="sd">    :regex: regular expression to match</span>
+<span class="sd">    :type regex: string</span>
+<span class="sd">    :field: field number to be matched with the regex</span>
+<span class="sd">    :type field: integer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index</span><span class="p">,</span><span class="n">shape_records</span> <span class="o">=</span> <span class="n">string_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">regex</span><span class="p">,</span><span class="n">field</span><span class="p">)</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">shape_records</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="new_shape_string"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.new_shape_string">[docs]</a><span class="k">def</span> <span class="nf">new_shape_string</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">regex</span><span class="p">,</span><span class="n">field</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">shapefile</span>
+    <span class="k">if</span> <span class="nb">type</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">POINT</span>
+    <span class="n">newshp</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">shapeType</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">shapeType</span><span class="p">)</span>
+    <span class="n">newshp</span><span class="o">.</span><span class="n">autoBalance</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">index</span><span class="p">,</span><span class="n">shape_records</span> <span class="o">=</span> <span class="n">string_match</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">regex</span><span class="p">,</span><span class="n">field</span><span class="p">)</span>
+
+    <span class="n">_fi</span> <span class="o">=</span> <span class="p">[</span><span class="n">sf</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">index</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_fi</span><span class="p">:</span>
+        <span class="n">newshp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">fieldType</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">size</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">decimal</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">_shre</span> <span class="o">=</span> <span class="n">shape_records</span>
+    <span class="k">for</span> <span class="n">sr</span> <span class="ow">in</span> <span class="n">_shre</span><span class="p">:</span>
+        <span class="n">_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">_parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">sr</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="n">_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_points</span><span class="p">)</span>
+
+        <span class="n">newshp</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">parts</span><span class="o">=</span><span class="n">_parts</span><span class="p">)</span>
+        <span class="n">newshp</span><span class="o">.</span><span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sr</span><span class="o">.</span><span class="n">record</span><span class="p">)</span>
+        <span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">sr</span><span class="o">.</span><span class="n">record</span><span class="p">)</span>
+
+    <span class="n">newshp</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">index</span>
+</div>
+<div class="viewcode-block" id="apply_bbox"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.maps.apply_bbox">[docs]</a><span class="k">def</span> <span class="nf">apply_bbox</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span><span class="n">ax</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Use bbox as xlim and ylim in ax</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">limits</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">bbox</span>
+    <span class="n">xlim</span> <span class="o">=</span> <span class="n">limits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">limits</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">ylim</span> <span class="o">=</span> <span class="n">limits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">limits</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

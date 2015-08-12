@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>List of implemented kernels &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="list-of-implemented-kernels">
+<h1>List of implemented kernels<a class="headerlink" href="#list-of-implemented-kernels" title="Permalink to this headline">¶</a></h1>
+<p>The following table shows the implemented kernels in GPy and gives the details of the implemented function for each kernel.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="9%" />
+<col width="4%" />
+<col width="9%" />
+<col width="5%" />
+<col width="6%" />
+<col width="9%" />
+<col width="12%" />
+<col width="6%" />
+<col width="9%" />
+<col width="5%" />
+<col width="5%" />
+<col width="6%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">NAME</th>
+<th class="head">Dimension</th>
+<th class="head">ARD</th>
+<th class="head">get/set</th>
+<th class="head">K</th>
+<th class="head">Kdiag</th>
+<th class="head">dK_dtheta</th>
+<th class="head">dKdiag_dtheta</th>
+<th class="head">dK_dX</th>
+<th class="head">dKdiag_dX</th>
+<th class="head">psi0</th>
+<th class="head">psi1</th>
+<th class="head">psi2</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>bias</td>
+<td>n</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+</tr>
+<tr class="row-odd"><td>Brownian</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>exponential</td>
+<td>n</td>
+<td>yes</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>finite_dimensional</td>
+<td>n</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>linear</td>
+<td>n</td>
+<td>yes</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+</tr>
+<tr class="row-odd"><td>Matern32</td>
+<td>n</td>
+<td>yes</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Matern52</td>
+<td>n</td>
+<td>yes</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>periodic_exponential</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>periodic_Matern32</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>periodic_Matern52</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>rational quadratic</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>rbf</td>
+<td>n</td>
+<td>yes</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+</tr>
+<tr class="row-even"><td>spline</td>
+<td>1</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>white</td>
+<td>n</td>
+<td>&nbsp;</td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+<td><img alt="tick" src="_images/tick.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Depending on the use, all functions may not be required</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">get/set,</span> <span class="pre">K,</span> <span class="pre">Kdiag</span></code>: compulsory</li>
+<li><code class="docutils literal"><span class="pre">dK_dtheta</span></code>: necessary to optimize the model</li>
+<li><code class="docutils literal"><span class="pre">dKdiag_dtheta</span></code>: sparse models, BGPLVM, GPs with uncertain inputs</li>
+<li><code class="docutils literal"><span class="pre">dK_dX</span></code>: sparse models, GPLVM, BGPLVM, GPs with uncertain inputs</li>
+<li><code class="docutils literal"><span class="pre">dKdiag_dX</span></code>: sparse models, BGPLVM, GPs with uncertain inputs</li>
+<li><code class="docutils literal"><span class="pre">psi0,</span> <span class="pre">psi1,</span> <span class="pre">psi2</span></code>: BGPLVM, GPs with uncertain inputs</li>
+</ul>
+</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/kernel_implementation.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

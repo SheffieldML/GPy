@@ -1,0 +1,335 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.optimization.optimization &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.optimization.optimization</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">rasmussens_minimize</span> <span class="kn">as</span> <span class="nn">rasm</span>
+    <span class="n">rasm_available</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">rasm_available</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="kn">from</span> <span class="nn">scg</span> <span class="kn">import</span> <span class="n">SCG</span>
+
+<div class="viewcode-block" id="Optimizer"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.Optimizer">[docs]</a><span class="k">class</span> <span class="nc">Optimizer</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Superclass for all the optimizers.</span>
+
+<span class="sd">    :param x_init: initial set of parameters</span>
+<span class="sd">    :param f_fp: function that returns the function AND the gradients at the same time</span>
+<span class="sd">    :param f: function to optimize</span>
+<span class="sd">    :param fp: gradients</span>
+<span class="sd">    :param messages: print messages from the optimizer?</span>
+<span class="sd">    :type messages: (True | False)</span>
+<span class="sd">    :param max_f_eval: maximum number of function evaluations</span>
+
+<span class="sd">    :rtype: optimizer object.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_f_eval</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span> <span class="n">max_iters</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span>
+                 <span class="n">ftol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">xtol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bfgs_factor</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_init</span> <span class="o">=</span> <span class="n">x_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">messages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_f_eval</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_iters</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bfgs_factor</span> <span class="o">=</span> <span class="n">bfgs_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="s">&quot;Not available&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="o">=</span> <span class="n">xtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="o">=</span> <span class="n">gtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="o">=</span> <span class="n">ftol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+<div class="viewcode-block" id="Optimizer.run"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.Optimizer.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Optimizer.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.Optimizer.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;this needs to be implemented to use the optimizer class&quot;</span>
+</div>
+<div class="viewcode-block" id="Optimizer.plot"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.Optimizer.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        See GPy.plotting.matplot_dep.inference_plots</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">assert</span> <span class="s">&quot;matplotlib&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span> <span class="s">&quot;matplotlib package has not been imported.&quot;</span>
+        <span class="kn">from</span> <span class="nn">...plotting.matplot_dep</span> <span class="kn">import</span> <span class="n">inference_plots</span>
+        <span class="n">inference_plots</span><span class="o">.</span><span class="n">plot_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+</div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="s">&quot;Optimizer: </span><span class="se">\t\t\t\t</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span>
+        <span class="n">diagnostics</span> <span class="o">+=</span> <span class="s">&quot;f(x_opt): </span><span class="se">\t\t\t\t</span><span class="s"> </span><span class="si">%.3f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span>
+        <span class="n">diagnostics</span> <span class="o">+=</span> <span class="s">&quot;Number of function evaluations: </span><span class="se">\t</span><span class="s"> </span><span class="si">%d</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span>
+        <span class="n">diagnostics</span> <span class="o">+=</span> <span class="s">&quot;Optimization status: </span><span class="se">\t\t\t</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
+        <span class="n">diagnostics</span> <span class="o">+=</span> <span class="s">&quot;Time elapsed: </span><span class="se">\t\t\t\t</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
+        <span class="k">return</span> <span class="n">diagnostics</span>
+</div>
+<div class="viewcode-block" id="opt_tnc"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_tnc">[docs]</a><span class="k">class</span> <span class="nc">opt_tnc</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Optimizer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;TNC (Scipy implementation)&quot;</span>
+
+<div class="viewcode-block" id="opt_tnc.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_tnc.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the TNC optimizer</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tnc_rcstrings</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Local minimum&#39;</span><span class="p">,</span> <span class="s">&#39;Converged&#39;</span><span class="p">,</span> <span class="s">&#39;XConverged&#39;</span><span class="p">,</span> <span class="s">&#39;Maximum number of f evaluations reached&#39;</span><span class="p">,</span>
+             <span class="s">&#39;Line search failed&#39;</span><span class="p">,</span> <span class="s">&#39;Function is constant&#39;</span><span class="p">]</span>
+
+        <span class="k">assert</span> <span class="n">f_fp</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&quot;TNC requires f_fp&quot;</span>
+
+        <span class="n">opt_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;xtol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;ftol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;pgtol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span>
+
+        <span class="n">opt_result</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">fmin_tnc</span><span class="p">(</span><span class="n">f_fp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_init</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+                       <span class="n">maxfun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span><span class="p">,</span> <span class="o">**</span><span class="n">opt_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="n">f_fp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">tnc_rcstrings</span><span class="p">[</span><span class="n">opt_result</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+</div></div>
+<div class="viewcode-block" id="opt_lbfgsb"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_lbfgsb">[docs]</a><span class="k">class</span> <span class="nc">opt_lbfgsb</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Optimizer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;L-BFGS-B (Scipy implementation)&quot;</span>
+
+<div class="viewcode-block" id="opt_lbfgsb.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_lbfgsb.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the optimizer</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rcstrings</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Converged&#39;</span><span class="p">,</span> <span class="s">&#39;Maximum number of f evaluations reached&#39;</span><span class="p">,</span> <span class="s">&#39;Error&#39;</span><span class="p">]</span>
+
+        <span class="k">assert</span> <span class="n">f_fp</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&quot;BFGS requires f_fp&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">:</span>
+            <span class="n">iprint</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iprint</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="n">opt_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: l-bfgs-b doesn&#39;t have an xtol arg, so I&#39;m going to ignore it&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: l-bfgs-b doesn&#39;t have an ftol arg, so I&#39;m going to ignore it&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;pgtol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bfgs_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;factr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bfgs_factor</span>
+
+        <span class="n">opt_result</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">fmin_l_bfgs_b</span><span class="p">(</span><span class="n">f_fp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_init</span><span class="p">,</span> <span class="n">iprint</span><span class="o">=</span><span class="n">iprint</span><span class="p">,</span>
+                                            <span class="n">maxfun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span><span class="p">,</span> <span class="o">**</span><span class="n">opt_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="n">f_fp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s">&#39;funcalls&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">rcstrings</span><span class="p">[</span><span class="n">opt_result</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s">&#39;warnflag&#39;</span><span class="p">]]</span>
+</div></div>
+<div class="viewcode-block" id="opt_simplex"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_simplex">[docs]</a><span class="k">class</span> <span class="nc">opt_simplex</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Optimizer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;Nelder-Mead simplex routine (via Scipy)&quot;</span>
+
+<div class="viewcode-block" id="opt_simplex.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_simplex.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The simplex optimizer does not require gradients.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">statuses</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Converged&#39;</span><span class="p">,</span> <span class="s">&#39;Maximum number of function evaluations made&#39;</span><span class="p">,</span> <span class="s">&#39;Maximum number of iterations reached&#39;</span><span class="p">]</span>
+
+        <span class="n">opt_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;xtol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">opt_dict</span><span class="p">[</span><span class="s">&#39;ftol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: simplex doesn&#39;t have an gtol arg, so I&#39;m going to ignore it&quot;</span>
+
+        <span class="n">opt_result</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">fmin</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_init</span><span class="p">,</span> <span class="p">(),</span> <span class="n">disp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+                   <span class="n">maxfun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span><span class="p">,</span> <span class="n">full_output</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">opt_dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">statuses</span><span class="p">[</span><span class="n">opt_result</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="bp">None</span>
+
+</div></div>
+<div class="viewcode-block" id="opt_rasm"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_rasm">[docs]</a><span class="k">class</span> <span class="nc">opt_rasm</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Optimizer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;Rasmussen&#39;s Conjugate Gradient&quot;</span>
+
+<div class="viewcode-block" id="opt_rasm.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_rasm.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run Rasmussen&#39;s Conjugate Gradient optimizer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span> <span class="n">f_fp</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&quot;Rasmussen&#39;s minimizer requires f_fp&quot;</span>
+        <span class="n">statuses</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Converged&#39;</span><span class="p">,</span> <span class="s">&#39;Line search failed&#39;</span><span class="p">,</span> <span class="s">&#39;Maximum number of f evaluations reached&#39;</span><span class="p">,</span>
+                <span class="s">&#39;NaNs in optimization&#39;</span><span class="p">]</span>
+
+        <span class="n">opt_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: minimize doesn&#39;t have an xtol arg, so I&#39;m going to ignore it&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: minimize doesn&#39;t have an ftol arg, so I&#39;m going to ignore it&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gtol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: minimize doesn&#39;t have an gtol arg, so I&#39;m going to ignore it&quot;</span>
+
+        <span class="n">opt_result</span> <span class="o">=</span> <span class="n">rasm</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_init</span><span class="p">,</span> <span class="n">f_fp</span><span class="p">,</span> <span class="p">(),</span> <span class="n">messages</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+                                   <span class="n">maxnumfuneval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">statuses</span><span class="p">[</span><span class="n">opt_result</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</div></div>
+<div class="viewcode-block" id="opt_SCG"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_SCG">[docs]</a><span class="k">class</span> <span class="nc">opt_SCG</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;max_f_eval&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">warn</span><span class="p">(</span><span class="s">&quot;max_f_eval deprecated for SCG optimizer: use max_iters instead!</span><span class="se">\n</span><span class="s">Ignoring max_f_eval!&quot;</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
+        <span class="n">Optimizer</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_name</span> <span class="o">=</span> <span class="s">&quot;Scaled Conjugate Gradients&quot;</span>
+
+<div class="viewcode-block" id="opt_SCG.opt"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.opt_SCG.opt">[docs]</a>    <span class="k">def</span> <span class="nf">opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_fp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">f</span> <span class="ow">is</span> <span class="bp">None</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">fp</span> <span class="ow">is</span> <span class="bp">None</span>
+
+        <span class="n">opt_result</span> <span class="o">=</span> <span class="n">SCG</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_init</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="p">,</span>
+                         <span class="n">maxiters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iters</span><span class="p">,</span>
+                         <span class="n">max_f_eval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_f_eval</span><span class="p">,</span>
+                         <span class="n">xtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xtol</span><span class="p">,</span> <span class="n">ftol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ftol</span><span class="p">,</span>
+                         <span class="n">gtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gtol</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_opt</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funct_eval</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">opt_result</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+</div></div>
+<div class="viewcode-block" id="get_optimizer"><a class="viewcode-back" href="../../../../GPy.inference.optimization.html#GPy.inference.optimization.optimization.get_optimizer">[docs]</a><span class="k">def</span> <span class="nf">get_optimizer</span><span class="p">(</span><span class="n">f_min</span><span class="p">):</span>
+
+    <span class="n">optimizers</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;fmin_tnc&#39;</span><span class="p">:</span> <span class="n">opt_tnc</span><span class="p">,</span>
+          <span class="s">&#39;simplex&#39;</span><span class="p">:</span> <span class="n">opt_simplex</span><span class="p">,</span>
+          <span class="s">&#39;lbfgsb&#39;</span><span class="p">:</span> <span class="n">opt_lbfgsb</span><span class="p">,</span>
+          <span class="s">&#39;scg&#39;</span><span class="p">:</span> <span class="n">opt_SCG</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">rasm_available</span><span class="p">:</span>
+        <span class="n">optimizers</span><span class="p">[</span><span class="s">&#39;rasmussen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">opt_rasm</span>
+
+    <span class="k">for</span> <span class="n">opt_name</span> <span class="ow">in</span> <span class="n">optimizers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">opt_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">f_min</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">optimizers</span><span class="p">[</span><span class="n">opt_name</span><span class="p">]</span>
+
+    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;No optimizer was found matching the name: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">f_min</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

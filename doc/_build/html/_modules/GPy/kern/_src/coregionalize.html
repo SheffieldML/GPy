@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.coregionalize &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.coregionalize</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, James Hensman and Ricardo Andrade</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">from</span> <span class="nn">kern</span> <span class="kn">import</span> <span class="n">Kern</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">weave</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization.transformations</span> <span class="kn">import</span> <span class="n">Logexp</span>
+<span class="kn">from</span> <span class="nn">...util.config</span> <span class="kn">import</span> <span class="n">config</span> <span class="c"># for assesing whether to use weave</span>
+
+<div class="viewcode-block" id="Coregionalize"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize">[docs]</a><span class="k">class</span> <span class="nc">Coregionalize</span><span class="p">(</span><span class="n">Kern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Covariance function for intrinsic/linear coregionalization models</span>
+
+<span class="sd">    This covariance has the form:</span>
+<span class="sd">    .. math::</span>
+<span class="sd">       \mathbf{B} = \mathbf{W}\mathbf{W}^\top + \text{diag}(kappa)</span>
+
+<span class="sd">    An intrinsic/linear coregionalization covariance function of the form:</span>
+<span class="sd">    .. math::</span>
+
+<span class="sd">       k_2(x, y)=\mathbf{B} k(x, y)</span>
+
+<span class="sd">    it is obtained as the tensor product between a covariance function</span>
+<span class="sd">    k(x, y) and B.</span>
+
+<span class="sd">    :param output_dim: number of outputs to coregionalize</span>
+<span class="sd">    :type output_dim: int</span>
+<span class="sd">    :param rank: number of columns of the W matrix (this parameter is ignored if parameter W is not None)</span>
+<span class="sd">    :type rank: int</span>
+<span class="sd">    :param W: a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B</span>
+<span class="sd">    :type W: numpy array of dimensionality (num_outpus, W_columns)</span>
+<span class="sd">    :param kappa: a vector which allows the outputs to behave independently</span>
+<span class="sd">    :type kappa: numpy array of dimensionality  (output_dim, )</span>
+
+<span class="sd">    .. note: see coregionalization examples in GPy.examples.regression for some usage.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">W</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">active_dims</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;coregion&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Coregionalize</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">active_dims</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="o">&gt;</span><span class="n">output_dim</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Warning: Unusual choice of rank, it should normally be less than the output_dim.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">W</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">W</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="o">==</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kappa</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">kappa</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">kappa</span><span class="o">.</span><span class="n">shape</span><span class="o">==</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;kappa&#39;</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">Logexp</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Coregionalize.parameters_changed"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.parameters_changed">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Coregionalize.K"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.K">[docs]</a>    <span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&#39;weave&#39;</span><span class="p">,</span> <span class="s">&#39;working&#39;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_K_weave</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s"> Weave compilation failed. Falling back to (slower) numpy implementation</span><span class="se">\n</span><span class="s">&quot;</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;weave&#39;</span><span class="p">,</span> <span class="s">&#39;working&#39;</span><span class="p">,</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_K_numpy</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_K_numpy</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span>
+
+</div>
+    <span class="k">def</span> <span class="nf">_K_numpy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">index</span><span class="p">,</span><span class="n">index</span><span class="o">.</span><span class="n">T</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">index</span><span class="p">,</span><span class="n">index2</span><span class="o">.</span><span class="n">T</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_K_weave</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compute the kernel function using scipy.weave&quot;&quot;&quot;</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">code</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">            for(int i=0;i&lt;N; i++){</span>
+<span class="s">              target[i+i*N] = B[index[i]+output_dim*index[i]];</span>
+<span class="s">              for(int j=0; j&lt;i; j++){</span>
+<span class="s">                  target[j+i*N] = B[index[i]+output_dim*index[j]];</span>
+<span class="s">                  target[i+j*N] = target[j+i*N];</span>
+<span class="s">                }</span>
+<span class="s">              }</span>
+<span class="s">            &quot;&quot;&quot;</span>
+            <span class="n">N</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span>
+            <span class="n">weave</span><span class="o">.</span><span class="n">inline</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">,</span> <span class="s">&#39;index&#39;</span><span class="p">,</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;output_dim&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">code</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">            for(int i=0;i&lt;num_inducing; i++){</span>
+<span class="s">              for(int j=0; j&lt;N; j++){</span>
+<span class="s">                  target[i+j*num_inducing] = B[output_dim*index[j]+index2[i]];</span>
+<span class="s">                }</span>
+<span class="s">              }</span>
+<span class="s">            &quot;&quot;&quot;</span>
+            <span class="n">N</span><span class="p">,</span> <span class="n">num_inducing</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">index2</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span>
+            <span class="n">weave</span><span class="o">.</span><span class="n">inline</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">,</span> <span class="s">&#39;index&#39;</span><span class="p">,</span> <span class="s">&#39;index2&#39;</span><span class="p">,</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&#39;num_inducing&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;output_dim&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">target</span>
+
+
+<div class="viewcode-block" id="Coregionalize.Kdiag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.Kdiag">[docs]</a>    <span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()]</span>
+</div>
+<div class="viewcode-block" id="Coregionalize.update_gradients_full"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.update_gradients_full">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">index2</span> <span class="o">=</span> <span class="n">index</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+
+        <span class="c">#attempt to use weave for a nasty double indexing loop: fall back to numpy</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&#39;weave&#39;</span><span class="p">,</span> <span class="s">&#39;working&#39;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dL_dK_small</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_reduce_weave</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s"> Weave compilation failed. Falling back to (slower) numpy implementation</span><span class="se">\n</span><span class="s">&quot;</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;weave&#39;</span><span class="p">,</span> <span class="s">&#39;working&#39;</span><span class="p">,</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                <span class="n">dL_dK_small</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_reduce_weave</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dL_dK_small</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_reduce_weave</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">index2</span><span class="p">)</span>
+
+
+
+        <span class="n">dkappa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">dL_dK_small</span><span class="p">)</span>
+        <span class="n">dL_dK_small</span> <span class="o">+=</span> <span class="n">dL_dK_small</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">dW</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="n">dL_dK_small</span><span class="p">[:,</span> <span class="p">:,</span> <span class="bp">None</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dW</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dkappa</span>
+</div>
+    <span class="k">def</span> <span class="nf">_gradient_reduce_weave</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">index2</span><span class="p">):</span>
+        <span class="n">dL_dK_small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+        <span class="n">code</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">        for(int i=0; i&lt;num_inducing; i++){</span>
+<span class="s">          for(int j=0; j&lt;N; j++){</span>
+<span class="s">            dL_dK_small[index[j] + output_dim*index2[i]] += dL_dK[i+j*num_inducing];</span>
+<span class="s">          }</span>
+<span class="s">        }</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">num_inducing</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">index2</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span>
+        <span class="n">weave</span><span class="o">.</span><span class="n">inline</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&#39;num_inducing&#39;</span><span class="p">,</span> <span class="s">&#39;output_dim&#39;</span><span class="p">,</span> <span class="s">&#39;dL_dK&#39;</span><span class="p">,</span> <span class="s">&#39;dL_dK_small&#39;</span><span class="p">,</span> <span class="s">&#39;index&#39;</span><span class="p">,</span> <span class="s">&#39;index2&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">dL_dK_small</span>
+
+    <span class="k">def</span> <span class="nf">_gradient_reduce_numpy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">index2</span><span class="p">):</span>
+        <span class="n">index</span><span class="p">,</span> <span class="n">index2</span> <span class="o">=</span> <span class="n">index</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">index2</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dL_dK_small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">output_dim</span><span class="p">):</span>
+            <span class="n">tmp1</span> <span class="o">=</span> <span class="n">dL_dK</span><span class="p">[</span><span class="n">index</span><span class="o">==</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">output_dim</span><span class="p">):</span>
+                <span class="n">dL_dK_small</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp1</span><span class="p">[:,</span><span class="n">index2</span><span class="o">==</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">dL_dK_small</span>
+
+<div class="viewcode-block" id="Coregionalize.update_gradients_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.update_gradients_diag">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">dL_dKdiag_small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dL_dKdiag</span><span class="p">[</span><span class="n">index</span><span class="o">==</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">*</span><span class="n">dL_dKdiag_small</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kappa</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dL_dKdiag_small</span>
+</div>
+<div class="viewcode-block" id="Coregionalize.gradients_X"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.gradients_X">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Coregionalize.gradients_X_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.coregionalize.Coregionalize.gradients_X_diag">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

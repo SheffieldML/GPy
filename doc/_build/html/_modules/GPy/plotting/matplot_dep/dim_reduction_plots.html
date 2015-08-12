@@ -1,0 +1,432 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.plotting.matplot_dep.dim_reduction_plots &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.plotting.matplot_dep.dim_reduction_plots</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">latent_space_visualizations.controllers.imshow_controller</span> <span class="kn">import</span> <span class="n">ImshowController</span><span class="p">,</span><span class="n">ImAnnotateController</span>
+<span class="kn">from</span> <span class="nn">...core.parameterization.variational</span> <span class="kn">import</span> <span class="n">VariationalPosterior</span>
+<span class="kn">from</span> <span class="nn">.base_plots</span> <span class="kn">import</span> <span class="n">x_frame2D</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">Tango</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="kn">import</span> <span class="n">get_cmap</span>
+    <span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pb</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="most_significant_input_dimensions"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.dim_reduction_plots.most_significant_input_dimensions">[docs]</a><span class="k">def</span> <span class="nf">most_significant_input_dimensions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">which_indices</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine which dimensions should be plotted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">which_indices</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">input_1</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">input_2</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">input_sensitivity</span><span class="p">())[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;cannot automatically determine which dimensions to plot, please pass &#39;which_indices&#39;&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="n">which_indices</span>
+    <span class="k">return</span> <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span>
+</div>
+<div class="viewcode-block" id="plot_latent"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.dim_reduction_plots.plot_latent">[docs]</a><span class="k">def</span> <span class="nf">plot_latent</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">which_indices</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                <span class="n">fignum</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">plot_inducing</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">plot_limits</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">aspect</span><span class="o">=</span><span class="s">&#39;auto&#39;</span><span class="p">,</span> <span class="n">updates</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">predict_kwargs</span><span class="o">=</span><span class="p">{},</span> <span class="n">imshow_kwargs</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)</span>
+<span class="sd">    :param resolution: the resolution of the grid on which to evaluate the predictive variance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="n">fignum</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+    <span class="n">Tango</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">num_data</span><span class="p">)</span>
+
+    <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="n">most_significant_input_dimensions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">which_indices</span><span class="p">)</span>
+
+    <span class="c">#fethch the data points X that we&#39;d like to plot</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">VariationalPosterior</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">mean</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
+
+
+    <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Warning: subsampling X, as it has more samples then 1000. X.shape={!s}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">subsample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">subsample</span><span class="p">]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">subsample</span><span class="p">]</span>
+        <span class="c">#=======================================================================</span>
+        <span class="c">#     &lt;&lt;&lt;WORK IN PROGRESS&gt;&gt;&gt;</span>
+        <span class="c">#     &lt;&lt;&lt;DO NOT DELETE&gt;&gt;&gt;</span>
+        <span class="c">#     plt.close(&#39;all&#39;)</span>
+        <span class="c">#     fig, ax = plt.subplots(1,1)</span>
+        <span class="c">#     from GPy.plotting.matplot_dep.dim_reduction_plots import most_significant_input_dimensions</span>
+        <span class="c">#     import matplotlib.patches as mpatches</span>
+        <span class="c">#     i1, i2 = most_significant_input_dimensions(m, None)</span>
+        <span class="c">#     xmin, xmax = 100, -100</span>
+        <span class="c">#     ymin, ymax = 100, -100</span>
+        <span class="c">#     legend_handles = []</span>
+        <span class="c">#</span>
+        <span class="c">#     X = m.X.mean[:, [i1, i2]]</span>
+        <span class="c">#     X = m.X.variance[:, [i1, i2]]</span>
+        <span class="c">#</span>
+        <span class="c">#     xmin = X[:,0].min(); xmax = X[:,0].max()</span>
+        <span class="c">#     ymin = X[:,1].min(); ymax = X[:,1].max()</span>
+        <span class="c">#     range_ = [[xmin, xmax], [ymin, ymax]]</span>
+        <span class="c">#     ul = np.unique(labels)</span>
+        <span class="c">#</span>
+        <span class="c">#     for i, l in enumerate(ul):</span>
+        <span class="c">#         #cdict = dict(red  =[(0., colors[i][0], colors[i][0]), (1., colors[i][0], colors[i][0])],</span>
+        <span class="c">#         #             green=[(0., colors[i][0], colors[i][1]), (1., colors[i][1], colors[i][1])],</span>
+        <span class="c">#         #             blue =[(0., colors[i][0], colors[i][2]), (1., colors[i][2], colors[i][2])],</span>
+        <span class="c">#         #             alpha=[(0., 0., .0), (.5, .5, .5), (1., .5, .5)])</span>
+        <span class="c">#         #cmap = LinearSegmentedColormap(&#39;{}&#39;.format(l), cdict)</span>
+        <span class="c">#         cmap = LinearSegmentedColormap.from_list(&#39;cmap_{}&#39;.format(str(l)), [colors[i], colors[i]], 255)</span>
+        <span class="c">#         cmap._init()</span>
+        <span class="c">#         #alphas = .5*(1+scipy.special.erf(np.linspace(-2,2, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))</span>
+        <span class="c">#         alphas = (scipy.special.erf(np.linspace(0,2.4, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))</span>
+        <span class="c">#         cmap._lut[:, -1] = alphas</span>
+        <span class="c">#         print l</span>
+        <span class="c">#         x, y = X[labels==l].T</span>
+        <span class="c">#</span>
+        <span class="c">#         heatmap, xedges, yedges = np.histogram2d(x, y, bins=300, range=range_)</span>
+        <span class="c">#         #heatmap, xedges, yedges = np.histogram2d(x, y, bins=100)</span>
+        <span class="c">#</span>
+        <span class="c">#         im = ax.imshow(heatmap, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], cmap=cmap, aspect=&#39;auto&#39;, interpolation=&#39;nearest&#39;, label=str(l))</span>
+        <span class="c">#         legend_handles.append(mpatches.Patch(color=colors[i], label=l))</span>
+        <span class="c">#     ax.set_xlim(xmin, xmax)</span>
+        <span class="c">#     ax.set_ylim(ymin, ymax)</span>
+        <span class="c">#     plt.legend(legend_handles, [l.get_label() for l in legend_handles])</span>
+        <span class="c">#     plt.draw()</span>
+        <span class="c">#     plt.show()</span>
+        <span class="c">#=======================================================================</span>
+
+    <span class="c"># create a function which computes the shading of latent space according to the output variance</span>
+    <span class="k">def</span> <span class="nf">plot_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">Xtest_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">Xtest_full</span><span class="p">[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xtest_full</span><span class="p">,</span> <span class="o">**</span><span class="n">predict_kwargs</span><span class="p">)</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">var</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c">#Create an IMshow controller that can re-plot the latent space shading at a good resolution</span>
+    <span class="k">if</span> <span class="n">plot_limits</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]]</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">x_r</span><span class="p">,</span> <span class="n">y_r</span> <span class="o">=</span> <span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span>
+        <span class="n">xmin</span> <span class="o">-=</span> <span class="o">.</span><span class="mi">1</span><span class="o">*</span><span class="n">x_r</span>
+        <span class="n">xmax</span> <span class="o">+=</span> <span class="o">.</span><span class="mi">1</span><span class="o">*</span><span class="n">x_r</span>
+        <span class="n">ymin</span> <span class="o">-=</span> <span class="o">.</span><span class="mi">1</span><span class="o">*</span><span class="n">y_r</span>
+        <span class="n">ymax</span> <span class="o">+=</span> <span class="o">.</span><span class="mi">1</span><span class="o">*</span><span class="n">y_r</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">plot_limits</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="s">&quot;Wrong plot limits: {} given -&gt; need (xmin, xmax, ymin, ymax)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plot_limits</span><span class="p">)</span>
+    <span class="n">view</span> <span class="o">=</span> <span class="n">ImshowController</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">plot_function</span><span class="p">,</span>
+                            <span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">),</span>
+                            <span class="n">resolution</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="n">aspect</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s">&#39;bilinear&#39;</span><span class="p">,</span>
+                            <span class="n">cmap</span><span class="o">=</span><span class="n">pb</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">binary</span><span class="p">,</span> <span class="o">**</span><span class="n">imshow_kwargs</span><span class="p">)</span>
+
+    <span class="c"># make sure labels are in order of input:</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+    <span class="n">ulabels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">ulabels</span><span class="p">:</span>
+            <span class="n">ulabels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+
+    <span class="n">marker</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">marker</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ul</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ulabels</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">string_</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="n">ul</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="s">&#39;class </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">ul</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">marker</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="n">ul</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">Tango</span><span class="o">.</span><span class="n">nextMedium</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="n">this_label</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">9</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mf">1.</span><span class="p">)</span> <span class="ow">and</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># remove the grid if present, it doesn&#39;t look good</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;auto&#39;</span><span class="p">)</span> <span class="c"># set a nice aspect ratio</span>
+
+    <span class="k">if</span> <span class="n">plot_inducing</span><span class="p">:</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="n">input_1</span><span class="p">],</span> <span class="n">Z</span><span class="p">[:,</span> <span class="n">input_2</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&quot;^&quot;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">6</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Could not invoke tight layout: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">updates</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Could not invoke show: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;Enter to continue&#39;</span><span class="p">)</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ax</span>
+</div>
+<div class="viewcode-block" id="plot_magnification"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.dim_reduction_plots.plot_magnification">[docs]</a><span class="k">def</span> <span class="nf">plot_magnification</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">which_indices</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">resolution</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                <span class="n">fignum</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">plot_inducing</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">aspect</span><span class="o">=</span><span class="s">&#39;auto&#39;</span><span class="p">,</span> <span class="n">updates</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)</span>
+<span class="sd">    :param resolution: the resolution of the grid on which to evaluate the predictive variance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="n">fignum</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">Tango</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">num_data</span><span class="p">)</span>
+
+    <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="n">most_significant_input_dimensions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">which_indices</span><span class="p">)</span>
+
+    <span class="c"># first, plot the output variance as a function of the latent space</span>
+    <span class="n">Xtest</span><span class="p">,</span> <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">x_frame2D</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]],</span> <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">)</span>
+    <span class="n">Xtest_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Xtest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">def</span> <span class="nf">plot_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">Xtest_full</span><span class="p">[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">mf</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">magnification</span><span class="p">(</span><span class="n">Xtest_full</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mf</span>
+
+    <span class="n">view</span> <span class="o">=</span> <span class="n">ImshowController</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">plot_function</span><span class="p">,</span>
+                            <span class="nb">tuple</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]])</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:,</span> <span class="p">[</span><span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]]),</span>
+                            <span class="n">resolution</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="n">aspect</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s">&#39;bilinear&#39;</span><span class="p">,</span>
+                            <span class="n">cmap</span><span class="o">=</span><span class="n">pb</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+    <span class="c"># make sure labels are in order of input:</span>
+    <span class="n">ulabels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">ulabels</span><span class="p">:</span>
+            <span class="n">ulabels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+
+    <span class="n">marker</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">marker</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ul</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ulabels</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">string_</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="n">ul</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="s">&#39;class </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">ul</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="s">&#39;class </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">i</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">marker</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="n">ul</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">Tango</span><span class="o">.</span><span class="n">nextMedium</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="n">this_label</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mf">1.</span><span class="p">)</span> <span class="ow">and</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xmax</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">xmin</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">xmax</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># remove the grid if present, it doesn&#39;t look good</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;auto&#39;</span><span class="p">)</span> <span class="c"># set a nice aspect ratio</span>
+
+    <span class="k">if</span> <span class="n">plot_inducing</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">[:,</span> <span class="n">input_1</span><span class="p">],</span> <span class="n">model</span><span class="o">.</span><span class="n">Z</span><span class="p">[:,</span> <span class="n">input_2</span><span class="p">],</span> <span class="s">&#39;^w&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">updates</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;Enter to continue&#39;</span><span class="p">)</span>
+
+    <span class="n">pb</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Magnification Factor&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+
+</div>
+<div class="viewcode-block" id="plot_steepest_gradient_map"><a class="viewcode-back" href="../../../../GPy.plotting.matplot_dep.html#GPy.plotting.matplot_dep.dim_reduction_plots.plot_steepest_gradient_map">[docs]</a><span class="k">def</span> <span class="nf">plot_steepest_gradient_map</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fignum</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">which_indices</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">data_labels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">data_marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">data_s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s">&#39;auto&#39;</span><span class="p">,</span> <span class="n">updates</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span> <span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="n">input_1</span><span class="p">,</span> <span class="n">input_2</span> <span class="o">=</span> <span class="n">significant_dims</span> <span class="o">=</span> <span class="n">most_significant_input_dimensions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">which_indices</span><span class="p">)</span>
+
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">resolution</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">input_dim</span><span class="p">))</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[:</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">output_dim</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">plot_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="n">significant_dims</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">dmu_dX</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">dmu_dXnew</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">argmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dmu_dX</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dmu_dX</span><span class="p">[</span><span class="n">indices</span><span class="p">,</span> <span class="n">argmax</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">)[</span><span class="n">argmax</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="n">fignum</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">data_labels</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">data_labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">num_data</span><span class="p">)</span>
+    <span class="n">ulabels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">data_labels</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">ulabels</span><span class="p">:</span>
+            <span class="n">ulabels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+    <span class="n">marker</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">data_marker</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ul</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ulabels</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">string_</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="n">ul</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">ul</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="s">&#39;class </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">ul</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">this_label</span> <span class="o">=</span> <span class="s">&#39;class </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">i</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">marker</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">data_labels</span> <span class="o">==</span> <span class="n">ul</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_1</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">input_2</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">data_s</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">Tango</span><span class="o">.</span><span class="n">nextMedium</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="n">this_label</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;latent dimension </span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">input_2</span><span class="p">)</span>
+
+    <span class="n">controller</span> <span class="o">=</span> <span class="n">ImAnnotateController</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span>
+                                  <span class="n">plot_function</span><span class="p">,</span>
+                                  <span class="nb">tuple</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:,</span> <span class="n">significant_dims</span><span class="p">])</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)[:,</span> <span class="n">significant_dims</span><span class="p">]),</span>
+                                  <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">,</span>
+                                  <span class="n">aspect</span><span class="o">=</span><span class="n">aspect</span><span class="p">,</span>
+                                  <span class="n">cmap</span><span class="o">=</span><span class="n">get_cmap</span><span class="p">(</span><span class="s">&#39;jet&#39;</span><span class="p">),</span>
+                                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">updates</span><span class="p">:</span>
+        <span class="n">pb</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">clear</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;Enter to continue&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">clear</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="s">&#39;yes&#39;</span> <span class="ow">or</span> <span class="n">clear</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">controller</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">controller</span><span class="o">.</span><span class="n">view</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

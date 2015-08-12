@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.inference.latent_function_inference.exact_gaussian_inference &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy.inference.latent_function_inference" href="../latent_function_inference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" accesskey="U">GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.inference.latent_function_inference.exact_gaussian_inference</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">from</span> <span class="nn">posterior</span> <span class="kn">import</span> <span class="n">Posterior</span>
+<span class="kn">from</span> <span class="nn">...util.linalg</span> <span class="kn">import</span> <span class="n">pdinv</span><span class="p">,</span> <span class="n">dpotrs</span><span class="p">,</span> <span class="n">tdot</span>
+<span class="kn">from</span> <span class="nn">...util</span> <span class="kn">import</span> <span class="n">diag</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">LatentFunctionInference</span>
+<span class="n">log_2_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ExactGaussianInference"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference">[docs]</a><span class="k">class</span> <span class="nc">ExactGaussianInference</span><span class="p">(</span><span class="n">LatentFunctionInference</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An object for inference when the likelihood is Gaussian.</span>
+
+<span class="sd">    The function self.inference returns a Posterior object, which summarizes</span>
+<span class="sd">    the posterior.</span>
+
+<span class="sd">    For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span><span class="c">#self._YYTfactor_cache = caching.cache()</span>
+
+<div class="viewcode-block" id="ExactGaussianInference.get_YYTfactor"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference.get_YYTfactor">[docs]</a>    <span class="k">def</span> <span class="nf">get_YYTfactor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        find a matrix L which satisfies LL^T = YY^T.</span>
+
+<span class="sd">        Note that L may have fewer columns than Y, else L=Y.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">N</span><span class="o">&gt;</span><span class="n">D</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Y</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c">#if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.</span>
+            <span class="c">#print &quot;WARNING: N&gt;D of Y, we need caching of L, such that L*L^T = Y, returning Y still!&quot;</span>
+            <span class="k">return</span> <span class="n">Y</span>
+</div>
+<div class="viewcode-block" id="ExactGaussianInference.inference"><a class="viewcode-back" href="../../../../GPy.inference.latent_function_inference.html#GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference.inference">[docs]</a>    <span class="k">def</span> <span class="nf">inference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kern</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">likelihood</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Y_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Posterior class containing essential quantities of the posterior</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">YYT_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_YYTfactor</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+
+        <span class="n">K</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="n">Ky</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">diag</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Ky</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">gaussian_variance</span><span class="p">(</span><span class="n">Y_metadata</span><span class="p">))</span>
+        <span class="n">Wi</span><span class="p">,</span> <span class="n">LW</span><span class="p">,</span> <span class="n">LWi</span><span class="p">,</span> <span class="n">W_logdet</span> <span class="o">=</span> <span class="n">pdinv</span><span class="p">(</span><span class="n">Ky</span><span class="p">)</span>
+
+        <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dpotrs</span><span class="p">(</span><span class="n">LW</span><span class="p">,</span> <span class="n">YYT_factor</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">log_marginal</span> <span class="o">=</span>  <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">Y</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">log_2_pi</span> <span class="o">-</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">W_logdet</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">YYT_factor</span><span class="p">))</span>
+
+        <span class="n">dL_dK</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">tdot</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span> <span class="o">-</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">Wi</span><span class="p">)</span>
+
+        <span class="n">dL_dthetaL</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">exact_inference_gradients</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">),</span><span class="n">Y_metadata</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Posterior</span><span class="p">(</span><span class="n">woodbury_chol</span><span class="o">=</span><span class="n">LW</span><span class="p">,</span> <span class="n">woodbury_vector</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">),</span> <span class="n">log_marginal</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;dL_dK&#39;</span><span class="p">:</span><span class="n">dL_dK</span><span class="p">,</span> <span class="s">&#39;dL_dthetaL&#39;</span><span class="p">:</span><span class="n">dL_dthetaL</span><span class="p">}</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li>
+          <li class="nav-item nav-item-3"><a href="../latent_function_inference.html" >GPy.inference.latent_function_inference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.models.gp_var_gauss &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.models.gp_var_gauss</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2014, James Hensman, Alan Saul</span>
+<span class="c"># Distributed under the terms of the GNU General public License, see LICENSE.txt</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">erf</span>
+<span class="kn">from</span> <span class="nn">..core.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization</span> <span class="kn">import</span> <span class="n">ObsAr</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">kern</span>
+<span class="kn">from</span> <span class="nn">..core.parameterization.param</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">..util.linalg</span> <span class="kn">import</span> <span class="n">pdinv</span>
+
+<span class="n">log_2_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GPVariationalGaussianApproximation"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation">[docs]</a><span class="k">class</span> <span class="nc">GPVariationalGaussianApproximation</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The Variational Gaussian Approximation revisited implementation for regression</span>
+
+<span class="sd">    @article{Opper:2009,</span>
+<span class="sd">        title = {The Variational Gaussian Approximation Revisited},</span>
+<span class="sd">        author = {Opper, Manfred and Archambeau, C{\&#39;e}dric},</span>
+<span class="sd">        journal = {Neural Comput.},</span>
+<span class="sd">        year = {2009},</span>
+<span class="sd">        pages = {786--792},</span>
+<span class="sd">    }</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">Model</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s">&#39;Variational GP classification&#39;</span><span class="p">)</span>
+        <span class="c"># accept the construction arguments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">ObsAr</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kernel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">kern</span><span class="o">.</span><span class="n">RBF</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">kern</span><span class="o">.</span><span class="n">White</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.01</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kern</span> <span class="o">=</span> <span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;alpha&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s">&#39;beta&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">gh_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gh_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">hermite</span><span class="o">.</span><span class="n">hermgauss</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ysign</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Y</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GPVariationalGaussianApproximation.log_likelihood"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.log_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Marginal log likelihood evaluation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_lik</span>
+</div>
+<div class="viewcode-block" id="GPVariationalGaussianApproximation.likelihood_quadrature"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.likelihood_quadrature">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_quadrature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform Gauss-Hermite quadrature over the log of the likelihood, with a fixed weight</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># assume probit for now.</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gh_x</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">v</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Ysign</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gh_w</span><span class="p">)</span>
+        <span class="n">NoverP</span> <span class="o">=</span> <span class="n">N</span><span class="o">/</span><span class="n">p</span>
+        <span class="n">dF_dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">NoverP</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Ysign</span><span class="p">[:,</span><span class="bp">None</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gh_w</span><span class="p">)</span>
+        <span class="n">dF_dv</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">NoverP</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">NoverP</span><span class="o">*</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gh_w</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">F</span><span class="p">,</span> <span class="n">dF_dm</span><span class="p">,</span> <span class="n">dF_dv</span>
+</div>
+<div class="viewcode-block" id="GPVariationalGaussianApproximation.parameters_changed"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.parameters_changed">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="n">KB</span> <span class="o">=</span> <span class="n">K</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">BKB</span> <span class="o">=</span> <span class="n">KB</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_data</span><span class="p">)</span> <span class="o">+</span> <span class="n">BKB</span>
+        <span class="n">Ai</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">Alogdet</span> <span class="o">=</span> <span class="n">pdinv</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+        <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">Ai</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span>  <span class="c"># posterior coavairance: need full matrix for gradients</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span>
+
+        <span class="n">F</span><span class="p">,</span> <span class="n">dF_dm</span><span class="p">,</span> <span class="n">dF_dv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood_quadrature</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+        <span class="n">dF_da</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">dF_dm</span><span class="p">)</span>
+        <span class="n">SigmaB</span> <span class="o">=</span> <span class="n">Sigma</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span>
+        <span class="n">dF_db</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Sigma</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">dF_dv</span><span class="p">))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">SigmaB</span><span class="p">))</span><span class="o">*</span><span class="mi">2</span>
+        <span class="n">KL</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">Alogdet</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">Ai</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_data</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">))</span>
+        <span class="n">dKL_da</span> <span class="o">=</span> <span class="n">m</span>
+        <span class="n">A_A2</span> <span class="o">=</span> <span class="n">Ai</span> <span class="o">-</span> <span class="n">Ai</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ai</span><span class="p">)</span>
+        <span class="n">dKL_db</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">KB</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">A_A2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_lik</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">KL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dF_da</span> <span class="o">-</span> <span class="n">dKL_da</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">dF_db</span> <span class="o">-</span> <span class="n">dKL_db</span>
+
+        <span class="c"># K-gradients</span>
+        <span class="n">dKL_dK</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="n">A_A2</span><span class="p">)</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">Ai</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">dF_dK</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">dF_dm</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tmp</span><span class="o">*</span><span class="n">dF_dv</span><span class="p">,</span> <span class="n">tmp</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dF_dK</span> <span class="o">-</span> <span class="n">dKL_dK</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GPVariationalGaussianApproximation.predict"><a class="viewcode-back" href="../../../GPy.models.html#GPy.models.gp_var_gauss.GPVariationalGaussianApproximation.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict the function(s) at the new point(s) Xnew.</span>
+
+<span class="sd">        :param Xnew: The points at which to make a prediction</span>
+<span class="sd">        :type Xnew: np.ndarray, Nnew x self.input_dim</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Wi</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">pdinv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">**-</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">Kux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kux</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="n">WiKux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Wi</span><span class="p">,</span> <span class="n">Kux</span><span class="p">)</span>
+        <span class="n">Kxx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="n">Xnew</span><span class="p">)</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">Kxx</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">WiKux</span><span class="o">*</span><span class="n">Kux</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">erf</span><span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="p">(</span><span class="n">var</span><span class="o">+</span><span class="mi">1</span><span class="p">))))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

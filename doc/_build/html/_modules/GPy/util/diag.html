@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.util.diag &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../index.html" />
+    <link rel="up" title="GPy" href="../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.util.diag</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="view"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.view">[docs]</a><span class="k">def</span> <span class="nf">view</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a view on the diagonal elements of a 2D array.</span>
+
+<span class="sd">    This is actually a view (!) on the diagonal of the array, so you can</span>
+<span class="sd">    in-place adjust the view.</span>
+
+<span class="sd">    :param :class:`ndarray` A: 2 dimensional numpy array</span>
+<span class="sd">    :param int offset: view offset to give back (negative entries allowed)</span>
+<span class="sd">    :rtype: :class:`ndarray` view of diag(A)</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; X = np.arange(9).reshape(3,3)</span>
+<span class="sd">    &gt;&gt;&gt; view(X)</span>
+<span class="sd">    array([0, 4, 8])</span>
+<span class="sd">    &gt;&gt;&gt; d = view(X)</span>
+<span class="sd">    &gt;&gt;&gt; d += 2</span>
+<span class="sd">    &gt;&gt;&gt; view(X)</span>
+<span class="sd">    array([ 2,  6, 10])</span>
+<span class="sd">    &gt;&gt;&gt; view(X, offset=-1)</span>
+<span class="sd">    array([3, 7])</span>
+<span class="sd">    &gt;&gt;&gt; subtract(X, 3, offset=-1)</span>
+<span class="sd">    array([[ 2,  1,  2],</span>
+<span class="sd">           [ 0,  6,  5],</span>
+<span class="sd">           [ 6,  4, 10]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;only implemented for 2 dimensions&quot;</span>
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&quot;attempting to get the view of non-square matrix?!&quot;</span>
+    <span class="k">if</span> <span class="n">offset</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">offset</span><span class="p">:],</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">offset</span><span class="p">,</span> <span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="p">((</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,</span> <span class="p">))</span>
+    <span class="k">elif</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="o">-</span><span class="n">offset</span><span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="p">((</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,</span> <span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="p">((</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,</span> <span class="p">))</span>
+</div>
+<div class="viewcode-block" id="offdiag_view"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.offdiag_view">[docs]</a><span class="k">def</span> <span class="nf">offdiag_view</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;only implemented for 2 dimensions&quot;</span>
+    <span class="n">Af</span> <span class="o">=</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">Af</span><span class="p">[(</span><span class="mi">1</span><span class="o">+</span><span class="n">offset</span><span class="p">):],</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</div>
+<span class="k">def</span> <span class="nf">_diag_ufunc</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">offset</span><span class="p">,</span><span class="n">func</span><span class="p">):</span>
+    <span class="n">dA</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span> <span class="n">func</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">dA</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">A</span>
+
+<div class="viewcode-block" id="times"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.times">[docs]</a><span class="k">def</span> <span class="nf">times</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Times the view of A with b in place (!).</span>
+<span class="sd">    Returns modified A</span>
+<span class="sd">    Broadcasting is allowed, thus b can be scalar.</span>
+
+<span class="sd">    if offset is not zero, make sure b is of right shape!</span>
+
+<span class="sd">    :param ndarray A: 2 dimensional array</span>
+<span class="sd">    :param ndarray-like b: either one dimensional or scalar</span>
+<span class="sd">    :param int offset: same as in view.</span>
+<span class="sd">    :rtype: view of A, which is adjusted inplace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_diag_ufunc</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">)</span></div>
+<span class="n">multiply</span> <span class="o">=</span> <span class="n">times</span>
+
+<div class="viewcode-block" id="divide"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.divide">[docs]</a><span class="k">def</span> <span class="nf">divide</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Divide the view of A by b in place (!).</span>
+<span class="sd">    Returns modified A</span>
+<span class="sd">    Broadcasting is allowed, thus b can be scalar.</span>
+
+<span class="sd">    if offset is not zero, make sure b is of right shape!</span>
+
+<span class="sd">    :param ndarray A: 2 dimensional array</span>
+<span class="sd">    :param ndarray-like b: either one dimensional or scalar</span>
+<span class="sd">    :param int offset: same as in view.</span>
+<span class="sd">    :rtype: view of A, which is adjusted inplace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_diag_ufunc</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="add"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.add">[docs]</a><span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add b to the view of A in place (!).</span>
+<span class="sd">    Returns modified A.</span>
+<span class="sd">    Broadcasting is allowed, thus b can be scalar.</span>
+
+<span class="sd">    if offset is not zero, make sure b is of right shape!</span>
+
+<span class="sd">    :param ndarray A: 2 dimensional array</span>
+<span class="sd">    :param ndarray-like b: either one dimensional or scalar</span>
+<span class="sd">    :param int offset: same as in view.</span>
+<span class="sd">    :rtype: view of A, which is adjusted inplace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_diag_ufunc</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="subtract"><a class="viewcode-back" href="../../../GPy.util.html#GPy.util.diag.subtract">[docs]</a><span class="k">def</span> <span class="nf">subtract</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Subtract b from the view of A in place (!).</span>
+<span class="sd">    Returns modified A.</span>
+<span class="sd">    Broadcasting is allowed, thus b can be scalar.</span>
+
+<span class="sd">    if offset is not zero, make sure b is of right shape!</span>
+
+<span class="sd">    :param ndarray A: 2 dimensional array</span>
+<span class="sd">    :param ndarray-like b: either one dimensional or scalar</span>
+<span class="sd">    :param int offset: same as in view.</span>
+<span class="sd">    :rtype: view of A, which is adjusted inplace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_diag_ufunc</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

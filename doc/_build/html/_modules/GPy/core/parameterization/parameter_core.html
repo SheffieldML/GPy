@@ -1,0 +1,1130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.core.parameterization.parameter_core &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.core.parameterization.parameter_core</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, GPy authors (see AUTHORS.txt).</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Core module for parameterization.</span>
+<span class="sd">This module implements all parameterization techniques, split up in modular bits.</span>
+
+<span class="sd">HierarchyError:</span>
+<span class="sd">raised when an error with the hierarchy occurs (circles etc.)</span>
+
+<span class="sd">Observable:</span>
+<span class="sd">Observable Pattern for patameterization</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">transformations</span> <span class="kn">import</span> <span class="n">Transformation</span><span class="p">,</span><span class="n">Logexp</span><span class="p">,</span> <span class="n">NegativeLogexp</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">,</span> <span class="n">__fixed__</span><span class="p">,</span> <span class="n">FIXED</span><span class="p">,</span> <span class="n">UNFIXED</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">updateable</span> <span class="kn">import</span> <span class="n">Updateable</span>
+
+<div class="viewcode-block" id="HierarchyError"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.HierarchyError">[docs]</a><span class="k">class</span> <span class="nc">HierarchyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets thrown when something is wrong with the parameter hierarchy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</div>
+<div class="viewcode-block" id="adjust_name_for_printing"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.adjust_name_for_printing">[docs]</a><span class="k">def</span> <span class="nf">adjust_name_for_printing</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make sure a name can be printed, alongside used as a variable name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">name2</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span> <span class="s">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="s">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;-&quot;</span><span class="p">,</span> <span class="s">&quot;_m_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;+&quot;</span><span class="p">,</span> <span class="s">&quot;_p_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;!&quot;</span><span class="p">,</span> <span class="s">&quot;_I_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;**&quot;</span><span class="p">,</span> <span class="s">&quot;_xx_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;*&quot;</span><span class="p">,</span> <span class="s">&quot;_x_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="s">&quot;_l_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;@&quot;</span><span class="p">,</span> <span class="s">&#39;_at_&#39;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;(&quot;</span><span class="p">,</span> <span class="s">&quot;_of_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;)&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;^[a-zA-Z_][a-zA-Z0-9-_]*$&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">,</span> <span class="s">&quot;name {} converted to {} cannot be further converted to valid python variable name!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name2</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span>
+
+
+</div>
+<div class="viewcode-block" id="Parentable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parentable">[docs]</a><span class="k">class</span> <span class="nc">Parentable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enable an Object to have a parent.</span>
+
+<span class="sd">    Additionally this adds the parent_index, which is the index for the parent</span>
+<span class="sd">    to look for in its parameter list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_parent_</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">_parent_index_</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Parentable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Parentable.has_parent"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parentable.has_parent">[docs]</a>    <span class="k">def</span> <span class="nf">has_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return whether this parentable object currently has a parent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+</div>
+    <span class="k">def</span> <span class="nf">_parent_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets called, when the parent changed, so we can adjust our</span>
+<span class="sd">        inner attributes according to the new parent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;shouldnt happen, Parentable objects need to be able to change their parent&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_disconnect_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disconnect this object from its parent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="s">&quot;Abstract superclass&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_highest_parent_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the highest parent by traversing up to the root node of the hierarchy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_highest_parent_</span>
+
+    <span class="k">def</span> <span class="nf">_notify_parent_change</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dont do anything if in leaf node</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Pickleable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Pickleable">[docs]</a><span class="k">class</span> <span class="nc">Pickleable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make an object pickleable (See python doc &#39;pickling&#39;).</span>
+
+<span class="sd">    This class allows for pickling support by Memento pattern.</span>
+<span class="sd">    _getstate returns a memento of the class, which gets pickled.</span>
+<span class="sd">    _setstate(&lt;memento&gt;) (re-)sets the state of the class to the memento</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Pickleable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Pickling operations</span>
+    <span class="c">#===========================================================================</span>
+<div class="viewcode-block" id="Pickleable.pickle"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Pickleable.pickle">[docs]</a>    <span class="k">def</span> <span class="nf">pickle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param f: either filename or open file object to write to.</span>
+<span class="sd">                  if it is an open buffer, you have to make sure to close</span>
+<span class="sd">                  it properly.</span>
+<span class="sd">        :param protocol: pickling protocol to use, python-pickle for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">cPickle</span> <span class="kn">as</span> <span class="nn">pickle</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># copy and pickling</span>
+    <span class="c">#===========================================================================</span></div>
+<div class="viewcode-block" id="Pickleable.copy"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Pickleable.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a (deep) copy of the current parameter handle.</span>
+
+<span class="sd">        All connections to parents of the copy will be cut.</span>
+
+<span class="sd">        :param dict memo: memo for deepcopy</span>
+<span class="sd">        :param Parameterized which: parameterized object which started the copy process [default: self]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#raise NotImplementedError, &quot;Copy is not yet implemented, TODO: Observable hierarchy&quot;</span>
+        <span class="k">if</span> <span class="n">memo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+        <span class="c"># the next part makes sure that we do not include parents in any form:</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">which</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="n">which</span><span class="o">.</span><span class="n">traverse_parents</span><span class="p">(</span><span class="n">parents</span><span class="o">.</span><span class="n">append</span><span class="p">)</span> <span class="c"># collect parents</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parents</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">memo</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)):</span><span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># set all parents to be None, so they will not be copied</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">memo</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient</span><span class="p">)):</span><span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gradient</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># reset the gradient</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">memo</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">)):</span><span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># fixes have to be reset, as this is now highest parent</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">)</span> <span class="c"># and start the copy</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">_parent_index_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">_trigger_params_changed</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">copy</span>
+</div>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">)</span> <span class="c"># fresh instance</span>
+        <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">s</span> <span class="c"># be sure to break all cycles --&gt; self is already done</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__getstate__</span><span class="p">(),</span> <span class="n">memo</span><span class="p">))</span> <span class="c"># standard copy</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ignore_list</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;_param_array_&#39;</span><span class="p">,</span> <span class="c"># parameters get set from bottom to top</span>
+                       <span class="s">&#39;_gradient_array_&#39;</span><span class="p">,</span> <span class="c"># as well as gradients</span>
+                       <span class="s">&#39;_optimizer_copy_&#39;</span><span class="p">,</span>
+                       <span class="s">&#39;logger&#39;</span><span class="p">,</span>
+                       <span class="s">&#39;observers&#39;</span><span class="p">,</span>
+                       <span class="s">&#39;_fixes_&#39;</span><span class="p">,</span> <span class="c"># and fixes</span>
+                       <span class="s">&#39;_Cacher_wrap__cachers&#39;</span><span class="p">,</span> <span class="c"># never pickle cachers</span>
+                       <span class="p">]</span>
+        <span class="n">dc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_list</span><span class="p">:</span>
+                <span class="n">dc</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">return</span> <span class="n">dc</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">lists_and_dicts</span> <span class="kn">import</span> <span class="n">ObserverList</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observers</span> <span class="o">=</span> <span class="n">ObserverList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_observers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span> <span class="o">=</span> <span class="bp">False</span>
+
+</div>
+<div class="viewcode-block" id="Gradcheckable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Gradcheckable">[docs]</a><span class="k">class</span> <span class="nc">Gradcheckable</span><span class="p">(</span><span class="n">Pickleable</span><span class="p">,</span> <span class="n">Parentable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds the functionality for an object to be gradcheckable.</span>
+<span class="sd">    It is just a thin wrapper of a call to the highest parent for now.</span>
+<span class="sd">    TODO: Can be done better, by only changing parameters of the current parameter handle,</span>
+<span class="sd">    such that object hierarchy only has to change for those.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Gradcheckable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Gradcheckable.checkgrad"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Gradcheckable.checkgrad">[docs]</a>    <span class="k">def</span> <span class="nf">checkgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">df_tolerance</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the gradient of this parameter with respect to the highest parent&#39;s</span>
+<span class="sd">        objective function.</span>
+<span class="sd">        This is a three point estimate of the gradient, wiggling at the parameters</span>
+<span class="sd">        with a stepsize step.</span>
+<span class="sd">        The check passes if either the ratio or the difference between numerical and</span>
+<span class="sd">        analytical gradient is smaller then tolerance.</span>
+
+<span class="sd">        :param bool verbose: whether each parameter shall be checked individually.</span>
+<span class="sd">        :param float step: the stepsize for the numerical three point gradient estimate.</span>
+<span class="sd">        :param float tolerance: the tolerance for the gradient ratio or difference.</span>
+<span class="sd">        :param float df_tolerance: the tolerance for df_tolerance</span>
+
+<span class="sd">        Note:-</span>
+<span class="sd">           The *dF_ratio* indicates the limit of accuracy of numerical gradients.</span>
+<span class="sd">           If it is too small, e.g., smaller than 1e-12, the numerical gradients</span>
+<span class="sd">           are usually not accurate enough for the tests (shown with blue).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_checkgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="n">tolerance</span><span class="p">,</span> <span class="n">df_tolerance</span><span class="o">=</span><span class="n">df_tolerance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="n">tolerance</span><span class="p">,</span> <span class="n">df_tolerance</span><span class="o">=</span><span class="n">df_tolerance</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_checkgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform the checkgrad on the model.</span>
+<span class="sd">        TODO: this can be done more efficiently, when doing it inside here</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">HierarchyError</span><span class="p">,</span> <span class="s">&quot;This parameter is not in a model with a likelihood, and, therefore, cannot be gradient checked!&quot;</span>
+</div>
+<div class="viewcode-block" id="Nameable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Nameable">[docs]</a><span class="k">class</span> <span class="nc">Nameable</span><span class="p">(</span><span class="n">Gradcheckable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make an object nameable inside the hierarchy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Nameable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The name of this object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+    <span class="nd">@name.setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the name of this object.</span>
+<span class="sd">        Tell the parent if the name has changed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">from_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_name_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_name</span><span class="p">)</span>
+<div class="viewcode-block" id="Nameable.hierarchy_name"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Nameable.hierarchy_name">[docs]</a>    <span class="k">def</span> <span class="nf">hierarchy_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjust_for_printing</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return the name for this object with the parents names attached by dots.</span>
+
+<span class="sd">        :param bool adjust_for_printing: whether to call :func:`~adjust_for_printing()`</span>
+<span class="sd">        on the names, recursively</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">adjust_for_printing</span><span class="p">:</span> <span class="n">adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">adjust_name_for_printing</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">hierarchy_name</span><span class="p">()</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">adjust</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">adjust</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="Indexable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable">[docs]</a><span class="k">class</span> <span class="nc">Indexable</span><span class="p">(</span><span class="n">Nameable</span><span class="p">,</span> <span class="n">Updateable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make an object constrainable with Priors and Transformations.</span>
+<span class="sd">    TODO: Mappings!!</span>
+<span class="sd">    Adding a constraint to a Parameter means to tell the highest parent that</span>
+<span class="sd">    the constraint was added and making sure that all parameters covered</span>
+<span class="sd">    by this object are indeed conforming to the constraint.</span>
+
+<span class="sd">    :func:`constrain()` and :func:`unconstrain()` are main methods here</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default_constraint</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Indexable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_constraint_</span> <span class="o">=</span> <span class="n">default_constraint</span>
+        <span class="kn">from</span> <span class="nn">index_operations</span> <span class="kn">import</span> <span class="n">ParameterIndexOperations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">ParameterIndexOperations</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priors</span> <span class="o">=</span> <span class="n">ParameterIndexOperations</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_constraint_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_constraint_</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_disconnect_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">constr</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        From Parentable:</span>
+<span class="sd">        disconnect the parent and set the new constraints to constr</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">constr</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">constr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">constr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parent_index_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_fixes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notify_parent_change</span><span class="p">()</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Indexable</span>
+    <span class="c">#===========================================================================</span>
+    <span class="k">def</span> <span class="nf">_offset_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the offset of the param inside this parameterized object.</span>
+<span class="sd">        This does not need to account for shaped parameters, as it</span>
+<span class="sd">        basically just sums up the parameter sizes which come before param.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_get_original</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[:</span><span class="n">p</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">_parent_</span><span class="p">)</span> <span class="o">+</span> <span class="n">param</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">_raveled_index_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get the raveled index for a param</span>
+<span class="sd">        that is an int array, containing the indexes for the flattened</span>
+<span class="sd">        param inside this parameterized logic.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">param</span> <span class="kn">import</span> <span class="n">ParamConcatenation</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">ParamConcatenation</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_raveled_index_for</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">param</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">param</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_raveled_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Flattened array of ints, specifying the index of this object.</span>
+<span class="sd">        This has to account for shaped parameters!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Fixing Parameters:</span>
+    <span class="c">#===========================================================================</span>
+<div class="viewcode-block" id="Indexable.constrain_fixed"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.constrain_fixed">[docs]</a>    <span class="k">def</span> <span class="nf">constrain_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constrain this parameter to be fixed to the current value it carries.</span>
+
+<span class="sd">        :param warning: print a warning for overwriting constraints.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">()</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">__fixed__</span><span class="p">,</span> <span class="n">warning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_set_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">None</span> <span class="k">if</span> <span class="n">trigger_parent</span> <span class="k">else</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">index</span></div>
+    <span class="n">fix</span> <span class="o">=</span> <span class="n">constrain_fixed</span>
+
+<div class="viewcode-block" id="Indexable.unconstrain_fixed"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unconstrain_fixed">[docs]</a>    <span class="k">def</span> <span class="nf">unconstrain_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This parameter will no longer be fixed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">unconstrained</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">(</span><span class="n">__fixed__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_set_unfixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unconstrained</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">unconstrained</span></div>
+    <span class="n">unfix</span> <span class="o">=</span> <span class="n">unconstrain_fixed</span>
+
+    <span class="k">def</span> <span class="nf">_ensure_fixes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Ensure that the fixes array is set:</span>
+        <span class="c"># Parameterized: ones(self.size)</span>
+        <span class="c"># Param: ones(self._realsize_</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_fixes</span><span class="p">():</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_fixes</span><span class="p">()</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="n">offset</span><span class="p">]</span> <span class="o">=</span> <span class="n">FIXED</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># ==UNFIXED</span>
+
+    <span class="k">def</span> <span class="nf">_set_unfixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_fixes</span><span class="p">()</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="n">offset</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNFIXED</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># ==UNFIXED</span>
+
+    <span class="k">def</span> <span class="nf">_connect_fixes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">fixed_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">fixed_indices</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_fixes</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">[</span><span class="n">fixed_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">FIXED</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Convenience for fixed</span>
+    <span class="c">#===========================================================================</span>
+    <span class="k">def</span> <span class="nf">_has_fixes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;_fixes_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">is_fixed</span><span class="p">:</span> <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_get_original</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="c"># if advanced indexing is activated it happens that the array is a copy</span>
+        <span class="c"># you can retrieve the original param through this method, by passing</span>
+        <span class="c"># the copy here</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">_parent_index_</span><span class="p">]</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Prior Operations</span>
+    <span class="c">#===========================================================================</span>
+<div class="viewcode-block" id="Indexable.set_prior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.set_prior">[docs]</a>    <span class="k">def</span> <span class="nf">set_prior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the prior for this object to prior.</span>
+<span class="sd">        :param :class:`~GPy.priors.Prior` prior: a prior to set for this parameter</span>
+<span class="sd">        :param bool warning: whether to warn if another prior was set for this parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">repriorized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unset_priors</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="p">,</span> <span class="n">repriorized</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">warning</span><span class="p">)</span>
+
+        <span class="kn">from</span> <span class="nn">domains</span> <span class="kn">import</span> <span class="n">_REAL</span><span class="p">,</span> <span class="n">_POSITIVE</span><span class="p">,</span> <span class="n">_NEGATIVE</span>
+        <span class="k">if</span> <span class="n">prior</span><span class="o">.</span><span class="n">domain</span> <span class="ow">is</span> <span class="n">_POSITIVE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constrain_positive</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">prior</span><span class="o">.</span><span class="n">domain</span> <span class="ow">is</span> <span class="n">_NEGATIVE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constrain_negative</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">prior</span><span class="o">.</span><span class="n">domain</span> <span class="ow">is</span> <span class="n">_REAL</span><span class="p">:</span>
+            <span class="n">rav_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="bp">False</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="n">__fixed__</span> <span class="k">else</span> <span class="n">c</span><span class="o">.</span><span class="n">domain</span> <span class="ow">is</span> <span class="n">_REAL</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">con</span><span class="p">)</span> <span class="k">for</span> <span class="n">con</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">properties_for</span><span class="p">(</span><span class="n">rav_i</span><span class="p">)),</span> <span class="s">&#39;Domain of prior and constraint have to match, please unconstrain if you REALLY wish to use this prior&#39;</span>
+</div>
+<div class="viewcode-block" id="Indexable.unset_priors"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unset_priors">[docs]</a>    <span class="k">def</span> <span class="nf">unset_priors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">priors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Un-set all priors given (in *priors) from this parameter handle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_from_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="p">,</span> <span class="n">priors</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Indexable.log_prior"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.log_prior">[docs]</a>    <span class="k">def</span> <span class="nf">log_prior</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;evaluate the prior&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span>
+            <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">lnpdf</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.</span>
+</div>
+    <span class="k">def</span> <span class="nf">_log_prior_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;evaluate the gradients of the priors&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">lnpdf_grad</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">ind</span><span class="p">]))</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()]</span>
+            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">return</span> <span class="mf">0.</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Tie parameters together</span>
+    <span class="c">#===========================================================================</span>
+
+    <span class="k">def</span> <span class="nf">_has_ties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">tie</span><span class="o">.</span><span class="n">tied_param</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">tie</span><span class="o">.</span><span class="n">label_buf</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_raveled_index_for</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">&gt;</span><span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Indexable.tie_together"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.tie_together">[docs]</a>    <span class="k">def</span> <span class="nf">tie_together</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">tie</span><span class="o">.</span><span class="n">add_tied_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_set_fixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trigger_params_changed</span><span class="p">()</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Constrain operations -&gt; done</span>
+    <span class="c">#===========================================================================</span>
+</div>
+<div class="viewcode-block" id="Indexable.constrain"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.constrain">[docs]</a>    <span class="k">def</span> <span class="nf">constrain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param transform: the :py:class:`GPy.core.transformations.Transformation`</span>
+<span class="sd">                          to constrain the this parameter to.</span>
+<span class="sd">        :param warning: print a warning if re-constraining parameters.</span>
+
+<span class="sd">        Constrain the parameter to the given</span>
+<span class="sd">        :py:class:`GPy.core.transformations.Transformation`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">Transformation</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">)</span>
+        <span class="n">reconstrained</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">()</span>
+        <span class="n">added</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span> <span class="n">reconstrained</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">warning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">None</span> <span class="k">if</span> <span class="n">trigger_parent</span> <span class="k">else</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">added</span>
+</div>
+<div class="viewcode-block" id="Indexable.unconstrain"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unconstrain">[docs]</a>    <span class="k">def</span> <span class="nf">unconstrain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">transforms</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param transforms: The transformations to unconstrain from.</span>
+
+<span class="sd">        remove all :py:class:`GPy.core.transformations.Transformation`</span>
+<span class="sd">        transformats of this parameter object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_from_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span> <span class="n">transforms</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Indexable.constrain_positive"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.constrain_positive">[docs]</a>    <span class="k">def</span> <span class="nf">constrain_positive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param warning: print a warning if re-constraining parameters.</span>
+
+<span class="sd">        Constrain this parameter to the default positive constraint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span><span class="n">Logexp</span><span class="p">(),</span> <span class="n">warning</span><span class="o">=</span><span class="n">warning</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="n">trigger_parent</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Indexable.constrain_negative"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.constrain_negative">[docs]</a>    <span class="k">def</span> <span class="nf">constrain_negative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param warning: print a warning if re-constraining parameters.</span>
+
+<span class="sd">        Constrain this parameter to the default negative constraint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span><span class="n">NegativeLogexp</span><span class="p">(),</span> <span class="n">warning</span><span class="o">=</span><span class="n">warning</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="n">trigger_parent</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Indexable.constrain_bounded"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.constrain_bounded">[docs]</a>    <span class="k">def</span> <span class="nf">constrain_bounded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">warning</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param lower, upper: the limits to bound this parameter to</span>
+<span class="sd">        :param warning: print a warning if re-constraining parameters.</span>
+
+<span class="sd">        Constrain this parameter to lie within the given range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span><span class="n">Logistic</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">),</span> <span class="n">warning</span><span class="o">=</span><span class="n">warning</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="n">trigger_parent</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Indexable.unconstrain_positive"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unconstrain_positive">[docs]</a>    <span class="k">def</span> <span class="nf">unconstrain_positive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove positive constraint of this parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">(</span><span class="n">Logexp</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="Indexable.unconstrain_negative"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unconstrain_negative">[docs]</a>    <span class="k">def</span> <span class="nf">unconstrain_negative</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove negative constraint of this parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">(</span><span class="n">NegativeLogexp</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="Indexable.unconstrain_bounded"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Indexable.unconstrain_bounded">[docs]</a>    <span class="k">def</span> <span class="nf">unconstrain_bounded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param lower, upper: the limits to unbound this parameter from</span>
+
+<span class="sd">        Remove (lower, upper) bounded constrain from this parameter/</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconstrain</span><span class="p">(</span><span class="n">Logistic</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span>
+</div>
+    <span class="k">def</span> <span class="nf">_parent_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        From Parentable:</span>
+<span class="sd">        Called when the parent changed</span>
+
+<span class="sd">        update the constraints and priors view, so that</span>
+<span class="sd">        constraining is automized for the parent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">index_operations</span> <span class="kn">import</span> <span class="n">ParameterIndexOperationsView</span>
+        <span class="c">#if getattr(self, &quot;_in_init_&quot;):</span>
+            <span class="c">#import ipdb;ipdb.set_trace()</span>
+            <span class="c">#self.constraints.update(param.constraints, start)</span>
+            <span class="c">#self.priors.update(param.priors, start)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">_offset_for</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">ParameterIndexOperationsView</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">constraints</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priors</span> <span class="o">=</span> <span class="n">ParameterIndexOperationsView</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">priors</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">_parent_changed</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_to_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">,</span> <span class="n">reconstrained</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span> <span class="n">warning</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper preventing copy code.</span>
+<span class="sd">        This adds the given what (transformation, prior etc) to parameter index operations which.</span>
+<span class="sd">        reconstrained are reconstrained indices.</span>
+<span class="sd">        warn when reconstraining parameters if warning is True.</span>
+<span class="sd">        TODO: find out which parameters have changed specifically</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">warning</span> <span class="ow">and</span> <span class="n">reconstrained</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># TODO: figure out which parameters have changed and only print those</span>
+            <span class="k">print</span> <span class="s">&quot;WARNING: reconstraining parameters {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hierarchy_name</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">()</span>
+        <span class="n">which</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">what</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">index</span>
+
+    <span class="k">def</span> <span class="nf">_remove_from_index_operations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">,</span> <span class="n">transforms</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper preventing copy code.</span>
+<span class="sd">        Remove given what (transform prior etc) from which param index ops.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">transforms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">transforms</span> <span class="o">=</span> <span class="n">which</span><span class="o">.</span><span class="n">properties</span><span class="p">()</span>
+        <span class="n">removed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">:</span>
+            <span class="n">unconstrained</span> <span class="o">=</span> <span class="n">which</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raveled_index</span><span class="p">())</span>
+            <span class="n">removed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">removed</span><span class="p">,</span> <span class="n">unconstrained</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="n">__fixed__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">_set_unfixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unconstrained</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">removed</span>
+</div>
+<div class="viewcode-block" id="OptimizationHandlable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.OptimizationHandlable">[docs]</a><span class="k">class</span> <span class="nc">OptimizationHandlable</span><span class="p">(</span><span class="n">Indexable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This enables optimization handles on an Object as done in GPy 0.4.</span>
+
+<span class="sd">    `..._optimizer_copy_transformed`: make sure the transformations and constraints etc are handled</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default_constraint</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">OptimizationHandlable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default_constraint</span><span class="o">=</span><span class="n">default_constraint</span><span class="p">,</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Optimizer copy</span>
+    <span class="c">#===========================================================================</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">optimizer_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Array for the optimizer to work on.</span>
+<span class="sd">        This array always lives in the space for the optimizer.</span>
+<span class="sd">        Thus, it is untransformed, going from Transformations.</span>
+
+<span class="sd">        Setting this array, will make sure the transformed parameters for this model</span>
+<span class="sd">        will be set accordingly. It has to be set with an array, retrieved from</span>
+<span class="sd">        this method, as e.g. fixing will resize the array.</span>
+
+<span class="sd">        The optimizer should only interfere with this array, such that transformations</span>
+<span class="sd">        are secured.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_optimizer_copy_&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span><span class="o">.</span><span class="n">flat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">finv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">[</span><span class="n">ind</span><span class="p">]))</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">__fixed__</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_ties</span><span class="p">()):</span>
+                <span class="n">fixes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+                <span class="n">fixes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]]</span> <span class="o">=</span> <span class="n">FIXED</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">fixes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">tie</span><span class="o">.</span><span class="n">getTieFlag</span><span class="p">(</span><span class="bp">self</span><span class="p">))]</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_fixes</span><span class="p">():</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_</span>
+
+    <span class="nd">@optimizer_array.setter</span>
+    <span class="k">def</span> <span class="nf">optimizer_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make sure the optimizer copy does not get touched, thus, we only want to</span>
+<span class="sd">        set the values *inside* not the array itself.</span>
+
+<span class="sd">        Also we want to update param_array in here.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="n">f</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]]</span> <span class="o">=</span> <span class="n">FIXED</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_fixes</span><span class="p">():</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">ind</span><span class="p">]))</span>
+             <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">__fixed__</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">,</span> <span class="n">ind</span><span class="p">[</span><span class="n">f</span><span class="p">[</span><span class="n">ind</span><span class="p">]],</span> <span class="n">c</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">f</span><span class="p">[</span><span class="n">ind</span><span class="p">]]]))</span>
+             <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">__fixed__</span><span class="p">]</span>
+        <span class="c">#self._highest_parent_.tie.propagate_val()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trigger_update</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_params_transformed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="s">&quot;_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!&quot;</span>
+<span class="c">#</span>
+    <span class="k">def</span> <span class="nf">_set_params_transformed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="s">&quot;_get|set_params{_optimizer_copy_transformed} is deprecated, use self.optimizer array insetad!&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_trigger_params_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        First tell all children to update,</span>
+<span class="sd">        then update yourself.</span>
+
+<span class="sd">        If trigger_parent is True, we will tell the parent, otherwise not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">_trigger_params_changed</span><span class="p">(</span><span class="n">trigger_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">is_fixed</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span> <span class="k">if</span> <span class="n">trigger_parent</span> <span class="k">else</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_size_transformed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        As fixes are not passed to the optimiser, the size of the model for the optimiser</span>
+<span class="sd">        is the size of all parameters minus the size of the fixes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="k">def</span> <span class="nf">_transform_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transform the gradients by multiplying the gradient factor for each</span>
+<span class="sd">        constraint to it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highest_parent_</span><span class="o">.</span><span class="n">tie</span><span class="o">.</span><span class="n">collate_gradient</span><span class="p">()</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">gradfactor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">g</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">__fixed__</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_fixes</span><span class="p">():</span> <span class="k">return</span> <span class="n">g</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">g</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the number of parameters of this parameter_handle.</span>
+<span class="sd">        Param objects will always return 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">,</span> <span class="s">&quot;Abstract, please implement in respective classes&quot;</span>
+
+<div class="viewcode-block" id="OptimizationHandlable.parameter_names"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.OptimizationHandlable.parameter_names">[docs]</a>    <span class="k">def</span> <span class="nf">parameter_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">add_self</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">adjust_for_printing</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the names of all parameters of this model.</span>
+
+<span class="sd">        :param bool add_self: whether to add the own name in front of names</span>
+<span class="sd">        :param bool adjust_for_printing: whether to call `adjust_name_for_printing` on names</span>
+<span class="sd">        :param bool recursive: whether to traverse through hierarchy and append leaf node names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">adjust_for_printing</span><span class="p">:</span> <span class="n">adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">adjust_name_for_printing</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+        <span class="k">if</span> <span class="n">recursive</span><span class="p">:</span> <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">xi</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">for</span> <span class="n">xi</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">(</span><span class="n">add_self</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">adjust_for_printing</span><span class="o">=</span><span class="n">adjust_for_printing</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">adjust</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">add_self</span><span class="p">:</span> <span class="n">names</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">adjust</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">names</span>
+</div>
+    <span class="k">def</span> <span class="nf">_get_param_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">hierarchy_name</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#39;[&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;]&#39;</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flattened_parameters</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">_indices</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">n</span>
+
+    <span class="k">def</span> <span class="nf">_get_param_names_transformed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_param_names</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_fixes</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">n</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixes_</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">n</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># Randomizeable</span>
+    <span class="c">#===========================================================================</span>
+<div class="viewcode-block" id="OptimizationHandlable.randomize"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.OptimizationHandlable.randomize">[docs]</a>    <span class="k">def</span> <span class="nf">randomize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rand_gen</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Randomize the model.</span>
+<span class="sd">        Make this draw from the prior if one exists, else draw from given random generator</span>
+
+<span class="sd">        :param rand_gen: np random number generator which takes args and kwargs</span>
+<span class="sd">        :param flaot loc: loc parameter for random number generator</span>
+<span class="sd">        :param float scale: scale parameter for random number generator</span>
+<span class="sd">        :param args, kwargs: will be passed through to random number generator</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rand_gen</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">rand_gen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span>
+        <span class="c"># first take care of all parameters (from N(0,1))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">rand_gen</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_size_transformed</span><span class="p">(),</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_model</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_model</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span> <span class="c"># Switch off the updates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_array</span> <span class="o">=</span> <span class="n">x</span>  <span class="c"># makes sure all of the tied parameters get the same init (since there&#39;s only one prior object...)</span>
+        <span class="c"># now draw from prior where possible</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">unfixlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="n">unfixlist</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">unfixlist</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="n">unfixlist</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_model</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># For shared memory arrays. This does nothing in Param, but sets the memory</span>
+    <span class="c"># for all parameterized objects</span>
+    <span class="c">#===========================================================================</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">gradient_full</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note to users:</span>
+<span class="sd">        This does not return the gradient in the right shape! Use self.gradient</span>
+<span class="sd">        for the right gradient array.</span>
+
+<span class="sd">        To work on the gradient array, use this as the gradient handle.</span>
+<span class="sd">        This method exists for in memory use of parameters.</span>
+<span class="sd">        When trying to access the true gradient array, use this.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradient</span> <span class="c"># &lt;&lt;&lt; ensure _gradient_array_</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span>
+
+    <span class="k">def</span> <span class="nf">_propagate_param_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parray</span><span class="p">,</span> <span class="n">garray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For propagating the param_array and gradient_array.</span>
+<span class="sd">        This ensures the in memory view of each subsequent array.</span>
+
+<span class="sd">        1.) connect param_array of children to self.param_array</span>
+<span class="sd">        2.) tell all children to propagate further</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="n">pi_old_size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pi</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">pislice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">pi_old_size</span><span class="p">,</span> <span class="n">pi_old_size</span> <span class="o">+</span> <span class="n">pi</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_array</span><span class="p">[</span><span class="n">pislice</span><span class="p">]</span> <span class="o">=</span> <span class="n">pi</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">flat</span>  <span class="c"># , requirements=[&#39;C&#39;, &#39;W&#39;]).flat</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gradient_full</span><span class="p">[</span><span class="n">pislice</span><span class="p">]</span> <span class="o">=</span> <span class="n">pi</span><span class="o">.</span><span class="n">gradient_full</span><span class="o">.</span><span class="n">flat</span>  <span class="c"># , requirements=[&#39;C&#39;, &#39;W&#39;]).flat</span>
+
+            <span class="n">pi</span><span class="o">.</span><span class="n">param_array</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">parray</span><span class="p">[</span><span class="n">pislice</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">pi</span><span class="o">.</span><span class="n">gradient_full</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">garray</span><span class="p">[</span><span class="n">pislice</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+            <span class="n">pi</span><span class="o">.</span><span class="n">_propagate_param_grad</span><span class="p">(</span><span class="n">parray</span><span class="p">[</span><span class="n">pislice</span><span class="p">],</span> <span class="n">garray</span><span class="p">[</span><span class="n">pislice</span><span class="p">])</span>
+            <span class="n">pi_old_size</span> <span class="o">+=</span> <span class="n">pi</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="k">def</span> <span class="nf">_connect_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</div>
+<span class="n">_name_digit</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;(?P&lt;name&gt;.*)_(?P&lt;digit&gt;\d+)$&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="Parameterizable"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parameterizable">[docs]</a><span class="k">class</span> <span class="nc">Parameterizable</span><span class="p">(</span><span class="n">OptimizationHandlable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A parameterisable class.</span>
+
+<span class="sd">    This class provides the parameters list (ArrayList) and standard parameter handling,</span>
+<span class="sd">    such as {add|remove}_parameter(), traverse hierarchy and param_array, gradient_array</span>
+<span class="sd">    and the empty parameters_changed().</span>
+
+<span class="sd">    This class is abstract and should not be instantiated.</span>
+<span class="sd">    Use GPy.core.Parameterized() as node (or leaf) in the parameterized hierarchy.</span>
+<span class="sd">    Use GPy.core.Param() for a leaf in the parameterized hierarchy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Parameterizable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">GPy.core.parameterization.lists_and_dicts</span> <span class="kn">import</span> <span class="n">ArrayList</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ArrayList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># for traversing in reverse order we need to know if we were here already</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">param_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Array representing the parameters of this class.</span>
+<span class="sd">        There is only one copy of all parameters in memory, two during optimization.</span>
+
+<span class="sd">        !WARNING!: setting the parameter array MUST always be done in memory:</span>
+<span class="sd">        m.param_array[:] = m_copy.param_array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_param_array_&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">unfixed_param_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Array representing the parameters of this class.</span>
+<span class="sd">        There is only one copy of all parameters in memory, two during optimization.</span>
+
+<span class="sd">        !WARNING!: setting the parameter array MUST always be done in memory:</span>
+<span class="sd">        m.param_array[:] = m_copy.param_array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_param_array_&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">fixes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="n">fixes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">__fixed__</span><span class="p">]]</span> <span class="o">=</span> <span class="n">FIXED</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span><span class="p">[</span><span class="n">fixes</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span>
+
+    <span class="nd">@param_array.setter</span>
+    <span class="k">def</span> <span class="nf">param_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_array_</span> <span class="o">=</span> <span class="n">arr</span>
+
+<div class="viewcode-block" id="Parameterizable.traverse"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parameterizable.traverse">[docs]</a>    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Traverse the hierarchy performing visit(self, *args, **kwargs)</span>
+<span class="sd">        at every node passed by downwards. This function includes self!</span>
+
+<span class="sd">        See &quot;visitor pattern&quot; in literature. This is implemented in pre-order fashion.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">        Collect all children:</span>
+
+<span class="sd">        children = []</span>
+<span class="sd">        self.traverse(children.append)</span>
+<span class="sd">        print children</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span><span class="p">:</span>
+            <span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="Parameterizable.traverse_parents"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parameterizable.traverse_parents">[docs]</a>    <span class="k">def</span> <span class="nf">traverse_parents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Traverse the hierarchy upwards, visiting all parents and their children except self.</span>
+<span class="sd">        See &quot;visitor pattern&quot; in literature. This is implemented in pre-order fashion.</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        parents = []</span>
+<span class="sd">        self.traverse_parents(parents.append)</span>
+<span class="sd">        print parents</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_traverse_parents</span><span class="p">(</span><span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">False</span>
+</div>
+    <span class="k">def</span> <span class="nf">_traverse_parents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_traverse_parents</span><span class="p">(</span><span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">visit</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__visited</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c">#=========================================================================</span>
+    <span class="c"># Gradient handling</span>
+    <span class="c">#=========================================================================</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_gradient_array_&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span>
+
+    <span class="nd">@gradient.setter</span>
+    <span class="k">def</span> <span class="nf">gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gradient_array_</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_parameter_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">ignore_added_names</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">pname</span> <span class="o">=</span> <span class="n">adjust_name_for_printing</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ignore_added_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+            <span class="k">return</span>
+
+        <span class="k">def</span> <span class="nf">warn_and_retry</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+            <span class="c">#===================================================================</span>
+            <span class="c"># print &quot;&quot;&quot;</span>
+            <span class="c"># WARNING: added a parameter with formatted name {},</span>
+            <span class="c"># which is already assigned to {}.</span>
+            <span class="c"># Trying to change the parameter name to</span>
+            <span class="c">#</span>
+            <span class="c"># {}.{}</span>
+            <span class="c"># &quot;&quot;&quot;.format(pname, self.hierarchy_name(), self.hierarchy_name(), param.name + &quot;_&quot;)</span>
+            <span class="c">#===================================================================</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="o">+=</span> <span class="s">&quot;_1&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;digit&#39;</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_parameter_name</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">ignore_added_names</span><span class="p">)</span>
+        <span class="c"># and makes sure to not delete programmatically added parameters</span>
+        <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">param</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">warn_and_retry</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">_name_digit</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">return</span>
+        <span class="k">if</span> <span class="n">pname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span><span class="p">:</span>
+                <span class="n">other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">param</span> <span class="ow">is</span> <span class="n">other</span><span class="p">):</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+                    <span class="n">warn_and_retry</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+                    <span class="n">warn_and_retry</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">_name_digit</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_remove_parameter_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">pname</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">param</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">pname</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&quot;can only delete either param by name, or the name of a param&quot;</span>
+        <span class="n">pname</span> <span class="o">=</span> <span class="n">adjust_name_for_printing</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span> <span class="ow">or</span> <span class="n">adjust_name_for_printing</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_added_names_</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_name_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">old_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_parameter_name</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">old_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_parameter_name</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Parameterizable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="c">#===========================================================================</span>
+    <span class="c"># notification system</span>
+    <span class="c">#===========================================================================</span>
+    <span class="k">def</span> <span class="nf">_parameters_changed_notification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">me</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        In parameterizable we just need to make sure, that the next call to optimizer_array</span>
+<span class="sd">        will update the optimizer_array to the latest parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_copy_transformed</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># tells the optimizer array to update on next request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters_changed</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_pass_through_notify_observers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">me</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_setup_observers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Setup the default observers</span>
+
+<span class="sd">        1: parameters_changed_notify</span>
+<span class="sd">        2: pass through to parent, if present</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters_changed_notification</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parent</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_observer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent_</span><span class="o">.</span><span class="n">_pass_through_notify_observers</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="c">#===========================================================================</span>
+    <span class="c"># From being parentable, we have to define the parent_change notification</span>
+    <span class="c">#===========================================================================</span>
+    <span class="k">def</span> <span class="nf">_notify_parent_change</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Notify all parameters that the parent has changed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">_parent_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Parameterizable.parameters_changed"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parameterizable.parameters_changed">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called when parameters have changed.</span>
+<span class="sd">        Another way of listening to param changes is to</span>
+<span class="sd">        add self as a listener to the param, such that</span>
+<span class="sd">        updates get passed through. See :py:function:``GPy.core.param.Observable.add_observer``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Parameterizable.save"><a class="viewcode-back" href="../../../../GPy.core.parameterization.html#GPy.core.parameterization.parameter_core.Parameterizable.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">ftype</span><span class="o">=</span><span class="s">&#39;HDF5&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save all the model parameters into a file (HDF5 by default).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">Param</span>
+        <span class="kn">from</span> <span class="nn">...util.misc</span> <span class="kn">import</span> <span class="n">param_to_array</span>
+        <span class="k">def</span> <span class="nf">gather_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plist</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Param</span><span class="p">):</span>
+                <span class="n">plist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">plist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">gather_params</span><span class="p">,</span> <span class="n">plist</span><span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">(</span><span class="n">adjust_for_printing</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ftype</span><span class="o">==</span><span class="s">&#39;HDF5&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">h5py</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">plist</span><span class="p">,</span><span class="n">names</span><span class="p">):</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">param_to_array</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="n">d</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">p</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="s">&#39;Fails to write the parameters into a HDF5 file!&#39;</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

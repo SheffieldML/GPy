@@ -1,0 +1,2052 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src package &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" />
+    <link rel="up" title="GPy.kern package" href="GPy.kern.html" />
+    <link rel="next" title="GPy.kern._src.psi_comp package" href="GPy.kern._src.psi_comp.html" />
+    <link rel="prev" title="GPy.kern package" href="GPy.kern.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern._src.psi_comp.html" title="GPy.kern._src.psi_comp package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern.html" title="GPy.kern package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="GPy.kern.html" accesskey="U">GPy.kern package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gpy-kern-src-package">
+<h1>GPy.kern._src package<a class="headerlink" href="#gpy-kern-src-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="GPy.kern._src.psi_comp.html">GPy.kern._src.psi_comp package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.linear_psi_comp">GPy.kern._src.psi_comp.linear_psi_comp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.rbf_psi_comp">GPy.kern._src.psi_comp.rbf_psi_comp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.rbf_psi_gpucomp">GPy.kern._src.psi_comp.rbf_psi_gpucomp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.sslinear_psi_comp">GPy.kern._src.psi_comp.sslinear_psi_comp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.ssrbf_psi_comp">GPy.kern._src.psi_comp.ssrbf_psi_comp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp.ssrbf_psi_gpucomp">GPy.kern._src.psi_comp.ssrbf_psi_gpucomp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GPy.kern._src.psi_comp.html#module-GPy.kern._src.psi_comp">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.kern._src.ODE_UY">
+<span id="gpy-kern-src-ode-uy-module"></span><h2>GPy.kern._src.ODE_UY module<a class="headerlink" href="#module-GPy.kern._src.ODE_UY" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.ODE_UY.ODE_UY">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.ODE_UY.</code><code class="descname">ODE_UY</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance_U=3.0</em>, <em>variance_Y=1.0</em>, <em>lengthscale_U=1.0</em>, <em>lengthscale_Y=1.0</em>, <em>active_dims=None</em>, <em>name='ode_uy'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UY.html#ODE_UY"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UY.ODE_UY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UY.ODE_UY.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UY.html#ODE_UY.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UY.ODE_UY.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UY.ODE_UY.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UY.html#ODE_UY.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UY.ODE_UY.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the diagonal of the covariance matrix associated to X.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UY.ODE_UY.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UY.html#ODE_UY.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UY.ODE_UY.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.ODE_UYC">
+<span id="gpy-kern-src-ode-uyc-module"></span><h2>GPy.kern._src.ODE_UYC module<a class="headerlink" href="#module-GPy.kern._src.ODE_UYC" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.ODE_UYC.ODE_UYC">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.ODE_UYC.</code><code class="descname">ODE_UYC</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance_U=3.0</em>, <em>variance_Y=1.0</em>, <em>lengthscale_U=1.0</em>, <em>lengthscale_Y=1.0</em>, <em>ubias=1.0</em>, <em>active_dims=None</em>, <em>name='ode_uyc'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UYC.html#ODE_UYC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UYC.ODE_UYC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UYC.ODE_UYC.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UYC.html#ODE_UYC.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UYC.ODE_UYC.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UYC.ODE_UYC.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UYC.html#ODE_UYC.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UYC.ODE_UYC.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the diagonal of the covariance matrix associated to X.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_UYC.ODE_UYC.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_UYC.html#ODE_UYC.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_UYC.ODE_UYC.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.ODE_st">
+<span id="gpy-kern-src-ode-st-module"></span><h2>GPy.kern._src.ODE_st module<a class="headerlink" href="#module-GPy.kern._src.ODE_st" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.ODE_st.ODE_st">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.ODE_st.</code><code class="descname">ODE_st</code><span class="sig-paren">(</span><em>input_dim</em>, <em>a=1.0</em>, <em>b=1.0</em>, <em>c=1.0</em>, <em>variance_Yx=3.0</em>, <em>variance_Yt=1.5</em>, <em>lengthscale_Yx=1.5</em>, <em>lengthscale_Yt=1.5</em>, <em>active_dims=None</em>, <em>name='ode_st'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_st.html#ODE_st"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_st.ODE_st" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>kernel resultiong from a first order ODE with OU driving GP</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimension, has to be equal to one</li>
+<li><strong>varianceU</strong> (<em>float</em>) &#8211; variance of the driving GP</li>
+<li><strong>lengthscaleU</strong> (<em>float</em>) &#8211; lengthscale of the driving GP  (sqrt(3)/lengthscaleU)</li>
+<li><strong>varianceY</strong> (<em>float</em>) &#8211; &#8216;variance&#8217; of the transfer function</li>
+<li><strong>lengthscaleY</strong> (<em>float</em>) &#8211; &#8216;lengthscale&#8217; of the transfer function (1/lengthscaleY)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.ODE_st.ODE_st.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_st.html#ODE_st.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_st.ODE_st.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance matrix between X and X2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_st.ODE_st.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_st.html#ODE_st.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_st.ODE_st.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the diagonal of the covariance matrix associated to X.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_st.ODE_st.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_st.html#ODE_st.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_st.ODE_st.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.ODE_t">
+<span id="gpy-kern-src-ode-t-module"></span><h2>GPy.kern._src.ODE_t module<a class="headerlink" href="#module-GPy.kern._src.ODE_t" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.ODE_t.ODE_t">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.ODE_t.</code><code class="descname">ODE_t</code><span class="sig-paren">(</span><em>input_dim</em>, <em>a=1.0</em>, <em>c=1.0</em>, <em>variance_Yt=3.0</em>, <em>lengthscale_Yt=1.5</em>, <em>ubias=1.0</em>, <em>active_dims=None</em>, <em>name='ode_st'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_t.html#ODE_t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_t.ODE_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.ODE_t.ODE_t.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_t.html#ODE_t.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_t.ODE_t.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance matrix between X and X2.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_t.ODE_t.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_t.html#ODE_t.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_t.ODE_t.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.ODE_t.ODE_t.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/ODE_t.html#ODE_t.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.ODE_t.ODE_t.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.add">
+<span id="gpy-kern-src-add-module"></span><h2>GPy.kern._src.add module<a class="headerlink" href="#module-GPy.kern._src.add" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.add.Add">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.add.</code><code class="descname">Add</code><span class="sig-paren">(</span><em>subkerns</em>, <em>name='add'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.CombinationKernel" title="GPy.kern._src.kern.CombinationKernel"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.CombinationKernel</span></code></a></p>
+<p>Add given list of kernels together.
+propagates gradients through.</p>
+<p>This kernel will take over the active dims of it&#8217;s subkernels passed in.</p>
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add all kernels together.
+If a list of parts (of this kernel!) <cite>which_parts</cite> is given, only
+the parts of the list are taken to compute the covariance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the gradient of the objective function with respect to X.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dL_dK</strong> (<em>np.ndarray (num_samples x num_inducing)</em>) &#8211; An array of gradients of the objective function with respect to the covariance function.</li>
+<li><strong>X</strong> (<em>np.ndarray (num_samples x input_dim)</em>) &#8211; Observed data inputs</li>
+<li><strong>X2</strong> (<em>np.ndarray (num_inducing x input_dim)</em>) &#8211; Observed data inputs (optional, defaults to X)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.gradients_Z_expectations">
+<code class="descname">gradients_Z_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.gradients_Z_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.gradients_Z_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.gradients_qX_expectations">
+<code class="descname">gradients_qX_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.gradients_qX_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.gradients_qX_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.psi0">
+<code class="descname">psi0</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.psi0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.psi0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.psi1">
+<code class="descname">psi1</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.psi1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.psi1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.add.Add.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/add.html#Add.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.add.Add.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.brownian">
+<span id="gpy-kern-src-brownian-module"></span><h2>GPy.kern._src.brownian module<a class="headerlink" href="#module-GPy.kern._src.brownian" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.brownian.Brownian">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.brownian.</code><code class="descname">Brownian</code><span class="sig-paren">(</span><em>input_dim=1</em>, <em>variance=1.0</em>, <em>active_dims=None</em>, <em>name='Brownian'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/brownian.html#Brownian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.brownian.Brownian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Brownian motion in 1D only.</p>
+<p>Negative times are treated as a separate (backwards!) Brownian motion.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variance</strong> (<em>float</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.brownian.Brownian.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/brownian.html#Brownian.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.brownian.Brownian.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.brownian.Brownian.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/brownian.html#Brownian.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.brownian.Brownian.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.brownian.Brownian.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/brownian.html#Brownian.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.brownian.Brownian.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.coregionalize">
+<span id="gpy-kern-src-coregionalize-module"></span><h2>GPy.kern._src.coregionalize module<a class="headerlink" href="#module-GPy.kern._src.coregionalize" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.coregionalize.Coregionalize">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.coregionalize.</code><code class="descname">Coregionalize</code><span class="sig-paren">(</span><em>input_dim</em>, <em>output_dim</em>, <em>rank=1</em>, <em>W=None</em>, <em>kappa=None</em>, <em>active_dims=None</em>, <em>name='coregion'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Covariance function for intrinsic/linear coregionalization models</p>
+<p>This covariance has the form:
+.. math:</p>
+<div class="highlight-python"><div class="highlight"><pre>\mathbf{B} = \mathbf{W}\mathbf{W}^       op +    ext{diag}(kappa)
+</pre></div>
+</div>
+<p>An intrinsic/linear coregionalization covariance function of the form:
+.. math:</p>
+<div class="highlight-python"><div class="highlight"><pre>k_2(x, y)=\mathbf{B} k(x, y)
+</pre></div>
+</div>
+<p>it is obtained as the tensor product between a covariance function
+k(x, y) and B.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>output_dim</strong> (<em>int</em>) &#8211; number of outputs to coregionalize</li>
+<li><strong>rank</strong> (<em>int</em>) &#8211; number of columns of the W matrix (this parameter is ignored if parameter W is not None)</li>
+<li><strong>W</strong> (<em>numpy array of dimensionality (num_outpus, W_columns)</em>) &#8211; a low rank matrix that determines the correlations between the different outputs, together with kappa it forms the coregionalization matrix B</li>
+<li><strong>kappa</strong> (<em>numpy array of dimensionality  (output_dim, )</em>) &#8211; a vector which allows the outputs to behave independently</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.coregionalize.Coregionalize.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/coregionalize.html#Coregionalize.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.coregionalize.Coregionalize.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="gpy-kern-src-hierarchical-module">
+<h2>GPy.kern._src.hierarchical module<a class="headerlink" href="#gpy-kern-src-hierarchical-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.kern._src.independent_outputs">
+<span id="gpy-kern-src-independent-outputs-module"></span><h2>GPy.kern._src.independent_outputs module<a class="headerlink" href="#module-GPy.kern._src.independent_outputs" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.independent_outputs.Hierarchical">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.independent_outputs.</code><code class="descname">Hierarchical</code><span class="sig-paren">(</span><em>kernels</em>, <em>name='hierarchy'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#Hierarchical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.Hierarchical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.CombinationKernel" title="GPy.kern._src.kern.CombinationKernel"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.CombinationKernel</span></code></a></p>
+<p>A kernel which can represent a simple hierarchical model.</p>
+<p>See Hensman et al 2013, &#8220;Hierarchical Bayesian modelling of gene expression time
+series across irregularly sampled replicates and clusters&#8221;
+<a class="reference external" href="http://www.biomedcentral.com/1471-2105/14/252">http://www.biomedcentral.com/1471-2105/14/252</a></p>
+<p>To construct this kernel, you must pass a list of kernels. the first kernel
+will be assumed to be the &#8216;base&#8217; kernel, and will be computed everywhere.
+For every additional kernel, we assume another layer in the hierachy, with
+a corresponding column of the input matrix which indexes which function the
+data are in at that level.</p>
+<p>For more, see the ipython notebook documentation on Hierarchical
+covariances.</p>
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.Hierarchical.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#Hierarchical.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.Hierarchical.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.Hierarchical.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#Hierarchical.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.Hierarchical.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.Hierarchical.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#Hierarchical.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.Hierarchical.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.Hierarchical.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#Hierarchical.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.Hierarchical.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.independent_outputs.</code><code class="descname">IndependentOutputs</code><span class="sig-paren">(</span><em>kernels</em>, <em>index_dim=-1</em>, <em>name='independ'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.CombinationKernel" title="GPy.kern._src.kern.CombinationKernel"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.CombinationKernel</span></code></a></p>
+<p>A kernel which can represent several independent functions.  this kernel
+&#8216;switches off&#8217; parts of the matrix where the output indexes are different.</p>
+<p>The index of the functions is given by the last column in the input X the
+rest of the columns of X are passed to the underlying kernel for
+computation (in blocks).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kernels</strong> &#8211; either a kernel, or list of kernels to work with. If it is</td>
+</tr>
+</tbody>
+</table>
+<p>a list of kernels the indices in the index_dim, index the kernels you gave!</p>
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#IndependentOutputs.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.kern._src.independent_outputs.index_to_slices">
+<code class="descclassname">GPy.kern._src.independent_outputs.</code><code class="descname">index_to_slices</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/independent_outputs.html#index_to_slices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.independent_outputs.index_to_slices" title="Permalink to this definition">¶</a></dt>
+<dd><p>take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.</p>
+<p>e.g.
+&gt;&gt;&gt; index = np.asarray([0,0,0,1,1,1,2,2,2])
+returns
+&gt;&gt;&gt; [[slice(0,3,None)],[slice(3,6,None)],[slice(6,9,None)]]</p>
+<p>or, a more complicated example
+&gt;&gt;&gt; index = np.asarray([0,0,1,1,0,2,2,2,1,1])
+returns
+&gt;&gt;&gt; [[slice(0,2,None),slice(4,5,None)],[slice(2,4,None),slice(8,10,None)],[slice(5,8,None)]]</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.kern">
+<span id="gpy-kern-src-kern-module"></span><h2>GPy.kern._src.kern module<a class="headerlink" href="#module-GPy.kern._src.kern" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.kern.CombinationKernel">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.kern.</code><code class="descname">CombinationKernel</code><span class="sig-paren">(</span><em>kernels</em>, <em>name</em>, <em>extra_dims=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#CombinationKernel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.CombinationKernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Abstract super class for combination kernels.
+A combination kernel combines (a list of) kernels and works on those.
+Examples are the HierarchicalKernel or Add and Prod kernels.</p>
+<dl class="method">
+<dt id="GPy.kern._src.kern.CombinationKernel.get_input_dim_active_dims">
+<code class="descname">get_input_dim_active_dims</code><span class="sig-paren">(</span><em>kernels</em>, <em>extra_dims=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#CombinationKernel.get_input_dim_active_dims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.CombinationKernel.get_input_dim_active_dims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.CombinationKernel.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#CombinationKernel.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.CombinationKernel.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>If summize is true, we want to get the summerized view of the sensitivities,
+otherwise put everything into an array with shape (#kernels, input_dim)
+in the order of appearance of the kernels in the parameterized object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.kern.CombinationKernel.parts">
+<code class="descname">parts</code><a class="headerlink" href="#GPy.kern._src.kern.CombinationKernel.parts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.kern.Kern">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.kern.</code><code class="descname">Kern</code><span class="sig-paren">(</span><em>input_dim</em>, <em>active_dims</em>, <em>name</em>, <em>useGPU=False</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.parameterized.Parameterized" title="GPy.core.parameterization.parameterized.Parameterized"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.parameterization.parameterized.Parameterized</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the kernel function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> &#8211; the first set of inputs to the kernel</li>
+<li><strong>X2</strong> &#8211; (optional) the second set of arguments to the kernel. If X2
+is None, this is passed throgh to the &#8216;part&#8217; object, which
+handLes this as X2 == X.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>other</em>, <em>name='add'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add another kernel to this one.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference internal" href="GPy.kern.html#module-GPy.kern" title="GPy.kern"><em>GPy.kern</em></a>) &#8211; the other kernel to be added</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.gradients_Z_expectations">
+<code class="descname">gradients_Z_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.gradients_Z_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.gradients_Z_expectations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the derivative of the objective wrt Z, using the chain rule
+through the expectation variables.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.gradients_qX_expectations">
+<code class="descname">gradients_qX_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.gradients_qX_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.gradients_qX_expectations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the gradients wrt the parameters of the variational
+distruibution q(X), chain-ruling via the expectations of the kernel</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the sensitivity for each dimension of this kernel.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>x=None</em>, <em>fignum=None</em>, <em>ax=None</em>, <em>title=None</em>, <em>plot_limits=None</em>, <em>resolution=None</em>, <em>**mpl_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>plot this kernel.
+:param x: the value to use for the other kernel argument (kernels are a function of two variables!)
+:param fignum: figure number of the plot
+:param ax: matplotlib axis to plot on
+:param title: the matplotlib title
+:param plot_limits: the range over which to plot the kernel
+:resolution: the resolution of the lines used in plotting
+:mpl_kwargs avalid keyword arguments to pass through to matplotlib (e.g. lw=7)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.plot_ARD">
+<code class="descname">plot_ARD</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.plot_ARD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.plot_ARD" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <a class="reference internal" href="GPy.plotting.matplot_dep.html#module-GPy.plotting.matplot_dep.kernel_plots" title="GPy.plotting.matplot_dep.kernel_plots"><code class="xref py py-class docutils literal"><span class="pre">kernel_plots</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.prod">
+<code class="descname">prod</code><span class="sig-paren">(</span><em>other</em>, <em>name='mul'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.prod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.prod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply two kernels (either on the same space, or on the tensor
+product of the input space).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>other</strong> (<a class="reference internal" href="GPy.kern.html#module-GPy.kern" title="GPy.kern"><em>GPy.kern</em></a>) &#8211; the other kernel to be added</li>
+<li><strong>tensor</strong> (<em>bool</em>) &#8211; whether or not to use the tensor space (default is false).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.psi0">
+<code class="descname">psi0</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.psi0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.psi0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.psi1">
+<code class="descname">psi1</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.psi1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.psi1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.kern.Kern.return_psi2_n">
+<code class="descname">return_psi2_n</code><a class="headerlink" href="#GPy.kern._src.kern.Kern.return_psi2_n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the gradients of all parameters when using only the diagonal elements of the covariance matrix</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradients of all parameters when doing inference with
+uncertain inputs, using expectations of the kernel.</p>
+<p>The esential maths is</p>
+<dl class="docutils">
+<dt>dL_d{theta_i} = dL_dpsi0 * dpsi0_d{theta_i} +</dt>
+<dd>dL_dpsi1 * dpsi1_d{theta_i} +
+dL_dpsi2 * dpsi2_d{theta_i}</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.kern.Kern.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kern.html#Kern.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kern.Kern.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradients of all parameters when doing full (N) inference.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.kernel_slice_operations">
+<span id="gpy-kern-src-kernel-slice-operations-module"></span><h2>GPy.kern._src.kernel_slice_operations module<a class="headerlink" href="#module-GPy.kern._src.kernel_slice_operations" title="Permalink to this headline">¶</a></h2>
+<p>Created on 11 Mar 2014</p>
+<p>&#64;author: maxz</p>
+<dl class="class">
+<dt id="GPy.kern._src.kernel_slice_operations.KernCallsViaSlicerMeta">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.kernel_slice_operations.</code><code class="descname">KernCallsViaSlicerMeta</code><a class="reference internal" href="_modules/GPy/kern/_src/kernel_slice_operations.html#KernCallsViaSlicerMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kernel_slice_operations.KernCallsViaSlicerMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="GPy.core.parameterization.html#GPy.core.parameterization.parameterized.ParametersChangedMeta" title="GPy.core.parameterization.parameterized.ParametersChangedMeta"><code class="xref py py-class docutils literal"><span class="pre">GPy.core.parameterization.parameterized.ParametersChangedMeta</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.kern._src.kernel_slice_operations.put_clean">
+<code class="descclassname">GPy.kern._src.kernel_slice_operations.</code><code class="descname">put_clean</code><span class="sig-paren">(</span><em>dct</em>, <em>name</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/kernel_slice_operations.html#put_clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.kernel_slice_operations.put_clean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.linear">
+<span id="gpy-kern-src-linear-module"></span><h2>GPy.kern._src.linear module<a class="headerlink" href="#module-GPy.kern._src.linear" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.linear.Linear">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.linear.</code><code class="descname">Linear</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variances=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Linear kernel</p>
+<div class="math">
+<p><img src="_images/math/7073988fc18d98dd1fa609563743c060408c44d5.png" alt="k(x,y) = \sum_{i=1}^input_dim \sigma^2_i x_iy_i"/></p>
+</div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variances</strong> (<em>array or list of the appropriate size (or float if there
+is only one variance parameter)</em>) &#8211; the vector of variances <img class="math" src="_images/math/7af82c540112d04a12bed95744925acfebcedf6e.png" alt="\sigma^2_i"/></li>
+<li><strong>ARD</strong> (<em>Boolean</em>) &#8211; Auto Relevance Determination. If False, the kernel has only one
+variance parameter sigma^2, otherwise there is one variance
+parameter per dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.gradients_Z_expectations">
+<code class="descname">gradients_Z_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.gradients_Z_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.gradients_Z_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.gradients_qX_expectations">
+<code class="descname">gradients_qX_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.gradients_qX_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.gradients_qX_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.psi0">
+<code class="descname">psi0</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.psi0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.psi0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.psi1">
+<code class="descname">psi1</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.psi1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.psi1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.Linear.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#Linear.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.Linear.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.linear.LinearFull">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.linear.</code><code class="descname">LinearFull</code><span class="sig-paren">(</span><em>input_dim</em>, <em>rank</em>, <em>W=None</em>, <em>kappa=None</em>, <em>active_dims=None</em>, <em>name='linear_full'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.linear.LinearFull.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/linear.html#LinearFull.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.linear.LinearFull.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.mlp">
+<span id="gpy-kern-src-mlp-module"></span><h2>GPy.kern._src.mlp module<a class="headerlink" href="#module-GPy.kern._src.mlp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.mlp.MLP">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.mlp.</code><code class="descname">MLP</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>weight_variance=1.0</em>, <em>bias_variance=100.0</em>, <em>active_dims=None</em>, <em>name='mlp'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Multi layer perceptron kernel (also known as arc sine kernel or neural network kernel)</p>
+<div class="math">
+<p><img src="_images/math/4c7d40be0b140d6249e2761f424632441eb1f475.png" alt="k(x,y) = \sigma^{2}\frac{2}{\pi }  \text{asin} \left ( \frac{ \sigma_w^2 x^\top y+\sigma_b^2}{\sqrt{\sigma_w^2x^\top x + \sigma_b^2 + 1}\sqrt{\sigma_w^2 y^\top y \sigma_b^2 +1}} \right )"/></p>
+</div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variance</strong> (<em>float</em>) &#8211; the variance <img class="math" src="_images/math/93c29bfedc993de115781b4fbb7e3a8b9e8d6b51.png" alt="\sigma^2"/></li>
+<li><strong>weight_variance</strong> (<em>array or list of the appropriate size (or float if there is only one weight variance parameter)</em>) &#8211; the vector of the variances of the prior over input weights in the neural network <img class="math" src="_images/math/5d7004dd45c58bd71e97c825ae1e74559b30bfbd.png" alt="\sigma^2_w"/></li>
+<li><strong>bias_variance</strong> &#8211; the variance of the prior over bias parameters <img class="math" src="_images/math/c582b5b606a2c3060394219159d4b17ff4611044.png" alt="\sigma^2_b"/></li>
+<li><strong>ARD</strong> (<em>Boolean</em>) &#8211; Auto Relevance Determination. If equal to &#8220;False&#8221;, the kernel is isotropic (ie. one weight variance parameter sigma^2_w), otherwise there is one weight variance parameter per dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Kernpart object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the diagonal of the covariance matrix for X.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derivative of the covariance matrix with respect to X</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gradient of diagonal of covariance with respect to X</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.mlp.MLP.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/mlp.html#MLP.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.mlp.MLP.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derivative of the covariance with respect to the parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.periodic">
+<span id="gpy-kern-src-periodic-module"></span><h2>GPy.kern._src.periodic module<a class="headerlink" href="#module-GPy.kern._src.periodic" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.periodic.Periodic">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.periodic.</code><code class="descname">Periodic</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance</em>, <em>lengthscale</em>, <em>period</em>, <em>n_freq</em>, <em>lower</em>, <em>upper</em>, <em>active_dims</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#Periodic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.Periodic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.periodic.Periodic.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#Periodic.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.Periodic.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.Periodic.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#Periodic.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.Periodic.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.periodic.PeriodicExponential">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.periodic.</code><code class="descname">PeriodicExponential</code><span class="sig-paren">(</span><em>input_dim=1</em>, <em>variance=1.0</em>, <em>lengthscale=1.0</em>, <em>period=6.283185307179586</em>, <em>n_freq=10</em>, <em>lower=0.0</em>, <em>upper=12.566370614359172</em>, <em>active_dims=None</em>, <em>name='periodic_exponential'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicExponential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicExponential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.periodic.Periodic" title="GPy.kern._src.periodic.Periodic"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.periodic.Periodic</span></code></a></p>
+<p>Kernel of the periodic subspace (up to a given frequency) of a exponential
+(Matern 1/2) RKHS.</p>
+<p>Only defined for input_dim=1.</p>
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicExponential.Gram_matrix">
+<code class="descname">Gram_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicExponential.Gram_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicExponential.Gram_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicExponential.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicExponential.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicExponential.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicExponential.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicExponential.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicExponential.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters (shape is N x num_inducing x num_params)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.periodic.PeriodicMatern32">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.periodic.</code><code class="descname">PeriodicMatern32</code><span class="sig-paren">(</span><em>input_dim=1</em>, <em>variance=1.0</em>, <em>lengthscale=1.0</em>, <em>period=6.283185307179586</em>, <em>n_freq=10</em>, <em>lower=0.0</em>, <em>upper=12.566370614359172</em>, <em>active_dims=None</em>, <em>name='periodic_Matern32'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern32"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.periodic.Periodic" title="GPy.kern._src.periodic.Periodic"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.periodic.Periodic</span></code></a></p>
+<p>Kernel of the periodic subspace (up to a given frequency) of a Matern 3/2 RKHS. Only defined for input_dim=1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variance</strong> (<em>float</em>) &#8211; the variance of the Matern kernel</li>
+<li><strong>lengthscale</strong> (<em>np.ndarray of size (input_dim,)</em>) &#8211; the lengthscale of the Matern kernel</li>
+<li><strong>period</strong> (<em>float</em>) &#8211; the period</li>
+<li><strong>n_freq</strong> (<em>int</em>) &#8211; the number of frequencies considered for the periodic subspace</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern32.Gram_matrix">
+<code class="descname">Gram_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern32.Gram_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern32.Gram_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern32.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern32.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern32.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern32.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern32.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern32.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>derivative of the covariance matrix with respect to the parameters (shape is num_data x num_inducing x num_params)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.periodic.PeriodicMatern52">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.periodic.</code><code class="descname">PeriodicMatern52</code><span class="sig-paren">(</span><em>input_dim=1</em>, <em>variance=1.0</em>, <em>lengthscale=1.0</em>, <em>period=6.283185307179586</em>, <em>n_freq=10</em>, <em>lower=0.0</em>, <em>upper=12.566370614359172</em>, <em>active_dims=None</em>, <em>name='periodic_Matern52'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern52"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern52" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.periodic.Periodic" title="GPy.kern._src.periodic.Periodic"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.periodic.Periodic</span></code></a></p>
+<p>Kernel of the periodic subspace (up to a given frequency) of a Matern 5/2 RKHS. Only defined for input_dim=1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variance</strong> (<em>float</em>) &#8211; the variance of the Matern kernel</li>
+<li><strong>lengthscale</strong> (<em>np.ndarray of size (input_dim,)</em>) &#8211; the lengthscale of the Matern kernel</li>
+<li><strong>period</strong> (<em>float</em>) &#8211; the period</li>
+<li><strong>n_freq</strong> (<em>int</em>) &#8211; the number of frequencies considered for the periodic subspace</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern52.Gram_matrix">
+<code class="descname">Gram_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern52.Gram_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern52.Gram_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern52.parameters_changed">
+<code class="descname">parameters_changed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern52.parameters_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern52.parameters_changed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.periodic.PeriodicMatern52.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/periodic.html#PeriodicMatern52.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.periodic.PeriodicMatern52.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.poly">
+<span id="gpy-kern-src-poly-module"></span><h2>GPy.kern._src.poly module<a class="headerlink" href="#module-GPy.kern._src.poly" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.poly.Poly">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.poly.</code><code class="descname">Poly</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>order=3.0</em>, <em>active_dims=None</em>, <em>name='poly'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Polynomial kernel</p>
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.poly.Poly.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/poly.html#Poly.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.poly.Poly.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.prod">
+<span id="gpy-kern-src-prod-module"></span><h2>GPy.kern._src.prod module<a class="headerlink" href="#module-GPy.kern._src.prod" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.prod.Prod">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.prod.</code><code class="descname">Prod</code><span class="sig-paren">(</span><em>kernels</em>, <em>name='mul'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.CombinationKernel" title="GPy.kern._src.kern.CombinationKernel"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.CombinationKernel</span></code></a></p>
+<p>Computes the product of 2 kernels</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k2</strong> (<em>k1,</em>) &#8211; the kernels to multiply</li>
+<li><strong>tensor</strong> (<em>Boolean</em>) &#8211; The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.prod.Prod.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/prod.html#Prod.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.prod.Prod.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.rbf">
+<span id="gpy-kern-src-rbf-module"></span><h2>GPy.kern._src.rbf module<a class="headerlink" href="#module-GPy.kern._src.rbf" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.rbf.RBF">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.rbf.</code><code class="descname">RBF</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='rbf'</em>, <em>useGPU=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>Radial Basis Function kernel, aka squared-exponential, exponentiated quadratic or Gaussian kernel:</p>
+<div class="math">
+<p><img src="_images/math/90e371af90a73ea4ad53551cb110df130bfd0990.png" alt="k(r) = \sigma^2 \exp \bigg(- \frac{1}{2} r^2 \bigg)"/></p>
+</div><dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.gradients_Z_expectations">
+<code class="descname">gradients_Z_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.gradients_Z_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.gradients_Z_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.gradients_qX_expectations">
+<code class="descname">gradients_qX_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.gradients_qX_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.gradients_qX_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.psi0">
+<code class="descname">psi0</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.psi0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.psi0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.psi1">
+<code class="descname">psi1</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.psi1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.psi1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.spectrum">
+<code class="descname">spectrum</code><span class="sig-paren">(</span><em>omega</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.spectrum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.rbf.RBF.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/rbf.html#RBF.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.rbf.RBF.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.splitKern">
+<span id="gpy-kern-src-splitkern-module"></span><h2>GPy.kern._src.splitKern module<a class="headerlink" href="#module-GPy.kern._src.splitKern" title="Permalink to this headline">¶</a></h2>
+<p>A new kernel</p>
+<dl class="class">
+<dt id="GPy.kern._src.splitKern.DiffGenomeKern">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.splitKern.</code><code class="descname">DiffGenomeKern</code><span class="sig-paren">(</span><em>kernel</em>, <em>idx_p</em>, <em>Xp</em>, <em>index_dim=-1</em>, <em>name='DiffGenomeKern'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#DiffGenomeKern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.DiffGenomeKern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.DiffGenomeKern.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#DiffGenomeKern.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.DiffGenomeKern.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.DiffGenomeKern.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#DiffGenomeKern.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.DiffGenomeKern.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.DiffGenomeKern.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#DiffGenomeKern.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.DiffGenomeKern.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.DiffGenomeKern.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#DiffGenomeKern.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.DiffGenomeKern.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.splitKern.SplitKern">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.splitKern.</code><code class="descname">SplitKern</code><span class="sig-paren">(</span><em>kernel</em>, <em>Xp</em>, <em>index_dim=-1</em>, <em>name='SplitKern'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.CombinationKernel" title="GPy.kern._src.kern.CombinationKernel"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.CombinationKernel</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.splitKern.SplitKern_cross">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.splitKern.</code><code class="descname">SplitKern_cross</code><span class="sig-paren">(</span><em>kernel</em>, <em>Xp</em>, <em>name='SplitKern_cross'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern_cross"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern_cross" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern_cross.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern_cross.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern_cross.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern_cross.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern_cross.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern_cross.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern_cross.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern_cross.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern_cross.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.splitKern.SplitKern_cross.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/splitKern.html#SplitKern_cross.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.splitKern.SplitKern_cross.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.static">
+<span id="gpy-kern-src-static-module"></span><h2>GPy.kern._src.static module<a class="headerlink" href="#module-GPy.kern._src.static" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.static.Bias">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.static.</code><code class="descname">Bias</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>active_dims=None</em>, <em>name='bias'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.static.Static" title="GPy.kern._src.static.Static"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.static.Static</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.static.Bias.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Bias.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Bias.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Bias.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Bias.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Bias.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Bias.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.static.Fixed">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.static.</code><code class="descname">Fixed</code><span class="sig-paren">(</span><em>input_dim</em>, <em>covariance_matrix</em>, <em>variance=1.0</em>, <em>active_dims=None</em>, <em>name='fixed'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.static.Static" title="GPy.kern._src.static.Static"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.static.Static</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Fixed.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Fixed.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Fixed.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.static.Static">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.static.</code><code class="descname">Static</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance</em>, <em>active_dims</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.gradients_Z_expectations">
+<code class="descname">gradients_Z_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.gradients_Z_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.gradients_Z_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.gradients_qX_expectations">
+<code class="descname">gradients_qX_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.gradients_qX_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.gradients_qX_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.psi0">
+<code class="descname">psi0</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.psi0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.psi0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.psi1">
+<code class="descname">psi1</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.psi1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.psi1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.Static.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#Static.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.Static.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.static.White">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.static.</code><code class="descname">White</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>active_dims=None</em>, <em>name='white'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.static.Static" title="GPy.kern._src.static.Static"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.static.Static</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.static.White.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.White.psi2">
+<code class="descname">psi2</code><span class="sig-paren">(</span><em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White.psi2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White.psi2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.White.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.White.update_gradients_expectations">
+<code class="descname">update_gradients_expectations</code><span class="sig-paren">(</span><em>dL_dpsi0</em>, <em>dL_dpsi1</em>, <em>dL_dpsi2</em>, <em>Z</em>, <em>variational_posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White.update_gradients_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White.update_gradients_expectations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.static.White.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/static.html#White.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.static.White.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src.stationary">
+<span id="gpy-kern-src-stationary-module"></span><h2>GPy.kern._src.stationary module<a class="headerlink" href="#module-GPy.kern._src.stationary" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.stationary.Cosine">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">Cosine</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='Cosine'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Cosine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Cosine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Cosine.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Cosine.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Cosine.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Cosine.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Cosine.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Cosine.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.ExpQuad">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">ExpQuad</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='ExpQuad'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#ExpQuad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.ExpQuad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>The Exponentiated quadratic covariance function.</p>
+<div class="math">
+<p><img src="_images/math/5821f26082a79756b532348fdc05c458a1b4d96c.png" alt="k(r) = \sigma^2 (1 + \sqrt{5} r + \frac53 r^2) \exp(- \sqrt{5} r)"/></p>
+</div><dl class="docutils">
+<dt>notes::</dt>
+<dd><ul class="first last simple">
+<li>Yes, this is exactly the same as the RBF covariance function, but the
+RBF implementation also has some features for doing variational kernels
+(the psi-statistics).</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="GPy.kern._src.stationary.ExpQuad.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#ExpQuad.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.ExpQuad.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.ExpQuad.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#ExpQuad.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.ExpQuad.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.Exponential">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">Exponential</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='Exponential'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Exponential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Exponential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Exponential.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Exponential.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Exponential.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Exponential.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Exponential.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Exponential.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.Matern32">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">Matern32</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='Mat32'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern32"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>Matern 3/2 kernel:</p>
+<div class="math">
+<p><img src="_images/math/d91c19e81a73403c46fc57af8f02014851713dbe.png" alt="k(r) = \sigma^2 (1 + \sqrt{3} r) \exp(- \sqrt{3} r) \ \ \ \  \text{ where  } r = \sqrt{\sum_{i=1}^input_dim \frac{(x_i-y_i)^2}{\ell_i^2} }"/></p>
+</div><dl class="method">
+<dt id="GPy.kern._src.stationary.Matern32.Gram_matrix">
+<code class="descname">Gram_matrix</code><span class="sig-paren">(</span><em>F</em>, <em>F1</em>, <em>F2</em>, <em>lower</em>, <em>upper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern32.Gram_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern32.Gram_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Gram matrix of the vector of functions F with respect to the
+RKHS norm. The use of this function is limited to input_dim=1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>F</strong> (<em>np.array</em>) &#8211; vector of functions</li>
+<li><strong>F1</strong> (<em>np.array</em>) &#8211; vector of derivatives of F</li>
+<li><strong>F2</strong> (<em>np.array</em>) &#8211; vector of second derivatives of F</li>
+<li><strong>lower,upper</strong> (<em>floats</em>) &#8211; boundaries of the input domain</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Matern32.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern32.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern32.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Matern32.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern32.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern32.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.Matern52">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">Matern52</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='Mat52'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern52"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern52" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>Matern 5/2 kernel:</p>
+<div class="math">
+<p><img src="_images/math/5821f26082a79756b532348fdc05c458a1b4d96c.png" alt="k(r) = \sigma^2 (1 + \sqrt{5} r + \frac53 r^2) \exp(- \sqrt{5} r)"/></p>
+</div><dl class="method">
+<dt id="GPy.kern._src.stationary.Matern52.Gram_matrix">
+<code class="descname">Gram_matrix</code><span class="sig-paren">(</span><em>F</em>, <em>F1</em>, <em>F2</em>, <em>F3</em>, <em>lower</em>, <em>upper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern52.Gram_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern52.Gram_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Gram matrix of the vector of functions F with respect to the RKHS norm. The use of this function is limited to input_dim=1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>F</strong> (<em>np.array</em>) &#8211; vector of functions</li>
+<li><strong>F1</strong> (<em>np.array</em>) &#8211; vector of derivatives of F</li>
+<li><strong>F2</strong> (<em>np.array</em>) &#8211; vector of second derivatives of F</li>
+<li><strong>F3</strong> (<em>np.array</em>) &#8211; vector of third derivatives of F</li>
+<li><strong>lower,upper</strong> (<em>floats</em>) &#8211; boundaries of the input domain</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Matern52.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern52.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern52.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Matern52.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Matern52.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Matern52.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.OU">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">OU</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='OU'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#OU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.OU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>OU kernel:</p>
+<div class="math">
+<p><img src="_images/math/ae3bd00b8434112f53b49d89e8e598ca33f5cc34.png" alt="k(r) = \sigma^2 \exp(- r) \ \ \ \  \text{ where  } r = \sqrt{\sum_{i=1}^input_dim \frac{(x_i-y_i)^2}{\ell_i^2} }"/></p>
+</div><dl class="method">
+<dt id="GPy.kern._src.stationary.OU.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#OU.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.OU.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.OU.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#OU.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.OU.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.RatQuad">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">RatQuad</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance=1.0</em>, <em>lengthscale=None</em>, <em>power=2.0</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='RatQuad'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#RatQuad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.RatQuad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.stationary.Stationary" title="GPy.kern._src.stationary.Stationary"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.stationary.Stationary</span></code></a></p>
+<p>Rational Quadratic Kernel</p>
+<div class="math">
+<p><img src="_images/math/c44a71659d7a772231846371a575382ab5ecb4dc.png" alt="k(r) = \sigma^2 \bigg( 1 + \frac{r^2}{2} \bigg)^{- \alpha}"/></p>
+</div><dl class="method">
+<dt id="GPy.kern._src.stationary.RatQuad.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#RatQuad.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.RatQuad.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.RatQuad.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#RatQuad.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.RatQuad.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.RatQuad.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#RatQuad.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.RatQuad.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.RatQuad.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#RatQuad.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.RatQuad.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.stationary.Stationary">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.stationary.</code><code class="descname">Stationary</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variance</em>, <em>lengthscale</em>, <em>ARD</em>, <em>active_dims</em>, <em>name</em>, <em>useGPU=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<blockquote>
+<div><p>Stationary kernels (covariance functions).</p>
+<p>Stationary covariance fucntion depend only on r, where r is defined as</p>
+<blockquote>
+<div>r = sqrt{ sum_{q=1}^Q (x_q - x&#8217;_q)^2 }</div></blockquote>
+<p>The covariance function k(x, x&#8217; can then be written k(r).</p>
+<p>In this implementation, r is scaled by the lengthscales parameter(s):</p>
+<blockquote>
+<div>r = sqrt{ sum_{q=1}^Q</div></blockquote>
+</div></blockquote>
+<p>rac{(x_q - x&#8217;_q)^2}{ell_q^2} }.</p>
+<blockquote>
+<div><p>By default, there&#8217;s only one lengthscale: seaprate lengthscales for each
+dimension can be enables by setting ARD=True.</p>
+<p>To implement a stationary covariance function using this class, one need
+only define the covariance function k(r), and it derivative.</p>
+<blockquote>
+<div><p>...
+def K_of_r(self, r):</p>
+<blockquote>
+<div>return foo</div></blockquote>
+<dl class="docutils">
+<dt>def dK_dr(self, r):</dt>
+<dd>return bar</dd>
+</dl>
+</div></blockquote>
+<p>The lengthscale(s) and variance parameters are added to the structure automatically.</p>
+</div></blockquote>
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kernel function applied on inputs X and X2.
+In the stationary case there is an inner function depending on the
+distances from X to X2, called r.</p>
+<p>K(X, X2) = K_of_r((X-X2)**2)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.K_of_r">
+<code class="descname">K_of_r</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.K_of_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.K_of_r" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.dK_dr">
+<code class="descname">dK_dr</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.dK_dr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.dK_dr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="GPy.kern._src.stationary.Stationary.dK_dr_via_X">
+<code class="descname">dK_dr_via_X</code><em class="property"> = &lt;functools.partial object&gt;</em><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.dK_dr_via_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.gradients_X_">
+<code class="descname">gradients_X_</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.gradients_X_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.gradients_X_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.gradients_X_weave">
+<code class="descname">gradients_X_weave</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.gradients_X_weave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.gradients_X_weave" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><em>summarize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the derivative of the objective with respect to the diagonal of
+the covariance matrix, compute the derivative wrt the parameters of
+this kernel and stor in the &lt;parameter&gt;.gradient field.</p>
+<p>See also update_gradients_full</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the derivative of the objective wrt the covariance matrix
+(dL_dK), compute the gradient wrt the parameters of this kernel,
+and store in the parameters object as e.g. self.variance.gradient</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.stationary.Stationary.weave_lengthscale_grads">
+<code class="descname">weave_lengthscale_grads</code><span class="sig-paren">(</span><em>tmp</em>, <em>X</em>, <em>X2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/stationary.html#Stationary.weave_lengthscale_grads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.stationary.Stationary.weave_lengthscale_grads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use scipy.weave to compute derivatives wrt the lengthscales</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="gpy-kern-src-symbolic-module">
+<h2>GPy.kern._src.symbolic module<a class="headerlink" href="#gpy-kern-src-symbolic-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.kern._src.trunclinear">
+<span id="gpy-kern-src-trunclinear-module"></span><h2>GPy.kern._src.trunclinear module<a class="headerlink" href="#module-GPy.kern._src.trunclinear" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.kern._src.trunclinear.TruncLinear">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.trunclinear.</code><code class="descname">TruncLinear</code><span class="sig-paren">(</span><em>input_dim</em>, <em>variances=None</em>, <em>delta=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Truncated Linear kernel</p>
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \simga_q)</tt>)</p>
+latex exited with error
+[stdout]
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/Debian) (preloaded format=latex)
+ restricted \write18 enabled.
+entering extended mode
+(./math.tex
+LaTeX2e &lt;2014/05/01&gt;
+Babel &lt;3.9k&gt; and hyphenation patterns for 79 languages loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size12.clo))
+(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/utf8x.def))
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/ucs.sty
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/data/uni-global.def))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?&#8217; option.
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amscls/amsthm.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/tools/bm.sty)
+No file math.aux.
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/ucsencs.def)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd)
+! Undefined control sequence.
+&lt;argument&gt; ...sigma ^2_i \max (0, x_iy_i - \simga 
+                                                  _q)\end {split}\notag 
+l.14 \end{gather}
+                 
+! Undefined control sequence.
+&lt;argument&gt; ...sigma ^2_i \max (0, x_iy_i - \simga 
+                                                  _q)\end {split}\notag 
+l.14 \end{gather}
+                 
+[1] (./math.aux) )
+(see the transcript file for additional information)
+Output written on math.dvi (1 page, 616 bytes).
+Transcript written on math.log.
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variances</strong> (<em>array or list of the appropriate size (or float if there
+is only one variance parameter)</em>) &#8211; the vector of variances <img class="math" src="_images/math/7af82c540112d04a12bed95744925acfebcedf6e.png" alt="\sigma^2_i"/></li>
+<li><strong>ARD</strong> (<em>Boolean</em>) &#8211; Auto Relevance Determination. If False, the kernel has only one
+variance parameter sigma^2, otherwise there is one variance
+parameter per dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf">
+<em class="property">class </em><code class="descclassname">GPy.kern._src.trunclinear.</code><code class="descname">TruncLinear_inf</code><span class="sig-paren">(</span><em>input_dim</em>, <em>interval</em>, <em>variances=None</em>, <em>ARD=False</em>, <em>active_dims=None</em>, <em>name='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.kern._src.kern.Kern" title="GPy.kern._src.kern.Kern"><code class="xref py py-class docutils literal"><span class="pre">GPy.kern._src.kern.Kern</span></code></a></p>
+<p>Truncated Linear kernel</p>
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \simga_q)</tt>)</p>
+latex exited with error
+[stdout]
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/Debian) (preloaded format=latex)
+ restricted \write18 enabled.
+entering extended mode
+(./math.tex
+LaTeX2e &lt;2014/05/01&gt;
+Babel &lt;3.9k&gt; and hyphenation patterns for 79 languages loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size12.clo))
+(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/utf8x.def))
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/ucs.sty
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/data/uni-global.def))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?&#8217; option.
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amscls/amsthm.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/tools/bm.sty) (./math.aux)
+(/usr/share/texlive/texmf-dist/tex/latex/ucs/ucsencs.def)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd)
+! Undefined control sequence.
+&lt;argument&gt; ...sigma ^2_i \max (0, x_iy_i - \simga 
+                                                  _q)\end {split}\notag 
+l.14 \end{gather}
+                 
+! Undefined control sequence.
+&lt;argument&gt; ...sigma ^2_i \max (0, x_iy_i - \simga 
+                                                  _q)\end {split}\notag 
+l.14 \end{gather}
+                 
+[1] (./math.aux) )
+(see the transcript file for additional information)
+Output written on math.dvi (1 page, 616 bytes).
+Transcript written on math.log.
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_dim</strong> (<em>int</em>) &#8211; the number of input dimensions</li>
+<li><strong>variances</strong> (<em>array or list of the appropriate size (or float if there
+is only one variance parameter)</em>) &#8211; the vector of variances <img class="math" src="_images/math/7af82c540112d04a12bed95744925acfebcedf6e.png" alt="\sigma^2_i"/></li>
+<li><strong>ARD</strong> (<em>Boolean</em>) &#8211; Auto Relevance Determination. If False, the kernel has only one
+variance parameter sigma^2, otherwise there is one variance
+parameter per dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">kernel object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.K">
+<code class="descname">K</code><span class="sig-paren">(</span><em>X</em>, <em>X2=None</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.Kdiag">
+<code class="descname">Kdiag</code><span class="sig-paren">(</span><em>X</em>, <em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.Kdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.Kdiag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.gradients_X">
+<code class="descname">gradients_X</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.gradients_X"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.gradients_X" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.gradients_X_diag">
+<code class="descname">gradients_X_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.gradients_X_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.gradients_X_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.input_sensitivity">
+<code class="descname">input_sensitivity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.input_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.input_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.update_gradients_diag">
+<code class="descname">update_gradients_diag</code><span class="sig-paren">(</span><em>dL_dKdiag</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.update_gradients_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.update_gradients_diag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.kern._src.trunclinear.TruncLinear_inf.update_gradients_full">
+<code class="descname">update_gradients_full</code><span class="sig-paren">(</span><em>dL_dK</em>, <em>X</em>, <em>X2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/kern/_src/trunclinear.html#TruncLinear_inf.update_gradients_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.kern._src.trunclinear.TruncLinear_inf.update_gradients_full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.kern._src">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-GPy.kern._src" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GPy.kern._src package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.ODE_UY">GPy.kern._src.ODE_UY module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.ODE_UYC">GPy.kern._src.ODE_UYC module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.ODE_st">GPy.kern._src.ODE_st module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.ODE_t">GPy.kern._src.ODE_t module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.add">GPy.kern._src.add module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.brownian">GPy.kern._src.brownian module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.coregionalize">GPy.kern._src.coregionalize module</a></li>
+<li><a class="reference internal" href="#gpy-kern-src-hierarchical-module">GPy.kern._src.hierarchical module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.independent_outputs">GPy.kern._src.independent_outputs module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.kern">GPy.kern._src.kern module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.kernel_slice_operations">GPy.kern._src.kernel_slice_operations module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.linear">GPy.kern._src.linear module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.mlp">GPy.kern._src.mlp module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.periodic">GPy.kern._src.periodic module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.poly">GPy.kern._src.poly module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.prod">GPy.kern._src.prod module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.rbf">GPy.kern._src.rbf module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.splitKern">GPy.kern._src.splitKern module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.static">GPy.kern._src.static module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.stationary">GPy.kern._src.stationary module</a></li>
+<li><a class="reference internal" href="#gpy-kern-src-symbolic-module">GPy.kern._src.symbolic module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src.trunclinear">GPy.kern._src.trunclinear module</a></li>
+<li><a class="reference internal" href="#module-GPy.kern._src">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GPy.kern.html"
+                        title="previous chapter">GPy.kern package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GPy.kern._src.psi_comp.html"
+                        title="next chapter">GPy.kern._src.psi_comp package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/GPy.kern._src.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern._src.psi_comp.html" title="GPy.kern._src.psi_comp package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GPy.kern.html" title="GPy.kern package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="GPy.kern.html" >GPy.kern package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

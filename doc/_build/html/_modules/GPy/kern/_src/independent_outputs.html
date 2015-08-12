@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.kern._src.independent_outputs &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="../../../../index.html" />
+    <link rel="up" title="GPy" href="../../../GPy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" accesskey="U">GPy</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GPy.kern._src.independent_outputs</h1><div class="highlight"><pre>
+<span class="c"># Copyright (c) 2012, James Hesnsman</span>
+<span class="c"># Licensed under the BSD 3-clause license (see LICENSE.txt)</span>
+
+
+<span class="kn">from</span> <span class="nn">kern</span> <span class="kn">import</span> <span class="n">Kern</span><span class="p">,</span> <span class="n">CombinationKernel</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<div class="viewcode-block" id="index_to_slices"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.index_to_slices">[docs]</a><span class="k">def</span> <span class="nf">index_to_slices</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index. </span>
+
+<span class="sd">    e.g.</span>
+<span class="sd">    &gt;&gt;&gt; index = np.asarray([0,0,0,1,1,1,2,2,2])</span>
+<span class="sd">    returns</span>
+<span class="sd">    &gt;&gt;&gt; [[slice(0,3,None)],[slice(3,6,None)],[slice(6,9,None)]]</span>
+
+<span class="sd">    or, a more complicated example</span>
+<span class="sd">    &gt;&gt;&gt; index = np.asarray([0,0,1,1,0,2,2,2,1,1])</span>
+<span class="sd">    returns</span>
+<span class="sd">    &gt;&gt;&gt; [[slice(0,2,None),slice(4,5,None)],[slice(2,4,None),slice(8,10,None)],[slice(5,8,None)]]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span><span class="p">[]</span>
+
+    <span class="c">#contruct the return structure</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+
+    <span class="c">#find the switchpoints</span>
+    <span class="n">ind_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">ind</span><span class="p">,</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">ind</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">switchpoints</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">ind_</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">ind_</span><span class="p">,</span><span class="o">+</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="p">[</span><span class="n">ret</span><span class="p">[</span><span class="n">ind_i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="o">*</span><span class="n">indexes_i</span><span class="p">))</span> <span class="k">for</span> <span class="n">ind_i</span><span class="p">,</span><span class="n">indexes_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="n">switchpoints</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span><span class="nb">zip</span><span class="p">(</span><span class="n">switchpoints</span><span class="p">,</span><span class="n">switchpoints</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))]</span>
+    <span class="k">return</span> <span class="n">ret</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs">[docs]</a><span class="k">class</span> <span class="nc">IndependentOutputs</span><span class="p">(</span><span class="n">CombinationKernel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A kernel which can represent several independent functions.  this kernel</span>
+<span class="sd">    &#39;switches off&#39; parts of the matrix where the output indexes are different.</span>
+
+<span class="sd">    The index of the functions is given by the last column in the input X the</span>
+<span class="sd">    rest of the columns of X are passed to the underlying kernel for</span>
+<span class="sd">    computation (in blocks).</span>
+
+<span class="sd">    :param kernels: either a kernel, or list of kernels to work with. If it is</span>
+<span class="sd">    a list of kernels the indices in the index_dim, index the kernels you gave!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernels</span><span class="p">,</span> <span class="n">index_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;independ&#39;</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index_dim</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s">&quot;IndependentOutputs kernel is only defined with one input dimension being the index&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kern</span> <span class="o">=</span> <span class="n">kernels</span>
+            <span class="n">kernels</span> <span class="o">=</span> <span class="p">[</span><span class="n">kernels</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kern</span> <span class="o">=</span> <span class="n">kernels</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IndependentOutputs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">kernels</span><span class="o">=</span><span class="n">kernels</span><span class="p">,</span> <span class="n">extra_dims</span><span class="o">=</span><span class="p">[</span><span class="n">index_dim</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span> <span class="o">=</span> <span class="n">index_dim</span>
+
+<div class="viewcode-block" id="IndependentOutputs.K"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.K">[docs]</a>    <span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span> <span class="p">,</span><span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+        <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="p">[[</span><span class="n">target</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">ss</span><span class="p">),</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">,:],</span> <span class="n">X</span><span class="p">[</span><span class="n">ss</span><span class="p">,:]))</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">ss</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">slices_i</span><span class="p">,</span> <span class="n">slices_i</span><span class="p">)]</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">slices_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slices2</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X2</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="p">[[</span><span class="n">target</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">s2</span><span class="p">),</span> <span class="n">kern</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">,:],</span><span class="n">X2</span><span class="p">[</span><span class="n">s2</span><span class="p">,:]))</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">s2</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">slices_i</span><span class="p">,</span> <span class="n">slices_j</span><span class="p">)]</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">slices_i</span><span class="p">,</span><span class="n">slices_j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">,</span><span class="n">slices2</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">target</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs.Kdiag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.Kdiag">[docs]</a>    <span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+        <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">kern</span><span class="o">.</span><span class="n">Kdiag</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">]))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">slices_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">target</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs.update_gradients_full"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_full">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dK</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> 
+            <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">kerns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kern</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">def</span> <span class="nf">collate_grads</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dL</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">):</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> <span class="n">target</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">][:]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="p">[[</span><span class="n">collate_grads</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">ss</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">ss</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">ss</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">slices_i</span><span class="p">,</span> <span class="n">slices_i</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">kern</span><span class="p">,</span><span class="n">slices_i</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span><span class="n">slices</span><span class="p">))]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slices2</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X2</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+            <span class="p">[[[</span><span class="n">collate_grads</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">s2</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="n">X2</span><span class="p">[</span><span class="n">s2</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">s2</span> <span class="ow">in</span> <span class="n">slices_j</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">kern</span><span class="p">,</span><span class="n">slices_i</span><span class="p">,</span><span class="n">slices_j</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span><span class="n">slices</span><span class="p">,</span><span class="n">slices2</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:[</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="n">kern</span><span class="p">,</span> <span class="n">_</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">))]</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs.gradients_X"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># TODO: make use of index_to_slices</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+            <span class="n">slices</span> <span class="o">=</span> <span class="p">[</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">]</span><span class="o">==</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="p">[</span><span class="n">target</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="bp">None</span><span class="p">))</span>
+              <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+            <span class="c">#slices = index_to_slices(X[:,self.index_dim])</span>
+            <span class="c">#[[np.add(target[s], kern.gradients_X(dL_dK[s,s], X[s]), out=target[s]) </span>
+            <span class="c">#  for s in slices_i] for kern, slices_i in zip(kerns, slices)]</span>
+            <span class="c">#import ipdb;ipdb.set_trace()</span>
+            <span class="c">#[[(np.add(target[s ], kern.gradients_X(dL_dK[s ,ss],X[s ], X[ss]), out=target[s ]),</span>
+            <span class="c">#   np.add(target[ss], kern.gradients_X(dL_dK[ss,s ],X[ss], X[s ]), out=target[ss]))</span>
+            <span class="c">#  for s, ss in itertools.combinations(slices_i, 2)] for kern, slices_i in zip(kerns, slices)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+            <span class="n">slices</span> <span class="o">=</span> <span class="p">[</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">]</span><span class="o">==</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="n">slices2</span> <span class="o">=</span> <span class="p">[</span><span class="n">X2</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">]</span><span class="o">==</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="p">[</span><span class="n">target</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">s2</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="n">X2</span><span class="p">[</span><span class="n">s2</span><span class="p">]))</span>
+              <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">,</span> <span class="n">slices2</span><span class="p">)]</span>
+            <span class="c"># TODO: make work with index_to_slices</span>
+            <span class="c">#slices = index_to_slices(X[:,self.index_dim])</span>
+            <span class="c">#slices2 = index_to_slices(X2[:,self.index_dim])</span>
+            <span class="c">#[[target.__setitem__(s, target[s] + kern.gradients_X(dL_dK[s,s2], X[s], X2[s2])) for s, s2 in itertools.product(slices_i, slices_j)] for kern, slices_i,slices_j in zip(kerns, slices,slices2)]</span>
+        <span class="k">return</span> <span class="n">target</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs.gradients_X_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.gradients_X_diag">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+        <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="p">[[</span><span class="n">target</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradients_X_diag</span><span class="p">(</span><span class="n">dL_dKdiag</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">]))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">slices_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">target</span>
+</div>
+<div class="viewcode-block" id="IndependentOutputs.update_gradients_diag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.IndependentOutputs.update_gradients_diag">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">index_dim</span><span class="p">])</span>
+        <span class="n">kerns</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">kern</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kern</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kern</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="k">for</span> <span class="n">kern</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">def</span> <span class="nf">collate_grads</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dL</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+            <span class="n">kern</span><span class="o">.</span><span class="n">update_gradients_diag</span><span class="p">(</span><span class="n">dL</span><span class="p">,</span><span class="n">X</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> <span class="n">target</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">][:]</span> <span class="o">+=</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span>
+        <span class="p">[[</span><span class="n">collate_grads</span><span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dL_dKdiag</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">,:])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">kern</span><span class="p">,</span> <span class="n">slices_i</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_kern</span><span class="p">:</span> <span class="n">kern</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:[</span><span class="n">kern</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,</span> <span class="n">target</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="n">kern</span><span class="p">,</span> <span class="n">_</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kerns</span><span class="p">,</span> <span class="n">slices</span><span class="p">))]</span>
+</div></div>
+<div class="viewcode-block" id="Hierarchical"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.Hierarchical">[docs]</a><span class="k">class</span> <span class="nc">Hierarchical</span><span class="p">(</span><span class="n">CombinationKernel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A kernel which can represent a simple hierarchical model.</span>
+
+<span class="sd">    See Hensman et al 2013, &quot;Hierarchical Bayesian modelling of gene expression time</span>
+<span class="sd">    series across irregularly sampled replicates and clusters&quot;</span>
+<span class="sd">    http://www.biomedcentral.com/1471-2105/14/252</span>
+
+<span class="sd">    To construct this kernel, you must pass a list of kernels. the first kernel</span>
+<span class="sd">    will be assumed to be the &#39;base&#39; kernel, and will be computed everywhere.</span>
+<span class="sd">    For every additional kernel, we assume another layer in the hierachy, with</span>
+<span class="sd">    a corresponding column of the input matrix which indexes which function the</span>
+<span class="sd">    data are in at that level.</span>
+
+<span class="sd">    For more, see the ipython notebook documentation on Hierarchical</span>
+<span class="sd">    covariances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernels</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;hierarchy&#39;</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">k</span><span class="o">.</span><span class="n">input_dim</span><span class="o">==</span><span class="n">kernels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input_dim</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kernels</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">kernels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">kernels</span><span class="p">)</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">input_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">k</span><span class="o">.</span><span class="n">input_dim</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kernels</span><span class="p">])</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Hierarchical</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">kernels</span><span class="o">=</span><span class="n">kernels</span><span class="p">,</span> <span class="n">extra_dims</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">input_max</span><span class="p">,</span> <span class="n">input_max</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">kernels</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Hierarchical.K"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.Hierarchical.K">[docs]</a>    <span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span> <span class="p">,</span><span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span> <span class="c"># compute &#39;base&#39; kern everywhere</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="p">[</span><span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_dims</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="p">[[[</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">],</span> <span class="n">k</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="bp">None</span><span class="p">),</span> <span class="n">K</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">slices_i</span> <span class="ow">in</span> <span class="n">slices_k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">slices_k</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">slices</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slices2</span> <span class="o">=</span> <span class="p">[</span><span class="n">index_to_slices</span><span class="p">(</span><span class="n">X2</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_dims</span><span class="p">]</span>
+            <span class="p">[[[</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">ss</span><span class="p">],</span> <span class="n">k</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">X2</span><span class="p">[</span><span class="n">ss</span><span class="p">]),</span> <span class="n">K</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">ss</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">ss</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">slices_i</span><span class="p">,</span> <span class="n">slices_j</span><span class="p">)]</span> <span class="k">for</span> <span class="n">slices_i</span><span class="p">,</span> <span class="n">slices_j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">slices_k1</span><span class="p">,</span> <span class="n">slices_k2</span><span class="p">)]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">slices_k1</span><span class="p">,</span> <span class="n">slices_k2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">slices</span><span class="p">,</span> <span class="n">slices2</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">K</span>
+</div>
+<div class="viewcode-block" id="Hierarchical.Kdiag"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.Hierarchical.Kdiag">[docs]</a>    <span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">K</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Hierarchical.gradients_X"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.Hierarchical.gradients_X">[docs]</a>    <span class="k">def</span> <span class="nf">gradients_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+<div class="viewcode-block" id="Hierarchical.update_gradients_full"><a class="viewcode-back" href="../../../../GPy.kern._src.html#GPy.kern._src.independent_outputs.Hierarchical.update_gradients_full">[docs]</a>    <span class="k">def</span> <span class="nf">update_gradients_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dK</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">slices</span> <span class="o">=</span> <span class="p">[</span><span class="n">index_to_slices</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_dims</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">slices_k</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">slices</span><span class="p">):</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="k">def</span> <span class="nf">collate_grads</span><span class="p">(</span><span class="n">dL</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+                    <span class="n">k</span><span class="o">.</span><span class="n">update_gradients_full</span><span class="p">(</span><span class="n">dL</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="p">)</span>
+                    <span class="n">target</span> <span class="o">+=</span> <span class="n">k</span><span class="o">.</span><span class="n">gradient</span>
+                <span class="p">[[</span><span class="n">collate_grads</span><span class="p">(</span><span class="n">dL_dK</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">s</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="bp">None</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">slices_i</span><span class="p">]</span> <span class="k">for</span> <span class="n">slices_i</span> <span class="ow">in</span> <span class="n">slices_k</span><span class="p">]</span>
+                <span class="n">k</span><span class="o">.</span><span class="n">gradient</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../../GPy.html" >GPy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

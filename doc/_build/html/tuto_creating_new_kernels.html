@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating new kernels &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-new-kernels">
+<h1>Creating new kernels<a class="headerlink" href="#creating-new-kernels" title="Permalink to this headline">¶</a></h1>
+<p>We will see in this tutorial how to create new kernels in GPy. We will also give details on how to implement each function of the kernel and illustrate with a running example: the rational quadratic kernel.</p>
+<div class="section" id="structure-of-a-kernel-in-gpy">
+<h2>Structure of a kernel in GPy<a class="headerlink" href="#structure-of-a-kernel-in-gpy" title="Permalink to this headline">¶</a></h2>
+<p>In GPy a kernel object is made of a list of kernpart objects, which correspond to symetric positive definite functions. More precisely, the kernel should be understood as the sum of the kernparts. In order to implement a new covariance, the following steps must be followed</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>implement the new covariance as a kernpart object</li>
+<li>update the constructors that allow to use the kernpart as a kern object</li>
+<li>update the __init__.py file</li>
+</ol>
+</div></blockquote>
+<p>Theses three steps are detailed below.</p>
+</div>
+<div class="section" id="implementing-a-kernpart-object">
+<h2>Implementing a kernpart object<a class="headerlink" href="#implementing-a-kernpart-object" title="Permalink to this headline">¶</a></h2>
+<p>We advise the reader to start with copy-pasting an existing kernel and to modify the new file. We will now give a description of the various functions that can be found in a kernpart object.</p>
+<p><strong>Header</strong></p>
+<p>The header is similar to all kernels:</p>
+<div class="highlight-python"><div class="highlight"><pre>from kernpart import kernpart
+import numpy as np
+
+class rational_quadratic(kernpart):
+</pre></div>
+</div>
+<p><strong>__init__(self,input_dim, param1, param2, ...)</strong></p>
+<p>The implementation of this function in mandatory.</p>
+<p>For all kernparts the first parameter <code class="docutils literal"><span class="pre">input_dim</span></code> corresponds to the dimension of the input space, and the following parameters stand for the parameterization of the kernel.</p>
+<p>You have to call <code class="docutils literal"><span class="pre">super(&lt;class_name&gt;,</span> <span class="pre">self).__init__(input_dim,</span>
+<span class="pre">name)</span></code> to make sure the input dimension and name of the kernel are
+stored in the right place. These attributes are available as
+<code class="docutils literal"><span class="pre">self.input_dim</span></code> and <code class="docutils literal"><span class="pre">self.name</span></code> at runtime.
+.. The following attributes are compulsory: <code class="docutils literal"><span class="pre">self.input_dim</span></code> (the dimension, integer), <code class="docutils literal"><span class="pre">self.name</span></code> (name of the kernel, string), <code class="docutils literal"><span class="pre">self.num_params</span></code> (number of parameters, integer). ::
+Parameterization is done by adding
+:py:class:<code class="docutils literal"><span class="pre">GPy.core.parameter.Param</span></code> objects to <code class="docutils literal"><span class="pre">self</span></code> and use
+them as normal numpy <code class="docutils literal"><span class="pre">array-like``s</span> <span class="pre">in</span> <span class="pre">yout</span> <span class="pre">code.</span> <span class="pre">The</span> <span class="pre">parameters</span> <span class="pre">have</span>
+<span class="pre">to</span> <span class="pre">be</span> <span class="pre">added</span> <span class="pre">by</span> <span class="pre">calling</span>
+<span class="pre">:py:function:``GPy.core.parameterized:Parameterized.add_parameters</span></code>
+with the :py:class:<code class="docutils literal"><span class="pre">GPy.core.parameter.Param</span></code> objects as arguments.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):</dt>
+<dd>super(RationalQuadratic, self).__init__(input_dim, &#8216;rat_quad&#8217;)
+assert input_dim == 1, &#8220;For this kernel we assume input_dim=1&#8221;
+self.variance = Param(&#8216;variance&#8217;, variance)
+self.lengthscale = Param(&#8216;lengtscale&#8217;, lengthscale)
+self.power = Param(&#8216;power&#8217;, power)
+self.add_parameters(self.variance, self.lengthscale, self.power)</dd>
+</dl>
+</div></blockquote>
+<p>From now on you can use the parameters <code class="docutils literal"><span class="pre">self.variance,</span>
+<span class="pre">self.lengthscale,</span> <span class="pre">self.power</span></code> as normal numpy <a href="#id1"><span class="problematic" id="id2">``</span></a>array-like``s in your
+code. Updates from the optimization routine will be done
+automatically.</p>
+<p><strong>parameters_changed(self)</strong></p>
+<p>The implementation of this function is optional.</p>
+<p>This functions deals as a callback for each optimization iteration. If
+one optimization step was successfull and the parameters (added by
+:py:function:<code class="docutils literal"><span class="pre">GPy.core.parameterized:Parameterized.add_parameters</span></code>)
+this callback function will be called to be able to update any
+precomputations for the kernel.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>def parameters_changed(self):</dt>
+<dd># nothing todo here</dd>
+</dl>
+</div></blockquote>
+<p><strong>K(self,X,X2,target)</strong></p>
+<p>The implementation of this function in mandatory.</p>
+<p>This function is used to compute the covariance matrix associated with the inputs X, X2 (np.arrays with arbitrary number of line (say <img class="math" src="_images/math/26038e5468fa3f743e11b649cd49e30d4bf2d9aa.png" alt="n_1"/>, <img class="math" src="_images/math/a8ab03f1f7e4f60328e1b8d96389e2d5a31e6e24.png" alt="n_2"/>) and <code class="docutils literal"><span class="pre">self.input_dim</span></code> columns). This function does not returns anything but it adds the <img class="math" src="_images/math/c6550fb5636af16f487a8b9739f9abe82dbf07b8.png" alt="n_1 \times n_2"/> covariance matrix to the kernpart to the object <code class="docutils literal"><span class="pre">target</span></code> (a <img class="math" src="_images/math/c6550fb5636af16f487a8b9739f9abe82dbf07b8.png" alt="n_1 \times n_2"/> np.array). This trick allows to compute the covariance matrix of a kernel containing many kernparts with a limited memory use.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">X2</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">dist2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">((</span><span class="n">X</span><span class="o">-</span><span class="n">X2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="p">)</span>
+    <span class="n">target</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Kdiag(self,X,target)</strong></p>
+<p>The implementation of this function in mandatory.</p>
+<p>This function is similar to <code class="docutils literal"><span class="pre">K</span></code> but it computes only the values of the kernel on the diagonal. Thus, <code class="docutils literal"><span class="pre">target</span></code> is a 1-dimensional np.array of length <img class="math" src="_images/math/26038e5468fa3f743e11b649cd49e30d4bf2d9aa.png" alt="n_1"/>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">Kdiag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="n">target</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span>
+</pre></div>
+</div>
+<p><strong>dK_dtheta(self,dL_dK,X,X2,target)</strong></p>
+<p>This function is required for the optimization of the parameters.</p>
+<p>Computes the derivative of the likelihood. As previously, the values are added to the object target which is a 1-dimensional np.array of length <code class="docutils literal"><span class="pre">self.input_dim</span></code>. For example, if the kernel is parameterized by <img class="math" src="_images/math/508c8b33737f7c90395256d7c1efbfc68f346ce8.png" alt="\sigma^2,\ \theta"/>, then <img class="math" src="_images/math/e70d5f1b33598371cd2960cbd61cdc79f720732f.png" alt="\frac{dL}{d\sigma^2} = \frac{dL}{d K} \frac{dK}{d\sigma^2}"/> is added to the first element of target and <img class="math" src="_images/math/07aad80690e06cd5a29e87d6e696222f9b3a2f39.png" alt="\frac{dL}{d\theta} = \frac{dL}{d K} \frac{dK}{d\theta}"/> to the second.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">dK_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dK</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">X2</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">dist2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">((</span><span class="n">X</span><span class="o">-</span><span class="n">X2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="n">dvar</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">)</span>
+    <span class="n">dl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">*</span> <span class="n">dist2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">dp</span> <span class="o">=</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">)</span>
+
+    <span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dvar</span><span class="o">*</span><span class="n">dL_dK</span><span class="p">)</span>
+    <span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dl</span><span class="o">*</span><span class="n">dL_dK</span><span class="p">)</span>
+    <span class="n">target</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp</span><span class="o">*</span><span class="n">dL_dK</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>dKdiag_dtheta(self,dL_dKdiag,X,target)</strong></p>
+<p>This function is required for BGPLVM, sparse models and uncertain inputs.</p>
+<p>As previously, target is an <code class="docutils literal"><span class="pre">self.num_params</span></code> array and <img class="math" src="_images/math/437f2299194c0bf019dd646a9e9c76092e57d919.png" alt="\frac{dL}{d Kdiag} \frac{dKdiag}{dparam}"/> is added to each element.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">dKdiag_dtheta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dKdiag</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dL_dKdiag</span><span class="p">)</span>
+    <span class="c"># here self.lengthscale and self.power have no influence on Kdiag so target[1:] are unchanged</span>
+</pre></div>
+</div>
+<p><strong>dK_dX(self,dL_dK,X,X2,target)</strong></p>
+<p>This function is required for GPLVM, BGPLVM, sparse models and uncertain inputs.</p>
+<p>Computes the derivative of the likelihood with respect to the inputs <code class="docutils literal"><span class="pre">X</span></code> (a <img class="math" src="_images/math/a59a66c531afd1167c497e377131e38dba8e0dfd.png" alt="n \times d"/> np.array). The result is added to target which is a <img class="math" src="_images/math/a59a66c531afd1167c497e377131e38dba8e0dfd.png" alt="n \times d"/> np.array.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">dK_dX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dK</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">X2</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;derivative of the covariance matrix with respect to X.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">X2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">X2</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">dist2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">((</span><span class="n">X</span><span class="o">-</span><span class="n">X2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="p">)</span>
+
+    <span class="n">dX</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">*</span> <span class="p">(</span><span class="n">X</span><span class="o">-</span><span class="n">X2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span>  <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dist2</span><span class="o">/</span><span class="mf">2.</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">lengthscale</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">target</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dL_dK</span><span class="o">*</span><span class="n">dX</span><span class="p">,</span><span class="mi">1</span><span class="p">)[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><strong>dKdiag_dX(self,dL_dKdiag,X,target)</strong></p>
+<p>This function is required for BGPLVM, sparse models and uncertain inputs. As for <code class="docutils literal"><span class="pre">dKdiag_dtheta</span></code>, <img class="math" src="_images/math/9af67d8f787d95df1e400b2a998bc16206095c72.png" alt="\frac{dL}{d Kdiag} \frac{dKdiag}{dX}"/> is added to each element of target.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">dKdiag_dX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dL_dKdiag</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p><strong>Psi statistics</strong></p>
+<p>The psi statistics and their derivatives are required for BGPLVM and GPS with uncertain inputs.</p>
+<p>The expressions of the psi statistics are:</p>
+<p>TODO</p>
+<p>For the rational quadratic we have:</p>
+<p>TODO</p>
+</div>
+<div class="section" id="update-the-constructor">
+<h2>Update the constructor<a class="headerlink" href="#update-the-constructor" title="Permalink to this headline">¶</a></h2>
+<p>Once the required functions have been implemented as a kernpart object, the file GPy/kern/constructors.py has to be updated to allow to build a kernel based on the kernpart object.</p>
+<p>The following line should be added in the preamble of the file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">rational_quadratic</span> <span class="kn">import</span> <span class="n">rational_quadratic</span> <span class="k">as</span> <span class="n">rational_quadratic_part</span>
+</pre></div>
+</div>
+<p>as well as the following block</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">rational_quadratic</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span><span class="n">variance</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">lengthscale</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="n">part</span> <span class="o">=</span> <span class="n">rational_quadraticpart</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span><span class="n">variance</span><span class="p">,</span> <span class="n">lengthscale</span><span class="p">,</span> <span class="n">power</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kern</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="p">[</span><span class="n">part</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-initialization">
+<h2>Update initialization<a class="headerlink" href="#update-initialization" title="Permalink to this headline">¶</a></h2>
+<p>The last step is to update the list of kernels imported from constructor in GPy/kern/__init__.py.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating new kernels</a><ul>
+<li><a class="reference internal" href="#structure-of-a-kernel-in-gpy">Structure of a kernel in GPy</a></li>
+<li><a class="reference internal" href="#implementing-a-kernpart-object">Implementing a kernpart object</a></li>
+<li><a class="reference internal" href="#update-the-constructor">Update the constructor</a></li>
+<li><a class="reference internal" href="#update-initialization">Update initialization</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tuto_creating_new_kernels.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

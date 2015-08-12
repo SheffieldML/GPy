@@ -31,7 +31,7 @@ The simplest way to install GPy is using pip. Ubuntu users can do:
     sudo apt-get install python-pip
     pip install gpy
     
-On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com).
+On windows, we recommend the [anaconda python distribution](http://continuum.io/downloads). We've also had luck with [enthought](http://www.enthought.com).
 
 On a fresh install of windows 8.1, we downloaded the Anaconda python distribution, started the anaconda command prompt and typed 
 
@@ -56,7 +56,7 @@ clone this git repository and add it to your path:
  
 ### OSX
 
-Everything appears to work out-of-the box using ![enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
+Everything appears to work out-of-the box using [enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
 
     git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile

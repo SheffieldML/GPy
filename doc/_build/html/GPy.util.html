@@ -1,0 +1,2085 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GPy.util package &mdash; GPy  documentation</title>
+    
+    <link rel="stylesheet" href="_static//default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="GPy  documentation" href="index.html" />
+    <link rel="up" title="GPy package" href="GPy.html" />
+    <link rel="prev" title="GPy.testing package" href="GPy.testing.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.testing.html" title="GPy.testing package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" accesskey="U">GPy package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gpy-util-package">
+<h1>GPy.util package<a class="headerlink" href="#gpy-util-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.util.block_matrices">
+<span id="gpy-util-block-matrices-module"></span><h2>GPy.util.block_matrices module<a class="headerlink" href="#module-GPy.util.block_matrices" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.block_matrices.get_blocks">
+<code class="descclassname">GPy.util.block_matrices.</code><code class="descname">get_blocks</code><span class="sig-paren">(</span><em>A</em>, <em>blocksizes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/block_matrices.html#get_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.block_matrices.get_blocks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.caching">
+<span id="gpy-util-caching-module"></span><h2>GPy.util.caching module<a class="headerlink" href="#module-GPy.util.caching" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.util.caching.Cache_this">
+<em class="property">class </em><code class="descclassname">GPy.util.caching.</code><code class="descname">Cache_this</code><span class="sig-paren">(</span><em>limit=5</em>, <em>ignore_args=()</em>, <em>force_kwargs=()</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cache_this"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cache_this" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A decorator which can be applied to bound methods in order to cache them</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.caching.Cacher">
+<em class="property">class </em><code class="descclassname">GPy.util.caching.</code><code class="descname">Cacher</code><span class="sig-paren">(</span><em>operation</em>, <em>limit=5</em>, <em>ignore_args=()</em>, <em>force_kwargs=()</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.add_to_cache">
+<code class="descname">add_to_cache</code><span class="sig-paren">(</span><em>cache_id</em>, <em>inputs</em>, <em>output</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.add_to_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.add_to_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>This adds cache_id to the cache, with inputs and output</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.combine_inputs">
+<code class="descname">combine_inputs</code><span class="sig-paren">(</span><em>args</em>, <em>kw</em>, <em>ignore_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.combine_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.combine_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines the args and kw in a unique way, such that ordering of kwargs does not lead to recompute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.ensure_cache_length">
+<code class="descname">ensure_cache_length</code><span class="sig-paren">(</span><em>cache_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.ensure_cache_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.ensure_cache_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensures the cache is within its limits and has one place free</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.id">
+<code class="descname">id</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the self.id of an object, to be used in caching individual self.ids</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.on_cache_changed">
+<code class="descname">on_cache_changed</code><span class="sig-paren">(</span><em>direct</em>, <em>which=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.on_cache_changed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.on_cache_changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callback funtion, which sets local flags when the elements of some cached inputs change</p>
+<p>this function gets &#8216;hooked up&#8217; to the inputs when we cache them, and upon their elements being changed we update here.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.prepare_cache_id">
+<code class="descname">prepare_cache_id</code><span class="sig-paren">(</span><em>combined_args_kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.prepare_cache_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.prepare_cache_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the cacheid (conc. string of argument self.ids in order)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.caching.Cacher.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Totally reset the cache</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.caching.Cacher_wrap">
+<em class="property">class </em><code class="descclassname">GPy.util.caching.</code><code class="descname">Cacher_wrap</code><span class="sig-paren">(</span><em>f</em>, <em>limit</em>, <em>ignore_args</em>, <em>force_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/caching.html#Cacher_wrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.caching.Cacher_wrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.classification">
+<span id="gpy-util-classification-module"></span><h2>GPy.util.classification module<a class="headerlink" href="#module-GPy.util.classification" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.classification.conf_matrix">
+<code class="descclassname">GPy.util.classification.</code><code class="descname">conf_matrix</code><span class="sig-paren">(</span><em>p, labels, names=['1', '0'], threshold=0.5, show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/classification.html#conf_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.classification.conf_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns error rate and true/false positives in a binary classification problem
+- Actual classes are displayed by column.
+- Predicted classes are displayed by row.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>p</strong> &#8211; array of class &#8216;1&#8217; probabilities.</li>
+<li><strong>labels</strong> &#8211; array of actual classes.</li>
+<li><strong>names</strong> &#8211; list of class names, defaults to [&#8216;1&#8217;,&#8216;0&#8217;].</li>
+<li><strong>threshold</strong> &#8211; probability value used to decide the class.</li>
+<li><strong>show</strong> (<em>False|True</em>) &#8211; whether the matrix should be shown or not</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.config">
+<span id="gpy-util-config-module"></span><h2>GPy.util.config module<a class="headerlink" href="#module-GPy.util.config" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.util.datasets">
+<span id="gpy-util-datasets-module"></span><h2>GPy.util.datasets module<a class="headerlink" href="#module-GPy.util.datasets" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.datasets.authorize_download">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">authorize_download</code><span class="sig-paren">(</span><em>dataset_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#authorize_download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.authorize_download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check with the user that the are happy with terms and conditions for the data set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.boston_housing">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">boston_housing</code><span class="sig-paren">(</span><em>data_set='boston_housing'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#boston_housing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.boston_housing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.boxjenkins_airline">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">boxjenkins_airline</code><span class="sig-paren">(</span><em>data_set='boxjenkins_airline'</em>, <em>num_train=96</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#boxjenkins_airline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.boxjenkins_airline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.brendan_faces">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">brendan_faces</code><span class="sig-paren">(</span><em>data_set='brendan_faces'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#brendan_faces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.brendan_faces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.cifar10_patches">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">cifar10_patches</code><span class="sig-paren">(</span><em>data_set='cifar-10'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#cifar10_patches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.cifar10_patches" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Candian Institute for Advanced Research 10 image data set. Code for loading in this data is taken from this Boris Babenko&#8217;s blog post, original code available here: <a class="reference external" href="http://bbabenko.tumblr.com/post/86756017649/learning-low-level-vision-feautres-in-10-lines-of-code">http://bbabenko.tumblr.com/post/86756017649/learning-low-level-vision-feautres-in-10-lines-of-code</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.cmu_mocap">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">cmu_mocap</code><span class="sig-paren">(</span><em>subject</em>, <em>train_motions</em>, <em>test_motions=[]</em>, <em>sample_every=4</em>, <em>data_set='cmu_mocap'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#cmu_mocap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.cmu_mocap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a given subject&#8217;s training and test motions from the CMU motion capture data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.cmu_mocap_35_walk_jog">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">cmu_mocap_35_walk_jog</code><span class="sig-paren">(</span><em>data_set='cmu_mocap'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#cmu_mocap_35_walk_jog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.cmu_mocap_35_walk_jog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load CMU subject 35&#8217;s walking and jogging motions, the same data that was used by Taylor, Roweis and Hinton at NIPS 2007. but without their preprocessing. Also used by Lawrence at AISTATS 2007.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.cmu_mocap_49_balance">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">cmu_mocap_49_balance</code><span class="sig-paren">(</span><em>data_set='cmu_mocap'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#cmu_mocap_49_balance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.cmu_mocap_49_balance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load CMU subject 49&#8217;s one legged balancing motion that was used by Alvarez, Luengo and Lawrence at AISTATS 2009.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.cmu_urls_files">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">cmu_urls_files</code><span class="sig-paren">(</span><em>subj_motions</em>, <em>messages=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#cmu_urls_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.cmu_urls_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find which resources are missing on the local disk for the requested CMU motion capture motions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.creep_data">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">creep_data</code><span class="sig-paren">(</span><em>data_set='creep_rupture'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#creep_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.creep_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Brun and Yoshida&#8217;s metal creep rupture data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.crescent_data">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">crescent_data</code><span class="sig-paren">(</span><em>num_data=200</em>, <em>seed=10000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#crescent_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.crescent_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data set formed from a mixture of four Gaussians. In each class two of the Gaussians are elongated at right angles to each other and offset to form an approximation to the crescent data that is popular in semi-supervised learning as a toy problem.</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">param num_data_part:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">number of data to be sampled (default is 200).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type num_data:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param seed:</th><td class="field-body">random seed to be used for data generation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type seed:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.data_available">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">data_available</code><span class="sig-paren">(</span><em>dataset_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#data_available"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.data_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the data set is available on the local machine already.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.data_details_return">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">data_details_return</code><span class="sig-paren">(</span><em>data</em>, <em>data_set</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#data_details_return"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.data_details_return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the data component of the data dictionary with details drawn from the data_resources.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.decampos_digits">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">decampos_digits</code><span class="sig-paren">(</span><em>data_set='decampos_characters', which_digits=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#decampos_digits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.decampos_digits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.della_gatta_TRP63_gene_expression">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">della_gatta_TRP63_gene_expression</code><span class="sig-paren">(</span><em>data_set='della_gatta'</em>, <em>gene_number=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#della_gatta_TRP63_gene_expression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.della_gatta_TRP63_gene_expression" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.download_data">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">download_data</code><span class="sig-paren">(</span><em>dataset_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#download_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.download_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check with the user that the are happy with terms and conditions for the data set, then download it.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.download_rogers_girolami_data">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">download_rogers_girolami_data</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#download_rogers_girolami_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.download_rogers_girolami_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.download_url">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">download_url</code><span class="sig-paren">(</span><em>url</em>, <em>store_directory</em>, <em>save_name=None</em>, <em>messages=True</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#download_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.download_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download a file from a url and save it to disk.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.drosophila_knirps">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">drosophila_knirps</code><span class="sig-paren">(</span><em>data_set='drosophila_protein'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#drosophila_knirps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.drosophila_knirps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.drosophila_protein">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">drosophila_protein</code><span class="sig-paren">(</span><em>data_set='drosophila_protein'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#drosophila_protein"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.drosophila_protein" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.football_data">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">football_data</code><span class="sig-paren">(</span><em>season='1314'</em>, <em>data_set='football_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#football_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.football_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Football data from English games since 1993. This downloads data from football-data.co.uk for the given season.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.fruitfly_tomancak">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">fruitfly_tomancak</code><span class="sig-paren">(</span><em>data_set='fruitfly_tomancak'</em>, <em>gene_number=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#fruitfly_tomancak"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.fruitfly_tomancak" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.global_average_temperature">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">global_average_temperature</code><span class="sig-paren">(</span><em>data_set='global_temperature'</em>, <em>num_train=1000</em>, <em>refresh_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#global_average_temperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.global_average_temperature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.google_trends">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">google_trends</code><span class="sig-paren">(</span><em>query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends', refresh_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#google_trends"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.google_trends" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data downloaded from Google trends for given query terms. Warning, if you use this function multiple times in a row you get blocked due to terms of service violations. The function will cache the result of your query, if you wish to refresh an old query set refresh_data to True. The function is inspired by this notebook: <a class="reference external" href="http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb">http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.hapmap3">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">hapmap3</code><span class="sig-paren">(</span><em>data_set='hapmap3'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#hapmap3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.hapmap3" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HapMap phase three SNP dataset - 1184 samples out of 11 populations.</p>
+<p>SNP_matrix (A) encoding [see Paschou et all. 2007 (PCA-Correlated SNPs...)]:
+Let (B1,B2) be the alphabetically sorted bases, which occur in the j-th SNP, then</p>
+<blockquote>
+<div>/  1, iff SNPij==(B1,B1)</div></blockquote>
+<dl class="docutils">
+<dt>Aij = |  0, iff SNPij==(B1,B2)</dt>
+<dd>-1, iff SNPij==(B2,B2)</dd>
+</dl>
+<p>The SNP data and the meta information (such as iid, sex and phenotype) are
+stored in the dataframe datadf, index is the Individual ID,
+with following columns for metainfo:</p>
+<blockquote>
+<div><ul class="simple">
+<li>family_id   -&gt; Family ID</li>
+<li>paternal_id -&gt; Paternal ID</li>
+<li>maternal_id -&gt; Maternal ID</li>
+<li>sex         -&gt; Sex (1=male; 2=female; other=unknown)</li>
+<li>phenotype   -&gt; Phenotype (-9, or 0 for unknown)</li>
+<li>population  -&gt; Population string (e.g. &#8216;ASW&#8217; - &#8216;YRI&#8217;)</li>
+<li>rest are SNP rs (ids)</li>
+</ul>
+</div></blockquote>
+<p>More information is given in infodf:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>Chromosome:</dt>
+<dd><ul class="first last simple">
+<li>autosomal chromosemes                -&gt; 1-22</li>
+<li>X    X chromosome                    -&gt; 23</li>
+<li>Y    Y chromosome                    -&gt; 24</li>
+<li>XY   Pseudo-autosomal region of X    -&gt; 25</li>
+<li>MT   Mitochondrial                   -&gt; 26</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Relative Positon (to Chromosome) [base pairs]</p>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.isomap_faces">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">isomap_faces</code><span class="sig-paren">(</span><em>num_samples=698</em>, <em>data_set='isomap_face_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#isomap_faces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.isomap_faces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.lee_yeast_ChIP">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">lee_yeast_ChIP</code><span class="sig-paren">(</span><em>data_set='lee_yeast_ChIP'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#lee_yeast_ChIP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.lee_yeast_ChIP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.mauna_loa">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">mauna_loa</code><span class="sig-paren">(</span><em>data_set='mauna_loa'</em>, <em>num_train=545</em>, <em>refresh_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#mauna_loa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.mauna_loa" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.oil">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">oil</code><span class="sig-paren">(</span><em>data_set='three_phase_oil_flow'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#oil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.oil" title="Permalink to this definition">¶</a></dt>
+<dd><p>The three phase oil data from Bishop and James (1993).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.oil_100">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">oil_100</code><span class="sig-paren">(</span><em>seed=10000</em>, <em>data_set='three_phase_oil_flow'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#oil_100"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.oil_100" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olivetti_faces">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olivetti_faces</code><span class="sig-paren">(</span><em>data_set='olivetti_faces'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olivetti_faces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olivetti_faces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olivetti_glasses">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olivetti_glasses</code><span class="sig-paren">(</span><em>data_set='olivetti_glasses'</em>, <em>num_training=200</em>, <em>seed=10000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olivetti_glasses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olivetti_glasses" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_100m_men">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_100m_men</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_100m_men"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_100m_men" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_100m_women">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_100m_women</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_100m_women"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_100m_women" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_200m_men">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_200m_men</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_200m_men"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_200m_men" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_200m_women">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_200m_women</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_200m_women"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_200m_women" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_400m_men">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_400m_men</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_400m_men"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_400m_men" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_400m_women">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_400m_women</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_400m_women"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_400m_women" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_marathon_men">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_marathon_men</code><span class="sig-paren">(</span><em>data_set='olympic_marathon_men'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_marathon_men"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_marathon_men" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.olympic_sprints">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">olympic_sprints</code><span class="sig-paren">(</span><em>data_set='rogers_girolami_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#olympic_sprints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.olympic_sprints" title="Permalink to this definition">¶</a></dt>
+<dd><p>All olympics sprint winning times for multiple output prediction.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.osu_run1">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">osu_run1</code><span class="sig-paren">(</span><em>data_set='osu_run1'</em>, <em>sample_every=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#osu_run1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.osu_run1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.prompt_user">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">prompt_user</code><span class="sig-paren">(</span><em>prompt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#prompt_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.prompt_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ask user for agreeing to data set licenses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.pumadyn">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">pumadyn</code><span class="sig-paren">(</span><em>seed=10000</em>, <em>data_set='pumadyn-32nm'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#pumadyn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.pumadyn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.reporthook">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">reporthook</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>c</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#reporthook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.reporthook" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.ripley_synth">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">ripley_synth</code><span class="sig-paren">(</span><em>data_set='ripley_prnn_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#ripley_synth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.ripley_synth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.robot_wireless">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">robot_wireless</code><span class="sig-paren">(</span><em>data_set='robot_wireless'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#robot_wireless"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.robot_wireless" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.sample_class">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">sample_class</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#sample_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.sample_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.silhouette">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">silhouette</code><span class="sig-paren">(</span><em>data_set='ankur_pose_data'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#silhouette"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.silhouette" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.simulation_BGPLVM">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">simulation_BGPLVM</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#simulation_BGPLVM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.simulation_BGPLVM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.singlecell">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">singlecell</code><span class="sig-paren">(</span><em>data_set='singlecell'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#singlecell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.singlecell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.singlecell_rna_seq_deng">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">singlecell_rna_seq_deng</code><span class="sig-paren">(</span><em>dataset='singlecell_deng'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#singlecell_rna_seq_deng"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.singlecell_rna_seq_deng" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.singlecell_rna_seq_islam">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">singlecell_rna_seq_islam</code><span class="sig-paren">(</span><em>dataset='singlecell_islam'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#singlecell_rna_seq_islam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.singlecell_rna_seq_islam" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.sod1_mouse">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">sod1_mouse</code><span class="sig-paren">(</span><em>data_set='sod1_mouse'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#sod1_mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.sod1_mouse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.spellman_yeast">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">spellman_yeast</code><span class="sig-paren">(</span><em>data_set='spellman_yeast'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#spellman_yeast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.spellman_yeast" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.spellman_yeast_cdc15">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">spellman_yeast_cdc15</code><span class="sig-paren">(</span><em>data_set='spellman_yeast'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#spellman_yeast_cdc15"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.spellman_yeast_cdc15" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.swiss_roll">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">swiss_roll</code><span class="sig-paren">(</span><em>num_samples=3000</em>, <em>data_set='swiss_roll'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#swiss_roll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.swiss_roll" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.swiss_roll_1000">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">swiss_roll_1000</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#swiss_roll_1000"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.swiss_roll_1000" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.swiss_roll_generated">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">swiss_roll_generated</code><span class="sig-paren">(</span><em>num_samples=1000</em>, <em>sigma=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#swiss_roll_generated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.swiss_roll_generated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.toy_linear_1d_classification">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">toy_linear_1d_classification</code><span class="sig-paren">(</span><em>seed=10000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#toy_linear_1d_classification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.toy_linear_1d_classification" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.toy_rbf_1d">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">toy_rbf_1d</code><span class="sig-paren">(</span><em>seed=10000</em>, <em>num_samples=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#toy_rbf_1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.toy_rbf_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples values of a function from an RBF covariance with very small noise for inputs uniformly distributed between -1 and 1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>seed</strong> (<em>int</em>) &#8211; seed to use for random sampling.</li>
+<li><strong>num_samples</strong> (<em>int</em>) &#8211; number of samples to sample in the function (default 500).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.toy_rbf_1d_50">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">toy_rbf_1d_50</code><span class="sig-paren">(</span><em>seed=10000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#toy_rbf_1d_50"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.toy_rbf_1d_50" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.datasets.xw_pen">
+<code class="descclassname">GPy.util.datasets.</code><code class="descname">xw_pen</code><span class="sig-paren">(</span><em>data_set='xw_pen'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/datasets.html#xw_pen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.datasets.xw_pen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.debug">
+<span id="gpy-util-debug-module"></span><h2>GPy.util.debug module<a class="headerlink" href="#module-GPy.util.debug" title="Permalink to this headline">¶</a></h2>
+<p>The module for some general debug tools</p>
+<dl class="function">
+<dt id="GPy.util.debug.checkFinite">
+<code class="descclassname">GPy.util.debug.</code><code class="descname">checkFinite</code><span class="sig-paren">(</span><em>arr</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/debug.html#checkFinite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.debug.checkFinite" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.debug.checkFullRank">
+<code class="descclassname">GPy.util.debug.</code><code class="descname">checkFullRank</code><span class="sig-paren">(</span><em>m</em>, <em>tol=1e-10</em>, <em>name=None</em>, <em>force_check=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/debug.html#checkFullRank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.debug.checkFullRank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.decorators">
+<span id="gpy-util-decorators-module"></span><h2>GPy.util.decorators module<a class="headerlink" href="#module-GPy.util.decorators" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.decorators.silence_errors">
+<code class="descclassname">GPy.util.decorators.</code><code class="descname">silence_errors</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/decorators.html#silence_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.decorators.silence_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>This wraps a function and it silences numpy errors that
+happen during the execution. After the function has exited, it restores
+the previous state of the warnings.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.diag">
+<span id="gpy-util-diag-module"></span><h2>GPy.util.diag module<a class="headerlink" href="#module-GPy.util.diag" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.diag.add">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">add</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add b to the view of A in place (!).
+Returns modified A.
+Broadcasting is allowed, thus b can be scalar.</p>
+<p>if offset is not zero, make sure b is of right shape!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>ndarray</em>) &#8211; 2 dimensional array</li>
+<li><strong>b</strong> (<em>ndarray-like</em>) &#8211; either one dimensional or scalar</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; same as in view.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">view of A, which is adjusted inplace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.divide">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">divide</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#divide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.divide" title="Permalink to this definition">¶</a></dt>
+<dd><p>Divide the view of A by b in place (!).
+Returns modified A
+Broadcasting is allowed, thus b can be scalar.</p>
+<p>if offset is not zero, make sure b is of right shape!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>ndarray</em>) &#8211; 2 dimensional array</li>
+<li><strong>b</strong> (<em>ndarray-like</em>) &#8211; either one dimensional or scalar</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; same as in view.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">view of A, which is adjusted inplace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.multiply">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">multiply</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GPy.util.diag.multiply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Times the view of A with b in place (!).
+Returns modified A
+Broadcasting is allowed, thus b can be scalar.</p>
+<p>if offset is not zero, make sure b is of right shape!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>ndarray</em>) &#8211; 2 dimensional array</li>
+<li><strong>b</strong> (<em>ndarray-like</em>) &#8211; either one dimensional or scalar</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; same as in view.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">view of A, which is adjusted inplace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.offdiag_view">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">offdiag_view</code><span class="sig-paren">(</span><em>A</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#offdiag_view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.offdiag_view" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.subtract">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">subtract</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.subtract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subtract b from the view of A in place (!).
+Returns modified A.
+Broadcasting is allowed, thus b can be scalar.</p>
+<p>if offset is not zero, make sure b is of right shape!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>ndarray</em>) &#8211; 2 dimensional array</li>
+<li><strong>b</strong> (<em>ndarray-like</em>) &#8211; either one dimensional or scalar</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; same as in view.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">view of A, which is adjusted inplace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.times">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">times</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.times" title="Permalink to this definition">¶</a></dt>
+<dd><p>Times the view of A with b in place (!).
+Returns modified A
+Broadcasting is allowed, thus b can be scalar.</p>
+<p>if offset is not zero, make sure b is of right shape!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>ndarray</em>) &#8211; 2 dimensional array</li>
+<li><strong>b</strong> (<em>ndarray-like</em>) &#8211; either one dimensional or scalar</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; same as in view.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">view of A, which is adjusted inplace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.diag.view">
+<code class="descclassname">GPy.util.diag.</code><code class="descname">view</code><span class="sig-paren">(</span><em>A</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/diag.html#view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.diag.view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a view on the diagonal elements of a 2D array.</p>
+<p>This is actually a view (!) on the diagonal of the array, so you can
+in-place adjust the view.</p>
+<p>:param <code class="xref py py-class docutils literal"><span class="pre">ndarray</span></code> A: 2 dimensional numpy array
+:param int offset: view offset to give back (negative entries allowed)
+:rtype: <code class="xref py py-class docutils literal"><span class="pre">ndarray</span></code> view of diag(A)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="go">array([0, 4, 8])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">+=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="go">array([ 2,  6, 10])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">offset</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">array([3, 7])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">subtract</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">offset</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">array([[ 2,  1,  2],</span>
+<span class="go">       [ 0,  6,  5],</span>
+<span class="go">       [ 6,  4, 10]])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.erfcx">
+<span id="gpy-util-erfcx-module"></span><h2>GPy.util.erfcx module<a class="headerlink" href="#module-GPy.util.erfcx" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.erfcx.erfcx">
+<code class="descclassname">GPy.util.erfcx.</code><code class="descname">erfcx</code><span class="sig-paren">(</span><em>arg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/erfcx.html#erfcx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.erfcx.erfcx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.functions">
+<span id="gpy-util-functions-module"></span><h2>GPy.util.functions module<a class="headerlink" href="#module-GPy.util.functions" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.functions.clip_exp">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">clip_exp</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#clip_exp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.clip_exp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.functions.differfln">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">differfln</code><span class="sig-paren">(</span><em>x0</em>, <em>x1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#differfln"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.differfln" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.functions.logistic">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">logistic</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#logistic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.logistic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.functions.logisticln">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">logisticln</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#logisticln"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.logisticln" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.functions.normcdf">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">normcdf</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#normcdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.normcdf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.functions.normcdfln">
+<code class="descclassname">GPy.util.functions.</code><code class="descname">normcdfln</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/functions.html#normcdfln"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.functions.normcdfln" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.gpu_init">
+<span id="gpy-util-gpu-init-module"></span><h2>GPy.util.gpu_init module<a class="headerlink" href="#module-GPy.util.gpu_init" title="Permalink to this headline">¶</a></h2>
+<p>The package for scikits.cuda initialization</p>
+<p>Global variables: initSuccess
+providing CUBLAS handle: cublas_handle</p>
+<dl class="function">
+<dt id="GPy.util.gpu_init.closeGPU">
+<code class="descclassname">GPy.util.gpu_init.</code><code class="descname">closeGPU</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/gpu_init.html#closeGPU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.gpu_init.closeGPU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.initialization">
+<span id="gpy-util-initialization-module"></span><h2>GPy.util.initialization module<a class="headerlink" href="#module-GPy.util.initialization" title="Permalink to this headline">¶</a></h2>
+<p>Created on 24 Feb 2014</p>
+<p>&#64;author: maxz</p>
+<dl class="function">
+<dt id="GPy.util.initialization.initialize_latent">
+<code class="descclassname">GPy.util.initialization.</code><code class="descname">initialize_latent</code><span class="sig-paren">(</span><em>init</em>, <em>input_dim</em>, <em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/initialization.html#initialize_latent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.initialization.initialize_latent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.linalg">
+<span id="gpy-util-linalg-module"></span><h2>GPy.util.linalg module<a class="headerlink" href="#module-GPy.util.linalg" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.linalg.DSYR">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">DSYR</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#DSYR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.DSYR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.DSYR_blas">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">DSYR_blas</code><span class="sig-paren">(</span><em>A</em>, <em>x</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#DSYR_blas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.DSYR_blas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a symmetric rank-1 update operation:
+A &lt;- A + alpha * np.dot(x,x.T)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>A</strong> &#8211; Symmetric NxN np.array</li>
+<li><strong>x</strong> &#8211; Nx1 np.array</li>
+<li><strong>alpha</strong> &#8211; scalar</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.DSYR_numpy">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">DSYR_numpy</code><span class="sig-paren">(</span><em>A</em>, <em>x</em>, <em>alpha=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#DSYR_numpy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.DSYR_numpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a symmetric rank-1 update operation:
+A &lt;- A + alpha * np.dot(x,x.T)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>A</strong> &#8211; Symmetric NxN np.array</li>
+<li><strong>x</strong> &#8211; Nx1 np.array</li>
+<li><strong>alpha</strong> &#8211; scalar</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.backsub_both_sides">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">backsub_both_sides</code><span class="sig-paren">(</span><em>L</em>, <em>X</em>, <em>transpose='left'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#backsub_both_sides"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.backsub_both_sides" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.cholupdate">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">cholupdate</code><span class="sig-paren">(</span><em>L</em>, <em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#cholupdate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.cholupdate" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the LOWER cholesky factor of a pd matrix IN PLACE</p>
+<p>if L is the lower chol. of K, then this function computes L_
+where L_ is the lower chol of K + x*x^T</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.dpotri">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">dpotri</code><span class="sig-paren">(</span><em>A</em>, <em>lower=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#dpotri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.dpotri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for lapack dpotri function</p>
+<dl class="docutils">
+<dt>DPOTRI - compute the inverse of a real symmetric positive</dt>
+<dd>definite matrix A using the Cholesky factorization A =
+U**T*U or A = L*L**T computed by DPOTRF</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> &#8211; Matrix A</li>
+<li><strong>lower</strong> &#8211; is matrix lower (true) or upper (false)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A inverse</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.dpotrs">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">dpotrs</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>lower=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#dpotrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.dpotrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for lapack dpotrs function
+:param A: Matrix A
+:param B: Matrix B
+:param lower: is matrix lower (true) or upper (false)
+:returns:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.dtrtri">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">dtrtri</code><span class="sig-paren">(</span><em>L</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#dtrtri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.dtrtri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverts a Cholesky lower triangular matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>L</strong> &#8211; lower triangular matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">inverse of L</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.dtrtrs">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">dtrtrs</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>lower=1</em>, <em>trans=0</em>, <em>unitdiag=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#dtrtrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.dtrtrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for lapack dtrtrs function</p>
+<p>DTRTRS solves a triangular system of the form</p>
+<blockquote>
+<div>A * X = B  or  A**T * X = B,</div></blockquote>
+<p>where A is a triangular matrix of order N, and B is an N-by-NRHS
+matrix.  A check is made to verify that A is nonsingular.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> &#8211; Matrix A(triangular)</li>
+<li><strong>B</strong> &#8211; Matrix B</li>
+<li><strong>lower</strong> &#8211; is matrix lower (true) or upper (false)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Solution to A * X = B or A**T * X = B</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.force_F_ordered">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">force_F_ordered</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#force_F_ordered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.force_F_ordered" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a F ordered version of A, assuming A is triangular</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.force_F_ordered_symmetric">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">force_F_ordered_symmetric</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#force_F_ordered_symmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.force_F_ordered_symmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a F ordered version of A, assuming A is symmetric</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.jitchol">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">jitchol</code><span class="sig-paren">(</span><em>A</em>, <em>maxtries=5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#jitchol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.jitchol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.mdot">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">mdot</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#mdot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.mdot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply all the arguments using matrix product rules.
+The output is equivalent to multiplying the arguments one by one
+from left to right using dot().
+Precedence can be controlled by creating tuples of arguments,
+for instance mdot(a,((b,c),d)) multiplies a (a*((b*c)*d)).
+Note that this means the output of dot(a,b) and mdot(a,b) will differ if
+a or b is a pure tuple of numbers.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.multiple_pdinv">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">multiple_pdinv</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#multiple_pdinv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.multiple_pdinv" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>A</strong> &#8211; A DxDxN numpy array (each A[:,:,i] is pd)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval invs:</th><td class="field-body">the inverses of A</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype invs:</th><td class="field-body">np.ndarray</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval hld:</th><td class="field-body">0.5* the log of the determinants of A</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype hld:</th><td class="field-body">np.array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.pca">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">pca</code><span class="sig-paren">(</span><em>Y</em>, <em>input_dim</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#pca"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.pca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Principal component analysis: maximum likelihood solution by SVD</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Y</strong> &#8211; NxD np.array of data</li>
+<li><strong>input_dim</strong> &#8211; int, dimension of projection</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval X:</th><td class="field-body"><ul class="first simple">
+<li>Nxinput_dim np.array of dimensionality reduced data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rval W:</th><td class="field-body"><ul class="first last simple">
+<li>input_dimxD mapping from X to Y</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.pddet">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">pddet</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#pddet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.pddet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determinant of a positive definite matrix, only symmetric matricies though</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.pdinv">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">pdinv</code><span class="sig-paren">(</span><em>A</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#pdinv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.pdinv" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>A</strong> &#8211; A DxD pd numpy array</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval Ai:</th><td class="field-body">the inverse of A</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype Ai:</th><td class="field-body">np.ndarray</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval L:</th><td class="field-body">the Cholesky decomposition of A</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype L:</th><td class="field-body">np.ndarray</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval Li:</th><td class="field-body">the Cholesky decomposition of Ai</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype Li:</th><td class="field-body">np.ndarray</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval logdet:</th><td class="field-body">the log of the determinant of A</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Rtype logdet:</th><td class="field-body">float64</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.ppca">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">ppca</code><span class="sig-paren">(</span><em>Y</em>, <em>Q</em>, <em>iterations=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#ppca"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.ppca" title="Permalink to this definition">¶</a></dt>
+<dd><p>EM implementation for probabilistic pca.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Y</strong> (<em>array-like</em>) &#8211; Observed Data</li>
+<li><strong>Q</strong> (<em>int</em>) &#8211; Dimensionality for reduced array</li>
+<li><strong>iterations</strong> (<em>int</em>) &#8211; number of iterations for EM</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.symmetrify">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">symmetrify</code><span class="sig-paren">(</span><em>A</em>, <em>upper=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#symmetrify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.symmetrify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper</p>
+<p>works IN PLACE.</p>
+<p>note: tries to use weave, falls back to a slower numpy version</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.symmetrify_numpy">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">symmetrify_numpy</code><span class="sig-paren">(</span><em>A</em>, <em>upper=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#symmetrify_numpy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.symmetrify_numpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Force a matrix to be symmetric</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.symmetrify_weave">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">symmetrify_weave</code><span class="sig-paren">(</span><em>A</em>, <em>upper=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#symmetrify_weave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.symmetrify_weave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper</p>
+<p>works IN PLACE.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.tdot">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">tdot</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#tdot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.tdot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.tdot_blas">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">tdot_blas</code><span class="sig-paren">(</span><em>mat</em>, <em>out=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#tdot_blas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.tdot_blas" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns np.dot(mat, mat.T), but faster for large 2D arrays of doubles.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.tdot_numpy">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">tdot_numpy</code><span class="sig-paren">(</span><em>mat</em>, <em>out=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#tdot_numpy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.tdot_numpy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.linalg.trace_dot">
+<code class="descclassname">GPy.util.linalg.</code><code class="descname">trace_dot</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/linalg.html#trace_dot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.linalg.trace_dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Efficiently compute the trace of the matrix product of a and b</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.linalg_gpu">
+<span id="gpy-util-linalg-gpu-module"></span><h2>GPy.util.linalg_gpu module<a class="headerlink" href="#module-GPy.util.linalg_gpu" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.util.ln_diff_erfs">
+<span id="gpy-util-ln-diff-erfs-module"></span><h2>GPy.util.ln_diff_erfs module<a class="headerlink" href="#module-GPy.util.ln_diff_erfs" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.ln_diff_erfs.ln_diff_erfs">
+<code class="descclassname">GPy.util.ln_diff_erfs.</code><code class="descname">ln_diff_erfs</code><span class="sig-paren">(</span><em>x1</em>, <em>x2</em>, <em>return_sign=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/ln_diff_erfs.html#ln_diff_erfs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.ln_diff_erfs.ln_diff_erfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for stably computing the log of difference of two erfs in a numerically stable manner.
+:param x1 : argument of the positive erf
+:type x1: ndarray
+:param x2 : argument of the negative erf
+:type x2: ndarray
+:return: tuple containing (log(abs(erf(x1) - erf(x2))), sign(erf(x1) - erf(x2)))</p>
+<p>Based on MATLAB code that was written by Antti Honkela and modified by David Luengo and originally derived from code by Neil Lawrence.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.misc">
+<span id="gpy-util-misc-module"></span><h2>GPy.util.misc module<a class="headerlink" href="#module-GPy.util.misc" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.misc.chain_1">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">chain_1</code><span class="sig-paren">(</span><em>df_dg</em>, <em>dg_dx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#chain_1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.chain_1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic chaining function for first derivative</p>
+<div class="math">
+<p><img src="_images/math/4f8a60521b12d9341a7d63d315e8c4d6d4944769.png" alt="\frac{d(f . g)}{dx} = \frac{df}{dg} \frac{dg}{dx}"/></p>
+</div></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.chain_2">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">chain_2</code><span class="sig-paren">(</span><em>d2f_dg2</em>, <em>dg_dx</em>, <em>df_dg</em>, <em>d2g_dx2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#chain_2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.chain_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic chaining function for second derivative</p>
+<div class="math">
+<p><img src="_images/math/b0f3fa8d6aec4217077dd92bd58d218dcc0dc663.png" alt="\frac{d^{2}(f . g)}{dx^{2}} = \frac{d^{2}f}{dg^{2}}(\frac{dg}{dx})^{2} + \frac{df}{dg}\frac{d^{2}g}{dx^{2}}"/></p>
+</div></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.chain_3">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">chain_3</code><span class="sig-paren">(</span><em>d3f_dg3</em>, <em>dg_dx</em>, <em>d2f_dg2</em>, <em>d2g_dx2</em>, <em>df_dg</em>, <em>d3g_dx3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#chain_3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.chain_3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic chaining function for third derivative</p>
+<div class="math">
+<p><img src="_images/math/988e0e11a8d6647b1763eb35ad4aa6c01478b0a9.png" alt="\frac{d^{3}(f . g)}{dx^{3}} = \frac{d^{3}f}{dg^{3}}(\frac{dg}{dx})^{3} + 3\frac{d^{2}f}{dg^{2}}\frac{dg}{dx}\frac{d^{2}g}{dx^{2}} + \frac{df}{dg}\frac{d^{3}g}{dx^{3}}"/></p>
+</div></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.kmm_init">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">kmm_init</code><span class="sig-paren">(</span><em>X</em>, <em>m=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#kmm_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.kmm_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the same initialization algorithm that is used
+in Kmeans++. It&#8217;s quite simple and very useful to initialize
+the locations of the inducing points in sparse GPs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> &#8211; data</li>
+<li><strong>m</strong> &#8211; number of inducing points</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.linear_grid">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">linear_grid</code><span class="sig-paren">(</span><em>D</em>, <em>n=100</em>, <em>min_max=(-100</em>, <em>100)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#linear_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.linear_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a D-dimensional grid of n linearly spaced points</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>D</strong> &#8211; dimension of the grid</li>
+<li><strong>n</strong> &#8211; number of points</li>
+<li><strong>min_max</strong> &#8211; (min, max) list</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.opt_wrapper">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">opt_wrapper</code><span class="sig-paren">(</span><em>m</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#opt_wrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.opt_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function just wraps the optimization procedure of a GPy
+object so that optimize() pickleable (necessary for multiprocessing).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.misc.param_to_array">
+<code class="descclassname">GPy.util.misc.</code><code class="descname">param_to_array</code><span class="sig-paren">(</span><em>*param</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/misc.html#param_to_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.misc.param_to_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an arbitrary number of parameters to :class:ndarray class objects. This is for
+converting parameter objects to numpy arrays, when using scipy.weave.inline routine.
+In scipy.weave.blitz there is no automatic array detection (even when the array inherits
+from :class:ndarray)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.mocap">
+<span id="gpy-util-mocap-module"></span><h2>GPy.util.mocap module<a class="headerlink" href="#module-GPy.util.mocap" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.util.mocap.acclaim_skeleton">
+<em class="property">class </em><code class="descclassname">GPy.util.mocap.</code><code class="descname">acclaim_skeleton</code><span class="sig-paren">(</span><em>file_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.util.mocap.skeleton" title="GPy.util.mocap.skeleton"><code class="xref py py-class docutils literal"><span class="pre">GPy.util.mocap.skeleton</span></code></a></p>
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.get_child_xyz">
+<code class="descname">get_child_xyz</code><span class="sig-paren">(</span><em>ind</em>, <em>channels</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.get_child_xyz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.get_child_xyz" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.load_channels">
+<code class="descname">load_channels</code><span class="sig-paren">(</span><em>file_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.load_channels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.load_channels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.load_skel">
+<code class="descname">load_skel</code><span class="sig-paren">(</span><em>file_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.load_skel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.load_skel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads an ASF file into a skeleton structure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file_name</strong> &#8211; The file name to load in.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_bonedata">
+<code class="descname">read_bonedata</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_bonedata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_bonedata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read bone data from an acclaim skeleton file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_channels">
+<code class="descname">read_channels</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_channels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read channels from an acclaim file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_documentation">
+<code class="descname">read_documentation</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_documentation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_documentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read documentation from an acclaim skeleton file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_hierarchy">
+<code class="descname">read_hierarchy</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_hierarchy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_hierarchy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read hierarchy information from acclaim skeleton file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_line">
+<code class="descname">read_line</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a line from a file string and check it isn&#8217;t either empty or commented before returning.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_root">
+<code class="descname">read_root</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the root node from an acclaim skeleton file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_skel">
+<code class="descname">read_skel</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_skel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_skel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads an acclaim skeleton format from a file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.read_units">
+<code class="descname">read_units</code><span class="sig-paren">(</span><em>fid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.read_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.read_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read units from an acclaim skeleton file stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.resolve_indices">
+<code class="descname">resolve_indices</code><span class="sig-paren">(</span><em>index</em>, <em>start_val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.resolve_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.resolve_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get indices for the skeleton from the channels when loading in channel data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.set_rotation_matrices">
+<code class="descname">set_rotation_matrices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.set_rotation_matrices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.set_rotation_matrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the meta information at each vertex to contain the correct matrices C and Cinv as prescribed by the rotations and rotation orders.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.acclaim_skeleton.to_xyz">
+<code class="descname">to_xyz</code><span class="sig-paren">(</span><em>channels</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#acclaim_skeleton.to_xyz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.acclaim_skeleton.to_xyz" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.mocap.load_text_data">
+<code class="descclassname">GPy.util.mocap.</code><code class="descname">load_text_data</code><span class="sig-paren">(</span><em>dataset</em>, <em>directory</em>, <em>centre=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#load_text_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.load_text_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load in a data set of marker points from the Ohio State University C3D motion capture files (<a class="reference external" href="http://accad.osu.edu/research/mocap/mocap_data.htm">http://accad.osu.edu/research/mocap/mocap_data.htm</a>).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.mocap.parse_text">
+<code class="descclassname">GPy.util.mocap.</code><code class="descname">parse_text</code><span class="sig-paren">(</span><em>file_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#parse_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.parse_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse data from Ohio State University text mocap files (<a class="reference external" href="http://accad.osu.edu/research/mocap/mocap_data.htm">http://accad.osu.edu/research/mocap/mocap_data.htm</a>).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.mocap.read_connections">
+<code class="descclassname">GPy.util.mocap.</code><code class="descname">read_connections</code><span class="sig-paren">(</span><em>file_name</em>, <em>point_names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#read_connections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.read_connections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a file detailing which markers should be connected to which for motion capture data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.mocap.rotation_matrix">
+<code class="descclassname">GPy.util.mocap.</code><code class="descname">rotation_matrix</code><span class="sig-paren">(</span><em>xangle</em>, <em>yangle</em>, <em>zangle</em>, <em>order='zxy'</em>, <em>degrees=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#rotation_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.rotation_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the rotation matrix for an angle in each direction.
+This is a helper function for computing the rotation matrix for a given set of angles in a given order.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>xangle</strong> &#8211; rotation for x-axis.</li>
+<li><strong>yangle</strong> &#8211; rotation for y-axis.</li>
+<li><strong>zangle</strong> &#8211; rotation for z-axis.</li>
+<li><strong>order</strong> &#8211; the order for the rotations.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.mocap.skeleton">
+<em class="property">class </em><code class="descclassname">GPy.util.mocap.</code><code class="descname">skeleton</code><a class="reference internal" href="_modules/GPy/util/mocap.html#skeleton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.skeleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.util.mocap.tree" title="GPy.util.mocap.tree"><code class="xref py py-class docutils literal"><span class="pre">GPy.util.mocap.tree</span></code></a></p>
+<dl class="method">
+<dt id="GPy.util.mocap.skeleton.connection_matrix">
+<code class="descname">connection_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#skeleton.connection_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.skeleton.connection_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.skeleton.finalize">
+<code class="descname">finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#skeleton.finalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.skeleton.finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>After loading in a skeleton ensure parents are correct, vertex orders are correct and rotation matrices are correct.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.skeleton.smooth_angle_channels">
+<code class="descname">smooth_angle_channels</code><span class="sig-paren">(</span><em>channels</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#skeleton.smooth_angle_channels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.skeleton.smooth_angle_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove discontinuities in angle channels so that they don&#8217;t cause artifacts in algorithms that rely on the smoothness of the functions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.skeleton.to_xyz">
+<code class="descname">to_xyz</code><span class="sig-paren">(</span><em>channels</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#skeleton.to_xyz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.skeleton.to_xyz" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.mocap.tree">
+<em class="property">class </em><code class="descclassname">GPy.util.mocap.</code><code class="descname">tree</code><a class="reference internal" href="_modules/GPy/util/mocap.html#tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="GPy.util.mocap.tree.branch_str">
+<code class="descname">branch_str</code><span class="sig-paren">(</span><em>index</em>, <em>indent=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.branch_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.branch_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.find_children">
+<code class="descname">find_children</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.find_children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.find_children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a tree and set the children according to the parents.</p>
+<p>Takes a tree structure which lists the parents of each vertex
+and computes the children for each vertex and places them in.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.find_parents">
+<code class="descname">find_parents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.find_parents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.find_parents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a tree and set the parents according to the children</p>
+<p>Takes a tree structure which lists the children of each vertex
+and computes the parents for each vertex and places them in.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.find_root">
+<code class="descname">find_root</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.find_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.find_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the index of the root node of the tree.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.get_index_by_id">
+<code class="descname">get_index_by_id</code><span class="sig-paren">(</span><em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.get_index_by_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.get_index_by_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give the index associated with a given vertex id.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.get_index_by_name">
+<code class="descname">get_index_by_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.get_index_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.get_index_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give the index associated with a given vertex name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.order_vertices">
+<code class="descname">order_vertices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.order_vertices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.order_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Order vertices in the graph such that parents always have a lower index than children.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.mocap.tree.swap_vertices">
+<code class="descname">swap_vertices</code><span class="sig-paren">(</span><em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#tree.swap_vertices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.tree.swap_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swap two vertices in the tree structure array.
+swap_vertex swaps the location of two vertices in a tree structure array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tree</strong> &#8211; the tree for which two vertices are to be swapped.</li>
+<li><strong>i</strong> &#8211; the index of the first vertex to be swapped.</li>
+<li><strong>j</strong> &#8211; the index of the second vertex to be swapped.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rval tree:</th><td class="field-body"><p class="first last">the tree structure with the two vertex locations swapped.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.mocap.vertex">
+<em class="property">class </em><code class="descclassname">GPy.util.mocap.</code><code class="descname">vertex</code><span class="sig-paren">(</span><em>name</em>, <em>id</em>, <em>parents=[]</em>, <em>children=[]</em>, <em>meta={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/mocap.html#vertex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.mocap.vertex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="gpy-util-mpi-module">
+<h2>GPy.util.mpi module<a class="headerlink" href="#gpy-util-mpi-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-GPy.util.multioutput">
+<span id="gpy-util-multioutput-module"></span><h2>GPy.util.multioutput module<a class="headerlink" href="#module-GPy.util.multioutput" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.multioutput.ICM">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">ICM</code><span class="sig-paren">(</span><em>input_dim</em>, <em>num_outputs</em>, <em>kernel</em>, <em>W_rank=1</em>, <em>W=None</em>, <em>kappa=None</em>, <em>name='ICM'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#ICM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.ICM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a kernel for an Intrinsic Coregionalization Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Input_dim:</th><td class="field-body"><p class="first">Input dimensionality (does not include dimension of indices)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_outputs:</th><td class="field-body"><p class="first">Number of outputs</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kernel</strong> (<em>a GPy kernel</em>) &#8211; kernel that will be multiplied by the coregionalize kernel (matrix B).</li>
+<li><strong>W_rank</strong> (<em>integer</em>) &#8211; number tuples of the corregionalization parameters &#8216;W&#8217;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.multioutput.LCM">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">LCM</code><span class="sig-paren">(</span><em>input_dim</em>, <em>num_outputs</em>, <em>kernels_list</em>, <em>W_rank=1</em>, <em>name='ICM'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#LCM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.LCM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a kernel for an Linear Coregionalization Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Input_dim:</th><td class="field-body"><p class="first">Input dimensionality (does not include dimension of indices)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_outputs:</th><td class="field-body"><p class="first">Number of outputs</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kernel</strong> (<em>a GPy kernel</em>) &#8211; kernel that will be multiplied by the coregionalize kernel (matrix B).</li>
+<li><strong>W_rank</strong> (<em>integer</em>) &#8211; number tuples of the corregionalization parameters &#8216;W&#8217;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.multioutput.Private">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">Private</code><span class="sig-paren">(</span><em>input_dim</em>, <em>num_outputs</em>, <em>kernel</em>, <em>output</em>, <em>kappa=None</em>, <em>name='X'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#Private"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.Private" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a kernel for an Intrinsic Coregionalization Model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Input_dim:</th><td class="field-body"><p class="first">Input dimensionality</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Num_outputs:</th><td class="field-body"><p class="first">Number of outputs</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kernel</strong> (<em>a GPy kernel</em>) &#8211; kernel that will be multiplied by the coregionalize kernel (matrix B).</li>
+<li><strong>W_rank</strong> (<em>integer</em>) &#8211; number tuples of the corregionalization parameters &#8216;W&#8217;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.multioutput.build_XY">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">build_XY</code><span class="sig-paren">(</span><em>input_list</em>, <em>output_list=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#build_XY"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.build_XY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.multioutput.build_likelihood">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">build_likelihood</code><span class="sig-paren">(</span><em>Y_list</em>, <em>noise_index</em>, <em>likelihoods_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#build_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.build_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.multioutput.get_slices">
+<code class="descclassname">GPy.util.multioutput.</code><code class="descname">get_slices</code><span class="sig-paren">(</span><em>input_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/multioutput.html#get_slices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.multioutput.get_slices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.netpbmfile">
+<span id="gpy-util-netpbmfile-module"></span><h2>GPy.util.netpbmfile module<a class="headerlink" href="#module-GPy.util.netpbmfile" title="Permalink to this headline">¶</a></h2>
+<p>Read and write image data from respectively to Netpbm files.</p>
+<p>This implementation follows the Netpbm format specifications at
+<a class="reference external" href="http://netpbm.sourceforge.net/doc/">http://netpbm.sourceforge.net/doc/</a>. No gamma correction is performed.</p>
+<p>The following image formats are supported: PBM (bi-level), PGM (grayscale),
+PPM (color), PAM (arbitrary), XV thumbnail (RGB332, read-only).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><a class="reference external" href="http://www.lfd.uci.edu/~gohlke/">Christoph Gohlke</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Organization:</th><td class="field-body">Laboratory for Fluorescence Dynamics, University of California, Irvine</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Version:</th><td class="field-body">2013.01.18</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference external" href="http://www.python.org">CPython 2.7, 3.2 or 3.3</a></li>
+<li><a class="reference external" href="http://www.numpy.org">Numpy 1.7</a></li>
+<li><a class="reference external" href="http://www.matplotlib.org">Matplotlib 1.2</a>  (optional for plotting)</li>
+</ul>
+</div>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">im1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],[</span><span class="mi">65534</span><span class="p">,</span> <span class="mi">65535</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">imsave</span><span class="p">(</span><span class="s">&#39;_tmp.pgm&#39;</span><span class="p">,</span> <span class="n">im1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">im2</span> <span class="o">=</span> <span class="n">imread</span><span class="p">(</span><span class="s">&#39;_tmp.pgm&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">im1</span> <span class="o">==</span> <span class="n">im2</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="function">
+<dt id="GPy.util.netpbmfile.imread">
+<code class="descclassname">GPy.util.netpbmfile.</code><code class="descname">imread</code><span class="sig-paren">(</span><em>filename</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#imread"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.imread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return image data from Netpbm file as numpy array.</p>
+<p><cite>args</cite> and <cite>kwargs</cite> are arguments to NetpbmFile.asarray().</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">image</span> <span class="o">=</span> <span class="n">imread</span><span class="p">(</span><span class="s">&#39;_tmp.pgm&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.netpbmfile.imsave">
+<code class="descclassname">GPy.util.netpbmfile.</code><code class="descname">imsave</code><span class="sig-paren">(</span><em>filename</em>, <em>data</em>, <em>maxval=None</em>, <em>pam=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#imsave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.imsave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write image data to Netpbm file.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">image</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],[</span><span class="mi">65534</span><span class="p">,</span> <span class="mi">65535</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">imsave</span><span class="p">(</span><span class="s">&#39;_tmp.pgm&#39;</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.netpbmfile.NetpbmFile">
+<em class="property">class </em><code class="descclassname">GPy.util.netpbmfile.</code><code class="descname">NetpbmFile</code><span class="sig-paren">(</span><em>arg=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#NetpbmFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.NetpbmFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Read and write Netpbm PAM, PBM, PGM, PPM, files.</p>
+<dl class="method">
+<dt id="GPy.util.netpbmfile.NetpbmFile.asarray">
+<code class="descname">asarray</code><span class="sig-paren">(</span><em>copy=True</em>, <em>cache=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#NetpbmFile.asarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.NetpbmFile.asarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return image data from file as numpy array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.netpbmfile.NetpbmFile.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#NetpbmFile.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.NetpbmFile.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close open file. Future asarray calls might fail.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.netpbmfile.NetpbmFile.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>arg</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/netpbmfile.html#NetpbmFile.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.netpbmfile.NetpbmFile.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write instance to file.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-GPy.util.normalizer">
+<span id="gpy-util-normalizer-module"></span><h2>GPy.util.normalizer module<a class="headerlink" href="#module-GPy.util.normalizer" title="Permalink to this headline">¶</a></h2>
+<p>Created on Aug 27, 2014</p>
+<p>&#64;author: t-mazwie</p>
+<dl class="class">
+<dt id="GPy.util.normalizer.MeanNorm">
+<em class="property">class </em><code class="descclassname">GPy.util.normalizer.</code><code class="descname">MeanNorm</code><a class="reference internal" href="_modules/GPy/util/normalizer.html#MeanNorm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.MeanNorm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.util.normalizer.Norm" title="GPy.util.normalizer.Norm"><code class="xref py py-class docutils literal"><span class="pre">GPy.util.normalizer.Norm</span></code></a></p>
+<dl class="method">
+<dt id="GPy.util.normalizer.MeanNorm.inverse_mean">
+<code class="descname">inverse_mean</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#MeanNorm.inverse_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.MeanNorm.inverse_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.MeanNorm.normalize">
+<code class="descname">normalize</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#MeanNorm.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.MeanNorm.normalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.MeanNorm.scale_by">
+<code class="descname">scale_by</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#MeanNorm.scale_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.MeanNorm.scale_by" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.MeanNorm.scaled">
+<code class="descname">scaled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#MeanNorm.scaled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.MeanNorm.scaled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.normalizer.Norm">
+<em class="property">class </em><code class="descclassname">GPy.util.normalizer.</code><code class="descname">Norm</code><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="GPy.util.normalizer.Norm.inverse_mean">
+<code class="descname">inverse_mean</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm.inverse_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm.inverse_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the normalized object X into space of Y</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.Norm.inverse_variance">
+<code class="descname">inverse_variance</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm.inverse_variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm.inverse_variance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.Norm.normalize">
+<code class="descname">normalize</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project Y into normalized space</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.Norm.scale_by">
+<code class="descname">scale_by</code><span class="sig-paren">(</span><em>Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm.scale_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm.scale_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use data matrix Y as normalization space to work in.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.normalizer.Norm.scaled">
+<code class="descname">scaled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/normalizer.html#Norm.scaled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.normalizer.Norm.scaled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether this Norm object has been initialized.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.parallel">
+<span id="gpy-util-parallel-module"></span><h2>GPy.util.parallel module<a class="headerlink" href="#module-GPy.util.parallel" title="Permalink to this headline">¶</a></h2>
+<p>The module of tools for parallelization (MPI)</p>
+<dl class="function">
+<dt id="GPy.util.parallel.divide_data">
+<code class="descclassname">GPy.util.parallel.</code><code class="descname">divide_data</code><span class="sig-paren">(</span><em>datanum</em>, <em>rank</em>, <em>size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/parallel.html#divide_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.parallel.divide_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.pca">
+<span id="gpy-util-pca-module"></span><h2>GPy.util.pca module<a class="headerlink" href="#module-GPy.util.pca" title="Permalink to this headline">¶</a></h2>
+<p>Created on 10 Sep 2012</p>
+<p>&#64;author: Max Zwiessele
+&#64;copyright: Max Zwiessele 2012</p>
+<dl class="class">
+<dt id="GPy.util.pca.PCA">
+<em class="property">class </em><code class="descclassname">GPy.util.pca.</code><code class="descname">PCA</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/pca.html#PCA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.pca.PCA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>PCA module with automatic primal/dual determination.</p>
+<dl class="method">
+<dt id="GPy.util.pca.PCA.center">
+<code class="descname">center</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/pca.html#PCA.center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.pca.PCA.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Center <cite>X</cite> in PCA space.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.pca.PCA.plot_2d">
+<code class="descname">plot_2d</code><span class="sig-paren">(</span><em>X</em>, <em>labels=None</em>, <em>s=20</em>, <em>marker='o'</em>, <em>dimensions=(0</em>, <em>1)</em>, <em>ax=None</em>, <em>colors=None</em>, <em>fignum=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/pca.html#PCA.plot_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.pca.PCA.plot_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot dimensions <cite>dimensions</cite> with given labels against each other in
+PC space. Labels can be any sequence of labels of dimensions X.shape[0].
+Labels can be drawn with a subsequent call to legend()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.pca.PCA.plot_fracs">
+<code class="descname">plot_fracs</code><span class="sig-paren">(</span><em>Q=None</em>, <em>ax=None</em>, <em>fignum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/pca.html#PCA.plot_fracs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.pca.PCA.plot_fracs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot fractions of Eigenvalues sorted in descending order.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.pca.PCA.project">
+<code class="descname">project</code><span class="sig-paren">(</span><em>X</em>, <em>Q=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/pca.html#PCA.project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.pca.PCA.project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project X into PCA space, defined by the Q highest eigenvalues.
+Y = X dot V</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.squashers">
+<span id="gpy-util-squashers-module"></span><h2>GPy.util.squashers module<a class="headerlink" href="#module-GPy.util.squashers" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.squashers.sigmoid">
+<code class="descclassname">GPy.util.squashers.</code><code class="descname">sigmoid</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/squashers.html#sigmoid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.squashers.sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.squashers.single_softmax">
+<code class="descclassname">GPy.util.squashers.</code><code class="descname">single_softmax</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/squashers.html#single_softmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.squashers.single_softmax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.squashers.softmax">
+<code class="descclassname">GPy.util.squashers.</code><code class="descname">softmax</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/squashers.html#softmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.squashers.softmax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.subarray_and_sorting">
+<span id="gpy-util-subarray-and-sorting-module"></span><h2>GPy.util.subarray_and_sorting module<a class="headerlink" href="#module-GPy.util.subarray_and_sorting" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-GPy.util.subarray_and_sorting"></span><dl class="function">
+<dt id="GPy.util.subarray_and_sorting.common_subarrays">
+<code class="descclassname">GPy.util.subarray_and_sorting.</code><code class="descname">common_subarrays</code><span class="sig-paren">(</span><em>X</em>, <em>axis=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/subarray_and_sorting.html#common_subarrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.subarray_and_sorting.common_subarrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find common subarrays of 2 dimensional X, where axis is the axis to apply the search over.
+Common subarrays are returned as a dictionary of &lt;subarray, [index]&gt; pairs, where
+the subarray is a tuple representing the subarray and the index is the index
+for the subarray in X, where index is the index to the remaining axis.</p>
+<p>:param <code class="xref py py-class docutils literal"><span class="pre">np.ndarray</span></code> X: 2d array to check for common subarrays in
+:param int axis: axis to apply subarray detection over.</p>
+<blockquote>
+<div>When the index is 0, compare rows &#8211; columns, otherwise.</div></blockquote>
+<p>In a 2d array:
+&gt;&gt;&gt; import numpy as np
+&gt;&gt;&gt; X = np.zeros((3,6), dtype=bool)
+&gt;&gt;&gt; X[[1,1,1],[0,4,5]] = 1; X[1:,[2,3]] = 1
+&gt;&gt;&gt; X
+array([[False, False, False, False, False, False],</p>
+<blockquote>
+<div>[ True, False,  True,  True,  True,  True],
+[False, False,  True,  True, False, False]], dtype=bool)</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">common_subarrays</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">[:,</span> <span class="n">d</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])]]</span>
+<span class="go">array([[False, False, False],</span>
+<span class="go">       [ True,  True,  True],</span>
+<span class="go">       [False, False, False]], dtype=bool)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">4</span><span class="p">])]</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])]</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])]</span>
+<span class="go">[1]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.univariate_Gaussian">
+<span id="gpy-util-univariate-gaussian-module"></span><h2>GPy.util.univariate_Gaussian module<a class="headerlink" href="#module-GPy.util.univariate_Gaussian" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GPy.util.univariate_Gaussian.inv_std_norm_cdf">
+<code class="descclassname">GPy.util.univariate_Gaussian.</code><code class="descname">inv_std_norm_cdf</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/univariate_Gaussian.html#inv_std_norm_cdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.univariate_Gaussian.inv_std_norm_cdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse cumulative standard Gaussian distribution
+Based on Winitzki, S. (2008)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.univariate_Gaussian.std_norm_cdf">
+<code class="descclassname">GPy.util.univariate_Gaussian.</code><code class="descname">std_norm_cdf</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/univariate_Gaussian.html#std_norm_cdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.univariate_Gaussian.std_norm_cdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cumulative standard Gaussian distribution
+Based on Abramowitz, M. and Stegun, I. (1970)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.univariate_Gaussian.std_norm_cdf_weave">
+<code class="descclassname">GPy.util.univariate_Gaussian.</code><code class="descname">std_norm_cdf_weave</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/univariate_Gaussian.html#std_norm_cdf_weave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.univariate_Gaussian.std_norm_cdf_weave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cumulative standard Gaussian distribution
+Based on Abramowitz, M. and Stegun, I. (1970)</p>
+<p>A weave implementation of std_norm_cdf, which is faster. this is unused,
+because of the difficulties of a weave dependency. (see github issue #94)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GPy.util.univariate_Gaussian.std_norm_pdf">
+<code class="descclassname">GPy.util.univariate_Gaussian.</code><code class="descname">std_norm_pdf</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/univariate_Gaussian.html#std_norm_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.univariate_Gaussian.std_norm_pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard Gaussian density function</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util.warping_functions">
+<span id="gpy-util-warping-functions-module"></span><h2>GPy.util.warping_functions module<a class="headerlink" href="#module-GPy.util.warping_functions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction">
+<em class="property">class </em><code class="descclassname">GPy.util.warping_functions.</code><code class="descname">TanhWarpingFunction</code><span class="sig-paren">(</span><em>n_terms=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.util.warping_functions.WarpingFunction" title="GPy.util.warping_functions.WarpingFunction"><code class="xref py py-class docutils literal"><span class="pre">GPy.util.warping_functions.WarpingFunction</span></code></a></p>
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction.f">
+<code class="descname">f</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction.f"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction.f" title="Permalink to this definition">¶</a></dt>
+<dd><p>transform y with f using parameter vector psi
+psi = [[a,b,c]]
+::math::<cite>f = sum_{terms} a * tanh(b*(y+c))</cite></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction.f_inv">
+<code class="descname">f_inv</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em>, <em>iterations=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction.f_inv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction.f_inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the numerical inverse of f</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>iterations</strong> &#8211; number of N.R. iterations</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction.fgrad_y">
+<code class="descname">fgrad_y</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em>, <em>return_precalc=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction.fgrad_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction.fgrad_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y ([N x 1])
+returns: Nx1 vector of derivatives, unless return_precalc is true,
+then it also returns the precomputed stuff</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction.fgrad_y_psi">
+<code class="descname">fgrad_y_psi</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em>, <em>return_covar_chain=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction.fgrad_y_psi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction.fgrad_y_psi" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y and psi</p>
+<p>returns: NxIx3 tensor of partial derivatives</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction_d">
+<em class="property">class </em><code class="descclassname">GPy.util.warping_functions.</code><code class="descname">TanhWarpingFunction_d</code><span class="sig-paren">(</span><em>n_terms=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction_d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction_d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GPy.util.warping_functions.WarpingFunction" title="GPy.util.warping_functions.WarpingFunction"><code class="xref py py-class docutils literal"><span class="pre">GPy.util.warping_functions.WarpingFunction</span></code></a></p>
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction_d.f">
+<code class="descname">f</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction_d.f"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction_d.f" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform y with f using parameter vector psi
+psi = [[a,b,c]]</p>
+<p><img class="math" src="_images/math/153e15220d6bec90ed9f8e0c870c3c808eae75aa.png" alt="f = \sum_{terms} a * tanh(b*(y+c))"/></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction_d.f_inv">
+<code class="descname">f_inv</code><span class="sig-paren">(</span><em>z</em>, <em>psi</em>, <em>max_iterations=1000</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction_d.f_inv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction_d.f_inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the numerical inverse of f</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>max_iterations</strong> &#8211; maximum number of N.R. iterations</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction_d.fgrad_y">
+<code class="descname">fgrad_y</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em>, <em>return_precalc=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction_d.fgrad_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction_d.fgrad_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y ([N x 1])</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Nx1 vector of derivatives, unless return_precalc is true, then it also returns the precomputed stuff</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.TanhWarpingFunction_d.fgrad_y_psi">
+<code class="descname">fgrad_y_psi</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em>, <em>return_covar_chain=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#TanhWarpingFunction_d.fgrad_y_psi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.TanhWarpingFunction_d.fgrad_y_psi" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y and psi</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">NxIx4 tensor of partial derivatives</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="GPy.util.warping_functions.WarpingFunction">
+<em class="property">class </em><code class="descclassname">GPy.util.warping_functions.</code><code class="descname">WarpingFunction</code><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>abstract function for warping
+z = f(y)</p>
+<dl class="method">
+<dt id="GPy.util.warping_functions.WarpingFunction.f">
+<code class="descname">f</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction.f"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction.f" title="Permalink to this definition">¶</a></dt>
+<dd><p>function transformation
+y is a list of values (GP training data) of shpape [N,1]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.WarpingFunction.f_inv">
+<code class="descname">f_inv</code><span class="sig-paren">(</span><em>z</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction.f_inv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction.f_inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>inverse function transformation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.WarpingFunction.fgrad_y">
+<code class="descname">fgrad_y</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction.fgrad_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction.fgrad_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.WarpingFunction.fgrad_y_psi">
+<code class="descname">fgrad_y_psi</code><span class="sig-paren">(</span><em>y</em>, <em>psi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction.fgrad_y_psi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction.fgrad_y_psi" title="Permalink to this definition">¶</a></dt>
+<dd><p>gradient of f w.r.t to y</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GPy.util.warping_functions.WarpingFunction.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>psi</em>, <em>xmin</em>, <em>xmax</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/GPy/util/warping_functions.html#WarpingFunction.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#GPy.util.warping_functions.WarpingFunction.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-GPy.util">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-GPy.util" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GPy.util package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-GPy.util.block_matrices">GPy.util.block_matrices module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.caching">GPy.util.caching module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.classification">GPy.util.classification module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.config">GPy.util.config module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.datasets">GPy.util.datasets module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.debug">GPy.util.debug module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.decorators">GPy.util.decorators module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.diag">GPy.util.diag module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.erfcx">GPy.util.erfcx module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.functions">GPy.util.functions module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.gpu_init">GPy.util.gpu_init module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.initialization">GPy.util.initialization module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.linalg">GPy.util.linalg module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.linalg_gpu">GPy.util.linalg_gpu module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.ln_diff_erfs">GPy.util.ln_diff_erfs module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.misc">GPy.util.misc module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.mocap">GPy.util.mocap module</a></li>
+<li><a class="reference internal" href="#gpy-util-mpi-module">GPy.util.mpi module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.multioutput">GPy.util.multioutput module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.netpbmfile">GPy.util.netpbmfile module</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-GPy.util.normalizer">GPy.util.normalizer module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.parallel">GPy.util.parallel module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.pca">GPy.util.pca module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.squashers">GPy.util.squashers module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.subarray_and_sorting">GPy.util.subarray_and_sorting module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.univariate_Gaussian">GPy.util.univariate_Gaussian module</a></li>
+<li><a class="reference internal" href="#module-GPy.util.warping_functions">GPy.util.warping_functions module</a></li>
+<li><a class="reference internal" href="#module-GPy.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GPy.testing.html"
+                        title="previous chapter">GPy.testing package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/GPy.util.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GPy.testing.html" title="GPy.testing package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GPy  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="GPy.html" >GPy package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -88,12 +88,12 @@ class Bernoulli(Likelihood):
         else:
             raise NotImplementedError
 
-    def predictive_variance(self, mu, variance, pred_mean, Y_metadata=None):
+    def conditional_variance(self, f):
+        return self.gp_link.transf(f) * (1. - self.gp_link.transf(f))
 
-        if isinstance(self.gp_link, link_functions.Heaviside):
-            return 0.
-        else:
-            return np.nan
+
+    def conditional_mean(self, f):
+        return self.gp_link.transf(f)
 
     def pdf_link(self, inv_link_f, y, Y_metadata=None):
         """

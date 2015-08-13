@@ -361,14 +361,12 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2)
 
-    # @unittest.expectedFailure
     def test_SparseGPRegression_rbf_linear_white_kern_2D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 2d data with uncertain inputs'''
         rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         raise unittest.SkipTest("This is not implemented yet!")
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2, uncertain_inputs=1)
 
-    # @unittest.expectedFailure
     def test_SparseGPRegression_rbf_linear_white_kern_1D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs'''
         rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
@@ -410,23 +408,8 @@ class GradientTests(np.testing.TestCase):
         Z = np.linspace(0, 15, 4)[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, Z=Z)
-        # distribution = GPy.likelihoods.likelihood_functions.Bernoulli()
-        # likelihood = GPy.likelihoods.EP(Y, distribution)
-        # m = GPy.core.SparseGP(X, likelihood, kernel, Z)
-        # m.ensure_default_constraints()
         self.assertTrue(m.checkgrad())
 
-    @unittest.expectedFailure
-    def test_generalized_FITC(self):
-        N = 20
-        X = np.hstack([np.random.rand(N / 2) + 1, np.random.rand(N / 2) - 1])[:, None]
-        k = GPy.kern.RBF(1) + GPy.kern.White(1)
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
-        m = GPy.models.FITCClassification(X, Y, kernel=k)
-        m.update_likelihood_approximation()
-        self.assertTrue(m.checkgrad())
-
-    @unittest.expectedFailure
     def test_multioutput_regression_1D(self):
         X1 = np.random.rand(50, 1) * 8
         X2 = np.random.rand(30, 1) * 5
@@ -436,12 +419,11 @@ class GradientTests(np.testing.TestCase):
         Y = np.vstack((Y1, Y2))
 
         k1 = GPy.kern.RBF(1)
-        m = GPy.models.GPMultioutputRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel_list=[k1])
-        import ipdb;ipdb.set_trace()
-        m.constrain_fixed('.*rbf_var', 1.)
+        m = GPy.models.GPCoregionalizedRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel=k1)
+        #import ipdb;ipdb.set_trace()
+        #m.constrain_fixed('.*rbf_var', 1.)
         self.assertTrue(m.checkgrad())
 
-    @unittest.expectedFailure
     def test_multioutput_sparse_regression_1D(self):
         X1 = np.random.rand(500, 1) * 8
         X2 = np.random.rand(300, 1) * 5
@@ -451,8 +433,7 @@ class GradientTests(np.testing.TestCase):
         Y = np.vstack((Y1, Y2))
 
         k1 = GPy.kern.RBF(1)
-        m = GPy.models.SparseGPMultioutputRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel_list=[k1])
-        m.constrain_fixed('.*rbf_var', 1.)
+        m = GPy.models.SparseGPCoregionalizedRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel=k1)
         self.assertTrue(m.checkgrad())
 
     def test_gp_heteroscedastic_regression(self):

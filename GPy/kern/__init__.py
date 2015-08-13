@@ -6,6 +6,7 @@ from ._src.brownian import Brownian
 from ._src.stationary import Exponential, OU, Matern32, Matern52, ExpQuad, RatQuad, Cosine
 from ._src.mlp import MLP
 from ._src.periodic import PeriodicExponential, PeriodicMatern32, PeriodicMatern52
+from ._src.standard_periodic import StdPeriodic
 from ._src.independent_outputs import IndependentOutputs, Hierarchical
 from ._src.coregionalize import Coregionalize
 from ._src.ODE_UY import ODE_UY

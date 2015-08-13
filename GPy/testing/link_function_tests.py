@@ -7,6 +7,7 @@ _lim_val_exp = np.log(_lim_val)
 _lim_val_square = np.sqrt(_lim_val)
 _lim_val_cube = cbrt(_lim_val)
 from GPy.likelihoods.link_functions import Identity, Probit, Cloglog, Log, Log_ex_1, Reciprocal, Heaviside
+#np.seterr(over='raise')
 
 class LinkFunctionTests(np.testing.TestCase):
     def setUp(self):

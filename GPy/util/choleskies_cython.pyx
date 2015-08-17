@@ -28,7 +28,7 @@ def flat_to_triang(double[:, :] flat, int M):
                 for mm in range(m+1):
                     ret[d, m, mm] = flat[count,d]
                     count += 1
-    return ret
+    return np.asarray(ret)
 
 def triang_to_flat(double[:, :, :] L):
     cdef int D = L.shape[0]
@@ -44,7 +44,7 @@ def triang_to_flat(double[:, :, :] L):
                 for mm in range(m+1):
                     flat[count,d] = L[d, m, mm]
                     count += 1
-    return flat
+    return np.asarray(flat)
 
 def backprop_gradient(double[:, :] dL, double[:, :] L):
     cdef double[:, ::1] dL_dK = np.tril(dL)
@@ -60,7 +60,7 @@ def backprop_gradient(double[:, :] dL, double[:, :] L):
                 dL_dK[j, k] /= L[k, k]
                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
             dL_dK[k, k] /= (2. * L[k, k])
-    return dL_dK
+    return np.asarray(dL_dK)
 
 def backprop_gradient_par(double[:,:] dL, double[:,:] L):
     cdef double[:,::1] dL_dK = np.tril(dL)
@@ -78,7 +78,7 @@ def backprop_gradient_par(double[:,:] dL, double[:,:] L):
                 dL_dK[j, k] /= L[k, k]
                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
             dL_dK[k, k] /= (2. * L[k, k])
-    return dL_dK
+    return np.asarray(dL_dK)
 
 cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
     cdef int i, k, n

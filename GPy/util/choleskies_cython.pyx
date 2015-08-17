@@ -1,10 +1,12 @@
 #cython: wraparaound=False
 #cython: boundscheck=False
 #cython: nonecheck=False
+#cython: cdivision=True
 
 # Copyright James Hensman and Alan Saul 2015
 
 import numpy as np
+cimport cython
 from cython.parallel import prange, parallel
 cimport numpy as np
 cimport scipy.linalg.cython_blas as cblas

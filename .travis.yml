@@ -22,7 +22,7 @@ before_install:
   - df -h
   - ulimit -a
   - pip install -U pip wheel setuptools
-  - pip install numpy scipy cython nose
+  - pip install numpy scipy cython nose six
   - python -V
 
 install:

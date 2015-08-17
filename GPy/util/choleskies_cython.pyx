@@ -9,7 +9,7 @@ from cython.parallel import prange, parallel
 cimport numpy as np
 cimport scipy.linalg.cython_blas as cblas
 
-def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
+def flat_to_triang(double[:, :] flat, int M):
     """take a matrix N x D and return a D X M x M array where
 
     N = M(M+1)/2
@@ -19,7 +19,7 @@ def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
     cdef int D = flat.shape[1]
     cdef int N = flat.shape[0]
     cdef int count = 0
-    cdef np.ndarray[double, ndim=3] ret = np.zeros((D, M, M))
+    cdef double[:, :, ::1] ret = np.zeros((D, M, M))
     cdef int d, m, mm
     with nogil:
         for d in range(D):
@@ -30,12 +30,12 @@ def flat_to_triang(np.ndarray[double, ndim=2] flat, int M):
                     count += 1
     return ret
 
-def triang_to_flat(np.ndarray[double, ndim=3] L):
+def triang_to_flat(double[:, :, :] L):
     cdef int D = L.shape[0]
     cdef int M = L.shape[1]
     cdef int N = M*(M+1)/2
     cdef int count = 0
-    cdef np.ndarray[double, ndim=2, mode='c'] flat = np.empty((N, D))
+    cdef double[:, ::1] flat = np.empty((N, D))
     cdef int d, m, mm
     with nogil:
         for d in range(D):
@@ -46,9 +46,8 @@ def triang_to_flat(np.ndarray[double, ndim=3] L):
                     count += 1
     return flat
 
-
-def backprop_gradient(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
-    cdef np.ndarray[double, ndim=2, mode='c'] dL_dK = np.tril(dL).copy()
+def backprop_gradient(double[:, :] dL, double[:, :] L):
+    cdef double[:, ::1] dL_dK = np.tril(dL)
     cdef int N = L.shape[0]
     cdef int k, j, i
     with nogil:
@@ -64,7 +63,7 @@ def backprop_gradient(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] 
     return dL_dK
 
 def backprop_gradient_par(double[:,:] dL, double[:,:] L):
-    cdef double[:,::1] dL_dK = np.tril(dL).copy()
+    cdef double[:,::1] dL_dK = np.tril(dL)
     cdef int N = L.shape[0]
     cdef int k, j, i
     with nogil:
@@ -81,7 +80,7 @@ def backprop_gradient_par(double[:,:] dL, double[:,:] L):
             dL_dK[k, k] /= (2. * L[k, k])
     return dL_dK
 
-cdef void chol_backprop(int N, double[:] dL, double[:] L) nogil:
+cdef void chol_backprop(int N, double[:, :] dL, double[:, :] L) nogil:
     cdef int i, k, n
 
     # DSYMV required constant arguments
@@ -91,24 +90,23 @@ cdef void chol_backprop(int N, double[:] dL, double[:] L) nogil:
     # DSCAL required arguments
     cdef double scale
 
-    dL[N*N - 1] /= (2. * L[N*N - 1])
+    dL[N - 1, N - 1] /= (2. * L[N - 1, N - 1])
     for k in range(N-2, -1, -1):
         n = N-k-1
-
-        cblas.dsymv(uplo='l', n=&n, alpha=&alpha, a=&dL[(N*(k+1) + k+1)], lda=&N, x=&L[k*N+k+1], incx=&incx,
-                    beta=&beta, y=&dL[N*(k+1)+k], incy=&N)
+        cblas.dsymv(uplo='l', n=&n, alpha=&alpha, a=&dL[k + 1, k + 1], lda=&N, x=&L[k, k + 1], incx=&incx,
+                    beta=&beta, y=&dL[k + 1, k], incy=&N)
 
         for i in xrange(0, N - k - 1):
-            dL[N * (k + 1 + i) + k] -= dL[N * (k + 1) + k + i * (N + 1) + 1] * L[k * N + k + 1 + i]
+            dL[k + 1 + i, k] -= dL[k + i+ 1, k + i + 1] * L[k, k + 1 + i]
 
-        scale = 1.0/L[k*N+k]
-        cblas.dscal(&n, &scale , &dL[(k+1)*N+k], &N)
+        scale = 1.0 / L[k, k]
+        cblas.dscal(&n, &scale , &dL[k + 1, k], &N)
 
-        dL[k*N + k] -= cblas.ddot(&n, &dL[(k+1)*N+k], &N, &L[k*N+k+1], &incx)
-        dL[k*N + k] /= (2.0 * L[k*N + k])
+        dL[k, k] -= cblas.ddot(&n, &dL[k + 1, k], &N, &L[k, k], &incx)
+        dL[k, k] /= (2.0 * L[k, k])
 
 def backprop_gradient_par_c(np.ndarray[double, ndim=2] dL, np.ndarray[double, ndim=2] L):
-    cdef np.ndarray[double, ndim=2, mode='c'] dL_dK = np.tril(dL) # makes a copy, c-contig
+    cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
     cdef int N = L.shape[0]
     with nogil:
         chol_backprop(N, dL_dK, L)

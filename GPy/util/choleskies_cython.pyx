@@ -80,7 +80,7 @@ def backprop_gradient_par(double[:,:] dL, double[:,:] L):
             dL_dK[k, k] /= (2. * L[k, k])
     return dL_dK
 
-cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L):# nogil:
+cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
     cdef int i, k, n
 
     # DSYMV required constant arguments
@@ -109,6 +109,6 @@ def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):
     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
     cdef int N = L.shape[0]
-    if True:#with nogil:
+    with nogil:
         chol_backprop(N, dL_dK, L_cont)
     return np.asarray(dL_dK)

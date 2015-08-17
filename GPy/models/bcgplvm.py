@@ -1,11 +1,11 @@
-# Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
+# Copyright (c) 2015 James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
 import numpy as np
 from ..core import GP
-from ..models import GPLVM
-from ..mappings import *
+from . import GPLVM
+from .. import mappings
 
 
 class BCGPLVM(GPLVM):
@@ -16,33 +16,31 @@ class BCGPLVM(GPLVM):
     :type Y: np.ndarray
     :param input_dim: latent dimensionality
     :type input_dim: int
-    :param init: initialisation method for the latent space
-    :type init: 'PCA'|'random'
     :param mapping: mapping for back constraint
     :type mapping: GPy.core.Mapping object
 
     """
-    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, normalize_Y=False, mapping=None):
-        
+    def __init__(self, Y, input_dim, kernel=None, mapping=None):
+
+
         if mapping is None:
-            mapping = Kernel(X=Y, output_dim=input_dim)
+            mapping = mappings.MLP(input_dim=Y.shape[1],
+                                   output_dim=input_dim,
+                                   hidden_dim=10)
+        else:
+            assert mapping.input_dim==Y.shape[1], "mapping input dim does not work for Y dimension"
+            assert mapping.output_dim==input_dim, "mapping output dim does not work for self.input_dim"
+        GPLVM.__init__(self, Y, input_dim, X=mapping.f(Y), kernel=kernel, name="bcgplvm")
+        self.unlink_parameter(self.X)
         self.mapping = mapping
-        GPLVM.__init__(self, Y, input_dim, init, X, kernel, normalize_Y)
-        self.X = self.mapping.f(self.likelihood.Y)
+        self.link_parameter(self.mapping)
 
-    def _get_param_names(self):
-        return self.mapping._get_param_names() + GP._get_param_names(self)
+        self.X = self.mapping.f(self.Y)
 
-    def _get_params(self):
-        return np.hstack((self.mapping._get_params(), GP._get_params(self)))
+    def parameters_changed(self):
+        self.X = self.mapping.f(self.Y)
+        GP.parameters_changed(self)
+        Xgradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
+        self.mapping.update_gradients(Xgradient, self.Y)
 
-    def _set_params(self, x):
-        self.mapping._set_params(x[:self.mapping.num_params])
-        self.X = self.mapping.f(self.likelihood.Y)
-        GP._set_params(self, x[self.mapping.num_params:])
-
-    def _log_likelihood_gradients(self):
-        dL_df = self.kern.gradients_X(self.dL_dK, self.X)
-        dL_dtheta = self.mapping.df_dtheta(dL_df, self.likelihood.Y)
-        return np.hstack((dL_dtheta.flatten(), GP._log_likelihood_gradients(self)))
 

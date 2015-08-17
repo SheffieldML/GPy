@@ -383,6 +383,16 @@ class GradientTests(np.testing.TestCase):
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
         self.assertTrue(m.checkgrad())
 
+    def test_BCGPLVM_rbf_bias_white_kern_2D(self):
+        """ Testing GPLVM with rbf + bias kernel """
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
+        K = k.K(X)
+        Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
+        m = GPy.models.BCGPLVM(Y, input_dim, kernel=k)
+        self.assertTrue(m.checkgrad())
+
     def test_GPLVM_rbf_linear_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2

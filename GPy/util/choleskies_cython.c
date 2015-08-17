@@ -3271,7 +3271,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
  *             dL_dK[k, k] /= (2. * L[k, k])
  *     return dL_dK             # <<<<<<<<<<<<<<
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L):# nogil:
+ * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -3310,7 +3310,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
 /* "GPy/util/choleskies_cython.pyx":83
  *     return dL_dK
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L):# nogil:             # <<<<<<<<<<<<<<
+ * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:             # <<<<<<<<<<<<<<
  *     cdef int i, k, n
  * 
  */
@@ -3323,7 +3323,6 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
   double __pyx_v_beta;
   int __pyx_v_incx;
   double __pyx_v_scale;
-  __Pyx_RefNannyDeclarations
   long __pyx_t_1;
   long __pyx_t_2;
   long __pyx_t_3;
@@ -3359,7 +3358,6 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("chol_backprop", 0);
 
   /* "GPy/util/choleskies_cython.pyx":87
  * 
@@ -3565,7 +3563,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
   /* "GPy/util/choleskies_cython.pyx":83
  *     return dL_dK
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L):# nogil:             # <<<<<<<<<<<<<<
+ * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:             # <<<<<<<<<<<<<<
  *     cdef int i, k, n
  * 
  */
@@ -3575,7 +3573,6 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
   __pyx_L1_error:;
   __Pyx_WriteUnraisable("GPy.util.choleskies_cython.chol_backprop", __pyx_clineno, __pyx_lineno, __pyx_filename, 0);
   __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
 }
 
 /* "GPy/util/choleskies_cython.pyx":108
@@ -3717,7 +3714,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
  *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
  *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)             # <<<<<<<<<<<<<<
  *     cdef int N = L.shape[0]
- *     if True:#with nogil:
+ *     with nogil:
  */
   __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
@@ -3763,21 +3760,54 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
  *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
  *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
  *     cdef int N = L.shape[0]             # <<<<<<<<<<<<<<
- *     if True:#with nogil:
+ *     with nogil:
  *         chol_backprop(N, dL_dK, L_cont)
  */
   __pyx_v_N = (__pyx_v_L.shape[0]);
 
-  /* "GPy/util/choleskies_cython.pyx":113
+  /* "GPy/util/choleskies_cython.pyx":112
+ *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
  *     cdef int N = L.shape[0]
- *     if True:#with nogil:
+ *     with nogil:             # <<<<<<<<<<<<<<
+ *         chol_backprop(N, dL_dK, L_cont)
+ *     return np.asarray(dL_dK)
+ */
+  {
+      #ifdef WITH_THREAD
+      PyThreadState *_save;
+      Py_UNBLOCK_THREADS
+      #endif
+      /*try:*/ {
+
+        /* "GPy/util/choleskies_cython.pyx":113
+ *     cdef int N = L.shape[0]
+ *     with nogil:
  *         chol_backprop(N, dL_dK, L_cont)             # <<<<<<<<<<<<<<
  *     return np.asarray(dL_dK)
  */
-  __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(__pyx_v_N, __pyx_v_dL_dK, __pyx_v_L_cont);
+        __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(__pyx_v_N, __pyx_v_dL_dK, __pyx_v_L_cont);
+      }
+
+      /* "GPy/util/choleskies_cython.pyx":112
+ *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef int N = L.shape[0]
+ *     with nogil:             # <<<<<<<<<<<<<<
+ *         chol_backprop(N, dL_dK, L_cont)
+ *     return np.asarray(dL_dK)
+ */
+      /*finally:*/ {
+        /*normal exit:*/{
+          #ifdef WITH_THREAD
+          Py_BLOCK_THREADS
+          #endif
+          goto __pyx_L5;
+        }
+        __pyx_L5:;
+      }
+  }
 
   /* "GPy/util/choleskies_cython.pyx":114
- *     if True:#with nogil:
+ *     with nogil:
  *         chol_backprop(N, dL_dK, L_cont)
  *     return np.asarray(dL_dK)             # <<<<<<<<<<<<<<
  */

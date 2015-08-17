@@ -161,6 +161,16 @@ class NormalPosterior(VariationalPosterior):
         from ...plotting.matplot_dep import variational_plots
         return variational_plots.plot(self, *args, **kwargs)
 
+    def KL(self, other):
+        """Compute the KL divergence to another NormalPosterior Object. This only holds, if the two NormalPosterior objects have the same shape, as we do computational tricks for the multivariate normal KL divergence.
+        """
+        return .5*(
+            np.sum(self.variance/other.variance) 
+            + ((other.mean-self.mean)**2/other.variance).sum() 
+            - self.num_data * self.input_dim
+            + np.sum(np.log(other.variance)) - np.sum(np.log(self.variance))
+            )
+    
 class SpikeAndSlabPosterior(VariationalPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.

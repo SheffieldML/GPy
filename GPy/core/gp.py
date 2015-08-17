@@ -60,9 +60,11 @@ class GP(Model):
             self.normalizer.scale_by(Y)
             self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
             self.Y = Y
-        else:
+        elif isinstance(Y, np.ndarray):
             self.Y = ObsAr(Y)
             self.Y_normalized = self.Y
+        else:
+            self.Y = Y
 
         if Y.shape[0] != self.num_data:
             #There can be cases where we want inputs than outputs, for example if we have multiple latent
@@ -473,16 +475,16 @@ class GP(Model):
             self.inference_method.on_optimization_end()
             raise
 
-    def infer_newX(self, Y_new, optimize=True, ):
+    def infer_newX(self, Y_new, optimize=True):
         """
-        Infer the distribution of X for the new observed data *Y_new*.
+        Infer X for the new observed data *Y_new*.
 
         :param Y_new: the new observed data for inference
         :type Y_new: numpy.ndarray
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
-        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` or numpy.ndarray, :class:`~GPy.core.model.Model`)
+        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)

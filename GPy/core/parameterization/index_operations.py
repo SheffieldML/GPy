@@ -109,7 +109,7 @@ class ParameterIndexOperations(object):
         try:
             return self._properties.itervalues()
         except AttributeError:
-	#Changed this from itervalues to values for Py3 compatibility. It didn't break the test suite.
+            #Changed this from itervalues to values for Py3 compatibility. It didn't break the test suite.
             return self._properties.values()
 
     def indices(self):

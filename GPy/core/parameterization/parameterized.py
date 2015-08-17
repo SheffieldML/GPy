@@ -197,9 +197,10 @@ class Parameterized(Parameterizable):
                 raise RuntimeError("{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param)))
 
         start = sum([p.size for p in self.parameters[:param._parent_index_]])
-        self._remove_parameter_name(param)
         self.size -= param.size
         del self.parameters[param._parent_index_]
+        self._remove_parameter_name(param)
+
 
         param._disconnect_parent()
         param.remove_observer(self, self._pass_through_notify_observers)

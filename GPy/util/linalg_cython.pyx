@@ -1,3 +1,4 @@
+from libc.math cimport sqrt
 cimport numpy as np
 from cpython cimport bool
 import cython
@@ -19,16 +20,18 @@ def symmetrify(np.ndarray[double, ndim=2] A, bool upper):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
+@cython.cdivision(True)
 def cholupdate(np.ndarray[double, ndim=1] x, np.ndarray[double, ndim=2] L, int N):
-    cdef double r
-    cdef double c
-    cdef double s
-    for j in xrange(N):
-        r = np.sqrt(L[j,j]*L[j,j] + x[j]*x[j])
-        c = r / L[j,j]
-        s = x[j] / L[j,j]
-        L[j,j] = r
-        for i in xrange(j):
-            L[i,j] = (L[i,j] + s*x[i])/c
-            x[i] = c*x[i] - s*L[i,j];
-        r = np.sqrt(L[j,j])
+    cdef double r, c, s
+    cdef int j, i
+
+    with nogil:
+        for j in xrange(N):
+            r = sqrt(L[j, j] * L[j, j] + x[j] * x[j])
+            c = r / L[j, j]
+            s = x[j] / L[j, j]
+            L[j, j] = r
+            for i in xrange(j):
+                L[i, j] = (L[i, j] + s * x[i]) / c
+                x[i] = c * x[i] - s * L[i, j]
+            r = sqrt(L[j, j])

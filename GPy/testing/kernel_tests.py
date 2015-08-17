@@ -312,7 +312,12 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.LinearFull(self.D, self.D-1)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-
+        
+    def test_standard_periodic(self):
+        k = GPy.kern.StdPeriodic(self.D, self.D-1)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+        
 class KernelTestsMiscellaneous(unittest.TestCase):
     def setUp(self):
         N, D = 100, 10

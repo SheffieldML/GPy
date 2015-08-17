@@ -58,12 +58,15 @@ class GPLVM(GP):
         return target
 
     def plot(self):
-        assert self.likelihood.Y.shape[1] == 2
-        pb.scatter(self.likelihood.Y[:, 0], self.likelihood.Y[:, 1], 40, self.X[:, 0].copy(), linewidth=0, cmap=pb.cm.jet)  # @UndefinedVariable
+        assert self.Y.shape[1] == 2, "too high dimensional to plot. Try plot_latent"
+        from matplotlib import pyplot as plt
+        plt.scatter(self.Y[:, 0],
+                    self.Y[:, 1],
+                    40, self.X[:, 0].copy(),
+                    linewidth=0, cmap=plt.cm.jet)
         Xnew = np.linspace(self.X.min(), self.X.max(), 200)[:, None]
         mu, _ = self.predict(Xnew)
-        import pylab as pb
-        pb.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)
+        plt.plot(mu[:, 0], mu[:, 1], 'k', linewidth=1.5)
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,

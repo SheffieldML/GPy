@@ -13,7 +13,8 @@ before_install:
   - free -m
   - df -h
   - ulimit -a
-  - pip install -q --use-mirrors numpy scipy Cython
+  - pip install -U pip wheel
+  - pip install numpy scipy cython
   - python -V
 
 install:
@@ -23,3 +24,7 @@ script:
   - mkdir empty
   - cd empty
   - python -c "import sys;import Gpy;sys.exit(0 if Gpy.test() else 1)"
+
+cache:
+  directories:
+    - $HOME/.cache/pip

@@ -80,7 +80,7 @@ def backprop_gradient_par(double[:,:] dL, double[:,:] L):
             dL_dK[k, k] /= (2. * L[k, k])
     return np.asarray(dL_dK)
 
-cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
+cdef void chol_backprop(int N, double[::1, :] dL, double[::1, :] L) nogil:
     cdef int i, k, n
 
     # DSYMV required constant arguments
@@ -97,7 +97,7 @@ cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
                     beta=&beta, y=&dL[k + 1, k], incy=&N)
 
         for i in xrange(0, N - k - 1):
-            dL[k + 1 + i, k] -= dL[k + i+ 1, k + i + 1] * L[k, k + 1 + i]
+            dL[k + 1 + i, k] -= dL[k + i + 1, k + i + 1] * L[k, k + 1 + i]
 
         scale = 1.0 / L[k, k]
         cblas.dscal(&n, &scale , &dL[k + 1, k], &N)
@@ -106,8 +106,8 @@ cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
         dL[k, k] /= (2.0 * L[k, k])
 
 def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):
-    cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
-    cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+    cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+    cdef double[::1, :] L_cont = np.asfortranarray(L)
     cdef int N = L.shape[0]
     with nogil:
         chol_backprop(N, dL_dK, L_cont)

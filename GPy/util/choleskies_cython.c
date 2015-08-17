@@ -1439,6 +1439,8 @@ static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_d_d_dc
 
 static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(PyObject *);
 
+static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dcd__double(PyObject *);
+
 static int __Pyx_check_binary_version(void);
 
 #if !defined(__Pyx_PyIdentifier_FromString)
@@ -1634,11 +1636,11 @@ static char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static char __pyx_k_MemoryError[] = "MemoryError";
 static char __pyx_k_RuntimeError[] = "RuntimeError";
 static char __pyx_k_pyx_getbuffer[] = "__pyx_getbuffer";
+static char __pyx_k_asfortranarray[] = "asfortranarray";
 static char __pyx_k_flat_to_triang[] = "flat_to_triang";
 static char __pyx_k_triang_to_flat[] = "triang_to_flat";
 static char __pyx_k_allocate_buffer[] = "allocate_buffer";
 static char __pyx_k_dtype_is_object[] = "dtype_is_object";
-static char __pyx_k_ascontiguousarray[] = "ascontiguousarray";
 static char __pyx_k_backprop_gradient[] = "backprop_gradient";
 static char __pyx_k_strided_and_direct[] = "<strided and direct>";
 static char __pyx_k_strided_and_indirect[] = "<strided and indirect>";
@@ -1706,7 +1708,7 @@ static PyObject *__pyx_kp_s_Unable_to_convert_item_to_object;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_allocate_buffer;
 static PyObject *__pyx_n_s_asarray;
-static PyObject *__pyx_n_s_ascontiguousarray;
+static PyObject *__pyx_n_s_asfortranarray;
 static PyObject *__pyx_n_s_backprop_gradient;
 static PyObject *__pyx_n_s_backprop_gradient_par;
 static PyObject *__pyx_n_s_backprop_gradient_par_c;
@@ -2111,7 +2113,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_flat_to_triang(CYTHON_U
  *                 for mm in range(m+1):
  *                     ret[d, m, mm] = flat[count,d]             # <<<<<<<<<<<<<<
  *                     count += 1
- *     return ret
+ *     return np.asarray(ret)
  */
               __pyx_t_14 = __pyx_v_count;
               __pyx_t_15 = __pyx_v_d;
@@ -2129,7 +2131,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_flat_to_triang(CYTHON_U
  *                 for mm in range(m+1):
  *                     ret[d, m, mm] = flat[count,d]
  *                     count += 1             # <<<<<<<<<<<<<<
- *     return ret
+ *     return np.asarray(ret)
  * 
  */
               __pyx_v_count = (__pyx_v_count + 1);
@@ -2159,13 +2161,44 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_flat_to_triang(CYTHON_U
   /* "GPy/util/choleskies_cython.pyx":31
  *                     ret[d, m, mm] = flat[count,d]
  *                     count += 1
- *     return ret             # <<<<<<<<<<<<<<
+ *     return np.asarray(ret)             # <<<<<<<<<<<<<<
  * 
  * def triang_to_flat(double[:, :, :] L):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_ret, 3, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_asarray); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_ret, 3, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_6 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_6)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_6);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
+    }
+  }
+  if (!__pyx_t_6) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_1);
+  } else {
+    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_6); __pyx_t_6 = NULL;
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
@@ -2198,7 +2231,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_flat_to_triang(CYTHON_U
 }
 
 /* "GPy/util/choleskies_cython.pyx":33
- *     return ret
+ *     return np.asarray(ret)
  * 
  * def triang_to_flat(double[:, :, :] L):             # <<<<<<<<<<<<<<
  *     cdef int D = L.shape[0]
@@ -2419,7 +2452,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_2triang_to_flat(CYTHON_
  *                 for mm in range(m+1):
  *                     flat[count,d] = L[d, m, mm]             # <<<<<<<<<<<<<<
  *                     count += 1
- *     return flat
+ *     return np.asarray(flat)
  */
               __pyx_t_13 = __pyx_v_d;
               __pyx_t_14 = __pyx_v_m;
@@ -2437,7 +2470,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_2triang_to_flat(CYTHON_
  *                 for mm in range(m+1):
  *                     flat[count,d] = L[d, m, mm]
  *                     count += 1             # <<<<<<<<<<<<<<
- *     return flat
+ *     return np.asarray(flat)
  * 
  */
               __pyx_v_count = (__pyx_v_count + 1);
@@ -2467,19 +2500,50 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_2triang_to_flat(CYTHON_
   /* "GPy/util/choleskies_cython.pyx":47
  *                     flat[count,d] = L[d, m, mm]
  *                     count += 1
- *     return flat             # <<<<<<<<<<<<<<
+ *     return np.asarray(flat)             # <<<<<<<<<<<<<<
  * 
  * def backprop_gradient(double[:, :] dL, double[:, :] L):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_flat, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_asarray); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_flat, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_5 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_5)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_5);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (!__pyx_t_5) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_1);
+  } else {
+    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_5); __pyx_t_5 = NULL;
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
   /* "GPy/util/choleskies_cython.pyx":33
- *     return ret
+ *     return np.asarray(ret)
  * 
  * def triang_to_flat(double[:, :, :] L):             # <<<<<<<<<<<<<<
  *     cdef int D = L.shape[0]
@@ -2505,7 +2569,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_2triang_to_flat(CYTHON_
 }
 
 /* "GPy/util/choleskies_cython.pyx":49
- *     return flat
+ *     return np.asarray(flat)
  * 
  * def backprop_gradient(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
  *     cdef double[:, ::1] dL_dK = np.tril(dL)
@@ -2803,7 +2867,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_4backprop_gradient(CYTH
  *                 dL_dK[j, k] /= L[k, k]
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]             # <<<<<<<<<<<<<<
  *             dL_dK[k, k] /= (2. * L[k, k])
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  */
             __pyx_t_28 = __pyx_v_j;
             __pyx_t_29 = __pyx_v_k;
@@ -2824,7 +2888,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_4backprop_gradient(CYTH
  *                 dL_dK[j, k] /= L[k, k]
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
  *             dL_dK[k, k] /= (2. * L[k, k])             # <<<<<<<<<<<<<<
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  */
           __pyx_t_34 = __pyx_v_k;
@@ -2860,19 +2924,50 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_4backprop_gradient(CYTH
   /* "GPy/util/choleskies_cython.pyx":63
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
  *             dL_dK[k, k] /= (2. * L[k, k])
- *     return dL_dK             # <<<<<<<<<<<<<<
+ *     return np.asarray(dL_dK)             # <<<<<<<<<<<<<<
  * 
  * def backprop_gradient_par(double[:,:] dL, double[:,:] L):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_2)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_2);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+    }
+  }
+  if (!__pyx_t_2) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_1);
+  } else {
+    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2); __pyx_t_2 = NULL;
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
   /* "GPy/util/choleskies_cython.pyx":49
- *     return flat
+ *     return np.asarray(flat)
  * 
  * def backprop_gradient(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
  *     cdef double[:, ::1] dL_dK = np.tril(dL)
@@ -2899,7 +2994,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_4backprop_gradient(CYTH
 }
 
 /* "GPy/util/choleskies_cython.pyx":65
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  * def backprop_gradient_par(double[:,:] dL, double[:,:] L):             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] dL_dK = np.tril(dL)
@@ -3116,7 +3211,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
                   #define unlikely(x) (x)
               #endif
               #ifdef _OPENMP
-              #pragma omp parallel  private(__pyx_t_15, __pyx_t_14, __pyx_t_12, __pyx_t_9, __pyx_t_21, __pyx_t_22, __pyx_t_23, __pyx_t_25, __pyx_t_16, __pyx_t_11, __pyx_t_17, __pyx_t_19, __pyx_t_8, __pyx_t_13, __pyx_t_18, __pyx_t_24, __pyx_t_26, __pyx_t_10, __pyx_t_20)
+              #pragma omp parallel  private(__pyx_t_23, __pyx_t_20, __pyx_t_18, __pyx_t_11, __pyx_t_26, __pyx_t_10, __pyx_t_8, __pyx_t_9, __pyx_t_22, __pyx_t_17, __pyx_t_25, __pyx_t_16, __pyx_t_21, __pyx_t_24, __pyx_t_14, __pyx_t_19, __pyx_t_12, __pyx_t_13, __pyx_t_15)
               #endif /* _OPENMP */
               {
 
@@ -3135,7 +3230,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
                       if (__pyx_t_11 > 0)
                       {
                           #ifdef _OPENMP
-                          #pragma omp for firstprivate(__pyx_v_i) lastprivate(__pyx_v_i) lastprivate(__pyx_v_j)
+                          #pragma omp for lastprivate(__pyx_v_j) firstprivate(__pyx_v_i) lastprivate(__pyx_v_i)
                           #endif /* _OPENMP */
                           for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_11; __pyx_t_10++){
                               {
@@ -3254,7 +3349,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
  *                 dL_dK[j, k] /= L[k, k]
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]             # <<<<<<<<<<<<<<
  *             dL_dK[k, k] /= (2. * L[k, k])
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  */
             __pyx_t_31 = __pyx_v_j;
             __pyx_t_32 = __pyx_v_k;
@@ -3275,7 +3370,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
  *                 dL_dK[j, k] /= L[k, k]
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
  *             dL_dK[k, k] /= (2. * L[k, k])             # <<<<<<<<<<<<<<
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  */
           __pyx_t_37 = __pyx_v_k;
@@ -3311,19 +3406,50 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
   /* "GPy/util/choleskies_cython.pyx":81
  *                 dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
  *             dL_dK[k, k] /= (2. * L[k, k])
- *     return dL_dK             # <<<<<<<<<<<<<<
+ *     return np.asarray(dL_dK)             # <<<<<<<<<<<<<<
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:
+ * cdef void chol_backprop(int N, double[::1, :] dL, double[::1, :] L) nogil:
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_2)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_2);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+    }
+  }
+  if (!__pyx_t_2) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_1);
+  } else {
+    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2); __pyx_t_2 = NULL;
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
   /* "GPy/util/choleskies_cython.pyx":65
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  * def backprop_gradient_par(double[:,:] dL, double[:,:] L):             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] dL_dK = np.tril(dL)
@@ -3350,9 +3476,9 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_6backprop_gradient_par(
 }
 
 /* "GPy/util/choleskies_cython.pyx":83
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:             # <<<<<<<<<<<<<<
+ * cdef void chol_backprop(int N, double[::1, :] dL, double[::1, :] L) nogil:             # <<<<<<<<<<<<<<
  *     cdef int i, k, n
  * 
  */
@@ -3437,7 +3563,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
   __pyx_t_4 = (__pyx_v_N - 1);
   if (__pyx_t_3 < 0) __pyx_t_3 += __pyx_v_dL.shape[0];
   if (__pyx_t_4 < 0) __pyx_t_4 += __pyx_v_dL.shape[1];
-  *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_3 * __pyx_v_dL.strides[0]) )) + __pyx_t_4)) )) /= (2. * (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_1 * __pyx_v_L.strides[0]) )) + __pyx_t_2)) ))));
+  *((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_3)) ) + __pyx_t_4 * __pyx_v_dL.strides[1]) )) /= (2. * (*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_1)) ) + __pyx_t_2 * __pyx_v_L.strides[1]) ))));
 
   /* "GPy/util/choleskies_cython.pyx":94
  * 
@@ -3493,13 +3619,13 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
  *                     beta=&beta, y=&dL[k + 1, k], incy=&N)
  * 
  */
-    __pyx_f_5scipy_6linalg_11cython_blas_dsymv(__pyx_k_l, (&__pyx_v_n), (&__pyx_v_alpha), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_6 * __pyx_v_dL.strides[0]) )) + __pyx_t_7)) )))), (&__pyx_v_N), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_8 * __pyx_v_L.strides[0]) )) + __pyx_t_9)) )))), (&__pyx_v_incx), (&__pyx_v_beta), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_10 * __pyx_v_dL.strides[0]) )) + __pyx_t_11)) )))), (&__pyx_v_N));
+    __pyx_f_5scipy_6linalg_11cython_blas_dsymv(__pyx_k_l, (&__pyx_v_n), (&__pyx_v_alpha), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_6)) ) + __pyx_t_7 * __pyx_v_dL.strides[1]) )))), (&__pyx_v_N), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_8)) ) + __pyx_t_9 * __pyx_v_L.strides[1]) )))), (&__pyx_v_incx), (&__pyx_v_beta), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_10)) ) + __pyx_t_11 * __pyx_v_dL.strides[1]) )))), (&__pyx_v_N));
 
     /* "GPy/util/choleskies_cython.pyx":99
  *                     beta=&beta, y=&dL[k + 1, k], incy=&N)
  * 
  *         for i in xrange(0, N - k - 1):             # <<<<<<<<<<<<<<
- *             dL[k + 1 + i, k] -= dL[k + i+ 1, k + i + 1] * L[k, k + 1 + i]
+ *             dL[k + 1 + i, k] -= dL[k + i + 1, k + i + 1] * L[k, k + 1 + i]
  * 
  */
     __pyx_t_12 = ((__pyx_v_N - __pyx_v_k) - 1);
@@ -3509,7 +3635,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
       /* "GPy/util/choleskies_cython.pyx":100
  * 
  *         for i in xrange(0, N - k - 1):
- *             dL[k + 1 + i, k] -= dL[k + i+ 1, k + i + 1] * L[k, k + 1 + i]             # <<<<<<<<<<<<<<
+ *             dL[k + 1 + i, k] -= dL[k + i + 1, k + i + 1] * L[k, k + 1 + i]             # <<<<<<<<<<<<<<
  * 
  *         scale = 1.0 / L[k, k]
  */
@@ -3525,11 +3651,11 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
       __pyx_t_19 = __pyx_v_k;
       if (__pyx_t_18 < 0) __pyx_t_18 += __pyx_v_dL.shape[0];
       if (__pyx_t_19 < 0) __pyx_t_19 += __pyx_v_dL.shape[1];
-      *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_18 * __pyx_v_dL.strides[0]) )) + __pyx_t_19)) )) -= ((*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_14 * __pyx_v_dL.strides[0]) )) + __pyx_t_15)) ))) * (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_16 * __pyx_v_L.strides[0]) )) + __pyx_t_17)) ))));
+      *((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_18)) ) + __pyx_t_19 * __pyx_v_dL.strides[1]) )) -= ((*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_14)) ) + __pyx_t_15 * __pyx_v_dL.strides[1]) ))) * (*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_16)) ) + __pyx_t_17 * __pyx_v_L.strides[1]) ))));
     }
 
     /* "GPy/util/choleskies_cython.pyx":102
- *             dL[k + 1 + i, k] -= dL[k + i+ 1, k + i + 1] * L[k, k + 1 + i]
+ *             dL[k + 1 + i, k] -= dL[k + i + 1, k + i + 1] * L[k, k + 1 + i]
  * 
  *         scale = 1.0 / L[k, k]             # <<<<<<<<<<<<<<
  *         cblas.dscal(&n, &scale , &dL[k + 1, k], &N)
@@ -3539,7 +3665,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
     __pyx_t_21 = __pyx_v_k;
     if (__pyx_t_20 < 0) __pyx_t_20 += __pyx_v_L.shape[0];
     if (__pyx_t_21 < 0) __pyx_t_21 += __pyx_v_L.shape[1];
-    __pyx_t_22 = (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_20 * __pyx_v_L.strides[0]) )) + __pyx_t_21)) )));
+    __pyx_t_22 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_20)) ) + __pyx_t_21 * __pyx_v_L.strides[1]) )));
     if (unlikely(__pyx_t_22 == 0)) {
       #ifdef WITH_THREAD
       PyGILState_STATE __pyx_gilstate_save = PyGILState_Ensure();
@@ -3563,7 +3689,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
     __pyx_t_24 = __pyx_v_k;
     if (__pyx_t_23 < 0) __pyx_t_23 += __pyx_v_dL.shape[0];
     if (__pyx_t_24 < 0) __pyx_t_24 += __pyx_v_dL.shape[1];
-    __pyx_f_5scipy_6linalg_11cython_blas_dscal((&__pyx_v_n), (&__pyx_v_scale), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_23 * __pyx_v_dL.strides[0]) )) + __pyx_t_24)) )))), (&__pyx_v_N));
+    __pyx_f_5scipy_6linalg_11cython_blas_dscal((&__pyx_v_n), (&__pyx_v_scale), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_23)) ) + __pyx_t_24 * __pyx_v_dL.strides[1]) )))), (&__pyx_v_N));
 
     /* "GPy/util/choleskies_cython.pyx":105
  *         cblas.dscal(&n, &scale , &dL[k + 1, k], &N)
@@ -3584,7 +3710,7 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
     __pyx_t_30 = __pyx_v_k;
     if (__pyx_t_29 < 0) __pyx_t_29 += __pyx_v_dL.shape[0];
     if (__pyx_t_30 < 0) __pyx_t_30 += __pyx_v_dL.shape[1];
-    *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_29 * __pyx_v_dL.strides[0]) )) + __pyx_t_30)) )) -= __pyx_f_5scipy_6linalg_11cython_blas_ddot((&__pyx_v_n), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_25 * __pyx_v_dL.strides[0]) )) + __pyx_t_26)) )))), (&__pyx_v_N), (&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_27 * __pyx_v_L.strides[0]) )) + __pyx_t_28)) )))), (&__pyx_v_incx));
+    *((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_29)) ) + __pyx_t_30 * __pyx_v_dL.strides[1]) )) -= __pyx_f_5scipy_6linalg_11cython_blas_ddot((&__pyx_v_n), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_25)) ) + __pyx_t_26 * __pyx_v_dL.strides[1]) )))), (&__pyx_v_N), (&(*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_27)) ) + __pyx_t_28 * __pyx_v_L.strides[1]) )))), (&__pyx_v_incx));
 
     /* "GPy/util/choleskies_cython.pyx":106
  * 
@@ -3601,13 +3727,13 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
     __pyx_t_34 = __pyx_v_k;
     if (__pyx_t_33 < 0) __pyx_t_33 += __pyx_v_dL.shape[0];
     if (__pyx_t_34 < 0) __pyx_t_34 += __pyx_v_dL.shape[1];
-    *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_dL.data + __pyx_t_33 * __pyx_v_dL.strides[0]) )) + __pyx_t_34)) )) /= (2.0 * (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_31 * __pyx_v_L.strides[0]) )) + __pyx_t_32)) ))));
+    *((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_dL.data) + __pyx_t_33)) ) + __pyx_t_34 * __pyx_v_dL.strides[1]) )) /= (2.0 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ ((char *) (((double *) __pyx_v_L.data) + __pyx_t_31)) ) + __pyx_t_32 * __pyx_v_L.strides[1]) ))));
   }
 
   /* "GPy/util/choleskies_cython.pyx":83
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
- * cdef void chol_backprop(int N, double[:, ::1] dL, double[:, ::1] L) nogil:             # <<<<<<<<<<<<<<
+ * cdef void chol_backprop(int N, double[::1, :] dL, double[::1, :] L) nogil:             # <<<<<<<<<<<<<<
  *     cdef int i, k, n
  * 
  */
@@ -3623,8 +3749,8 @@ static void __pyx_f_3GPy_4util_17choleskies_cython_chol_backprop(int __pyx_v_N, 
  *         dL[k, k] /= (2.0 * L[k, k])
  * 
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  */
 
 /* Python wrapper */
@@ -3700,7 +3826,9 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
   PyObject *__pyx_t_3 = NULL;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  __Pyx_memviewslice __pyx_t_6 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  __Pyx_memviewslice __pyx_t_8 = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -3709,100 +3837,131 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
   /* "GPy/util/choleskies_cython.pyx":109
  * 
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))             # <<<<<<<<<<<<<<
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  *     cdef int N = L.shape[0]
  */
   __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_tril); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_asfortranarray); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __pyx_memoryview_fromslice(__pyx_v_dL, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = NULL;
+  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_tril); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_dL, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_6 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_6)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_6);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+    }
+  }
+  if (!__pyx_t_6) {
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
+  } else {
+    __pyx_t_7 = PyTuple_New(1+1); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_7);
+    __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_6); __pyx_t_6 = NULL;
+    __Pyx_GIVEREF(__pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_7, 0+1, __pyx_t_4);
+    __pyx_t_4 = 0;
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_5 = NULL;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
-    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
-    if (likely(__pyx_t_4)) {
+    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_3);
+    if (likely(__pyx_t_5)) {
       PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-      __Pyx_INCREF(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_5);
       __Pyx_INCREF(function);
       __Pyx_DECREF_SET(__pyx_t_3, function);
     }
   }
-  if (!__pyx_t_4) {
+  if (!__pyx_t_5) {
     __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
-    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4); __pyx_t_4 = NULL;
+    __pyx_t_7 = PyTuple_New(1+1); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_7);
+    __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
     __Pyx_GIVEREF(__pyx_t_2);
-    PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_7, 0+1, __pyx_t_2);
     __pyx_t_2 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_7, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(__pyx_t_1);
-  if (unlikely(!__pyx_t_6.memview)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dcd__double(__pyx_t_1);
+  if (unlikely(!__pyx_t_8.memview)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_dL_dK = __pyx_t_6;
-  __pyx_t_6.memview = NULL;
-  __pyx_t_6.data = NULL;
+  __pyx_v_dL_dK = __pyx_t_8;
+  __pyx_t_8.memview = NULL;
+  __pyx_t_8.data = NULL;
 
   /* "GPy/util/choleskies_cython.pyx":110
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)             # <<<<<<<<<<<<<<
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)             # <<<<<<<<<<<<<<
  *     cdef int N = L.shape[0]
  *     with nogil:
  */
   __pyx_t_3 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_ascontiguousarray); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_asfortranarray); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_L, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_2 = NULL;
-  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
-    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_5);
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_7))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_7);
     if (likely(__pyx_t_2)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
       __Pyx_INCREF(__pyx_t_2);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_5, function);
+      __Pyx_DECREF_SET(__pyx_t_7, function);
     }
   }
   if (!__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
-    __pyx_t_4 = PyTuple_New(1+1); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2); __pyx_t_2 = NULL;
+    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2); __pyx_t_2 = NULL;
     __Pyx_GIVEREF(__pyx_t_3);
-    PyTuple_SET_ITEM(__pyx_t_4, 0+1, __pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_7, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   }
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(__pyx_t_1);
-  if (unlikely(!__pyx_t_6.memview)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dcd__double(__pyx_t_1);
+  if (unlikely(!__pyx_t_8.memview)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_L_cont = __pyx_t_6;
-  __pyx_t_6.memview = NULL;
-  __pyx_t_6.data = NULL;
+  __pyx_v_L_cont = __pyx_t_8;
+  __pyx_t_8.memview = NULL;
+  __pyx_t_8.data = NULL;
 
   /* "GPy/util/choleskies_cython.pyx":111
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  *     cdef int N = L.shape[0]             # <<<<<<<<<<<<<<
  *     with nogil:
  *         chol_backprop(N, dL_dK, L_cont)
@@ -3810,7 +3969,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
   __pyx_v_N = (__pyx_v_L.shape[0]);
 
   /* "GPy/util/choleskies_cython.pyx":112
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  *     cdef int N = L.shape[0]
  *     with nogil:             # <<<<<<<<<<<<<<
  *         chol_backprop(N, dL_dK, L_cont)
@@ -3833,7 +3992,7 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
       }
 
       /* "GPy/util/choleskies_cython.pyx":112
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  *     cdef int N = L.shape[0]
  *     with nogil:             # <<<<<<<<<<<<<<
  *         chol_backprop(N, dL_dK, L_cont)
@@ -3856,39 +4015,39 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
  *     return np.asarray(dL_dK)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_7 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_asarray); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __pyx_memoryview_fromslice(__pyx_v_dL_dK, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_3 = NULL;
-  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_4))) {
-    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_4);
+  if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_5);
     if (likely(__pyx_t_3)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
       __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_4, function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
     }
   }
   if (!__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_7); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
     __pyx_t_2 = PyTuple_New(1+1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_3); __pyx_t_3 = NULL;
-    __Pyx_GIVEREF(__pyx_t_5);
-    PyTuple_SET_ITEM(__pyx_t_2, 0+1, __pyx_t_5);
-    __pyx_t_5 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GIVEREF(__pyx_t_7);
+    PyTuple_SET_ITEM(__pyx_t_2, 0+1, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
@@ -3897,8 +4056,8 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
  *         dL[k, k] /= (2.0 * L[k, k])
  * 
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  */
 
   /* function exit code */
@@ -3908,7 +4067,9 @@ static PyObject *__pyx_pf_3GPy_4util_17choleskies_cython_8backprop_gradient_par_
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __PYX_XDEC_MEMVIEW(&__pyx_t_8, 1);
   __Pyx_AddTraceback("GPy.util.choleskies_cython.backprop_gradient_par_c", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -18297,7 +18458,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_allocate_buffer, __pyx_k_allocate_buffer, sizeof(__pyx_k_allocate_buffer), 0, 0, 1, 1},
   {&__pyx_n_s_asarray, __pyx_k_asarray, sizeof(__pyx_k_asarray), 0, 0, 1, 1},
-  {&__pyx_n_s_ascontiguousarray, __pyx_k_ascontiguousarray, sizeof(__pyx_k_ascontiguousarray), 0, 0, 1, 1},
+  {&__pyx_n_s_asfortranarray, __pyx_k_asfortranarray, sizeof(__pyx_k_asfortranarray), 0, 0, 1, 1},
   {&__pyx_n_s_backprop_gradient, __pyx_k_backprop_gradient, sizeof(__pyx_k_backprop_gradient), 0, 0, 1, 1},
   {&__pyx_n_s_backprop_gradient_par, __pyx_k_backprop_gradient_par, sizeof(__pyx_k_backprop_gradient_par), 0, 0, 1, 1},
   {&__pyx_n_s_backprop_gradient_par_c, __pyx_k_backprop_gradient_par_c, sizeof(__pyx_k_backprop_gradient_par_c), 0, 0, 1, 1},
@@ -18618,7 +18779,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_codeobj__21 = (PyObject*)__Pyx_PyCode_New(2, 0, 9, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__20, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_david_gits_GPy_GPy_util_ch, __pyx_n_s_flat_to_triang, 12, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__21)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "GPy/util/choleskies_cython.pyx":33
- *     return ret
+ *     return np.asarray(ret)
  * 
  * def triang_to_flat(double[:, :, :] L):             # <<<<<<<<<<<<<<
  *     cdef int D = L.shape[0]
@@ -18630,7 +18791,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_codeobj__23 = (PyObject*)__Pyx_PyCode_New(1, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__22, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_david_gits_GPy_GPy_util_ch, __pyx_n_s_triang_to_flat, 33, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__23)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "GPy/util/choleskies_cython.pyx":49
- *     return flat
+ *     return np.asarray(flat)
  * 
  * def backprop_gradient(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
  *     cdef double[:, ::1] dL_dK = np.tril(dL)
@@ -18642,7 +18803,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_codeobj__25 = (PyObject*)__Pyx_PyCode_New(2, 0, 7, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__24, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_david_gits_GPy_GPy_util_ch, __pyx_n_s_backprop_gradient, 49, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__25)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "GPy/util/choleskies_cython.pyx":65
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  * def backprop_gradient_par(double[:,:] dL, double[:,:] L):             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] dL_dK = np.tril(dL)
@@ -18657,8 +18818,8 @@ static int __Pyx_InitCachedConstants(void) {
  *         dL[k, k] /= (2.0 * L[k, k])
  * 
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  */
   __pyx_tuple__28 = PyTuple_Pack(5, __pyx_n_s_dL, __pyx_n_s_L, __pyx_n_s_dL_dK, __pyx_n_s_L_cont, __pyx_n_s_N); if (unlikely(!__pyx_tuple__28)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__28);
@@ -18912,7 +19073,7 @@ PyMODINIT_FUNC PyInit_choleskies_cython(void)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "GPy/util/choleskies_cython.pyx":33
- *     return ret
+ *     return np.asarray(ret)
  * 
  * def triang_to_flat(double[:, :, :] L):             # <<<<<<<<<<<<<<
  *     cdef int D = L.shape[0]
@@ -18924,7 +19085,7 @@ PyMODINIT_FUNC PyInit_choleskies_cython(void)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "GPy/util/choleskies_cython.pyx":49
- *     return flat
+ *     return np.asarray(flat)
  * 
  * def backprop_gradient(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
  *     cdef double[:, ::1] dL_dK = np.tril(dL)
@@ -18936,7 +19097,7 @@ PyMODINIT_FUNC PyInit_choleskies_cython(void)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "GPy/util/choleskies_cython.pyx":65
- *     return dL_dK
+ *     return np.asarray(dL_dK)
  * 
  * def backprop_gradient_par(double[:,:] dL, double[:,:] L):             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] dL_dK = np.tril(dL)
@@ -18951,8 +19112,8 @@ PyMODINIT_FUNC PyInit_choleskies_cython(void)
  *         dL[k, k] /= (2.0 * L[k, k])
  * 
  * def backprop_gradient_par_c(double[:, :] dL, double[:, :] L):             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] dL_dK = np.tril(dL) # makes a copy, c-contig
- *     cdef double[:, ::1] L_cont = np.ascontiguousarray(L)
+ *     cdef double[::1, :] dL_dK = np.asfortranarray(np.tril(dL))
+ *     cdef double[::1, :] L_cont = np.asfortranarray(L)
  */
   __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_3GPy_4util_17choleskies_cython_9backprop_gradient_par_c, NULL, __pyx_n_s_GPy_util_choleskies_cython); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
@@ -22398,6 +22559,28 @@ static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_d_dc_d
     }
     retcode = __Pyx_ValidateAndInit_memviewslice(axes_specs, __Pyx_IS_C_CONTIG,
                                                  (PyBUF_C_CONTIGUOUS | PyBUF_FORMAT | PyBUF_WRITABLE), 2,
+                                                 &__Pyx_TypeInfo_double, stack,
+                                                 &result, obj);
+    if (unlikely(retcode == -1))
+        goto __pyx_fail;
+    return result;
+__pyx_fail:
+    result.memview = NULL;
+    result.data = NULL;
+    return result;
+}
+
+static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dcd__double(PyObject *obj) {
+    __Pyx_memviewslice result = { 0, 0, { 0 }, { 0 }, { 0 } };
+    __Pyx_BufFmt_StackElem stack[1];
+    int axes_specs[] = { (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_CONTIG), (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_FOLLOW) };
+    int retcode;
+    if (obj == Py_None) {
+        result.memview = (struct __pyx_memoryview_obj *) Py_None;
+        return result;
+    }
+    retcode = __Pyx_ValidateAndInit_memviewslice(axes_specs, __Pyx_IS_F_CONTIG,
+                                                 (PyBUF_F_CONTIGUOUS | PyBUF_FORMAT | PyBUF_WRITABLE), 2,
                                                  &__Pyx_TypeInfo_double, stack,
                                                  &result, obj);
     if (unlikely(retcode == -1))

@@ -31,7 +31,7 @@ install:
 script:
   - mkdir empty
   - cd empty
-  - python -c "import sys;import Gpy;sys.exit(0 if Gpy.test() else 1)"
+  - nosetests GPy
 
 cache:
   directories:

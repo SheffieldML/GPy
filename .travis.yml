@@ -2,6 +2,14 @@ sudo: false
 
 language: python
 
+addons:
+  apt:
+    packages:
+      - gfortran
+      - libatlas-dev
+      - libatlas-base-dev
+      - liblapack-dev
+
 python:
   - 2.6
   - 2.7
@@ -13,8 +21,8 @@ before_install:
   - free -m
   - df -h
   - ulimit -a
-  - pip install -U pip wheel
-  - pip install numpy scipy cython
+  - pip install -U pip wheel setuptools
+  - pip install numpy scipy cython nose
   - python -V
 
 install:

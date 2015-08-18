@@ -229,7 +229,8 @@ class TestNoiseModels(object):
                     "vals": [self.var],
                     "constraints": [(".*variance", self.constrain_positive)]
                 },
-                "laplace": True
+                "laplace": True,
+                "variational_expectations": True
             },
             #"Gaussian_probit": {
             #"model": GPy.likelihoods.gaussian(gp_link=link_functions.Probit(), variance=self.var, D=self.D, N=self.N),

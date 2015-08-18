@@ -8,7 +8,7 @@ The test cases for various inference algorithms
 import unittest, itertools
 import numpy as np
 import GPy
-
+#np.seterr(invalid='raise')
 
 class InferenceXTestCase(unittest.TestCase):
 

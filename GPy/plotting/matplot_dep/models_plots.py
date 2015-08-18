@@ -110,7 +110,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 else:
                     Y_metadata['output_index'] = extra_data
             m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
-            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=Y_metadata)
+            fmu, fv = model._raw_predict(Xgrid, full_cov=False, **predict_kw)
+            lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
 
 
         for d in which_data_ycols:

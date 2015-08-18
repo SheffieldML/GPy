@@ -60,7 +60,8 @@ class GPVariationalGaussianApproximation(Model):
         var = np.diag(Sigma).reshape(-1,1)
 
         F, dF_dm, dF_dv, dF_dthetaL = self.likelihood.variational_expectations(self.Y, m, var, Y_metadata=self.Y_metadata)
-        self.likelihood.gradient = dF_dthetaL.sum(1).sum(1)
+        if dF_dthetaL is not None:
+            self.likelihood.gradient = dF_dthetaL.sum(1).sum(1)
         dF_da = np.dot(K, dF_dm)
         SigmaB = Sigma*self.beta
         dF_db = -np.diag(Sigma.dot(np.diag(dF_dv.flatten())).dot(SigmaB))*2

@@ -249,7 +249,7 @@ class GP(Model):
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -257,10 +257,12 @@ class GP(Model):
         :type X: np.ndarray (Xnew x self.input_dim)
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
+        :param kern: optional kernel to use for prediction
+        :type predict_kw: dict
         :returns: list of quantiles for each X and predictive quantiles for interval combination
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
-        m, v = self._raw_predict(X,  full_cov=False)
+        m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)

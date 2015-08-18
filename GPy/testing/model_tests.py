@@ -509,7 +509,8 @@ class GradientTests(np.testing.TestCase):
         X = X[:, None]
         Y = 25. + np.sin(X / 20.) * 2. + np.random.rand(num_obs)[:, None]
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
-        m = GPy.models.GPVariationalGaussianApproximation(X, Y, kern)
+        lik = GPy.likelihoods.Gaussian()
+        m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
         self.assertTrue(m.checkgrad())
 
 

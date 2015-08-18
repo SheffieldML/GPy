@@ -9,8 +9,7 @@ import inspect
 from GPy.likelihoods import link_functions
 from GPy.core.parameterization import Param
 from functools import partial
-#np.random.seed(300)
-#np.random.seed(4)
+fixed_seed = 0
 
 #np.seterr(divide='raise')
 def dparam_partial(inst_func, *args):
@@ -105,7 +104,7 @@ class TestNoiseModels(object):
     Generic model checker
     """
     def setUp(self):
-        np.random.seed(0)
+        np.random.seed(fixed_seed)
         self.N = 15
         self.D = 3
         self.X = np.random.rand(self.N, self.D)*10
@@ -704,6 +703,7 @@ class LaplaceTests(unittest.TestCase):
     """
 
     def setUp(self):
+        np.random.seed(fixed_seed)
         self.N = 15
         self.D = 1
         self.X = np.random.rand(self.N, self.D)*10

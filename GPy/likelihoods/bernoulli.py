@@ -85,6 +85,7 @@ class Bernoulli(Likelihood):
                 gh_x, gh_w = gh_points
 
 
+            gh_w = gh_w / np.sqrt(np.pi)
             shape = m.shape
             m,v,Y = m.flatten(), v.flatten(), Y.flatten()
             Ysign = np.where(Y==1,1,-1)

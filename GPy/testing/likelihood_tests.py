@@ -105,6 +105,7 @@ class TestNoiseModels(object):
     Generic model checker
     """
     def setUp(self):
+        np.random.seed(0)
         self.N = 15
         self.D = 3
         self.X = np.random.rand(self.N, self.D)*10
@@ -218,7 +219,8 @@ class TestNoiseModels(object):
                     "constraints": [(".*variance", self.constrain_positive)]
                 },
                 "laplace": True,
-                "ep": False # FIXME: Should be True when we have it working again
+                "ep": False, # FIXME: Should be True when we have it working again
+                "variational_expectations": True,
             },
             "Gaussian_log": {
                 "model": GPy.likelihoods.Gaussian(gp_link=link_functions.Log(), variance=self.var),
@@ -252,7 +254,8 @@ class TestNoiseModels(object):
                 "link_f_constraints": [partial(self.constrain_bounded, lower=0, upper=1)],
                 "laplace": True,
                 "Y": self.binary_Y,
-                "ep": False # FIXME: Should be True when we have it working again
+                "ep": False, # FIXME: Should be True when we have it working again
+                "variational_expectations": True
             },
             "Exponential_default": {
                 "model": GPy.likelihoods.Exponential(),
@@ -347,6 +350,10 @@ class TestNoiseModels(object):
                 ep = attributes["ep"]
             else:
                 ep = False
+            if "variational_expectations" in attributes:
+                var_exp = attributes["variational_expectations"]
+            else:
+                var_exp = False
 
             #if len(param_vals) > 1:
                 #raise NotImplementedError("Cannot support multiple params in likelihood yet!")
@@ -377,6 +384,11 @@ class TestNoiseModels(object):
             if ep:
                 #ep likelihood gradcheck
                 yield self.t_ep_fit_rbf_white, model, self.X, Y, f, Y_metadata, self.step, param_vals, param_names, param_constraints
+            if var_exp:
+                #Need to specify mu and var!
+                yield self.t_varexp, model, Y, Y_metadata
+                yield self.t_dexp_dmu, model, Y, Y_metadata
+                yield self.t_dexp_dvar, model, Y, Y_metadata
 
 
         self.tearDown()
@@ -603,6 +615,87 @@ class TestNoiseModels(object):
         print(m)
         assert m.checkgrad(verbose=1, step=step)
 
+    ################
+    # variational expectations #
+    ################
+    @with_setup(setUp, tearDown)
+    def t_varexp(self, model, Y, Y_metadata):
+        #Test that the analytic implementation (if it exists) matches the generic gauss
+        #hermite implementation
+        print("\n{}".format(inspect.stack()[0][3]))
+        #Make mu and var (marginal means and variances of q(f)) draws from a GP
+        k = GPy.kern.RBF(1).K(np.linspace(0,1,Y.shape[0])[:, None])
+        L = GPy.util.linalg.jitchol(k)
+        mu = L.dot(np.random.randn(*Y.shape))
+        #Variance must be positive
+        var = np.abs(L.dot(np.random.randn(*Y.shape)))
+
+        expectation = model.variational_expectations(Y=Y, m=mu, v=var, gh_points=None, Y_metadata=Y_metadata)[0]
+
+        #Implementation of gauss hermite integration
+        shape = mu.shape
+        gh_x, gh_w= np.polynomial.hermite.hermgauss(50)
+        m,v,Y = mu.flatten(), var.flatten(), Y.flatten()
+        #make a grid of points
+        X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+        #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
+        # broadcast needs to be handled carefully.
+        logp = model.logpdf(X, Y[:,None], Y_metadata=Y_metadata)
+        #average over the gird to get derivatives of the Gaussian's parameters
+        #division by pi comes from fact that for each quadrature we need to scale by 1/sqrt(pi)
+        expectation_gh  = np.dot(logp, gh_w)/np.sqrt(np.pi)
+        expectation_gh = expectation_gh.reshape(*shape)
+
+        np.testing.assert_almost_equal(expectation, expectation_gh, decimal=5)
+
+    @with_setup(setUp, tearDown)
+    def t_dexp_dmu(self, model, Y, Y_metadata):
+        print("\n{}".format(inspect.stack()[0][3]))
+        #Make mu and var (marginal means and variances of q(f)) draws from a GP
+        k = GPy.kern.RBF(1).K(np.linspace(0,1,Y.shape[0])[:, None])
+        L = GPy.util.linalg.jitchol(k)
+        mu = L.dot(np.random.randn(*Y.shape))
+        #Variance must be positive
+        var = np.abs(L.dot(np.random.randn(*Y.shape)))
+        expectation = functools.partial(model.variational_expectations, Y=Y, v=var, gh_points=None, Y_metadata=Y_metadata)
+
+        #Function to get the nth returned value
+        def F(mu):
+            return expectation(m=mu)[0]
+        def dmu(mu):
+            return expectation(m=mu)[1]
+
+        grad = GradientChecker(F, dmu, mu.copy(), 'm')
+
+        grad.randomize()
+        print(grad)
+        print(model)
+        assert grad.checkgrad(verbose=1)
+
+    @with_setup(setUp, tearDown)
+    def t_dexp_dvar(self, model, Y, Y_metadata):
+        print("\n{}".format(inspect.stack()[0][3]))
+        #Make mu and var (marginal means and variances of q(f)) draws from a GP
+        k = GPy.kern.RBF(1).K(np.linspace(0,1,Y.shape[0])[:, None])
+        L = GPy.util.linalg.jitchol(k)
+        mu = L.dot(np.random.randn(*Y.shape))
+        #Variance must be positive
+        var = np.abs(L.dot(np.random.randn(*Y.shape)))
+        expectation = functools.partial(model.variational_expectations, Y=Y, m=mu, gh_points=None, Y_metadata=Y_metadata)
+
+        #Function to get the nth returned value
+        def F(var):
+            return expectation(v=var)[0]
+        def dvar(var):
+            return expectation(v=var)[2]
+
+        grad = GradientChecker(F, dvar, var.copy(), 'v')
+
+        self.constrain_positive('v', grad)
+        grad.randomize()
+        print(grad)
+        print(model)
+        assert grad.checkgrad(verbose=1)
 
 class LaplaceTests(unittest.TestCase):
     """

@@ -183,7 +183,7 @@ class GP(Model):
         """
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, _Xnew, full_cov=False, kern=None):
+    def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """
         For making predictions, does not account for normalization or likelihood
 
@@ -199,24 +199,30 @@ class GP(Model):
         if kern is None:
             kern = self.kern
 
-        Kx = kern.K(_Xnew, self.X).T
-        WiKx = np.dot(self.posterior.woodbury_inv, Kx)
+        Kx = kern.K(self.X, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
-            Kxx = kern.K(_Xnew)
-            var = Kxx - np.dot(Kx.T, WiKx)
+            Kxx = kern.K(Xnew)
+            if self.posterior.woodbury_inv.ndim == 2:
+                var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+            elif self.posterior.woodbury_inv.ndim == 3:
+                var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+                for i in range(var.shape[2]):
+                    var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
+            var = var
         else:
-            Kxx = kern.Kdiag(_Xnew)
-            var = Kxx - np.sum(WiKx*Kx, 0)
-            var = var.reshape(-1, 1)
-            var[var<0.] = 0.
+            Kxx = kern.Kdiag(Xnew)
+            if self.posterior.woodbury_inv.ndim == 2:
+                var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
+            elif self.posterior.woodbury_inv.ndim == 3:
+                var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+                for i in range(var.shape[1]):
+                    var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+            var = var
+        #add in the mean function
+        if self.mean_function is not None:
+            mu += self.mean_function.f(Xnew)
 
-        #force mu to be a column vector
-        if len(mu.shape)==1: mu = mu[:,None]
-
-        #add the mean function in
-        if not self.mean_function is None:
-            mu += self.mean_function.f(_Xnew)
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -249,7 +255,7 @@ class GP(Model):
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -257,10 +263,12 @@ class GP(Model):
         :type X: np.ndarray (Xnew x self.input_dim)
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
+        :param kern: optional kernel to use for prediction
+        :type predict_kw: dict
         :returns: list of quantiles for each X and predictive quantiles for interval combination
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
-        m, v = self._raw_predict(X,  full_cov=False)
+        m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)

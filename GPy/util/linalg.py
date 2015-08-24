@@ -9,9 +9,6 @@ import numpy as np
 from scipy import linalg
 from scipy.linalg import lapack, blas
 
-import ctypes
-from ctypes import byref, c_char, c_int, c_double # TODO
-
 from .config import config
 import logging
 from . import linalg_cython
@@ -312,26 +309,11 @@ def tdot_blas(mat, out=None):
         out[:] = 0.0
 
     # # Call to DSYRK from BLAS
-    # If already in Fortran order (rare), and has the right sorts of strides I
-    # could avoid the copy. I also thought swapping to cblas API would allow use
-    # of C order. However, I tried that and had errors with large matrices:
-    # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
     mat = np.asfortranarray(mat)
-    TRANS = c_char('n'.encode('ascii'))
-    N = c_int(mat.shape[0])
-    K = c_int(mat.shape[1])
-    LDA = c_int(mat.shape[0])
-    UPLO = c_char('l'.encode('ascii'))
-    ALPHA = c_double(1.0)
-    A = mat.ctypes.data_as(ctypes.c_void_p)
-    BETA = c_double(0.0)
-    C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) // 8)
-    blas.dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
-               byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
+    out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1,
+                     trans=0, lower=1, trans=0)
 
     symmetrify(out, upper=True)
-
     return np.ascontiguousarray(out)
 
 def tdot(*args, **kwargs):
@@ -347,15 +329,7 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    N = c_int(A.shape[0])
-    LDA = c_int(A.shape[0])
-    UPLO = c_char('l'.encode('ascii'))
-    ALPHA = c_double(alpha)
-    A_ = A.ctypes.data_as(ctypes.c_void_p)
-    x_ = x.ctypes.data_as(ctypes.c_void_p)
-    INCX = c_int(1)
-    blas.dsyr(byref(UPLO), byref(N), byref(ALPHA),
-              x_, byref(INCX), A_, byref(LDA))
+    blas.dsyr(lower=1, x=x, a=A, alpha=alpha)
     symmetrify(A, upper=True)
 
 def DSYR_numpy(A, x, alpha=1.):

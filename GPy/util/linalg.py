@@ -311,7 +311,7 @@ def tdot_blas(mat, out=None):
     # # Call to DSYRK from BLAS
     mat = np.asfortranarray(mat)
     out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1,
-                     trans=0, lower=1, trans=0)
+                     trans=0, lower=0)
 
     symmetrify(out, upper=True)
     return np.ascontiguousarray(out)
@@ -329,7 +329,7 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    blas.dsyr(lower=1, x=x, a=A, alpha=alpha)
+    A = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=True)
     symmetrify(A, upper=True)
 
 def DSYR_numpy(A, x, alpha=1.):

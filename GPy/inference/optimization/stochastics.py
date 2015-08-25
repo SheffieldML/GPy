@@ -5,7 +5,7 @@ class StochasticStorage(object):
     '''
     This is a container for holding the stochastic parameters,
     such as subset indices or step length and so on.
-    
+
     self.d has to be a list of lists:
     [dimension indices, nan indices for those dimensions]
     so that the minibatches can be used as efficiently as possible.10
@@ -38,16 +38,17 @@ class SparseGPMissing(StochasticStorage):
         import numpy as np
         self.Y = model.Y_normalized
         bdict = {}
+        #For N > 1000 array2string default crops
+        opt = np.get_printoptions()
+        np.set_printoptions(threshold='nan')
         for d in range(self.Y.shape[1]):
-            inan = np.isnan(self.Y[:, d])
-            arr_str = np.array2string(inan, 
-                                      np.inf, 0, 
-                                      True, '', 
-                                      formatter={'bool':lambda x: '1' if x else '0'})
+            inan = np.isnan(self.Y)[:, d]
+            arr_str = np.array2string(~inan, np.inf, 0, True, '', formatter={'bool':lambda x: '1' if x else '0'})
             try:
                 bdict[arr_str][0].append(d)
             except:
                 bdict[arr_str] = [[d], ~inan]
+        np.set_printoptions(**opt)
         self.d = bdict.values()
 
 class SparseGPStochastics(StochasticStorage):
@@ -70,16 +71,19 @@ class SparseGPStochastics(StochasticStorage):
             import numpy as np
             self.d = np.random.choice(self.output_dim, size=self.batchsize, replace=False)
             bdict = {}
+            opt = np.get_printoptions()
+            np.set_printoptions(threshold='nan')
             for d in self.d:
                 inan = np.isnan(self.Y[:, d])
-                arr_str = int(np.array2string(inan, 
-                                          np.inf, 0, 
-                                          True, '', 
+                arr_str = int(np.array2string(inan,
+                                          np.inf, 0,
+                                          True, '',
                                           formatter={'bool':lambda x: '1' if x else '0'}), 2)
                 try:
                     bdict[arr_str][0].append(d)
                 except:
                     bdict[arr_str] = [[d], ~inan]
+            np.set_printoptions(**opt)
             self.d = bdict.values()
 
     def reset(self):

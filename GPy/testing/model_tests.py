@@ -352,8 +352,8 @@ class GradientTests(np.testing.TestCase):
         self.check_model(rbf, model_type='SparseGPRegression', dimension=2)
 
     def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
-        ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
+        ''' Testing the sparse GP regression with rbf kernel on 1d data '''
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1) + GPy.kern.White(1, 1e-5)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1)
 
     def test_SparseGPRegression_rbf_linear_white_kern_2D(self):
@@ -472,6 +472,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue(m.checkgrad())
 
     def test_gp_kronecker_gaussian(self):
+        np.random.seed(0)
         N1, N2 = 30, 20
         X1 = np.random.randn(N1, 1)
         X2 = np.random.randn(N2, 1)
@@ -492,16 +493,16 @@ class GradientTests(np.testing.TestCase):
 
         m.randomize()
         mm[:] = m[:]
-        assert np.allclose(m.log_likelihood(), mm.log_likelihood())
-        assert np.allclose(m.gradient, mm.gradient)
+        self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
+        self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)
         X2test = np.random.randn(100, 1)
         mean1, var1 = m.predict(X1test, X2test)
         yy, xx = np.meshgrid(X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
         mean2, var2 = mm.predict(Xgrid)
-        assert np.allclose(mean1, mean2)
-        assert np.allclose(var1, var2)
+        self.assertTrue( np.allclose(mean1, mean2) )
+        self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
         num_obs = 25

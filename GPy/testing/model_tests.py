@@ -352,8 +352,8 @@ class GradientTests(np.testing.TestCase):
         self.check_model(rbf, model_type='SparseGPRegression', dimension=2)
 
     def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
-        ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
+        ''' Testing the sparse GP regression with rbf kernel on 1d data '''
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1) + GPy.kern.White(1, 1e-5)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1)
 
     def test_SparseGPRegression_rbf_linear_white_kern_2D(self):

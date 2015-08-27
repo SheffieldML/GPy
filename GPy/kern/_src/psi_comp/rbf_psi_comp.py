@@ -5,7 +5,7 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from GPy.util.caching import Cacher
 
-def psicomputations(variance, lengthscale, Z, variational_posterior):
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
     """
     Z - MxQ
     mu - NxQ
@@ -21,7 +21,9 @@ def psicomputations(variance, lengthscale, Z, variational_posterior):
     psi0 = np.empty(mu.shape[0])
     psi0[:] = variance
     psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S).sum(axis=0)
+    psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
+    if not return_psi2_n:
+        psi2 = psi2.sum(axis=0)
     return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):
@@ -66,11 +68,12 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
     return _psi2
 
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
+                              psi0=None, psi1=None, psi2=None):
     ARD = (len(lengthscale)!=1)
 
-    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
-    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
+    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance, psi1=psi1)
+    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance, psi2=psi2)
 
     dL_dvar = np.sum(dL_dpsi0) + dvar_psi1 + dvar_psi2
 
@@ -84,7 +87,7 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscal
 
     return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
 
-def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
+def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None):
     """
     dL_dpsi1 - NxM
     Z - MxQ
@@ -103,8 +106,9 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
 
     lengthscale2 = np.square(lengthscale)
 
-    _psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    Lpsi1 = dL_dpsi1*_psi1
+    if psi1 is None:
+        psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
+    Lpsi1 = dL_dpsi1*psi1
     Zmu = Z[None,:,:]-mu[:,None,:] # NxMxQ
     denom = 1./(S+lengthscale2)
     Zmu2_denom = np.square(Zmu)*denom[:,None,:] #NxMxQ
@@ -116,7 +120,7 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
-def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
+def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None):
     """
     Z - MxQ
     mu - NxQ
@@ -137,8 +141,9 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     denom = 1./(2*S+lengthscale2)
     denom2 = np.square(denom)
 
-    _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
-    Lpsi2 = dL_dpsi2*_psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
+    if psi2 is None:
+        psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
+    Lpsi2 = dL_dpsi2*psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
     Lpsi2sum = np.einsum('nmo->n',Lpsi2) #N
     Lpsi2Z = np.einsum('nmo,oq->nq',Lpsi2,Z) #NxQ
     Lpsi2Z2 = np.einsum('nmo,oq,oq->nq',Lpsi2,Z,Z) #NxQ
@@ -158,3 +163,5 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
 
 _psi1computations = Cacher(__psi1computations, limit=5)
 _psi2computations = Cacher(__psi2computations, limit=5)
+_psi1compDer = Cacher(__psi1compDer, limit=5)
+_psi2compDer = Cacher(__psi2compDer, limit=5)

@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 from evaluation import RMSE
-from methods import GP_RBF, SVIGP_RBF
+from methods import GP_RBF, SVIGP_RBF, SparseGP_RBF
 from tasks import Housing, WineQuality
 from outputs import ScreenOutput, CSVOutput, H5Output
 import numpy as np
@@ -13,7 +13,7 @@ outpath = '.'
 prjname = 'regression'
 config = {
           'evaluations':[RMSE],
-          'methods':[GP_RBF, SVIGP_RBF],
+          'methods':[GP_RBF, SVIGP_RBF, SparseGP_RBF],
           'tasks':[WineQuality,Housing],
           'repeats':2,
           'outputs': [ScreenOutput(), CSVOutput(outpath, prjname), H5Output(outpath, prjname)]

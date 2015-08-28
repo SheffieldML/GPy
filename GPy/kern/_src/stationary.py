@@ -13,7 +13,7 @@ from ...util.config import config # for assesing whether to use cython
 from ...util.caching import Cache_this
 
 try:
-    import stationary_cython
+    from . import stationary_cython
 except ImportError:
     print('warning in sationary: failed to import cython module: falling back to numpy')
     config.set('cython', 'working', 'false')
@@ -77,7 +77,7 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=20, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -89,7 +89,7 @@ class Stationary(Kern):
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
-    @Cache_this(limit=3, ignore_args=())
+    @Cache_this(limit=20, ignore_args=())
     def dK_dr_via_X(self, X, X2):
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
@@ -114,7 +114,7 @@ class Stationary(Kern):
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=20, ignore_args=())
     def _scaled_dist(self, X, X2=None):
         """
         Efficiently compute the scaled distance, r.

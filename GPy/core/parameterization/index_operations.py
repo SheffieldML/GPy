@@ -5,7 +5,7 @@ import numpy
 from numpy.lib.function_base import vectorize
 from .lists_and_dicts import IntArrayDict
 from functools import reduce
-from transformations import Transformation
+from .transformations import Transformation
 
 def extract_properties_to_index(index, props):
     prop_index = dict()
@@ -109,7 +109,7 @@ class ParameterIndexOperations(object):
         try:
             return self._properties.itervalues()
         except AttributeError:
-	#Changed this from itervalues to values for Py3 compatibility. It didn't break the test suite.
+            #Changed this from itervalues to values for Py3 compatibility. It didn't break the test suite.
             return self._properties.values()
 
     def indices(self):

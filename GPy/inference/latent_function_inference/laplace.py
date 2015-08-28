@@ -139,10 +139,6 @@ class Laplace(LatentFunctionInference):
 
         f_hat, Ki_fhat = self.rasm_mode(K, Y, likelihood, Ki_f_init, Y_metadata=Y_metadata)
 
-        self.f_hat = f_hat
-        #self.Ki_fhat =  Ki_fhat
-        #self.K = K.copy()
-
         #Compute hessian and other variables at mode
         log_marginal, woodbury_inv, dL_dK, dL_dthetaL = self.mode_computations(f_hat, Ki_fhat, K, Y, likelihood, kern, Y_metadata)
 
@@ -175,7 +171,9 @@ class Laplace(LatentFunctionInference):
         #define the objective function (to be maximised)
         def obj(Ki_f, f):
             ll = -0.5*np.sum(np.dot(Ki_f.T, f)) + np.sum(likelihood.logpdf(f, Y, Y_metadata=Y_metadata))
+            print ll
             if np.isnan(ll):
+                import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
                 return -np.inf
             else:
                 return ll
@@ -298,6 +296,11 @@ class Laplace(LatentFunctionInference):
         else:
             dL_dthetaL = np.zeros(likelihood.size)
 
+        #Cache some things for speedy LOO
+        self.Ki_W_i = Ki_W_i
+        self.K = K
+        self.W = W
+        self.f_hat = f_hat
         return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
 
     def _compute_B_statistics(self, K, W, log_concave, *args, **kwargs):

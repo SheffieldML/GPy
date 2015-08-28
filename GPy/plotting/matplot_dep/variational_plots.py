@@ -22,7 +22,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
     lines = []
     fills = []
     bg_lines = []
-    means, variances = parameterized.mean, parameterized.variance
+    means, variances = parameterized.mean.values, parameterized.variance.values
     x = np.arange(means.shape[0])
     for i in range(means.shape[1]):
         if ax is None:
@@ -43,7 +43,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
         if i < means.shape[1] - 1:
             a.set_xticklabels('')
     pb.draw()
-    fig.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
+    a.figure.tight_layout(h_pad=.01) # , rect=(0, 0, 1, .95))
     return dict(lines=lines, fills=fills, bg_lines=bg_lines)
 
 def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_side=True):

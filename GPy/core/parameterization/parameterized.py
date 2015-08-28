@@ -6,10 +6,10 @@ import numpy; np = numpy
 import itertools
 from re import compile, _pattern_type
 from .param import ParamConcatenation
-from parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
+from .parameter_core import HierarchyError, Parameterizable, adjust_name_for_printing
 
 import logging
-from index_operations import ParameterIndexOperationsView
+from .index_operations import ParameterIndexOperationsView
 logger = logging.getLogger("parameters changed meta")
 
 class ParametersChangedMeta(type):
@@ -197,9 +197,10 @@ class Parameterized(Parameterizable):
                 raise RuntimeError("{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param)))
 
         start = sum([p.size for p in self.parameters[:param._parent_index_]])
-        self._remove_parameter_name(param)
         self.size -= param.size
         del self.parameters[param._parent_index_]
+        self._remove_parameter_name(param)
+
 
         param._disconnect_parent()
         param.remove_observer(self, self._pass_through_notify_observers)

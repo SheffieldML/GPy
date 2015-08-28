@@ -522,16 +522,9 @@ class DGPLVM(Prior):
 
     """
     domain = _REAL
-    # _instances = []
-    # def __new__(cls, mu, sigma): # Singleton:
-    #     if cls._instances:
-    #         cls._instances[:] = [instance for instance in cls._instances if instance()]
-    #         for instance in cls._instances:
-    #             if instance().mu == mu and instance().sigma == sigma:
-    #                 return instance()
-    #     o = super(Prior, cls).__new__(cls, mu, sigma)
-    #     cls._instances.append(weakref.ref(o))
-    #     return cls._instances[-1]()
+    
+    def __new__(cls, sigma2, lbl, x_shape): 
+        return super(Prior, cls).__new__(cls, sigma2, lbl, x_shape)
 
     def __init__(self, sigma2, lbl, x_shape):
         self.sigma2 = sigma2
@@ -758,12 +751,12 @@ class DGPLVM_Lamda(Prior, Parameterized):
         self.sigma2 = sigma2
         # self.x = x
         self.lbl = lbl
-	self.lamda = lamda
+        self.lamda = lamda
         self.classnum = lbl.shape[1]
         self.datanum = lbl.shape[0]
         self.x_shape = x_shape
         self.dim = x_shape[1]
-	self.lamda = Param('lamda', np.diag(lamda))
+        self.lamda = Param('lamda', np.diag(lamda))
         self.link_parameter(self.lamda)
 
     def get_class_label(self, y):
@@ -789,7 +782,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    class_i = cls[i]
+            class_i = cls[i]
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
 
@@ -843,7 +836,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
 
     # Calculating beta and Bi for Sb
     def compute_sig_beta_Bi(self, data_idx, M_i, M_0, lst_idx_all):
-        import pdb
+        # import pdb
         # pdb.set_trace()
         B_i = np.zeros((self.classnum, self.dim))
         Sig_beta_B_i_all = np.zeros((self.datanum, self.dim))
@@ -899,8 +892,8 @@ class DGPLVM_Lamda(Prior, Parameterized):
 	#!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	#self.lamda.values[:] = self.lamda.values/self.lamda.values.sum()	
 
-	xprime = x.dot(np.diagflat(self.lamda))
-	x = xprime
+        xprime = x.dot(np.diagflat(self.lamda))
+        x = xprime
 	# print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
@@ -909,15 +902,15 @@ class DGPLVM_Lamda(Prior, Parameterized):
         Sw = self.compute_Sw(cls, M_i)
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.5))[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.9)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
 
     # This function calculates derivative of the log of prior function
     def lnpdf_grad(self, x):
         x = x.reshape(self.x_shape)
-	xprime = x.dot(np.diagflat(self.lamda))
-	x = xprime
+        xprime = x.dot(np.diagflat(self.lamda))
+        x = xprime
 	# print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
@@ -933,8 +926,8 @@ class DGPLVM_Lamda(Prior, Parameterized):
         # Calculating inverse of Sb and its transpose and minus
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
-	Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
+        #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.5))[0]
+        Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.9)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
         Sb_inv_N_trans_minus = -1 * Sb_inv_N_trans
         Sw_trans = np.transpose(Sw)
@@ -951,14 +944,14 @@ class DGPLVM_Lamda(Prior, Parameterized):
         # Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
         DPxprim_Dx = DPxprim_Dx.T
     
-    	DPxprim_Dlamda = DPx_Dx.dot(x)
+        DPxprim_Dlamda = DPx_Dx.dot(x)
 
     	# Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
-    	DPxprim_Dlamda = DPxprim_Dlamda.T
+        DPxprim_Dlamda = DPxprim_Dlamda.T
 
-	self.lamda.gradient = np.diag(DPxprim_Dlamda)
+        self.lamda.gradient = np.diag(DPxprim_Dlamda)
 	# print DPxprim_Dx
-    	return DPxprim_Dx
+        return DPxprim_Dx
 
 
     # def frb(self, x):
@@ -1139,8 +1132,8 @@ class DGPLVM_T(Prior):
     # This function calculates log of our prior
     def lnpdf(self, x):
         x = x.reshape(self.x_shape)
-	xprim = x.dot(self.vec)
-	x = xprim
+        xprim = x.dot(self.vec)
+        x = xprim
 	# print x  
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
@@ -1156,11 +1149,11 @@ class DGPLVM_T(Prior):
 
     # This function calculates derivative of the log of prior function
     def lnpdf_grad(self, x):
-	x = x.reshape(self.x_shape)
-	xprim = x.dot(self.vec)
-	x = xprim 
+        x = x.reshape(self.x_shape)
+        xprim = x.dot(self.vec)
+        x = xprim 
 	# print x       
-	cls = self.compute_cls(x)
+        cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
         M_i = self.compute_Mi(cls)
         Sb = self.compute_Sb(cls, M_i, M_0)

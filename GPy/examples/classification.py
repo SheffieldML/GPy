@@ -217,9 +217,8 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
     elif model_type == 'FITC':
         m = GPy.models.FITCClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
         m['.*len'] = 3.
-
     if optimize:
-        m.pseudo_EM()
+        m.optimize()
 
     if plot:
         m.plot()

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 from setuptools import setup, Extension
 import numpy as np
 
@@ -22,6 +23,7 @@ ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
             Extension(name='GPy.util.choleskies_cython',
                       sources=['GPy/util/choleskies_cython.c'],
                       include_dirs=[np.get_include()],
+                      extra_link_args = ['-lgomp'],
                       extra_compile_args=compile_flags),
             Extension(name='GPy.util.linalg_cython',
                       sources=['GPy/util/linalg_cython.c'],
@@ -62,7 +64,7 @@ setup(name = 'GPy',
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
       long_description=read('README.md'),
-      install_requires=['numpy>=1.7', 'scipy>=0.12'],
+      install_requires=['numpy>=1.7', 'scipy>=0.16'],
       extras_require = {'docs':['matplotlib >=1.3','Sphinx','IPython']},
       classifiers=['License :: OSI Approved :: BSD License',
                    'Natural Language :: English',

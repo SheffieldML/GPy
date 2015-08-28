@@ -5,7 +5,7 @@ import numpy as np
 from . import linalg
 from .config import config
 
-import choleskies_cython
+from . import choleskies_cython
 
 def safe_root(N):
     i = np.sqrt(N)
@@ -17,12 +17,12 @@ def safe_root(N):
 def _flat_to_triang_pure(flat_mat):
     N, D = flat_mat.shape
     M = (-1 + safe_root(8*N+1))//2
-    ret = np.zeros((M, M, D))
-    count = 0
-    for m in range(M):
-        for mm in range(m+1):
-            for d in range(D):
-              ret.flat[d + m*D*M + mm*D] = flat_mat.flat[count];
+    ret = np.zeros((D, M, M))
+    for d in range(D):
+        count = 0
+        for m in range(M):
+            for mm in range(m+1):
+              ret[d,m, mm] = flat_mat[count, d];
               count = count+1
     return ret
 
@@ -33,15 +33,15 @@ def _flat_to_triang_cython(flat_mat):
 
 
 def _triang_to_flat_pure(L):
-    M, _, D = L.shape
+    D, _, M = L.shape
 
     N = M*(M+1)//2
     flat = np.empty((N, D))
-    count = 0;
-    for m in range(M):
-        for mm in range(m+1):
-            for d in range(D):
-                flat.flat[count] = L.flat[d + m*D*M + mm*D];
+    for d in range(D):
+        count = 0;
+        for m in range(M):
+            for mm in range(m+1):
+                flat[count,d] = L[d, m, mm]
                 count = count +1
     return flat
 
@@ -59,12 +59,12 @@ def _backprop_gradient_pure(dL, L):
     """
     dL_dK = np.tril(dL).copy()
     N = L.shape[0]
-    for k in xrange(N - 1, -1, -1):
-        for j in xrange(k + 1, N):
-            for i in xrange(j, N):
+    for k in range(N - 1, -1, -1):
+        for j in range(k + 1, N):
+            for i in range(j, N):
                 dL_dK[i, k] -= dL_dK[i, j] * L[j, k]
                 dL_dK[j, k] -= dL_dK[i, j] * L[i, k]
-        for j in xrange(k + 1, N):
+        for j in range(k + 1, N):
             dL_dK[j, k] /= L[k, k]
             dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
         dL_dK[k, k] /= (2 * L[k, k])
@@ -74,7 +74,7 @@ def triang_to_cov(L):
     return np.dstack([np.dot(L[:,:,i], L[:,:,i].T) for i in range(L.shape[-1])])
 
 def multiple_dpotri(Ls):
-    return np.dstack([linalg.dpotri(np.asfortranarray(Ls[:,:,i]), lower=1)[0] for i in range(Ls.shape[-1])])
+    return np.array([linalg.dpotri(np.asfortranarray(Ls[i]), lower=1)[0] for i in range(Ls.shape[0])])
 
 def indexes_to_fix_for_low_rank(rank, size):
     """
@@ -100,7 +100,7 @@ def indexes_to_fix_for_low_rank(rank, size):
 if config.getboolean('cython', 'working'):
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
-    backprop_gradient = choleskies_cython.backprop_gradient
+    backprop_gradient = choleskies_cython.backprop_gradient_par_c
 else:
     backprop_gradient = _backprop_gradient_pure
     triang_to_flat =  _triang_to_flat_pure

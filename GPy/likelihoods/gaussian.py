@@ -316,6 +316,9 @@ class Gaussian(Likelihood):
         return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
+        if not isinstance(self.gp_link, link_functions.Identity):
+            return super(Gaussian, self).variational_expectations(Y=Y, m=m, v=v, gh_points=gh_points, Y_metadata=Y_metadata)
+
         lik_var = float(self.variance)
         F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var

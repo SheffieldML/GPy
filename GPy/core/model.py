@@ -76,7 +76,7 @@ class Model(Parameterized):
                 jobs = []
                 pool = mp.Pool(processes=num_processes)
                 for i in range(num_restarts):
-                    self.randomize()
+                    if i>0: self.randomize()
                     job = pool.apply_async(opt_wrapper, args=(self,), kwds=kwargs)
                     jobs.append(job)
 
@@ -90,7 +90,7 @@ class Model(Parameterized):
         for i in range(num_restarts):
             try:
                 if not parallel:
-                    self.randomize()
+                    if i>0: self.randomize()
                     self.optimize(**kwargs)
                 else:
                     self.optimization_runs.append(jobs[i].get())
@@ -257,7 +257,7 @@ class Model(Parameterized):
             optimizer = optimization.get_optimizer(optimizer)
             opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
 
-        with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook) as vo:
+        with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook, clear_after_finish=clear_after_finish) as vo:
             opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)
             vo.finish(opt)
 

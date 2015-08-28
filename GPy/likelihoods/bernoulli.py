@@ -85,6 +85,7 @@ class Bernoulli(Likelihood):
                 gh_x, gh_w = gh_points
 
 
+            gh_w = gh_w / np.sqrt(np.pi)
             shape = m.shape
             m,v,Y = m.flatten(), v.flatten(), Y.flatten()
             Ysign = np.where(Y==1,1,-1)
@@ -231,6 +232,17 @@ class Bernoulli(Likelihood):
         d3logpdf_dlink3 = np.where(y, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
         np.seterr(**state)
         return d3logpdf_dlink3
+
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
+        """
+        Get the "quantiles" of the binary labels (Bernoulli draws). all the
+        quantiles must be either 0 or 1, since those are the only values the
+        draw can take!
+        """
+        p = self.predictive_mean(mu, var)
+        return [np.asarray(p>(q/100.), dtype=np.int32) for q in quantiles]
+
+
 
     def samples(self, gp, Y_metadata=None):
         """

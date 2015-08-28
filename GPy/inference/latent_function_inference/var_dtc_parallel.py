@@ -172,18 +172,23 @@ class VarDTC_minibatch(LatentFunctionInference):
         if not np.isfinite(Kmm).all():
             print(Kmm)
         Lm = jitchol(Kmm)
+        LmInv = dtrtri(Lm)
 
-        LmInvPsi2LmInvT = backsub_both_sides(Lm,psi2_full,transpose='right')
+        LmInvPsi2LmInvT = LmInv.dot(psi2_full.dot(LmInv.T))
         Lambda = np.eye(Kmm.shape[0])+LmInvPsi2LmInvT
         LL = jitchol(Lambda)
+        LLInv = dtrtri(LL)
         logdet_L = 2.*np.sum(np.log(np.diag(LL)))
-        b = dtrtrs(LL,dtrtrs(Lm,psi1Y_full.T)[0])[0]
+        LmLLInv = LLInv.dot(LmInv)
+        
+        b  = psi1Y_full.dot(LmLLInv.T)
         bbt = np.square(b).sum()
-        v = dtrtrs(Lm,dtrtrs(LL,b,trans=1)[0],trans=1)[0]
-
-        tmp  = -backsub_both_sides(LL, tdot(b)+output_dim*np.eye(input_dim), transpose='left')
-        dL_dpsi2R = backsub_both_sides(Lm, tmp+output_dim*np.eye(input_dim), transpose='left')/2.
-
+        v = b.dot(LmLLInv).T
+        LLinvPsi1TYYTPsi1LLinvT = tdot(b.T)
+        
+        tmp = -LLInv.T.dot(LLinvPsi1TYYTPsi1LLinvT+output_dim*np.eye(input_dim)).dot(LLInv)
+        dL_dpsi2R = LmInv.T.dot(tmp+output_dim*np.eye(input_dim)).dot(LmInv)/2.
+        
         # Cache intermediate results
         self.midRes['dL_dpsi2R'] = dL_dpsi2R
         self.midRes['v'] = v
@@ -201,7 +206,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         # Compute dL_dKmm
         #======================================================================
 
-        dL_dKmm =  dL_dpsi2R - output_dim*backsub_both_sides(Lm, LmInvPsi2LmInvT, transpose='left')/2.
+        dL_dKmm =  dL_dpsi2R - output_dim*LmInv.T.dot(LmInvPsi2LmInvT).dot(LmInv)/2.
 
         #======================================================================
         # Compute the Posterior distribution of inducing points p(u|Y)

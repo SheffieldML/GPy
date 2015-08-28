@@ -6,7 +6,7 @@ import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use cython
-import coregionalize_cython
+from . import coregionalize_cython
 
 class Coregionalize(Kern):
     """
@@ -94,7 +94,7 @@ class Coregionalize(Kern):
             dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)
 
 
-        dkappa = np.diag(dL_dK_small)
+        dkappa = np.diag(dL_dK_small).copy()
         dL_dK_small += dL_dK_small.T
         dW = (self.W[:, None, :]*dL_dK_small[:, :, None]).sum(0)
 

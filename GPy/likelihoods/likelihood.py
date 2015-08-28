@@ -143,7 +143,7 @@ class Likelihood(Parameterized):
 
         p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
                            for yi, mi, vi, yi_m in zipped_values])
-        p_ystar = np.array(p_ystar).reshape(-1, 1)
+        p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
 
     def log_predictive_density_sampling(self, y_test, mu_star, var_star, Y_metadata=None, num_samples=1000):
@@ -173,6 +173,7 @@ class Likelihood(Parameterized):
 
         from scipy.misc import logsumexp
         log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
+        log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
 
 
@@ -265,8 +266,8 @@ class Likelihood(Parameterized):
             stop
 
         if self.size:
-            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None]) # Ntheta x (orig size) x N_{quad_points}
-            dF_dtheta = np.dot(dF_dtheta, gh_w)
+            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None], Y_metadata=Y_metadata) # Ntheta x (orig size) x N_{quad_points}
+            dF_dtheta = np.dot(dF_dtheta, gh_w)/np.sqrt(np.pi)
             dF_dtheta = dF_dtheta.reshape(self.size, shape[0], shape[1])
         else:
             dF_dtheta = None # Not yet implemented
@@ -297,12 +298,7 @@ class Likelihood(Parameterized):
                 return self.conditional_mean(f)*p
         scaled_mean = [quad(int_mean, fmin, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
-
         return mean
-
-    def _conditional_mean(self, f):
-        """Quadrature calculation of the conditional mean: E(Y_star|f)"""
-        raise NotImplementedError("implement this function to make predictions")
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
@@ -607,23 +603,30 @@ class Likelihood(Parameterized):
         :param full_cov: whether to use the full covariance or just the diagonal
         :type full_cov: Boolean
         """
-
-        pred_mean = self.predictive_mean(mu, var, Y_metadata)
-        pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata)
+        try:
+            pred_mean = self.predictive_mean(mu, var, Y_metadata=Y_metadata)
+            pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata=Y_metadata)
+        except NotImplementedError:
+            print("Finding predictive mean and variance via sampling rather than quadrature")
+            Nf_samp = 300
+            Ny_samp = 1
+            s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
+            ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+            pred_mean = np.mean(ss_y, axis=1)[:, None]
+            pred_var = np.var(ss_y, axis=1)[:, None]
 
         return pred_mean, pred_var
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         #compute the quantiles by sampling!!!
-        N_samp = 500
-        s = np.random.randn(mu.shape[0], N_samp)*np.sqrt(var) + mu
-        #ss_f = s.flatten()
-        #ss_y = self.samples(ss_f, Y_metadata)
-        #ss_y = self.samples(s, Y_metadata, samples=100)
-        ss_y = self.samples(s, Y_metadata)
-        #ss_y = ss_y.reshape(mu.shape[0], N_samp)
+        Nf_samp = 300
+        Ny_samp = 1
+        s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
+        ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+        #ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
 
-        return [np.percentile(ss_y ,q, axis=1)[:,None] for q in quantiles]
+        pred_quantiles = [np.percentile(ss_y, q, axis=1)[:,None] for q in quantiles]
+        return pred_quantiles
 
     def samples(self, gp, Y_metadata=None, samples=1):
         """

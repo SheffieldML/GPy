@@ -1,16 +1,14 @@
 # Copyright (c) 2012-2015, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-try:
-    import Tango
-    import pylab as pb
-except:
-    pass
 import numpy as np
+from . import Tango
 from base_plots import gpplot, x_frame1D, x_frame2D
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
 from scipy import sparse
+from ...core.parameterization.variational import VariationalPosterior
+from matplotlib import pyplot as plt
 
 def plot_fit(model, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
@@ -63,7 +61,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     #if len(which_data_ycols)==0:
         #raise ValueError('No data selected for plotting')
     if ax is None:
-        fig = pb.figure(num=fignum)
+        fig = plt.figure(num=fignum)
         ax = fig.add_subplot(111)
 
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
@@ -78,7 +76,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
     if predict_kw is None:
         predict_kw = {}
-    
+
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
     free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
@@ -106,11 +104,14 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                 upper = m + 2*np.sqrt(v)
         else:
             if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
-                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
-            else:
-                meta = None
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta, **predict_kw)
-            lower, upper = model.predict_quantiles(Xgrid, Y_metadata=meta)
+                extra_data = Xgrid[:,-1:].astype(np.int)
+                if Y_metadata is None:
+                    Y_metadata = {'output_index': extra_data}
+                else:
+                    Y_metadata['output_index'] = extra_data
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
+            fmu, fv = model._raw_predict(Xgrid, full_cov=False, **predict_kw)
+            lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
 
 
         for d in which_data_ycols:
@@ -119,9 +120,11 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples)
+            Ysim = model.posterior_samples(Xgrid, samples, Y_metadata=Y_metadata)
+            print Ysim.shape
+            print Xnew.shape
             for yi in Ysim.T:
-                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], '#3300FF', linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
         if samples_f: #NOTE not tested with fixed_inputs
@@ -184,14 +187,16 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             m, _ = model._raw_predict(Xgrid, **predict_kw)
         else:
             if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
-                meta = {'output_index': Xgrid[:,-1:].astype(np.int)}
-            else:
-                meta = None
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=meta, **predict_kw)
+                extra_data = Xgrid[:,-1:].astype(np.int)
+                if Y_metadata is None:
+                    Y_metadata = {'output_index': extra_data}
+                else:
+                    Y_metadata['output_index'] = extra_data
+            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
-            plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)
-            if not plot_raw: plots['dataplot'] = ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=pb.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
+            plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=plt.cm.jet)
+            if not plot_raw: plots['dataplot'] = ax.scatter(X[which_data_rows, free_dims[0]], X[which_data_rows, free_dims[1]], 40, Y[which_data_rows, d], cmap=plt.cm.jet, vmin=m.min(), vmax=m.max(), linewidth=0.)
 
         #set the limits of the plot to some sensible values
         ax.set_xlim(xmin[0], xmax[0])
@@ -219,7 +224,7 @@ def plot_fit_f(model, *args, **kwargs):
     kwargs['plot_raw'] = True
     plot_fit(model,*args, **kwargs)
 
-def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True):
+def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_all=False):
     """
     Convenience function for returning back fixed_inputs where the other inputs
     are fixed using fix_routine
@@ -235,8 +240,13 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True):
     f_inputs = []
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean.values.copy()
-    else:
+    elif isinstance(model.X, VariationalPosterior):
         X = model.X.values.copy()
+    else:
+        if X_all:
+            X = model.X_all.copy()
+        else:
+            X = model.X.copy()
     for i in range(X.shape[1]):
         if i not in non_fixed_inputs:
             if fix_routine == 'mean':

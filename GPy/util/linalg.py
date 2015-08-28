@@ -15,7 +15,7 @@ import warnings
 import os
 from .config import config
 import logging
-import linalg_cython
+from . import linalg_cython
 
 
 _scipyversion = np.float64((scipy.__version__).split('.')[:2])

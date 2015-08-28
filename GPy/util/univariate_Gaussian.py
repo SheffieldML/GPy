@@ -8,6 +8,7 @@ from scipy.special import ndtr as std_norm_cdf
 #define a standard normal pdf
 _sqrt_2pi = np.sqrt(2*np.pi)
 def std_norm_pdf(x):
+    x = np.clip(x,-1e150,1e150)
     return np.exp(-np.square(x)/2)/_sqrt_2pi
 
 def inv_std_norm_cdf(x):

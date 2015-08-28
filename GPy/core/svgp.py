@@ -5,7 +5,7 @@ import numpy as np
 from ..util import choleskies
 from .sparse_gp import SparseGP
 from .parameterization.param import Param
-from ..inference.latent_function_inference import SVGP as svgp_inf
+from ..inference.latent_function_inference.svgp import SVGP as svgp_inf
 
 
 class SVGP(SparseGP):
@@ -46,7 +46,7 @@ class SVGP(SparseGP):
             num_latent_functions = Y.shape[1]
 
         self.m = Param('q_u_mean', np.zeros((self.num_inducing, num_latent_functions)))
-        chol = choleskies.triang_to_flat(np.tile(np.eye(self.num_inducing)[:,:,None], (1,1,num_latent_functions)))
+        chol = choleskies.triang_to_flat(np.tile(np.eye(self.num_inducing)[None,:,:], (num_latent_functions, 1,1)))
         self.chol = Param('q_u_chol', chol)
         self.link_parameter(self.chol)
         self.link_parameter(self.m)

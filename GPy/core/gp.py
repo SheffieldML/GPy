@@ -60,9 +60,11 @@ class GP(Model):
             self.normalizer.scale_by(Y)
             self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
             self.Y = Y
-        else:
+        elif isinstance(Y, np.ndarray):
             self.Y = ObsAr(Y)
             self.Y_normalized = self.Y
+        else:
+            self.Y = Y
 
         if Y.shape[0] != self.num_data:
             #There can be cases where we want inputs than outputs, for example if we have multiple latent
@@ -88,7 +90,6 @@ class GP(Model):
             assert mean_function.input_dim == self.input_dim
             assert mean_function.output_dim == self.output_dim
             self.link_parameter(mean_function)
-
 
         #find a sensible inference method
         logger.info("initializing inference method")
@@ -182,7 +183,7 @@ class GP(Model):
         """
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, _Xnew, full_cov=False, kern=None):
+    def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """
         For making predictions, does not account for normalization or likelihood
 
@@ -198,23 +199,30 @@ class GP(Model):
         if kern is None:
             kern = self.kern
 
-        Kx = kern.K(_Xnew, self.X).T
-        WiKx = np.dot(self.posterior.woodbury_inv, Kx)
+        Kx = kern.K(self.X, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if full_cov:
-            Kxx = kern.K(_Xnew)
-            var = Kxx - np.dot(Kx.T, WiKx)
+            Kxx = kern.K(Xnew)
+            if self.posterior.woodbury_inv.ndim == 2:
+                var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+            elif self.posterior.woodbury_inv.ndim == 3:
+                var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+                for i in range(var.shape[2]):
+                    var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
+            var = var
         else:
-            Kxx = kern.Kdiag(_Xnew)
-            var = Kxx - np.sum(WiKx*Kx, 0)
-            var = var.reshape(-1, 1)
+            Kxx = kern.Kdiag(Xnew)
+            if self.posterior.woodbury_inv.ndim == 2:
+                var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
+            elif self.posterior.woodbury_inv.ndim == 3:
+                var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+                for i in range(var.shape[1]):
+                    var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+            var = var
+        #add in the mean function
+        if self.mean_function is not None:
+            mu += self.mean_function.f(Xnew)
 
-        #force mu to be a column vector
-        if len(mu.shape)==1: mu = mu[:,None]
-
-        #add the mean function in
-        if not self.mean_function is None:
-            mu += self.mean_function.f(_Xnew)
         return mu, var
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -244,10 +252,10 @@ class GP(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata)
+        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -255,13 +263,15 @@ class GP(Model):
         :type X: np.ndarray (Xnew x self.input_dim)
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
+        :param kern: optional kernel to use for prediction
+        :type predict_kw: dict
         :returns: list of quantiles for each X and predictive quantiles for interval combination
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
-        m, v = self._raw_predict(X,  full_cov=False)
+        m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
     def predictive_gradients(self, Xnew):
         """
@@ -331,7 +341,7 @@ class GP(Model):
         :returns: Ysim: set of simulations, a Numpy array (N x samples).
         """
         fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(fsim, Y_metadata)
+        Ysim = self.likelihood.samples(fsim, Y_metadata=Y_metadata)
         return Ysim
 
     def plot_f(self, plot_limits=None, which_data_rows='all',
@@ -473,16 +483,16 @@ class GP(Model):
             self.inference_method.on_optimization_end()
             raise
 
-    def infer_newX(self, Y_new, optimize=True, ):
+    def infer_newX(self, Y_new, optimize=True):
         """
-        Infer the distribution of X for the new observed data *Y_new*.
+        Infer X for the new observed data *Y_new*.
 
         :param Y_new: the new observed data for inference
         :type Y_new: numpy.ndarray
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
-        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` or numpy.ndarray, :class:`~GPy.core.model.Model`)
+        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)

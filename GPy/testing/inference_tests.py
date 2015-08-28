@@ -8,11 +8,12 @@ The test cases for various inference algorithms
 import unittest, itertools
 import numpy as np
 import GPy
-
+#np.seterr(invalid='raise')
 
 class InferenceXTestCase(unittest.TestCase):
 
     def genData(self):
+        np.random.seed(1)
         D1,D2,N = 12,12,50
 
         x = np.linspace(0, 4 * np.pi, N)[:, None]

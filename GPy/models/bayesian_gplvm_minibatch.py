@@ -120,8 +120,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         E.g. set the gradients of parameters, etc.
         """
         super(BayesianGPLVMMiniBatch, self)._outer_values_update(full_values)
-        print full_values['kerngrad']
-        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         if self.has_uncertain_inputs():
              meangrad_tmp, vargrad_tmp = self.kern.gradients_qX_expectations(
                                                 variational_posterior=self.X,

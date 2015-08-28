@@ -123,6 +123,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
 
     def _outer_init_full_values(self):
         full_values = super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
+        full_values['dL_dpsi0'] = np.zeros(self.X.shape[0])
+        full_values['dL_dpsi1'] = np.zeros((self.X.shape[0], self.Z.shape[0]))
         return full_values
 
     def parameters_changed(self):

@@ -214,8 +214,8 @@ class SparseGPMiniBatch(SparseGP):
         to initialize the gradients for the mean and the variance in order to
         have the full gradient for indexing)
         """
-        return {'dL_dpsi0': np.zeros(self.X.shape[0]),
-                'dL_dpsi1': np.zeros((self.X.shape[0], self.Z.shape[0]))}
+        return {'dL_dKdiag': np.zeros(self.X.shape[0]),
+                'dL_dKnm': np.zeros((self.X.shape[0], self.Z.shape[0]))}
 
     def _outer_loop_for_missing_data(self):
         Lm = None
@@ -243,10 +243,8 @@ class SparseGPMiniBatch(SparseGP):
             psi1 = self.kern.psi1(self.Z, self.X)
             psi2 = self.kern.psi2(self.Z, self.X)
         else:
-            if psi0 is None:
-                psi0 = kern.Kdiag(X)
-            if psi1 is None:
-                psi1 = kern.K(X, Z)
+            psi0 = self.kern.Kdiag(self.X)
+            psi1 = self.kern.K(self.X, self.Z)
             psi2 = None
 
         self.psi0 = psi0
@@ -261,8 +259,12 @@ class SparseGPMiniBatch(SparseGP):
 
             psi0ni = psi0[ninan]
             psi1ni = psi1[ninan]
-            psi2ni = psi2[ninan]
-            value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan)
+            if self.has_uncertain_inputs():
+                psi2ni = psi2[ninan]
+                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan)
+            else:
+                psi2ni = None
+                value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)
 
             posterior, log_marginal_likelihood, grad_dict = self._inner_parameters_changed(
                                 self.kern, self.X[ninan],

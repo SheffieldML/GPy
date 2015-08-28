@@ -261,7 +261,7 @@ class SparseGPMiniBatch(SparseGP):
             psi1ni = psi1[ninan]
             if self.has_uncertain_inputs():
                 psi2ni = psi2[ninan]
-                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan)
+                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan)
             else:
                 psi2ni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)

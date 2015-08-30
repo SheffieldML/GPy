@@ -167,21 +167,27 @@ class SparseGPMiniBatch(SparseGP):
             dL_dKmm = full_values['dL_dKmm']
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             full_values['kerngrad'] = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X,
-                                                    Z=self.Z,
-                                                    dL_dpsi0=full_values['dL_dpsi0'],
-                                                    dL_dpsi1=full_values['dL_dpsi1'],
-                                                    dL_dpsi2=full_values['dL_dpsi2'])
+            self.kern.update_gradients_expectations(
+                                                variational_posterior=self.X,
+                                                Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
+                                                dL_dpsi1=full_values['dL_dpsi1'],
+                                                dL_dpsi2=full_values['dL_dpsi2'],
+                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+            #self.kern.update_gradients_expectations(variational_posterior=self.X,
+                                                    #Z=self.Z,
+                                                    #dL_dpsi0=full_values['dL_dpsi0'],
+                                                    #dL_dpsi1=full_values['dL_dpsi1'],
+                                                    #dL_dpsi2=full_values['dL_dpsi2'])
             full_values['kerngrad'] += self.kern.gradient
 
             #gradients wrt Z
             full_values['Zgrad'] = self.kern.gradients_X(dL_dKmm, self.Z)
             full_values['Zgrad'] += self.kern.gradients_Z_expectations(
-                               full_values['dL_dpsi0'],
-                               full_values['dL_dpsi1'],
-                               full_values['dL_dpsi2'],
-                               Z=self.Z,
-                               variational_posterior=self.X)
+                                            variational_posterior=self.X,
+                                            Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
+                                            dL_dpsi1=full_values['dL_dpsi1'],
+                                            dL_dpsi2=full_values['dL_dpsi2'],
+                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
         else:
             #gradients wrt kernel
             self.kern.update_gradients_diag(full_values['dL_dKdiag'], self.X)

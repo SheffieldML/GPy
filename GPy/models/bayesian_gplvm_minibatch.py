@@ -126,7 +126,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                                 Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                                 dL_dpsi1=full_values['dL_dpsi1'],
                                                 dL_dpsi2=full_values['dL_dpsi2'],
-                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
+                                                Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
              full_values['meangrad'] += meangrad_tmp
              full_values['vargrad'] += vargrad_tmp
         else:
@@ -156,6 +157,11 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         full_values['vargrad'] = np.zeros((self.X.shape[0], self.X.shape[1]))
         full_values['dL_dpsi0'] = np.zeros(self.X.shape[0])
         full_values['dL_dpsi1'] = np.zeros((self.X.shape[0], self.Z.shape[0]))
+        full_values['dL_dpsi2'] = np.zeros((self.Z.shape[0], self.Z.shape[0]))
+
+        full_values['Lpsi0'] = np.zeros(self.X.shape[0])
+        full_values['Lpsi1'] = np.zeros((self.X.shape[0], self.Z.shape[0]))
+        full_values['Lpsi2'] = np.zeros((self.X.shape[0], self.Z.shape[0], self.Z.shape[0]))
         return full_values
 
     def parameters_changed(self):

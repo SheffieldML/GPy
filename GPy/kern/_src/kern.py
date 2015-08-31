@@ -117,7 +117,7 @@ class Kern(Parameterized):
         raise NotImplementedError
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                      psi0=None, psi1=None, psi2=None):
+                                      psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         """
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
@@ -129,26 +129,26 @@ class Kern(Parameterized):
                         dL_dpsi2 * dpsi2_d{theta_i}
         """
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                                        psi0=psi0, psi1=psi1, psi2=psi2)[0]
+                                                        psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)[0]
         self.gradient[:] = dtheta
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                psi0=None, psi1=None, psi2=None):
+                                psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                                      psi0=psi0, psi1=psi1, psi2=psi2)[1]
+                                                      psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)[1]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                    psi0=None, psi1=None, psi2=None):
+                                    psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                                      psi0=psi0, psi1=psi1, psi2=psi2)[2:]
+                                                      psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)[2:]
 
     def plot(self, x=None, fignum=None, ax=None, title=None, plot_limits=None, resolution=None, **mpl_kwargs):
         """

@@ -24,10 +24,10 @@ class PSICOMP_RBF(Pickleable):
 
     @Cache_this(limit=10, ignore_args=(0,1,2,3))
     def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
-                                  psi0=None, psi1=None, psi2=None):
+                                  psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         if isinstance(variational_posterior, variational.NormalPosterior):
             return rbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
-                                                          psi0=psi0, psi1=psi1, psi2=psi2)
+                                                          psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         else:

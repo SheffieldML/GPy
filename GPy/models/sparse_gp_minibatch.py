@@ -106,6 +106,10 @@ class SparseGPMiniBatch(SparseGP):
         posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
                                                                                         dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2_sum_n, **kwargs)
 
+        if self.has_uncertain_inputs():
+            grad_dict['Lpsi0'] = grad_dict['dL_dpsi0']*psi0
+            grad_dict['Lpsi1'] = grad_dict['dL_dpsi1']*psi1
+            grad_dict['Lpsi2'] = grad_dict['dL_dpsi2']*psi2
         return posterior, log_marginal_likelihood, grad_dict
 
     def _inner_take_over_or_update(self, full_values=None, current_values=None, value_indices=None):
@@ -172,7 +176,8 @@ class SparseGPMiniBatch(SparseGP):
                                                 Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                                 dL_dpsi1=full_values['dL_dpsi1'],
                                                 dL_dpsi2=full_values['dL_dpsi2'],
-                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
+                                                Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
             #self.kern.update_gradients_expectations(variational_posterior=self.X,
                                                     #Z=self.Z,
                                                     #dL_dpsi0=full_values['dL_dpsi0'],
@@ -187,7 +192,8 @@ class SparseGPMiniBatch(SparseGP):
                                             Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                             dL_dpsi1=full_values['dL_dpsi1'],
                                             dL_dpsi2=full_values['dL_dpsi2'],
-                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
+                                            Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
         else:
             #gradients wrt kernel
             self.kern.update_gradients_diag(full_values['dL_dKdiag'], self.X)
@@ -267,7 +273,9 @@ class SparseGPMiniBatch(SparseGP):
             psi1ni = psi1[ninan]
             if self.has_uncertain_inputs():
                 psi2ni = psi2[ninan]
-                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan)
+                #value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan)
+                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan,
+                                     Lpsi0=ninan, Lpsi1=ninan, Lpsi2=ninan)
             else:
                 psi2ni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)

@@ -147,7 +147,11 @@ class SparseGPMiniBatch(SparseGP):
                 if np.isscalar(current_values[key]):
                     full_values[key] += current_values[key]
                 else:
-                    full_values[key][index] += current_values[key]
+                    from ..core.parameterization.observable_array import ObsAr
+                    if isinstance(full_values[key], ObsAr):
+                        full_values[key].values[index] += current_values[key]
+                    else:
+                        full_values[key][index] += current_values[key]
             else:
                 full_values[key] = current_values[key]
 
@@ -178,11 +182,6 @@ class SparseGPMiniBatch(SparseGP):
                                                 dL_dpsi2=full_values['dL_dpsi2'],
                                                 psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
                                                 Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
-            #self.kern.update_gradients_expectations(variational_posterior=self.X,
-                                                    #Z=self.Z,
-                                                    #dL_dpsi0=full_values['dL_dpsi0'],
-                                                    #dL_dpsi1=full_values['dL_dpsi1'],
-                                                    #dL_dpsi2=full_values['dL_dpsi2'])
             full_values['kerngrad'] += self.kern.gradient
 
             #gradients wrt Z
@@ -251,9 +250,10 @@ class SparseGPMiniBatch(SparseGP):
         #Compute the psi statistics for N once, but don't sum out N in psi2
         if self.has_uncertain_inputs():
             self.kern.return_psi2_n = True
-            psi0 = self.kern.psi0(self.Z, self.X)
-            psi1 = self.kern.psi1(self.Z, self.X)
-            psi2 = self.kern.psi2(self.Z, self.X)
+            from ..core.parameterization.observable_array import ObsAr
+            psi0 = ObsAr(self.kern.psi0(self.Z, self.X))
+            psi1 = ObsAr(self.kern.psi1(self.Z, self.X))
+            psi2 = ObsAr(self.kern.psi2(self.Z, self.X))
         else:
             psi0 = self.kern.Kdiag(self.X)
             psi1 = self.kern.K(self.X, self.Z)

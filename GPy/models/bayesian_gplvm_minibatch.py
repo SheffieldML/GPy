@@ -9,6 +9,7 @@ from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_miniba
 import logging
 from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 from GPy.core.parameterization.param import Param
+from GPy.core.parameterization.observable_array import ObsAr
 
 class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     """
@@ -134,17 +135,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
             full_values['Xgrad'] = self.kern.gradients_X(full_values['dL_dKnm'], self.X, self.Z)
             full_values['Xgrad'] += self.kern.gradients_X_diag(full_values['dL_dKdiag'], self.X)
 
-        #kl_fctr = self.kl_factr
-        #if self.has_uncertain_inputs():
-            #self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
-
-            # Subsetting Variational Posterior objects, makes the gradients
-            # empty. We need them to be 0 though:
-            #self.X.mean.gradient[:] = 0
-            #self.X.variance.gradient[:] = 0
-
-            #self.variational_prior.update_gradients_KL(self.X)
-
         if self.has_uncertain_inputs():
             self.X.mean.gradient = full_values['meangrad']
             self.X.variance.gradient = full_values['vargrad']
@@ -155,13 +145,15 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         full_values = super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
         full_values['meangrad'] = np.zeros((self.X.shape[0], self.X.shape[1]))
         full_values['vargrad'] = np.zeros((self.X.shape[0], self.X.shape[1]))
-        full_values['dL_dpsi0'] = np.zeros(self.X.shape[0])
-        full_values['dL_dpsi1'] = np.zeros((self.X.shape[0], self.Z.shape[0]))
-        full_values['dL_dpsi2'] = np.zeros((self.Z.shape[0], self.Z.shape[0]))
 
-        full_values['Lpsi0'] = np.zeros(self.X.shape[0])
-        full_values['Lpsi1'] = np.zeros((self.X.shape[0], self.Z.shape[0]))
-        full_values['Lpsi2'] = np.zeros((self.X.shape[0], self.Z.shape[0], self.Z.shape[0]))
+        #FIXME Hack
+        full_values['dL_dpsi0'] = ObsAr(np.zeros(self.X.shape[0]))
+        full_values['dL_dpsi1'] = ObsAr(np.zeros((self.X.shape[0], self.Z.shape[0])))
+        full_values['dL_dpsi2'] = ObsAr(np.zeros((self.Z.shape[0], self.Z.shape[0])))
+
+        full_values['Lpsi0'] = ObsAr(np.zeros(self.X.shape[0]))
+        full_values['Lpsi1'] = ObsAr(np.zeros((self.X.shape[0], self.Z.shape[0])))
+        full_values['Lpsi2'] = ObsAr(np.zeros((self.X.shape[0], self.Z.shape[0], self.Z.shape[0])))
         return full_values
 
     def parameters_changed(self):

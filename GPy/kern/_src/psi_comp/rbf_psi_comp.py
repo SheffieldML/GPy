@@ -68,6 +68,7 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
     return _psi2
 
+@profile
 def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
                               psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
     ARD = (len(lengthscale)!=1)
@@ -121,6 +122,7 @@ def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None, Lpsi1=No
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
+@profile
 def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=None):
     """
     Z - MxQ
@@ -156,8 +158,14 @@ def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=No
     _dL_dvar = Lpsi2sum.sum()*2/variance
     _dL_dmu = (-2*denom) * (mu*Lpsi2sum[:,None]-Lpsi2Zhat)
     _dL_dS = (2*np.square(denom))*(np.square(mu)*Lpsi2sum[:,None]-2*mu*Lpsi2Zhat+Lpsi2Zhat2) - denom*Lpsi2sum[:,None]
-    _dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
-             2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
+    _dL_dZ1 = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2
+    _dL_dZ2 = np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2
+    _dL_dZ3 = 2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom)
+    _dL_dZ4 = - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z)
+    _dL_dZ5 = - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
+    _dL_dZ = _dL_dZ1 + _dL_dZ2 + _dL_dZ3 + _dL_dZ4 + _dL_dZ5
+    #_dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
+             #2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
     _dL_dl = 2*lengthscale* ((S/lengthscale2*denom+np.square(mu*denom))*Lpsi2sum[:,None]+(Lpsi2Z2-Lpsi2Z2p)/(2*np.square(lengthscale2))-
                              (2*mu*denom2)*Lpsi2Zhat+denom2*Lpsi2Zhat2).sum(axis=0)
 

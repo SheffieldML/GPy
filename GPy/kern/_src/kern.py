@@ -58,12 +58,7 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
-        self._return_psi2_n_flag = ObsAr(np.zeros(1)).astype(bool)
-
-        #FIXME: temporary solution
-        from ...core.parameterization.lists_and_dicts import ObserverList
-        self._return_psi2_n_flag.observers = ObserverList()
-        self._return_psi2_n_flag._update_on = True
+        self._return_psi2_n_flag = ObsAr(np.zeros(1).astype(bool))
 
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()

@@ -4,6 +4,7 @@
 import numpy as np
 from ...core import Model
 from ...core.parameterization import variational
+from GPy.core.parameterization.variational import VariationalPosterior
 
 def infer_newX(model, Y_new, optimize=True, init='L2'):
     """
@@ -60,7 +61,8 @@ class InferenceX(Model):
 #                 self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
-        if hasattr(model, 'variational_prior'):
+        from ...core.parameterization.variational import VariationalPosterior
+        if isinstance(model.X, VariationalPosterior):
             self.uncertain_input = True
             from ...models.ss_gplvm import IBPPrior
             from ...models.ss_mrd import IBPPrior_SSMRD
@@ -71,7 +73,7 @@ class InferenceX(Model):
                 self.variational_prior = model.variational_prior.copy()
         else:
             self.uncertain_input = False
-        if hasattr(model, 'inducing_inputs'):
+        if hasattr(model, 'Z'):
             self.sparse_gp = True
             self.Z = model.Z.copy()
         else:

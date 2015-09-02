@@ -100,6 +100,8 @@ class Kern(Parameterized):
         return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
+    def gradients_XX(self, dL_dK, X, X2):
+        raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
         raise NotImplementedError
 

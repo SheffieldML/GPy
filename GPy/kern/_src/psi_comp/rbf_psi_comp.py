@@ -68,7 +68,6 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
     return _psi2
 
-@profile
 def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
                               psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
     ARD = (len(lengthscale)!=1)
@@ -122,7 +121,6 @@ def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None, Lpsi1=No
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
-@profile
 def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=None):
     """
     Z - MxQ

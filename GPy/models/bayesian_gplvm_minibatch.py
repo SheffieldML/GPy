@@ -122,15 +122,15 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         """
         super(BayesianGPLVMMiniBatch, self)._outer_values_update(full_values)
         if self.has_uncertain_inputs():
-             meangrad_tmp, vargrad_tmp = self.kern.gradients_qX_expectations(
-                                                variational_posterior=self.X,
-                                                Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
-                                                dL_dpsi1=full_values['dL_dpsi1'],
-                                                dL_dpsi2=full_values['dL_dpsi2'],
-                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
-                                                Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
-             full_values['meangrad'] += meangrad_tmp
-             full_values['vargrad'] += vargrad_tmp
+            meangrad_tmp, vargrad_tmp = self.kern.gradients_qX_expectations(
+                                            variational_posterior=self.X,
+                                            Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
+                                            dL_dpsi1=full_values['dL_dpsi1'],
+                                            dL_dpsi2=full_values['dL_dpsi2'],
+                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
+                                            Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
+            full_values['meangrad'] += meangrad_tmp
+            full_values['vargrad'] += vargrad_tmp
         else:
             full_values['Xgrad'] = self.kern.gradients_X(full_values['dL_dKnm'], self.X, self.Z)
             full_values['Xgrad'] += self.kern.gradients_X_diag(full_values['dL_dKdiag'], self.X)
@@ -146,7 +146,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         full_values['meangrad'] = np.zeros((self.X.shape[0], self.X.shape[1]))
         full_values['vargrad'] = np.zeros((self.X.shape[0], self.X.shape[1]))
 
-        #FIXME Hack
         full_values['dL_dpsi0'] = ObsAr(np.zeros(self.X.shape[0]))
         full_values['dL_dpsi1'] = ObsAr(np.zeros((self.X.shape[0], self.Z.shape[0])))
         full_values['dL_dpsi2'] = ObsAr(np.zeros((self.Z.shape[0], self.Z.shape[0])))

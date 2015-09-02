@@ -31,6 +31,9 @@ class RBF(Stationary):
     def dK_dr(self, r):
         return -r*self.K_of_r(r)
 
+    def dK2_drdr(self, r):
+        return (r**2-1)*self.K_of_r(r)
+
     def __getstate__(self):
         dc = super(RBF, self).__getstate__()
         if self.useGPU:

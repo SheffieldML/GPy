@@ -146,7 +146,7 @@ class VerboseOptimization(object):
         seconds = time.time()-self.start
         #sys.stdout.write(" "*len(self.message))
         self.deltat += seconds
-        if self.deltat > .2:
+        if self.deltat > .3 or seconds < .3:
             self.print_out(seconds)
             self.deltat = 0
 

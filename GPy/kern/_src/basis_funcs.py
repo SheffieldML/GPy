@@ -11,7 +11,7 @@ class BasisFuncKernel(Kern):
     def __init__(self, input_dim, variance=1., active_dims=None, ARD=False, name='basis func kernel'):
         """
         Abstract superclass for kernels with explicit basis functions for use in GPy.
-        
+
         This class does NOT automatically add an offset to the design matrix phi!
         """
         super(BasisFuncKernel, self).__init__(input_dim, active_dims, name)
@@ -23,24 +23,24 @@ class BasisFuncKernel(Kern):
             variance = np.array(variance)
         self.variance = Param('variance', variance, Logexp())
         self.link_parameter(self.variance)
-    
+
     def parameters_changed(self):
         self.alpha = np.sqrt(self.variance)
         self.beta = 1./self.variance
-    
+
     @Cache_this(limit=3, ignore_args=())
     def phi(self, X):
         return self._phi(X)
 
     def _phi(self, X):
         raise NotImplementedError('Overwrite this _phi function, which maps the input X into the higher dimensional space and returns the design matrix Phi')
-        
+
     def K(self, X, X2=None):
         return self._K(X, X2)
 
     def Kdiag(self, X, X2=None):
         return np.diag(self._K(X, X2))
-    
+
     def update_gradients_full(self, dL_dK, X, X2=None):
         if self.ARD:
             phi1 = self.phi(X)
@@ -51,22 +51,22 @@ class BasisFuncKernel(Kern):
                 self.variance.gradient = np.einsum('ij,iq,jq->q', dL_dK, phi1, phi2)
         else:
             self.variance.gradient = np.einsum('ij,ij', dL_dK, self._K(X, X2)) * self.beta
-        
+
     def update_gradients_diag(self, dL_dKdiag, X):
         if self.ARD:
             phi1 = self.phi(X)
             self.variance.gradient = np.einsum('i,iq,iq->q', dL_dKdiag, phi1, phi1)
         else:
             self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.Kdiag(X)) * self.beta
-        
+
     def concatenate_offset(self, X):
         return np.c_[np.ones((X.shape[0], 1)), X]
-    
+
     def posterior_inf(self, X=None, posterior=None):
         """
-        Do the posterior inference on the parameters given this kernels functions 
-        and the model posterior, which has to be a GPy posterior, usually found at m.posterior, if m is a GPy model. 
-        If not given we search for the the highest parent to be a model, containing the posterior, and for X accordingly. 
+        Do the posterior inference on the parameters given this kernels functions
+        and the model posterior, which has to be a GPy posterior, usually found at m.posterior, if m is a GPy model.
+        If not given we search for the the highest parent to be a model, containing the posterior, and for X accordingly.
         """
         if X is None:
             try:
@@ -80,7 +80,7 @@ class BasisFuncKernel(Kern):
                 raise RuntimeError("This kernel is not part of a model and cannot be used for posterior inference")
         phi_alpha = self.phi(X) * self.variance
         return (phi_alpha).T.dot(posterior.woodbury_vector), (np.eye(phi_alpha.shape[1])*self.variance - mdot(phi_alpha.T, posterior.woodbury_inv, phi_alpha))
-    
+
     @Cache_this(limit=3, ignore_args=())
     def _K(self, X, X2):
         if X2 is None or X is X2:
@@ -95,35 +95,35 @@ class BasisFuncKernel(Kern):
                 phi1 = phi1[:, None]
                 phi2 = phi2[:, None]
             return phi1.dot(phi2.T)
-        
-        
+
+
 class LinearSlopeBasisFuncKernel(BasisFuncKernel):
     def __init__(self, input_dim, start, stop, variance=1., active_dims=None, ARD=False, name='linear_segment'):
         """
         A linear segment transformation. The segments start at start, \
-        are then linear to stop and constant again. The segments are 
-        normalized, so that they have exactly as much mass above 
-        as below the origin. 
-        
-        Start and stop can be tuples or lists of starts and stops. 
+        are then linear to stop and constant again. The segments are
+        normalized, so that they have exactly as much mass above
+        as below the origin.
+
+        Start and stop can be tuples or lists of starts and stops.
         Behaviour of start stop is as np.where(X<start) would do.
         """
-        
+
         self.start = np.array(start)
         self.stop = np.array(stop)
         super(LinearSlopeBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
-    
+
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
         phi = np.where(X < self.start, self.start, X)
         phi = np.where(phi > self.stop, self.stop, phi)
         return ((phi-(self.stop+self.start)/2.))#/(.5*(self.stop-self.start)))-1.
-    
+
 class ChangePointBasisFuncKernel(BasisFuncKernel):
     def __init__(self, input_dim, changepoint, variance=1., active_dims=None, ARD=False, name='changepoint'):
         self.changepoint = np.array(changepoint)
         super(ChangePointBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
-    
+
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
         return np.where((X < self.changepoint), -1, 1)
@@ -131,7 +131,7 @@ class ChangePointBasisFuncKernel(BasisFuncKernel):
 class DomainKernel(LinearSlopeBasisFuncKernel):
     def __init__(self, input_dim, start, stop, variance=1., active_dims=None, ARD=False, name='constant_domain'):
         super(DomainKernel, self).__init__(input_dim, start, stop, variance, active_dims, ARD, name)
-    
+
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
         phi = np.where((X>self.start)*(X<self.stop), 1, 0)
@@ -147,7 +147,7 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
             self.slope = Param('slope', slope, Logexp())
         super(LogisticBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
         self.link_parameter(self.slope)
-    
+
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
         import scipy as sp
@@ -156,7 +156,7 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
 
     def parameters_changed(self):
         BasisFuncKernel.parameters_changed(self)
-    
+
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(LogisticBasisFuncKernel, self).update_gradients_full(dL_dK, X, X2)
         if X2 is None or X is X2:

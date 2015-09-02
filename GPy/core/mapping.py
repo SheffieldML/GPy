@@ -32,7 +32,7 @@ class Bijective_mapping(Mapping):
     also back from f to X. The inverse mapping is called g().
     """
     def __init__(self, input_dim, output_dim, name='bijective_mapping'):
-        super(Bijective_apping, self).__init__(name=name)
+        super(Bijective_mapping, self).__init__(name=name)
 
     def g(self, f):
         """Inverse mapping from output domain of the function to the inputs."""

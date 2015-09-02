@@ -326,7 +326,7 @@ class Gaussian(Likelihood):
         dF_dtheta = -0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2)
         return F, dF_dmu, dF_dv, dF_dtheta.reshape(1, Y.shape[0], Y.shape[1])
 
-class Heteroscedastic_Gaussian(Gaussian):
+class HeteroscedasticGaussian(Gaussian):
     def __init__(self, Y_metadata, gp_link=None, variance=1., name='het_Gauss'):
         if gp_link is None:
             gp_link = link_functions.Identity()
@@ -335,7 +335,7 @@ class Heteroscedastic_Gaussian(Gaussian):
             print("Warning, Exact inference is not implemeted for non-identity link functions,\
             if you are not already, ensure Laplace inference_method is used")
 
-        super(Heteroscedastic_Gaussian, self).__init__(gp_link, np.ones(Y_metadata['output_index'].shape[0])*variance, name)
+        super(HeteroscedasticGaussian, self).__init__(gp_link, np.ones(Y_metadata['output_index'].shape[0])*variance, name)
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
         return dL_dKdiag[Y_metadata['output_index']][:,0]

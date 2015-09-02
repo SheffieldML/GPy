@@ -407,8 +407,8 @@ class GP(Model):
     def plot(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
-        plot_raw=False,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx', predict_kw=None):
+        plot_raw=False, linecol=None,fillcol=None, Y_metadata=None,
+        data_symbol='kx', predict_kw=None, plot_training_data=True):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -445,6 +445,8 @@ class GP(Model):
         :type Y_metadata: dict
         :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
         :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        :param plot_training_data: whether or not to plot the training points
+        :type plot_training_data: boolean
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -457,7 +459,85 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, predict_kw=predict_kw, **kw)
+                                     data_symbol=data_symbol, predict_kw=predict_kw, 
+                                     plot_training_data=plot_training_data, **kw)
+
+
+    def plot_data(self, which_data_rows='all',
+        which_data_ycols='all', visible_dims=None,
+        fignum=None, ax=None, data_symbol='kx'):
+        """
+        Plot the training data
+          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
+
+        Can plot only part of the data
+        using which_data_rows and which_data_ycols.
+
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_ycols: 'all' or a list of integers
+        :param visible_dims: an array specifying the input dimensions to plot (maximum two)
+        :type visible_dims: a numpy array
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param levels: number of levels to plot in a contour plot.
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
+        :type levels: int
+        :param samples: the number of a posteriori samples to plot
+        :type samples: int
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
+        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
+        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
+        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import models_plots
+        kw = {}
+        return models_plots.plot_data(self, which_data_rows,
+                                     which_data_ycols, visible_dims,
+                                     fignum, ax, data_symbol, **kw)
+
+
+    def plot_fit_errorbars(self, which_data_rows='all',
+            which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
+            linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True):
+
+        """
+        Plot the posterior error bars corresponding to the training data
+          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
+
+        Can plot only part of the data
+        using which_data_rows and which_data_ycols.
+
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_rows: 'all' or a list of integers
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param plot_training_data: whether or not to plot the training points
+        :type plot_training_data: boolean
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import models_plots
+        kw = {}
+        return models_plots.plot_fit_errorbars(self, which_data_rows, which_data_ycols, fixed_inputs,
+                                    fignum, ax, linecol, data_symbol,
+                                    predict_kw, plot_training_data, **kw)
+
 
     def input_sensitivity(self, summarize=True):
         """

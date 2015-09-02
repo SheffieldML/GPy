@@ -405,9 +405,10 @@ class GP(Model):
 
         for each point N in Xnew
         """
-        from ..util.linalg import jitchol
         G = self.predict_wishard_embedding(Xnew, kern)
-        return np.array([2*np.sqrt(np.exp(np.sum(np.log(np.diag(jitchol(G[n, :, :])))))) for n in range(Xnew.shape[0])])
+        from ..util.linalg import jitchol
+        return np.array([np.sqrt(np.exp(2*np.sum(np.log(np.diag(jitchol(G[n, :, :])))))) for n in range(Xnew.shape[0])])
+        #return np.array([np.sqrt(np.linalg.det(G[n, :, :])) for n in range(Xnew.shape[0])])
 
     def posterior_samples_f(self,X,size=10, full_cov=True):
         """
@@ -563,6 +564,22 @@ class GP(Model):
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
                                      data_symbol=data_symbol, predict_kw=predict_kw, **kw)
+
+    def plot_magnification(self, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
+                fignum=None, legend=True,
+                plot_limits=None,
+                aspect='auto', updates=False, **kwargs):
+
+        import sys
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import dim_reduction_plots
+
+        return dim_reduction_plots.plot_magnification(self, labels, which_indices,
+                resolution, ax, marker, s,
+                fignum, False, legend,
+                plot_limits, aspect, updates, **kwargs)
+
 
     def input_sensitivity(self, summarize=True):
         """

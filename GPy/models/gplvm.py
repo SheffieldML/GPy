@@ -81,18 +81,3 @@ class GPLVM(GP):
                 resolution, ax, marker, s,
                 fignum, False, legend,
                 plot_limits, aspect, updates, **kwargs)
-
-    def plot_magnification(self, labels=None, which_indices=None,
-                resolution=50, ax=None, marker='o', s=40,
-                fignum=None, legend=True,
-                plot_limits=None,
-                aspect='auto', updates=False, **kwargs):
-
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
-
-        return dim_reduction_plots.plot_magnification(self, labels, which_indices,
-                resolution, ax, marker, s,
-                fignum, False, legend,
-                plot_limits, aspect, updates, **kwargs)

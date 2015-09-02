@@ -322,11 +322,11 @@ def plot_magnification(model, labels=None, which_indices=None,
 
         index = np.nonzero(labels == ul)[0]
         if model.input_dim == 1:
-            x = model.X[index, input_1]
+            x = X[index, input_1]
             y = np.zeros(index.size)
         else:
-            x = model.X[index, input_1]
-            y = model.X[index, input_2]
+            x = X[index, input_1]
+            y = X[index, input_2]
         ax.scatter(x, y, marker=m, s=s, color=Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
@@ -335,13 +335,14 @@ def plot_magnification(model, labels=None, which_indices=None,
     if not np.all(labels == 1.) and legend:
         ax.legend(loc=0, numpoints=1)
 
-    ax.set_xlim(xmin[0], xmax[0])
-    ax.set_ylim(xmin[1], xmax[1])
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
     ax.grid(b=False) # remove the grid if present, it doesn't look good
     ax.set_aspect('auto') # set a nice aspect ratio
 
     if plot_inducing:
-        ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
+        Z = model.Z
+        ax.scatter(Z[:, input_1], Z[:, input_2], c='w', s=18, marker="^", edgecolor='k', linewidth=.3, alpha=.7)
 
     if updates:
         fig.canvas.show()
@@ -386,8 +387,8 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
             this_label = 'class %i' % i
         m = marker.next()
         index = np.nonzero(data_labels == ul)[0]
-        x = model.X[index, input_1]
-        y = model.X[index, input_2]
+        x = X[index, input_1]
+        y = X[index, input_2]
         ax.scatter(x, y, marker=m, s=data_s, color=Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
@@ -395,7 +396,7 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
 
     controller = ImAnnotateController(ax,
                                   plot_function,
-                                  tuple(model.X.min(0)[:, significant_dims]) + tuple(model.X.max(0)[:, significant_dims]),
+                                  tuple(X.min(0)[:, significant_dims]) + tuple(X.max(0)[:, significant_dims]),
                                   resolution=resolution,
                                   aspect=aspect,
                                   cmap=get_cmap('jet'),

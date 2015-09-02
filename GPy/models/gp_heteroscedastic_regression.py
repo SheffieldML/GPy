@@ -16,6 +16,8 @@ class GPHeteroscedasticRegression(GP):
     :param X: input observations
     :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf
+
+    NB: This model does not make inference on the noise outside the training set
     """
     def __init__(self, X, Y, kernel=None, Y_metadata=None):
 

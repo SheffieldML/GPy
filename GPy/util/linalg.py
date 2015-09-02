@@ -7,47 +7,12 @@
 
 import numpy as np
 from scipy import linalg
-import types
-import ctypes
-from ctypes import byref, c_char, c_int, c_double # TODO
-import scipy
-import warnings
-import os
+from scipy.linalg import lapack, blas
+
 from .config import config
 import logging
 from . import linalg_cython
 
-
-_scipyversion = np.float64((scipy.__version__).split('.')[:2])
-_fix_dpotri_scipy_bug = True
-if np.all(_scipyversion >= np.array([0, 14])):
-    from scipy.linalg import lapack
-    _fix_dpotri_scipy_bug = False
-elif np.all(_scipyversion >= np.array([0, 12])):
-    #import scipy.linalg.lapack.clapack as lapack
-    from scipy.linalg import lapack
-else:
-    from scipy.linalg.lapack import flapack as lapack
-
-if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
-    try:
-        anaconda_path = str(config.get('anaconda', 'location'))
-        mkl_rt = ctypes.cdll.LoadLibrary(os.path.join(anaconda_path, 'DLLs', 'mkl_rt.dll'))
-        dsyrk = mkl_rt.dsyrk
-        dsyr = mkl_rt.dsyr
-        _blas_available = True
-        print('anaconda installed and mkl is loaded')
-    except:
-        _blas_available = False
-else:
-    try:
-        _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
-        dsyrk = _blaslib.dsyrk_
-        dsyr = _blaslib.dsyr_
-        _blas_available = True
-    except AttributeError as e:
-        _blas_available = False
-        warnings.warn("warning: caught this exception:" + str(e))
 
 def force_F_ordered_symmetric(A):
     """
@@ -169,9 +134,6 @@ def dpotri(A, lower=1):
     :returns: A inverse
 
     """
-    if _fix_dpotri_scipy_bug:
-        assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
-        lower = 0
 
     A = force_F_ordered(A)
     R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
@@ -300,8 +262,8 @@ def pca(Y, input_dim):
     Z = linalg.svd(Y - Y.mean(axis=0), full_matrices=False)
     [X, W] = [Z[0][:, 0:input_dim], np.dot(np.diag(Z[1]), Z[2]).T[:, 0:input_dim]]
     v = X.std(axis=0)
-    X /= v;
-    W *= v;
+    X /= v
+    W *= v
     return X, W.T
 
 def ppca(Y, Q, iterations=100):
@@ -347,34 +309,15 @@ def tdot_blas(mat, out=None):
         out[:] = 0.0
 
     # # Call to DSYRK from BLAS
-    # If already in Fortran order (rare), and has the right sorts of strides I
-    # could avoid the copy. I also thought swapping to cblas API would allow use
-    # of C order. However, I tried that and had errors with large matrices:
-    # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
     mat = np.asfortranarray(mat)
-    TRANS = c_char('n'.encode('ascii'))
-    N = c_int(mat.shape[0])
-    K = c_int(mat.shape[1])
-    LDA = c_int(mat.shape[0])
-    UPLO = c_char('l'.encode('ascii'))
-    ALPHA = c_double(1.0)
-    A = mat.ctypes.data_as(ctypes.c_void_p)
-    BETA = c_double(0.0)
-    C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) // 8)
-    dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
-            byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
+    out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1,
+                     trans=0, lower=0)
 
     symmetrify(out, upper=True)
-
-
     return np.ascontiguousarray(out)
 
 def tdot(*args, **kwargs):
-    if _blas_available:
-        return tdot_blas(*args, **kwargs)
-    else:
-        return tdot_numpy(*args, **kwargs)
+    return tdot_blas(*args, **kwargs)
 
 def DSYR_blas(A, x, alpha=1.):
     """
@@ -386,15 +329,7 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    N = c_int(A.shape[0])
-    LDA = c_int(A.shape[0])
-    UPLO = c_char('l'.encode('ascii'))
-    ALPHA = c_double(alpha)
-    A_ = A.ctypes.data_as(ctypes.c_void_p)
-    x_ = x.ctypes.data_as(ctypes.c_void_p)
-    INCX = c_int(1)
-    dsyr(byref(UPLO), byref(N), byref(ALPHA),
-            x_, byref(INCX), A_, byref(LDA))
+    A = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=True)
     symmetrify(A, upper=True)
 
 def DSYR_numpy(A, x, alpha=1.):
@@ -411,10 +346,8 @@ def DSYR_numpy(A, x, alpha=1.):
 
 
 def DSYR(*args, **kwargs):
-    if _blas_available:
-        return DSYR_blas(*args, **kwargs)
-    else:
-        return DSYR_numpy(*args, **kwargs)
+    return DSYR_blas(*args, **kwargs)
+
 
 def symmetrify(A, upper=False):
     """

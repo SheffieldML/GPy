@@ -201,6 +201,8 @@ class GP(Model):
 
         Kx = kern.K(self.X, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+        if len(mu.shape)==1:
+            mu = mu.reshape(-1,1)
         if full_cov:
             Kxx = kern.K(Xnew)
             if self.posterior.woodbury_inv.ndim == 2:

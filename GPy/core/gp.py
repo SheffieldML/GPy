@@ -619,9 +619,9 @@ class GP(Model):
                                      fignum, ax, data_symbol, **kw)
 
 
-    def plot_fit_errorbars(self, which_data_rows='all',
+    def errorbars_trainset(self, which_data_rows='all',
             which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
-            linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True):
+            linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True,lw=None):
 
         """
         Plot the posterior error bars corresponding to the training data
@@ -646,7 +646,9 @@ class GP(Model):
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
         kw = {}
-        return models_plots.plot_fit_errorbars(self, which_data_rows, which_data_ycols, fixed_inputs,
+        if lw is not None:
+            kw['lw'] = lw
+        return models_plots.errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
                                     fignum, ax, linecol, data_symbol,
                                     predict_kw, plot_training_data, **kw)
 

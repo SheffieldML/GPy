@@ -330,11 +330,11 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_
         return X
 
 
-def plot_fit_errorbars(model, which_data_rows='all',
+def errorbars_trainset(model, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         fignum=None, ax=None,
         linecol='red', data_symbol='kx',
-        predict_kw=None, plot_training_data=True):
+        predict_kw=None, plot_training_data=True, **kwargs):
 
     """
     Plot the posterior error bars corresponding to the training data
@@ -386,9 +386,8 @@ def plot_fit_errorbars(model, which_data_rows='all',
         fmu, fv = model._raw_predict(X, full_cov=False, **predict_kw)
         lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=model.Y_metadata)
 
-
         for d in which_data_ycols:
-            plots['gperrors'] = gperrors(X, m[:, d], lower[:, d], upper[:, d], edgecol=linecol, ax=ax, fignum=fignum )
+            plots['gperrors'] = gperrors(X, m[:, d], lower[:, d], upper[:, d], edgecol=linecol, ax=ax, fignum=fignum, **kwargs )
             if plot_training_data:
                 plots['dataplot'] = plot_data(model=model, which_data_rows=which_data_rows,
                 visible_dims=free_dims, data_symbol=data_symbol, mew=1.5, ax=ax, fignum=fignum)

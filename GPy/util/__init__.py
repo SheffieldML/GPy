@@ -16,4 +16,5 @@ from . import diag
 from . import initialization
 from . import multioutput
 from . import linalg_gpu
+from . import parallel
 

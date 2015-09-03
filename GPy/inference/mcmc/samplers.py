@@ -1,6 +1,6 @@
 # ## Copyright (c) 2014, Zhenwen Dai
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
+from __future__ import print_function
 
 import numpy as np
 from scipy import linalg, optimize

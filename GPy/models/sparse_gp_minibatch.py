@@ -303,6 +303,8 @@ class SparseGPMiniBatch(SparseGP):
             self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,
                                    K=posterior._K, mean=None, cov=None, K_chol=posterior.K_chol)
         self._outer_values_update(self.full_values)
+        if self.has_uncertain_inputs():
+            self.kern.return_psi2_n = False
 
     def _outer_loop_without_missing_data(self):
         self._log_marginal_likelihood = 0

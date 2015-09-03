@@ -22,7 +22,7 @@ def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
 
     psi0 = (variance*(np.square(mu)+S)).sum(axis=1)
     psi1 = np.dot(mu,(variance*Z).T)
-    if sum_N_psi2:
+    if return_psi2_n:
         psi2 = np.dot(S.sum(axis=0)*np.square(variance)*Z,Z.T)+ tdot(psi1.T)
     else:
         raise NotImplementedError

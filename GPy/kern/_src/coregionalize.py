@@ -5,7 +5,6 @@ from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
-from ...util.config import config # for assesing whether to use cython
 try:
     from . import coregionalize_cython
     cython_available = True
@@ -84,7 +83,7 @@ class Coregionalize(Kern):
     def Kdiag(self, X):
         return np.diag(self.B)[np.asarray(X, dtype=np.int).flatten()]
 
-    def update_gradients_full(self, dL_dK, X, X2=None):
+    def update_gradients_full(self, dL_dK, X, X2=None,cython=False):
         index = np.asarray(X, dtype=np.int)
         if X2 is None:
             index2 = index
@@ -92,7 +91,7 @@ class Coregionalize(Kern):
             index2 = np.asarray(X2, dtype=np.int)
 
         #attempt to use cython for a nasty double indexing loop: fall back to numpy
-        if config.getboolean('cython', 'working'):
+        if cython_available:
             dL_dK_small = self._gradient_reduce_cython(dL_dK, index, index2)
         else:
             dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)

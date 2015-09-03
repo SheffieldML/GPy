@@ -9,11 +9,10 @@ from GPy.core.parameterization.param import Param
 
 verbose = 0
 try:
-    from . import coregionalize_cython
-    cython_available = True
+    import GPy.util.linalg_cython
+    cython_available=True
 except ImportError:
-    cython_available = False
-
+    cython_available=False
 
 class Kern_check_model(GPy.core.Model):
     """
@@ -375,56 +374,6 @@ class KernelTestsNonContinuous(unittest.TestCase):
         X = self.X[self.X[:,-1]!=2]
         X2 = self.X2[self.X2[:,-1]!=2]
         self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
-
-@unittest.skipIf(~cython_available,"Cython modules have not been built on this machine")
-class Coregionalize_cython_test(unittest.TestCase):
-    """
-    Make sure that the coregionalize kernel work with and without cython enabled
-    """
-    def setUp(self):
-        self.k = GPy.kern.Coregionalize(1, output_dim=12)
-        self.N1, self.N2 = 100, 200
-        self.X = np.random.randint(0,12,(self.N1,1))
-        self.X2 = np.random.randint(0,12,(self.N2,1))
-
-    def test_sym(self):
-        dL_dK = np.random.randn(self.N1, self.N1)
-        K_cython = self.k.K(self.X)
-        self.k.update_gradients_full(dL_dK, self.X,cython=True)
-        grads_cython = self.k.gradient.copy()
-
-        GPy.util.config.config.set('cython', 'working',cython=False)
-        K_numpy = self.k.K(self.X)
-        self.k.update_gradients_full(dL_dK, self.X)
-        grads_numpy = self.k.gradient.copy()
-
-        self.assertTrue(np.allclose(K_numpy, K_cython))
-        self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
-
-    def test_nonsym(self):
-        dL_dK = np.random.randn(self.N1, self.N2)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X, self.X2)
-        self.k.gradient = 0.
-        self.k.update_gradients_full(dL_dK, self.X, self.X2)
-        grads_cython = self.k.gradient.copy()
-
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X, self.X2)
-        self.k.gradient = 0.
-        self.k.update_gradients_full(dL_dK, self.X, self.X2)
-        grads_numpy = self.k.gradient.copy()
-
-        self.assertTrue(np.allclose(K_numpy, K_cython))
-        self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
-
-
 
 class KernelTestsProductWithZeroValues(unittest.TestCase):
 

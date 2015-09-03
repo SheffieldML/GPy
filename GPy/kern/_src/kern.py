@@ -180,7 +180,7 @@ class Kern(Parameterized):
     def __iadd__(self, other):
         return self.add(other)
 
-    def add(self, other, name='add'):
+    def add(self, other, name='sum'):
         """
         Add another kernel to this one.
 

@@ -24,6 +24,11 @@ class Static(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
+    def gradients_XX(self, dL_dK, X, X2):
+        return np.zeros((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
+    def gradients_XX_diag(self, dL_dKdiag, X):
+        return np.zeros(X.shape)
+
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
 

@@ -14,7 +14,7 @@ class Add(CombinationKernel):
 
     This kernel will take over the active dims of it's subkernels passed in.
     """
-    def __init__(self, subkerns, name='add'):
+    def __init__(self, subkerns, name='sum'):
         for i, kern in enumerate(subkerns[:]):
             if isinstance(kern, Add):
                 del subkerns[i]
@@ -71,11 +71,21 @@ class Add(CombinationKernel):
         target = np.zeros(X.shape)
         [target.__iadd__(p.gradients_X_diag(dL_dKdiag, X)) for p in self.parts]
         return target
-    
+
+    def gradients_XX(self, dL_dK, X, X2):
+        target = 0.
+        [target.__iadd__(p.gradients_XX(dL_dK, X, X2)) for p in self.parts]
+        return target
+
+    def gradients_XX_diag(self, dL_dKdiag, X):
+        target = np.zeros(X.shape)
+        [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X)) for p in self.parts]
+        return target
+
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
-    
+
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))

@@ -102,7 +102,7 @@ class Kern(Parameterized):
         raise NotImplementedError
     def gradients_XX(self, dL_dK, X, X2):
         raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
-    def gradients_XX_diag(self, dL_dK, X, X2):
+    def gradients_XX_diag(self, dL_dKdiag, X):
         raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
         raise NotImplementedError

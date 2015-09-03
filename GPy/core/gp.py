@@ -106,6 +106,13 @@ class GP(Model):
         self.link_parameter(self.likelihood)
         self.posterior = None
 
+        # The predictive variable to be used to predict using the posterior object's
+        # woodbury_vector and woodbury_inv is defined as predictive_variable
+        # This is usually just a link to self.X (full GP) or self.Z (sparse GP).
+        # Make sure to name this variable and the predict functions will "just work"
+        # as long as the posterior has the right woodbury entries.
+        self._predictive_variable = self.X
+
 
     def set_XY(self, X=None, Y=None, trigger_update=True):
         """
@@ -201,12 +208,15 @@ class GP(Model):
 
         Kx = kern.K(self.X, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+        if len(mu.shape)==1:
+            mu = mu.reshape(-1,1)
         if full_cov:
             Kxx = kern.K(Xnew)
             if self.posterior.woodbury_inv.ndim == 2:
                 var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
             elif self.posterior.woodbury_inv.ndim == 3:
                 var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+                from ..util.linalg import mdot
                 for i in range(var.shape[2]):
                     var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
             var = var
@@ -301,6 +311,110 @@ class GP(Model):
         dv_dX += self.kern.gradients_X(alpha, Xnew, self.X)
         return dmu_dX, dv_dX
 
+
+    def predict_jacobian(self, Xnew, kern=None, full_cov=True):
+        """
+        Compute the derivatives of the posterior of the GP.
+
+        Given a set of points at which to predict X* (size [N*,Q]), compute the
+        mean and variance of the derivative. Resulting arrays are sized:
+
+         dL_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+          Note that this is the mean and variance of the derivative,
+          not the derivative of the mean and variance! (See predictive_gradients for that)
+
+         dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
+          If there is missing data, it is not implemented for now, but
+          there will be one output variance per output dimension.
+
+        :param X: The points at which to get the predictive gradients.
+        :type X: np.ndarray (Xnew x self.input_dim)
+        :param kern: The kernel to compute the jacobian for.
+        :param boolean full_cov: whether to return the full covariance of the jacobian.
+
+        :returns: dmu_dX, dv_dX
+        :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q,(D)) ]
+
+        Note: We always return sum in input_dim gradients, as the off-diagonals
+        in the input_dim are not needed for further calculations.
+        This is a compromise for increase in speed. Mathematically the jacobian would
+        have another dimension in Q.
+        """
+        if kern is None:
+            kern = self.kern
+
+        mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+
+        for i in range(self.output_dim):
+            mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
+
+        dK_dXnew_full = np.empty((self._predictive_variable.shape[0], Xnew.shape[0], Xnew.shape[1]))
+        for i in range(self._predictive_variable.shape[0]):
+            dK_dXnew_full[i] = kern.gradients_X([[1.]], Xnew, self._predictive_variable[[i]])
+
+        if full_cov:
+            dK2_dXdX = kern.gradients_XX([[1.]], Xnew)
+        else:
+            dK2_dXdX = kern.gradients_XX_diag([[1.]], Xnew)
+
+        def compute_cov_inner(wi):
+            if full_cov:
+                # full covariance gradients:
+                var_jac = dK2_dXdX - np.einsum('qnm,miq->niq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
+            else:
+                var_jac = dK2_dXdX - np.einsum('qim,miq->iq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
+            return var_jac
+
+        if self.posterior.woodbury_inv.ndim == 3:
+            var_jac = []
+            for d in range(self.posterior.woodbury_inv.shape[2]):
+                var_jac.append(compute_cov_inner(self.posterior.woodbury_inv[:, :, d]))
+            var_jac = np.concatenate(var_jac)
+        else:
+            var_jac = compute_cov_inner(self.posterior.woodbury_inv)
+        return mean_jac, var_jac
+
+    def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+        """
+        Predict the wishard embedding G of the GP. This is the density of the
+        input of the GP defined by the probabilistic function mapping f.
+        G = J_mean.T*J_mean + output_dim*J_cov.
+
+        :param array-like Xnew: The points at which to evaluate the magnification.
+        :param :py:class:`~GPy.kern.Kern` kern: The kernel to use for the magnification.
+
+        Supplying only a part of the learning kernel gives insights into the density
+        of the specific kernel part of the input function. E.g. one can see how dense the
+        linear part of a kernel is compared to the non-linear part etc.
+        """
+        if kern is None:
+            kern = self.kern
+
+        mu_jac, var_jac = self.predict_jacobian(Xnew, kern, full_cov=False)
+        mumuT = np.einsum('iqd,ipd->iqp', mu_jac, mu_jac)
+        if var_jac.ndim == 3:
+            Sigma = np.einsum('iqd,ipd->iqp', var_jac, var_jac)
+        else:
+            Sigma = self.output_dim*np.einsum('iq,ip->iqp', var_jac, var_jac)
+        G = 0.
+        if mean:
+            G += mumuT
+        if covariance:
+            G += Sigma
+        return G
+
+    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True):
+        """
+        Predict the magnification factor as
+
+        sqrt(det(G))
+
+        for each point N in Xnew
+        """
+        G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
+        from ..util.linalg import jitchol
+        return np.array([np.sqrt(np.exp(2*np.sum(np.log(np.diag(jitchol(G[n, :, :])))))) for n in range(Xnew.shape[0])])
+        #return np.array([np.sqrt(np.linalg.det(G[n, :, :])) for n in range(Xnew.shape[0])])
 
     def posterior_samples_f(self,X,size=10, full_cov=True):
         """
@@ -405,8 +519,8 @@ class GP(Model):
     def plot(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
-        plot_raw=False,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx', predict_kw=None):
+        plot_raw=False, linecol=None,fillcol=None, Y_metadata=None,
+        data_symbol='kx', predict_kw=None, plot_training_data=True):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -443,6 +557,8 @@ class GP(Model):
         :type Y_metadata: dict
         :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
         :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        :param plot_training_data: whether or not to plot the training points
+        :type plot_training_data: boolean
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -455,7 +571,101 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, predict_kw=predict_kw, **kw)
+                                     data_symbol=data_symbol, predict_kw=predict_kw,
+                                     plot_training_data=plot_training_data, **kw)
+
+
+    def plot_data(self, which_data_rows='all',
+        which_data_ycols='all', visible_dims=None,
+        fignum=None, ax=None, data_symbol='kx'):
+        """
+        Plot the training data
+          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
+
+        Can plot only part of the data
+        using which_data_rows and which_data_ycols.
+
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_ycols: 'all' or a list of integers
+        :param visible_dims: an array specifying the input dimensions to plot (maximum two)
+        :type visible_dims: a numpy array
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param levels: number of levels to plot in a contour plot.
+        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
+        :type levels: int
+        :param samples: the number of a posteriori samples to plot
+        :type samples: int
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
+        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
+        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
+        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import models_plots
+        kw = {}
+        return models_plots.plot_data(self, which_data_rows,
+                                     which_data_ycols, visible_dims,
+                                     fignum, ax, data_symbol, **kw)
+
+
+    def plot_fit_errorbars(self, which_data_rows='all',
+            which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
+            linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True):
+
+        """
+        Plot the posterior error bars corresponding to the training data
+          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
+
+        Can plot only part of the data
+        using which_data_rows and which_data_ycols.
+
+        :param which_data_rows: which of the training data to plot (default all)
+        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+        :type which_data_rows: 'all' or a list of integers
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param fignum: figure to plot on.
+        :type fignum: figure number
+        :param ax: axes to plot on.
+        :type ax: axes handle
+        :param plot_training_data: whether or not to plot the training points
+        :type plot_training_data: boolean
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import models_plots
+        kw = {}
+        return models_plots.plot_fit_errorbars(self, which_data_rows, which_data_ycols, fixed_inputs,
+                                    fignum, ax, linecol, data_symbol,
+                                    predict_kw, plot_training_data, **kw)
+
+
+    def plot_magnification(self, labels=None, which_indices=None,
+                resolution=50, ax=None, marker='o', s=40,
+                fignum=None, legend=True,
+                plot_limits=None,
+                aspect='auto', updates=False, plot_inducing=True, kern=None, **kwargs):
+
+        import sys
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import dim_reduction_plots
+
+        return dim_reduction_plots.plot_magnification(self, labels, which_indices,
+                resolution, ax, marker, s,
+                fignum, plot_inducing, legend,
+                plot_limits, aspect, updates, **kwargs)
+
 
     def input_sensitivity(self, summarize=True):
         """

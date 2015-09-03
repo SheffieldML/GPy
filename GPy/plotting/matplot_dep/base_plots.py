@@ -61,7 +61,12 @@ def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
         edgecol='#3300FF'
 
     if not 'alpha' in kwargs.keys():
-        kwargs['alpha'] = 0.3
+        kwargs['alpha'] = 1.
+
+
+    if not 'lw' in kwargs.keys():
+        kwargs['lw'] = 1.
+
 
     plots.append(axes.errorbar(x,mu,yerr=np.vstack([mu-lower,upper-mu]),color=edgecol,**kwargs))
     plots[-1][0].remove()

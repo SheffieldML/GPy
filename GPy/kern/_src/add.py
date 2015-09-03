@@ -73,7 +73,10 @@ class Add(CombinationKernel):
         return target
 
     def gradients_XX(self, dL_dK, X, X2):
-        target = 0.
+        if X2 is None:
+            target = np.zeros((X.shape[0], X.shape[0], X.shape[1]))
+        else:
+            target = np.zeros((X.shape[0], X2.shape[0], X.shape[1]))
         [target.__iadd__(p.gradients_XX(dL_dK, X, X2)) for p in self.parts]
         return target
 

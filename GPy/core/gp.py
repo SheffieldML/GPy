@@ -352,13 +352,16 @@ class GP(Model):
         for i in range(self._predictive_variable.shape[0]):
             dK_dXnew_full[i] = kern.gradients_X([[1.]], Xnew, self._predictive_variable[[i]])
 
+        if full_cov:
+            dK2_dXdX = kern.gradients_XX([[1.]], Xnew)
+        else:
+            dK2_dXdX = kern.gradients_XX_diag([[1.]], Xnew)
+
         def compute_cov_inner(wi):
             if full_cov:
                 # full covariance gradients:
-                dK2_dXdX = kern.gradients_XX([[1.]], Xnew)
                 var_jac = dK2_dXdX - np.einsum('qnm,miq->niq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
             else:
-                dK2_dXdX = kern.gradients_XX_diag([[1.]], Xnew)
                 var_jac = dK2_dXdX - np.einsum('qim,miq->iq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
             return var_jac
 
@@ -568,7 +571,7 @@ class GP(Model):
                                      which_data_ycols, fixed_inputs,
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, predict_kw=predict_kw, 
+                                     data_symbol=data_symbol, predict_kw=predict_kw,
                                      plot_training_data=plot_training_data, **kw)
 
 

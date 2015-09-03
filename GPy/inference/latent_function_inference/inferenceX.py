@@ -4,6 +4,7 @@
 import numpy as np
 from ...core import Model
 from ...core.parameterization import variational
+from ...util.linalg import tdot
 from GPy.core.parameterization.variational import VariationalPosterior
 
 def infer_newX(model, Y_new, optimize=True, init='L2'):
@@ -127,13 +128,13 @@ class InferenceX(Model):
             wv = wv[:,self.valid_dim]
             output_dim = self.valid_dim.sum()
             if self.ninan is not None:
-                self.dL_dpsi2 = beta/2.*(self.posterior.woodbury_inv[:,:,self.valid_dim] - np.einsum('md,od->mo',wv, wv)[:, :, None]).sum(-1)
+                self.dL_dpsi2 = beta/2.*(self.posterior.woodbury_inv[:,:,self.valid_dim] - tdot(wv)[:, :, None]).sum(-1)
             else:
-                self.dL_dpsi2 = beta/2.*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))
+                self.dL_dpsi2 = beta/2.*(output_dim*self.posterior.woodbury_inv - tdot(wv))
             self.dL_dpsi1 = beta*np.dot(self.Y[:,self.valid_dim], wv.T)
             self.dL_dpsi0 = - beta/2.* np.ones(self.Y.shape[0])
         else:
-            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
+            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - tdot(wv))/2. #np.einsum('md,od->mo',wv, wv)
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
             self.dL_dpsi0 = -beta/2.*output_dim* np.ones(self.Y.shape[0])
 

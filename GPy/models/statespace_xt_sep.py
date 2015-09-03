@@ -55,9 +55,9 @@ class StateSpace_xt(Model):
 
         # Default kernel
         if tempokernel is None:
-            self.kern = kern.Matern32(1,lengthscale=1)
+            self.tempokern = kern.Matern32(1,lengthscale=1)
         else:
-            self.kern = tempokernel
+            self.tempokern = tempokernel
 
         if spacekernel is None:
             #self.kern = kern.Matern32(1,lengthscale=1)
@@ -67,13 +67,13 @@ class StateSpace_xt(Model):
         else:
             self.spacekern = spacekernel
 
-        self.link_parameter(self.kern)
-        #self.link_parameter(self.spacekern)
+        self.link_parameter(self.tempokern)
+        self.link_parameter(self.spacekern)
 
         self.sigma2.constrain_positive()
 
         # Assert that the kernel is supported
-        if not hasattr(self.kern, 'sde'):
+        if not hasattr(self.tempokern, 'sde'):
             raise NotImplementedError('SDE must be implemented for the kernel being used')
         #assert self.kern.sde() not False, "This kernel is not supported for state space estimation"
 
@@ -82,60 +82,71 @@ class StateSpace_xt(Model):
         Parameters have now changed
         """
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dF,dQc,dPinf) = self.tempokern.sde()
         
-        X=self.X
+        #X=self.X
+        SX=self.SXP[self.SI]
 
-        n=X.shape[0]
+        n=SX.shape[0]
         F1 = np.kron(np.eye(n),F)
         L1 = np.kron(np.eye(n),L)
-        K1=self.spacekern.K(X)
+        K1=self.spacekern.K(SX)
         Qc1 = K1*Qc               #kron(K,Qc1);
         H1 = np.kron(np.eye(n),H)
         Pinf1 = np.kron(K1,Pinf)
 
         # Use the Kalman filter to evaluate the likelihood
-        self._log_marginal_likelihood = self.kf_likelihood(F1,L1,Qc1,H1,self.sigma2,Pinf1,self.X.T,self.Y.T)
+        self._log_marginal_likelihood = self.kf_likelihood(F1,L1,Qc1,H1,self.sigma2,Pinf1)#,self.X.T,self.Y.T)
         gradients  = self.compute_gradients()
-        self.sigma2.gradient_full[:] = gradients[-1]
-        self.kern.gradient_full[:] = gradients[:-1]
+        self.sigma2.gradient_full[:] = gradients[-1]     # the very last for noise
+        #self.tempokern.gradient_full[:] = gradients[:-1]
+        self.tempokern.gradient_full[:] = gradients[:2]# frist 2 for temporal grad
+        self.spacekern.gradient_full[:] = gradients[2:-1]  # second 2 for spatiol grad
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
     def compute_gradients(self):
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf,dFt,dQct,dPinft) = self.kern.sde()
+        (F,L,Qc,H,Pinf,dFt,dQct,dPinft) = self.tempokern.sde()
 
-        X=self.X
+        #X=self.X
+        SX=self.SXP[self.SI]
 
-        n=X.shape[0]
+        n=SX.shape[0]
         F1 = np.kron(np.eye(n),F)
         L1 = np.kron(np.eye(n),L)
-        K1=self.spacekern.K(X)
+        K1=self.spacekern.K(SX)
         Qc1 = K1*Qc               #kron(K,Qc1);
         H1 = np.kron(np.eye(n),H)
         Pinf1 = np.kron(K1,Pinf)
 
         # Allocate space for the derivatives 
-        dF1    = np.zeros([F1.shape[0],F1.shape[1],dFt.shape[2]+1])
-        dQc1  = np.zeros([Qc1.shape[0],Qc1.shape[1],dQct.shape[2]+1]) 
-        dPinf1 = np.zeros([Pinf1.shape[0],Pinf1.shape[1],dPinft.shape[2]+1])
-        
+        dF1    = np.zeros([F1.shape[0],F1.shape[1],dFt.shape[2]+1+2])
+        dQc1  = np.zeros([Qc1.shape[0],Qc1.shape[1],dQct.shape[2]+1+2]) 
+        dPinf1 = np.zeros([Pinf1.shape[0],Pinf1.shape[1],dPinft.shape[2]+1+2])
+        dK1_dl = self.spacekern.dK_dtheta(SX)
+        dK1_ds = K1/self.spacekern.variance
+
         # Assign the values for the kernel function
         dF1[:,:,0] = np.kron(np.eye(n),dFt[:,:,0])
         dF1[:,:,1] = np.kron(np.eye(n),dFt[:,:,1])
         dQc1[:,:,0] = K1*dQct[:,:,0]
         dQc1[:,:,1] = K1*dQct[:,:,1]
         dPinf1[:,:,0] = np.kron(K1,dPinft[:,:,0])
-        dPinf1[:,:,1] = np.kron(K1,dPinft[:,:,1])          
+        dPinf1[:,:,1] = np.kron(K1,dPinft[:,:,1])     
 
-        # The sigma2 derivative
-        dR = np.zeros([1,1,dF1.shape[2]])
-        dR[:,:,-1] = 1
+        dPinf1[:,:,2] = np.kron(dK1_dl,Pinf)   
+        dPinf1[:,:,3] = np.kron(dK1_ds,Pinf)  
+        dQc1[:,:,2] = dK1_dl*Qc
+        dQc1[:,:,3] = dK1_ds*Qc  
         
+        # The sigma2 derivative
+        dR = np.zeros([1,1,dF1.shape[2]])#dR = np.zeros([1,1,dF1.shape[2]])
+        dR[:,:,-1] = 1
+
         # Calculate the likelihood gradients
-        gradients = self.kf_likelihood_g(F1,L1,Qc1,H1,self.sigma2,Pinf1,dF1,dQc1,dPinf1,dR,self.X.T,self.Y.T)
+        gradients = self.kf_likelihood_g(F1,L1,Qc1,H1,self.sigma2,Pinf1,dF1,dQc1,dPinf1,dR)
     	return gradients
 
 
@@ -155,7 +166,7 @@ class StateSpace_xt(Model):
         Y = Y[return_index]
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf,use1,use2,use3) = self.kern.sde()
+        (F,L,Qc,H,Pinf,use1,use2,use3) = self.tempokern.sde()
 
         n=SXP.shape[0]
         F1 = np.kron(np.eye(n),F)
@@ -175,7 +186,9 @@ class StateSpace_xt(Model):
         # Run the Kalman filter
         #(M, P) = self.kalman_filter(F,L,Qc,H,self.sigma2,Pinf,X.T,Y.T)
         #(M, P) = self.kalman_filter(F1,L1,Qc1,H1,self.sigma2,Pinf1,X.T,Y)
-        NY = np.zeros([Y.shape[0],Xnew.shape[0]+X.shape[0]]) * np.nan
+
+        # indexed the data poin within grid
+        NY = np.zeros([Y.shape[1],Xnew.shape[0]+X.shape[0]]) * np.nan
         NX = np.zeros([Xnew.shape[0] + X.shape[0],1])
         # Assume that Xmax is ordered !!!
         oi = 0
@@ -184,7 +197,7 @@ class StateSpace_xt(Model):
         for xni in range(Xnew.shape[0]):
             if oi < X.shape[0]:
                 if (xni == 0 and X[oi] < Xnew[xni]) or (xni > 0 and X[oi] >= Xnew[xni-1] and X[oi] < Xnew[xni]):
-                    NY[:,ni] = Y[:,oi]
+                    NY[:,ni] = Y.T[:,oi]
                     NX[ni]   = X[oi]
                     ni = ni + 1
                     oi = oi + 1
@@ -332,7 +345,7 @@ class StateSpace_xt(Model):
         X = X[sort_index]
 
         # Get the model matrices from the kernel
-        (F,L,Qc,H,Pinf) = self.kern.sde()
+        (F,L,Qc,H,Pinf) = self.tempokern.sde()
 
         # Allocate space for results
         Y = np.empty((size,X.shape[0]))
@@ -446,9 +459,11 @@ class StateSpace_xt(Model):
         # Return
         return (MS, PS)
 
-    def kf_likelihood(self,F,L,Qc,H,R,Pinf,X,Y):
+    def kf_likelihood(self,F,L,Qc,H,R,Pinf):
         # Evaluate marginal likelihood
 
+        X=self.X.T
+        Y=self.Y.T
         # Initialize
         lik = 0
         m = np.zeros((F.shape[0],1))
@@ -489,7 +504,7 @@ class StateSpace_xt(Model):
                      #Should be LL, isupper = ...                
                      #LL = linalg.cho_factor(S)
                      #K = linalg.cho_solve(LL, H.dot(P)).T                
-                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
+                     LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[0]))
                      K = linalg.cho_solve((LL, isupper), H.dot(P)).T
                      lik -= np.sum(np.log(np.diag(LL)))
                      lik -= 0.5*v.shape[0]*np.log(2*np.pi)
@@ -513,10 +528,12 @@ class StateSpace_xt(Model):
         # Return likelihood
         return lik
 
-    def kf_likelihood_g(self,F,L,Qc,H,R,Pinf,dF,dQc,dPinf,dR,X,Y):
+    def kf_likelihood_g(self,F,L,Qc,H,R,Pinf,dF,dQc,dPinf,dR):
         # Evaluate marginal likelihood gradient
 
         # State dimension, number of data points and number of parameters
+        Y=self.Y.T
+        X=self.X.T
         n      = F.shape[0]
         steps  = Y.shape[1]
         nparam = dF.shape[2]
@@ -589,6 +606,8 @@ class StateSpace_xt(Model):
                 dP[:,:,j] = dA.dot(P).dot(A.T) + A.dot(dP[:,:,j]).dot(A.T) \
                    + A.dot(P).dot(dA.T) + dQ
             
+            #stop
+
             # Set predicted m and P
             m = mm
             P = PP
@@ -596,7 +615,7 @@ class StateSpace_xt(Model):
             # Start the Kalman filter update step and precalculate variables
             #S = H.dot(P).dot(H.T) + R
             S = H.dot(P).dot(H.T) + R*np.eye(Y.shape[0])
-            LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[1]))
+            LL, isupper = linalg.cho_factor(H.dot(P).dot(H.T) + R*np.eye(Y.shape[0]))
             v = Y[:,k][None].T-H.dot(m)
             K = linalg.cho_solve((LL, isupper), H.dot(P)).T
             
@@ -616,7 +635,7 @@ class StateSpace_xt(Model):
             for j in range(0,nparam):
 
                 # Innovation covariance derivative
-                dS = H.dot(dP[:,:,j]).dot(H.T) + dR[:,:,j]*np.eye(Y.shape[1])
+                dS = H.dot(dP[:,:,j]).dot(H.T) + dR[:,:,j]*np.eye(Y.shape[0])
                 # s^(-1)*ds
                 iSd= linalg.cho_solve((LL, isupper),dS)
                 # Evaluate the energy derivative for j

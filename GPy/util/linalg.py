@@ -11,7 +11,11 @@ from scipy.linalg import lapack, blas
 
 from .config import config
 import logging
-from . import linalg_cython
+try:
+    from . import linalg_cython
+    cython_available = True
+except ImportError:
+    cython_available = False
 
 
 def force_F_ordered_symmetric(A):
@@ -358,7 +362,7 @@ def symmetrify(A, upper=False):
 
     note: tries to use cython, falls back to a slower numpy version
     """
-    if config.getboolean('cython', 'working'):
+    if cython_available:
         _symmetrify_cython(A, upper)
     else:
         _symmetrify_numpy(A, upper)

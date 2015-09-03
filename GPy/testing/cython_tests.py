@@ -1,12 +1,19 @@
 import numpy as np
+import unittest
 import scipy as sp
 from GPy.util import choleskies
 import GPy
+try:
+    from . import choleskies_cython
+    cython_available = True
+except ImportError:
+    cython_available = False
+
 
 """
-These tests make sure that the opure python and cython codes work the same
+These tests make sure that the pure python and cython codes work the same. If Cython is not available, they will be skipped.
 """
-
+@unittest.skipIf(~cython_available,"Cython modules have not been built on this machine")
 class CythonTestChols(np.testing.TestCase):
     def setUp(self):
         self.flat = np.random.randn(45,5)
@@ -20,6 +27,7 @@ class CythonTestChols(np.testing.TestCase):
         A2 = choleskies._triang_to_flat_cython(self.triang)
         np.testing.assert_allclose(A1, A2)
 
+@unittest.skipIf(~cython_available,"Cython modules have not been built on this machine")
 class test_stationary(np.testing.TestCase):
     def setUp(self):
         self.k = GPy.kern.RBF(10)
@@ -49,6 +57,7 @@ class test_stationary(np.testing.TestCase):
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
         np.testing.assert_allclose(g1, g2)
 
+@unittest.skipIf(~cython_available,"Cython modules have not been built on this machine")
 class test_choleskies_backprop(np.testing.TestCase):
     def setUp(self):
         a =np.random.randn(10,12)
@@ -61,10 +70,3 @@ class test_choleskies_backprop(np.testing.TestCase):
         r3 = GPy.util.choleskies.choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
         np.testing.assert_allclose(r1, r2)
         np.testing.assert_allclose(r1, r3)
-
-
-
-
-
-
-

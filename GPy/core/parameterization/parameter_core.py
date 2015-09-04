@@ -860,7 +860,7 @@ class Parameterizable(OptimizationHandlable):
         self._param_array_ = None
         self._added_names_ = set()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.___visited = False
+        self.__visited = False # for traversing in reverse order we need to know if we were here already
 
     @property
     def param_array(self):
@@ -897,16 +897,6 @@ class Parameterizable(OptimizationHandlable):
     @param_array.setter
     def param_array(self, arr):
         self._param_array_ = arr
-
-    @property
-    def __visited(self):
-        if not hasattr(self, '___visited'):
-            self.___visited = False
-        return self.___visited
-
-    @__visited.setter
-    def __visited(self, vis):
-        self.___visited = vis
 
     def traverse(self, visit, *args, **kwargs):
         """

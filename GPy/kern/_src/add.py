@@ -85,15 +85,15 @@ class Add(CombinationKernel):
         [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X)) for p in self.parts]
         return target
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi2(self, Z, variational_posterior):
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
         #return psi2
@@ -128,7 +128,7 @@ class Add(CombinationKernel):
                 raise NotImplementedError("psi2 cannot be computed for this kernel")
         return psi2
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi2n(self, Z, variational_posterior):
         psi2 = reduce(np.add, (p.psi2n(Z, variational_posterior) for p in self.parts))
         #return psi2

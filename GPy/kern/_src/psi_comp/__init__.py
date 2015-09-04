@@ -35,9 +35,9 @@ class PSICOMP_RBF(Pickleable):
 class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=2, ignore_args=(0,))
-    def psicomputations(self, variance, Z, variational_posterior):
+    def psicomputations(self, variance, Z, variational_posterior, return_psi2_n=False):
         if isinstance(variational_posterior, variational.NormalPosterior):
-            return linear_psi_comp.psicomputations(variance, Z, variational_posterior)
+            return linear_psi_comp.psicomputations(variance, Z, variational_posterior, return_psi2_n=return_psi2_n)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psicomputations(variance, Z, variational_posterior)
         else:

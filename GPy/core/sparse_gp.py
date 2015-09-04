@@ -119,9 +119,10 @@ class SparseGP(GP):
         if there is missing data, each dimension has its own full_cov of shape NxNxD, and if full_cov is of,
         we take only the diagonal elements across N.
 
-        For uncertain inputs, the SparseGP bound produces a full covariance structure across D, so for full_cov we
-        return a NxDxD matrix and in the not full_cov case, we return the diagonal elements across D (NxD).
-        This is for both with and without missing data. See for missing data SparseGP implementation py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
+        For uncertain inputs, the SparseGP bound produces cannot predict the full covariance matrix full_cov for now.
+        The implementation of that will follow. However, for each dimension the
+        covariance changes, so if full_cov is False (standard), we return the variance
+        for each dimension [NxD].
         """
 
         if kern is None: kern = self.kern
@@ -158,6 +159,7 @@ class SparseGP(GP):
             mu = np.dot(psi1_star, la) # TODO: dimensions?
 
             if full_cov:
+                raise NotImplementedError, "Full covariance for Sparse GP predicted with uncertain inputs not implemented yet."
                 var = np.empty((Xnew.shape[0], la.shape[1], la.shape[1]))
                 di = np.diag_indices(la.shape[1])
             else:

@@ -125,6 +125,9 @@ class Linear(Kern):
     def psi2(self, Z, variational_posterior):
         return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[2]
 
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self.variances, Z, variational_posterior, return_psi2_n=True)[2]
+
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         dL_dvar = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[0]
         if self.ARD:

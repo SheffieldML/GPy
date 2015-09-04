@@ -22,8 +22,7 @@ def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2
     psi0[:] = variance
     psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
     psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
-    if not return_psi2_n:
-        psi2 = psi2.sum(axis=0)
+    if not return_psi2_n: psi2 = psi2.sum(axis=0)
     return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):
@@ -68,12 +67,11 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
     return _psi2
 
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
-                              psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
+def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
     ARD = (len(lengthscale)!=1)
 
-    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance, psi1=psi1, Lpsi1=Lpsi1)
-    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance, psi2=psi2, Lpsi2=Lpsi2)
+    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
+    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance)
 
     dL_dvar = np.sum(dL_dpsi0) + dvar_psi1 + dvar_psi2
 
@@ -87,7 +85,7 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscal
 
     return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
 
-def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None, Lpsi1=None):
+def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
     """
     dL_dpsi1 - NxM
     Z - MxQ
@@ -106,10 +104,8 @@ def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None, Lpsi1=No
 
     lengthscale2 = np.square(lengthscale)
 
-    if psi1 is None:
-        psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    if Lpsi1 is None:
-        Lpsi1 = dL_dpsi1*psi1
+    _psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
+    Lpsi1 = dL_dpsi1*_psi1
     Zmu = Z[None,:,:]-mu[:,None,:] # NxMxQ
     denom = 1./(S+lengthscale2)
     Zmu2_denom = np.square(Zmu)*denom[:,None,:] #NxMxQ
@@ -121,7 +117,7 @@ def __psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None, Lpsi1=No
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
-def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=None):
+def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     """
     Z - MxQ
     mu - NxQ
@@ -142,10 +138,8 @@ def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=No
     denom = 1./(2*S+lengthscale2)
     denom2 = np.square(denom)
 
-    if psi2 is None:
-        psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
-    if Lpsi2 is None:
-        Lpsi2 = dL_dpsi2*psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
+    _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
+    Lpsi2 = dL_dpsi2*_psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
     Lpsi2sum = np.einsum('nmo->n',Lpsi2) #N
     Lpsi2Z = np.einsum('nmo,oq->nq',Lpsi2,Z) #NxQ
     Lpsi2Z2 = np.einsum('nmo,oq,oq->nq',Lpsi2,Z,Z) #NxQ
@@ -156,14 +150,8 @@ def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=No
     _dL_dvar = Lpsi2sum.sum()*2/variance
     _dL_dmu = (-2*denom) * (mu*Lpsi2sum[:,None]-Lpsi2Zhat)
     _dL_dS = (2*np.square(denom))*(np.square(mu)*Lpsi2sum[:,None]-2*mu*Lpsi2Zhat+Lpsi2Zhat2) - denom*Lpsi2sum[:,None]
-    _dL_dZ1 = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2
-    _dL_dZ2 = np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2
-    _dL_dZ3 = 2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom)
-    _dL_dZ4 = - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z)
-    _dL_dZ5 = - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
-    _dL_dZ = _dL_dZ1 + _dL_dZ2 + _dL_dZ3 + _dL_dZ4 + _dL_dZ5
-    #_dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
-             #2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
+    _dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
+             2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
     _dL_dl = 2*lengthscale* ((S/lengthscale2*denom+np.square(mu*denom))*Lpsi2sum[:,None]+(Lpsi2Z2-Lpsi2Z2p)/(2*np.square(lengthscale2))-
                              (2*mu*denom2)*Lpsi2Zhat+denom2*Lpsi2Zhat2).sum(axis=0)
 
@@ -171,5 +159,3 @@ def __psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None, Lpsi2=No
 
 _psi1computations = Cacher(__psi1computations, limit=5)
 _psi2computations = Cacher(__psi2computations, limit=5)
-_psi1compDer = Cacher(__psi1compDer, limit=5)
-_psi2compDer = Cacher(__psi2compDer, limit=5)

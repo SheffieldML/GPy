@@ -137,11 +137,9 @@ def _slice_psi(f):
 
 def _slice_update_gradients_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-             psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         with _Slice_wrap(self, Z, variational_posterior) as s:
-            ret = f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2,
-                    psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)
+            ret = f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2)
         return ret
     return wrap
 
@@ -150,8 +148,7 @@ def _slice_gradients_Z_expectations(f):
     def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
              psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         with _Slice_wrap(self, Z, variational_posterior) as s:
-            ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2,
-                                          psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2))
+            ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2))
         return ret
     return wrap
 
@@ -160,8 +157,7 @@ def _slice_gradients_qX_expectations(f):
     def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
              psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         with _Slice_wrap(self, variational_posterior, Z) as s:
-            ret = list(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X2, s.X,
-                         psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2))
+            ret = list(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X2, s.X))
             r2 = ret[:2]
             ret[0] = s.handle_return_array(r2[0])
             ret[1] = s.handle_return_array(r2[1])

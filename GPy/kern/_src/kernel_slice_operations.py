@@ -26,6 +26,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'psi0', _slice_psi)
         put_clean(dct, 'psi1', _slice_psi)
         put_clean(dct, 'psi2', _slice_psi)
+        put_clean(dct, 'psi2n', _slice_psi)
         put_clean(dct, 'update_gradients_expectations', _slice_update_gradients_expectations)
         put_clean(dct, 'gradients_Z_expectations', _slice_gradients_Z_expectations)
         put_clean(dct, 'gradients_qX_expectations', _slice_gradients_qX_expectations)

@@ -36,6 +36,26 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
         np.testing.assert_almost_equal(mu_hat, mu)
 
+    def test_normalizer(self):
+        k = GPy.kern.RBF(1)
+        Y = self.Y
+        mu, std = Y.mean(0), Y.std(0)
+        m = GPy.models.GPRegression(self.X, Y, kernel=k, normalizer=True)
+        m.optimize()
+        assert(m.checkgrad())
+        k = GPy.kern.RBF(1)
+        m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
+        m2[:] = m[:]
+        mu1, var1 = m.predict(m.X, full_cov=True)
+        mu2, var2 = m2.predict(m2.X, full_cov=True)
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2)
+        mu1, var1 = m.predict(m.X, full_cov=False)
+        mu2, var2 = m2.predict(m2.X, full_cov=False)
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2)
+
+
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)

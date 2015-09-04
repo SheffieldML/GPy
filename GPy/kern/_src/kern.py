@@ -58,23 +58,9 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
-        self._return_psi2_n_flag = ObsAr(np.zeros(1)).astype(bool)
 
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()
-
-    @property
-    def return_psi2_n(self):
-        """
-        Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.
-        """
-        return self._return_psi2_n_flag[0]
-    @return_psi2_n.setter
-    def return_psi2_n(self, val):
-        def visit(self):
-            if isinstance(self, Kern):
-                self._return_psi2_n_flag[0]=val
-        self.traverse(visit)
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
@@ -97,7 +83,9 @@ class Kern(Parameterized):
     def psi1(self, Z, variational_posterior):
         return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
     def gradients_XX(self, dL_dK, X, X2):
@@ -115,7 +103,8 @@ class Kern(Parameterized):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                      psi0=None, psi1=None, psi2=None):
         """
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
@@ -126,22 +115,27 @@ class Kern(Parameterized):
                         dL_dpsi1 * dpsi1_d{theta_i} +
                         dL_dpsi2 * dpsi2_d{theta_i}
         """
-        dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
+        dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                                        psi0=psi0, psi1=psi1, psi2=psi2)[0]
         self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                psi0=None, psi1=None, psi2=None):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
-        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                                      psi0=psi0, psi1=psi1, psi2=psi2)[1]
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                    psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
-        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                                      psi0=psi0, psi1=psi1, psi2=psi2)[2:]
 
     def plot(self, x=None, fignum=None, ax=None, title=None, plot_limits=None, resolution=None, **mpl_kwargs):
         """

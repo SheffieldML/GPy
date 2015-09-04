@@ -12,18 +12,22 @@ from .gaussherm import PSICOMP_GH
 
 class PSICOMP_RBF(Pickleable):
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, variance, lengthscale, Z, variational_posterior):
+    def psicomputations(self, variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
         if isinstance(variational_posterior, variational.NormalPosterior):
-            return rbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior)
+            return rbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=return_psi2_n)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
+            if return_psi2_n:
+                raise NotImplementedError('However this function seems to return it by default')
             return ssrbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior)
         else:
             raise ValueError("unknown distriubtion received for psi-statistics")
 
     @Cache_this(limit=10, ignore_args=(0,1,2,3))
-    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
+                                  psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         if isinstance(variational_posterior, variational.NormalPosterior):
-            return rbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
+            return rbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior,
+                                                          psi0=psi0, psi1=psi1, psi2=psi2, Lpsi0=Lpsi0, Lpsi1=Lpsi1, Lpsi2=Lpsi2)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
         else:
@@ -35,7 +39,9 @@ class PSICOMP_RBF(Pickleable):
 class PSICOMP_Linear(Pickleable):
 
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, variance, Z, variational_posterior):
+    def psicomputations(self, variance, Z, variational_posterior, return_psi2_n=False):
+        if return_psi2_n:
+            raise NotImplementedError
         if isinstance(variational_posterior, variational.NormalPosterior):
             return linear_psi_comp.psicomputations(variance, Z, variational_posterior)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
@@ -44,8 +50,9 @@ class PSICOMP_Linear(Pickleable):
             raise ValueError("unknown distriubtion received for psi-statistics")
 
     @Cache_this(limit=10, ignore_args=(0,1,2,3))
-    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
+    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior, psi0=None, psi1=None, psi2=None):
         if isinstance(variational_posterior, variational.NormalPosterior):
+            #Should pass psi in
             return linear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior)

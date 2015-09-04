@@ -9,9 +9,9 @@ import numpy as np
 
 from GPy.util.caching import Cache_this
 from ....util.linalg import tdot
-from ....core.parameterization.parameter_core import Pickleable
+from . import PSICOMP
 
-class PSICOMP_GH(Pickleable):
+class PSICOMP_GH(PSICOMP):
     
     def __init__(self, degree=5, cache_K=True):
         self.degree = degree
@@ -36,7 +36,7 @@ class PSICOMP_GH(Pickleable):
         return self.Xs
     
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, kern, Z, qX):
+    def psicomputations(self, kern, Z, qX, return_psi2_n=False):
         mu, S = qX.mean.values, qX.variance.values
         N,M,Q = mu.shape[0],Z.shape[0],mu.shape[1]
         if self.cache_K: Xs = self.comp_K(Z, qX)

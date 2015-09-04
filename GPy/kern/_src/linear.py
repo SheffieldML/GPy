@@ -117,29 +117,29 @@ class Linear(Kern):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[0]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
 
     def psi1(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[1]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
 
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
 
     def psi2n(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior, return_psi2_n=True)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        dL_dvar = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[0]
+        dL_dvar = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         if self.ARD:
             self.variances.gradient = dL_dvar
         else:
             self.variances.gradient = dL_dvar.sum()
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[1]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[2:]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
 
 class LinearFull(Kern):
     def __init__(self, input_dim, rank, W=None, kappa=None, active_dims=None, name='linear_full'):

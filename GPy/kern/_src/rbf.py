@@ -53,25 +53,25 @@ class RBF(Stationary):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[0]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
 
     def psi1(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[1]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
 
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior, return_psi2_n=False)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
 
     def psi2n(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior, return_psi2_n=True)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        dL_dvar, dL_dlengscale = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[:2]
+        dL_dvar, dL_dlengscale = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[:2]
         self.variance.gradient = dL_dvar
         self.lengthscale.gradient = dL_dlengscale
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[2]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variance, self.lengthscale, Z, variational_posterior)[3:]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[3:]
 

@@ -43,6 +43,8 @@ class StateSpace(Model):
         assert self.output_dim == 1, "State space methods for single outputs only"
 
         self.kalman_filter_type = kalman_filter_type
+        self.kalman_filter_type = 'svd' # temp test
+        
         
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
@@ -70,7 +72,9 @@ class StateSpace(Model):
         """
         Parameters have now changed
         """
-
+        np.set_printoptions(16)
+        print(self.param_array)
+        #import pdb; pdb.set_trace()
         
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dFt,dQct,dP_inft, dP0t) = self.kern.sde()
@@ -115,6 +119,15 @@ class StateSpace(Model):
                                       calc_grad_log_likelihood=True, 
                                       grad_params_no=grad_params_no, 
                                       grad_calc_params=grad_calc_params)
+        
+        #import pdb; pdb.set_trace()
+        
+        if np.any( np.isfinite(log_likelihood) == False):
+            import pdb; pdb.set_trace()
+        
+        if np.any( np.isfinite(grad_log_likelihood) == False):
+            import pdb; pdb.set_trace()
+        #print(grad_log_likelihood)
         
         grad_log_likelihood_sum = np.sum(grad_log_likelihood,axis=1)
         grad_log_likelihood_sum.shape = (grad_log_likelihood_sum.shape[0],1)
@@ -190,27 +203,39 @@ class StateSpace(Model):
                                       F,L,Qc,H,float(self.Gaussian_noise.variance),P_inf,self.X,Y,m_init=None,
                                       P_init=P0, p_kalman_filter_type = kalman_filter_type, 
                                       calc_log_likelihood=False, 
-                                      calc_grad_log_likelihood=False)                              
+                                      calc_grad_log_likelihood=False)
+                                                                   
+#        (filter_means, filter_covs, log_likelihood, 
+#         grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
+#                                      float(self.Gaussian_noise.variance),P_inf,self.X,self.Y,m_init=None,
+#                                      P_init=P0, p_kalman_filter_type = kalman_filter_type, calc_log_likelihood=True, 
+#                                      calc_grad_log_likelihood=True, 
+#                                      grad_params_no=grad_params_no, 
+#                                      grad_calc_params=grad_calc_params)
+                                      
         # Run the Rauch-Tung-Striebel smoother
         if not filteronly:
             (M, P) = ssm.ContDescrStateSpace.cont_discr_rts_smoother(state_dim, M, P, 
-                                AQcomp=SmootherMatrObject, X=X, F=F,L=L,Qc=Qc)
+                                p_dynamic_callables=SmootherMatrObject, X=X, F=F,L=L,Qc=Qc)
         
         # remove initial values        
-        M = M[1:,:]
+        M = M[1:,:,:]
         P = P[1:,:,:]        
         
         # Put the data back in the original order
-        M = M[return_inverse,:]
+        M = M[return_inverse,:,:]
         P = P[return_inverse,:,:]
 
         # Only return the values for Xnew
         if not predict_only_training:
-            M = M[self.num_data:,:]
+            M = M[self.num_data:,:,:]
             P = P[self.num_data:,:,:]
-
+        
         # Calculate the mean and variance
-        m = np.dot(M,H.T)
+        # after einsum m has dimension in 3D (sample_num, dim_no,time_series_no)
+        m = np.einsum('ijl,kj', M, H)# np.dot(M,H.T)
+        m.shape = (m.shape[0], m.shape[1]) # remove the third dimension
+        
         V = np.einsum('ij,ajk,kl', H, P, H.T)
         
         V.shape = (V.shape[0], V.shape[1]) # remove the third dimension

@@ -139,7 +139,7 @@ class sde_Exponential(Exponential):
         F  = np.array(((-1.0/lengthscale,),))
         L  = np.array(((1.0,),)) 
         Qc = np.array( ((2.0*variance/lengthscale,),) ) 
-        H = np.array(((1,),)) 
+        H = np.array(((1.0,),)) 
         Pinf = np.array(((variance,),)) 
         P0 = Pinf.copy()        
         

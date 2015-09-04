@@ -12,8 +12,465 @@ import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
 
-
 print_verbose = False
+
+try:
+    import state_space_cython 
+    cython_code_available = True
+    print("state_space: cython is available")
+except ImportError as e:
+    cython_code_available = False
+
+
+#cython_code_available = False
+if cython_code_available:
+    print("state_space: cython is used")
+else:
+    print("state_space: cython is NOT used")
+    
+class Dynamic_Callables_Python(object):
+    
+    def f_a(self, k, m, A):
+        """
+        p_a: function (k, x_{k-1}, A_{k}). Dynamic function.        
+            k (iteration number), starts at 0
+            x_{k-1} State from the previous step
+            A_{k} Jacobian matrices of f_a. In the linear case it is exactly A_{k}.
+        """
+
+        raise NotImplemented("f_a is not implemented!")
+
+    def Ak(self, k,m,P): # returns state iteration matrix
+        """
+        function (k, m, P) return Jacobian of dynamic function, it is passed into p_a.
+            k (iteration number), starts at 0
+            m: point where Jacobian is evaluated
+            P: parameter for Jacobian, usually covariance matrix.
+        """
+        
+        raise NotImplemented("Ak is not implemented!")
+        
+    def Qk(self, k):
+        """
+        function (k). Returns noise matrix of dynamic model on iteration k.
+                k (iteration number). starts at 0
+        """
+        raise NotImplemented("Qk is not implemented!")
+
+    def Q_srk(self, k):
+        """
+        function (k). Returns the square root of noise matrix of dynamic model on iteration k.
+                k (iteration number). starts at 0
+                
+        This function is implemented to use SVD prediction step.
+        """
+        
+        raise NotImplemented("Q_srk is not implemented!")
+
+    def dAk(self, k):
+        """
+        function (k). Returns the derivative of A on iteration k.
+                k (iteration number). starts at 0
+        """
+        raise NotImplemented("dAk is not implemented!")
+
+    def dQk(self, k):
+        """
+        function (k). Returns the derivative of Q on iteration k.
+                k (iteration number). starts at 0
+        """
+        raise NotImplemented("dQk is not implemented!")    
+    
+    def reset(self,compute_derivatives = False):
+        """
+        Return the state of this object to the beginning of iteration (to k eq. 0)
+        """        
+        
+        raise NotImplemented("reset is not implemented!")
+        
+if cython_code_available:
+    Dynamic_Callables_Class = state_space_cython.Dynamic_Callables_Cython
+else:
+    Dynamic_Callables_Class = Dynamic_Callables_Python
+    
+
+class Measurement_Callables_Python(object):
+    def f_h(self, k, m_pred, Hk):
+        """
+        function (k, x_{k}, H_{k}). Measurement function.
+            k (iteration number), starts at 0
+            x_{k} state 
+            H_{k} Jacobian matrices of f_h. In the linear case it is exactly H_{k}.
+        """
+
+        raise NotImplemented("f_a is not implemented!")
+
+    def Hk(self, k,m_pred,P_pred): # returns state iteration matrix
+        """
+        function (k, m, P) return Jacobian of measurement function, it is
+            passed into p_h.
+            k (iteration number), starts at 0
+            m: point where Jacobian is evaluated
+            P: parameter for Jacobian, usually covariance matrix.
+        """
+        
+        raise NotImplemented("Hk is not implemented!")
+        
+    def Rk(self, k):
+        """
+        function (k). Returns noise matrix of measurement equation 
+            on iteration k.
+            k (iteration number). starts at 0
+        """
+        raise NotImplemented("Rk is not implemented!")
+        
+
+    def R_isrk(self, k):
+        """
+        function (k). Returns the square root of the noise matrix of 
+            measurement equation on iteration k. 
+            k (iteration number). starts at 0
+                
+        This function is implemented to use SVD prediction step.
+        """
+        
+        raise NotImplemented("Q_srk is not implemented!")
+
+    def dHk(self, k):
+        """
+        function (k). Returns the derivative of H on iteration k.
+                k (iteration number). starts at 0
+        """
+        raise NotImplemented("dAk is not implemented!")
+
+    def dRk(self, k):
+        """
+        function (k). Returns the derivative of R on iteration k.
+                k (iteration number). starts at 0
+        """
+        raise NotImplemented("dQk is not implemented!")
+
+    def reset(self,compute_derivatives = False):
+        """
+        Return the state of this object to the beginning of iteration (to k eq. 0)
+        """        
+        
+        raise NotImplemented("reset is not implemented!")
+
+if cython_code_available:
+    Measurement_Callables_Class = state_space_cython.Measurement_Callables_Cython
+else:
+    Measurement_Callables_Class = Measurement_Callables_Python
+    
+class R_handling_Python(Measurement_Callables_Class):
+    """
+    The calss handles noise matrix R.
+    """
+    def __init__(self, R, index, R_time_var_index, unique_R_number, dR=None):
+        """
+        Input:        
+        ---------------
+        R - array with noise on various steps. The result of preprocessing
+            the noise input.
+        
+        index - for each step of Kalman filter contains the corresponding index
+                in the array.
+        
+        R_time_var_index - another index in the array R. Computed earlier and passed here.
+        
+        unique_R_number - number of unique noise matrices below which square roots
+            are cached and above which they are computed each time.
+        
+        dR: 3D array[:, :, param_num]
+            derivative of R. Derivative is supported only when R do not change over time
+             
+        Output:
+        --------------
+        Object which has two necessary functions:
+            f_R(k)
+            inv_R_square_root(k)
+        """
+        self.R = R
+        self.index = index
+        self.R_time_var_index = R_time_var_index
+        self.dR = dR        
+        
+        if (len(np.unique(index)) > unique_R_number):
+            self.svd_each_time = True
+        else:
+            self.svd_each_time = False
+            
+        self.R_square_root = {}
+        
+    def Rk(self,k):
+        return self.R[:,:, self.index[self.R_time_var_index, k]]
+    
+    def dRk(self,k):
+        if self.dR is None:
+            raise ValueError("dR derivative is None")
+            
+        return self.dR # the same dirivative on each iteration
+        
+    def R_isrk(self, k):
+        """
+        Function returns the inverse square root of R matrix on step k.
+        """
+        ind = self.index[self.R_time_var_index, k]
+        R = self.R[:,:, ind ]
+        
+        if (R.shape[0] == 1): # 1-D case handle simplier. No storage
+        # of the result, just compute it each time.
+            inv_square_root = np.sqrt( 1.0/R )
+        else:
+            if self.svd_each_time:
+                
+                (U,S,Vh) = sp.linalg.svd( R,full_matrices=False, compute_uv=True, 
+                          overwrite_a=False,check_finite=True)
+                          
+                inv_square_root = U * 1.0/np.sqrt(S)
+            else:
+                if ind in self.R_square_root:
+                    inv_square_root = self.R_square_root[ind]
+                else:
+                    (U,S,Vh) = sp.linalg.svd( R,full_matrices=False, compute_uv=True, 
+                              overwrite_a=False,check_finite=True)
+                    
+                    inv_square_root = U * 1.0/np.sqrt(S)
+                    
+                    self.R_square_root[ind] = inv_square_root
+                
+        return inv_square_root
+
+if cython_code_available:
+    R_handling_Class = state_space_cython.R_handling_Cython
+else:
+    R_handling_Class = R_handling_Python
+
+class Std_Measurement_Callables_Python(R_handling_Class):
+    
+    def __init__(self, H, H_time_var_index, R, index, R_time_var_index, unique_R_number, dH = None, dR=None):
+        super(Std_Measurement_Callables_Python,self).__init__(R, index, R_time_var_index, unique_R_number,dR)
+    
+        self.H = H
+        self.H_time_var_index = H_time_var_index
+        self.dH = dH
+    def f_h(self, k, m, H):
+        """
+        function (k, x_{k}, H_{k}). Measurement function.
+            k (iteration number), starts at 0
+            x_{k} state 
+            H_{k} Jacobian matrices of f_h. In the linear case it is exactly H_{k}.
+        """
+
+        return np.dot(H, m)
+
+    def Hk(self, k,m_pred,P_pred): # returns state iteration matrix
+        """
+        function (k, m, P) return Jacobian of measurement function, it is
+            passed into p_h.
+            k (iteration number), starts at 0
+            m: point where Jacobian is evaluated
+            P: parameter for Jacobian, usually covariance matrix.
+        """
+
+        return self.H[:,:, self.index[self.H_time_var_index, k]]
+        
+    def dHk(self,k):
+        if self.dH is None:
+            raise ValueError("dH derivative is None")
+    
+        return self.dH # the same dirivative on each iteration
+
+if cython_code_available:
+    Std_Measurement_Callables_Class = state_space_cython.Std_Measurement_Callables_Cython
+else:
+    Std_Measurement_Callables_Class = Std_Measurement_Callables_Python
+    
+class Q_handling_Python(Dynamic_Callables_Class):
+    
+    def __init__(self, Q, index, Q_time_var_index, unique_Q_number, dQ = None):
+        """
+        Input:        
+        ---------------
+        R - array with noise on various steps. The result of preprocessing
+            the noise input.
+        
+        index - for each step of Kalman filter contains the corresponding index
+                in the array.
+        
+        R_time_var_index - another index in the array R. Computed earlier and passed here.
+        
+        unique_R_number - number of unique noise matrices below which square roots
+            are cached and above which they are computed each time.
+            
+        dQ: 3D array[:, :, param_num]
+            derivative of Q. Derivative is supported only when Q do not change over time
+            
+        Output:
+        --------------
+        Object which has two necessary functions:
+            f_R(k)
+            inv_R_square_root(k)
+        """
+    
+        self.Q = Q
+        self.index = index
+        self.Q_time_var_index = Q_time_var_index
+        self.dQ = dQ         
+        
+        if (len(np.unique(index)) > unique_Q_number):
+            self.svd_each_time = True
+        else:
+            self.svd_each_time = False
+            
+        self.Q_square_root = {}
+    
+        
+    def Qk(self,k):
+        """
+        function (k). Returns noise matrix of dynamic model on iteration k.
+                k (iteration number). starts at 0
+        """
+        return self.Q[:,:, self.index[self.Q_time_var_index, k]]
+    
+    def dQk(self,k):
+        if self.dQ is None:
+            raise ValueError("dQ derivative is None")
+            
+        return self.dQ # the same dirivative on each iteration
+        
+    def Q_srk(self,k):
+        """
+        function (k). Returns the square root of noise matrix of dynamic model on iteration k.
+                k (iteration number). starts at 0
+                
+        This function is implemented to use SVD prediction step.
+        """
+        ind = self.index[self.Q_time_var_index, k]
+        Q = self.Q[:,:, ind]
+        
+        
+        if (Q.shape[0] == 1): # 1-D case handle simplier. No storage
+        # of the result, just compute it each time.
+            square_root = np.sqrt( Q )
+        else:
+            if self.svd_each_time:
+                
+                (U,S,Vh) = sp.linalg.svd( Q,full_matrices=False, compute_uv=True, 
+                          overwrite_a=False,check_finite=True)
+                          
+                square_root = U * np.sqrt(S)
+            else:
+                
+                if ind in self.Q_square_root:
+                    square_root = self.Q_square_root[ind]
+                else:
+                    (U,S,Vh) = sp.linalg.svd( Q,full_matrices=False, compute_uv=True, 
+                              overwrite_a=False,check_finite=True)
+                    
+                    square_root = U * np.sqrt(S)
+                    
+                    self.Q_square_root[ind] = square_root
+            
+        return square_root
+
+if cython_code_available:
+    Q_handling_Class = state_space_cython.Q_handling_Cython
+else:
+    Q_handling_Class = Q_handling_Python
+
+class Std_Dynamic_Callables_Python(Q_handling_Class):
+    
+    def __init__(self, A, A_time_var_index, Q, index, Q_time_var_index, unique_Q_number, dA = None, dQ=None):
+        super(Std_Measurement_Callables_Python,self).__init__(Q, index, Q_time_var_index, unique_Q_number,dQ)
+    
+        self.A = A
+        self.A_time_var_index = A_time_var_index
+        self.dA = dA
+        
+    def f_a(self, k, m, A):
+        """
+            f_a: function (k, x_{k-1}, A_{k}). Dynamic function.        
+            k (iteration number), starts at 0
+            x_{k-1} State from the previous step
+            A_{k} Jacobian matrices of f_a. In the linear case it is exactly A_{k}.
+        """
+
+        return np.dot(A,m)
+
+    def Ak(self, k,m_pred,P_pred): # returns state iteration matrix
+        """
+        function (k, m, P) return Jacobian of measurement function, it is
+            passed into p_h.
+            k (iteration number), starts at 0
+            m: point where Jacobian is evaluated
+            P: parameter for Jacobian, usually covariance matrix.
+        """
+
+        return self.A[:,:, self.index[self.A_time_var_index, k]]
+        
+    def dAk(self,k):
+        if self.dA is None:
+            raise ValueError("dA derivative is None")
+    
+        return self.dA # the same dirivative on each iteration
+
+if cython_code_available:
+    Std_Dynamic_Callables_Class = state_space_cython.Std_Dynamic_Callables_Cython
+else:
+    Std_Dynamic_Callables_Class = Std_Dynamic_Callables_Python
+
+
+class AddMethodToClass(object):
+    
+    def __init__(self, func=None, tp='staticmethod'):
+        """
+        Input:
+        --------------
+        func: function to add
+        tp: string
+        Type of the method: normal, staticmethod, classmethod
+        """        
+        if func is None:
+            raise ValueError("Function can not be None")
+            
+        self.func = func
+        self.tp = tp
+        
+    def __get__(self, obj, klass=None,*args, **kwargs):
+        
+        if self.tp == 'staticmethod':
+            return self.func
+        elif self.tp == 'normal':
+            def newfunc(obj, *args, **kwargs):
+               return self.func
+               
+        elif self.tp == 'classmethod': 
+            def newfunc(klass, *args, **kwargs):
+               return self.func
+        return newfunc
+        
+class DescreteStateSpaceMeta(type):
+    """
+    Substitute necessary methods from cython.
+    """
+    
+    def __new__(typeclass, name, bases, attributes):
+        """
+        After thos method the class object is created
+        """
+        
+        if cython_code_available:
+            if '_kalman_prediction_step_SVD' in attributes:
+                attributes['_kalman_prediction_step_SVD'] = AddMethodToClass(state_space_cython._kalman_prediction_step_SVD_Cython)
+                
+            if '_kalman_update_step_SVD' in attributes:    
+                attributes['_kalman_update_step_SVD'] = AddMethodToClass(state_space_cython._kalman_update_step_SVD_Cython)
+            
+            if '_cont_discr_kalman_filter_raw' in attributes:
+                attributes['_cont_discr_kalman_filter_raw'] = AddMethodToClass(state_space_cython._cont_discr_kalman_filter_raw_Cython)
+                
+        return super(DescreteStateSpaceMeta, typeclass).__new__(typeclass, name, bases, attributes)
 
 class DescreteStateSpace(object):
     """
@@ -37,9 +494,10 @@ class DescreteStateSpace(object):
     implementations are very similar.
     
     """
+    __metaclass__ = DescreteStateSpaceMeta
     
     @staticmethod
-    def _reshape_input_data(shape):
+    def _reshape_input_data(shape, desired_dim=3):
         """
         Static function returns the column-wise shape for for an input shape.
         
@@ -47,23 +505,38 @@ class DescreteStateSpace(object):
         --------------
             shape: tuple
                 Shape of an input array, so that it is always a column.
-            
+                
+            desired_dim: int
+                desired shape of output. For Y data it should be 3 
+                (sample_no, dimension, ts_no). For X data - 2 (sample_no, 1)
         Output:
         --------------
             new_shape: tuple
                 New shape of the measurements array. Idea is that samples are 
-                along dimension 0.
+                along dimension 0, sample dimension - dimension 1, different
+                time series - dimension 2.
             old_shape: tuple or None
                 If the shape has been modified, return old shape, otherwise None
         """
     
     
         if (len(shape) > 3):
-            raise ValueError("Input array is not supposed to be more than 3 dimensional")            
+            raise ValueError("Input array is not supposed to be more than 3 dimensional.")
+        
+        if (len(shape) > desired_dim):
+            raise ValueError("Input array shape is more than desired shape.")             
         elif len(shape) == 1:
-            return ((shape[0],1), shape)
+            if (desired_dim==3):
+                return ((shape[0],1,1), shape) # last dimension is the time serime_series_no
+            elif (desired_dim==2):
+                return ((shape[0],1), shape)
+                
         elif len(shape) == 2:
-            return ((shape[1],1), shape) if (shape[0] == 1) else (shape,None)  # convert to column vector
+            if (desired_dim==3):
+                return ((shape[1],1,1), shape) if (shape[0] == 1) else ( (shape[0],shape[1],1), shape)  # convert to column vector
+            elif (desired_dim==2):    
+                return ((shape[1],1), shape) if (shape[0] == 1) else ( (shape[0],shape[1]), None)  # convert to column vector
+                
         else: # len(shape) == 3
             return (shape,None) # do nothing
             
@@ -97,7 +570,7 @@ class DescreteStateSpace(object):
         Log_likelihood and Grad_log_likelihood have the corresponding dimensions then.
 
         4) Calculation of Grad_log_likelihood is not supported if matrices A,Q,
-        H, or R changes overf time. (later may be changed)
+        H, or R changes over time. (later may be changed)
 
         5) Measurement may include missing values. In this case update step is
         not done for this measurement. (later may be changed)
@@ -208,10 +681,7 @@ class DescreteStateSpace(object):
         # Reshape and check measurements:
         Y.shape, old_Y_shape  = cls._reshape_input_data(Y.shape)
         measurement_dim = Y.shape[1]
-        if len(Y.shape) == 2: 
-            time_series_no = 1 # regular case
-        elif len(Y.shape) == 3:
-            time_series_no = Y.shape[2] # multiple time series mode
+        time_series_no = Y.shape[2] # multiple time series mode
         
         if ((len(p_A.shape) == 3) and (len(p_A.shape[2]) != 1)) or\
             ((len(p_Q.shape) == 3) and (len(p_Q.shape[2]) != 1)) or\
@@ -256,14 +726,9 @@ class DescreteStateSpace(object):
         
         # m_init
         if m_init is None:
-            if (time_series_no == 1):
-                m_init = m_init = np.zeros((state_dim,1))
-            else:
-                # multiple time series mode.
-                m_init = np.zeros((state_dim, time_series_no))
+            m_init = np.zeros((state_dim, time_series_no))
         else:
-            if (time_series_no == 1):
-                m_init = np.atleast_2d(m_init).T
+            m_init = np.atleast_2d(m_init).T
         
         # P_init
         if P_init is None:
@@ -280,48 +745,36 @@ class DescreteStateSpace(object):
         c_p_Q = p_A.copy() # create a copy because this object is passed to the smoother
         c_index = index.copy() # create a copy because this object is passed to the smoother
         
-        fa = lambda k,m,A: np.dot(A, m)
-        f_A = lambda k,m,P: c_p_A[:,:, c_index[A_time_var_index, k]]
-        f_Q = lambda k: c_p_Q[:,:, c_index[Q_time_var_index, k]]
-        fh = lambda k,m,H: np.dot(H, m)
-        f_H = lambda k,m,P: p_H[:,:, index[H_time_var_index, k]]
-        f_R = lambda k: p_R[:,:, index[R_time_var_index, k]]
-        
-        
         grad_calc_params_pass_further = None
         if calc_grad_log_likelihood:
             if model_matrices_chage_with_time:
                 raise ValueError("When computing likelihood gradient A and Q can not change over time.")    
             
-            f_dA = cls._check_grad_state_matrices(grad_calc_params.get('dA'), state_dim, grad_params_no, which = 'dA')
-            f_dQ = cls._check_grad_state_matrices(grad_calc_params.get('dQ'), state_dim, grad_params_no, which = 'dQ')
-            f_dH = cls._check_grad_measurement_matrices(grad_calc_params.get('dH'), state_dim, grad_params_no, measurement_dim, which = 'dH')
-            f_dR = cls._check_grad_measurement_matrices(grad_calc_params.get('dR'), state_dim, grad_params_no, measurement_dim, which = 'dR')
-            
+            dA = cls._check_grad_state_matrices(grad_calc_params.get('dA'), state_dim, grad_params_no, which = 'dA')
+            dQ = cls._check_grad_state_matrices(grad_calc_params.get('dQ'), state_dim, grad_params_no, which = 'dQ')
+            dH = cls._check_grad_measurement_matrices(grad_calc_params.get('dH'), state_dim, grad_params_no, measurement_dim, which = 'dH')
+            dR = cls._check_grad_measurement_matrices(grad_calc_params.get('dR'), state_dim, grad_params_no, measurement_dim, which = 'dR')
+
             dm_init = grad_calc_params.get('dm_init')
             if dm_init is None:
-                if (time_series_no == 1):
-                    dm_init = np.zeros((state_dim,grad_params_no))
-                else:
-                     # multiple time series mode. Keep grad_params always as a last dimension
-                    dm_init = np.zeros((state_dim, time_series_no, grad_params_no))
+                dm_init = np.zeros((state_dim, time_series_no, grad_params_no))
                 
             dP_init = grad_calc_params.get('dP_init')
             if dP_init is None:
                 dP_init = np.zeros((state_dim,state_dim,grad_params_no))
             
             grad_calc_params_pass_further = {}
-            grad_calc_params_pass_further['f_dA'] = f_dA
-            grad_calc_params_pass_further['f_dQ'] = f_dQ
-            grad_calc_params_pass_further['f_dH'] = f_dH
-            grad_calc_params_pass_further['f_dR'] = f_dR
             grad_calc_params_pass_further['dm_init'] = dm_init
             grad_calc_params_pass_further['dP_init'] = dP_init
-            
-        (M, P,log_likelihood, grad_log_likelihood) = cls._kalman_algorithm_raw(state_dim, fa, f_A, f_Q, fh, f_H, f_R, Y, m_init,
-                          P_init, calc_log_likelihood=calc_log_likelihood, 
-                          calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                          grad_calc_params=grad_calc_params_pass_further)
+        
+        dynamic_callables = Std_Dynamic_Callables_Class(c_p_A, A_time_var_index, c_p_Q, c_index, Q_time_var_index, 20, dA, dQ)
+        measurement_callables = Std_Measurement_Callables_Class(p_H, H_time_var_index, p_R, index, R_time_var_index, 20, dH, dR)
+        
+        (M, P,log_likelihood, grad_log_likelihood) = cls._kalman_algorithm_raw(state_dim, dynamic_callables,
+                                    measurement_callables, Y, m_init,
+                                    P_init, calc_log_likelihood=calc_log_likelihood, 
+                                    calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                                    grad_calc_params=grad_calc_params_pass_further)
                           
         # restore shapes so that input parameters are unchenged
         if old_index_shape is not None:
@@ -342,13 +795,8 @@ class DescreteStateSpace(object):
         if old_R_shape is not None:
             p_R.shape = old_R_shape
         # Return values
-            
-        matrs_for_smoother = {}
-        matrs_for_smoother['p_a'] = fa
-        matrs_for_smoother['p_f_A'] = f_A
-        matrs_for_smoother['p_f_Q'] = f_Q
-        
-        return (M, P,log_likelihood, grad_log_likelihood, matrs_for_smoother)
+       
+        return (M, P,log_likelihood, grad_log_likelihood, dynamic_callables)
         
     @classmethod        
     def extended_kalman_filter(cls,p_state_dim, p_a, p_f_A, p_f_Q, p_h, p_f_H, p_f_R, Y, m_init=None,
@@ -482,7 +930,21 @@ class DescreteStateSpace(object):
         else:
             if p_f_R(1).shape[0] != m_init.shape[0]:
                 raise ValueError("p_f_R function returns matrix of wrong size")
-
+        
+#        class dynamic_callables_class(Dynamic_Model_Callables):
+#            
+#            Ak = 
+#            Qk = 
+        
+        
+        class measurement_callables_class(R_handling_Class):
+            def __init__(self,R, index, R_time_var_index, unique_R_number):
+                super(measurement_callables_class,self).__init__(R, index, R_time_var_index, unique_R_number)
+            
+            Hk = AddMethodToClass(f_H)
+            f_h = AddMethodToClass(f_hl)
+        
+        
         (M, P,log_likelihood, grad_log_likelihood)  = cls._kalman_algorithm_raw(p_state_dim, p_a, p_f_A, p_f_Q, p_h, p_f_H, p_f_R, Y, m_init,
                           P_init, calc_log_likelihood, 
                           calc_grad_log_likelihood=False, grad_calc_params=None)
@@ -505,7 +967,7 @@ class DescreteStateSpace(object):
         return (M, P)                     
         
     @classmethod
-    def _kalman_algorithm_raw(cls,state_dim, p_a, p_f_A, p_f_Q, p_h, p_f_H, p_f_R, Y, m_init,
+    def _kalman_algorithm_raw(cls,state_dim, p_dynamic_callables, p_measurement_callables, Y, m_init,
                           P_init, calc_log_likelihood=False, 
                           calc_grad_log_likelihood=False, grad_calc_params=None):
         """
@@ -617,30 +1079,17 @@ class DescreteStateSpace(object):
         """
             
         steps_no = Y.shape[0] # number of steps in the Kalman Filter
-        if len(Y.shape) == 2: 
-            time_series_no = 1 # regular case
-        elif len(Y.shape) == 3:
-            time_series_no = Y.shape[2] # multiple time series mode
+        time_series_no = Y.shape[2] # multiple time series mode
             
         if calc_grad_log_likelihood:
-            grad_calc_params_1 = (grad_calc_params['f_dA'], grad_calc_params['f_dQ'])
-            grad_calc_params_2 = (grad_calc_params['f_dH'],grad_calc_params['f_dR'])
-            
             dm_init = grad_calc_params['dm_init']; dP_init = grad_calc_params['dP_init']
         else:
-            grad_calc_params_1 = None
-            grad_calc_params_2 = None
-        
             dm_init = None; dP_init = None
                     
         # Allocate space for results
         # Mean estimations. Initial values will be included
-        if (time_series_no == 1): # one time series mode
-            M = np.empty(((steps_no+1),state_dim))
-            M[0,:] = np.squeeze(m_init) # Initialize mean values
-        else:  # multiple time series mode
-            M = np.empty(((steps_no+1),state_dim,time_series_no))
-            M[0,:,:] = m_init # Initialize mean values
+        M = np.empty(((steps_no+1),state_dim,time_series_no))
+        M[0,:,:] = m_init # Initialize mean values
         # Variance estimations. Initial values will be included
         P = np.empty(((steps_no+1),state_dim,state_dim))
         P[0,:,:] = P_init # Initialize initial covariance matrix
@@ -655,22 +1104,24 @@ class DescreteStateSpace(object):
         for k in range(0,steps_no):
             # In this loop index for new estimations is (k+1), old - (k)
             # This happened because initial values are stored at 0-th index.
+                
+            prev_mean = M[k,:,:] # mean from the previous step
 
-            if (time_series_no == 1): # single time series mode
-                k_measurment = Y[k,:].T # measurement as column
-            else: # multiple time series mode
-                k_measurment = Y[k,:,:]
-            
             m_pred, P_pred, dm_pred, dP_pred = \
-            cls._kalman_prediction_step(k, M[k,:] ,P[k,:,:], p_a, p_f_A, p_f_Q, 
+            cls._kalman_prediction_step(k, prev_mean ,P[k,:,:], p_dynamic_callables, 
                 calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                p_dm = dm_upd, p_dP = dP_upd, grad_calc_params_1 = grad_calc_params_1)
+                p_dm = dm_upd, p_dP = dP_upd)
+            
+            k_measurment = Y[k,:,:]
+                
+            if np.any(np.isnan(k_measurment)):
+                raise ValueError("Nan measurements are currently not supported")
             
             m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-            cls._kalman_update_step(k,  m_pred , P_pred, p_h, p_f_H, p_f_R, k_measurment, 
+            cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
                         calc_log_likelihood=calc_log_likelihood, 
                         calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = grad_calc_params_2)                
+                        p_dm = dm_pred, p_dP = dP_pred)                
             
             if calc_log_likelihood:
                 log_likelihood += log_likelihood_update
@@ -678,20 +1129,17 @@ class DescreteStateSpace(object):
             if calc_grad_log_likelihood:
                 grad_log_likelihood += d_log_likelihood_update
                 
-            if (time_series_no == 1): # single time series mode
-                M[k+1,:] = np.squeeze(m_upd)
-            else: # multiple time series mode
-                M[k+1,:,:] = m_upd # separate mean value for each time series
+            M[k+1,:,:] = m_upd # separate mean value for each time series
                 
             P[k+1,:,:] = P_upd
         
         # !!!Print statistics! Print sizes of matrices
         # !!!Print statistics! Print iteration time base on another boolean variable
-        return (M, P, log_likelihood, grad_log_likelihood)
+        return (M, P, log_likelihood, grad_log_likelihood, p_dynamic_callables.reset(False))
         
     @staticmethod    
-    def _kalman_prediction_step(k, p_m , p_P, p_a, p_f_A, p_f_Q, calc_grad_log_likelihood=False, 
-                                p_dm = None, p_dP = None, grad_calc_params_1 = None):
+    def _kalman_prediction_step(k, p_m , p_P, p_dyn_model_callable, calc_grad_log_likelihood=False, 
+                                p_dm = None, p_dP = None):
         """
         Desctrete prediction function        
         
@@ -708,20 +1156,9 @@ class DescreteStateSpace(object):
             p_P:
                 Covariance matrix from the previous step.
                 
-            p_a: function (k, x_{k-1}, A_{k}). Dynamic function.        
-                k (iteration number), starts at 0
-                x_{k-1} State from the previous step
-                A_{k} Jacobian matrices of f_a. In the linear case it is exactly A_{k}.
+            p_dyn_model_callable: class
             
-            p_f_A: function (k, m, P) return Jacobian of dynamic function, it is
-                passed into p_a.
-                k (iteration number), starts at 0
-                m: point where Jacobian is evaluated
-                P: parameter for Jacobian, usually covariance matrix.
-        
-            p_f_Q: function (k). Returns noise matrix of dynamic model on iteration k.
-                k (iteration number). starts at 0
-                
+            
             calc_grad_log_likelihood: boolean
                 Whether to calculate gradient of the marginal likelihood 
                 of the state-space model. If true then the next parameter must 
@@ -735,40 +1172,25 @@ class DescreteStateSpace(object):
             p_dP: 3D array (state_dim, state_dim, parameters_no)
                 Mean derivatives from the previous step
                 
-            grad_calc_params_1: List or None
-            List with derivatives. The first component is 'f_dA' - function(k)
-            which returns the derivative of H. The second element is 'f_dQ'
-             - function(k). Function which returns the derivative of Q.
-             
         Output:
         ----------------------------
         m_pred, P_pred, dm_pred, dP_pred: metrices, 3D objects
             Results of the prediction steps.        
             
         """
-        if len(p_m.shape)<2:
-            p_m.shape = (p_m.shape[0],1)
-        
-        #import pdb; pdb.set_trace()
         
         # index correspond to values from previous iteration.
-        A = p_f_A(k,p_m,p_P) # state transition matrix (or Jacobian)
-        Q = p_f_Q(k) # state noise matrix 
+        A = p_dyn_model_callable.Ak(k,p_m,p_P) # state transition matrix (or Jacobian)
+        Q = p_dyn_model_callable.Qk(k) # state noise matrix 
                   
-        
         # Prediction step ->
-        m_pred = p_a(k, p_m, A) # predicted mean
+        m_pred = p_dyn_model_callable.f_a(k, p_m, A) # predicted mean
         P_pred = A.dot(p_P).dot(A.T) + Q # predicted variance
         # Prediction step <-
         
-        if (p_m.shape[1] > 1):
-            multiple_ts_mode = True
-        else:
-            multiple_ts_mode = False
-        
         if calc_grad_log_likelihood:
-            p_f_dA = grad_calc_params_1[0]; dA_all_params = p_f_dA(k) # derivatives of A wrt parameters 
-            p_f_dQ = grad_calc_params_1[1]; dQ_all_params = p_f_dQ(k) # derivatives of Q wrt parameters
+            dA_all_params = p_dyn_model_callable.dAk(k) # derivatives of A wrt parameters 
+            dQ_all_params = p_dyn_model_callable.dQk(k) # derivatives of Q wrt parameters
             
             param_number = p_dP.shape[2]
             
@@ -781,14 +1203,9 @@ class DescreteStateSpace(object):
                 dQ = dQ_all_params[:,:,j]
                 
                 dP = p_dP[:,:,j]
-                if (multiple_ts_mode == False):
-                    dm = p_dm[:,j]; dm.shape = (dm.shape[0],1)
-                    dm_pred[:,j] =  np.squeeze(np.dot(dA, p_m) + np.dot(A, dm)) # dm can 3-dim (dim,ts,variable)
-                elif (multiple_ts_mode == True): # modification for several time series
-                    dm = p_dm[:,:,j]
-                    dm_pred[:,:,j] = np.dot(dA, p_m) + np.dot(A, dm)
+                dm = p_dm[:,:,j]
+                dm_pred[:,:,j] = np.dot(dA, p_m) + np.dot(A, dm)
                 # prediction step derivatives for current parameter:
-                
                 
                 dP_pred[:,:,j] = np.dot( dA ,np.dot(p_P, A.T))
                 dP_pred[:,:,j] += dP_pred[:,:,j].T            
@@ -802,8 +1219,8 @@ class DescreteStateSpace(object):
         return m_pred, P_pred, dm_pred, dP_pred
     
     @staticmethod    
-    def _kalman_prediction_step_SVD(k, p_m , p_P, p_a, p_f_A, p_f_Q, p_f_Qsr, calc_grad_log_likelihood=False, 
-                                p_dm = None, p_dP = None, grad_calc_params_1 = None):
+    def _kalman_prediction_step_SVD(k, p_m , p_P, p_dyn_model_callable, calc_grad_log_likelihood=False, 
+                                p_dm = None, p_dP = None):
         """
         Desctrete prediction function        
         
@@ -821,22 +1238,7 @@ class DescreteStateSpace(object):
                 Covariance matrix from the previous step and its SVD decomposition.
                 Prev_cov = V * S * V.T The tuple is (Prev_cov, S, V)                
                 
-            p_a: function (k, x_{k-1}, A_{k}). Dynamic function.        
-                k (iteration number), starts at 0
-                x_{k-1} State from the previous step
-                A_{k} Jacobian matrices of f_a. In the linear case it is exactly A_{k}.
-            
-            p_f_A: function (k, m, P) return Jacobian of dynamic function, it is
-                passed into p_a.
-                k (iteration number), starts at 0
-                m: point where Jacobian is evaluated
-                P: parameter for Jacobian, usually covariance matrix.
-        
-            p_f_Q: function (k). Returns noise matrix of dynamic model on iteration k.
-                k (iteration number). starts at 0
-            
-            p_f_Qsr: function (k). Returns square root of noise matrix of the 
-                dynamic model on iteration k. k (iteration number). starts at 0
+            p_dyn_model_callable: object
                 
             calc_grad_log_likelihood: boolean
                 Whether to calculate gradient of the marginal likelihood 
@@ -851,19 +1253,12 @@ class DescreteStateSpace(object):
             p_dP: 3D array (state_dim, state_dim, parameters_no)
                 Mean derivatives from the previous step
                 
-            grad_calc_params_1: List or None
-            List with derivatives. The first component is 'f_dA' - function(k)
-            which returns the derivative of H. The second element is 'f_dQ'
-             - function(k). Function which returns the derivative of Q.
-             
         Output:
         ----------------------------
         m_pred, P_pred, dm_pred, dP_pred: metrices, 3D objects
             Results of the prediction steps.        
             
         """
-        if len(p_m.shape)<2:
-            p_m.shape = (p_m.shape[0],1)
         
         # covariance from the previous step and its SVD decomposition
         # p_prev_cov = v * S * V.T
@@ -871,11 +1266,11 @@ class DescreteStateSpace(object):
         #p_prev_cov_tst = np.dot(p_V, (p_S * p_V).T) # reconstructed covariance from the previous step        
         
         # index correspond to values from previous iteration.
-        A = p_f_A(k,p_m,Prev_cov) # state transition matrix (or Jacobian)
-        Q = p_f_Q(k) # state noise matrx. This is necessary for the square root calculation (next step)
-        Q_sr = p_f_Qsr(k)            
+        A = p_dyn_model_callable.Ak(k,p_m,Prev_cov) # state transition matrix (or Jacobian)
+        Q = p_dyn_model_callable.Qk(k) # state noise matrx. This is necessary for the square root calculation (next step)
+        Q_sr = p_dyn_model_callable.Q_srk(k)            
         # Prediction step ->
-        m_pred = p_a(k, p_m, A) # predicted mean
+        m_pred = p_dyn_model_callable.f_a(k, p_m, A) # predicted mean
         
         # coavariance prediction have changed:
         svd_1_matr = np.vstack( ( (np.sqrt(S_old)* np.dot(A,V_old)).T , Q_sr.T) )
@@ -891,15 +1286,10 @@ class DescreteStateSpace(object):
         P_pred = (P_pred, S_new, Vh.T)
         # Prediction step <-
         
-        if (p_m.shape[1] > 1):
-            multiple_ts_mode = True
-        else:
-            multiple_ts_mode = False
-        
         # derivatives
         if calc_grad_log_likelihood:
-            p_f_dA = grad_calc_params_1[0]; dA_all_params = p_f_dA(k) # derivatives of A wrt parameters 
-            p_f_dQ = grad_calc_params_1[1]; dQ_all_params = p_f_dQ(k) # derivatives of Q wrt parameters
+            dA_all_params = p_dyn_model_callable.dAk(k) # derivatives of A wrt parameters 
+            dQ_all_params = p_dyn_model_callable.dQk(k) # derivatives of Q wrt parameters
             
             param_number = p_dP.shape[2]
             
@@ -911,19 +1301,15 @@ class DescreteStateSpace(object):
                 dA = dA_all_params[:,:,j]
                 dQ = dQ_all_params[:,:,j]
                 
-                dP = p_dP[:,:,j]
-                if (multiple_ts_mode == False):
-                    dm = p_dm[:,j]; dm.shape = (dm.shape[0],1)
-                    dm_pred[:,j] =  np.squeeze(np.dot(dA, p_m) + np.dot(A, dm)) # dm can 3-dim (dim,ts,variable)
-                elif (multiple_ts_mode == True): # modification for several time series
-                    dm = p_dm[:,:,j]
-                    dm_pred[:,:,j] = np.dot(dA, p_m) + np.dot(A, dm)
+                #dP = p_dP[:,:,j]
+                #dm = p_dm[:,:,j]
+                dm_pred[:,:,j] = np.dot(dA, p_m) + np.dot(A, p_dm[:,:,j])
                 # prediction step derivatives for current parameter:
                 
                 
                 dP_pred[:,:,j] = np.dot( dA ,np.dot(Prev_cov, A.T))
                 dP_pred[:,:,j] += dP_pred[:,:,j].T            
-                dP_pred[:,:,j] += np.dot( A ,np.dot(dP, A.T)) + dQ
+                dP_pred[:,:,j] += np.dot( A ,np.dot(p_dP[:,:,j], A.T)) + dQ
                 
                 dP_pred[:,:,j] = 0.5*(dP_pred[:,:,j] + dP_pred[:,:,j].T) #symmetrize
         else:
@@ -933,8 +1319,8 @@ class DescreteStateSpace(object):
         return m_pred, P_pred, dm_pred, dP_pred
         
     @staticmethod
-    def _kalman_update_step(k,   p_m , p_P, p_h, p_f_H, p_f_R, measurement, calc_log_likelihood= False, 
-                            calc_grad_log_likelihood=False, p_dm = None, p_dP = None, grad_calc_params_2 = None):
+    def _kalman_update_step(k,   p_m , p_P, p_meas_model_callable, measurement, calc_log_likelihood= False, 
+                            calc_grad_log_likelihood=False, p_dm = None, p_dP = None):
         """
         Input:
         
@@ -950,21 +1336,8 @@ class DescreteStateSpace(object):
         p_P:
              Covariance matrix from the prediction step.
              
-        p_h: function (k, x_{k}, H_{k}). Measurement function.
-            k (iteration number), starts at 0
-            x_{k} state 
-            H_{k} Jacobian matrices of f_h. In the linear case it is exactly H_{k}.
+        p_meas_model_callable: object
         
-        p_f_H: function (k, m, P) return Jacobian of dynamic function, it is
-            passed into p_h.
-            k (iteration number), starts at 0
-            m: point where Jacobian is evaluated
-            P: parameter for Jacobian, usually covariance matrix.
-        
-        p_f_R: function (k). Returns noise matrix of measurement equation 
-            on iteration k.
-            k (iteration number). starts at 0
-            
         measurement: (measurement_dim, time_series_no) matrix
             One measurement used on the current update step. For 
             "multiple time series mode" it is matrix, second dimension of 
@@ -986,11 +1359,6 @@ class DescreteStateSpace(object):
         p_dP: array
             Covariance derivatives from the prediction step.
         
-        grad_calc_params_2: List or None
-            List with derivatives. The first component is 'f_dH' - function(k)
-            which returns the derivative of H. The second element is 'f_dR'
-             - function(k). Function which returns the derivative of R.
-        
         Output:
         ----------------------------
         m_upd, P_upd, dm_upd, dP_upd: metrices, 3D objects
@@ -1008,135 +1376,119 @@ class DescreteStateSpace(object):
         m_pred = p_m # from prediction step
         P_pred = p_P # from prediction step      
         
-        H = p_f_H(k, m_pred, P_pred)
-        R = p_f_R(k)
+        H = p_meas_model_callable.Hk(k, m_pred, P_pred)
+        R = p_meas_model_callable.Rk(k)
         
-        if (p_m.shape[1] > 1):
-            multiple_ts_mode = True
-            time_series_no = p_m.shape[1] # number of time serieses
-        else:
-            time_series_no = 1
-            multiple_ts_mode = False
-        
+        time_series_no = p_m.shape[1] # number of time serieses
+
         log_likelihood_update=None; dm_upd=None; dP_upd=None; d_log_likelihood_update=None
         # Update step (only if there is data)
-        if not np.any(np.isnan(measurement)): # TODO: if some dimensions are missing, do properly computations for other.
-             v = measurement-p_h(k, m_pred, H)
-             S = H.dot(P_pred).dot(H.T) + R
-             if measurement.shape[0]==1: # measurements are one dimensional
-                 if (S < 0):
-                     raise ValueError("Kalman Filter Update: S is negative step %i" % k )
-                     #import pdb; pdb.set_trace()
-                     
-                 K = P_pred.dot(H.T) / S
-                 if calc_log_likelihood:
-                     log_likelihood_update = -0.5 * ( np.log(2*np.pi) + np.log(S) +
-                                         v*v / S)
-                     #log_likelihood_update = log_likelihood_update[0,0] # to make int
-                     if np.any(np.isnan(log_likelihood_update)): # some member in P_pred is None.
-                         raise ValueError("Nan values in likelihood update!")
-                 LL = None; islower = None
-             else:
-                 LL,islower = linalg.cho_factor(S)
-                 K = linalg.cho_solve((LL,islower), H.dot(P_pred.T)).T
+        #if not np.any(np.isnan(measurement)): # TODO: if some dimensions are missing, do properly computations for other.
+        v = measurement-p_meas_model_callable.f_h(k, m_pred, H)
+        S = H.dot(P_pred).dot(H.T) + R
+        if measurement.shape[0]==1: # measurements are one dimensional
+            if (S < 0):
+                raise ValueError("Kalman Filter Update: S is negative step %i" % k )
+                 #import pdb; pdb.set_trace()
                  
-                 if calc_log_likelihood:
-                     log_likelihood_update = -0.5 * ( v.shape[0]*np.log(2*np.pi) + 
-                         2*np.sum( np.log(np.diag(LL)) ) +\
-                             np.sum((linalg.cho_solve((LL,islower),v)) * v, axis = 0) ) # diagonal of v.T*S^{-1}*v
-                     #log_likelihood_update = log_likelihood_update[0,0] # to make int  
-                 
-            
-             if calc_grad_log_likelihood:
-                 dm_pred_all_params = p_dm # derivativas of the prediction phase 
-                 dP_pred_all_params = p_dP
-                 
-                 param_number = p_dP.shape[2]
-                 
-                 p_f_dH = grad_calc_params_2[0]; dH_all_params = p_f_dH(k)
-                 p_f_dR = grad_calc_params_2[1]; dR_all_params = p_f_dR(k)
-                 
-                 dm_upd = np.empty(dm_pred_all_params.shape)
-                 dP_upd = np.empty(dP_pred_all_params.shape)
-                 
-                 # firts dimension parameter_no, second - time series number
-                 d_log_likelihood_update = np.empty((param_number,time_series_no))
-                 for param in range(param_number):
-                
-                    dH = dH_all_params[:,:,param]
-                    dR = dR_all_params[:,:,param]
-                    
-                    if (multiple_ts_mode == False):    
-                        dm_pred = dm_pred_all_params[:,param]
-                    else:
-                        dm_pred = dm_pred_all_params[:,:,param]
-                        
-                        
-                    dP_pred = dP_pred_all_params[:,:,param]
-                
-                    # Terms in the likelihood derivatives
-                    dv = - np.dot( dH, m_pred) -  np.dot( H, dm_pred)           
-                    dS = np.dot(dH, np.dot( P_pred, H.T))
-                    dS += dS.T
-                    dS += np.dot(H, np.dot( dP_pred, H.T)) + dR
-                
-                    # TODO: maybe symmetrize dS
-                
-                    #dm and dP for the next stem
-                    if LL is not None: # the state vector is not a scalar
-                        tmp1 = linalg.cho_solve((LL,islower), H).T
-                        tmp2 = linalg.cho_solve((LL,islower), dH).T
-                        tmp3 = linalg.cho_solve((LL,islower), dS).T
-                    else: # the state vector is a scalar
-                        tmp1 = H.T / S
-                        tmp2 = dH.T / S
-                        tmp3 = dS.T / S
-                        
-                    dK = np.dot( dP_pred, tmp1) + np.dot( P_pred, tmp2) - \
-                         np.dot( P_pred, np.dot( tmp1, tmp3 ) )
-                    
-                    # terms required for the next step, save this for each parameter
-                    if (multiple_ts_mode == False):
-                        dm_upd[:,param] = dm_pred + np.squeeze(np.dot(dK, v) + np.dot(K, dv))
-                    else:
-                        dm_upd[:,:,param] = dm_pred + np.dot(dK, v) + np.dot(K, dv)
-                        
-                    dP_upd[:,:,param] = -np.dot(dK, np.dot(S, K.T))      
-                    dP_upd[:,:,param] += dP_upd[:,:,param].T
-                    dP_upd[:,:,param] += dP_pred - np.dot(K , np.dot( dS, K.T))
-                    
-                    dP_upd[:,:,param] = 0.5*(dP_upd[:,:,param] + dP_upd[:,:,param].T) #symmetrize
-                    # computing the likelihood change for each parameter:
-                    if LL is not None: # the state vector is not 1D
-                        #tmp4 = linalg.cho_solve((LL,islower), dv)
-                        tmp5 = linalg.cho_solve((LL,islower), v)
-                    else: # the state vector is a scalar
-                        #tmp4 = dv / S
-                        tmp5 = v / S
-                        
-                    
-                    d_log_likelihood_update[param,:] = -(0.5*np.sum(np.diag(tmp3)) + \
-                        np.sum(tmp5*dv, axis=0) - 0.5 * np.sum(tmp5 * np.dot(dS, tmp5), axis=0) ) 
-                        
-                    # Before  
-                    #d_log_likelihood_update[param,0] = -(0.5*np.sum(np.diag(tmp3)) + \
-                    #np.dot(tmp5.T, dv) - 0.5 * np.dot(tmp5.T ,np.dot(dS, tmp5)) ) 
-                 
-            
-            
-            # Compute the actual updates for mean and variance of the states.
-             m_upd = m_pred + K.dot( v )
+            K = P_pred.dot(H.T) / S
+            if calc_log_likelihood:
+                log_likelihood_update = -0.5 * ( np.log(2*np.pi) + np.log(S) +
+                                    v*v / S)
+                #log_likelihood_update = log_likelihood_update[0,0] # to make int
+                if np.any(np.isnan(log_likelihood_update)): # some member in P_pred is None.
+                    raise ValueError("Nan values in likelihood update!")
+            LL = None; islower = None
+        else:
+            LL,islower = linalg.cho_factor(S)
+            K = linalg.cho_solve((LL,islower), H.dot(P_pred.T)).T
              
-             # Covariance update and ensure it is symmetric
-             P_upd = K.dot(S).dot(K.T)
-             P_upd = 0.5*(P_upd + P_upd.T)
-             P_upd =  P_pred - P_upd# this update matrix is symmetric
+            if calc_log_likelihood:
+                log_likelihood_update = -0.5 * ( v.shape[0]*np.log(2*np.pi) + 
+                    2*np.sum( np.log(np.diag(LL)) ) +\
+                        np.sum((linalg.cho_solve((LL,islower),v)) * v, axis = 0) ) # diagonal of v.T*S^{-1}*v
+             
+        if calc_grad_log_likelihood:
+            dm_pred_all_params = p_dm # derivativas of the prediction phase 
+            dP_pred_all_params = p_dP
+             
+            param_number = p_dP.shape[2]
+             
+            dH_all_params = p_meas_model_callable.dHk(k)
+            dR_all_params = p_meas_model_callable.dRk(k)
+             
+            dm_upd = np.empty(dm_pred_all_params.shape)
+            dP_upd = np.empty(dP_pred_all_params.shape)
+             
+             # firts dimension parameter_no, second - time series number
+            d_log_likelihood_update = np.empty((param_number,time_series_no))
+            for param in range(param_number):
+            
+               dH = dH_all_params[:,:,param]
+               dR = dR_all_params[:,:,param]
+                
+               dm_pred = dm_pred_all_params[:,:,param]
+               dP_pred = dP_pred_all_params[:,:,param]
+            
+                # Terms in the likelihood derivatives
+               dv = - np.dot( dH, m_pred) -  np.dot( H, dm_pred)           
+               dS = np.dot(dH, np.dot( P_pred, H.T))
+               dS += dS.T
+               dS += np.dot(H, np.dot( dP_pred, H.T)) + dR
+            
+               # TODO: maybe symmetrize dS
+            
+               #dm and dP for the next stem
+               if LL is not None: # the state vector is not a scalar
+                   tmp1 = linalg.cho_solve((LL,islower), H).T
+                   tmp2 = linalg.cho_solve((LL,islower), dH).T
+                   tmp3 = linalg.cho_solve((LL,islower), dS).T
+               else: # the state vector is a scalar
+                   tmp1 = H.T / S
+                   tmp2 = dH.T / S
+                   tmp3 = dS.T / S
+                    
+               dK = np.dot( dP_pred, tmp1) + np.dot( P_pred, tmp2) - \
+                    np.dot( P_pred, np.dot( tmp1, tmp3 ) )
+                
+                # terms required for the next step, save this for each parameter
+               dm_upd[:,:,param] = dm_pred + np.dot(dK, v) + np.dot(K, dv)
+                    
+               dP_upd[:,:,param] = -np.dot(dK, np.dot(S, K.T))      
+               dP_upd[:,:,param] += dP_upd[:,:,param].T
+               dP_upd[:,:,param] += dP_pred - np.dot(K , np.dot( dS, K.T))
+                
+               dP_upd[:,:,param] = 0.5*(dP_upd[:,:,param] + dP_upd[:,:,param].T) #symmetrize
+                # computing the likelihood change for each parameter:
+               if LL is not None: # the state vector is not 1D
+                    #tmp4 = linalg.cho_solve((LL,islower), dv)
+                   tmp5 = linalg.cho_solve((LL,islower), v)
+               else: # the state vector is a scalar
+                   #tmp4 = dv / S
+                   tmp5 = v / S
+                    
+                
+               d_log_likelihood_update[param,:] = -(0.5*np.sum(np.diag(tmp3)) + \
+                    np.sum(tmp5*dv, axis=0) - 0.5 * np.sum(tmp5 * np.dot(dS, tmp5), axis=0) ) 
+                # Before  
+                #d_log_likelihood_update[param,0] = -(0.5*np.sum(np.diag(tmp3)) + \
+                #np.dot(tmp5.T, dv) - 0.5 * np.dot(tmp5.T ,np.dot(dS, tmp5)) ) 
+                 
+            
+            
+        # Compute the actual updates for mean and variance of the states.
+        m_upd = m_pred + K.dot( v )
+             
+        # Covariance update and ensure it is symmetric
+        P_upd = K.dot(S).dot(K.T)
+        P_upd = 0.5*(P_upd + P_upd.T)
+        P_upd =  P_pred - P_upd# this update matrix is symmetric
         
-             return m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update
+        return m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update
     
     @staticmethod
-    def _kalman_update_step_SVD(k,   p_m , p_P, p_h, p_f_H, p_f_R, p_f_iRsr, measurement, calc_log_likelihood= False, 
-                            calc_grad_log_likelihood=False, p_dm = None, p_dP = None, grad_calc_params_2 = None):
+    def _kalman_update_step_SVD(k, p_m , p_P, p_meas_model_callable, measurement, calc_log_likelihood= False, 
+                            calc_grad_log_likelihood=False, p_dm = None, p_dP = None):
         """
         Input:
         
@@ -1158,7 +1510,7 @@ class DescreteStateSpace(object):
             x_{k} state 
             H_{k} Jacobian matrices of f_h. In the linear case it is exactly H_{k}.
         
-        p_f_H: function (k, m, P) return Jacobian of dynamic function, it is
+        p_f_H: function (k, m, P) return Jacobian of measurement function, it is
             passed into p_h.
             k (iteration number), starts at 0
             m: point where Jacobian is evaluated
@@ -1212,145 +1564,130 @@ class DescreteStateSpace(object):
         
         """        
         
+        #import pdb; pdb.set_trace()
+        
         m_pred = p_m # from prediction step
         P_pred,S_pred,V_pred = p_P # from prediction step      
         
-        H = p_f_H(k, m_pred, P_pred)
-        R = p_f_R(k)
-        R_isr = p_f_iRsr(k) # square root of the inverse of R matrix       
+        H = p_meas_model_callable.Hk(k, m_pred, P_pred)
+        R = p_meas_model_callable.Rk(k)
+        R_isr = p_meas_model_callable.R_isrk(k) # square root of the inverse of R matrix       
         
-        if (p_m.shape[1] > 1):
-            multiple_ts_mode = True
-            time_series_no = p_m.shape[1] # number of time serieses
-        else:
-            time_series_no = 1
-            multiple_ts_mode = False
+        time_series_no = p_m.shape[1] # number of time serieses
         
         log_likelihood_update=None; dm_upd=None; dP_upd=None; d_log_likelihood_update=None
         # Update step (only if there is data)
-        if not np.any(np.isnan(measurement)): # TODO: if some dimensions are missing, do properly computations for other.
-             v = measurement-p_h(k, m_pred, H)
-             
-             svd_2_matr = np.vstack( ( np.dot( R_isr.T, np.dot(H, V_pred)) , np.diag( 1.0/np.sqrt(S_pred) ) ) )
-                
-             (U,S,Vh) = sp.linalg.svd( svd_2_matr,full_matrices=False, compute_uv=True, 
-                          overwrite_a=False,check_finite=True)
-             
-             # P_upd = U_upd S_upd**2 U_upd.T
-             U_upd = np.dot(V_pred, Vh.T)             
-             S_upd = (1.0/S)**2
-             
-             P_upd = np.dot(U_upd * S_upd, U_upd.T) # update covariance
-             P_upd = (P_upd,S_upd,U_upd) # tuple to pass to the next step
+        #if not np.any(np.isnan(measurement)): # TODO: if some dimensions are missing, do properly computations for other.
+        v = measurement-p_meas_model_callable.f_h(k, m_pred, H)
+         
+        svd_2_matr = np.vstack( ( np.dot( R_isr.T, np.dot(H, V_pred)) , np.diag( 1.0/np.sqrt(S_pred) ) ) )
             
-             # stil need to compute S and K for derivative computation
-             S = H.dot(P_pred).dot(H.T) + R
-             if measurement.shape[0]==1: # measurements are one dimensional
-                 if (S < 0):
-                     raise ValueError("Kalman Filter Update SVD: S is negative step %i" % k )
-                     #import pdb; pdb.set_trace()
-                     
-                 K = P_pred.dot(H.T) / S
-                 if calc_log_likelihood:
-                     log_likelihood_update = -0.5 * ( np.log(2*np.pi) + np.log(S) +
-                                         v*v / S)
-                     #log_likelihood_update = log_likelihood_update[0,0] # to make int
-                     if np.any(np.isnan(log_likelihood_update)): # some member in P_pred is None.
-                         raise ValueError("Nan values in likelihood update!")
-                 LL = None; islower = None
-             else:
-                 raise ValueError("""Measurement dimension larger then 1 is currently not supported""")
+        (U,S,Vh) = sp.linalg.svd( svd_2_matr,full_matrices=False, compute_uv=True, 
+                     overwrite_a=False,check_finite=True)
+         
+         # P_upd = U_upd S_upd**2 U_upd.T
+        U_upd = np.dot(V_pred, Vh.T)             
+        S_upd = (1.0/S)**2
+         
+        P_upd = np.dot(U_upd * S_upd, U_upd.T) # update covariance
+        P_upd = (P_upd,S_upd,U_upd) # tuple to pass to the next step
+        
+         # stil need to compute S and K for derivative computation
+        S = H.dot(P_pred).dot(H.T) + R
+        if measurement.shape[0]==1: # measurements are one dimensional
+            if (S < 0):
+                raise ValueError("Kalman Filter Update SVD: S is negative step %i" % k )
+                #import pdb; pdb.set_trace()
+                 
+            K = P_pred.dot(H.T) / S
+            if calc_log_likelihood:
+                log_likelihood_update = -0.5 * ( np.log(2*np.pi) + np.log(S) +
+                                     v*v / S)
+                if np.any(np.isnan(log_likelihood_update)): # some member in P_pred is None.
+                    raise ValueError("Nan values in likelihood update!")
+            LL = None; islower = None
+        else:
+            raise ValueError("""Measurement dimension larger then 1 is currently not supported""")
+         
+        # Old  method of computing updated covariance (for testing) ->
+        #P_upd_tst = K.dot(S).dot(K.T)
+        #P_upd_tst = 0.5*(P_upd_tst + P_upd_tst.T)
+        #P_upd_tst =  P_pred - P_upd_tst# this update matrix is symmetric
+        # Old  method of computing updated covariance (for testing) <-
+         
+        if calc_grad_log_likelihood:
+            dm_pred_all_params = p_dm # derivativas of the prediction phase 
+            dP_pred_all_params = p_dP
              
-             # Old  method of computing updated covariance (for testing) ->
-             #P_upd_tst = K.dot(S).dot(K.T)
-             #P_upd_tst = 0.5*(P_upd_tst + P_upd_tst.T)
-             #P_upd_tst =  P_pred - P_upd_tst# this update matrix is symmetric
-             # Old  method of computing updated covariance (for testing) <-
+            param_number = p_dP.shape[2]
              
-             if calc_grad_log_likelihood:
-                 dm_pred_all_params = p_dm # derivativas of the prediction phase 
-                 dP_pred_all_params = p_dP
-                 
-                 param_number = p_dP.shape[2]
-                 
-                 p_f_dH = grad_calc_params_2[0]; dH_all_params = p_f_dH(k)
-                 p_f_dR = grad_calc_params_2[1]; dR_all_params = p_f_dR(k)
-                 
-                 dm_upd = np.empty(dm_pred_all_params.shape)
-                 dP_upd = np.empty(dP_pred_all_params.shape)
-                 
-                 # firts dimension parameter_no, second - time series number
-                 d_log_likelihood_update = np.empty((param_number,time_series_no))
-                 for param in range(param_number):
-                
-                    dH = dH_all_params[:,:,param]
-                    dR = dR_all_params[:,:,param]
-                    
-                    if (multiple_ts_mode == False):    
-                        dm_pred = dm_pred_all_params[:,param]
-                    else:
-                        dm_pred = dm_pred_all_params[:,:,param]
-                        
-                        
-                    dP_pred = dP_pred_all_params[:,:,param]
-                
-                    # Terms in the likelihood derivatives
-                    dv = - np.dot( dH, m_pred) -  np.dot( H, dm_pred)           
-                    dS = np.dot(dH, np.dot( P_pred, H.T))
-                    dS += dS.T
-                    dS += np.dot(H, np.dot( dP_pred, H.T)) + dR
-                
-                    # TODO: maybe symmetrize dS
-                
-                    #dm and dP for the next stem
-                    if LL is not None: # the state vector is not a scalar
-                        tmp1 = linalg.cho_solve((LL,islower), H).T
-                        tmp2 = linalg.cho_solve((LL,islower), dH).T
-                        tmp3 = linalg.cho_solve((LL,islower), dS).T
-                    else: # the state vector is a scalar
-                        tmp1 = H.T / S
-                        tmp2 = dH.T / S
-                        tmp3 = dS.T / S
-                        
-                    dK = np.dot( dP_pred, tmp1) + np.dot( P_pred, tmp2) - \
-                         np.dot( P_pred, np.dot( tmp1, tmp3 ) )
-                    
-                    # terms required for the next step, save this for each parameter
-                    if (multiple_ts_mode == False):
-                        dm_upd[:,param] = dm_pred + np.squeeze(np.dot(dK, v) + np.dot(K, dv))
-                    else:
-                        dm_upd[:,:,param] = dm_pred + np.dot(dK, v) + np.dot(K, dv)
-                        
-                    dP_upd[:,:,param] = -np.dot(dK, np.dot(S, K.T))      
-                    dP_upd[:,:,param] += dP_upd[:,:,param].T
-                    dP_upd[:,:,param] += dP_pred - np.dot(K , np.dot( dS, K.T))
-                    
-                    dP_upd[:,:,param] = 0.5*(dP_upd[:,:,param] + dP_upd[:,:,param].T) #symmetrize
-                    # computing the likelihood change for each parameter:
-                    if LL is not None: # the state vector is not 1D
-                        #tmp4 = linalg.cho_solve((LL,islower), dv)
-                        tmp5 = linalg.cho_solve((LL,islower), v)
-                    else: # the state vector is a scalar
-                        #tmp4 = dv / S
-                        tmp5 = v / S
-                        
-                    
-                    d_log_likelihood_update[param,:] = -(0.5*np.sum(np.diag(tmp3)) + \
-                        np.sum(tmp5*dv, axis=0) - 0.5 * np.sum(tmp5 * np.dot(dS, tmp5), axis=0) ) 
-                        
-                    # Before  
-                    #d_log_likelihood_update[param,0] = -(0.5*np.sum(np.diag(tmp3)) + \
-                    #np.dot(tmp5.T, dv) - 0.5 * np.dot(tmp5.T ,np.dot(dS, tmp5)) ) 
-                 
-            # Compute the actual updates for mean of the states. Variance update
-            # is computed earlier.
-             m_upd = m_pred + K.dot( v )
+            dH_all_params = p_meas_model_callable.dHk(k)
+            dR_all_params = p_meas_model_callable.dRk(k)
              
-             return m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update
+            dm_upd = np.empty(dm_pred_all_params.shape)
+            dP_upd = np.empty(dP_pred_all_params.shape)
+             
+             # firts dimension parameter_no, second - time series number
+            d_log_likelihood_update = np.empty((param_number,time_series_no))
+            for param in range(param_number):
+            
+               dH = dH_all_params[:,:,param]
+               dR = dR_all_params[:,:,param]
+                
+               dm_pred = dm_pred_all_params[:,:,param]
+               dP_pred = dP_pred_all_params[:,:,param]
+            
+                # Terms in the likelihood derivatives
+               dv = - np.dot( dH, m_pred) -  np.dot( H, dm_pred)           
+               dS = np.dot(dH, np.dot( P_pred, H.T))
+               dS += dS.T
+               dS += np.dot(H, np.dot( dP_pred, H.T)) + dR
+            
+                # TODO: maybe symmetrize dS
+            
+                #dm and dP for the next stem
+               if LL is not None: # the state vector is not a scalar
+                   tmp1 = linalg.cho_solve((LL,islower), H).T
+                   tmp2 = linalg.cho_solve((LL,islower), dH).T
+                   tmp3 = linalg.cho_solve((LL,islower), dS).T
+               else: # the state vector is a scalar
+                   tmp1 = H.T / S
+                   tmp2 = dH.T / S
+                   tmp3 = dS.T / S
+                    
+               dK = np.dot( dP_pred, tmp1) + np.dot( P_pred, tmp2) - \
+                    np.dot( P_pred, np.dot( tmp1, tmp3 ) )
+                
+               # terms required for the next step, save this for each parameter
+               dm_upd[:,:,param] = dm_pred + np.dot(dK, v) + np.dot(K, dv)
+                    
+               dP_upd[:,:,param] = -np.dot(dK, np.dot(S, K.T))      
+               dP_upd[:,:,param] += dP_upd[:,:,param].T
+               dP_upd[:,:,param] += dP_pred - np.dot(K , np.dot( dS, K.T))
+                
+               dP_upd[:,:,param] = 0.5*(dP_upd[:,:,param] + dP_upd[:,:,param].T) #symmetrize
+               # computing the likelihood change for each parameter:
+               if LL is not None: # the state vector is not 1D
+                   tmp5 = linalg.cho_solve((LL,islower), v)
+               else: # the state vector is a scalar
+                   tmp5 = v / S
+                    
+                
+               d_log_likelihood_update[param,:] = -(0.5*np.sum(np.diag(tmp3)) + \
+                   np.sum(tmp5*dv, axis=0) - 0.5 * np.sum(tmp5 * np.dot(dS, tmp5), axis=0) ) 
+                # Before  
+                #d_log_likelihood_update[param,0] = -(0.5*np.sum(np.diag(tmp3)) + \
+                #np.dot(tmp5.T, dv) - 0.5 * np.dot(tmp5.T ,np.dot(dS, tmp5)) ) 
+                 
+        # Compute the actual updates for mean of the states. Variance update
+        # is computed earlier.
+        m_upd = m_pred + K.dot( v )
+             
+        return m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update
              
     @staticmethod
     def _rts_smoother_update_step(k, p_m , p_P, p_m_pred, p_P_pred, p_m_prev_step, 
-                                  p_P_prev_step, p_f_A):
+                                  p_P_prev_step, p_dynamic_callables):
         """
         Rauch–Tung–Striebel(RTS) update step
         
@@ -1385,13 +1722,8 @@ class DescreteStateSpace(object):
             P: parameter for Jacobian, usually covariance matrix.
 
         """        
-        if len(p_m.shape)<2:
-            p_m.shape = (p_m.shape[0],1)
-            
-        if len(p_m_prev_step.shape)<2:
-            p_m_prev_step.shape = (p_m_prev_step.shape[0],1)
-            
-        A = p_f_A(k,p_m,p_P) # state transition matrix (or Jacobian)
+        
+        A = p_dynamic_callables.Ak(k,p_m,p_P) # state transition matrix (or Jacobian)
         
         tmp = np.dot( A, p_P.T)
         if A.shape[0] == 1: # 1D states
@@ -1402,14 +1734,10 @@ class DescreteStateSpace(object):
                 G = linalg.cho_solve((LL,islower),tmp).T
             except:
                 # It happende that p_P_pred has several near zero eigenvalues
-                # hence the Cholessky method does not work.
+                # hence the Cholesky method does not work.
                 res = sp.linalg.lstsq(p_P_pred, tmp)
                 G = res[0].T
-                #import pdb; pdb.set_trace()
-                #pass
-            
-            
-        
+                
         m_upd = p_m + G.dot( p_m_prev_step-p_m_pred )
         P_upd = p_P + G.dot( p_P_prev_step-p_P_pred).dot(G.T)
          
@@ -1418,7 +1746,7 @@ class DescreteStateSpace(object):
         return m_upd, P_upd, G
              
     @classmethod  
-    def rts_smoother(cls,state_dim, p_a, p_f_A, p_f_Q, filter_means, 
+    def rts_smoother(cls,state_dim, p_dynamic_callables, filter_means, 
                           filter_covars):
         """
         This function implements Rauch–Tung–Striebel(RTS) smoother algorithm
@@ -1474,12 +1802,19 @@ class DescreteStateSpace(object):
             
             m_pred, P_pred, tmp1, tmp2 = \
                     cls._kalman_prediction_step(k, filter_means[k,:], 
-                                                filter_covars[k,:,:], p_a, p_f_A, p_f_Q, 
+                                                filter_covars[k,:,:], p_dynamic_callables, 
                                                 calc_grad_log_likelihood=False) 
+            p_m = filter_means[k,:]
+            if len(p_m.shape)<2:
+                p_m.shape = (p_m.shape[0],1)
+            
+            p_m_prev_step = M[k+1,:]
+            if len(p_m_prev_step.shape)<2:
+                p_m_prev_step.shape = (p_m_prev_step.shape[0],1)
             
             m_upd, P_upd, G_tmp = cls._rts_smoother_update_step(k, 
-                            filter_means[k,:] ,filter_covars[k,:,:], 
-                            m_pred, P_pred, M[k+1,:] ,P[k+1,:,:], p_f_A)
+                            p_m ,filter_covars[k,:,:], 
+                            m_pred, P_pred, p_m_prev_step ,P[k+1,:,:], p_dynamic_callables)
                       
             M[k,:] = np.squeeze(m_upd)
             P[k,:,:] = P_upd
@@ -1684,12 +2019,12 @@ class DescreteStateSpace(object):
             else:
                 dM = np.ones((1,1,1)) * dM
                 
-        if not isinstance(dM, types.FunctionType):
-            f_dM = lambda k: dM
-        else:
-            f_dM = dM
+#        if not isinstance(dM, types.FunctionType):
+#            f_dM = lambda k: dM
+#        else:
+#            f_dM = dM
                 
-        return f_dM
+        return dM
         
         
     @staticmethod        
@@ -1746,114 +2081,19 @@ class DescreteStateSpace(object):
                 raise ValueError("When computing likelihood gradient wrong dH dimension.")
             else:
                 dM = np.ones((1,1,1)) * dM
-        if not isinstance(dM, types.FunctionType):
-            f_dM = lambda k: dM
-        else:
-            f_dM = dM
+                
+#        if not isinstance(dM, types.FunctionType):
+#            f_dM = lambda k: dM
+#        else:
+#            f_dM = dM
             
-        return f_dM
+        return dM
         
         
         
 class Struct(object):
     pass
 
-def inverse_square_root(R, tol=1e-14):
-    """
-    The function computes the square root of the matrix inverse.
-    
-    Input:
-    ------------------
-        R - given matrix 
-        tol - smallest value of the singular number below which the inversion 
-              of S must be handeled specially.
-    Output:
-    -------------------
-        inv_square_root - square root of the inverse
-    """
-    
-    if (R.shape[0] == 1): # matrix M is (1x1)
-        inv_square_root = np.sqrt(R)
-    else:
-        (U,S,Vh) = sp.linalg.svd( R,full_matrices=False, compute_uv=True, 
-                      overwrite_a=False,check_finite=True)
-        if (np.abs(S) < tol):
-            raise ValueError("""Inverse Square Root: Measurement noise matrix
-                             is singular. Handling is not implemented.""")
-        inv_square_root = U * 1.0/np.sqrt(S)
-    
-    return inv_square_root
-
-class R_handling():
-    """
-    The calss handles noise matrix R.
-    """
-    def __init__(self, R, index, R_time_var_index, unique_R_number):
-        """
-        Input:        
-        ---------------
-        R - array with noise on various steps. The result of preprocessing
-            the noise input.
-        
-        index - for each step of Kalman filter contains the corresponding index
-                in the array.
-        
-        unique_R_number - number of unique noise matrices below which square roots
-            are cached and above which they are computed each time.
-        
-        R_time_var_index - another index in the array R. Computed earlier and passed here.
-        
-        Output:
-        --------------
-        Object which has two necessary functions:
-            f_R(k)
-            inv_R_square_root(k)
-        """
-        self.R = R
-        self.index = index
-        self.R_time_var_index = R_time_var_index
-        
-        if (len(np.unique(index)) > unique_R_number):
-            self.svd_each_time = True
-        else:
-            self.svd_each_time = False
-            
-        self.R_square_root = {}
-        
-    def f_R(self,k):
-        return self.R[:,:, self.index[self.R_time_var_index, k]]
-    
-    def f_iRsr(self, k):
-        """
-        Function returns the inverse square root of R matrix on step k.
-        """
-        R = self.R[:,:, self.index[self.R_time_var_index, k]]
-        
-        if (self.R.shape[0] == 1): # 1-D case handle simplier. No storage
-        # of the result, just compute it each time.
-            inv_square_root = np.sqrt( 1.0/R )
-        else:
-            if self.svd_each_time:
-                
-                (U,S,Vh) = sp.linalg.svd( R,full_matrices=False, compute_uv=True, 
-                          overwrite_a=False,check_finite=True)
-                          
-                inv_square_root = U * 1.0/np.sqrt(S)
-            else:
-                ind = self.index[self.R_time_var_index, k]
-                if ind in self.R_square_root:
-                    inv_square_root = self.R_square_root[ind]
-                else:
-                    (U,S,Vh) = sp.linalg.svd( R,full_matrices=False, compute_uv=True, 
-                              overwrite_a=False,check_finite=True)
-                    
-                    inv_square_root = U * 1.0/np.sqrt(S)
-                    
-                    self.R_square_root[ind] = inv_square_root
-                
-        return inv_square_root
-    
-    
 class ContDescrStateSpace(DescreteStateSpace):
     """
     Class for continuous-discrete Kalman filter. State equation is
@@ -1864,7 +2104,7 @@ class ContDescrStateSpace(DescreteStateSpace):
     
     """
     
-    class AQcompute_once(object):
+    class AQcompute_once(Q_handling_Class):
         """
         Class for calculating matrices A, Q, dA, dQ of the discrete Kalman Filter
         from the matrices F, L, Qc, P_ing, dF, dQc, dP_inf of the continuos state
@@ -1919,13 +2159,21 @@ class ContDescrStateSpace(DescreteStateSpace):
             
             self.last_k = 0
             self.last_k_computed = False
-            self.Ak = None
-            self.Qk = None
-            self.dAk = None
-            self.dQk = None
+            self.v_Ak = None
+            self.v_Qk = None
+            self.v_dAk = None
+            self.v_dQk = None
             
             self.square_root_computed = False
             # !!!Print statistics! Which object is created
+        
+        def f_a(self, k,m,A):
+            """
+            Dynamic model
+            """
+            
+            return np.dot(A, m) # default dynamic model
+            
         def _recompute_for_new_k(self,k):
             """
             Computes the necessary matrices for an index k and store the results.
@@ -1941,26 +2189,26 @@ class ContDescrStateSpace(DescreteStateSpace):
                     A, Q, dA dQ on step k
             """
             if (self.last_k != k) or (self.last_k_computed == False):
-                Ak,Qk, tmp, dAk, dQk = ContDescrStateSpace.lti_sde_to_descrete(self.F,
+                v_Ak,v_Qk, tmp, v_dAk, v_dQk = ContDescrStateSpace.lti_sde_to_descrete(self.F,
                         self.L,self.Qc,self.dt[k],self.compute_derivatives, 
                         grad_params_no=self.grad_params_no, P_inf=self.P_inf, dP_inf=self.dP_inf, dF=self.dF, dQc=self.dQc)
                 
                 self.last_k = k
                 self.last_k_computed = True
-                self.Ak = Ak
-                self.Qk = Qk
-                self.dAk = dAk
-                self.dQk = dQk
+                self.v_Ak = v_Ak
+                self.v_Qk = v_Qk
+                self.v_dAk = v_dAk
+                self.v_dQk = v_dQk
                 self.Q_square_root_computed = False
             else:
-                Ak = self.Ak
-                Qk = self.Qk
-                dAk = self.dAk
-                dQk = self.dQk
+                v_Ak = self.v_Ak
+                v_Qk = self.v_Qk
+                v_dAk = self.v_dAk
+                v_dQk = self.v_dQk
             
             # !!!Print statistics! Print sizes of matrices
             
-            return Ak,Qk, dAk, dQk 
+            return v_Ak,v_Qk, v_dAk, v_dQk 
         
         def reset(self, compute_derivatives):
             """
@@ -1977,30 +2225,30 @@ class ContDescrStateSpace(DescreteStateSpace):
             
             return self
             
-        def f_A(self,k,m,P):
-            Ak,Qk, dAk, dQk = self._recompute_for_new_k(k)
-            return Ak
+        def Ak(self,k,m,P):
+            v_Ak,v_Qk, v_dAk, v_dQk = self._recompute_for_new_k(k)
+            return v_Ak
             
-        def f_Q(self,k):
-            Ak,Qk, dAk, dQk = self._recompute_for_new_k(k)
-            return Qk
+        def Qk(self,k):
+            v_Ak,v_Qk, v_dAk, v_dQk = self._recompute_for_new_k(k)
+            return v_Qk
             
-        def f_dA(self, k):
-            Ak,Qk, dAk, dQk = self._recompute_for_new_k(k)
-            return dAk
+        def dAk(self, k):
+            v_Ak,v_Qk, v_dAk, v_dQk = self._recompute_for_new_k(k)
+            return v_dAk
         
-        def f_dQ(self, k):
-            Ak,Qk, dAk, dQk = self._recompute_for_new_k(k) 
-            return dQk
+        def dQk(self, k):
+            v_Ak,v_Qk, v_dAk, v_dQk = self._recompute_for_new_k(k)
+            return v_dQk
         
-        def f_Qsr(self,k):
+        def Q_srk(self,k):
             """
             Square root of the noise matrix Q
             """
             
             if ((self.last_k == k) and (self.last_k_computed == True)):
                 if not self.Q_square_root_computed:
-                    (U, S, Vh) = sp.linalg.svd( self.Qk, full_matrices=False, compute_uv=True, overwrite_a=False, check_finite=False)
+                    (U, S, Vh) = sp.linalg.svd( self.v_Qk, full_matrices=False, compute_uv=True, overwrite_a=False, check_finite=False)
                     square_root = U * np.sqrt(S)
                     self.square_root_computed = True
                     self.Q_square_root = square_root
@@ -2019,14 +2267,14 @@ class ContDescrStateSpace(DescreteStateSpace):
                 raise ValueError("Matrices are not computed.")
             else:
                 k = self.last_k
-                A = self.Ak
-                Q = self.Qk
-                dA = self.dAk
-                dQ = self.dQk
+                A = self.v_Ak
+                Q = self.v_Qk
+                dA = self.v_dAk
+                dQ = self.v_dQk
                 
             return k, A, Q, dA, dQ 
         
-    class AQcompute_batch(object):
+    class AQcompute_batch_Python(Q_handling_Class):
         """
         Class for calculating matrices A, Q, dA, dQ of the discrete Kalman Filter
         from the matrices F, L, Qc, P_ing, dF, dQc, dP_inf of the continuos state
@@ -2077,10 +2325,17 @@ class ContDescrStateSpace(DescreteStateSpace):
                             (self.reconstruct_indices.nbytes if (self.reconstruct_indices is not None) else 0)
                             
             self.Q_svd_dict = {}
-	    self.last_k = None
+            self.last_k = None
              # !!!Print statistics! Which object is created
             # !!!Print statistics! Print sizes of matrices
-        def reset(self, compute_derivatives):
+            
+        def f_a(self, k,m,A):
+            """
+            Dynamic model
+            """            
+            return np.dot(A, m) # default dynamic model
+            
+        def reset(self, compute_derivatives=False):
             """
             For reusing this object e.g. in smoother computation. It makes sence
             because necessary matrices have been already computed for all
@@ -2088,24 +2343,24 @@ class ContDescrStateSpace(DescreteStateSpace):
             """
             return self
             
-        def f_A(self,k,m,P):
+        def Ak(self,k,m,P):
             self.last_k = k
             return self.As[:,:, self.reconstruct_indices[k]]
             
-        def f_Q(self,k):
+        def Qk(self,k):
             self.last_k = k
             return self.Qs[:,:, self.reconstruct_indices[k]]
         
-        def f_dA(self,k):
+        def dAk(self,k):
             self.last_k = k
             return self.dAs[:,:, :, self.reconstruct_indices[k]]
         
-        def f_dQ(self,k):
+        def dQk(self,k):
             self.last_k = k
             return self.dQs[:,:, :, self.reconstruct_indices[k]]
         
         
-        def f_Qsr(self,k):
+        def Q_srk(self,k):
             """
             Square root of the noise matrix Q
             """
@@ -2143,7 +2398,7 @@ class ContDescrStateSpace(DescreteStateSpace):
                                  p_kalman_filter_type='regular',
                                  calc_log_likelihood=False, 
                                  calc_grad_log_likelihood=False, 
-                                 grad_params_no=None, grad_calc_params=None):
+                                 grad_params_no=0, grad_calc_params=None):
         """
         This function implements the continuous-discrete Kalman Filter algorithm
         These notations for the State-Space model are assumed:
@@ -2285,7 +2540,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         p_H = np.atleast_1d(p_H)
         p_R = np.atleast_1d(p_R)
         
-        X.shape, old_X_shape  = cls._reshape_input_data(X.shape) # represent as column
+        X.shape, old_X_shape  = cls._reshape_input_data(X.shape, 2) # represent as column
         if (X.shape[1] != 1):
             raise ValueError("Only one dimensional X data is supported.")
         
@@ -2330,14 +2585,9 @@ class ContDescrStateSpace(DescreteStateSpace):
         (p_R, old_R_shape) = cls._check_SS_matrix(p_R, state_dim, measurement_dim, which='R')
         
         if m_init is None:
-            if (time_series_no == 1):
-                m_init = m_init = np.zeros((state_dim,1))
-            else:
-                # multiple time series mode.
-                m_init = np.zeros((state_dim, time_series_no))
+            m_init = np.zeros((state_dim, time_series_no))
         else:
-            if (time_series_no == 1):
-                m_init = np.atleast_2d(m_init).T
+            m_init = np.atleast_2d(m_init).T
         
         if P_init is None:
             P_init = P_inf.copy()
@@ -2351,10 +2601,10 @@ class ContDescrStateSpace(DescreteStateSpace):
         # Parameters:
         # k - number of Kalman filter iteration
         # m - vector for calculating matrices. Required for EKF. Not used here.
-        f_h = lambda k,m,H: np.dot(H, m)
-        f_H = lambda k,m,P: p_H[:,:, index[H_time_var_index, k]]
+        # f_hl = lambda k,m,H: np.dot(H, m)
+        # f_H = lambda k,m,P: p_H[:,:, index[H_time_var_index, k]]
         #f_R = lambda k: p_R[:,:, index[R_time_var_index, k]]
-        o_R = R_handling( p_R, index, R_time_var_index, 20)        
+        #o_R = R_handling( p_R, index, R_time_var_index, 20)        
         
         if calc_grad_log_likelihood:
             
@@ -2367,11 +2617,8 @@ class ContDescrStateSpace(DescreteStateSpace):
             
             dm_init = grad_calc_params.get('dm_init') # Initial values for the Kalman Filter
             if dm_init is None:
-                if time_series_no == 1:
-                    dm_init = np.zeros( (state_dim,grad_params_no) )
-                else:
-                     # multiple time series mode. Keep grad_params always as a last dimension
-                    dm_init = np.zeros( (state_dim, time_series_no, grad_params_no) )
+                # multiple time series mode. Keep grad_params always as a last dimension
+                dm_init = np.zeros( (state_dim, time_series_no, grad_params_no) )
                     
             dP_init = grad_calc_params.get('dP_init') # Initial values for the Kalman Filter
             if dP_init is None:
@@ -2386,14 +2633,23 @@ class ContDescrStateSpace(DescreteStateSpace):
             dm_init = None
             dP_init = None
         
+        measurement_callables = Std_Measurement_Callables_Class(p_H, H_time_var_index, p_R, index, R_time_var_index, 20, dH, dR)
+        #import pdb; pdb.set_trace()
+        
+        dynamic_callables = cls._cont_to_discrete_object(X, F, L, Qc, compute_derivatives=calc_grad_log_likelihood, 
+                                              grad_params_no=grad_params_no, 
+                                              P_inf=P_inf, dP_inf=dP_inf, dF = dF, dQc=dQc)
+                                              
         if print_verbose:
             print("General: run Continuos-Discrete Kalman Filter")
         # Also for dH, dR and probably for all derivatives
-        (M, P, log_likelihood, grad_log_likelihood, AQcomp) = cls._cont_discr_kalman_filter_raw(state_dim,F, L, Qc, P_inf,
-                        f_h, f_H, o_R, X, Y, m_init=m_init, P_init=P_init, p_kalman_filter_type=p_kalman_filter_type, 
+        (M, P, log_likelihood, grad_log_likelihood, AQcomp) = cls._cont_discr_kalman_filter_raw(state_dim,
+                        dynamic_callables, measurement_callables, 
+                        X, Y, m_init=m_init, P_init=P_init, 
+                        p_kalman_filter_type=p_kalman_filter_type, 
                         calc_log_likelihood=calc_log_likelihood, 
-                      calc_grad_log_likelihood=calc_grad_log_likelihood, grad_params_no=grad_params_no, dP_inf=dP_inf, 
-                      dF = dF, dQc=dQc, dH=dH, dR=dR, dm_init=dm_init, dP_init=dP_init)
+                        calc_grad_log_likelihood=calc_grad_log_likelihood, grad_params_no=grad_params_no, 
+                        dm_init=dm_init, dP_init=dP_init)
         
         if old_index_shape is not None:
             index.shape = old_index_shape
@@ -2413,12 +2669,11 @@ class ContDescrStateSpace(DescreteStateSpace):
         return (M, P, log_likelihood, grad_log_likelihood, AQcomp)
         
     @classmethod
-    def _cont_discr_kalman_filter_raw(cls,state_dim,F,L,Qc, P_inf, f_h, f_H, p_R, X, Y, 
+    def _cont_discr_kalman_filter_raw(cls,state_dim, p_dynamic_callables, p_measurement_callables, X, Y, 
                                       m_init=None, P_init=None, 
                                       p_kalman_filter_type='regular',
                                       calc_log_likelihood=False, 
-                      calc_grad_log_likelihood=False, grad_params_no=None, dP_inf=None, 
-                      dF = None, dQc=None, dH=None, dR=None, dm_init=None, dP_init=None):
+                      calc_grad_log_likelihood=False, grad_params_no=None, dm_init=None, dP_init=None):
         """
         General filtering algorithm for inference in the continuos-discrete 
         state-space model:
@@ -2504,32 +2759,14 @@ class ContDescrStateSpace(DescreteStateSpace):
         
         """
         
+        #import pdb; pdb.set_trace()
         steps_no = Y.shape[0] # number of steps in the Kalman Filter
-        if len(Y.shape) == 2: 
-            time_series_no = 1 # regular case
-        elif len(Y.shape) == 3:
-            time_series_no = Y.shape[2] # multiple time series mode
+        time_series_no = Y.shape[2] # multiple time series mode
             
-        # Return object which computes A, Q and possibly derivatives on the way, pass the derivative matrices not functions
-        AQcomp = cls._cont_to_discrete_object(X, F,L,Qc,compute_derivatives=calc_grad_log_likelihood, 
-                                              grad_params_no=grad_params_no, 
-                                              P_inf=P_inf, dP_inf=(dP_inf(0) if calc_grad_log_likelihood else None), 
-                                              dF = (dF(0) if calc_grad_log_likelihood else None), 
-                                              dQc=(dQc(0) if calc_grad_log_likelihood else None))
-                                              
-        # Functions required for discrete Kalman filter. Other requirements
-        # are:  fh, p_H, p_R - provided as parameters
-        # p_A, p_Q - provided by the object AQcomp.                                    
-        f_a = lambda k,m,A: np.dot(A, m) # state dynamic model
-  
         # Allocate space for results
         # Mean estimations. Initial values will be included
-        if (time_series_no == 1): # one time series mode
-            M = np.empty(((steps_no+1),state_dim))
-            M[0,:] = np.squeeze(m_init) # Initialize mean values # ??? why here squeze and in discrete case no squeeze
-        else: # multiple time series mode
-            M = np.empty(((steps_no+1),state_dim,time_series_no))
-            M[0,:,:] = m_init # Initialize mean values
+        M = np.empty(((steps_no+1),state_dim,time_series_no))
+        M[0,:,:] = m_init # Initialize mean values
         # Variance estimations. Initial values will be included
         P = np.empty(((steps_no+1),state_dim,state_dim))
         P_init = 0.5*( P_init + P_init.T) # symmetrize initial covariance. In some ustable cases this is uiseful
@@ -2553,31 +2790,33 @@ class ContDescrStateSpace(DescreteStateSpace):
         for k in range(0,steps_no):
             # In this loop index for new estimations is (k+1), old - (k)
             # This happened because initial values are stored at 0-th index.                 
-            
-            if (time_series_no == 1): # single time series mode
-                k_measurment = Y[k,:].T # measurement as column
-            else: # multiple time series mode
-                k_measurment = Y[k,:,:]
-            
             #import pdb; pdb.set_trace()
+        
+            prev_mean = M[k,:,:] # mean from the previous step
+            
             if p_kalman_filter_type == 'svd':            
                 m_pred, P_pred, dm_pred, dP_pred = \
-                cls._kalman_prediction_step_SVD(k, M[k,:] ,P_upd, f_a, AQcomp.f_A, AQcomp.f_Q, AQcomp.f_Qsr,
+                cls._kalman_prediction_step_SVD(k, prev_mean ,P_upd, p_dynamic_callables,
                     calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                    p_dm = dm_upd, p_dP = dP_upd, grad_calc_params_1 = (AQcomp.f_dA, AQcomp.f_dQ) )
+                    p_dm = dm_upd, p_dP = dP_upd )
             else:
                 m_pred, P_pred, dm_pred, dP_pred = \
-                cls._kalman_prediction_step(k, M[k,:] ,P[k,:,:], f_a, AQcomp.f_A, AQcomp.f_Q, 
+                cls._kalman_prediction_step(k, M[k,:] ,P[k,:,:], p_dynamic_callables, 
                     calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                    p_dm = dm_upd, p_dP = dP_upd, grad_calc_params_1 = (AQcomp.f_dA, AQcomp.f_dQ) )
+                    p_dm = dm_upd, p_dP = dP_upd )
             
             #import pdb; pdb.set_trace()
+            k_measurment = Y[k,:,:]
+                
+            if np.any(np.isnan(k_measurment)):
+                raise ValueError("Nan measurements are currently not supported")
+                
             if p_kalman_filter_type == 'svd':            
                 m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-                cls._kalman_update_step_SVD(k,  m_pred , P_pred, f_h, f_H, p_R.f_R, p_R.f_iRsr, 
+                cls._kalman_update_step_SVD(k,  m_pred , P_pred, p_measurement_callables, 
                         k_measurment, calc_log_likelihood=calc_log_likelihood, 
                         calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = (dH, dR))
+                        p_dm = dm_pred, p_dP = dP_pred )
                         
                         
 #                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
@@ -2591,10 +2830,10 @@ class ContDescrStateSpace(DescreteStateSpace):
 #                P_upd = (P_upd, S,U)
             else:
                 m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-                cls._kalman_update_step(k,  m_pred , P_pred, f_h, f_H, p_R.f_R, k_measurment, 
+                cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
                         calc_log_likelihood=calc_log_likelihood, 
                         calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = (dH, dR))                
+                        p_dm = dm_pred, p_dP = dP_pred )                
             
             if calc_log_likelihood:
                 log_likelihood += log_likelihood_update
@@ -2602,10 +2841,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             if calc_grad_log_likelihood:
                 grad_log_likelihood += d_log_likelihood_update
             
-            if (time_series_no == 1):
-                M[k+1,:] = np.squeeze(m_upd)
-            else:
-                M[k+1,:,:] = m_upd # separate mean value for each time series
+            M[k+1,:,:] = m_upd # separate mean value for each time series
             
             if p_kalman_filter_type == 'svd':            
                 P[k+1,:,:] = P_upd[0]
@@ -2614,11 +2850,11 @@ class ContDescrStateSpace(DescreteStateSpace):
             #print("kf it: %i" % k)
             # !!!Print statistics! Print sizes of matrices
             # !!!Print statistics! Print iteration time base on another boolean variable
-        return (M, P, log_likelihood, grad_log_likelihood, AQcomp.reset(False))
+        return (M, P, log_likelihood, grad_log_likelihood, p_dynamic_callables.reset(False))
     
     @classmethod  
     def cont_discr_rts_smoother(cls,state_dim, filter_means, filter_covars, 
-                                AQcomp=None, X=None, F=None,L=None,Qc=None):
+                                p_dynamic_callables=None, X=None, F=None,L=None,Qc=None):
         """
         
         Continuos-discrete Rauch–Tung–Striebel(RTS) smoother.
@@ -2641,7 +2877,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         filter_covars: (no_steps+1, state_dim, state_dim) 3D array
             Results of the Kalman Filter covariance estimation.
         
-        AQcomp: object or None
+        Dynamic_callables: object or None
             Object form the filter phase which provides functions for computing
             A, Q, dA, dQ fro  discrete model from the continuos model.
         
@@ -2658,12 +2894,11 @@ class ContDescrStateSpace(DescreteStateSpace):
             Smoothed estimates of the state covariances
         """
     
-        if AQcomp is None: # make this object from scratch
-            AQcomp = cls._cont_to_discrete_object(cls, X, F,L,Qc,compute_derivatives=False, 
-                                                  grad_params_no=None, P_inf=None, dP_inf=None, dF = None, dQc=None)
-        
         f_a = lambda k,m,A: np.dot(A, m) # state dynamic model
-        
+        if p_dynamic_callables is None: # make this object from scratch
+            p_dynamic_callables = cls._cont_to_discrete_object(cls, X, F,L,Qc,f_a,compute_derivatives=False, 
+                                                  grad_params_no=None, P_inf=None, dP_inf=None, dF = None, dQc=None)
+
         no_steps = filter_covars.shape[0]-1# number of steps (minus initial covariance)
       
         M = np.empty(filter_means.shape) # smoothed means
@@ -2672,23 +2907,25 @@ class ContDescrStateSpace(DescreteStateSpace):
         if print_verbose:
             print("General: run Continuos-Discrete Kalman Smoother")
             
-        M[-1,:] = filter_means[-1,:]
+        M[-1,:,:] = filter_means[-1,:,:]
         P[-1,:,:] = filter_covars[-1,:,:]
         for k in range(no_steps-1,-1,-1): 
             
+            prev_mean = filter_means[k,:] # mean from the previous step
             m_pred, P_pred, tmp1, tmp2 = \
-                    cls._kalman_prediction_step(k, filter_means[k,:], 
-                                                filter_covars[k,:,:], f_a, AQcomp.f_A, AQcomp.f_Q, 
+                    cls._kalman_prediction_step(k, prev_mean, 
+                                                filter_covars[k,:,:], p_dynamic_callables, 
                                                 calc_grad_log_likelihood=False) 
-            
+            p_m = filter_means[k,:]
+            p_m_prev_step = M[(k+1),:]
+
             m_upd, P_upd, tmp_G = cls._rts_smoother_update_step(k, 
-                            filter_means[k,:] ,filter_covars[k,:,:], 
-                            m_pred, P_pred, M[(k+1),:] ,P[(k+1),:,:], AQcomp.f_A)
+                            p_m ,filter_covars[k,:,:], 
+                            m_pred, P_pred, p_m_prev_step ,P[(k+1),:,:], p_dynamic_callables)
                       
-            M[k,:] = np.squeeze(m_upd)
+            M[k,:,:] = m_upd
             P[k,:,:] = P_upd
         # Return values
-            
         return (M, P)
     
     @classmethod
@@ -2708,6 +2945,8 @@ class ContDescrStateSpace(DescreteStateSpace):
         X, F, L, Qc: matrices
             Continuous model matrices
         
+        f_a: function
+            Dynamic Function is attached to the Dynamic_Model_Callables class 
         compute_derivatives: boolean
             Whether to compute derivatives
             
@@ -2733,7 +2972,19 @@ class ContDescrStateSpace(DescreteStateSpace):
         unique_indices = np.unique(np.round(dt, decimals=unique_round_decimals))
         number_unique_indices = len(unique_indices)
         
-        if number_unique_indices > threshold_number_of_unique_time_steps:        
+        #import pdb; pdb.set_trace()
+        if cython_code_available:
+            class AQcompute_batch(state_space_cython.AQcompute_batch_Cython):
+                def __init__(self, F,L,Qc,dt,compute_derivatives=False, grad_params_no=None, P_inf=None, dP_inf=None, dF = None, dQc=None):
+                    As, Qs, reconstruct_indices, dAs, dQs = ContDescrStateSpace.lti_sde_to_descrete(F,
+                                L,Qc,dt,compute_derivatives, 
+                                grad_params_no=grad_params_no, P_inf=P_inf, dP_inf=dP_inf, dF=dF, dQc=dQc)
+                    
+                    super(AQcompute_batch,self).__init__(As, Qs, reconstruct_indices, dAs,dQs)
+        else:
+            AQcompute_batch = cls.AQcompute_batch_Python
+            
+        if number_unique_indices > threshold_number_of_unique_time_steps:
             AQcomp = cls.AQcompute_once(F,L,Qc, dt,compute_derivatives=compute_derivatives,
                                     grad_params_no=grad_params_no, P_inf=P_inf, dP_inf=dP_inf, dF=dF, dQc=dQc)
             if print_verbose:
@@ -2741,7 +2992,7 @@ class ContDescrStateSpace(DescreteStateSpace):
                 print("CDO:  Number of different time steps: %i" % (number_unique_indices,) )                                    
             
         else:
-            AQcomp = cls.AQcompute_batch(F,L,Qc,dt,compute_derivatives=compute_derivatives,
+            AQcomp = AQcompute_batch(F,L,Qc,dt,compute_derivatives=compute_derivatives,
                                     grad_params_no=grad_params_no, P_inf=P_inf, dP_inf=dP_inf, dF=dF, dQc=dQc)
             if print_verbose:                        
                 print("CDO:  Continue-to-discrete BATCH object is created.")
@@ -2926,9 +3177,22 @@ def matrix_exponent(M):
         Mexp = np.array( ((np.exp(M[0,0]) ,),) )  
     
     else: # matrix is larger
-        Mexp = linalg.expm(M)      
-        if np.any(np.isnan(Mexp)):
-            Mexp = linalg.expm3(M)               
+        method = None
+        try:
+            Mexp = linalg.expm(M)
+            method = 1
+        except (FloatingPointError, ValueError) as e:
+            Mexp = linalg.expm3(M)
+            method = 2
+        finally:
+            if np.any(np.isnan(Mexp)):
+                if method == 2:
+                    raise ValueError("Matrix Exponent is not computed 1")
+                else:
+                    Mexp = linalg.expm3(M)
+                    method = 2
+                    if np.any(np.isnan(Mexp)):
+                        raise ValueError("Matrix Exponent is not computed 2")
             
     return Mexp
 

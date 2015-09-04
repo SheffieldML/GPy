@@ -58,23 +58,9 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
-        self._return_psi2_n_flag = ObsAr(np.zeros(1).astype(bool))
 
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()
-
-    @property
-    def return_psi2_n(self):
-        """
-        Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.
-        """
-        return self._return_psi2_n_flag[0]
-    @return_psi2_n.setter
-    def return_psi2_n(self, val):
-        def visit(self):
-            if isinstance(self, Kern):
-                self._return_psi2_n_flag[0]=val
-        self.traverse(visit)
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
@@ -97,7 +83,9 @@ class Kern(Parameterized):
     def psi1(self, Z, variational_posterior):
         return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=self.return_psi2_n)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
     def gradients_X_diag(self, dL_dKdiag, X):

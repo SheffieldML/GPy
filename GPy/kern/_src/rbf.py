@@ -56,7 +56,10 @@ class RBF(Stationary):
         return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior)[1]
 
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior, return_psi2_n=self.return_psi2_n)[2]
+        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior, return_psi2_n=False)[2]
+
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self.variance, self.lengthscale, Z, variational_posterior, return_psi2_n=True)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
                                       psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):

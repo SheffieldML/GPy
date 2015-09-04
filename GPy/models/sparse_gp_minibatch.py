@@ -63,10 +63,10 @@ class SparseGPMiniBatch(SparseGP):
 
         if stochastic and missing_data:
             self.missing_data = True
-            self.stochastics = SparseGPStochastics(self, batchsize)
+            self.stochastics = SparseGPStochastics(self, batchsize, self.missing_data)
         elif stochastic and not missing_data:
             self.missing_data = False
-            self.stochastics = SparseGPStochastics(self, batchsize)
+            self.stochastics = SparseGPStochastics(self, batchsize, self.missing_data)
         elif missing_data:
             self.missing_data = True
             self.stochastics = SparseGPMissing(self)
@@ -105,11 +105,6 @@ class SparseGPMiniBatch(SparseGP):
             psi2_sum_n = psi2.sum(axis=0)
         posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
                                                                                         dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2_sum_n, **kwargs)
-
-        if self.has_uncertain_inputs():
-            grad_dict['Lpsi0'] = grad_dict['dL_dpsi0']*psi0
-            grad_dict['Lpsi1'] = grad_dict['dL_dpsi1']*psi1
-            grad_dict['Lpsi2'] = grad_dict['dL_dpsi2']*psi2
         return posterior, log_marginal_likelihood, grad_dict
 
     def _inner_take_over_or_update(self, full_values=None, current_values=None, value_indices=None):
@@ -144,14 +139,10 @@ class SparseGPMiniBatch(SparseGP):
             else:
                 index = slice(None)
             if key in full_values:
-                if np.isscalar(current_values[key]):
+                try:
+                    full_values[key][index] += current_values[key]
+                except:
                     full_values[key] += current_values[key]
-                else:
-                    from ..core.parameterization.observable_array import ObsAr
-                    if isinstance(full_values[key], ObsAr):
-                        full_values[key].values[index] += current_values[key]
-                    else:
-                        full_values[key][index] += current_values[key]
             else:
                 full_values[key] = current_values[key]
 
@@ -174,43 +165,39 @@ class SparseGPMiniBatch(SparseGP):
             #gradients wrt kernel
             dL_dKmm = full_values['dL_dKmm']
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
-            full_values['kerngrad'] = self.kern.gradient.copy()
+            kgrad = self.kern.gradient.copy()
             self.kern.update_gradients_expectations(
                                                 variational_posterior=self.X,
                                                 Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                                 dL_dpsi1=full_values['dL_dpsi1'],
                                                 dL_dpsi2=full_values['dL_dpsi2'],
-                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
-                                                Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
-            full_values['kerngrad'] += self.kern.gradient
+                                                psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+            self.kern.gradient += kgrad
+
 
             #gradients wrt Z
-            full_values['Zgrad'] = self.kern.gradients_X(dL_dKmm, self.Z)
-            full_values['Zgrad'] += self.kern.gradients_Z_expectations(
+            self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
+            self.Z.gradient += self.kern.gradients_Z_expectations(
                                             variational_posterior=self.X,
                                             Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                             dL_dpsi1=full_values['dL_dpsi1'],
                                             dL_dpsi2=full_values['dL_dpsi2'],
-                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2,
-                                            Lpsi0=full_values['Lpsi0'], Lpsi1=full_values['Lpsi1'], Lpsi2=full_values['Lpsi2'])
+                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
         else:
             #gradients wrt kernel
             self.kern.update_gradients_diag(full_values['dL_dKdiag'], self.X)
-            full_values['kerngrad'] = self.kern.gradient.copy()
+            kgrad = self.kern.gradient.copy()
             self.kern.update_gradients_full(full_values['dL_dKnm'], self.X, self.Z)
-            full_values['kerngrad'] += self.kern.gradient
+            kgrad += self.kern.gradient
             self.kern.update_gradients_full(full_values['dL_dKmm'], self.Z, None)
-            full_values['kerngrad'] += self.kern.gradient
+            self.kern.gradient += kgrad
+            #kgrad += self.kern.gradient
+
             #gradients wrt Z
-            full_values['Zgrad'] = self.kern.gradients_X(full_values['dL_dKmm'], self.Z)
-            full_values['Zgrad'] += self.kern.gradients_X(full_values['dL_dKnm'].T, self.Z, self.X)
+            self.Z.gradient = self.kern.gradients_X(full_values['dL_dKmm'], self.Z)
+            self.Z.gradient += self.kern.gradients_X(full_values['dL_dKnm'].T, self.Z, self.X)
 
         self.likelihood.update_gradients(full_values['dL_dthetaL'])
-        full_values['likgrad'] = self.likelihood.gradient.copy()
-
-        self.likelihood.gradient = full_values['likgrad']
-        self.kern.gradient = full_values['kerngrad']
-        self.Z.gradient = full_values['Zgrad']
 
     def _outer_init_full_values(self):
         """
@@ -225,8 +212,15 @@ class SparseGPMiniBatch(SparseGP):
         to initialize the gradients for the mean and the variance in order to
         have the full gradient for indexing)
         """
-        return {'dL_dKdiag': np.zeros(self.X.shape[0]),
-                'dL_dKnm': np.zeros((self.X.shape[0], self.Z.shape[0]))}
+        retd = dict(dL_dKmm=np.zeros((self.Z.shape[0], self.Z.shape[0])))
+        if self.has_uncertain_inputs():
+            retd.update(dict(dL_dpsi0=np.zeros(self.X.shape[0]),
+                             dL_dpsi1=np.zeros((self.X.shape[0], self.Z.shape[0])),
+                             dL_dpsi2=np.zeros((self.X.shape[0], self.Z.shape[0], self.Z.shape[0]))))
+        else:
+            retd.update({'dL_dKdiag': np.zeros(self.X.shape[0]),
+                         'dL_dKnm': np.zeros((self.X.shape[0], self.Z.shape[0]))})
+        return retd
 
     def _outer_loop_for_missing_data(self):
         Lm = None
@@ -247,35 +241,17 @@ class SparseGPMiniBatch(SparseGP):
             message = m_f(-1)
             print(message, end=' ')
 
-        #Compute the psi statistics for N once, but don't sum out N in psi2
-        if self.has_uncertain_inputs():
-            self.kern.return_psi2_n = True
-            from ..core.parameterization.observable_array import ObsAr
-            psi0 = ObsAr(self.kern.psi0(self.Z, self.X))
-            psi1 = ObsAr(self.kern.psi1(self.Z, self.X))
-            psi2 = ObsAr(self.kern.psi2(self.Z, self.X))
-        else:
-            psi0 = self.kern.Kdiag(self.X)
-            psi1 = self.kern.K(self.X, self.Z)
-            psi2 = None
-
-        self.psi0 = psi0
-        self.psi1 = psi1
-        self.psi2 = psi2
-
         for d, ninan in self.stochastics.d:
             if not self.stochastics:
                 print(' '*(len(message)) + '\r', end=' ')
                 message = m_f(d)
                 print(message, end=' ')
 
-            psi0ni = psi0[ninan]
-            psi1ni = psi1[ninan]
+            psi0ni = self.psi0[ninan]
+            psi1ni = self.psi1[ninan]
             if self.has_uncertain_inputs():
-                psi2ni = psi2[ninan]
-                #value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan)
-                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, meangrad=ninan, vargrad=ninan,
-                                     Lpsi0=ninan, Lpsi1=ninan, Lpsi2=ninan)
+                psi2ni = self.psi2[ninan]
+                value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, dL_dpsi2=ninan)
             else:
                 psi2ni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)
@@ -290,7 +266,7 @@ class SparseGPMiniBatch(SparseGP):
             # Fill out the full values by adding in the apporpriate grad_dict
             # values
             self._inner_take_over_or_update(self.full_values, grad_dict, value_indices)
-            self._inner_values_update(grad_dict)  # What is this for?
+            self._inner_values_update(grad_dict)  # What is this for? -> MRD
 
             woodbury_inv[:, :, d] = posterior.woodbury_inv[:,:,None]
             woodbury_vector[:, d] = posterior.woodbury_vector
@@ -307,8 +283,6 @@ class SparseGPMiniBatch(SparseGP):
             self.kern.return_psi2_n = False
 
     def _outer_loop_without_missing_data(self):
-        self._log_marginal_likelihood = 0
-
         if self.posterior is None:
             woodbury_inv = np.zeros((self.num_inducing, self.num_inducing, self.output_dim))
             woodbury_vector = np.zeros((self.num_inducing, self.output_dim))
@@ -316,14 +290,14 @@ class SparseGPMiniBatch(SparseGP):
             woodbury_inv = self.posterior._woodbury_inv
             woodbury_vector = self.posterior._woodbury_vector
 
-        d = self.stochastics.d
+        d = self.stochastics.d[0][0]
         posterior, log_marginal_likelihood, grad_dict= self._inner_parameters_changed(
                             self.kern, self.X,
                             self.Z, self.likelihood,
                             self.Y_normalized[:, d], self.Y_metadata)
         self.grad_dict = grad_dict
 
-        self._log_marginal_likelihood += log_marginal_likelihood
+        self._log_marginal_likelihood = log_marginal_likelihood
 
         self._outer_values_update(self.grad_dict)
 
@@ -334,6 +308,19 @@ class SparseGPMiniBatch(SparseGP):
                                    K=posterior._K, mean=None, cov=None, K_chol=posterior.K_chol)
 
     def parameters_changed(self):
+        #Compute the psi statistics for N once, but don't sum out N in psi2
+        if self.has_uncertain_inputs():
+            #psi0 = ObsAr(self.kern.psi0(self.Z, self.X))
+            #psi1 = ObsAr(self.kern.psi1(self.Z, self.X))
+            #psi2 = ObsAr(self.kern.psi2(self.Z, self.X))
+            self.psi0 = self.kern.psi0(self.Z, self.X)
+            self.psi1 = self.kern.psi1(self.Z, self.X)
+            self.psi2 = self.kern.psi2n(self.Z, self.X)
+        else:
+            self.psi0 = self.kern.Kdiag(self.X)
+            self.psi1 = self.kern.K(self.X, self.Z)
+            self.psi2 = None
+
         if self.missing_data:
             self._outer_loop_for_missing_data()
         elif self.stochastics:

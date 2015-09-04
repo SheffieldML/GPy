@@ -174,16 +174,15 @@ class MRD(BayesianGPLVMMiniBatch):
             #grad_dict = b.full_values
 
             if self.has_uncertain_inputs():
-                self.X.mean.gradient += b.X.mean.gradient
-                self.X.variance.gradient += b.X.variance.gradient
+                self.X.gradient += b._Xgrad
             else:
-                self.X.gradient += b.X.gradient
+                self.X.gradient += b._Xgrad
 
-        if self.has_uncertain_inputs():
-            # update for the KL divergence
-            self.variational_prior.update_gradients_KL(self.X)
-            self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
-            pass
+        #if self.has_uncertain_inputs():
+        #    # update for the KL divergence
+        #    self.variational_prior.update_gradients_KL(self.X)
+        #    self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+        #    pass
 
     def log_likelihood(self):
         return self._log_marginal_likelihood

@@ -437,6 +437,86 @@ class KernelTestsProductWithZeroValues(unittest.TestCase):
         self.assertFalse(np.any(np.isnan(target)),
                          "Gradient resulted in NaN")
 
+class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
+    
+    def setUp(self):
+        from GPy.core.parameterization.variational import NormalPosterior
+        N,M,Q = 100,20,3
+                                
+        X = np.random.randn(N,Q)
+        X_var = np.random.rand(N,Q)+0.01
+        self.Z = np.random.randn(M,Q)
+        self.qX = NormalPosterior(X, X_var)
+        
+        self.w1 = np.random.randn(N)
+        self.w2 = np.random.randn(N,M)
+        self.w3 = np.random.randn(M,M) 
+        self.w3 = self.w3+self.w3.T
+        
+    def test_kernels(self):
+        from GPy.kern import RBF,Linear
+        Q = self.Z.shape[1]
+        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True)]
+        
+        for k in kernels:
+            k.randomize()
+            self._test_kernel_param(k)
+            self._test_Z(k)
+            self._test_qX(k)
+
+    def _test_kernel_param(self, kernel):
+        
+        def f(p):
+            kernel.param_array[:] = p
+            psi0 = kernel.psi0(self.Z, self.qX)
+            psi1 = kernel.psi1(self.Z, self.qX)
+            psi2 = kernel.psi2(self.Z, self.qX)
+            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            
+        def df(p):
+            kernel.param_array[:] = p
+            kernel.update_gradients_expectations(self.w1, self.w2, self.w3, self.Z, self.qX)
+            return kernel.gradient.copy()
+
+        from GPy.models import GradientChecker
+        m = GradientChecker(f, df, kernel.param_array.copy())
+        self.assertTrue(m.checkgrad())
+
+    def _test_Z(self, kernel):
+        
+        def f(p):
+            psi0 = kernel.psi0(p, self.qX)
+            psi1 = kernel.psi1(p, self.qX)
+            psi2 = kernel.psi2(p, self.qX)
+            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            
+        def df(p):
+            return kernel.gradients_Z_expectations(self.w1, self.w2, self.w3, p, self.qX)
+
+        from GPy.models import GradientChecker
+        m = GradientChecker(f, df, self.Z.copy())
+        self.assertTrue(m.checkgrad())
+        
+    def _test_qX(self, kernel):
+        
+        def f(p):
+            self.qX.param_array[:] = p
+            self.qX._trigger_params_changed()
+            psi0 = kernel.psi0(self.Z, self.qX)
+            psi1 = kernel.psi1(self.Z, self.qX)
+            psi2 = kernel.psi2(self.Z, self.qX)
+            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            
+        def df(p):
+            self.qX.param_array[:] = p
+            self.qX._trigger_params_changed()
+            grad =  kernel.gradients_qX_expectations(self.w1, self.w2, self.w3, self.Z, self.qX)
+            self.qX.set_gradients(grad)
+            return self.qX.gradient.copy()
+
+        from GPy.models import GradientChecker
+        m = GradientChecker(f, df, self.qX.param_array.copy())
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

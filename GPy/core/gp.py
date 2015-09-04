@@ -114,7 +114,7 @@ class GP(Model):
         self._predictive_variable = self.X
 
 
-    def set_XY(self, X=None, Y=None, trigger_update=True):
+    def set_XY(self, X=None, Y=None):
         """
         Set the input / output data of the model
         This is useful if we wish to change our existing data but maintain the same model
@@ -124,7 +124,7 @@ class GP(Model):
         :param Y: output observations
         :type Y: np.ndarray
         """
-        if trigger_update: self.update_model(False)
+        self.update_model(False)
         if Y is not None:
             if self.normalizer is not None:
                 self.normalizer.scale_by(Y)
@@ -140,34 +140,33 @@ class GP(Model):
                     assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
                     self.unlink_parameter(self.X)
                     self.X = X
-                    self.link_parameters(self.X)
+                    self.link_parameter(self.X)
                 else:
                     self.unlink_parameter(self.X)
                     from ..core import Param
                     self.X = Param('latent mean',X)
-                    self.link_parameters(self.X)
+                    self.link_parameter(self.X)
             else:
                 self.X = ObsAr(X)
-        if trigger_update: self.update_model(True)
-        if trigger_update: self._trigger_params_changed()
+        self.update_model(True)
 
-    def set_X(self,X, trigger_update=True):
+    def set_X(self,X):
         """
         Set the input data of the model
 
         :param X: input observations
         :type X: np.ndarray
         """
-        self.set_XY(X=X, trigger_update=trigger_update)
+        self.set_XY(X=X)
 
-    def set_Y(self,Y, trigger_update=True):
+    def set_Y(self,Y):
         """
         Set the output data of the model
 
         :param X: output observations
         :type X: np.ndarray
         """
-        self.set_XY(Y=Y, trigger_update=trigger_update)
+        self.set_XY(Y=Y)
 
     def parameters_changed(self):
         """

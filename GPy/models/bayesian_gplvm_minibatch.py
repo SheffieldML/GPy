@@ -107,8 +107,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
             self.X.gradient += self.kern.gradients_X_diag(full_values['dL_dKdiag'], self.X)
 
     def _outer_init_full_values(self):
-        full_values = super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
-        return full_values
+        return super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
 
     def parameters_changed(self):
         super(BayesianGPLVMMiniBatch,self).parameters_changed()
@@ -133,6 +132,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
             elif self.stochastics:
                 d = self.output_dim
                 self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)*self.stochastics.batchsize/d
+
+        self._Xgrad = self.X.gradient.copy()
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,

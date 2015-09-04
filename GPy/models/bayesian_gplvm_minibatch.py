@@ -100,22 +100,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                             dL_dpsi2=full_values['dL_dpsi2'],
                                             psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
 
-            kl_fctr = self.kl_factr
-
-            self.X.mean.gradient[:] = 0
-            self.X.variance.gradient[:] = 0
-            self.variational_prior.update_gradients_KL(self.X)
-
-            if self.missing_data or not self.stochastics:
-                self.X.mean.gradient = kl_fctr*self.X.mean.gradient
-                self.X.variance.gradient = kl_fctr*self.X.variance.gradient
-            else:
-                d = self.output_dim
-                self.X.mean.gradient = kl_fctr*self.X.mean.gradient*self.stochastics.batchsize/d
-                self.X.variance.gradient = kl_fctr*self.X.variance.gradient*self.stochastics.batchsize/d
-            self.X.mean.gradient += meangrad_tmp
-            self.X.variance.gradient += vargrad_tmp
-
+            self.X.mean.gradient = meangrad_tmp
+            self.X.variance.gradient = vargrad_tmp
         else:
             self.X.gradient = self.kern.gradients_X(full_values['dL_dKnm'], self.X, self.Z)
             self.X.gradient += self.kern.gradients_X_diag(full_values['dL_dKdiag'], self.X)
@@ -126,15 +112,27 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
 
     def parameters_changed(self):
         super(BayesianGPLVMMiniBatch,self).parameters_changed()
-        kl_fctr = self.kl_factr
-        if self.missing_data or not self.stochastics:
-            self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
-        elif self.stochastics:
-            d = self.output_dim
-            self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)*self.stochastics.batchsize/d
 
-        if isinstance(self.inference_method, VarDTC_minibatch):
-            return
+        kl_fctr = self.kl_factr
+        if kl_fctr > 0:
+            Xgrad = self.X.gradient.copy()
+            self.X.gradient[:] = 0
+            self.variational_prior.update_gradients_KL(self.X)
+
+            if self.missing_data or not self.stochastics:
+                self.X.mean.gradient = kl_fctr*self.X.mean.gradient
+                self.X.variance.gradient = kl_fctr*self.X.variance.gradient
+            else:
+                d = self.output_dim
+                self.X.mean.gradient = kl_fctr*self.X.mean.gradient*self.stochastics.batchsize/d
+                self.X.variance.gradient = kl_fctr*self.X.variance.gradient*self.stochastics.batchsize/d
+            self.X.gradient += Xgrad
+
+            if self.missing_data or not self.stochastics:
+                self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
+            elif self.stochastics:
+                d = self.output_dim
+                self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)*self.stochastics.batchsize/d
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,

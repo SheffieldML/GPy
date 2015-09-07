@@ -4,8 +4,11 @@
 import numpy as np
 from . import linalg
 from .config import config
-
-from . import choleskies_cython
+try:
+    from . import choleskies_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
 def safe_root(N):
     i = np.sqrt(N)

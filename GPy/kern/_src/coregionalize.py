@@ -6,7 +6,11 @@ import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.config import config # for assesing whether to use cython
-from . import coregionalize_cython
+try:
+    from . import coregionalize_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
 class Coregionalize(Kern):
     """
@@ -126,4 +130,3 @@ class Coregionalize(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
-

@@ -128,29 +128,30 @@ class SparseGP(GP):
         if kern is None: kern = self.kern
 
         if not isinstance(Xnew, VariationalPosterior):
-            Kx = kern.K(self._predictive_variable, Xnew)
-            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
-            if full_cov:
-                Kxx = kern.K(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
-                    for i in range(var.shape[2]):
-                        var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
-                var = var
-            else:
-                Kxx = kern.Kdiag(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
-                    for i in range(var.shape[1]):
-                        var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
-                var = var
-            #add in the mean function
-            if self.mean_function is not None:
-                mu += self.mean_function.f(Xnew)
+            # Kx = kern.K(self._predictive_variable, Xnew)
+            # mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+            # if full_cov:
+            #     Kxx = kern.K(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[2]):
+            #             var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
+            #     var = var
+            # else:
+            #     Kxx = kern.Kdiag(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[1]):
+            #             var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+            #     var = var
+            # #add in the mean function
+            # if self.mean_function is not None:
+            #     mu += self.mean_function.f(Xnew)
+            mu, var = super(SparseGP, self)._raw_predict(Xnew, full_cov, kern)
         else:
             psi0_star = kern.psi0(self._predictive_variable, Xnew)
             psi1_star = kern.psi1(self._predictive_variable, Xnew)

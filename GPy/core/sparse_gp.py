@@ -49,7 +49,7 @@ class SparseGP(GP):
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")
-            print("defaulting to ", inference_method, "for latent function inference")
+            print(("defaulting to ", inference_method, "for latent function inference"))
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
@@ -159,7 +159,7 @@ class SparseGP(GP):
             mu = np.dot(psi1_star, la) # TODO: dimensions?
 
             if full_cov:
-                raise NotImplementedError, "Full covariance for Sparse GP predicted with uncertain inputs not implemented yet."
+                raise NotImplementedError("Full covariance for Sparse GP predicted with uncertain inputs not implemented yet.")
                 var = np.empty((Xnew.shape[0], la.shape[1], la.shape[1]))
                 di = np.diag_indices(la.shape[1])
             else:

@@ -48,7 +48,7 @@ class Gaussian(Likelihood):
 
     def betaY(self,Y,Y_metadata=None):
         #TODO: ~Ricardo this does not live here
-        raise RuntimeError, "Please notify the GPy developers, this should not happen"
+        raise RuntimeError("Please notify the GPy developers, this should not happen")
         return Y/self.gaussian_variance(Y_metadata)
 
     def gaussian_variance(self, Y_metadata=None):

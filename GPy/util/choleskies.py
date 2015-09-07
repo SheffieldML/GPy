@@ -4,8 +4,11 @@
 import numpy as np
 from . import linalg
 from .config import config
-
-from . import choleskies_cython
+try:
+    from . import choleskies_cython
+    cython_available = True
+except ImportError:
+    cython_available = False
 
 def safe_root(N):
     i = np.sqrt(N)
@@ -97,7 +100,7 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2+size)/2), keep)
 
 
-if config.getboolean('cython', 'working'):
+if cython_available:
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
     backprop_gradient = choleskies_cython.backprop_gradient_par_c

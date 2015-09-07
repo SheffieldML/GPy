@@ -6,12 +6,6 @@ import numpy as np
 from GPy.util.caching import Cacher
 
 def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
@@ -26,12 +20,6 @@ def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2
     return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi1
     # Produced intermediate results:
     # _psi1                NxM
@@ -46,12 +34,6 @@ def __psi1computations(variance, lengthscale, Z, mu, S):
     return _psi1
 
 def __psi2computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi2
     # Produced intermediate results:
     # _psi2                MxM
@@ -86,13 +68,6 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscal
     return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
 
 def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
-    """
-    dL_dpsi1 - NxM
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi1
     # Produced intermediate results: dL_dparams w.r.t. psi1
     # _dL_dvariance     1
@@ -118,13 +93,6 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
 def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    dL_dpsi2 - MxM
-    """
     # here are the "statistics" for psi2
     # Produced the derivatives w.r.t. psi2:
     # _dL_dvariance      1

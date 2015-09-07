@@ -205,7 +205,7 @@ class GP(Model):
         if kern is None:
             kern = self.kern
 
-        Kx = kern.K(self.X, Xnew)
+        Kx = kern.K(self._predictive_variable, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if len(mu.shape)==1:
             mu = mu.reshape(-1,1)

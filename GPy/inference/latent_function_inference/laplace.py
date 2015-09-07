@@ -171,7 +171,9 @@ class Laplace(LatentFunctionInference):
         #define the objective function (to be maximised)
         def obj(Ki_f, f):
             ll = -0.5*np.sum(np.dot(Ki_f.T, f)) + np.sum(likelihood.logpdf(f, Y, Y_metadata=Y_metadata))
+            print ll
             if np.isnan(ll):
+                import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
                 return -np.inf
             else:
                 return ll

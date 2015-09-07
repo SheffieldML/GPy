@@ -9,6 +9,9 @@ class AxisEventController(object):
     def __init__(self, ax):
         self.ax = ax
         self.activate()
+    def __del__(self):
+        self.deactivate()
+        return self
     def deactivate(self):
         for cb_class in self.ax.callbacks.callbacks.values():
             for cb_num in cb_class.keys():
@@ -81,9 +84,9 @@ class BufferedAxisChangedController(AxisChangedController):
     def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=None, **kwargs):
         """
         Buffered axis changed controller. Controls the buffer and handles update events for when the axes changed.
-        
+
         Updated plotting will be after first reload (first time will be within plot limits, after that the limits will be buffered)
-        
+
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
             plot_function gets called with (2D!) Xtest grid if replotting required

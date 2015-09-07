@@ -64,9 +64,7 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-
-
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None, dL_dKmm=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
 
         _, output_dim = Y.shape
         uncertain_inputs = isinstance(X, VariationalPosterior)
@@ -95,17 +93,28 @@ class VarDTC(LatentFunctionInference):
 
         # The rather complex computations of A, and the psi stats
         if uncertain_inputs:
-            psi0 = kern.psi0(Z, X)
-            psi1 = kern.psi1(Z, X)
+            if psi0 is None:
+                psi0 = kern.psi0(Z, X)
+            if psi1 is None:
+                psi1 = kern.psi1(Z, X)
             if het_noise:
-                psi2_beta = np.sum([kern.psi2(Z,X[i:i+1,:]) * beta_i for i,beta_i in enumerate(beta)],0)
+                if psi2 is None:
+                    assert len(psi2.shape) == 3  # Need to have not summed out N
+                    #FIXME: Need testing
+                    psi2_beta = np.sum([psi2[X[i:i+1,:], :, :] * beta_i for i,beta_i in enumerate(beta)],0)
+                else:
+                    psi2_beta = np.sum([kern.psi2(Z,X[i:i+1,:]) * beta_i for i,beta_i in enumerate(beta)],0)
             else:
-                psi2_beta = kern.psi2(Z,X) * beta
+                if psi2 is None:
+                    psi2 = kern.psi2(Z,X)
+                psi2_beta =  psi2 * beta
             LmInv = dtrtri(Lm)
             A = LmInv.dot(psi2_beta.dot(LmInv.T))
         else:
-            psi0 = kern.Kdiag(X)
-            psi1 = kern.K(X, Z)
+            if psi0 is None:
+                psi0 = kern.Kdiag(X)
+            if psi1 is None:
+                psi1 = kern.K(X, Z)
             if het_noise:
                 tmp = psi1 * (np.sqrt(beta))
             else:

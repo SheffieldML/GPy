@@ -58,20 +58,9 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
-        self._return_psi2_n_flag = ObsAr(np.zeros(1)).astype(bool)
 
-    @property
-    def return_psi2_n(self):
-        """
-        Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.
-        """
-        return self._return_psi2_n_flag[0]
-    @return_psi2_n.setter
-    def return_psi2_n(self, val):
-        def visit(self):
-            if isinstance(self, Kern):
-                self._return_psi2_n_flag[0]=val
-        self.traverse(visit)
+        from .psi_comp import PSICOMP_GH
+        self.psicomp = PSICOMP_GH()
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
@@ -90,13 +79,19 @@ class Kern(Parameterized):
     def Kdiag(self, X):
         raise NotImplementedError
     def psi0(self, Z, variational_posterior):
-        raise NotImplementedError
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
     def psi1(self, Z, variational_posterior):
-        raise NotImplementedError
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
-        raise NotImplementedError
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
     def gradients_X(self, dL_dK, X, X2):
         raise NotImplementedError
+    def gradients_XX(self, dL_dK, X, X2):
+        raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
+    def gradients_XX_diag(self, dL_dKdiag, X):
+        raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
         raise NotImplementedError
 
@@ -119,21 +114,23 @@ class Kern(Parameterized):
                         dL_dpsi1 * dpsi1_d{theta_i} +
                         dL_dpsi2 * dpsi2_d{theta_i}
         """
-        raise NotImplementedError
+        dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
+        self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                psi0=None, psi1=None, psi2=None):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
-        raise NotImplementedError
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
-        raise NotImplementedError
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
 
     def plot(self, x=None, fignum=None, ax=None, title=None, plot_limits=None, resolution=None, **mpl_kwargs):
         """
@@ -172,7 +169,7 @@ class Kern(Parameterized):
     def __iadd__(self, other):
         return self.add(other)
 
-    def add(self, other, name='add'):
+    def add(self, other, name='sum'):
         """
         Add another kernel to this one.
 

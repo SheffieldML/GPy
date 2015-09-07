@@ -36,6 +36,26 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
         np.testing.assert_almost_equal(mu_hat, mu)
 
+    def test_normalizer(self):
+        k = GPy.kern.RBF(1)
+        Y = self.Y
+        mu, std = Y.mean(0), Y.std(0)
+        m = GPy.models.GPRegression(self.X, Y, kernel=k, normalizer=True)
+        m.optimize()
+        assert(m.checkgrad())
+        k = GPy.kern.RBF(1)
+        m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
+        m2[:] = m[:]
+        mu1, var1 = m.predict(m.X, full_cov=True)
+        mu2, var2 = m2.predict(m2.X, full_cov=True)
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2)
+        mu1, var1 = m.predict(m.X, full_cov=False)
+        mu2, var2 = m2.predict(m2.X, full_cov=False)
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2)
+
+
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)
@@ -352,8 +372,8 @@ class GradientTests(np.testing.TestCase):
         self.check_model(rbf, model_type='SparseGPRegression', dimension=2)
 
     def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
-        ''' Testing the sparse GP regression with rbf kernel on 2d data '''
-        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
+        ''' Testing the sparse GP regression with rbf kernel on 1d data '''
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1) + GPy.kern.White(1, 1e-5)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1)
 
     def test_SparseGPRegression_rbf_linear_white_kern_2D(self):
@@ -472,6 +492,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue(m.checkgrad())
 
     def test_gp_kronecker_gaussian(self):
+        np.random.seed(0)
         N1, N2 = 30, 20
         X1 = np.random.randn(N1, 1)
         X2 = np.random.randn(N2, 1)
@@ -492,16 +513,16 @@ class GradientTests(np.testing.TestCase):
 
         m.randomize()
         mm[:] = m[:]
-        assert np.allclose(m.log_likelihood(), mm.log_likelihood())
-        assert np.allclose(m.gradient, mm.gradient)
+        self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
+        self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)
         X2test = np.random.randn(100, 1)
         mean1, var1 = m.predict(X1test, X2test)
         yy, xx = np.meshgrid(X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
         mean2, var2 = mm.predict(Xgrid)
-        assert np.allclose(mean1, mean2)
-        assert np.allclose(var1, var2)
+        self.assertTrue( np.allclose(mean1, mean2) )
+        self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
         num_obs = 25
@@ -509,7 +530,8 @@ class GradientTests(np.testing.TestCase):
         X = X[:, None]
         Y = 25. + np.sin(X / 20.) * 2. + np.random.rand(num_obs)[:, None]
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
-        m = GPy.models.GPVariationalGaussianApproximation(X, Y, kern)
+        lik = GPy.likelihoods.Gaussian()
+        m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
         self.assertTrue(m.checkgrad())
 
 

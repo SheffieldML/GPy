@@ -241,7 +241,7 @@ gpu_code = """
 
 class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
-    def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
+    def __init__(self, threadnum=256, blocknum=30, GPU_direct=False):
         self.GPU_direct = GPU_direct
         self.gpuCache = None
         

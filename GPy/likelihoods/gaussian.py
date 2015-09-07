@@ -48,6 +48,7 @@ class Gaussian(Likelihood):
 
     def betaY(self,Y,Y_metadata=None):
         #TODO: ~Ricardo this does not live here
+        raise RuntimeError, "Please notify the GPy developers, this should not happen"
         return Y/self.gaussian_variance(Y_metadata)
 
     def gaussian_variance(self, Y_metadata=None):
@@ -315,9 +316,44 @@ class Gaussian(Likelihood):
         return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
+        if not isinstance(self.gp_link, link_functions.Identity):
+            return super(Gaussian, self).variational_expectations(Y=Y, m=m, v=v, gh_points=gh_points, Y_metadata=Y_metadata)
+
         lik_var = float(self.variance)
         F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var
         dF_dv = np.ones_like(v)*(-0.5/lik_var)
         dF_dtheta = -0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2)
         return F, dF_dmu, dF_dv, dF_dtheta.reshape(1, Y.shape[0], Y.shape[1])
+
+class HeteroscedasticGaussian(Gaussian):
+    def __init__(self, Y_metadata, gp_link=None, variance=1., name='het_Gauss'):
+        if gp_link is None:
+            gp_link = link_functions.Identity()
+
+        if not isinstance(gp_link, link_functions.Identity):
+            print("Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used")
+
+        super(HeteroscedasticGaussian, self).__init__(gp_link, np.ones(Y_metadata['output_index'].shape)*variance, name)
+
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        return dL_dKdiag[Y_metadata['output_index']]
+
+    def gaussian_variance(self, Y_metadata=None):
+        return self.variance[Y_metadata['output_index'].flatten()]
+
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
+        _s = self.variance[Y_metadata['output_index'].flatten()]
+        if full_cov:
+            if var.ndim == 2:
+                var += np.eye(var.shape[0])*_s
+            if var.ndim == 3:
+                var += np.atleast_3d(np.eye(var.shape[0])*_s)
+        else:
+            var += _s
+        return mu, var
+
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
+        _s = self.variance[Y_metadata['output_index'].flatten()]
+        return  [stats.norm.ppf(q/100.)*np.sqrt(var + _s) + mu for q in quantiles]

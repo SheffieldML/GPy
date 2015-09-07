@@ -5,7 +5,7 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from GPy.util.caching import Cacher
 
-def psicomputations(variance, lengthscale, Z, variational_posterior):
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
     """
     Z - MxQ
     mu - NxQ
@@ -21,7 +21,8 @@ def psicomputations(variance, lengthscale, Z, variational_posterior):
     psi0 = np.empty(mu.shape[0])
     psi0[:] = variance
     psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S).sum(axis=0)
+    psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
+    if not return_psi2_n: psi2 = psi2.sum(axis=0)
     return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):

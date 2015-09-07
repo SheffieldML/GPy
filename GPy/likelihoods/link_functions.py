@@ -141,7 +141,7 @@ class Log_ex_1(GPTransformation):
 
     """
     def transf(self,f):
-        return scipy.log1p(safe_exp(f))
+        return scipy.special.log1p(safe_exp(f))
 
     def dtransf_df(self,f):
         ef = safe_exp(f)

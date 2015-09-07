@@ -119,7 +119,7 @@ def plot_latent(model, labels=None, which_indices=None,
         Xtest_full[:, [input_1, input_2]] = x
         _, var = model.predict(Xtest_full, **predict_kwargs)
         var = var[:, :1]
-        return np.log(var)
+        return 2*np.sqrt(var)
 
     #Create an IMshow controller that can re-plot the latent space shading at a good resolution
     if plot_limits is None:

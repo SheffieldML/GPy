@@ -36,8 +36,10 @@ class GPLVM(GP):
         likelihood = Gaussian()
 
         super(GPLVM, self).__init__(X, Y, kernel, likelihood, name='GPLVM')
+
         self.X = Param('latent_mean', X)
         self.link_parameter(self.X, index=0)
+        self._predictive_variable = self.X
 
     def parameters_changed(self):
         super(GPLVM, self).parameters_changed()

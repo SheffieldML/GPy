@@ -63,19 +63,39 @@ def _psi2computations(dL_dpsi2, variance, Z, mu, S):
 
     variance2 = np.square(variance)
     common_sum = np.dot(mu,(variance*Z).T)
-    Z_expect = (np.dot(dL_dpsi2,Z)*Z).sum(axis=0)
-    dL_dpsi2T = dL_dpsi2+dL_dpsi2.T
-    common_expect = np.dot(common_sum,np.dot(dL_dpsi2T,Z))
-    Z2_expect = np.inner(common_sum,dL_dpsi2T)
-    Z1_expect = np.dot(dL_dpsi2T,Z)
-
-    dL_dvar = 2.*S.sum(axis=0)*variance*Z_expect+(common_expect*mu).sum(axis=0)
-
-    dL_dmu = common_expect*variance
-
-    dL_dS = np.empty(S.shape)
-    dL_dS[:] = Z_expect*variance2
-
-    dL_dZ = variance2*S.sum(axis=0)*Z1_expect+np.dot(Z2_expect.T,variance*mu)
+    if len(dL_dpsi2.shape)==2:
+        Z_expect = (np.dot(dL_dpsi2,Z)*Z).sum(axis=0)
+        dL_dpsi2T = dL_dpsi2+dL_dpsi2.T
+        common_expect = np.dot(common_sum,np.dot(dL_dpsi2T,Z))
+        Z2_expect = np.inner(common_sum,dL_dpsi2T)
+        Z1_expect = np.dot(dL_dpsi2T,Z)
+    
+        dL_dvar = 2.*S.sum(axis=0)*variance*Z_expect+(common_expect*mu).sum(axis=0)
+    
+        dL_dmu = common_expect*variance
+    
+        dL_dS = np.empty(S.shape)
+        dL_dS[:] = Z_expect*variance2
+    
+        dL_dZ = variance2*S.sum(axis=0)*Z1_expect+np.dot(Z2_expect.T,variance*mu)
+    else:
+        N,M,Q = mu.shape[0],Z.shape[0],mu.shape[1]
+        dL_dpsi2_ = dL_dpsi2.sum(axis=0)
+        Z_expect = (np.dot(dL_dpsi2.reshape(N*M,M),Z).reshape(N,M,Q)*Z[None,:,:]).sum(axis=1)
+        dL_dpsi2T = dL_dpsi2_+dL_dpsi2_.T
+        dL_dpsi2T_ = dL_dpsi2+np.swapaxes(dL_dpsi2, 1, 2)
+        common_expect = np.dot(common_sum,np.dot(dL_dpsi2T,Z))
+        common_expect_ = (common_sum[:,:,None]*np.dot(dL_dpsi2T_.reshape(N*M,M),Z).reshape(N,M,Q)).sum(axis=1)
+        Z2_expect = (common_sum[:,:,None]*dL_dpsi2T_).sum(axis=1)
+        Z1_expect = np.dot(dL_dpsi2T_.reshape(N*M,M),Z).reshape(N,M,Q)
+    
+        dL_dvar = 2.*variance*(S*Z_expect).sum(axis=0)+(common_expect_*mu).sum(axis=0)
+    
+        dL_dmu = common_expect_*variance
+    
+        dL_dS = np.empty(S.shape)
+        dL_dS[:] = variance2* Z_expect
+    
+        dL_dZ = variance2*(S[:,None,:]*Z1_expect).sum(axis=0)+np.dot(Z2_expect.T,variance*mu)
 
     return dL_dvar, dL_dmu, dL_dS, dL_dZ

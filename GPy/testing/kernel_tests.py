@@ -452,6 +452,8 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         self.w2 = np.random.randn(N,M)
         self.w3 = np.random.randn(M,M) 
         self.w3 = self.w3+self.w3.T
+        self.w3n = np.random.randn(N,M,M) 
+        self.w3n = self.w3n+np.swapaxes(self.w3n, 1,2)
         
     def test_kernels(self):
         from GPy.kern import RBF,Linear
@@ -463,54 +465,70 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
             self._test_kernel_param(k)
             self._test_Z(k)
             self._test_qX(k)
+            self._test_kernel_param(k, psi2n=True)
+            self._test_Z(k, psi2n=True)
+            self._test_qX(k, psi2n=True)
 
-    def _test_kernel_param(self, kernel):
-        
+    def _test_kernel_param(self, kernel, psi2n=False):
+
         def f(p):
             kernel.param_array[:] = p
             psi0 = kernel.psi0(self.Z, self.qX)
             psi1 = kernel.psi1(self.Z, self.qX)
-            psi2 = kernel.psi2(self.Z, self.qX)
-            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            if not psi2n:
+                psi2 = kernel.psi2(self.Z, self.qX) 
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            else:
+                psi2 = kernel.psi2n(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psi2).sum()
             
         def df(p):
             kernel.param_array[:] = p
-            kernel.update_gradients_expectations(self.w1, self.w2, self.w3, self.Z, self.qX)
+            kernel.update_gradients_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX)
             return kernel.gradient.copy()
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, kernel.param_array.copy())
         self.assertTrue(m.checkgrad())
 
-    def _test_Z(self, kernel):
+    def _test_Z(self, kernel, psi2n=False):
         
         def f(p):
             psi0 = kernel.psi0(p, self.qX)
             psi1 = kernel.psi1(p, self.qX)
             psi2 = kernel.psi2(p, self.qX)
-            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            if not psi2n:
+                psi2 = kernel.psi2(p, self.qX) 
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            else:
+                psi2 = kernel.psi2n(p, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psi2).sum()
             
         def df(p):
-            return kernel.gradients_Z_expectations(self.w1, self.w2, self.w3, p, self.qX)
+            return kernel.gradients_Z_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, p, self.qX)
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, self.Z.copy())
         self.assertTrue(m.checkgrad())
         
-    def _test_qX(self, kernel):
+    def _test_qX(self, kernel, psi2n=False):
         
         def f(p):
             self.qX.param_array[:] = p
             self.qX._trigger_params_changed()
             psi0 = kernel.psi0(self.Z, self.qX)
             psi1 = kernel.psi1(self.Z, self.qX)
-            psi2 = kernel.psi2(self.Z, self.qX)
-            return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            if not psi2n:
+                psi2 = kernel.psi2(self.Z, self.qX) 
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
+            else:
+                psi2 = kernel.psi2n(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psi2).sum()
             
         def df(p):
             self.qX.param_array[:] = p
             self.qX._trigger_params_changed()
-            grad =  kernel.gradients_qX_expectations(self.w1, self.w2, self.w3, self.Z, self.qX)
+            grad =  kernel.gradients_qX_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX)
             self.qX.set_gradients(grad)
             return self.qX.gradient.copy()
 

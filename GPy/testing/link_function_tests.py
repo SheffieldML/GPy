@@ -1,5 +1,5 @@
 import numpy as np
-import scipy as sp
+import scipy
 from scipy.special import cbrt
 from GPy.models import GradientChecker
 _lim_val = np.finfo(np.float64).max
@@ -92,18 +92,18 @@ class LinkFunctionTests(np.testing.TestCase):
         link = Log_ex_1()
         lim_of_inf = _lim_val_exp
 
-        np.testing.assert_almost_equal(np.log1p(np.exp(self.mid_f)), link.transf(self.mid_f))
-        assert np.isinf(np.log1p(np.exp(np.log(self.f_upper_lim))))
+        np.testing.assert_almost_equal(scipy.special.log1p(np.exp(self.mid_f)), link.transf(self.mid_f))
+        assert np.isinf(scipy.special.log1p(np.exp(np.log(self.f_upper_lim))))
         #Check the clipping works
         np.testing.assert_almost_equal(link.transf(self.f_lower_lim), 0, decimal=5)
         #Need to look at most significant figures here rather than the decimals
-        np.testing.assert_approx_equal(link.transf(self.f_upper_lim), np.log1p(_lim_val), significant=5)
+        np.testing.assert_approx_equal(link.transf(self.f_upper_lim), scipy.special.log1p(_lim_val), significant=5)
         self.check_overflow(link, lim_of_inf)
 
         #Check that it would otherwise fail
         beyond_lim_of_inf = lim_of_inf + 10.0
         old_err_state = np.seterr(over='ignore')
-        self.assertTrue(np.isinf(np.log1p(np.exp(beyond_lim_of_inf))))
+        self.assertTrue(np.isinf(scipy.special.log1p(np.exp(beyond_lim_of_inf))))
         np.seterr(**old_err_state)
 
 

@@ -9,7 +9,7 @@ from ....util.linalg import tdot
 
 import numpy as np
 
-def psicomputations(variance, Z, variational_posterior):
+def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
     """
     Compute psi-statistics for ss-linear kernel
     """

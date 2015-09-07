@@ -80,8 +80,9 @@ class PSICOMP_GH(PSICOMP):
             dL_dkfu = (dL_dpsi1+ 2.*Kfu.dot(dL_dpsi2))*self.weights[i]
             kern.update_gradients_full(dL_dkfu, X, Z)
             dtheta += kern.gradient
-            dX += kern.gradients_X(dL_dkfu, X, Z)
-            dZ += kern.gradients_X(dL_dkfu.T, Z, X)
+            dX_i, dZ_i = kern.gradients_X_X2(dL_dkfu, X, Z)
+            dX += dX_i
+            dZ += dZ_i
             dmu += dX
             dS += dX*self.locs[i]/(2.*S_sq)
         kern.gradient[:] = dtheta_old

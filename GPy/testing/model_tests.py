@@ -55,13 +55,44 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
         np.testing.assert_allclose(var1, var2)
 
+        q50n = m.predict_quantiles(m.X, (50,))
+        q50 = m2.predict_quantiles(m2.X, (50,))
+        np.testing.assert_allclose(q50n[0], (q50[0]*std)+mu)
+
+    def check_jacobian(self):
+        try:
+            import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt
+        except:
+            raise self.skipTest("autograd not available to check gradients")
+        def k(X, X2, alpha=1., lengthscale=None):
+            if lengthscale is None:
+                lengthscale = np.ones(X.shape[1])
+            exp = 0.
+            for q in range(X.shape[1]):
+                exp += ((X[:, [q]] - X2[:, [q]].T)/lengthscale[q])**2
+            #exp = np.sqrt(exp)
+            return alpha * np.exp(-.5*exp)
+        dk = ag.elementwise_grad(lambda x, x2: k(x, x2, alpha=ke.variance.values, lengthscale=ke.lengthscale.values))
+        dkdk = ag.elementwise_grad(dk, argnum=1)
+
+        ke = GPy.kern.RBF(1, ARD=True)
+        #ke.randomize()
+        ke.variance = .2#.randomize()
+        ke.lengthscale[:] = .5
+        ke.randomize()
+        X = np.linspace(-1, 1, 1000)[:,None]
+        X2 = np.array([[0.]]).T
+        np.testing.assert_allclose(ke.gradients_X([[1.]], X, X), dk(X, X))
+        np.testing.assert_allclose(ke.gradients_XX([[1.]], X, X).sum(0), dkdk(X, X))
+        np.testing.assert_allclose(ke.gradients_X([[1.]], X, X2), dk(X, X2))
+        np.testing.assert_allclose(ke.gradients_XX([[1.]], X, X2).sum(0), dkdk(X, X2))
+
 
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)
         m.randomize()
         Z = m.Z[:]
-        X = self.X[:]
 
         # Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
         Kinv = m.posterior.woodbury_inv
@@ -147,11 +178,24 @@ class MiscTests(unittest.TestCase):
         m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                           kernel=k, missing_data=True)
         assert(m.checkgrad())
+        mul, varl = m.predict(m.X)
 
         k = kern.RBF(Q, ARD=True) + kern.White(Q, np.exp(-2)) # + kern.bias(Q)
-        m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
+        m2 = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
                           kernel=k, missing_data=True)
         assert(m.checkgrad())
+        m2.kern.rbf.lengthscale[:] = 1e6
+        m2.X[:] = m.X.param_array
+        m2.likelihood[:] = m.likelihood[:]
+        m2.kern.white[:] = m.kern.white[:]
+        mu, var = m.predict(m.X)
+        np.testing.assert_allclose(mul, mu)
+        np.testing.assert_allclose(varl, var)
+
+        q50 = m.predict_quantiles(m.X, (50,))
+        np.testing.assert_allclose(mul, q50[0])
+
+
 
     def test_likelihood_replicate_kern(self):
         m = GPy.models.GPRegression(self.X, self.Y)

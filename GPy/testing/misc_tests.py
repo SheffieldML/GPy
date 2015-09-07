@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import scipy as sp
 import GPy
@@ -18,8 +19,8 @@ class MiscTests(np.testing.TestCase):
             assert np.isinf(np.exp(self._lim_val_exp + 1))
             assert np.isfinite(GPy.util.misc.safe_exp(self._lim_val_exp + 1))
 
-            print w
-            print len(w)
+            print(w)
+            print(len(w))
             assert len(w)==1 # should have one overflow warning
 
     def test_safe_exp_lower(self):

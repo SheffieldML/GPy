@@ -40,7 +40,7 @@ class SparseGPMissing(StochasticStorage):
         bdict = {}
         #For N > 1000 array2string default crops
         opt = np.get_printoptions()
-        np.set_printoptions(threshold='nan')
+        np.set_printoptions(threshold=np.inf)
         for d in range(self.Y.shape[1]):
             inan = np.isnan(self.Y)[:, d]
             arr_str = np.array2string(inan, np.inf, 0, True, '', formatter={'bool':lambda x: '1' if x else '0'})
@@ -74,7 +74,7 @@ class SparseGPStochastics(StochasticStorage):
             bdict = {}
             if self.missing_data:
                 opt = np.get_printoptions()
-                np.set_printoptions(threshold='nan')
+                np.set_printoptions(threshold=np.inf)
                 for d in self.d:
                     inan = np.isnan(self.Y[:, d])
                     arr_str = np.array2string(inan,np.inf, 0,True, '',formatter={'bool':lambda x: '1' if x else '0'})

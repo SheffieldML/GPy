@@ -3,7 +3,7 @@
 
 import numpy as np
 from . import Tango
-from base_plots import gpplot, x_frame1D, x_frame2D,gperrors
+from .base_plots import gpplot, x_frame1D, x_frame2D,gperrors
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
 from scipy import sparse
@@ -186,8 +186,8 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
             Ysim = model.posterior_samples(Xgrid, samples, Y_metadata=Y_metadata)
-            print Ysim.shape
-            print Xnew.shape
+            print(Ysim.shape)
+            print(Xnew.shape)
             for yi in Ysim.T:
                 plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], '#3300FF', linewidth=0.25)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.

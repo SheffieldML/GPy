@@ -488,7 +488,7 @@ class Logistic(Transformation):
                     return instance()
         newfunc = super(Transformation, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)  
+            o = newfunc(cls)
         else:
             o = newfunc(cls, lower, upper, *args, **kwargs)
         cls._instances.append(weakref.ref(o))

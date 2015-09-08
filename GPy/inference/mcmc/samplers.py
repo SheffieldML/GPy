@@ -41,7 +41,7 @@ class Metropolis_Hastings:
                    self.model._log_det_jacobian()
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
-            print "sample %d of %d\r"%(it,Ntotal),
+            print("sample %d of %d\r"%(it,Ntotal),end="\t")
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
             self.model.optimizer_array = prop

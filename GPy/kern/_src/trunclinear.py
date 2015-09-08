@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
@@ -15,7 +15,7 @@ class TruncLinear(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \simga_q)
+       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \sigma_q)
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
@@ -54,7 +54,7 @@ class TruncLinear(Kern):
         self.delta = Param('delta', delta)
         self.add_parameter(self.variances)
         self.add_parameter(self.delta)
-            
+
     @Cache_this(limit=2)
     def K(self, X, X2=None):
         XX = self.variances*self._product(X, X2)
@@ -114,7 +114,7 @@ class TruncLinear_inf(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \simga_q)
+       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \sigma_q)
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
@@ -148,8 +148,8 @@ class TruncLinear_inf(Kern):
 
         self.variances = Param('variances', variances, Logexp())
         self.add_parameter(self.variances)
-        
-    
+
+
 #     @Cache_this(limit=2)
     def K(self, X, X2=None):
         tmp = self._product(X, X2)

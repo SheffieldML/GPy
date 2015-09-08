@@ -46,6 +46,8 @@ def offdiag_view(A, offset=0):
     return as_strided(Af[(1+offset):], shape=(A.shape[0]-1, A.shape[1]), strides=(A.strides[0] + A.itemsize, A.strides[1]))
 
 def _diag_ufunc(A,b,offset,func):
+    b = np.squeeze(b)
+    assert b.ndim <= 1, "only implemented for one dimensional arrays"
     dA = view(A, offset); func(dA,b,dA)
     return A
 

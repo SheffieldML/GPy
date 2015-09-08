@@ -9,6 +9,7 @@ from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_miniba
 import logging
 from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 from GPy.core.parameterization.param import Param
+from GPy.core.parameterization.observable_array import ObsAr
 
 class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     """
@@ -64,9 +65,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
             self.logger.debug("creating inference_method var_dtc")
             inference_method = VarDTC(limit=1 if not missing_data else Y.shape[1])
 
-        if kernel.useGPU and isinstance(inference_method, VarDTC_GPU):
-            kernel.psicomp.GPU_direct = True
-
         super(BayesianGPLVMMiniBatch,self).__init__(X, Y, Z, kernel, likelihood=likelihood,
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer,
@@ -83,46 +81,10 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, subset_indices=None):
-        posterior, log_marginal_likelihood, grad_dict, current_values, value_indices = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm, subset_indices=subset_indices)
-
-        if self.has_uncertain_inputs():
-            current_values['meangrad'], current_values['vargrad'] = self.kern.gradients_qX_expectations(
-                                                variational_posterior=X,
-                                                Z=Z, dL_dpsi0=grad_dict['dL_dpsi0'],
-                                                dL_dpsi1=grad_dict['dL_dpsi1'],
-                                                dL_dpsi2=grad_dict['dL_dpsi2'])
-        else:
-            current_values['Xgrad'] = self.kern.gradients_X(grad_dict['dL_dKnm'], X, Z)
-            current_values['Xgrad'] += self.kern.gradients_X_diag(grad_dict['dL_dKdiag'], X)
-            if subset_indices is not None:
-                value_indices['Xgrad'] = subset_indices['samples']
-
-        kl_fctr = self.kl_factr
-        if self.has_uncertain_inputs():
-            if self.missing_data:
-                d = self.output_dim
-                log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)/d
-            else:
-                log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(X)
-
-            # Subsetting Variational Posterior objects, makes the gradients
-            # empty. We need them to be 0 though:
-            X.mean.gradient[:] = 0
-            X.variance.gradient[:] = 0
-
-            self.variational_prior.update_gradients_KL(X)
-            if self.missing_data:
-                current_values['meangrad'] += kl_fctr*X.mean.gradient/d
-                current_values['vargrad'] += kl_fctr*X.variance.gradient/d
-            else:
-                current_values['meangrad'] += kl_fctr*X.mean.gradient
-                current_values['vargrad'] += kl_fctr*X.variance.gradient
-
-            if subset_indices is not None:
-                value_indices['meangrad'] = subset_indices['samples']
-                value_indices['vargrad'] = subset_indices['samples']
-        return posterior, log_marginal_likelihood, grad_dict, current_values, value_indices
+    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, **kw):
+        posterior, log_marginal_likelihood, grad_dict = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm,
+                                                                                                                    psi0=psi0, psi1=psi1, psi2=psi2, **kw)
+        return posterior, log_marginal_likelihood, grad_dict
 
     def _outer_values_update(self, full_values):
         """
@@ -131,22 +93,47 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         """
         super(BayesianGPLVMMiniBatch, self)._outer_values_update(full_values)
         if self.has_uncertain_inputs():
-            self.X.mean.gradient = full_values['meangrad']
-            self.X.variance.gradient = full_values['vargrad']
+            meangrad_tmp, vargrad_tmp = self.kern.gradients_qX_expectations(
+                                            variational_posterior=self.X,
+                                            Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
+                                            dL_dpsi1=full_values['dL_dpsi1'],
+                                            dL_dpsi2=full_values['dL_dpsi2'],
+                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+
+            self.X.mean.gradient = meangrad_tmp
+            self.X.variance.gradient = vargrad_tmp
         else:
-            self.X.gradient = full_values['Xgrad']
+            self.X.gradient = self.kern.gradients_X(full_values['dL_dKnm'], self.X, self.Z)
+            self.X.gradient += self.kern.gradients_X_diag(full_values['dL_dKdiag'], self.X)
 
     def _outer_init_full_values(self):
-        if self.has_uncertain_inputs():
-            return dict(meangrad=np.zeros(self.X.mean.shape),
-                        vargrad=np.zeros(self.X.variance.shape))
-        else:
-            return dict(Xgrad=np.zeros(self.X.shape))
+        return super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
 
     def parameters_changed(self):
         super(BayesianGPLVMMiniBatch,self).parameters_changed()
-        if isinstance(self.inference_method, VarDTC_minibatch):
-            return
+
+        kl_fctr = self.kl_factr
+        if kl_fctr > 0:
+            Xgrad = self.X.gradient.copy()
+            self.X.gradient[:] = 0
+            self.variational_prior.update_gradients_KL(self.X)
+
+            if self.missing_data or not self.stochastics:
+                self.X.mean.gradient = kl_fctr*self.X.mean.gradient
+                self.X.variance.gradient = kl_fctr*self.X.variance.gradient
+            else:
+                d = self.output_dim
+                self.X.mean.gradient = kl_fctr*self.X.mean.gradient*self.stochastics.batchsize/d
+                self.X.variance.gradient = kl_fctr*self.X.variance.gradient*self.stochastics.batchsize/d
+            self.X.gradient += Xgrad
+
+            if self.missing_data or not self.stochastics:
+                self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
+            elif self.stochastics:
+                d = self.output_dim
+                self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)*self.stochastics.batchsize/d
+
+        self._Xgrad = self.X.gradient.copy()
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,

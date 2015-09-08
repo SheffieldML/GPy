@@ -9,7 +9,8 @@ import itertools
 try:
     import Tango
     from matplotlib.cm import get_cmap
-    import pylab as pb
+    from matplotlib import pyplot as pb
+    from matplotlib import cm
 except:
     pass
 
@@ -27,7 +28,7 @@ def most_significant_input_dimensions(model, which_indices):
             try:
                 input_1, input_2 = np.argsort(model.input_sensitivity())[::-1][:2]
             except:
-                raise ValueError, "cannot automatically determine which dimensions to plot, please pass 'which_indices'"
+                raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
     else:
         input_1, input_2 = which_indices
     return input_1, input_2
@@ -62,7 +63,7 @@ def plot_latent(model, labels=None, which_indices=None,
 
 
     if X.shape[0] > 1000:
-        print "Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape)
+        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
         subsample = np.random.choice(X.shape[0], size=1000, replace=False)
         X = X[subsample]
         labels = labels[subsample]
@@ -114,7 +115,7 @@ def plot_latent(model, labels=None, which_indices=None,
 
     # create a function which computes the shading of latent space according to the output variance
     def plot_function(x):
-        Xtest_full = np.zeros((x.shape[0], model.X.shape[1]))
+        Xtest_full = np.zeros((x.shape[0], X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
         _, var = model.predict(Xtest_full, **predict_kwargs)
         var = var[:, :1]
@@ -133,11 +134,11 @@ def plot_latent(model, labels=None, which_indices=None,
         try:
             xmin, xmax, ymin, ymax = plot_limits
         except (TypeError, ValueError) as e:
-            raise e.__class__, "Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits)
+            raise e.__class__("Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits))
     view = ImshowController(ax, plot_function,
                             (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=pb.cm.binary, **imshow_kwargs)
+                            cmap=cm.binary, **imshow_kwargs)
 
     # make sure labels are in order of input:
     labels = np.asarray(labels)
@@ -187,22 +188,23 @@ def plot_latent(model, labels=None, which_indices=None,
         fig.tight_layout()
         fig.canvas.draw()
     except Exception as e:
-        print "Could not invoke tight layout: {}".format(e)
+        print("Could not invoke tight layout: {}".format(e))
         pass
 
     if updates:
         try:
-            ax.figure.canvas.show()
+            fig.canvas.show()
         except Exception as e:
-            print "Could not invoke show: {}".format(e)
-        raw_input('Enter to continue')
-        view.deactivate()
+            print("Could not invoke show: {}".format(e))
+        #raw_input('Enter to continue')
+        return view
     return ax
 
 def plot_magnification(model, labels=None, which_indices=None,
                 resolution=60, ax=None, marker='o', s=40,
                 fignum=None, plot_inducing=False, legend=True,
-                aspect='auto', updates=False):
+                plot_limits=None,
+                aspect='auto', updates=False, mean=True, covariance=True, kern=None):
     """
     :param labels: a np.array of size model.num_data containing labels for the points (can be number, strings, etc)
     :param resolution: the resolution of the grid on which to evaluate the predictive variance
@@ -210,6 +212,8 @@ def plot_magnification(model, labels=None, which_indices=None,
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
+    else:
+        fig = ax.figure
     Tango.reset()
 
     if labels is None:
@@ -217,19 +221,90 @@ def plot_magnification(model, labels=None, which_indices=None,
 
     input_1, input_2 = most_significant_input_dimensions(model, which_indices)
 
-    # first, plot the output variance as a function of the latent space
-    Xtest, xx, yy, xmin, xmax = x_frame2D(model.X[:, [input_1, input_2]], resolution=resolution)
-    Xtest_full = np.zeros((Xtest.shape[0], model.X.shape[1]))
+    #fethch the data points X that we'd like to plot
+    X = model.X
+    if isinstance(X, VariationalPosterior):
+        X = X.mean
+    else:
+        X = X
+
+    if X.shape[0] > 1000:
+        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
+        subsample = np.random.choice(X.shape[0], size=1000, replace=False)
+        X = X[subsample]
+        labels = labels[subsample]
+        #=======================================================================
+        #     <<<WORK IN PROGRESS>>>
+        #     <<<DO NOT DELETE>>>
+        #     plt.close('all')
+        #     fig, ax = plt.subplots(1,1)
+        #     from GPy.plotting.matplot_dep.dim_reduction_plots import most_significant_input_dimensions
+        #     import matplotlib.patches as mpatches
+        #     i1, i2 = most_significant_input_dimensions(m, None)
+        #     xmin, xmax = 100, -100
+        #     ymin, ymax = 100, -100
+        #     legend_handles = []
+        #
+        #     X = m.X.mean[:, [i1, i2]]
+        #     X = m.X.variance[:, [i1, i2]]
+        #
+        #     xmin = X[:,0].min(); xmax = X[:,0].max()
+        #     ymin = X[:,1].min(); ymax = X[:,1].max()
+        #     range_ = [[xmin, xmax], [ymin, ymax]]
+        #     ul = np.unique(labels)
+        #
+        #     for i, l in enumerate(ul):
+        #         #cdict = dict(red  =[(0., colors[i][0], colors[i][0]), (1., colors[i][0], colors[i][0])],
+        #         #             green=[(0., colors[i][0], colors[i][1]), (1., colors[i][1], colors[i][1])],
+        #         #             blue =[(0., colors[i][0], colors[i][2]), (1., colors[i][2], colors[i][2])],
+        #         #             alpha=[(0., 0., .0), (.5, .5, .5), (1., .5, .5)])
+        #         #cmap = LinearSegmentedColormap('{}'.format(l), cdict)
+        #         cmap = LinearSegmentedColormap.from_list('cmap_{}'.format(str(l)), [colors[i], colors[i]], 255)
+        #         cmap._init()
+        #         #alphas = .5*(1+scipy.special.erf(np.linspace(-2,2, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         alphas = (scipy.special.erf(np.linspace(0,2.4, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         cmap._lut[:, -1] = alphas
+        #         print l
+        #         x, y = X[labels==l].T
+        #
+        #         heatmap, xedges, yedges = np.histogram2d(x, y, bins=300, range=range_)
+        #         #heatmap, xedges, yedges = np.histogram2d(x, y, bins=100)
+        #
+        #         im = ax.imshow(heatmap, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], cmap=cmap, aspect='auto', interpolation='nearest', label=str(l))
+        #         legend_handles.append(mpatches.Patch(color=colors[i], label=l))
+        #     ax.set_xlim(xmin, xmax)
+        #     ax.set_ylim(ymin, ymax)
+        #     plt.legend(legend_handles, [l.get_label() for l in legend_handles])
+        #     plt.draw()
+        #     plt.show()
+        #=======================================================================
+
+    #Create an IMshow controller that can re-plot the latent space shading at a good resolution
+    if plot_limits is None:
+        xmin, ymin = X[:, [input_1, input_2]].min(0)
+        xmax, ymax = X[:, [input_1, input_2]].max(0)
+        x_r, y_r = xmax-xmin, ymax-ymin
+        xmin -= .1*x_r
+        xmax += .1*x_r
+        ymin -= .1*y_r
+        ymax += .1*y_r
+    else:
+        try:
+            xmin, xmax, ymin, ymax = plot_limits
+        except (TypeError, ValueError) as e:
+            raise e.__class__("Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits))
+
 
     def plot_function(x):
+        Xtest_full = np.zeros((x.shape[0], X.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
-        mf=model.magnification(Xtest_full)
+        mf = model.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
         return mf
 
     view = ImshowController(ax, plot_function,
-                            tuple(model.X.min(0)[:, [input_1, input_2]]) + tuple(model.X.max(0)[:, [input_1, input_2]]),
+                            (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=pb.cm.gray)
+                            cmap=cm.get_cmap('Greys'))
 
     # make sure labels are in order of input:
     ulabels = []
@@ -245,17 +320,17 @@ def plot_magnification(model, labels=None, which_indices=None,
         elif type(ul) is np.int64:
             this_label = 'class %i' % ul
         else:
-            this_label = 'class %i' % i
+            this_label = unicode(ul)
         m = marker.next()
 
         index = np.nonzero(labels == ul)[0]
         if model.input_dim == 1:
-            x = model.X[index, input_1]
+            x = X[index, input_1]
             y = np.zeros(index.size)
         else:
-            x = model.X[index, input_1]
-            y = model.X[index, input_2]
-        ax.scatter(x, y, marker=m, s=s, color=Tango.nextMedium(), label=this_label)
+            x = X[index, input_1]
+            y = X[index, input_2]
+        ax.scatter(x, y, marker=m, s=s, c=Tango.nextMedium(), label=this_label, linewidth=.2, edgecolor='k', alpha=.9)
 
     ax.set_xlabel('latent dimension %i' % input_1)
     ax.set_ylabel('latent dimension %i' % input_2)
@@ -263,19 +338,29 @@ def plot_magnification(model, labels=None, which_indices=None,
     if not np.all(labels == 1.) and legend:
         ax.legend(loc=0, numpoints=1)
 
-    ax.set_xlim(xmin[0], xmax[0])
-    ax.set_ylim(xmin[1], xmax[1])
-    ax.grid(b=False) # remove the grid if present, it doesn't look good
-    ax.set_aspect('auto') # set a nice aspect ratio
+    ax.set_xlim((xmin, xmax))
+    ax.set_ylim((ymin, ymax))
 
-    if plot_inducing:
-        ax.plot(model.Z[:, input_1], model.Z[:, input_2], '^w')
+    if plot_inducing and hasattr(model, 'Z'):
+        Z = model.Z
+        ax.scatter(Z[:, input_1], Z[:, input_2], c='w', s=18, marker="^", edgecolor='k', linewidth=.3, alpha=.7)
+
+    try:
+        fig.canvas.draw()
+        fig.tight_layout()
+        fig.canvas.draw()
+    except Exception as e:
+        print("Could not invoke tight layout: {}".format(e))
+        pass
 
     if updates:
-        fig.canvas.show()
-        raw_input('Enter to continue')
-
-    pb.title('Magnification Factor')
+        try:
+            fig.canvas.draw()
+            fig.canvas.show()
+        except Exception as e:
+            print("Could not invoke show: {}".format(e))
+        #raw_input('Enter to continue')
+        return view
     return ax
 
 
@@ -314,8 +399,8 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
             this_label = 'class %i' % i
         m = marker.next()
         index = np.nonzero(data_labels == ul)[0]
-        x = model.X[index, input_1]
-        y = model.X[index, input_2]
+        x = X[index, input_1]
+        y = X[index, input_2]
         ax.scatter(x, y, marker=m, s=data_s, color=Tango.nextMedium(), label=this_label)
 
     ax.set_xlabel('latent dimension %i' % input_1)
@@ -323,7 +408,7 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
 
     controller = ImAnnotateController(ax,
                                   plot_function,
-                                  tuple(model.X.min(0)[:, significant_dims]) + tuple(model.X.max(0)[:, significant_dims]),
+                                  tuple(X.min(0)[:, significant_dims]) + tuple(X.max(0)[:, significant_dims]),
                                   resolution=resolution,
                                   aspect=aspect,
                                   cmap=get_cmap('jet'),

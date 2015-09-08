@@ -2,6 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from ..core.parameterization.observable import Observable
 import collections, weakref
+from functools import reduce
+from pickle import PickleError
 
 class Cacher(object):
     def __init__(self, operation, limit=5, ignore_args=(), force_kwargs=()):
@@ -75,7 +77,7 @@ class Cacher(object):
         self.order.append(cache_id)
         self.cached_inputs[cache_id] = inputs
         for a in inputs:
-            if a is not None:
+            if a is not None and not isinstance(a, int):
                 ind_id = self.id(a)
                 v = self.cached_input_ids.get(ind_id, [weakref.ref(a), []])
                 v[1].append(cache_id)
@@ -102,9 +104,9 @@ class Cacher(object):
         inputs = self.combine_inputs(args, kw, self.ignore_args)
         cache_id = self.prepare_cache_id(inputs)
         # 2: if anything is not cachable, we will just return the operation, without caching
-        if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None)), inputs, False):
-            #print 'WARNING: '+self.operation.__name__ + ' not cacheable!'
-            #print [not (isinstance(b, Observable)) for b in inputs]
+        if reduce(lambda a, b: a or (not (isinstance(b, Observable) or b is None or isinstance(b,int))), inputs, False):
+#             print 'WARNING: '+self.operation.__name__ + ' not cacheable!'
+#             print [not (isinstance(b, Observable)) for b in inputs]
             return self.operation(*args, **kw)
         # 3&4: check whether this cache_id has been cached, then has it changed?
         try:
@@ -148,10 +150,10 @@ class Cacher(object):
         return Cacher(self.operation, self.limit, self.ignore_args, self.force_kwargs)
 
     def __getstate__(self, memo=None):
-        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+        raise PickleError("Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation)))
 
     def __setstate__(self, memo=None):
-        raise NotImplementedError, "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation))
+        raise PickleError("Trying to pickle Cacher object with function {}, pickling functions not possible.".format(str(self.operation)))
 
     @property
     def __name__(self):

@@ -3,7 +3,7 @@
 
 
 import numpy as np
-from kern import Kern
+from .kern import Kern
 from ...util.linalg import tdot
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
@@ -17,7 +17,7 @@ class Linear(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i x_iy_i
+       k(x,y) = \sum_{i=1}^{\\text{input_dim}} \sigma^2_i x_iy_i
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
@@ -100,6 +100,12 @@ class Linear(Kern):
             #return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
             return np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
 
+    def gradients_XX(self, dL_dK, X, X2=None):
+        if X2 is None:
+            return 2*np.ones(X.shape)*self.variances
+        else:
+            return np.ones(X.shape)*self.variances
+
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
 
@@ -111,26 +117,29 @@ class Linear(Kern):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[0]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
 
     def psi1(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[1]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
 
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self.variances, Z, variational_posterior)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
+
+    def psi2n(self, Z, variational_posterior):
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        dL_dvar = self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[0]
+        dL_dvar = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         if self.ARD:
             self.variances.gradient = dL_dvar
         else:
             self.variances.gradient = dL_dvar.sum()
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[1]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        return self.psicomp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, self.variances, Z, variational_posterior)[2:]
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
 
 class LinearFull(Kern):
     def __init__(self, input_dim, rank, W=None, kappa=None, active_dims=None, name='linear_full'):

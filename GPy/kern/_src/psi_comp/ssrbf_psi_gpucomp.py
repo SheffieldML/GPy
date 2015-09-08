@@ -6,14 +6,7 @@ The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM
 import numpy as np
 from ....util.caching import Cache_this
 from . import PSICOMP_RBF
-from ....util import gpu_init
 
-try:
-    import pycuda.gpuarray as gpuarray
-    from pycuda.compiler import SourceModule
-    from ....util.linalg_gpu import sum_axis
-except:
-    pass    
 
 gpu_code = """
     // define THREADNUM
@@ -292,6 +285,11 @@ gpu_code = """
 class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
 
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
+        
+        from pycuda.compiler import SourceModule
+        from ....util.gpu_init import initGPU
+        initGPU()
+        
         self.GPU_direct = GPU_direct
         self.gpuCache = None
         
@@ -314,7 +312,8 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         memo[id(self)] = s 
         return s
 
-    def _initGPUCache(self, N, M, Q):            
+    def _initGPUCache(self, N, M, Q):
+        import pycuda.gpuarray as gpuarray
         if self.gpuCache == None:
             self.gpuCache = {
                              'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
@@ -377,12 +376,13 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
     @Cache_this(limit=1, ignore_args=(0,))
-    def psicomputations(self, variance, lengthscale, Z, variational_posterior):
+    def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
         """
         Z - MxQ
         mu - NxQ
         S - NxQ
         """
+        variance, lengthscale = kern.variance, kern.lengthscale
         N,M,Q = self.get_dimensions(Z, variational_posterior)
         self._initGPUCache(N,M,Q)
         self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
@@ -409,8 +409,10 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         else:
             return psi0, psi1_gpu.get(), psi2_gpu.get()
 
-    @Cache_this(limit=1, ignore_args=(0,1,2,3))
-    def psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+    @Cache_this(limit=1, ignore_args=(0,2,3,4))
+    def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        variance, lengthscale = kern.variance, kern.lengthscale
+        from ....util.linalg_gpu import sum_axis
         ARD = (len(lengthscale)!=1)
         
         N,M,Q = self.get_dimensions(Z, variational_posterior)

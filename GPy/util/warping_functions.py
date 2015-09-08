@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from GPy.core.parameterization import Parameterized, Param
+from ..core.parameterization import Parameterized, Param
 from ..core.parameterization.transformations import Logexp
 
 class WarpingFunction(Parameterized):
@@ -220,7 +220,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             y -= update
             it += 1
         if it == max_iterations:
-            print "WARNING!!! Maximum number of iterations reached in f_inv "
+            print("WARNING!!! Maximum number of iterations reached in f_inv ")
 
         return y
 

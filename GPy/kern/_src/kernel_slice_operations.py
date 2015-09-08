@@ -1,7 +1,11 @@
 '''
 Created on 11 Mar 2014
 
-@author: maxz
+@author: @mzwiessele
+
+This module provides a meta class for the kernels. The meta class is for
+slicing the inputs (X, X2) for the kernels, before K (or any other method involving X)
+gets calls. The `active_dims` of a kernel decide which dimensions the kernel works on.
 '''
 from ...core.parameterization.parameterized import ParametersChangedMeta
 import numpy as np
@@ -19,20 +23,27 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
         put_clean(dct, 'gradients_X', _slice_gradients_X)
+        put_clean(dct, 'gradients_X_X2', _slice_gradients_X)
+        put_clean(dct, 'gradients_XX', _slice_gradients_XX)
+        put_clean(dct, 'gradients_XX_diag', _slice_gradients_X_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)
 
         put_clean(dct, 'psi0', _slice_psi)
         put_clean(dct, 'psi1', _slice_psi)
         put_clean(dct, 'psi2', _slice_psi)
+        put_clean(dct, 'psi2n', _slice_psi)
         put_clean(dct, 'update_gradients_expectations', _slice_update_gradients_expectations)
         put_clean(dct, 'gradients_Z_expectations', _slice_gradients_Z_expectations)
         put_clean(dct, 'gradients_qX_expectations', _slice_gradients_qX_expectations)
         return super(KernCallsViaSlicerMeta, cls).__new__(cls, name, bases, dct)
 
 class _Slice_wrap(object):
-    def __init__(self, k, X, X2=None):
+    def __init__(self, k, X, X2=None, ret_shape=None):
         self.k = k
-        self.shape = X.shape
+        if ret_shape is None:
+            self.shape = X.shape
+        else:
+            self.shape = ret_shape
         assert X.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X.shape={!s}".format(X.shape)
         if X2 is not None:
             assert X2.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
@@ -54,7 +65,10 @@ class _Slice_wrap(object):
     def handle_return_array(self, return_val):
         if self.ret:
             ret = np.zeros(self.shape)
-            ret[:, self.k.active_dims] = return_val
+            if len(self.shape) == 2:
+                ret[:, self.k.active_dims] = return_val
+            elif len(self.shape) == 3:
+                ret[:, :, self.k.active_dims] = return_val
             return ret
         return return_val
 
@@ -98,6 +112,19 @@ def _slice_gradients_X(f):
         return ret
     return wrap
 
+def _slice_gradients_XX(f):
+    @wraps(f)
+    def wrap(self, dL_dK, X, X2=None):
+        if X2 is None:
+            N, M = X.shape[0], X.shape[0]
+        else:
+            N, M = X.shape[0], X2.shape[0]
+        with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1])) as s:
+        #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
+            ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
+        return ret
+    return wrap
+
 def _slice_gradients_X_diag(f):
     @wraps(f)
     def wrap(self, dL_dKdiag, X):
@@ -124,7 +151,8 @@ def _slice_update_gradients_expectations(f):
 
 def _slice_gradients_Z_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+             psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         with _Slice_wrap(self, Z, variational_posterior) as s:
             ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2))
         return ret
@@ -132,7 +160,8 @@ def _slice_gradients_Z_expectations(f):
 
 def _slice_gradients_qX_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+             psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
         with _Slice_wrap(self, variational_posterior, Z) as s:
             ret = list(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X2, s.X))
             r2 = ret[:2]

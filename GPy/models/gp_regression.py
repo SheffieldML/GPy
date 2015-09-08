@@ -16,6 +16,7 @@ class GPRegression(GP):
     :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf
     :param Norm normalizer: [False]
+    :param noise_var: the noise variance for Gaussian likelhood, defaults to 1.
 
         Normalize Y with the norm given.
         If normalizer is False, no normalization will be done
@@ -25,12 +26,12 @@ class GPRegression(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None, noise_var=1., mean_function=None):
 
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
-        likelihood = likelihoods.Gaussian()
+        likelihood = likelihoods.Gaussian(variance=noise_var)
 
-        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata, normalizer=normalizer)
+        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata, normalizer=normalizer, mean_function=mean_function)
 

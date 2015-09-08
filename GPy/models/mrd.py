@@ -74,6 +74,8 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.logger.debug("creating observable arrays")
         self.Ylist = [ObsAr(Y) for Y in Ylist]
+        #The next line is a fix for Python 3. It replicates the python 2 behaviour from the above comprehension
+        Y = Ylist[-1]
 
         if Ynames is None:
             self.logger.debug("creating Ynames")
@@ -82,7 +84,7 @@ class MRD(BayesianGPLVMMiniBatch):
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
 
         if inference_method is None:
-            self.inference_method = InferenceMethodList([VarDTC() for _ in xrange(len(self.Ylist))])
+            self.inference_method = InferenceMethodList([VarDTC() for _ in range(len(self.Ylist))])
         else:
             assert isinstance(inference_method, InferenceMethodList), "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(inference_method)
             self.inference_method = inference_method
@@ -137,7 +139,7 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.bgplvms = []
 
-        for i, n, k, l, Y, im, bs in itertools.izip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
+        for i, n, k, l, Y, im, bs in zip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
             assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
             md = np.isnan(Y).any()
             spgp = BayesianGPLVMMiniBatch(Y, input_dim, X, X_variance,
@@ -164,24 +166,23 @@ class MRD(BayesianGPLVMMiniBatch):
         self._log_marginal_likelihood = 0
         self.Z.gradient[:] = 0.
         self.X.gradient[:] = 0.
-        for b, i in itertools.izip(self.bgplvms, self.inference_method):
+        for b, i in zip(self.bgplvms, self.inference_method):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
             self.logger.info('working on im <{}>'.format(hex(id(i))))
-            self.Z.gradient[:] += b.full_values['Zgrad']
-            grad_dict = b.full_values
+            self.Z.gradient[:] += b.Z.gradient#full_values['Zgrad']
+            #grad_dict = b.full_values
 
             if self.has_uncertain_inputs():
-                self.X.mean.gradient += grad_dict['meangrad']
-                self.X.variance.gradient += grad_dict['vargrad']
+                self.X.gradient += b._Xgrad
             else:
-                self.X.gradient += grad_dict['Xgrad']
+                self.X.gradient += b._Xgrad
 
-        if self.has_uncertain_inputs():
-            # update for the KL divergence
-            self.variational_prior.update_gradients_KL(self.X)
-            self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
-            pass
+        #if self.has_uncertain_inputs():
+        #    # update for the KL divergence
+        #    self.variational_prior.update_gradients_KL(self.X)
+        #    self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
+        #    pass
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
@@ -195,7 +196,7 @@ class MRD(BayesianGPLVMMiniBatch):
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
             fracs = []
-            for qs, Y in itertools.izip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
+            for qs, Y in zip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
                 x,frcs = initialize_latent('PCA', len(qs), Y)
                 X[:, qs] = x
                 fracs.append(frcs)
@@ -327,9 +328,9 @@ class MRD(BayesianGPLVMMiniBatch):
 
     def __getstate__(self):
         state = super(MRD, self).__getstate__()
-        if state.has_key('kern'):
+        if 'kern' in state:
             del state['kern']
-        if state.has_key('likelihood'):
+        if 'likelihood' in state:
             del state['likelihood']
         return state
 

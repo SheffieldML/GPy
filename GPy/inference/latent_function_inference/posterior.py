@@ -15,7 +15,7 @@ class Posterior(object):
     the function at any new point x_* by integrating over this posterior.
 
     """
-    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None):
+    def __init__(self, woodbury_chol=None, woodbury_vector=None, K=None, mean=None, cov=None, K_chol=None, woodbury_inv=None, prior_mean=0):
         """
         woodbury_chol : a lower triangular matrix L that satisfies posterior_covariance = K - K L^{-T} L^{-1} K
         woodbury_vector : a matrix (or vector, as Nx1 matrix) M which satisfies posterior_mean = K M
@@ -52,7 +52,7 @@ class Posterior(object):
                 or ((mean is not None) and (cov is not None)):
             pass # we have sufficient to compute the posterior
         else:
-            raise ValueError, "insufficient information to compute the posterior"
+            raise ValueError("insufficient information to compute the posterior")
 
         self._K_chol = K_chol
         self._K = K
@@ -67,6 +67,7 @@ class Posterior(object):
         #option 2:
         self._mean = mean
         self._covariance = cov
+        self._prior_mean = prior_mean
 
         #compute this lazily
         self._precision = None
@@ -107,7 +108,7 @@ class Posterior(object):
         if self._precision is None:
             cov = np.atleast_3d(self.covariance)
             self._precision = np.zeros(cov.shape) # if one covariance per dimension
-            for p in xrange(cov.shape[-1]):
+            for p in range(cov.shape[-1]):
                 self._precision[:,:,p] = pdinv(cov[:,:,p])[0]
         return self._precision
 
@@ -125,7 +126,7 @@ class Posterior(object):
             if self._woodbury_inv is not None:
                 winv = np.atleast_3d(self._woodbury_inv)
                 self._woodbury_chol = np.zeros(winv.shape)
-                for p in xrange(winv.shape[-1]):
+                for p in range(winv.shape[-1]):
                     self._woodbury_chol[:,:,p] = pdinv(winv[:,:,p])[2]
                 #Li = jitchol(self._woodbury_inv)
                 #self._woodbury_chol, _ = dtrtri(Li)
@@ -134,13 +135,13 @@ class Posterior(object):
                 #self._woodbury_chol = jitchol(W)
             #try computing woodbury chol from cov
             elif self._covariance is not None:
-                raise NotImplementedError, "TODO: check code here"
+                raise NotImplementedError("TODO: check code here")
                 B = self._K - self._covariance
                 tmp, _ = dpotrs(self.K_chol, B)
                 self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)
                 _, _, self._woodbury_chol, _ = pdinv(self._woodbury_inv)
             else:
-                raise ValueError, "insufficient information to compute posterior"
+                raise ValueError("insufficient information to compute posterior")
         return self._woodbury_chol
 
     @property
@@ -158,9 +159,11 @@ class Posterior(object):
                 #self._woodbury_inv, _ = dpotrs(self.woodbury_chol, np.eye(self.woodbury_chol.shape[0]), lower=1)
                 symmetrify(self._woodbury_inv)
             elif self._covariance is not None:
-                B = self._K - self._covariance
-                tmp, _ = dpotrs(self.K_chol, B)
-                self._woodbury_inv, _ = dpotrs(self.K_chol, tmp.T)                
+                B = np.atleast_3d(self._K) - np.atleast_3d(self._covariance)
+                self._woodbury_inv = np.empty_like(B)
+                for i in range(B.shape[-1]):
+                    tmp, _ = dpotrs(self.K_chol, B[:,:,i])
+                    self._woodbury_inv[:,:,i], _ = dpotrs(self.K_chol, tmp.T)
         return self._woodbury_inv
 
     @property
@@ -173,7 +176,7 @@ class Posterior(object):
         $$
         """
         if self._woodbury_vector is None:
-            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean)
+            self._woodbury_vector, _ = dpotrs(self.K_chol, self.mean - self._prior_mean)
         return self._woodbury_vector
 
     @property

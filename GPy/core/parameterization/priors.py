@@ -13,7 +13,6 @@ import weakref
 class Prior(object):
     domain = None
     _instance = None
-
     def __new__(cls, *args, **kwargs):
         if not cls._instance or cls._instance.__class__ is not cls:
                 newfunc = super(Prior, cls).__new__
@@ -92,7 +91,6 @@ class Gaussian(Prior):
 #         self.sigma2 = np.square(self.sigma)
 #         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
-
 class Uniform(Prior):
     domain = _REAL
     _instances = []
@@ -130,7 +128,6 @@ class Uniform(Prior):
 #     def __setstate__(self, state):
 #         self.lower = state[0]
 #         self.upper = state[1]
-
 
 class LogGaussian(Gaussian):
     """
@@ -249,7 +246,6 @@ class MultivariateGaussian(Prior):
         self.inv, self.hld = pdinv(self.var)
         self.constant = -0.5 * self.input_dim * np.log(2 * np.pi) - self.hld
 
-
 def gamma_from_EV(E, V):
     warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)
     return Gamma.from_EV(E, V)
@@ -331,7 +327,6 @@ class Gamma(Prior):
         self.b = state[1]
         self.constant = -gammaln(self.a) + self.a * np.log(self.b)
 
-
 class InverseGamma(Gamma):
     """
     Implementation of the inverse-Gamma probability function, coupled with random variables.
@@ -344,8 +339,7 @@ class InverseGamma(Gamma):
     """
     domain = _POSITIVE
     _instances = []
-
-    def __new__(cls, a=1, b=.5):  # Singleton:
+    def __new__(cls, a=1, b=.5): # Singleton:
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:

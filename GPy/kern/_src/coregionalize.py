@@ -1,12 +1,16 @@
 # Copyright (c) 2012, James Hensman and Ricardo Andrade
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from kern import Kern
+from .kern import Kern
 import numpy as np
-from scipy import weave
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
-from ...util.config import config # for assesing whether to use weave
+from ...util.config import config # for assesing whether to use cython
+try:
+    from . import coregionalize_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
 class Coregionalize(Kern):
     """
@@ -57,13 +61,8 @@ class Coregionalize(Kern):
         self.B = np.dot(self.W, self.W.T) + np.diag(self.kappa)
 
     def K(self, X, X2=None):
-        if config.getboolean('weave', 'working'):
-            try:
-                return self._K_weave(X, X2)
-            except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-                config.set('weave', 'working', 'False')
-                return self._K_numpy(X, X2)
+        if config.getboolean('cython', 'working'):
+            return self._K_cython(X, X2)
         else:
             return self._K_numpy(X, X2)
 
@@ -76,36 +75,10 @@ class Coregionalize(Kern):
             index2 = np.asarray(X2, dtype=np.int)
             return self.B[index,index2.T]
 
-    def _K_weave(self, X, X2=None):
-        """compute the kernel function using scipy.weave"""
-        index = np.asarray(X, dtype=np.int)
-
+    def _K_cython(self, X, X2=None):
         if X2 is None:
-            target = np.empty((X.shape[0], X.shape[0]), dtype=np.float64)
-            code="""
-            for(int i=0;i<N; i++){
-              target[i+i*N] = B[index[i]+output_dim*index[i]];
-              for(int j=0; j<i; j++){
-                  target[j+i*N] = B[index[i]+output_dim*index[j]];
-                  target[i+j*N] = target[j+i*N];
-                }
-              }
-            """
-            N, B, output_dim = index.size, self.B, self.output_dim
-            weave.inline(code, ['target', 'index', 'N', 'B', 'output_dim'])
-        else:
-            index2 = np.asarray(X2, dtype=np.int)
-            target = np.empty((X.shape[0], X2.shape[0]), dtype=np.float64)
-            code="""
-            for(int i=0;i<num_inducing; i++){
-              for(int j=0; j<N; j++){
-                  target[i+j*num_inducing] = B[output_dim*index[j]+index2[i]];
-                }
-              }
-            """
-            N, num_inducing, B, output_dim = index.size, index2.size, self.B, self.output_dim
-            weave.inline(code, ['target', 'index', 'index2', 'N', 'num_inducing', 'B', 'output_dim'])
-        return target
+            return coregionalize_cython.K_symmetric(self.B, np.asarray(X, dtype=np.int64)[:,0])
+        return coregionalize_cython.K_asymmetric(self.B, np.asarray(X, dtype=np.int64)[:,0], np.asarray(X2, dtype=np.int64)[:,0])
 
 
     def Kdiag(self, X):
@@ -118,51 +91,37 @@ class Coregionalize(Kern):
         else:
             index2 = np.asarray(X2, dtype=np.int)
 
-        #attempt to use weave for a nasty double indexing loop: fall back to numpy
-        if config.getboolean('weave', 'working'):
-            try:
-                dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
-            except:
-                print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-                config.set('weave', 'working', 'False')
-                dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
+        #attempt to use cython for a nasty double indexing loop: fall back to numpy
+        if config.getboolean('cython', 'working'):
+            dL_dK_small = self._gradient_reduce_cython(dL_dK, index, index2)
         else:
-            dL_dK_small = self._gradient_reduce_weave(dL_dK, index, index2)
+            dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)
 
 
-
-        dkappa = np.diag(dL_dK_small)
+        dkappa = np.diag(dL_dK_small).copy()
         dL_dK_small += dL_dK_small.T
         dW = (self.W[:, None, :]*dL_dK_small[:, :, None]).sum(0)
 
         self.W.gradient = dW
         self.kappa.gradient = dkappa
 
-    def _gradient_reduce_weave(self, dL_dK, index, index2):
-        dL_dK_small = np.zeros_like(self.B)
-        code="""
-        for(int i=0; i<num_inducing; i++){
-          for(int j=0; j<N; j++){
-            dL_dK_small[index[j] + output_dim*index2[i]] += dL_dK[i+j*num_inducing];
-          }
-        }
-        """
-        N, num_inducing, output_dim = index.size, index2.size, self.output_dim
-        weave.inline(code, ['N', 'num_inducing', 'output_dim', 'dL_dK', 'dL_dK_small', 'index', 'index2'])
-        return dL_dK_small
-
     def _gradient_reduce_numpy(self, dL_dK, index, index2):
         index, index2 = index[:,0], index2[:,0]
         dL_dK_small = np.zeros_like(self.B)
-        for i in range(k.output_dim):
+        for i in range(self.output_dim):
             tmp1 = dL_dK[index==i]
-            for j in range(k.output_dim):
+            for j in range(self.output_dim):
                 dL_dK_small[j,i] = tmp1[:,index2==j].sum()
         return dL_dK_small
 
+    def _gradient_reduce_cython(self, dL_dK, index, index2):
+        index, index2 = index[:,0], index2[:,0]
+        return coregionalize_cython.gradient_reduce(self.B.shape[0], dL_dK, index, index2)
+
+
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=np.int).flatten()
-        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in xrange(self.output_dim)])
+        dL_dKdiag_small = np.array([dL_dKdiag[index==i].sum() for i in range(self.output_dim)])
         self.W.gradient = 2.*self.W*dL_dKdiag_small[:, None]
         self.kappa.gradient = dL_dKdiag_small
 
@@ -171,4 +130,3 @@ class Coregionalize(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
-

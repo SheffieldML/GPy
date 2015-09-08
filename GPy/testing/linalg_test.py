@@ -27,8 +27,10 @@ class LinalgTests(np.testing.TestCase):
 
     def test_jitchol_failure(self):
         try:
-            """ Expecting an exception to be thrown as we expect it to require
-            5 rounds of jitter to be added to enforce PDness"""
+            """
+            Expecting an exception to be thrown as we expect it to require
+            5 rounds of jitter to be added to enforce PDness
+            """
             jitchol(self.A_corrupt, maxtries=4)
             return False
         except sp.linalg.LinAlgError:
@@ -42,4 +44,17 @@ class LinalgTests(np.testing.TestCase):
         test_trace = trace_dot(A,B)
         np.testing.assert_allclose(trace,test_trace,atol=1e-13)
 
+    def test_einsum_ij_jlk_to_ilk(self):
+        A = np.random.randn(15, 150, 5)
+        B = np.random.randn(150, 50, 5)
+        pure = np.einsum('ijk,jlk->il', A, B)
+        quick = GPy.util.linalg.ijk_jlk_to_il(A,B)
+        np.testing.assert_allclose(pure, quick)
 
+    def test_einsum_ijk_ljk_to_ilk(self):
+        A = np.random.randn(150, 20, 5)
+        B = np.random.randn(150, 20, 5)
+        #B = A.copy()
+        pure = np.einsum('ijk,ljk->ilk', A, B)
+        quick = GPy.util.linalg.ijk_ljk_to_ilk(A,B)
+        np.testing.assert_allclose(pure, quick)

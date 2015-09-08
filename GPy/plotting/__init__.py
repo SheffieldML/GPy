@@ -2,6 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 try:
-    import matplot_dep
+    from . import matplot_dep
 except (ImportError, NameError):
-    print 'Fail to load GPy.plotting.matplot_dep.'
+    print('Fail to load GPy.plotting.matplot_dep.')

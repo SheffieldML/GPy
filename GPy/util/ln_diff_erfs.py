@@ -2,12 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 #Only works for scipy 0.12+
-try:
-    from scipy.special import erfcx, erf
-except ImportError:
-    from scipy.special import erf
-    from erfcx import erfcx
-
+from scipy.special import erfcx, erf
 import numpy as np
 
 def ln_diff_erfs(x1, x2, return_sign=False):
@@ -17,7 +12,7 @@ def ln_diff_erfs(x1, x2, return_sign=False):
     :param x2 : argument of the negative erf
     :type x2: ndarray
     :return: tuple containing (log(abs(erf(x1) - erf(x2))), sign(erf(x1) - erf(x2)))
-    
+
     Based on MATLAB code that was written by Antti Honkela and modified by David Luengo and originally derived from code by Neil Lawrence.
     """
     x1 = np.require(x1).real
@@ -26,7 +21,7 @@ def ln_diff_erfs(x1, x2, return_sign=False):
         x1 = np.reshape(x1, (1, 1))
     if x2.size==1:
         x2 = np.reshape(x2, (1, 1))
-        
+
     if x1.shape==x2.shape:
         v = np.zeros_like(x1)
     else:
@@ -35,8 +30,8 @@ def ln_diff_erfs(x1, x2, return_sign=False):
         elif x2.size==1:
             v = np.zeros(x1.shape)
         else:
-            raise ValueError, "This function does not broadcast unless provided with a scalar."
-    
+            raise ValueError("This function does not broadcast unless provided with a scalar.")
+
     if x1.size == 1:
         x1 = np.tile(x1, x2.shape)
 
@@ -92,7 +87,7 @@ def ln_diff_erfs(x1, x2, return_sign=False):
                     v[flags] = np.log(erfcx(-_x1)
                                    -erfcx(-_x2)*np.exp(_x1**2
                                                           -_x2**2))-_x1**2
-        
+
     # TODO: switch back on log of zero warnings.
 
     if return_sign:

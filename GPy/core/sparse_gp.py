@@ -2,18 +2,15 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from gp import GP
-from parameterization.param import Param
+from .gp import GP
+from .parameterization.param import Param
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from parameterization.variational import VariationalPosterior
+from .parameterization.variational import VariationalPosterior, NormalPosterior
+from ..util.linalg import mdot
 
 import logging
-from GPy.inference.latent_function_inference.posterior import Posterior
-from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    SparseGPMissing
-#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    #SparseGPMissing
+import itertools
 logger = logging.getLogger("sparse gp")
 
 class SparseGP(GP):
@@ -23,6 +20,10 @@ class SparseGP(GP):
     This model allows (approximate) inference using variational DTC or FITC
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
     these.
+
+    This is not for missing data, as the implementation for missing data involves
+    some inefficient optimization routine decisions.
+    See missing data SparseGP implementation in py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
 
     :param X: inputs
     :type X: np.ndarray (num_data x input_dim)
@@ -39,7 +40,7 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
+    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False):
         #pick a sensible inference method
         if inference_method is None:
@@ -47,20 +48,30 @@ class SparseGP(GP):
                 inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
             else:
                 #inference_method = ??
-                raise NotImplementedError, "what to do what to do?"
-            print "defaulting to ", inference_method, "for latent function inference"
+                raise NotImplementedError("what to do what to do?")
+            print(("defaulting to ", inference_method, "for latent function inference"))
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        GP.__init__(self, X, Y, kernel, likelihood, mean_function, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
 
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
         self.posterior = None
+        self._predictive_variable = self.Z
+
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
+
+    def set_Z(self, Z, trigger_update=True):
+        if trigger_update: self.update_model(False)
+        self.unlink_parameter(self.Z)
+        self.Z = Param('inducing inputs',Z)
+        self.link_parameter(self.Z, index=0)
+        if trigger_update: self.update_model(True)
+        if trigger_update: self._trigger_params_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
@@ -102,34 +113,74 @@ class SparseGP(GP):
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """
-        Make a prediction for the latent function values
+        Make a prediction for the latent function values.
+
+        For certain inputs we give back a full_cov of shape NxN,
+        if there is missing data, each dimension has its own full_cov of shape NxNxD, and if full_cov is of,
+        we take only the diagonal elements across N.
+
+        For uncertain inputs, the SparseGP bound produces cannot predict the full covariance matrix full_cov for now.
+        The implementation of that will follow. However, for each dimension the
+        covariance changes, so if full_cov is False (standard), we return the variance
+        for each dimension [NxD].
         """
 
         if kern is None: kern = self.kern
 
         if not isinstance(Xnew, VariationalPosterior):
-            Kx = kern.K(self.Z, Xnew)
-            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
-            if full_cov:
-                Kxx = kern.K(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
-                var = var
-            else:
-                Kxx = kern.Kdiag(Xnew)
-                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
+            # Kx = kern.K(self._predictive_variable, Xnew)
+            # mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+            # if full_cov:
+            #     Kxx = kern.K(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[2]):
+            #             var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
+            #     var = var
+            # else:
+            #     Kxx = kern.Kdiag(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[1]):
+            #             var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+            #     var = var
+            # #add in the mean function
+            # if self.mean_function is not None:
+            #     mu += self.mean_function.f(Xnew)
+            mu, var = super(SparseGP, self)._raw_predict(Xnew, full_cov, kern)
         else:
-            Kx = kern.psi1(self.Z, Xnew).T
-            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+            psi0_star = kern.psi0(self._predictive_variable, Xnew)
+            psi1_star = kern.psi1(self._predictive_variable, Xnew)
+            #psi2_star = kern.psi2(self.Z, Xnew) # Only possible if we get NxMxM psi2 out of the code.
+            la = self.posterior.woodbury_vector
+            mu = np.dot(psi1_star, la) # TODO: dimensions?
+
             if full_cov:
-                Kxx = kern.K(Xnew.mean)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = Kxx[:,:,None] - np.tensordot(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx).T, Kx, [1,0]).swapaxes(1,2)
+                raise NotImplementedError("Full covariance for Sparse GP predicted with uncertain inputs not implemented yet.")
+                var = np.empty((Xnew.shape[0], la.shape[1], la.shape[1]))
+                di = np.diag_indices(la.shape[1])
             else:
-                Kxx = kern.psi0(self.Z, Xnew)
-                var = (Kxx - np.sum(np.dot(np.atleast_3d(self.posterior.woodbury_inv).T, Kx) * Kx[None,:,:], 1)).T
+                var = np.empty((Xnew.shape[0], la.shape[1]))
+
+            for i in range(Xnew.shape[0]):
+                _mu, _var = Xnew.mean.values[[i]], Xnew.variance.values[[i]]
+                psi2_star = kern.psi2(self._predictive_variable, NormalPosterior(_mu, _var))
+                tmp = (psi2_star[:, :] - psi1_star[[i]].T.dot(psi1_star[[i]]))
+
+                var_ = mdot(la.T, tmp, la)
+                p0 = psi0_star[i]
+                t = np.atleast_3d(self.posterior.woodbury_inv)
+                t2 = np.trace(t.T.dot(psi2_star), axis1=1, axis2=2)
+
+                if full_cov:
+                    var_[di] += p0
+                    var_[di] += -t2
+                    var[i] = var_
+                else:
+                    var[i] = np.diag(var_)+p0-t2
+
         return mu, var

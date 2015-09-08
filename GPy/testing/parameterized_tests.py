@@ -12,6 +12,7 @@ from GPy.core.parameterization.transformations import NegativeLogexp, Logistic
 from GPy.core.parameterization.parameterized import Parameterized
 from GPy.core.parameterization.param import Param
 from GPy.core.parameterization.index_operations import ParameterIndexOperations
+from functools import reduce
 
 class ArrayCoreTest(unittest.TestCase):
     def setUp(self):
@@ -107,7 +108,7 @@ class ParameterizedTest(unittest.TestCase):
         self.assertListEqual(self.white._fixes_.tolist(), [FIXED])
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.param.constraints._param_index_ops)
-        self.assertListEqual(self.test1.constraints[Logexp()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
+        self.assertListEqual(self.test1.constraints[Logexp()].tolist(), list(range(self.param.size, self.param.size+self.rbf.size)))
 
     def test_remove_parameter_param_array_grad_array(self):
         val = self.test1.kern.param_array.copy()
@@ -120,15 +121,15 @@ class ParameterizedTest(unittest.TestCase):
     def test_default_constraints(self):
         self.assertIs(self.rbf.variance.constraints._param_index_ops, self.rbf.constraints._param_index_ops)
         self.assertIs(self.test1.constraints, self.rbf.constraints._param_index_ops)
-        self.assertListEqual(self.rbf.constraints.indices()[0].tolist(), range(2))
+        self.assertListEqual(self.rbf.constraints.indices()[0].tolist(), list(range(2)))
         from GPy.core.parameterization.transformations import Logexp
         kern = self.test1.kern
         self.test1.unlink_parameter(kern)
-        self.assertListEqual(kern.constraints[Logexp()].tolist(), range(3))
+        self.assertListEqual(kern.constraints[Logexp()].tolist(), list(range(3)))
 
     def test_constraints(self):
         self.rbf.constrain(GPy.transformations.Square(), False)
-        self.assertListEqual(self.test1.constraints[GPy.transformations.Square()].tolist(), range(self.param.size, self.param.size+self.rbf.size))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Square()].tolist(), list(range(self.param.size, self.param.size+self.rbf.size)))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp()].tolist(), [self.param.size+self.rbf.size])
 
         self.test1.kern.unlink_parameter(self.rbf)
@@ -181,8 +182,8 @@ class ParameterizedTest(unittest.TestCase):
 
     def test_add_parameter_in_hierarchy(self):
         self.test1.kern.rbf.link_parameter(Param("NEW", np.random.rand(2), NegativeLogexp()), 1)
-        self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), range(self.param.size+1, self.param.size+1 + 2))
-        self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), range(self.param.size))
+        self.assertListEqual(self.test1.constraints[NegativeLogexp()].tolist(), list(range(self.param.size+1, self.param.size+1 + 2)))
+        self.assertListEqual(self.test1.constraints[GPy.transformations.Logistic(0,1)].tolist(), list(range(self.param.size)))
         self.assertListEqual(self.test1.constraints[GPy.transformations.Logexp(0,1)].tolist(), np.r_[50, 53:55].tolist())
 
     def test_regular_expression_misc(self):
@@ -240,17 +241,23 @@ class ParameterizedTest(unittest.TestCase):
                 self.p2.constrain_positive()
 
         m = TestLikelihood()
-        print m
+        print(m)
         val = m.p1.values.copy()
         self.assert_(m.p1.is_fixed)
         self.assert_(m.constraints[GPy.constraints.Logexp()].tolist(), [1])
         m.randomize()
         self.assertEqual(m.p1, val)
 
+    def test_checkgrad(self):
+        assert(self.testmodel.kern.checkgrad())
+        assert(self.testmodel.kern.lengthscale.checkgrad())
+        assert(self.testmodel.likelihood.checkgrad())
+
     def test_printing(self):
-        print self.test1
-        print self.param
-        print self.test1['']
+        print(self.test1)
+        print(self.param)
+        print(self.test1[''])
+        print(self.testmodel.hierarchy_name(False))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_add_parameter']

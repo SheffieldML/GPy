@@ -3,7 +3,7 @@ Created on 11 Nov 2014
 
 @author: maxz
 '''
-from observable import Observable
+from .observable import Observable
 
 
 class Updateable(Observable):
@@ -11,7 +11,6 @@ class Updateable(Observable):
     A model can be updated or not.
     Make sure updates can be switched on and off.
     """
-    _updates = True
     def __init__(self, *args, **kwargs):
         super(Updateable, self).__init__(*args, **kwargs)
 
@@ -27,18 +26,18 @@ class Updateable(Observable):
             None: get the current update state
         """
         if updates is None:
-            p = getattr(self, '_highest_parent_', None)
-            if p is not None:
-                self._updates = p._updates
-            return self._updates
+            return self._update_on
         assert isinstance(updates, bool), "updates are either on (True) or off (False)"
         p = getattr(self, '_highest_parent_', None)
-        if p is not None:
-            p._updates = updates
-        self._updates = updates
+        def turn_updates(s):
+            s._update_on = updates
+        p.traverse(turn_updates)
         self.trigger_update()
 
     def toggle_update(self):
+        print("deprecated: toggle_update was renamed to update_toggle for easier access")
+        self.update_toggle()
+    def update_toggle(self):
         self.update_model(not self.update_model())
 
     def trigger_update(self, trigger_parent=True):

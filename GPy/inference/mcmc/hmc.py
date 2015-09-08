@@ -1,4 +1,4 @@
-# ## Copyright (c) 2014, Zhenwen Dai
+# ## Copyright (c) 2014 Mu Niu, Zhenwen Dai and GPy Authors
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
@@ -39,7 +39,7 @@ class HMC:
         :rtype: numpy.ndarray
         """
         params = np.empty((num_samples,self.p.size))
-        for i in xrange(num_samples):
+        for i in range(num_samples):
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)
             H_old = self._computeH()
             theta_old = self.model.optimizer_array.copy()
@@ -59,7 +59,7 @@ class HMC:
         return params
 
     def _update(self, hmc_iters):
-        for i in xrange(hmc_iters):
+        for i in range(hmc_iters):
             self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
             self.model.optimizer_array = self.model.optimizer_array + self.stepsize*np.dot(self.Minv, self.p)
             self.p[:] += -self.stepsize/2.*self.model._transform_gradients(self.model.objective_function_gradients())
@@ -82,7 +82,7 @@ class HMC_shortcut:
 
     def sample(self, m_iters=1000, hmc_iters=20):
         params = np.empty((m_iters,self.p.size))
-        for i in xrange(m_iters):
+        for i in range(m_iters):
             # sample a stepsize from the uniform distribution
             stepsize = np.exp(np.random.rand()*(self.stepsize_range[1]-self.stepsize_range[0])+self.stepsize_range[0])
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size),self.M)

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
-from posterior import Posterior
+from .posterior import Posterior
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
@@ -33,15 +33,19 @@ class EP(LatentFunctionInference):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
-    def inference(self, kern, X, likelihood, Y, Y_metadata=None, Z=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, Z=None):
+        assert mean_function is None, "inference with a mean function not implemented"
         num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
         K = kern.K(X)
 
         if self._ep_approximation is None:
+
+            #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         else:
+            #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation
 
         Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde))

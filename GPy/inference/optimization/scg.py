@@ -21,14 +21,13 @@
 #      OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #      POSSIBILITY OF SUCH DAMAGE.
 
-
+from __future__ import print_function
 import numpy as np
 import sys
 
-
 def print_out(len_maxiters, fnow, current_grad, beta, iteration):
-    print '\r',
-    print '{0:>0{mi}g}  {1:> 12e}  {2:< 12.6e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
+    print('\r', end=' ')
+    print('{0:>0{mi}g}  {1:> 12e}  {2:< 12.6e}  {3:> 12e}'.format(iteration, float(fnow), float(beta), float(current_grad), mi=len_maxiters), end=' ') # print 'Iteration:', iteration, ' Objective:', fnow, '  Scale:', beta, '\r',
     sys.stdout.flush()
 
 def exponents(fnow, current_grad):
@@ -61,6 +60,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
     function_eval = 1
     fnow = fold
     gradnew = gradf(x, *optargs) # Initial gradient.
+    function_eval += 1
     #if any(np.isnan(gradnew)):
     #    raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
     current_grad = np.dot(gradnew, gradnew)
@@ -79,7 +79,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
 
     len_maxiters = len(str(maxiters))
     if display:
-        print ' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters)
+        print(' {0:{mi}s}   {1:11s}    {2:11s}    {3:11s}'.format("I", "F", "Scale", "|g|", mi=len_maxiters))
         exps = exponents(fnow, current_grad)
         p_iter = iteration
 
@@ -96,6 +96,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
             sigma = sigma0 / np.sqrt(kappa)
             xplus = x + sigma * d
             gplus = gradf(xplus, *optargs)
+            function_eval += 1
             theta = np.dot(d, (gplus - gradnew)) / sigma
 
         # Increase effective curvature and evaluate step size alpha.
@@ -111,10 +112,10 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
         fnew = f(xnew, *optargs)
         function_eval += 1
 
-#         if function_eval >= max_f_eval:
-#             status = "maximum number of function evaluations exceeded"
-#             break
-#             return x, flog, function_eval, status
+        if function_eval >= max_f_eval:
+            status = "maximum number of function evaluations exceeded"
+            break
+            return x, flog, function_eval, status
 
         Delta = 2.*(fnew - fold) / (alpha * mu)
         if Delta >= 0.:
@@ -138,7 +139,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 b = np.any(n_exps < exps)
                 if a or b:
                     p_iter = iteration
-                    print ''
+                    print('')
                 if b:
                     exps = n_exps
 
@@ -156,6 +157,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
                 # Update variables for new position
                 gradold = gradnew
                 gradnew = gradf(x, *optargs)
+                function_eval += 1
                 current_grad = np.dot(gradnew, gradnew)
                 fold = fnew
                 # If the gradient is zero then we are done.
@@ -186,6 +188,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, display=True, 
 
     if display:
         print_out(len_maxiters, fnow, current_grad, beta, iteration)
-        print ""
-        print status
+        print("")
+        print(status)
     return x, flog, function_eval, status

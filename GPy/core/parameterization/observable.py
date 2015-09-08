@@ -12,8 +12,12 @@ class Observable(object):
     """
     def __init__(self, *args, **kwargs):
         super(Observable, self).__init__()
-        from lists_and_dicts import ObserverList
+        from .lists_and_dicts import ObserverList
         self.observers = ObserverList()
+        self._update_on = True
+
+    def set_updates(self, on=True):
+        self._update_on = on
 
     def add_observer(self, observer, callble, priority=0):
         """
@@ -51,15 +55,16 @@ class Observable(object):
         :param min_priority: only notify observers with priority > min_priority
                              if min_priority is None, notify all observers in order
         """
-        if which is None:
-            which = self
-        if min_priority is None:
-            [callble(self, which=which) for _, _, callble in self.observers]
-        else:
-            for p, _, callble in self.observers:
-                if p <= min_priority:
-                    break
-                callble(self, which=which)
+        if self._update_on:
+            if which is None:
+                which = self
+            if min_priority is None:
+                [callble(self, which=which) for _, _, callble in self.observers]
+            else:
+                for p, _, callble in self.observers:
+                    if p <= min_priority:
+                        break
+                    callble(self, which=which)
 
     def change_priority(self, observer, callble, priority):
         self.remove_observer(observer, callble)

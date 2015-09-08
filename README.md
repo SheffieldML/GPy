@@ -26,20 +26,61 @@ We like to pronounce it 'Gee-pie'.
 
 ### Getting started: installing with pip
 
-The simplest way to install GPy is using pip. Ubuntu users can do:
+We are now requiring the newest version of ![scipy](http://www.scipy.org/) and thus, we strongly recommend using 
+the  ![anaconda python distribution](http://continuum.io/downloads).
+With anaconda you can install GPy by the following:
 
-    sudo apt-get install python-pip
+    conda update scipy
     pip install gpy
     
-On windows, we recommend the [anaconda python distribution](http://continuum.io/downloads). We've also had luck with [enthought](http://www.enthought.com).
+. We've also had luck with ![enthought](http://www.enthought.com), although enthought currently (as of 8th Sep. 2015) does not support scipy 0.16.
 
 On a fresh install of windows 8.1, we downloaded the Anaconda python distribution, started the anaconda command prompt and typed 
 
+    conda update scipy
     pip install GPy
 
 Everything seems to work: from here you can type `ipython` and then `import GPy; GPy.tests()`. Working as of 21/11/14
 
 If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
+
+### Python 3 Compatibility
+Work is underway to make GPy run on Python 3.
+
+* All tests in the testsuite now run on Python3. 
+
+To see this for yourself, in Ubuntu 14.04, you can do
+
+    git clone https://github.com/mikecroucher/GPy.git
+    cd GPy
+    git checkout devel
+    python3 setup.py build_ext --inplace
+    nosetests3 GPy/testing
+
+nosetests3 is Ubuntu's way of reffering to the Python 3 version of nosetests. You install it with 
+
+    sudo apt-get install python3-nose
+
+The command `python3 setup.py build_ext --inplace` builds the Cython extensions. IF it doesn't work, you may need to install this:
+
+    sudo apt-get install python3-dev
+
+* Test coverage is less than 100% so it is expected that there is still more work to be done. We need more tests and examples to try out.
+* All weave functions not covered by the test suite are *simply commented out*. Can add equivalents later as test functions become available
+* A set of benchmarks would be useful! 
+
+### Citation
+
+    @Misc{gpy2014,
+      author =   {The GPy authors},
+      title =    {{GPy}: A Gaussian process framework in python},
+      howpublished = {\url{http://github.com/SheffieldML/GPy}},
+      year = {2012--2014}
+    }
+
+### Pronounciation
+
+We like to pronounce it 'Gee-pie'.
 
 ### Ubuntu hackers
 
@@ -56,8 +97,12 @@ clone this git repository and add it to your path:
  
 ### OSX
 
-Everything appears to work out-of-the box using [enthought](http://www.enthought.com) on osx Mavericks. Download/clone GPy, and then add GPy to your PYTHONPATH
+Everything appears to work out-of-the box using 
+![anaconda python distribution](http://continuum.io/downloads) 
+on osx Mavericks. 
+Download/clone GPy, and then add GPy to your PYTHONPATH
 
+    conda update scipy
     git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile
 
@@ -105,7 +150,7 @@ Ensure nose is installed via pip:
 
 Run nosetests from the root directory of the repository:
 
-    nosetests -v
+    nosetests -v GPy/testing
 
 or from within IPython
 

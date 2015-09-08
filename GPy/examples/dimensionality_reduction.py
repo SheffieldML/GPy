@@ -215,6 +215,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
     return m
 
 def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
+    """Simulate some data drawn from a matern covariance and a periodic exponential for use in MRD demos."""
     Q_signal = 4
     import GPy
     import numpy as np
@@ -254,6 +255,7 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
     return slist, [S1, S2, S3], Ylist
 
 def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
+    """Simulate some data drawn from sine and cosine for use in demos of MRD"""
     _np.random.seed(1234)
 
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
@@ -333,7 +335,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
     m.likelihood.variance = .1
 
     if optimize:
-        print "Optimizing model:"
+        print("Optimizing model:")
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
@@ -353,13 +355,13 @@ def ssgplvm_simulation(optimize=True, verbose=1,
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     # k = kern.RBF(Q, ARD=True, lengthscale=10.)
-    m = SSGPLVM(Y, Q, init="pca", num_inducing=num_inducing, kernel=k)
+    m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
     m.X.variance[:] = _np.random.uniform(0, .01, m.X.shape)
-    m.likelihood.variance = .1
+    m.likelihood.variance = .01
 
     if optimize:
-        print "Optimizing model:"
-        m.optimize('scg', messages=verbose, max_iters=max_iters,
+        print("Optimizing model:")
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
         m.X.plot("SSGPLVM Latent Space 1D")
@@ -388,7 +390,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
     m.Yreal = Y
 
     if optimize:
-        print "Optimizing model:"
+        print("Optimizing model:")
         m.optimize('bfgs', messages=verbose, max_iters=max_iters,
                    gtol=.05)
     if plot:
@@ -402,7 +404,8 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy.models import MRD
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
-    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
+    _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim)
+    
 
     # Ylist = [Ylist[0]]
     k = kern.Linear(Q, ARD=True)
@@ -411,7 +414,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     m['.*noise'] = [Y.var() / 40. for Y in Ylist]
 
     if optimize:
-        print "Optimizing Model:"
+        print("Optimizing Model:")
         m.optimize(messages=verbose, max_iters=8e3)
     if plot:
         m.X.plot("MRD Latent Space 1D")
@@ -439,7 +442,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
             initx="random", initz='permute', **kw)
 
     if optimize:
-        print "Optimizing Model:"
+        print("Optimizing Model:")
         m.optimize('bfgs', messages=verbose, max_iters=8e3, gtol=.1)
     if plot:
         m.X.plot("MRD Latent Space 1D")
@@ -585,6 +588,7 @@ def robot_wireless(optimize=True, verbose=True, plot=True):
     return m
 
 def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
+    """Interactive visualisation of the Stick Man data from Ohio State University with the Bayesian GPLVM."""
     from GPy.models import BayesianGPLVM
     from matplotlib import pyplot as plt
     import numpy as np
@@ -603,7 +607,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     try:
         if optimize: m.optimize('bfgs', messages=verbose, max_iters=5e3, bfgs_factor=10)
     except KeyboardInterrupt:
-        print "Keyboard interrupt, continuing to plot and return"
+        print("Keyboard interrupt, continuing to plot and return")
 
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
@@ -613,7 +617,8 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data['connect'])
         dim_select = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean[:1, :].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)
         fig.canvas.draw()
-        fig.canvas.show()
+        # Canvas.show doesn't work on OSX.
+        #fig.canvas.show()
         raw_input('Press enter to finish')
 
     return m
@@ -653,7 +658,7 @@ def ssgplvm_simulation_linear():
     def sample_X(Q, pi):
         x = np.empty(Q)
         dies = np.random.rand(Q)
-        for q in xrange(Q):
+        for q in range(Q):
             if dies[q] < pi:
                 x[q] = np.random.randn()
             else:
@@ -663,7 +668,7 @@ def ssgplvm_simulation_linear():
     Y = np.empty((N, D))
     X = np.empty((N, Q))
     # Generate data from random sampled weight matrices
-    for n in xrange(N):
+    for n in range(N):
         X[n] = sample_X(Q, pi)
         w = np.random.randn(D, Q)
         Y[n] = np.dot(w, X[n])

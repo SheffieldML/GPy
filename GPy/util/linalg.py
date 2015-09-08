@@ -6,46 +6,17 @@
 # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
 import numpy as np
-from scipy import linalg, weave
-import types
-import ctypes
-from ctypes import byref, c_char, c_int, c_double # TODO
-import scipy
-import warnings
-import os
-from config import config
+from scipy import linalg
+from scipy.linalg import lapack, blas
+from .config import config
 import logging
 
-_scipyversion = np.float64((scipy.__version__).split('.')[:2])
-_fix_dpotri_scipy_bug = True
-if np.all(_scipyversion >= np.array([0, 14])):
-    from scipy.linalg import lapack
-    _fix_dpotri_scipy_bug = False
-elif np.all(_scipyversion >= np.array([0, 12])):
-    #import scipy.linalg.lapack.clapack as lapack
-    from scipy.linalg import lapack
-else:
-    from scipy.linalg.lapack import flapack as lapack
+try:
+    from . import linalg_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
-if config.getboolean('anaconda', 'installed') and config.getboolean('anaconda', 'MKL'):
-    try:
-        anaconda_path = str(config.get('anaconda', 'location'))
-        mkl_rt = ctypes.cdll.LoadLibrary(os.path.join(anaconda_path, 'DLLs', 'mkl_rt.dll'))
-        dsyrk = mkl_rt.dsyrk
-        dsyr = mkl_rt.dsyr
-        _blas_available = True
-        print 'anaconda installed and mkl is loaded'
-    except:
-        _blas_available = False
-else:
-    try:
-        _blaslib = ctypes.cdll.LoadLibrary(np.core._dotblas.__file__) # @UndefinedVariable
-        dsyrk = _blaslib.dsyrk_
-        dsyr = _blaslib.dsyr_
-        _blas_available = True
-    except AttributeError as e:
-        _blas_available = False
-        warnings.warn("warning: caught this exception:" + str(e))
 
 def force_F_ordered_symmetric(A):
     """
@@ -64,7 +35,7 @@ def force_F_ordered(A):
     """
     if A.flags['F_CONTIGUOUS']:
         return A
-    print "why are your arrays not F order?"
+    print("why are your arrays not F order?")
     return np.asfortranarray(A)
 
 # def jitchol(A, maxtries=5):
@@ -91,25 +62,23 @@ def jitchol(A, maxtries=5):
     else:
         diagA = np.diag(A)
         if np.any(diagA <= 0.):
-            raise linalg.LinAlgError, "not pd: non-positive diagonal elements"
+            raise linalg.LinAlgError("not pd: non-positive diagonal elements")
         jitter = diagA.mean() * 1e-6
-        num_tries = 0
-        while num_tries < maxtries and np.isfinite(jitter):
+        num_tries = 1
+        while num_tries <= maxtries and np.isfinite(jitter):
             try:
-                print jitter
                 L = linalg.cholesky(A + np.eye(A.shape[0]) * jitter, lower=True)
                 return L
             except:
                 jitter *= 10
             finally:
                 num_tries += 1
-        raise linalg.LinAlgError, "not positive definite, even with jitter."
+        raise linalg.LinAlgError("not positive definite, even with jitter.")
     import traceback
     try: raise
     except:
         logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
             '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
-    import ipdb;ipdb.set_trace()
     return L
 
 # def dtrtri(L, lower=1):
@@ -169,9 +138,6 @@ def dpotri(A, lower=1):
     :returns: A inverse
 
     """
-    if _fix_dpotri_scipy_bug:
-        assert lower==1, "scipy linalg behaviour is very weird. please use lower, fortran ordered arrays"
-        lower = 0
 
     A = force_F_ordered(A)
     R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
@@ -213,12 +179,12 @@ def mdot(*args):
 
 def _mdot_r(a, b):
     """Recursive helper for mdot"""
-    if type(a) == types.TupleType:
+    if type(a) == tuple:
         if len(a) > 1:
             a = mdot(*a)
         else:
             a = a[0]
-    if type(b) == types.TupleType:
+    if type(b) == tuple:
         if len(b) > 1:
             b = mdot(*b)
         else:
@@ -293,15 +259,15 @@ def pca(Y, input_dim):
 
     """
     if not np.allclose(Y.mean(axis=0), 0.0):
-        print "Y is not zero mean, centering it locally (GPy.util.linalg.pca)"
+        print("Y is not zero mean, centering it locally (GPy.util.linalg.pca)")
 
         # Y -= Y.mean(axis=0)
 
     Z = linalg.svd(Y - Y.mean(axis=0), full_matrices=False)
     [X, W] = [Z[0][:, 0:input_dim], np.dot(np.diag(Z[1]), Z[2]).T[:, 0:input_dim]]
     v = X.std(axis=0)
-    X /= v;
-    W *= v;
+    X /= v
+    W *= v
     return X, W.T
 
 def ppca(Y, Q, iterations=100):
@@ -347,34 +313,15 @@ def tdot_blas(mat, out=None):
         out[:] = 0.0
 
     # # Call to DSYRK from BLAS
-    # If already in Fortran order (rare), and has the right sorts of strides I
-    # could avoid the copy. I also thought swapping to cblas API would allow use
-    # of C order. However, I tried that and had errors with large matrices:
-    # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot_broken.py
     mat = np.asfortranarray(mat)
-    TRANS = c_char('n')
-    N = c_int(mat.shape[0])
-    K = c_int(mat.shape[1])
-    LDA = c_int(mat.shape[0])
-    UPLO = c_char('l')
-    ALPHA = c_double(1.0)
-    A = mat.ctypes.data_as(ctypes.c_void_p)
-    BETA = c_double(0.0)
-    C = out.ctypes.data_as(ctypes.c_void_p)
-    LDC = c_int(np.max(out.strides) / 8)
-    dsyrk(byref(UPLO), byref(TRANS), byref(N), byref(K),
-            byref(ALPHA), A, byref(LDA), byref(BETA), C, byref(LDC))
+    out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1,
+                     trans=0, lower=0)
 
     symmetrify(out, upper=True)
-
-
     return np.ascontiguousarray(out)
 
 def tdot(*args, **kwargs):
-    if _blas_available:
-        return tdot_blas(*args, **kwargs)
-    else:
-        return tdot_numpy(*args, **kwargs)
+    return tdot_blas(*args, **kwargs)
 
 def DSYR_blas(A, x, alpha=1.):
     """
@@ -386,15 +333,7 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    N = c_int(A.shape[0])
-    LDA = c_int(A.shape[0])
-    UPLO = c_char('l')
-    ALPHA = c_double(alpha)
-    A_ = A.ctypes.data_as(ctypes.c_void_p)
-    x_ = x.ctypes.data_as(ctypes.c_void_p)
-    INCX = c_int(1)
-    dsyr(byref(UPLO), byref(N), byref(ALPHA),
-            x_, byref(INCX), A_, byref(LDA))
+    A = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=True)
     symmetrify(A, upper=True)
 
 def DSYR_numpy(A, x, alpha=1.):
@@ -411,120 +350,38 @@ def DSYR_numpy(A, x, alpha=1.):
 
 
 def DSYR(*args, **kwargs):
-    if _blas_available:
-        return DSYR_blas(*args, **kwargs)
-    else:
-        return DSYR_numpy(*args, **kwargs)
+    return DSYR_blas(*args, **kwargs)
+
 
 def symmetrify(A, upper=False):
     """
-    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+    Take the square matrix A and make it symmetrical by copting elements from
+    the lower half to the upper
 
     works IN PLACE.
 
-    note: tries to use weave, falls back to a slower numpy version
+    note: tries to use cython, falls back to a slower numpy version
     """
-    if config.getboolean('weave', 'working'):
-        try:
-            symmetrify_weave(A, upper)
-        except:
-            print "\n Weave compilation failed. Falling back to (slower) numpy implementation\n"
-            config.set('weave', 'working', 'False')
-            symmetrify_numpy(A, upper)
+    if config.getboolean('cython', 'working'):
+        _symmetrify_cython(A, upper)
     else:
-        symmetrify_numpy(A, upper)
+        _symmetrify_numpy(A, upper)
 
 
-def symmetrify_weave(A, upper=False):
-    """
-    Take the square matrix A and make it symmetrical by copting elements from the lower half to the upper
+def _symmetrify_cython(A, upper=False):
+    return linalg_cython.symmetrify(A, upper)
 
-    works IN PLACE.
-
-
-    """
-    N, M = A.shape
-    assert N == M
-
-    c_contig_code = """
-    int iN;
-    for (int i=1; i<N; i++){
-      iN = i*N;
-      for (int j=0; j<i; j++){
-        A[i+j*N] = A[iN+j];
-      }
-    }
-    """
-    f_contig_code = """
-    int iN;
-    for (int i=1; i<N; i++){
-      iN = i*N;
-      for (int j=0; j<i; j++){
-        A[iN+j] = A[i+j*N];
-      }
-    }
-    """
-
-    N = int(N) # for safe type casting
-    if A.flags['C_CONTIGUOUS'] and upper:
-        weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['C_CONTIGUOUS'] and not upper:
-        weave.inline(c_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['F_CONTIGUOUS'] and upper:
-        weave.inline(c_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    elif A.flags['F_CONTIGUOUS'] and not upper:
-        weave.inline(f_contig_code, ['A', 'N'], extra_compile_args=['-O3'])
-    else:
-        if upper:
-            tmp = np.tril(A.T)
-        else:
-            tmp = np.tril(A)
-        A[:] = 0.0
-        A += tmp
-        A += np.tril(tmp, -1).T
-
-
-def symmetrify_numpy(A, upper=False):
-    """
-    Force a matrix to be symmetric
-    """
+def _symmetrify_numpy(A, upper=False):
     triu = np.triu_indices_from(A,k=1)
     if upper:
         A.T[triu] = A[triu]
     else:
         A[triu] = A.T[triu]
 
-def cholupdate(L, x):
-    """
-    update the LOWER cholesky factor of a pd matrix IN PLACE
-
-    if L is the lower chol. of K, then this function computes L\_
-    where L\_ is the lower chol of K + x*x^T
-
-    """
-    support_code = """
-    #include <math.h>
-    """
-    code = """
-    double r,c,s;
-    int j,i;
-    for(j=0; j<N; j++){
-      r = sqrt(L(j,j)*L(j,j) + x(j)*x(j));
-      c = r / L(j,j);
-      s = x(j) / L(j,j);
-      L(j,j) = r;
-      for (i=j+1; i<N; i++){
-        L(i,j) = (L(i,j) + s*x(i))/c;
-        x(i) = c*x(i) - s*L(i,j);
-      }
-    }
-    """
-    x = x.copy()
-    N = x.size
-    weave.inline(code, support_code=support_code, arg_names=['N', 'L', 'x'], type_converters=weave.converters.blitz)
-
 def backsub_both_sides(L, X, transpose='left'):
-    """ Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky"""
+    """
+    Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky
+    """
     if transpose == 'left':
         tmp, _ = dtrtrs(L, X, lower=1, trans=1)
         return dtrtrs(L, tmp.T, lower=1, trans=1)[0].T
@@ -532,3 +389,27 @@ def backsub_both_sides(L, X, transpose='left'):
         tmp, _ = dtrtrs(L, X, lower=1, trans=0)
         return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
 
+def ij_jlk_to_ilk(A, B):
+    """
+    Faster version of einsum 'ij,jlk->ilk'
+    """
+    return A.dot(B.reshape(B.shape[0], -1)).reshape(A.shape[0], B.shape[1], B.shape[2])
+
+def ijk_jlk_to_il(A, B):
+    """
+    Faster version of einsum einsum('ijk,jlk->il', A,B)
+    """
+    res = np.zeros((A.shape[0], B.shape[1]))
+    [np.add(np.dot(A[:,:,k], B[:,:,k]), res, out=res) for k in range(B.shape[-1])]
+    return res
+
+def ijk_ljk_to_ilk(A, B):
+    """
+    Faster version of einsum np.einsum('ijk,ljk->ilk', A, B)
+
+    I.e A.dot(B.T) for every dimension
+    """
+    res = np.zeros((A.shape[-1], A.shape[0], B.shape[0]))
+    [np.dot(A[:,:,i], B[:,:,i].T, out=res[i,:,:]) for i in range(A.shape[-1])]
+    res = res.swapaxes(0, 2).swapaxes(0,1)
+    return res

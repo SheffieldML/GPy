@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from kern import Kern
+from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
@@ -22,6 +22,13 @@ class Static(Kern):
         return np.zeros(X.shape)
 
     def gradients_X_diag(self, dL_dKdiag, X):
+        return np.zeros(X.shape)
+
+    def gradients_XX(self, dL_dK, X, X2):
+        if X2 is None:
+            X2 = X
+        return np.zeros((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
+    def gradients_XX_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -59,8 +66,14 @@ class White(Static):
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
+    def psi2n(self, Z, variational_posterior):
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+
     def update_gradients_full(self, dL_dK, X, X2=None):
-        self.variance.gradient = np.trace(dL_dK)
+        if X2 is None:
+            self.variance.gradient = np.trace(dL_dK)
+        else:
+            self.variance.gradient = 0.
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
@@ -89,6 +102,11 @@ class Bias(Static):
         ret[:] = self.variance*self.variance*variational_posterior.shape[0]
         return ret
 
+    def psi2n(self, Z, variational_posterior):
+        ret = np.empty((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret[:] = self.variance*self.variance
+        return ret
+
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0]
 
@@ -106,7 +124,7 @@ class Fixed(Static):
         return self.variance * self.fixed_K
 
     def Kdiag(self, X):
-        return self.variance * self.fixed_K.diag()
+        return self.variance * self.fixed_K.diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
@@ -116,6 +134,9 @@ class Fixed(Static):
 
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
+
+    def psi2n(self, Z, variational_posterior):
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()

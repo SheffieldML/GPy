@@ -4,8 +4,9 @@
 import itertools
 import numpy
 np = numpy
-from parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
-from observable_array import ObsAr
+from .parameter_core import Parameterizable, adjust_name_for_printing, Pickleable
+from .observable_array import ObsAr
+from functools import reduce
 
 ###### printing
 __constraints_name__ = "Constraint"
@@ -36,6 +37,11 @@ class Param(Parameterizable, ObsAr):
 
     Fixing parameters will fix them to the value they are right now. If you change
     the fixed value, it will be fixed to the new value!
+
+    Important Note:
+    Multilevel indexing (e.g. self[:2][1:]) is not supported and might lead to unexpected behaviour.
+    Try to index in one go, using boolean indexing or the numpy builtin
+    np.index function.
 
     See :py:class:`GPy.core.parameterized.Parameterized` for more details on constraining etc.
 
@@ -84,6 +90,7 @@ class Param(Parameterizable, ObsAr):
         self._original_ = getattr(obj, '_original_', None)
         self._name = getattr(obj, '_name', None)
         self._gradient_array_ = getattr(obj, '_gradient_array_', None)
+        self._update_on = getattr(obj, '_update_on', None)
         self.constraints = getattr(obj, 'constraints', None)
         self.priors = getattr(obj, 'priors', None)
 
@@ -155,7 +162,7 @@ class Param(Parameterizable, ObsAr):
     #===========================================================================
     @property
     def is_fixed(self):
-        from transformations import __fixed__
+        from .transformations import __fixed__
         return self.constraints[__fixed__].size == self.size
 
     def _get_original(self, param):
@@ -173,6 +180,7 @@ class Param(Parameterizable, ObsAr):
         import copy
         Pickleable.__setstate__(s, copy.deepcopy(self.__getstate__(), memo))
         return s
+
     def _setup_observers(self):
         """
         Setup the default observers
@@ -206,10 +214,14 @@ class Param(Parameterizable, ObsAr):
         return 0
     @property
     def _constraints_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
+        #py3 fix
+        #return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.iteritems()))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.constraints.items()))]
     @property
     def _priors_str(self):
-        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.iteritems()))]
+        #py3 fix
+        #return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.iteritems()))]
+        return [' '.join(map(lambda c: str(c[0]) if c[1].size == self._realsize_ else "{" + str(c[0]) + "}", self.priors.items()))]
     @property
     def _ties_str(self):
         return ['']
@@ -273,12 +285,12 @@ class Param(Parameterizable, ObsAr):
         header = header_format.format(x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
         return "\n".join(["""<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;border-color:#999;}
-.tg td{font-family:Arial, sans-serif;font-size:14px;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#444;background-color:#F7FDFA;}
-.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:2px 3px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#999;color:#fff;background-color:#26ADE4;}
-.tg .tg-left{font-family:"Courier New", Courier, monospace !important;;text-align:left}
-.tg .tg-right{font-family:"Courier New", Courier, monospace !important;;text-align:right}
-</style>"""] + ['<table class="tg">'] + [header] + ["<tr><td class=tg-left>{i}</td><td  class=tg-right>{x}</td><td class=tg-left>{c}</td><td class=tg-left>{p}</td><td class=tg-left>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])
+.tg  {padding:2px 3px;word-break:normal;border-collapse:collapse;border-spacing:0;border-color:#DCDCDC;margin:0px auto;width:100%;}
+.tg td{font-family:"Courier New", Courier, monospace !important;font-weight:bold;color:#444;background-color:#F7FDFA;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg th{font-family:"Courier New", Courier, monospace !important;font-weight:normal;color:#fff;background-color:#26ADE4;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#DCDCDC;}
+.tg .tg-left{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:left;}
+.tg .tg-right{font-family:"Courier New", Courier, monospace !important;font-weight:normal;text-align:right;}
+</style>"""] + ['<table class="tg">'] + [header] + ["<tr><td class=tg-left>{i}</td><td  class=tg-right>{x}</td><td class=tg-left>{c}</td><td class=tg-left>{p}</td><td class=tg-left>{t}</td></tr>".format(x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in zip(indices, vals, constr_matrix, ties, prirs)] + ["</table>"])
 
     def __str__(self, constr_matrix=None, indices=None, prirs=None, ties=None, lc=None, lx=None, li=None, lp=None, lt=None, only_name=False):
         filter_ = self._current_slice_
@@ -299,7 +311,7 @@ class Param(Parameterizable, ObsAr):
         if only_name: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=sep*lc, i=sep*li, t=sep*lt, p=sep*lp)  # nice header for printing
         else: header = header_format.format(lc, lx, li, lt, lp, ' ', x=self.hierarchy_name(), c=__constraints_name__, i=__index_name__, t=__tie_name__, p=__priors_name__)  # nice header for printing
         if not ties: ties = itertools.cycle([''])
-        return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in itertools.izip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
+        return "\n".join([header] + ["  {i!s:^{3}s}  |  {x: >{1}.{2}g}  |  {c:^{0}s}  |  {p:^{5}s}  |  {t:^{4}s}  ".format(lc, lx, __precision__, li, lt, lp, x=x, c=" ".join(map(str, c)), p=" ".join(map(str, p)), t=(t or ''), i=i) for i, x, c, t, p in zip(indices, vals, constr_matrix, ties, prirs)])  # return all the constraints with right indices
         # except: return super(Param, self).__str__()
 
 class ParamConcatenation(object):
@@ -312,7 +324,7 @@ class ParamConcatenation(object):
         See :py:class:`GPy.core.parameter.Param` for more details on constraining.
         """
         # self.params = params
-        from lists_and_dicts import ArrayList
+        from .lists_and_dicts import ArrayList
         self.params = ArrayList([])
         for p in params:
             for p in p.flattened_parameters:
@@ -335,7 +347,9 @@ class ParamConcatenation(object):
                     level += 1
                     parent = parent._parent_
         import operator
-        self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
+        #py3 fix
+        #self.parents = map(lambda x: x[0], sorted(parents.iteritems(), key=operator.itemgetter(1)))
+        self.parents = map(lambda x: x[0], sorted(parents.items(), key=operator.itemgetter(1)))
     #===========================================================================
     # Get/set items, enable broadcasting
     #===========================================================================
@@ -360,7 +374,7 @@ class ParamConcatenation(object):
     #===========================================================================
     def update_all_params(self):
         for par in self.parents:
-            par.notify_observers()
+            par.trigger_update(trigger_parent=False)
 
     def constrain(self, constraint, warning=True):
         [param.constrain(constraint, trigger_parent=False) for param in self.params]
@@ -428,14 +442,14 @@ class ParamConcatenation(object):
         params = self.params
         constr_matrices, ties_matrices, prior_matrices = zip(*map(f, params))
         indices = [p._indices() for p in params]
-        lc = max([p._max_len_names(cm, __constraints_name__) for p, cm in itertools.izip(params, constr_matrices)])
+        lc = max([p._max_len_names(cm, __constraints_name__) for p, cm in zip(params, constr_matrices)])
         lx = max([p._max_len_values() for p in params])
-        li = max([p._max_len_index(i) for p, i in itertools.izip(params, indices)])
-        lt = max([p._max_len_names(tm, __tie_name__) for p, tm in itertools.izip(params, ties_matrices)])
-        lp = max([p._max_len_names(pm, __constraints_name__) for p, pm in itertools.izip(params, prior_matrices)])
+        li = max([p._max_len_index(i) for p, i in zip(params, indices)])
+        lt = max([p._max_len_names(tm, __tie_name__) for p, tm in zip(params, ties_matrices)])
+        lp = max([p._max_len_names(pm, __constraints_name__) for p, pm in zip(params, prior_matrices)])
         strings = []
         start = True
-        for p, cm, i, tm, pm in itertools.izip(params,constr_matrices,indices,ties_matrices,prior_matrices):
+        for p, cm, i, tm, pm in zip(params,constr_matrices,indices,ties_matrices,prior_matrices):
             strings.append(p.__str__(constr_matrix=cm, indices=i, prirs=pm, ties=tm, lc=lc, lx=lx, li=li, lp=lp, lt=lt, only_name=(1-start)))
             start = False
         return "\n".join(strings)

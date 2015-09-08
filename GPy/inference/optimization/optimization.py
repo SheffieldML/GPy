@@ -10,7 +10,7 @@ try:
     rasm_available = True
 except ImportError:
     rasm_available = False
-from scg import SCG
+from .scg import SCG
 
 class Optimizer():
     """
@@ -31,12 +31,13 @@ class Optimizer():
                  ftol=None, gtol=None, xtol=None, bfgs_factor=None):
         self.opt_name = None
         self.x_init = x_init
-        self.messages = messages
+        # Turning messages off and using internal structure for print outs:
+        self.messages = False #messages
         self.f_opt = None
         self.x_opt = None
         self.funct_eval = None
         self.status = None
-        self.max_f_eval = int(max_f_eval)
+        self.max_f_eval = int(max_iters)
         self.max_iters = int(max_iters)
         self.bfgs_factor = bfgs_factor
         self.trace = None
@@ -53,7 +54,7 @@ class Optimizer():
         self.time = str(end - start)
 
     def opt(self, f_fp=None, f=None, fp=None):
-        raise NotImplementedError, "this needs to be implemented to use the optimizer class"
+        raise NotImplementedError("this needs to be implemented to use the optimizer class")
 
     def plot(self):
         """
@@ -124,9 +125,9 @@ class opt_lbfgsb(Optimizer):
 
         opt_dict = {}
         if self.xtol is not None:
-            print "WARNING: l-bfgs-b doesn't have an xtol arg, so I'm going to ignore it"
+            print("WARNING: l-bfgs-b doesn't have an xtol arg, so I'm going to ignore it")
         if self.ftol is not None:
-            print "WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it"
+            print("WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it")
         if self.gtol is not None:
             opt_dict['pgtol'] = self.gtol
         if self.bfgs_factor is not None:
@@ -138,6 +139,10 @@ class opt_lbfgsb(Optimizer):
         self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[2]['funcalls']
         self.status = rcstrings[opt_result[2]['warnflag']]
+
+        #a more helpful error message is available in opt_result in the Error case
+        if opt_result[2]['warnflag']==2:
+            self.status = 'Error' + str(opt_result[2]['task'])
 
 class opt_simplex(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -157,7 +162,7 @@ class opt_simplex(Optimizer):
         if self.ftol is not None:
             opt_dict['ftol'] = self.ftol
         if self.gtol is not None:
-            print "WARNING: simplex doesn't have an gtol arg, so I'm going to ignore it"
+            print("WARNING: simplex doesn't have an gtol arg, so I'm going to ignore it")
 
         opt_result = optimize.fmin(f, self.x_init, (), disp=self.messages,
                    maxfun=self.max_f_eval, full_output=True, **opt_dict)
@@ -185,11 +190,11 @@ class opt_rasm(Optimizer):
 
         opt_dict = {}
         if self.xtol is not None:
-            print "WARNING: minimize doesn't have an xtol arg, so I'm going to ignore it"
+            print("WARNING: minimize doesn't have an xtol arg, so I'm going to ignore it")
         if self.ftol is not None:
-            print "WARNING: minimize doesn't have an ftol arg, so I'm going to ignore it"
+            print("WARNING: minimize doesn't have an ftol arg, so I'm going to ignore it")
         if self.gtol is not None:
-            print "WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it"
+            print("WARNING: minimize doesn't have an gtol arg, so I'm going to ignore it")
 
         opt_result = rasm.minimize(self.x_init, f_fp, (), messages=self.messages,
                                    maxnumfuneval=self.max_f_eval)

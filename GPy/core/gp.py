@@ -108,9 +108,15 @@ class GP(Model):
 
         # The predictive variable to be used to predict using the posterior object's
         # woodbury_vector and woodbury_inv is defined as predictive_variable
+        # as long as the posterior has the right woodbury entries.
+        # It is the input variable used for the covariance between
+        # X_star and the posterior of the GP.
         # This is usually just a link to self.X (full GP) or self.Z (sparse GP).
         # Make sure to name this variable and the predict functions will "just work"
-        # as long as the posterior has the right woodbury entries.
+        # In maths the predictive variable is:
+        #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
+        #         W_{pp} := \texttt{Woodbury inv}
+        #         p := _predictive_variable
         self._predictive_variable = self.X
 
 
@@ -205,7 +211,7 @@ class GP(Model):
         if kern is None:
             kern = self.kern
 
-        Kx = kern.K(self.X, Xnew)
+        Kx = kern.K(self._predictive_variable, Xnew)
         mu = np.dot(Kx.T, self.posterior.woodbury_vector)
         if len(mu.shape)==1:
             mu = mu.reshape(-1,1)
@@ -213,7 +219,7 @@ class GP(Model):
             Kxx = kern.K(Xnew)
             if self.posterior.woodbury_inv.ndim == 2:
                 var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-            elif self.posterior.woodbury_inv.ndim == 3:
+            elif self.posterior.woodbury_inv.ndim == 3: # Missing data
                 var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
                 from ..util.linalg import mdot
                 for i in range(var.shape[2]):
@@ -223,7 +229,7 @@ class GP(Model):
             Kxx = kern.Kdiag(Xnew)
             if self.posterior.woodbury_inv.ndim == 2:
                 var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
-            elif self.posterior.woodbury_inv.ndim == 3:
+            elif self.posterior.woodbury_inv.ndim == 3: # Missing data
                 var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
                 for i in range(var.shape[1]):
                     var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
@@ -364,11 +370,15 @@ class GP(Model):
                 var_jac = dK2_dXdX - np.einsum('qim,miq->iq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
             return var_jac
 
-        if self.posterior.woodbury_inv.ndim == 3:
-            var_jac = []
-            for d in range(self.posterior.woodbury_inv.shape[2]):
-                var_jac.append(compute_cov_inner(self.posterior.woodbury_inv[:, :, d]))
-            var_jac = np.concatenate(var_jac)
+        if self.posterior.woodbury_inv.ndim == 3: # Missing data:
+            if full_cov:
+                var_jac = np.empty((Xnew.shape[0],Xnew.shape[0],Xnew.shape[1],self.output_dim))
+                for d in range(self.posterior.woodbury_inv.shape[2]):
+                    var_jac[:, :, :, d] = compute_cov_inner(self.posterior.woodbury_inv[:, :, d])
+            else:
+                var_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+                for d in range(self.posterior.woodbury_inv.shape[2]):
+                    var_jac[:, :, d] = compute_cov_inner(self.posterior.woodbury_inv[:, :, d])
         else:
             var_jac = compute_cov_inner(self.posterior.woodbury_inv)
         return mean_jac, var_jac
@@ -391,10 +401,11 @@ class GP(Model):
 
         mu_jac, var_jac = self.predict_jacobian(Xnew, kern, full_cov=False)
         mumuT = np.einsum('iqd,ipd->iqp', mu_jac, mu_jac)
+        Sigma = np.zeros(mumuT.shape)
         if var_jac.ndim == 3:
-            Sigma = np.einsum('iqd,ipd->iqp', var_jac, var_jac)
+            Sigma[(slice(None), )+np.diag_indices(Xnew.shape[1], 2)] = var_jac.sum(-1)
         else:
-            Sigma = self.output_dim*np.einsum('iq,ip->iqp', var_jac, var_jac)
+            Sigma[(slice(None), )+np.diag_indices(Xnew.shape[1], 2)] = self.output_dim*var_jac
         G = 0.
         if mean:
             G += mumuT
@@ -412,8 +423,13 @@ class GP(Model):
         """
         G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
         from ..util.linalg import jitchol
-        return np.array([np.sqrt(np.exp(2*np.sum(np.log(np.diag(jitchol(G[n, :, :])))))) for n in range(Xnew.shape[0])])
-        #return np.array([np.sqrt(np.linalg.det(G[n, :, :])) for n in range(Xnew.shape[0])])
+        mag = np.empty(Xnew.shape[0])
+        for n in range(Xnew.shape[0]):
+            try:
+                mag[n] = np.sqrt(np.exp(2*np.sum(np.log(np.diag(jitchol(G[n, :, :]))))))
+            except:
+                mag[n] = np.sqrt(np.linalg.det(G[n, :, :]))
+        return mag
 
     def posterior_samples_f(self,X,size=10, full_cov=True):
         """

@@ -1,7 +1,11 @@
 '''
 Created on 11 Mar 2014
 
-@author: maxz
+@author: @mzwiessele
+
+This module provides a meta class for the kernels. The meta class is for
+slicing the inputs (X, X2) for the kernels, before K (or any other method involving X)
+gets calls. The `active_dims` of a kernel decide which dimensions the kernel works on.
 '''
 from ...core.parameterization.parameterized import ParametersChangedMeta
 import numpy as np
@@ -19,6 +23,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
         put_clean(dct, 'gradients_X', _slice_gradients_X)
+        put_clean(dct, 'gradients_X_X2', _slice_gradients_X)
         put_clean(dct, 'gradients_XX', _slice_gradients_XX)
         put_clean(dct, 'gradients_XX_diag', _slice_gradients_X_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)

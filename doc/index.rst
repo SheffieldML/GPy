@@ -25,7 +25,7 @@ The code can be found on our `Github project page <https://github.com/SheffieldM
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    GPy
 

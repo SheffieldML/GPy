@@ -5,6 +5,7 @@ from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
+from ...util.linalg import tdot
 from ...util.caching import Cache_this
 four_over_tau = 2./np.pi
 
@@ -40,6 +41,7 @@ class MLP(Kern):
         self.link_parameters(self.variance, self.weight_variance, self.bias_variance)
 
 
+    @Cache_this(limit=20, ignore_args=())
     def K(self, X, X2=None):
         if X2 is None:
             X_denom = np.sqrt(self._comp_prod(X)+1.)
@@ -51,6 +53,7 @@ class MLP(Kern):
         XTX = self._comp_prod(X,X2)/X_denom[:,None]/X2_denom[None,:]
         return self.variance*four_over_tau*np.arcsin(XTX)
 
+    @Cache_this(limit=20, ignore_args=())
     def Kdiag(self, X):
         """Compute the diagonal of the covariance matrix for X."""
         X_prod = self._comp_prod(X)
@@ -72,6 +75,10 @@ class MLP(Kern):
     def gradients_X(self, dL_dK, X, X2):
         """Derivative of the covariance matrix with respect to X"""
         return self._comp_grads(dL_dK, X, X2)[3]
+
+    def gradients_X_X2(self, dL_dK, X, X2):
+        """Derivative of the covariance matrix with respect to X"""
+        return self._comp_grads(dL_dK, X, X2)[3:]
 
     def gradients_X_diag(self, dL_dKdiag, X):
         """Gradient of diagonal of covariance with respect to X"""

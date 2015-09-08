@@ -92,12 +92,16 @@ print "Importing extensions"
 extensions = ['sphinx.ext.autodoc',
               #'sphinx.ext.doctest'
               'sphinx.ext.viewcode',
-              'sphinx.ext.pngmath',
+              #'sphinx.ext.pngmath',
+              'sphinx.ext.mathjax',
               'ipython_directive',
               'ipython_console_highlighting'
               #'matplotlib.sphinxext.plot_directive'
              ]
 plot_formats = [('png', 80), ('pdf', 50)]
+
+#pngmath_latex_preamble=r'\usepackage[active]{preview}\usepackage{MnSymbol}' # + other custom stuff for inline math, such as non-default math fonts etc.
+#pngmath_use_preview=True
 
 print "finished importing"
 
@@ -218,7 +222,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'default'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -228,10 +232,10 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'alabaster'
 
 # This is to revert to the default theme on readthedocs
-html_style = '/default.css'
+html_style = '/alabaster.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -317,7 +321,7 @@ latex_elements = {
     #'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    'preamble': '\\usepackage{MnSymbol}',
+    'preamble': '\\usepackage{MnSymbol,amsmath}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

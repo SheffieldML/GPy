@@ -11,7 +11,7 @@ from ..util.config import config
 verbose = 0
 
 try:
-    from . import linalg_cython
+    from ..util import linalg_cython
     config.set('cython', 'working', 'True')
 except ImportError:
     config.set('cython', 'working', 'False')

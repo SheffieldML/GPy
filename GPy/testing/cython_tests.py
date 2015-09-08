@@ -6,13 +6,14 @@ from ..util.config import config
 import unittest
 
 try:
-    from . import linalg_cython
+    from ..util import linalg_cython
+    from ..util import choleskies_cython
     config.set('cython', 'working', 'True')
 except ImportError:
     config.set('cython', 'working', 'False')
 
 """
-These tests make sure that the opure python and cython codes work the same
+These tests make sure that the pure python and cython codes work the same
 """
 
 @unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
@@ -67,8 +68,8 @@ class test_choleskies_backprop(np.testing.TestCase):
         self.L = GPy.util.linalg.jitchol(A)
         self.dL = np.random.randn(10,10)
     def test(self):
-        r1 = GPy.util.choleskies._backprop_gradient_pure(self.dL, self.L)
-        r2 = GPy.util.choleskies.choleskies_cython.backprop_gradient(self.dL, self.L)
-        r3 = GPy.util.choleskies.choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
+        r1 = choleskies._backprop_gradient_pure(self.dL, self.L)
+        r2 = choleskies_cython.backprop_gradient(self.dL, self.L)
+        r3 = choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
         np.testing.assert_allclose(r1, r2)
         np.testing.assert_allclose(r1, r3)

@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+import scipy
 from ..util.univariate_Gaussian import std_norm_cdf, std_norm_pdf
 import scipy as sp
 from ..util.misc import safe_exp, safe_square, safe_cube, safe_quad, safe_three_times
@@ -67,7 +68,7 @@ class Probit(GPTransformation):
     .. math::
 
         g(f) = \\Phi^{-1} (mu)
-    
+
     """
     def transf(self,f):
         return std_norm_cdf(f)
@@ -140,7 +141,7 @@ class Log_ex_1(GPTransformation):
 
     """
     def transf(self,f):
-        return np.log1p(safe_exp(f))
+        return scipy.special.log1p(safe_exp(f))
 
     def dtransf_df(self,f):
         ef = safe_exp(f)

@@ -17,7 +17,7 @@ class Linear(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i x_iy_i
+       k(x,y) = \sum_{i=1}^{\\text{input_dim}} \sigma^2_i x_iy_i
 
     :param input_dim: the number of input dimensions
     :type input_dim: int

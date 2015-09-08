@@ -304,7 +304,7 @@ def plot_magnification(model, labels=None, which_indices=None,
     view = ImshowController(ax, plot_function,
                             (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=cm.gray)
+                            cmap=cm.get_cmap('Greys'))
 
     # make sure labels are in order of input:
     ulabels = []

@@ -70,6 +70,9 @@ class Kern(Parameterized):
         """
         Compute the kernel function.
 
+        .. math::
+            K_{ij} = k(X_i, X_j)
+
         :param X: the first set of inputs to the kernel
         :param X2: (optional) the second set of arguments to the kernel. If X2
                    is None, this is passed throgh to the 'part' object, which
@@ -77,24 +80,64 @@ class Kern(Parameterized):
         """
         raise NotImplementedError
     def Kdiag(self, X):
+        """
+        The diagonal of the kernel matrix K
+
+        .. math::
+            Kdiag_{i} = k(X_i, X_i)
+        """
         raise NotImplementedError
     def psi0(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_0 = \sum_{i=0}^{n}E_{q(X)}[k(X_i, X_i)]
+        """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
     def psi1(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_1^{n,m} = E_{q(X)}[k(X_n, Z_m)]
+        """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_2^{m,m'} = \sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
+        """
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
     def psi2n(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_2^{n,m,m'} = E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})]
+
+        Thus, we do not sum out n, compared to psi2
+        """
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
     def gradients_X(self, dL_dK, X, X2):
+        """
+        .. math::
+
+            \\frac{\partial L}{\partial X} = \\frac{\partial L}{\partial K}\\frac{\partial K}{\partial X}
+        """
         raise NotImplementedError
     def gradients_X_X2(self, dL_dK, X, X2):
         return self.gradients_X(dL_dK, X, X2), self.gradients_X(dL_dK.T, X2, X)
     def gradients_XX(self, dL_dK, X, X2):
+        """
+        .. math::
+
+            \\frac{\partial^2 L}{\partial X\partial X_2} = \\frac{\partial L}{\partial K}\\frac{\partial^2 K}{\partial X\partial X_2}
+        """
         raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_XX_diag(self, dL_dKdiag, X):
+        """
+        The diagonal of the second derivative w.r.t. X and X2
+        """
         raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
+        """
+        The diagonal of the derivative w.r.t. X
+        """
         raise NotImplementedError
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -110,11 +153,17 @@ class Kern(Parameterized):
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
 
-        The esential maths is
+        The essential maths is
 
-        dL_d{theta_i} = dL_dpsi0 * dpsi0_d{theta_i} +
-                        dL_dpsi1 * dpsi1_d{theta_i} +
-                        dL_dpsi2 * dpsi2_d{theta_i}
+        .. math::
+
+            \\frac{\partial L}{\partial \\theta_i} & = \\frac{\partial L}{\partial \psi_0}\\frac{\partial \psi_0}{\partial \\theta_i}\\
+                & \quad + \\frac{\partial L}{\partial \psi_1}\\frac{\partial \psi_1}{\partial \\theta_i}\\
+                & \quad + \\frac{\partial L}{\partial \psi_2}\\frac{\partial \psi_2}{\partial \\theta_i}
+
+        Thus, we push the different derivatives through the gradients of the psi
+        statistics. Be sure to set the gradients for all kernel
+        parameters here.
         """
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         self.gradient[:] = dtheta

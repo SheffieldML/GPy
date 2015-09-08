@@ -62,6 +62,7 @@ class MiscTests(unittest.TestCase):
     def check_jacobian(self):
         try:
             import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt
+            from GPy.models import GradientChecker, GPRegression
         except:
             raise self.skipTest("autograd not available to check gradients")
         def k(X, X2, alpha=1., lengthscale=None):
@@ -87,6 +88,20 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_allclose(ke.gradients_X([[1.]], X, X2), dk(X, X2))
         np.testing.assert_allclose(ke.gradients_XX([[1.]], X, X2).sum(0), dkdk(X, X2))
 
+        m = GPRegression(self.X, self.Y)
+        def f(x):
+            m.X[:] = x
+            return m.log_likelihood()
+        def df(x):
+            m.X[:] = x
+            return m.kern.gradients_X(m.grad_dict['dL_dK'], X)
+        def ddf(x):
+            m.X[:] = x
+            return m.kern.gradients_XX(m.grad_dict['dL_dK'], X).sum(0)
+        gc = GradientChecker(f, df, self.X)
+        gc2 = GradientChecker(df, ddf, self.X)
+        assert(gc.checkgrad())
+        assert(gc2.checkgrad())
 
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)

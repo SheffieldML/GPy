@@ -25,13 +25,16 @@ class Stationary(Kern):
 
     Stationary covariance fucntion depend only on r, where r is defined as
 
-      r = \sqrt{ \sum_{q=1}^Q (x_q - x'_q)^2 }
+    .. math::
+        r(x, x') = \\sqrt{ \\sum_{q=1}^Q (x_q - x'_q)^2 }
 
     The covariance function k(x, x' can then be written k(r).
 
     In this implementation, r is scaled by the lengthscales parameter(s):
 
-      r = \sqrt{ \sum_{q=1}^Q \frac{(x_q - x'_q)^2}{\ell_q^2} }.
+    .. math::
+
+        r(x, x') = \\sqrt{ \\sum_{q=1}^Q \\frac{(x_q - x'_q)^2}{\ell_q^2} }.
 
     By default, there's only one lengthscale: seaprate lengthscales for each
     dimension can be enables by setting ARD=True.
@@ -39,11 +42,12 @@ class Stationary(Kern):
     To implement a stationary covariance function using this class, one need
     only define the covariance function k(r), and it derivative.
 
-      ...
-      def K_of_r(self, r):
-          return foo
-      def dK_dr(self, r):
-          return bar
+    ```
+    def K_of_r(self, r):
+        return foo
+    def dK_dr(self, r):
+        return bar
+    ```
 
     The lengthscale(s) and variance parameters are added to the structure automatically.
 
@@ -128,7 +132,8 @@ class Stationary(Kern):
         """
         Efficiently compute the scaled distance, r.
 
-        r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
+        ..math::
+            r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
 
         Note that if thre is only one lengthscale, l comes outside the sum. In
         this case we compute the unscaled distance first (in a separate
@@ -321,7 +326,7 @@ class OU(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
 
@@ -341,7 +346,7 @@ class Matern32(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
 
@@ -388,7 +393,7 @@ class Matern52(Stationary):
     .. math::
 
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
-       """
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 

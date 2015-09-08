@@ -88,7 +88,7 @@ class Test(unittest.TestCase):
         k.randomize()
         p = Parabola(.3)
         p.randomize()
-        Y = p.f(X) + np.random.multivariate_normal(np.zeros(X.shape[0]), k.K(X))[:,None] + np.random.normal(0, .1, (X.shape[0], 1))
+        Y = p.f(X) + np.random.multivariate_normal(np.zeros(X.shape[0]), k.K(X)+np.eye(X.shape[0])*1e-8)[:,None] + np.random.normal(0, .1, (X.shape[0], 1))
         m = GPy.models.GPRegression(X, Y, mean_function=p)
         m.randomize()
         assert(m.checkgrad())

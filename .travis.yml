@@ -1,27 +1,38 @@
-language: python
-python:
-  - "2.7"
+sudo: false
 
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+language: python
+
+addons:
+  apt:
+    packages:
+      - gfortran
+      - libatlas-dev
+      - libatlas-base-dev
+      - liblapack-dev
+
+python:
+  - 2.6
+  - 2.7
+  - 3.3
+  - 3.4
+
 before_install:
-  #Install a mini version of anaconda such that we can easily install our dependencies
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
-  # Workaround for a permissions issue with Travis virtual machine images
-  # that breaks Python's multiprocessing:
-  # https://github.com/travis-ci/travis-cookbooks/issues/155
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
+  - uname -a
+  - free -m
+  - df -h
+  - ulimit -a
+  - pip install -U pip wheel setuptools
+  - pip install numpy scipy cython nose six matplotlib
+  - python -V
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.9 scipy=0.16 matplotlib nose sphinx pip nose
-  #- pip install . 
-  - python setup.py build_ext --inplace
-  #--use-mirrors
-  #
-# command to run tests, e.g. python setup.py test
-script: 
-  - nosetests GPy/testing
+  - pip install .
+
+script:
+  - mkdir empty
+  - cd empty
+  - nosetests GPy
+
+cache:
+  directories:
+    - $HOME/.cache/pip

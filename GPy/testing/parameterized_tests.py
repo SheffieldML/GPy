@@ -248,10 +248,16 @@ class ParameterizedTest(unittest.TestCase):
         m.randomize()
         self.assertEqual(m.p1, val)
 
+    def test_checkgrad(self):
+        assert(self.testmodel.kern.checkgrad())
+        assert(self.testmodel.kern.lengthscale.checkgrad())
+        assert(self.testmodel.likelihood.lengthscale.checkgrad())
+
     def test_printing(self):
         print(self.test1)
         print(self.param)
         print(self.test1[''])
+        print(self.testmodel.hierarchy_name(False))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_add_parameter']

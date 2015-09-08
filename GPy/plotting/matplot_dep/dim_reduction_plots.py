@@ -119,7 +119,7 @@ def plot_latent(model, labels=None, which_indices=None,
         Xtest_full[:, [input_1, input_2]] = x
         _, var = model.predict(Xtest_full, **predict_kwargs)
         var = var[:, :1]
-        return 2*np.sqrt(var)
+        return np.log(var)
 
     #Create an IMshow controller that can re-plot the latent space shading at a good resolution
     if plot_limits is None:
@@ -304,7 +304,7 @@ def plot_magnification(model, labels=None, which_indices=None,
     view = ImshowController(ax, plot_function,
                             (xmin, ymin, xmax, ymax),
                             resolution, aspect=aspect, interpolation='bilinear',
-                            cmap=cm.gray)
+                            cmap=cm.get_cmap('Greys'))
 
     # make sure labels are in order of input:
     ulabels = []

@@ -251,7 +251,7 @@ class ParameterizedTest(unittest.TestCase):
     def test_checkgrad(self):
         assert(self.testmodel.kern.checkgrad())
         assert(self.testmodel.kern.lengthscale.checkgrad())
-        assert(self.testmodel.likelihood.lengthscale.checkgrad())
+        assert(self.testmodel.likelihood.checkgrad())
 
     def test_printing(self):
         print(self.test1)

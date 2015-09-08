@@ -62,7 +62,7 @@ class Transformation(object):
         import matplotlib.pyplot as plt
         from ...plotting.matplot_dep import base_plots
         x = np.linspace(-8,8)
-        base_plots.meanplot(x, self.f(x),axes=axes*args,**kw)
+        base_plots.meanplot(x, self.f(x), *args, ax=axes, **kw)
         axes = plt.gca()
         axes.set_xlabel(xlabel)
         axes.set_ylabel(ylabel)
@@ -488,7 +488,7 @@ class Logistic(Transformation):
                     return instance()
         newfunc = super(Transformation, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)
+            o = newfunc(cls)  
         else:
             o = newfunc(cls, lower, upper, *args, **kwargs)
         cls._instances.append(weakref.ref(o))

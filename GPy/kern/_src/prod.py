@@ -27,8 +27,6 @@ class Prod(CombinationKernel):
 
     :param k1, k2: the kernels to multiply
     :type k1, k2: Kern
-    :param tensor: The kernels are either multiply as functions defined on the same input space (default) or on the product of the input spaces
-    :type tensor: Boolean
     :rtype: kernel object
 
     """

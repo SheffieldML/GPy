@@ -157,7 +157,7 @@ def trace_dot(a, b):
     """
     Efficiently compute the trace of the matrix product of a and b
     """
-    return np.sum(a * b)
+    return np.einsum('ij,ji->', a, b)
 
 def mdot(*args):
     """

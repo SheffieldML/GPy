@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
-from GPy.util.linalg import jitchol
-import GPy
+from ..util.linalg import jitchol,trace_dot
 
 class LinalgTests(np.testing.TestCase):
     def setUp(self):
@@ -37,12 +36,13 @@ class LinalgTests(np.testing.TestCase):
         except sp.linalg.LinAlgError:
             return True
 
-    def test_einsum_ijk_jlk_to_il(self):
-        A = np.random.randn(50, 150, 5)
-        B = np.random.randn(150, 100, 5)
-        pure = np.einsum('ijk,jlk->il', A, B)
-        quick = GPy.util.linalg.ijk_jlk_to_il(A, B)
-        np.testing.assert_allclose(pure, quick)
+    def test_trace_dot(self):
+        N = 5
+        A = np.random.rand(N,N)
+        B = np.random.rand(N,N)
+        trace = np.trace(A.dot(B))
+        test_trace = trace_dot(A,B)
+        np.testing.assert_allclose(trace,test_trace,atol=1e-13)
 
     def test_einsum_ij_jlk_to_ilk(self):
         A = np.random.randn(15, 150, 5)

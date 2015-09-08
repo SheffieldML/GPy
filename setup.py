@@ -23,7 +23,7 @@ def ismac():
 
 if ismac():
     compile_flags = [ '-O3', ]
-    link_args = ['']
+    link_args = []
 else:
     compile_flags = [ '-fopenmp', '-O3', ]
     link_args = ['-lgomp']

@@ -10,6 +10,26 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
+### Getting started: installing with pip
+
+We are now requiring the newest version of ![scipy](http://www.scipy.org/) and thus, we strongly recommend using 
+the  ![anaconda python distribution](http://continuum.io/downloads).
+With anaconda you can install GPy by the following:
+
+    conda update scipy
+    pip install gpy
+    
+. We've also had luck with ![enthought](http://www.enthought.com), although enthought currently (as of 8th Sep. 2015) does not support scipy 0.16.
+
+On a fresh install of windows 8.1, we downloaded the Anaconda python distribution, started the anaconda command prompt and typed 
+
+    conda update scipy
+    pip install GPy
+
+Everything seems to work: from here you can type `ipython` and then `import GPy; GPy.tests()`. Working as of 21/11/14
+
+If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
+
 ### Python 3 Compatibility
 Work is underway to make GPy run on Python 3.
 
@@ -47,23 +67,6 @@ The command `python3 setup.py build_ext --inplace` builds the Cython extensions.
 ### Pronounciation
 
 We like to pronounce it 'Gee-pie'.
-
-### Getting started: installing with pip
-
-The simplest way to install GPy is using pip. Ubuntu users can do:
-
-    sudo apt-get install python-pip
-    pip install gpy
-    
-On windows, we recommend the ![anaconda python distribution](http://continuum.io/downloads). We've also had luck with ![enthought](http://www.enthought.com).
-
-On a fresh install of windows 8.1, we downloaded the Anaconda python distribution, started the anaconda command prompt and typed 
-
-    pip install GPy
-
-Everything seems to work: from here you can type `ipython` and then `import GPy; GPy.tests()`. Working as of 21/11/14
-
-If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
 
 ### Ubuntu hackers
 

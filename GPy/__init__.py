@@ -21,8 +21,7 @@ from . import plotting
 from .core import Model
 from .core.parameterization import Param, Parameterized, ObsAr
 
-with open('VERSION', 'r') as f:
-    __version__ = f.read()
+from .__version__ import __version__
 
 #@nottest
 try:

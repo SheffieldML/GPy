@@ -22,7 +22,7 @@ before_install:
   - ulimit -a
   - pip install -U pip wheel setuptools
   - pip install numpy cython nose six matplotlib
-  - pip install -vvv -U scipy
+  - pip install -v -U scipy
   - python -V
 
 install:

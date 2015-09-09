@@ -34,4 +34,3 @@ class GPVariationalGaussianApproximation(GP):
 
         self.link_parameter(self.alpha)
         self.link_parameter(self.beta)
-

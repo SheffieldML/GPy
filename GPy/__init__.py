@@ -21,6 +21,8 @@ from . import plotting
 from .core import Model
 from .core.parameterization import Param, Parameterized, ObsAr
 
+__version__ = '0.8.0'
+
 #@nottest
 try:
     #Get rid of nose dependency by only ignoring if you have nose installed

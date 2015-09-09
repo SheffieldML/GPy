@@ -7,7 +7,7 @@ from setuptools import setup, Extension
 import numpy as np
 
 # Version number
-version = '0.8'
+__version__ = '0.8.0'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -48,7 +48,7 @@ ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
                       extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',
-      version = version,
+      version = __version__,
       author = read('AUTHORS.txt'),
       author_email = "james.hensman@gmail.com",
       description = ("The Gaussian Process Toolbox"),

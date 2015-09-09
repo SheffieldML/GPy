@@ -6,11 +6,10 @@ import sys
 from setuptools import setup, Extension
 import numpy as np
 
-# Version number
-__version__ = '0.8.0'
-
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+__version__ = read('GPy/VERSION')
 
 #Mac OS X Clang doesn't support OpenMP th the current time.
 #This detects if we are building on a Mac
@@ -72,7 +71,8 @@ setup(name = 'GPy',
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
                               'util/data_resources.json',
-                              'util/football_teams.json']},
+                              'util/football_teams.json',
+                              'VERSION']},
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',

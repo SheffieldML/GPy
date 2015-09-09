@@ -29,6 +29,7 @@ install:
   - pip install .
 
 script:
+  - cd $HOME
   - mkdir empty
   - cd empty
   - nosetests GPy

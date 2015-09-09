@@ -7,7 +7,7 @@ from setuptools import setup, Extension
 import numpy as np
 
 # Version number
-version = '0.6.1'
+version = '0.8'
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()

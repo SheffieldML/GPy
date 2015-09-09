@@ -9,6 +9,14 @@ import numpy as np
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+def read_to_rst(fname):
+    try:
+        import pypandoc
+        print 'Warning in installation: For rst formatting in pypi, consider installing pypandoc for conversion'
+        return pypandoc.convert('README.md', 'rst')
+    except:
+        return read(fname)
+
 version_dummy = {}
 exec(read('GPy/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
@@ -79,7 +87,7 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      long_description=read('README.md'),
+      long_description=read_to_rst('README.rst'),
       install_requires=['numpy>=1.7', 'scipy>=0.16'],
       extras_require = {'docs':['matplotlib >=1.3','Sphinx','IPython']},
       classifiers=['License :: OSI Approved :: BSD License',

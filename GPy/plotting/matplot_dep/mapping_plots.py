@@ -4,7 +4,7 @@
 import numpy as np
 try:
     import Tango
-    import pylab as pb
+    from matplotlib import pyplot as pb
 except:
     pass
 from base_plots import x_frame1D, x_frame2D

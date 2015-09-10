@@ -28,11 +28,11 @@ try:
     #Get rid of nose dependency by only ignoring if you have nose installed
     from nose.tools import nottest
     @nottest
-    def tests():
-        Tester(testing).test(verbose=10)
+    def tests(verbose=10):
+        Tester(testing).test(verbose=verbose)
 except:
-    def tests():
-        Tester(testing).test(verbose=10)
+    def tests(verbose=10):
+        Tester(testing).test(verbose=verbose)
 
 def load(file_path):
     """

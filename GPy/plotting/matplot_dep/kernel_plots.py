@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import pylab as pb
+from matplotlib import pyplot as pb
 import Tango
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import offset_copy

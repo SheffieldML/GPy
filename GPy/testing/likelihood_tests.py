@@ -7,7 +7,6 @@ from GPy.models import GradientChecker
 import functools
 import inspect
 from GPy.likelihoods import link_functions
-from GPy.core.parameterization import Param
 from functools import partial
 fixed_seed = 7
 
@@ -799,7 +798,7 @@ class LaplaceTests(unittest.TestCase):
         post_mean_approx, post_var_approx, = m2.predict(X)
 
         if debug:
-            import pylab as pb
+            from matplotlib import pyplot as pb
             pb.figure(5)
             pb.title('posterior means')
             pb.scatter(X, post_mean, c='g')

@@ -1,4 +1,4 @@
-import pylab as pb, numpy as np
+from matplotlib import pyplot as pb, numpy as np
 
 def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
     """

@@ -17,7 +17,9 @@ class MiscTests(unittest.TestCase):
         
     def test_setXY(self):
         m = GPy.models.GPRegression(self.X, self.Y)
+        print m.X.shape, m.Y.shape
         m.set_XY(np.vstack([self.X, np.random.rand(1,self.X.shape[1])]), np.vstack([self.Y, np.random.rand(1,self.Y.shape[1])]))
+        m._trigger_params_changed()
         self.assertTrue(m.checkgrad())
         m.predict(m.X)
 

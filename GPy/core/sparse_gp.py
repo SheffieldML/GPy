@@ -59,8 +59,10 @@ class SparseGP(GP):
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
         self.posterior = None
-        self._predictive_variable = self.Z
 
+    @property
+    def _predictive_variable(self):
+        return self.Z
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)

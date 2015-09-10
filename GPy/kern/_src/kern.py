@@ -256,8 +256,6 @@ class Kern(Parameterized):
 
         :param other: the other kernel to be added
         :type other: GPy.kern
-        :param tensor: whether or not to use the tensor space (default is false).
-        :type tensor: bool
 
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."

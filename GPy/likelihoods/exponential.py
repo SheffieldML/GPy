@@ -124,7 +124,7 @@ class Exponential(Likelihood):
         #d3lik_dlink3 = 6*y/(link_f**4) - 2./(link_f**3)
         return d3lik_dlink3
 
-    def samples(self, gp):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 

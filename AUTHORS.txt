@@ -1,8 +1,3 @@
-James Hensman
-Nicolo Fusi
-Ricardo Andrade
-Nicolas Durrande
-Alan Saul
-Max Zwiessele
-Neil D. Lawrence
-Zhenwen Dai
+# This list was out of date, I've put "see contributors" for the moment. Not sure how to fix long term but don't want to be 
+# embarrassed by some off the great contributors of late being omitted from a list.
+See contributors.

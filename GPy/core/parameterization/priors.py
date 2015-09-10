@@ -366,6 +366,7 @@ class InverseGamma(Gamma):
     def rvs(self, n):
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
 
+
 class DGPLVM_KFDA(Prior):
     """
     Implementation of the Discriminative Gaussian Process Latent Variable function using
@@ -511,6 +512,7 @@ class DGPLVM_KFDA(Prior):
         self.a = self.compute_a(lst_ni)
         self.A = self.compute_A(lst_ni)
         self.x_shape = x_shape
+
 
 class DGPLVM(Prior):
     """
@@ -669,7 +671,7 @@ class DGPLVM(Prior):
         M_i = self.compute_Mi(cls)
         Sb = self.compute_Sb(cls, M_i, M_0)
         Sw = self.compute_Sw(cls, M_i)
-        # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
+        # sb_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
         Sb_inv_N = pdinv(Sb + np.eye(Sb.shape[0])*0.1)[0]
@@ -1198,6 +1200,7 @@ class DGPLVM_T(Prior):
 
 
 
+
 class HalfT(Prior):
     """
     Implementation of the half student t probability function, coupled with random variables.
@@ -1208,15 +1211,17 @@ class HalfT(Prior):
     """
     domain = _POSITIVE
     _instances = []
-    def __new__(cls, A, nu): # Singleton:
+
+    def __new__(cls, A, nu):  # Singleton:
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
                 if instance().A == A and instance().nu == nu:
-                   return instance()
+                    return instance()
         o = super(Prior, cls).__new__(cls, A, nu)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
+
     def __init__(self, A, nu):
         self.A = float(A)
         self.nu = float(nu)
@@ -1225,37 +1230,81 @@ class HalfT(Prior):
     def __str__(self):
         return "hT({:.2g}, {:.2g})".format(self.A, self.nu)
 
-    def lnpdf(self,theta):
-        return (theta>0) * ( self.constant -.5*(self.nu+1) * np.log( 1.+ (1./self.nu) * (theta/self.A)**2 ) )
+    def lnpdf(self, theta):
+        return (theta > 0) * (self.constant - .5*(self.nu + 1) * np.log(1. + (1./self.nu) * (theta/self.A)**2))
 
-        #theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
-        #lnpdfs = np.zeros_like(theta)
-        #theta = np.array([theta])
-        #above_zero = theta.flatten()>1e-6
-        #v = self.nu
-        #sigma2=self.A
-        #stop
-        #lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
-        #    - gammaln(v * 0.5)
-        #    - 0.5*np.log(sigma2 * v * np.pi)
-        #    - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
-        #)
-        #return lnpdfs
+        # theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+        # lnpdfs = np.zeros_like(theta)
+        # theta = np.array([theta])
+        # above_zero = theta.flatten()>1e-6
+        # v = self.nu
+        # sigma2=self.A
+        # stop
+        # lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
+        #     - gammaln(v * 0.5)
+        #     - 0.5*np.log(sigma2 * v * np.pi)
+        #     - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
+        # )
+        # return lnpdfs
 
-    def lnpdf_grad(self,theta):
-        theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
+    def lnpdf_grad(self, theta):
+        theta = theta if isinstance(theta, np.ndarray) else np.array([theta])
         grad = np.zeros_like(theta)
-        above_zero = theta>1e-6
+        above_zero = theta > 1e-6
         v = self.nu
-        sigma2=self.A
+        sigma2 = self.A
         grad[above_zero] = -0.5*(v+1)*(2*theta[above_zero])/(v*sigma2 + theta[above_zero][0]**2)
         return grad
 
     def rvs(self, n):
-         #return np.random.randn(n) * self.sigma + self.mu
-         from scipy.stats import t
-         #[np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
-         ret = t.rvs(self.nu,loc=0,scale=self.A, size=n)
-         ret[ret<0] = 0
-         return ret
+        # return np.random.randn(n) * self.sigma + self.mu
+        from scipy.stats import t
+        # [np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
+        ret = t.rvs(self.nu, loc=0, scale=self.A, size=n)
+        ret[ret < 0] = 0
+        return ret
 
+
+class Exponential(Prior):
+    """
+    Implementation of the Exponential probability function,
+    coupled with random variables.
+
+    :param l: shape parameter
+
+    """
+    domain = _POSITIVE
+    _instances = []
+
+    def __new__(cls, l):  # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().l == l:
+                    return instance()
+        o = super(Exponential, cls).__new__(cls, l)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, l):
+        self.l = l
+
+    def __str__(self):
+        return "Exp({:.2g})".format(self.l)
+
+    def summary(self):
+        ret = {"E[x]": 1. / self.l,
+               "E[ln x]": np.nan,
+               "var[x]": 1. / self.l**2,
+               "Entropy": 1. - np.log(self.l),
+               "Mode": 0.}
+        return ret
+
+    def lnpdf(self, x):
+        return np.log(self.l) - self.l * x
+
+    def lnpdf_grad(self, x):
+        return - self.l
+
+    def rvs(self, n):
+        return np.random.exponential(scale=self.l, size=n)

@@ -26,11 +26,7 @@ del version_dummy
 #Mac OS X Clang doesn't support OpenMP at the current time.
 #This detects if we are building on a Mac
 def ismac():
-    platform = sys.platform
-    ismac = False
-    if platform[:6] == 'darwin':
-        ismac = True
-    return ismac
+    return sys.platform[:6] == 'darwin'
 
 if ismac():
     compile_flags = [ '-O3', ]

@@ -7,7 +7,6 @@ from GPy.models import GradientChecker
 import functools
 import inspect
 from GPy.likelihoods import link_functions
-from GPy.core.parameterization import Param
 from functools import partial
 fixed_seed = 7
 

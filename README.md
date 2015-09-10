@@ -68,8 +68,8 @@ The command `python3 setup.py build_ext --inplace` builds the Cython extensions.
 
 ### Ubuntu hackers
 
-:Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
-be used for GPy. We hope this gets fixed soon.
+> Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
+> be used for GPy. We hope this gets fixed soon.
 
 For the most part, the developers are using ubuntu. To install the required packages:
 

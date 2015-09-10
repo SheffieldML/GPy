@@ -622,7 +622,7 @@ class Likelihood(Parameterized):
         Nf_samp = 300
         Ny_samp = 1
         s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
-        ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+        ss_y = self.samples(s, Y_metadata)#, samples=Ny_samp)
         #ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
 
         pred_quantiles = [np.percentile(ss_y, q, axis=1)[:,None] for q in quantiles]

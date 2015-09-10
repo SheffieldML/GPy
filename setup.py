@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from __future__ import print_function
 import os
 import sys
 from setuptools import setup, Extension
 import numpy as np
+
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -22,7 +23,7 @@ exec(read('GPy/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
-#Mac OS X Clang doesn't support OpenMP th the current time.
+#Mac OS X Clang doesn't support OpenMP at the current time.
 #This detects if we are building on a Mac
 def ismac():
     platform = sys.platform

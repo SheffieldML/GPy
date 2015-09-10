@@ -154,6 +154,7 @@ class GP(Model):
                     self.link_parameter(self.X)
             else:
                 self.X = ObsAr(X)
+            self._predictive_variable = self.X
         self.update_model(True)
 
     def set_X(self,X):

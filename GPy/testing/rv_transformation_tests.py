@@ -32,7 +32,7 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.unconstrain()
         m.theta.constrain(trans)
         # The PDF of the transformed variables
-        p_phi = lambda(phi): np.exp(-m._objective_grads(phi)[0])
+        p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
         # To the empirical PDF of:
         theta_s = prior.rvs(100000)
         phi_s = trans.finv(theta_s)
@@ -56,7 +56,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
-        for i in xrange(10):
+        for i in range(10):
             m.theta = theta_s[i]
             self.assertTrue(m.checkgrad(verbose=True))
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     m.theta.set_prior(prior)
 
     # The following should return the PDF in terms of the transformed quantities
-    p_phi = lambda(phi): np.exp(-m._objective_grads(phi)[0])
+    p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
 
     # Let's look at the transformation phi = log(exp(theta - 1))
     trans = GPy.constraints.Exponent()

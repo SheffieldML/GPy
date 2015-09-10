@@ -3,7 +3,7 @@
 
 
 import matplotlib as mpl
-import pylab as pb
+from matplotlib import pyplot as pb
 import sys
 #sys.path.append('/home/james/mlprojects/sitran_cluster/')
 #from switch_pylab_backend import *
@@ -159,7 +159,7 @@ cdict_Alu = {'red' :((0./5,colorsRGB['Aluminium1'][0]/256.,colorsRGB['Aluminium1
 # cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
 # cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
 if __name__=='__main__':
-    import pylab as pb
+    from matplotlib import pyplot as pb
     pb.figure()
     pb.pcolor(pb.rand(10,10),cmap=cmap_RB)
     pb.colorbar()

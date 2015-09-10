@@ -251,7 +251,7 @@ class HessianChecker(GradientChecker):
             print(grad_string)
 
             if plot:
-                import pylab as pb
+                from matplotlib import pyplot as pb
                 fig, axes = pb.subplots(2, 2)
                 max_lim = numpy.max(numpy.vstack((analytic_hess, numeric_hess)))
                 min_lim = numpy.min(numpy.vstack((analytic_hess, numeric_hess)))

@@ -5,7 +5,7 @@
 Gaussian Processes regression examples
 """
 try:
-    import pylab as pb
+    from matplotlib import pyplot as pb
 except:
     pass
 import numpy as np

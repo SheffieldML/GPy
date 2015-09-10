@@ -799,7 +799,7 @@ class LaplaceTests(unittest.TestCase):
         post_mean_approx, post_var_approx, = m2.predict(X)
 
         if debug:
-            import pylab as pb
+            from matplotlib import pyplot as pb
             pb.figure(5)
             pb.title('posterior means')
             pb.scatter(X, post_mean, c='g')

@@ -252,6 +252,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         continuous_kerns = ['RBF', 'Linear']
         self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
 
+    def test_MLP(self):
+        k = GPy.kern.MLP(self.D,ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_Matern32(self):
         k = GPy.kern.Matern32(self.D)
         k.randomize()
@@ -464,7 +469,7 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         self.w3n = self.w3n+np.swapaxes(self.w3n, 1,2)
 
     def test_kernels(self):
-        from GPy.kern import RBF,Linear
+        from GPy.kern import RBF,Linear,MLP
         Q = self.Z.shape[1]
         kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True)]
 

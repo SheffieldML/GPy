@@ -115,7 +115,7 @@ class Coregionalize(Kern):
         return dL_dK_small
 
     def _gradient_reduce_cython(self, dL_dK, index, index2):
-        index, index2 = index[:,0], index2[:,0]
+        index, index2 = np.int64(index[:,0]), np.int64(index2[:,0])
         return coregionalize_cython.gradient_reduce(self.B.shape[0], dL_dK, index, index2)
 
 

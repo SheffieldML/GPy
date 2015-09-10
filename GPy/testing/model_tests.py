@@ -14,6 +14,12 @@ class MiscTests(unittest.TestCase):
         self.X = np.random.uniform(-3., 3., (self.N, 1))
         self.Y = np.sin(self.X) + np.random.randn(self.N, self.D) * 0.05
         self.X_new = np.random.uniform(-3., 3., (self.N_new, 1))
+        
+    def test_setXY(self):
+        m = GPy.models.GPRegression(self.X, self.Y)
+        m.set_XY(np.vstack([self.X, np.random.rand(1,self.X.shape[1])]), np.vstack([self.Y, np.random.rand(1,self.Y.shape[1])]))
+        self.assertTrue(m.checkgrad())
+        m.predict(m.X)
 
     def test_raw_predict(self):
         k = GPy.kern.RBF(1)

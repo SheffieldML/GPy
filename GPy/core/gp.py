@@ -535,7 +535,7 @@ class GP(Model):
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False, linecol=None,fillcol=None, Y_metadata=None,
-        data_symbol='kx', predict_kw=None, plot_training_data=True):
+        data_symbol='kx', predict_kw=None, plot_training_data=True, samples_y=0, apply_link=False):
         """
         Plot the posterior of the GP.
           - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -558,7 +558,7 @@ class GP(Model):
         :param levels: number of levels to plot in a contour plot.
         :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
         :type levels: int
-        :param samples: the number of a posteriori samples to plot
+        :param samples: the number of a posteriori samples to plot, p(f*|y)
         :type samples: int
         :param fignum: figure to plot on.
         :type fignum: figure number
@@ -574,6 +574,10 @@ class GP(Model):
         :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
         :param plot_training_data: whether or not to plot the training points
         :type plot_training_data: boolean
+        :param samples_y: the number of a posteriori samples to plot, p(y*|y)
+        :type samples_y: int
+        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*, when plotting posterior samples f
+        :type apply_link: boolean
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import models_plots
@@ -587,7 +591,7 @@ class GP(Model):
                                      levels, samples, fignum, ax, resolution,
                                      plot_raw=plot_raw, Y_metadata=Y_metadata,
                                      data_symbol=data_symbol, predict_kw=predict_kw,
-                                     plot_training_data=plot_training_data, **kw)
+                                     plot_training_data=plot_training_data, samples_y=samples_y, apply_link=apply_link, **kw)
 
 
     def plot_data(self, which_data_rows='all',
@@ -613,7 +617,7 @@ class GP(Model):
         :param levels: number of levels to plot in a contour plot.
         :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
         :type levels: int
-        :param samples: the number of a posteriori samples to plot
+        :param samples: the number of a posteriori samples to plot, p(f*|y)
         :type samples: int
         :param fignum: figure to plot on.
         :type fignum: figure number

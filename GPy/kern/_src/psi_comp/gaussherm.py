@@ -7,11 +7,15 @@ An approximated psi-statistics implementation based on Gauss-Hermite Quadrature
 
 import numpy as np
 
+from ....core.parameterization import Param
 from GPy.util.caching import Cache_this
 from ....util.linalg import tdot
 from . import PSICOMP
 
 class PSICOMP_GH(PSICOMP):
+    """
+    TODO: support Psi2 with shape NxMxM
+    """
     
     def __init__(self, degree=5, cache_K=True):
         self.degree = degree
@@ -64,7 +68,10 @@ class PSICOMP_GH(PSICOMP):
         
         dtheta_old = kern.gradient.copy()
         dtheta = np.zeros_like(kern.gradient)
-        dZ = np.zeros_like(Z.values)
+        if isinstance(Z, Param):
+            dZ = np.zeros_like(Z.values)
+        else:
+            dZ = np.zeros_like(Z)
         dmu = np.zeros_like(mu)
         dS = np.zeros_like(S)
         for i in xrange(self.degree):

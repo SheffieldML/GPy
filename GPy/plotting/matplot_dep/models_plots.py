@@ -75,7 +75,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
         linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None, data_symbol='kx',
-        apply_link=False, samples_f=0, plot_uncertain_inputs=True, predict_kw=None, plot_training_data=True):
+        apply_link=False, samples_y=0, plot_uncertain_inputs=True, predict_kw=None, plot_training_data=True):
     """
     Plot the posterior of the GP.
       - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
@@ -93,24 +93,30 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     :type which_data_rows: 'all' or a list of integers
     :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
     :type fixed_inputs: a list of tuples
-    :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-    :type resolution: int
-    :param levels: number of levels to plot in a contour plot.
+    :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
     :type levels: int
-    :param samples: the number of a posteriori samples to plot p(y*|y)
+    :param samples: the number of a posteriori samples to plot p(f*|y)
     :type samples: int
     :param fignum: figure to plot on.
     :type fignum: figure number
     :param ax: axes to plot on.
     :type ax: axes handle
+    :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+    :type resolution: int
+    :param plot_raw: Whether to plot the raw function p(f|y)
+    :type plot_raw: boolean
     :param linecol: color of line to plot.
-    :type linecol:
+    :type linecol: hex or color
     :param fillcol: color of fill
-    :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
-    :param apply_link: apply the link function if plotting f (default false)
+    :type fillcol: hex or color
+    :param apply_link: apply the link function if plotting f (default false), as well as posterior samples if requested
     :type apply_link: boolean
-    :param samples_f: the number of posteriori f samples to plot p(f*|y)
-    :type samples_f: int
+    :param samples_y: the number of posteriori f samples to plot p(y*|y)
+    :type samples_y: int
+    :param plot_uncertain_inputs: plot the uncertainty of the inputs as error bars if they have uncertainty (BGPLVM etc.)
+    :type plot_uncertain_inputs: boolean
+    :param predict_kw: keyword args for _raw_predict and predict functions if required
+    :type predict_kw: dict
     :param plot_training_data: whether or not to plot the training points
     :type plot_training_data: boolean
     """
@@ -185,17 +191,17 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples, Y_metadata=Y_metadata)
-            print(Ysim.shape)
-            print(Xnew.shape)
-            for yi in Ysim.T:
-                plots['posterior_samples'] = ax.plot(Xnew, yi[:,None], '#3300FF', linewidth=0.25)
-                #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
-
-        if samples_f: #NOTE not tested with fixed_inputs
-            Fsim = model.posterior_samples_f(Xgrid, samples_f)
+            Fsim = model.posterior_samples_f(Xgrid, samples)
+            if apply_link:
+                Fsim = model.likelihood.gp_link.transf(Fsim)
             for fi in Fsim.T:
-                plots['posterior_samples_f'] = ax.plot(Xnew, fi[:,None], Tango.colorsHex['darkBlue'], linewidth=0.25)
+                plots['posterior_samples'] = ax.plot(Xnew, fi[:,None], '#3300FF', linewidth=0.25)
+                #ax.plot(Xnew, fi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
+
+        if samples_y: #NOTE not tested with fixed_inputs
+            Ysim = model.posterior_samples(Xgrid, samples_y, Y_metadata=Y_metadata)
+            for yi in Ysim.T:
+                plots['posterior_samples_y'] = ax.scatter(Xnew, yi[:,None], s=5, c=Tango.colorsHex['darkBlue'], marker='o', alpha=0.5)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
 

@@ -137,7 +137,7 @@ class Poisson(Likelihood):
         """
         return self.gp_link.transf(gp)
 
-    def samples(self, gp, Y_metadata=None, samples=1):
+    def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
@@ -145,5 +145,7 @@ class Poisson(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        Ysim = np.random.poisson(self.gp_link.transf(gp), [samples, gp.size]).T
-        return Ysim.reshape(orig_shape+(samples,))
+        # Ysim = np.random.poisson(self.gp_link.transf(gp), [samples, gp.size]).T
+        # return Ysim.reshape(orig_shape+(samples,))
+        Ysim = np.random.poisson(self.gp_link.transf(gp))
+        return Ysim.reshape(orig_shape)

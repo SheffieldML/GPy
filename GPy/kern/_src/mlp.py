@@ -33,9 +33,14 @@ class MLP(Kern):
 
     """
 
-    def __init__(self, input_dim, variance=1., weight_variance=1., bias_variance=1., active_dims=None, name='mlp'):
+    def __init__(self, input_dim, variance=1., weight_variance=1., bias_variance=1., ARD=False, active_dims=None, name='mlp'):
         super(MLP, self).__init__(input_dim, active_dims, name)
         self.variance = Param('variance', variance, Logexp())
+        self.ARD= ARD
+        if ARD:
+            wv = np.empty((input_dim,))
+            wv[:] = weight_variance
+            weight_variance = wv
         self.weight_variance = Param('weight_variance', weight_variance, Logexp())
         self.bias_variance = Param('bias_variance', bias_variance, Logexp())
         self.link_parameters(self.variance, self.weight_variance, self.bias_variance)
@@ -100,7 +105,22 @@ class MLP(Kern):
         X2_prod = self._comp_prod(X2) if X2 is not None else X_prod
         XTX = self._comp_prod(X,X2) if X2 is not None else self._comp_prod(X, X)
         common = var*four_over_tau/np.sqrt((X_prod[:,None]+1.)*(X2_prod[None,:]+1.)-np.square(XTX))*dL_dK
-        dw = (common*((XTX-b)/w-XTX*(((X_prod-b)/(w*(X_prod+1.)))[:,None]+((X2_prod-b)/(w*(X2_prod+1.)))[None,:])/2.)).sum()
+        if self.ARD:
+            if X2 is not None:
+                XX2 = X[:,None,:]*X2[None,:,:] if X2 is not None else X[:,None,:]*X[None,:,:]
+                XX = np.square(X)
+                X2X2 = np.square(X2)
+                Q = self.weight_variance.shape[0]
+                common_XTX = common*XTX
+                dw =  np.dot(common.flat,XX2.reshape(-1,Q)) -( (common_XTX.sum(1)/(X_prod+1.)).T.dot(XX)+(common_XTX.sum(0)/(X2_prod+1.)).dot(X2X2))/2
+            else:
+                XX2 = X[:,None,:]*X[None,:,:]
+                XX = np.square(X)
+                Q = self.weight_variance.shape[0]
+                common_XTX = common*XTX
+                dw =  np.dot(common.flat,XX2.reshape(-1,Q)) - ((common_XTX.sum(0)+common_XTX.sum(1))/(X_prod+1.)).dot(XX)/2
+        else:
+            dw = (common*((XTX-b)/w-XTX*(((X_prod-b)/(w*(X_prod+1.)))[:,None]+((X2_prod-b)/(w*(X2_prod+1.)))[None,:])/2.)).sum()
         db = (common*(1.-XTX*(1./(X_prod[:,None]+1.)+1./(X2_prod[None,:]+1.))/2.)).sum()
         if X2 is None:
             common = common+common.T
@@ -118,7 +138,11 @@ class MLP(Kern):
         dvar = (dL_dKdiag*K).sum()/var
         X_prod = self._comp_prod(X)
         common = var*four_over_tau/(np.sqrt(1-np.square(X_prod/(X_prod+1)))*np.square(X_prod+1))*dL_dKdiag
-        dw = (common*(X_prod-b)).sum()/w
+        if self.ARD:
+            XX = np.square(X)
+            dw = np.dot(common,XX)
+        else:
+            dw = (common*(X_prod-b)).sum()/w
         db = common.sum()
         dX = common[:,None]*X*w*2
         return dvar, dw, db, dX

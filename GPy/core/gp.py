@@ -117,8 +117,10 @@ class GP(Model):
         #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
         #         W_{pp} := \texttt{Woodbury inv}
         #         p := _predictive_variable
-        self._predictive_variable = self.X
 
+    @property
+    def _predictive_variable(self):
+        return self.X
 
     def set_XY(self, X=None, Y=None):
         """
@@ -154,7 +156,6 @@ class GP(Model):
                     self.link_parameter(self.X)
             else:
                 self.X = ObsAr(X)
-            self._predictive_variable = self.X
         self.update_model(True)
 
     def set_X(self,X):

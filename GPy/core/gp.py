@@ -98,7 +98,7 @@ class GP(Model):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
-                print("defaulting to ", inference_method, "for latent function inference")
+                print("defaulting to " + str(inference_method) + " for latent function inference")
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")

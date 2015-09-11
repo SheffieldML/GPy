@@ -11,6 +11,10 @@ A Gaussian processes framework in Python.
 
 Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GPy.png)
 
+### Avalability
+
+Python 2.7 and 3.4, Windows, MacOSX, Linux
+
 ### Citation
 
     @Misc{gpy2014,
@@ -20,9 +24,9 @@ Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GP
       year = {2012--2015}
     }
 
-### Pronounciation
+### Pronounciation: dʒí páj
 
-We like to pronounce it 'dʒí páj'.
+We like to pronounce it 'g-pie'.
 
 ### Getting started: installing with pip
 
@@ -39,32 +43,15 @@ although enthought currently (as of 8th Sep. 2015) does not support scipy 0.16.
 
 If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
 
-### Python 3 Compatibility
-Work is underway to make GPy run on Python 3.
+### Troubleshooting installation problems
 
-* All tests in the testsuite now run on Python3. 
-
-To see this for yourself, in Ubuntu 14.04, you can do
+If you're having trouble installing GPy via `pip install GPy` here is a probable solution:
 
     git clone https://github.com/mikecroucher/GPy.git
     cd GPy
     git checkout devel
     python3 setup.py build_ext --inplace
     nosetests3 GPy/testing
-
-nosetests3 is Ubuntu's way of reffering to the Python 3 version of nosetests. You install it with 
-
-    sudo apt-get install python3-nose
-
-The command `python3 setup.py build_ext --inplace` builds the Cython extensions. IF it doesn't work, you may need to install this:
-
-    sudo apt-get install python3-dev
-
-* Test coverage is less than 100% so it is expected that there is still more work to be done. We need more tests and examples to try out.
-* All weave functions not covered by the test suite are *simply commented out*. Can add equivalents later as test functions become available
-* A set of benchmarks would be useful! 
-
-
 
 ### Ubuntu hackers
 

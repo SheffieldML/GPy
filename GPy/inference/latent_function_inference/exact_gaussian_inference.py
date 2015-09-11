@@ -22,21 +22,7 @@ class ExactGaussianInference(LatentFunctionInference):
     def __init__(self):
         pass#self._YYTfactor_cache = caching.cache()
 
-    def get_YYTfactor(self, Y):
-        """
-        find a matrix L which satisfies LL^T = YY^T.
-
-        Note that L may have fewer columns than Y, else L=Y.
-        """
-        N, D = Y.shape
-        if (N>D):
-            return Y
-        else:
-            #if Y in self.cache, return self.Cache[Y], else store Y in cache and return L.
-            #print "WARNING: N>D of Y, we need caching of L, such that L*L^T = Y, returning Y still!"
-            return Y
-
-    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, K=None, gaussian_variance=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
@@ -46,13 +32,17 @@ class ExactGaussianInference(LatentFunctionInference):
         else:
             m = mean_function.f(X)
 
+        if gaussian_variance is None:
+            gaussian_variance = likelihood.gaussian_variance(Y_metadata)
 
-        YYT_factor = self.get_YYTfactor(Y-m)
+        YYT_factor = Y-m
 
-        K = kern.K(X)
+        if K is None:
+            K = kern.K(X)
 
         Ky = K.copy()
-        diag.add(Ky, likelihood.gaussian_variance(Y_metadata)+1e-8)
+        diag.add(Ky, gaussian_variance+1e-8)
+
         Wi, LW, LWi, W_logdet = pdinv(Ky)
 
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)

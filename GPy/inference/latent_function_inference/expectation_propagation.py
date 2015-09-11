@@ -3,11 +3,11 @@
 import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
 from .posterior import Posterior
-from . import LatentFunctionInference
+from . import ExactGaussianInference
 from ...util import diag
 log_2_pi = np.log(2*np.pi)
 
-class EP(LatentFunctionInference):
+class EP(ExactGaussianInference):
     def __init__(self, epsilon=1e-6, eta=1., delta=1.):
         """
         The expectation-propagation algorithm.
@@ -20,6 +20,7 @@ class EP(LatentFunctionInference):
         :param delta: damping EP updates factor.
         :type delta: float64
         """
+        super(EP, self).__init__()
         self.epsilon, self.eta, self.delta = epsilon, eta, delta
         self.reset()
 
@@ -34,12 +35,12 @@ class EP(LatentFunctionInference):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
-    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, Z=None):
-        assert mean_function is None, "inference with a mean function not implemented"
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, gaussian_variance=None, K=None):
         num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
-        K = kern.K(X)
+        if K is None:
+            K = kern.K(X)
 
         if self._ep_approximation is None:
             #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
@@ -48,17 +49,7 @@ class EP(LatentFunctionInference):
             #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation
 
-        Wi, LW, LWi, W_logdet = pdinv(K + np.diag(1./tau_tilde))
-
-        alpha, _ = dpotrs(LW, mu_tilde, lower=1)
-
-        log_marginal =  0.5*(-num_data * log_2_pi - W_logdet - np.sum(alpha * mu_tilde)) # TODO: add log Z_hat??
-
-        dL_dK = 0.5 * (tdot(alpha[:,None]) - Wi)
-
-        dL_dthetaL = np.zeros(likelihood.size)#TODO: derivatives of the likelihood parameters
-
-        return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL}
+        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, gaussian_variance=1./tau_tilde, K=K)
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 

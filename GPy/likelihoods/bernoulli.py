@@ -258,4 +258,4 @@ class Bernoulli(Likelihood):
         return Ysim.reshape(orig_shape)
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
-        pass
+        return np.zeros(self.size)

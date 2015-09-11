@@ -22,7 +22,7 @@ Continuous integration status: ![CI status](https://travis-ci.org/SheffieldML/GP
 
 ### Pronounciation
 
-We like to pronounce it 'Gee-pie'.
+We like to pronounce it 'dʒí páj'.
 
 ### Getting started: installing with pip
 

@@ -15,7 +15,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
 
     """
     try:import pods
-    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
+    except ImportError:raise ImportWarning('Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.')
     data = pods.datasets.oil()
     X = data['X']
     Xtest = data['Xtest']
@@ -26,6 +26,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
 
     # Create GP model
     m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, num_inducing=num_inducing)
+    m.Ytest = Ytest
 
     # Contrain all parameters to be positive
     #m.tie_params('.*len')
@@ -33,8 +34,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
 
     # Optimize
     if optimize:
-        for _ in range(5):
-            m.optimize(max_iters=int(max_iters/5))
+        m.optimize(messages=1)
     print(m)
 
     #Test
@@ -50,9 +50,8 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     :type seed: int
 
     """
-
     try:import pods
-    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
+    except ImportError:raise ImportWarning('Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.')
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data['Y'][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -150,6 +149,42 @@ def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, opti
     print(m)
     return m
 
+def sparse_toy_linear_1d_classification_uncertain_input(num_inducing=10, seed=default_seed, optimize=True, plot=True):
+    """
+    Sparse 1D classification example
+
+    :param seed: seed value for data generation (default is 4).
+    :type seed: int
+
+    """
+
+    try:import pods
+    except ImportError:print('pods unavailable, see https://github.com/sods/ods for example datasets')
+    import numpy as np
+    data = pods.datasets.toy_linear_1d_classification(seed=seed)
+    Y = data['Y'][:, 0:1]
+    Y[Y.flatten() == -1] = 0
+    X = data['X']
+    X_var = np.random.uniform(0.3,0.5,X.shape)
+
+    # Model definition
+    m = GPy.models.SparseGPClassificationUncertainInput(X, X_var, Y, num_inducing=num_inducing)
+    m['.*len'] = 4.
+
+    # Optimize
+    if optimize:
+        m.optimize()
+
+    # Plot
+    if plot:
+        from matplotlib import pyplot as plt
+        fig, axes = plt.subplots(2, 1)
+        m.plot_f(ax=axes[0])
+        m.plot(ax=axes[1])
+
+    print(m)
+    return m
+
 def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
     """
     Simple 1D classification example using a heavy side gp transformation
@@ -218,7 +253,7 @@ def crescent_data(model_type='Full', num_inducing=10, seed=default_seed, kernel=
         m = GPy.models.FITCClassification(data['X'], Y, kernel=kernel, num_inducing=num_inducing)
         m['.*len'] = 3.
     if optimize:
-        m.optimize()
+        m.optimize(messages=1)
 
     if plot:
         m.plot()

@@ -60,13 +60,14 @@ class Bernoulli(Likelihood):
         if isinstance(self.gp_link, link_functions.Probit):
             z = sign*v_i/np.sqrt(tau_i**2 + tau_i)
             Z_hat = std_norm_cdf(z)
+            Z_hat = np.where(Z_hat==0, 1e-15, Z_hat)
             phi = std_norm_pdf(z)
             mu_hat = v_i/tau_i + sign*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
             sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
 
         elif isinstance(self.gp_link, link_functions.Heaviside):
             a = sign*v_i/np.sqrt(tau_i)
-            Z_hat = std_norm_cdf(a)
+            Z_hat = np.max(1e-13, std_norm_cdf(z))
             N = std_norm_pdf(a)
             mu_hat = v_i/tau_i + sign*N/Z_hat/np.sqrt(tau_i)
             sigma2_hat = (1. - a*N/Z_hat - np.square(N/Z_hat))/tau_i

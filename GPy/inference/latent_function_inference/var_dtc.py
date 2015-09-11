@@ -64,31 +64,30 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, beta=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+        assert mean_function is None, "inference with a mean function not implemented"
 
-        _, output_dim = Y.shape
+        num_data, output_dim = Y.shape
+        num_inducing = Z.shape[0]
+
         uncertain_inputs = isinstance(X, VariationalPosterior)
 
-        #see whether we've got a different noise variance for each datum
-        beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
-        # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
-        #self.YYTfactor = self.get_YYTfactor(Y)
-        #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
-        het_noise = beta.size > 1
+        if beta is None:
+            #assume Gaussian likelihood
+            beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), self.const_jitter)
+
         if beta.ndim == 1:
             beta = beta[:, None]
+        het_noise = beta.size > 1
+
         VVT_factor = beta*Y
         #VVT_factor = beta*Y
         trYYT = self.get_trYYT(Y)
 
-        # do the inference:
-        num_inducing = Z.shape[0]
-        num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
-
-        Kmm = kern.K(Z).copy()
-        diag.add(Kmm, self.const_jitter)
         if Lm is None:
+            Kmm = kern.K(Z).copy()
+            diag.add(Kmm, self.const_jitter)
             Lm = jitchol(Kmm)
 
         # The rather complex computations of A, and the psi stats
@@ -99,15 +98,16 @@ class VarDTC(LatentFunctionInference):
                 psi1 = kern.psi1(Z, X)
             if het_noise:
                 if psi2 is None:
-                    assert len(psi2.shape) == 3  # Need to have not summed out N
-                    #FIXME: Need testing
-                    psi2_beta = np.sum([psi2[X[i:i+1,:], :, :] * beta_i for i,beta_i in enumerate(beta)],0)
+                    psi2_beta = (kern.psi2n(Z, X) * beta[:, :, None]).sum(0)
                 else:
-                    psi2_beta = np.sum([kern.psi2(Z,X[i:i+1,:]) * beta_i for i,beta_i in enumerate(beta)],0)
+                    psi2_beta = (psi2 * beta[:, :, None]).sum(0)
             else:
                 if psi2 is None:
-                    psi2 = kern.psi2(Z,X)
-                psi2_beta =  psi2 * beta
+                    psi2_beta = kern.psi2(Z,X) * beta
+                elif psi2.ndim == 3:
+                    psi2_beta = psi2.sum(0) * beta
+                else:
+                    psi2_beta = psi2 * beta
             LmInv = dtrtri(Lm)
             A = LmInv.dot(psi2_beta.dot(LmInv.T))
         else:

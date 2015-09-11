@@ -4,6 +4,7 @@ import numpy as np
 from ...util.linalg import pdinv,jitchol,DSYR,tdot,dtrtrs, dpotrs
 from .posterior import Posterior
 from . import LatentFunctionInference
+from ...util import diag
 log_2_pi = np.log(2*np.pi)
 
 class EP(LatentFunctionInference):
@@ -41,7 +42,6 @@ class EP(LatentFunctionInference):
         K = kern.K(X)
 
         if self._ep_approximation is None:
-
             #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         else:
@@ -69,6 +69,7 @@ class EP(LatentFunctionInference):
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         mu = np.zeros(num_data)
         Sigma = K.copy()
+        diag.add(Sigma, 1e-7)
 
         #Initial values - Marginal moments
         Z_hat = np.empty(num_data,dtype=np.float64)
@@ -79,14 +80,14 @@ class EP(LatentFunctionInference):
         if self.old_mutilde is None:
             tau_tilde, mu_tilde, v_tilde = np.zeros((3, num_data))
         else:
-            assert old_mutilde.size == num_data, "data size mis-match: did you change the data? try resetting!"
+            assert self.old_mutilde.size == num_data, "data size mis-match: did you change the data? try resetting!"
             mu_tilde, v_tilde = self.old_mutilde, self.old_vtilde
             tau_tilde = v_tilde/mu_tilde
 
         #Approximation
         tau_diff = self.epsilon + 1.
         v_diff = self.epsilon + 1.
-       	iterations = 0
+        iterations = 0
         while (tau_diff > self.epsilon) or (v_diff > self.epsilon):
             update_order = np.random.permutation(num_data)
             for i in update_order:

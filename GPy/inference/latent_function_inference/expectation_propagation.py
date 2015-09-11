@@ -35,7 +35,7 @@ class EP(ExactGaussianInference):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
-    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, gaussian_variance=None, K=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, precision=None, K=None):
         num_data, output_dim = Y.shape
         assert output_dim ==1, "ep in 1D only (for now!)"
 
@@ -49,7 +49,7 @@ class EP(ExactGaussianInference):
             #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_hat = self._ep_approximation
 
-        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, gaussian_variance=1./tau_tilde, K=K)
+        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, precision=1./tau_tilde, K=K)
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 

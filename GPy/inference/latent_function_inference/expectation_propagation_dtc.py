@@ -46,7 +46,7 @@ class EPDTC(VarDTC):
         return super(EPDTC, self).inference(kern, X, Z, likelihood, mu_tilde,
                                             mean_function=mean_function,
                                             Y_metadata=Y_metadata,
-                                            gaussian_variance=tau_tilde,
+                                            precision=tau_tilde,
                                             Lm=Lm, dL_dKmm=dL_dKmm,
                                             psi0=psi0, psi1=psi1, psi2=psi2)
 

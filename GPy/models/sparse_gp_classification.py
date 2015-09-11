@@ -6,8 +6,7 @@ import numpy as np
 from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
-from ..likelihoods import likelihood
-from ..inference.latent_function_inference import expectation_propagation_dtc
+from ..inference.latent_function_inference import EPDTC
 
 class SparseGPClassification(SparseGP):
     """
@@ -39,7 +38,7 @@ class SparseGPClassification(SparseGP):
         else:
             assert Z.shape[1] == X.shape[1]
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=expectation_propagation_dtc.EPDTC(), name='SparseGPClassification',Y_metadata=Y_metadata)
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=EPDTC(), name='SparseGPClassification',Y_metadata=Y_metadata)
 
 class SparseGPClassificationUncertainInput(SparseGP):
     """
@@ -78,7 +77,7 @@ class SparseGPClassificationUncertainInput(SparseGP):
         X = NormalPosterior(X, X_variance)
 
         SparseGP.__init__(self, X, Y, Z, kernel, likelihood,
-                          inference_method=expectation_propagation_dtc.EPDTC(),
+                          inference_method=EPDTC(),
                           name='SparseGPClassification', Y_metadata=Y_metadata, normalizer=normalizer)
 
     def parameters_changed(self):

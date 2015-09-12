@@ -33,7 +33,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The PDF of the transformed variables
         p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
         # To the empirical PDF of:
-        np.random.seed(12345)
+        np.random.seed(0)
         theta_s = prior.rvs(5e5)
         phi_s = trans.finv(theta_s)
         # which is essentially a kernel density estimation

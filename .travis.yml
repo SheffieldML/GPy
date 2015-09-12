@@ -50,6 +50,9 @@ before_install:
 install:
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
+  - echo which nosetests
+  - echo which python
+  - echo which conda
 
 before_script:
   - cd $HOME

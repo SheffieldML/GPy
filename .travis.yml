@@ -2,9 +2,9 @@ sudo: false
 
 os:
   - linux
-#  - osx
+  - osx
 
-language: python
+#language: python
 
 #addons:
 #  apt:
@@ -30,10 +30,12 @@ install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
 
-script:
+before_script:
   - cd $HOME
   - mkdir empty
   - cd empty
+   
+script:
   - nosetests GPy.testing
 
 cache:

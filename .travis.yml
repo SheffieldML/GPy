@@ -24,7 +24,7 @@ before_install:
       export OS=Linux;
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS=MacOSX;
-    else;
+    else
       echo "OS not supported yet";
       exit 1;
     fi
@@ -32,7 +32,7 @@ before_install:
       export MINICONDA=Miniconda
     elif [[ "PYTHON_VERSION" -ge "3" ]]; then
       export MINICONDA=Miniconda3
-    else;
+    else
       echo "Could not find python version";
       exit 1;
     fi

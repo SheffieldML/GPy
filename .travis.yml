@@ -24,10 +24,10 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
+#  - conda update --yes conda
   
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.9 scipy=0.16 matplotlib nose sphinx pip nose
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.9 scipy=0.16 matplotlib nose pip six
   - pip install .
 
 script:

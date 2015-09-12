@@ -20,11 +20,12 @@ env:
   - PYTHON_VERSION=3.4
 
 before_install:
-  if [$TRAVIS_OS_NAME -eq linux]
-  then
-    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  elif [$TRAVIS_OS_NAME -eq osx]
-    - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+  else;
+    exit 1
   fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b

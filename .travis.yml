@@ -34,7 +34,7 @@ script:
   - cd $HOME
   - mkdir empty
   - cd empty
-  - nosetests GPy
+  - nosetests GPy.testing
 
 cache:
   directories:

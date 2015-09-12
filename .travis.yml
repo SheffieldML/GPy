@@ -2,7 +2,7 @@ sudo: false
 
 os:
   - linux
-#  - osx
+  - osx
 
 language: python
 
@@ -16,7 +16,7 @@ language: python
 
 python:
   - 2.7
-#  - 3.3
+  - 3.3
   - 3.4
 
 before_install:
@@ -27,7 +27,7 @@ before_install:
 #  - conda update --yes conda
   
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.9 scipy=0.16 matplotlib nose pip six
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
 
 script:

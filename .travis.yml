@@ -2,7 +2,7 @@ sudo: false
 
 os:
   - osx
-  - linux
+#  - linux
 
 #language: python
 
@@ -29,8 +29,10 @@ before_install:
     fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - echo ~/miniconda
+  - export PATH=~/miniconda/bin:$PATH
   - echo $PATH
+  - ls 
 #  - conda update --yes conda
   
 install:

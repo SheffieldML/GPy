@@ -2,7 +2,7 @@ sudo: false
 
 os:
   - osx
-#  - linux
+  - linux
 
 #language: python
 
@@ -21,23 +21,28 @@ env:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      export OS=Linux;
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh;
-    else
+      export OS=MacOSX;
+    else;
+      echo "OS not supported yet";
       exit 1;
     fi
+  - if [[ "PYTHON_VERSION" == "2.7" ]]; then
+      export MINICONDA=Miniconda
+    elif [[ "PYTHON_VERSION" -ge "3" ]]; then
+      export MINICONDA=Miniconda3
+    else;
+      echo "Could not find python version";
+      exit 1;
+    fi
+  - wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O miniconda.sh;
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - echo ~/miniconda
   - export PATH=~/miniconda/bin:$PATH
-  - echo $PATH
-  - ls 
 #  - conda update --yes conda
   
 install:
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - echo $PATH
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
 

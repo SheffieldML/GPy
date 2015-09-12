@@ -24,24 +24,27 @@ class TestModel(GPy.core.Model):
 
 class RVTransformationTestCase(unittest.TestCase):
 
-    def _test_trans(self, trans):
+    def _test_trans(self, trans, kde=True):
         m = TestModel(trans.__class__.__name__)
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.unconstrain()
         m.theta.constrain(trans)
-        # The PDF of the transformed variables
-        p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
-        # To the empirical PDF of:
-        np.random.seed(0)
+        np.random.seed(1234)
         theta_s = prior.rvs(5e5)
-        phi_s = trans.finv(theta_s)
-        # which is essentially a kernel density estimation
-        kde = st.gaussian_kde(phi_s)
-        # We will compare the PDF here:
-        phi = np.linspace(phi_s.min(), phi_s.max(), 100)
-        # The transformed PDF of phi should be this:
-        pdf_phi = np.array([p_phi(p) for p in phi])
+        if kde:
+            # The PDF of the transformed variables
+            p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
+            # To the empirical PDF of:
+            phi_s = trans.finv(theta_s)
+            # which is essentially a kernel density estimation
+            kde = st.gaussian_kde(phi_s)
+            # We will compare the PDF here:
+            phi = np.linspace(phi_s.min(), phi_s.max(), 100)
+            # The transformed PDF of phi should be this:
+            pdf_phi = np.array([p_phi(p) for p in phi])
+            # The following test cannot be very accurate
+            self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # UNCOMMENT TO SEE GRAPHICAL COMPARISON
         #import matplotlib.pyplot as plt
         #fig, ax = plt.subplots()
@@ -53,8 +56,6 @@ class RVTransformationTestCase(unittest.TestCase):
         #plt.legend(loc='best')
         #plt.show(block=True)
         # END OF PLOT
-        # The following test cannot be very accurate
-        self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
         for i in range(5):
             m.theta = theta_s[i]
@@ -62,14 +63,30 @@ class RVTransformationTestCase(unittest.TestCase):
 
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
+    
+    def test_Exponent(self):
         self._test_trans(GPy.constraints.Exponent())
-        self._test_trans(GPy.constraints.LogexpNeg())
-        self._test_trans(GPy.constraints.NegativeLogexp())
+
+    def test_Logexpneg(self):
+        self._test_trans(GPy.constraints.LogexpNeg(False))
+
+    def test_neglogexp(self):
+        self._test_trans(GPy.constraints.NegativeLogexp(False))
+
+    def test_logexpclipped(self):
         self._test_trans(GPy.constraints.LogexpClipped())
-        self._test_trans(GPy.constraints.NegativeExponent())
-        self._test_trans(GPy.constraints.LogexpNeg())
-        self._test_trans(GPy.constraints.Square())
-        self._test_trans(GPy.constraints.Logistic())
+
+    def test_NegExp(self):
+        self._test_trans(GPy.constraints.NegativeExponent(False))
+
+    def test_logexpNeg(self):
+        self._test_trans(GPy.constraints.LogexpNeg(False))
+
+    def test_Square(self):
+        self._test_trans(GPy.constraints.Square(False))
+
+    def test_logistic(self):
+        self._test_trans(GPy.constraints.Logistic(False))
 
 if __name__ == '__main__':
     unittest.main()

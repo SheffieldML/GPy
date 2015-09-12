@@ -30,20 +30,19 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.set_prior(prior)
         m.theta.unconstrain()
         m.theta.constrain(trans)
-        theta_s = prior.rvs(1e5)
-        if kde:
-            # The PDF of the transformed variables
-            p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
-            # To the empirical PDF of:
-            phi_s = trans.finv(theta_s)
-            # which is essentially a kernel density estimation
-            kde = st.gaussian_kde(phi_s)
-            # We will compare the PDF here:
-            phi = np.linspace(phi_s.min(), phi_s.max(), 100)
-            # The transformed PDF of phi should be this:
-            pdf_phi = np.array([p_phi(p) for p in phi])
-            # The following test cannot be very accurate
-            self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
+        # The PDF of the transformed variables
+        p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
+        # To the empirical PDF of:
+        phi_s = trans.finv(theta_s)
+        # which is essentially a kernel density estimation
+        kde = st.gaussian_kde(phi_s)
+        # We will compare the PDF here:
+        phi = np.linspace(phi_s.min(), phi_s.max(), 100)
+        # The transformed PDF of phi should be this:
+        pdf_phi = np.array([p_phi(p) for p in phi])
+        # The following test cannot be very accurate
+        self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
+        theta_s = prior.rvs(1e6)
         # UNCOMMENT TO SEE GRAPHICAL COMPARISON
         #import matplotlib.pyplot as plt
         #fig, ax = plt.subplots()
@@ -56,10 +55,8 @@ class RVTransformationTestCase(unittest.TestCase):
         #plt.show(block=True)
         # END OF PLOT
         # Check the gradients at a few random points
-        np.random.seed(5)
-        for i in range(5):
-            #m.theta = theta_s[i]
-            m.randomize()
+        for i in range(10):
+            m.theta = theta_s[i]
             self.assertTrue(m.checkgrad(verbose=True))
 
     def test_Logexp(self):

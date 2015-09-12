@@ -30,7 +30,7 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.set_prior(prior)
         m.theta.unconstrain()
         m.theta.constrain(trans)
-        theta_s = prior.rvs(1e5)
+        theta_s = prior.rvs(1e6)
         if kde:
             # The PDF of the transformed variables
             p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])

@@ -33,6 +33,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The PDF of the transformed variables
         p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
         # To the empirical PDF of:
+        theta_s = prior.rvs(1e6)
         phi_s = trans.finv(theta_s)
         # which is essentially a kernel density estimation
         kde = st.gaussian_kde(phi_s)
@@ -42,7 +43,6 @@ class RVTransformationTestCase(unittest.TestCase):
         pdf_phi = np.array([p_phi(p) for p in phi])
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
-        theta_s = prior.rvs(1e6)
         # UNCOMMENT TO SEE GRAPHICAL COMPARISON
         #import matplotlib.pyplot as plt
         #fig, ax = plt.subplots()

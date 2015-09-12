@@ -14,6 +14,10 @@ os:
 #      - libatlas-base-dev
 #      - liblapack-dev
 
+cache:
+  directories:
+    - $HOME/miniconda/
+
 env:
   - PYTHON_VERSION=2.7
   - PYTHON_VERSION=3.3

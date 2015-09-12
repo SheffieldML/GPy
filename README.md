@@ -10,8 +10,8 @@ A Gaussian processes framework in Python.
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 
 ### Continuous integration:
-- *master*: ![CI status](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)
-- *devel*: ![CI status](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)
+|**master**| ![CI status](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)|
+|**devel** | ![CI status](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel) |
 
 ### Avalability
 

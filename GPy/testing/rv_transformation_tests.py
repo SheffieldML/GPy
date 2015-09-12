@@ -63,7 +63,13 @@ class RVTransformationTestCase(unittest.TestCase):
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
         self._test_trans(GPy.constraints.Exponent())
-
+        self._test_trans(GPy.constraints.LogexpNeg())
+        self._test_trans(GPy.constraints.NegativeLogexp())
+        self._test_trans(GPy.constraints.LogexpClipped())
+        self._test_trans(GPy.constraints.NegativeExponent())
+        self._test_trans(GPy.constraints.LogexpNeg())
+        self._test_trans(GPy.constraints.Square())
+        self._test_trans(GPy.constraints.Logistic())
 
 if __name__ == '__main__':
     unittest.main()

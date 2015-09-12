@@ -56,8 +56,10 @@ class RVTransformationTestCase(unittest.TestCase):
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
+        print(theta_s.min(), theta_s.max()
         for i in range(5):
-            m.theta = np.random.uniform(1e-5, 1e-3)
+            print(theta_s[i])
+            m.theta = theta_s[i]
             self.assertTrue(m.checkgrad(verbose=True))
 
     def test_Logexp(self):

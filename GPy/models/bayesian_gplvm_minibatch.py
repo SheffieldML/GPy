@@ -81,11 +81,6 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         """Get the gradients of the posterior distribution of X in its specific form."""
         return X.mean.gradient, X.variance.gradient
 
-    def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, **kw):
-        posterior, log_marginal_likelihood, grad_dict = super(BayesianGPLVMMiniBatch, self)._inner_parameters_changed(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm, dL_dKmm=dL_dKmm,
-                                                                                                                    psi0=psi0, psi1=psi1, psi2=psi2, **kw)
-        return posterior, log_marginal_likelihood, grad_dict
-
     def _outer_values_update(self, full_values):
         """
         Here you put the values, which were collected before in the right places.

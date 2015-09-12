@@ -9,7 +9,6 @@ import numpy as np
 import scipy.stats as st
 import GPy
 
-
 class TestModel(GPy.core.Model):
     """
     A simple GPy model with one parameter.
@@ -34,7 +33,8 @@ class RVTransformationTestCase(unittest.TestCase):
         # The PDF of the transformed variables
         p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
         # To the empirical PDF of:
-        theta_s = prior.rvs(1e6)
+        np.random.seed(12345)
+        theta_s = prior.rvs(5e5)
         phi_s = trans.finv(theta_s)
         # which is essentially a kernel density estimation
         kde = st.gaussian_kde(phi_s)

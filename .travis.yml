@@ -6,13 +6,13 @@ os:
 
 language: python
 
-addons:
-  apt:
-    packages:
-      - gfortran
-      - libatlas-dev
-      - libatlas-base-dev
-      - liblapack-dev
+#addons:
+#  apt:
+#    packages:
+#      - gfortran
+#      - libatlas-dev
+#      - libatlas-base-dev
+#      - liblapack-dev
 
 python:
   - 2.7

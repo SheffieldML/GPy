@@ -30,9 +30,12 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
+  - echo $PATH
 #  - conda update --yes conda
   
 install:
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - echo $PATH
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
 

@@ -1,5 +1,9 @@
 sudo: false
 
+os:
+  - linux
+  - osx
+  
 language: python
 
 addons:
@@ -21,7 +25,7 @@ before_install:
   - df -h
   - ulimit -a
   - pip install -U pip wheel setuptools
-  - pip install numpy cython nose six matplotlib
+  - pip install numpy nose six
   - pip install -v -U scipy
   - python -V
 

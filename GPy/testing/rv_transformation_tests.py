@@ -30,8 +30,7 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.set_prior(prior)
         m.theta.unconstrain()
         m.theta.constrain(trans)
-        np.random.seed(1234)
-        theta_s = prior.rvs(5e5)
+        theta_s = prior.rvs(1e6)
         if kde:
             # The PDF of the transformed variables
             p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
@@ -58,7 +57,8 @@ class RVTransformationTestCase(unittest.TestCase):
         # END OF PLOT
         # Check the gradients at a few random points
         for i in range(5):
-            m.theta = i+1.
+            m.theta = theta_s[i]
+            m.unset_prior()
             self.assertTrue(m.checkgrad(verbose=True))
 
     def test_Logexp(self):

@@ -56,7 +56,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
-        print(theta_s.min(), theta_s.max()
+        print(theta_s.min(), theta_s.max())
         for i in range(5):
             print(theta_s[i])
             m.theta = theta_s[i]

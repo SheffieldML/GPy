@@ -67,26 +67,26 @@ class RVTransformationTestCase(unittest.TestCase):
     def test_Exponent(self):
         self._test_trans(GPy.constraints.Exponent())
 
-    def test_Logexpneg(self):
-        self._test_trans(GPy.constraints.LogexpNeg(False))
+    # def test_Logexpneg(self):
+    #     self._test_trans(GPy.constraints.LogexpNeg(False))
 
-    def test_neglogexp(self):
-        self._test_trans(GPy.constraints.NegativeLogexp(False))
+    # def test_neglogexp(self):
+    #     self._test_trans(GPy.constraints.NegativeLogexp(False))
 
-    def test_logexpclipped(self):
-        self._test_trans(GPy.constraints.LogexpClipped())
+    # def test_logexpclipped(self):
+    #     self._test_trans(GPy.constraints.LogexpClipped())
 
-    def test_NegExp(self):
-        self._test_trans(GPy.constraints.NegativeExponent(False))
+    # def test_NegExp(self):
+    #     self._test_trans(GPy.constraints.NegativeExponent(False))
 
-    def test_logexpNeg(self):
-        self._test_trans(GPy.constraints.LogexpNeg(False))
+    # def test_logexpNeg(self):
+    #     self._test_trans(GPy.constraints.LogexpNeg(False))
 
-    def test_Square(self):
-        self._test_trans(GPy.constraints.Square(False))
+    # def test_Square(self):
+    #     self._test_trans(GPy.constraints.Square(False))
 
-    def test_logistic(self):
-        self._test_trans(GPy.constraints.Logistic(False))
+    # def test_logistic(self):
+    #     self._test_trans(GPy.constraints.Logistic(False))
 
 if __name__ == '__main__':
     unittest.main()

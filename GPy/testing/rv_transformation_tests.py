@@ -25,7 +25,7 @@ class TestModel(GPy.core.Model):
 class RVTransformationTestCase(unittest.TestCase):
 
     def _test_trans(self, trans):
-        m = TestModel(trans.name)
+        m = TestModel(trans.__class__.__name__)
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.unconstrain()

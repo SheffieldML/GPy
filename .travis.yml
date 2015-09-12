@@ -21,11 +21,11 @@ env:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
-    else;
-      exit 1
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh;
+    else
+      exit 1;
     fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b

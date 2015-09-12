@@ -56,9 +56,9 @@ class RVTransformationTestCase(unittest.TestCase):
         #plt.show(block=True)
         # END OF PLOT
         # Check the gradients at a few random points
-        np.random.seed(12345)
+        #np.random.seed(12345)
         for i in range(5):
-            m.randomize()
+            m.theta = theta_s[i]
             self.assertTrue(m.checkgrad(verbose=True))
 
     def test_Logexp(self):

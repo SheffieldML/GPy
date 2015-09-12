@@ -17,6 +17,7 @@ os:
 # cache:
 #   directories:
 #     - $HOME/miniconda/
+#     - $HOME/.cache/pip
 
 env:
   - PYTHON_VERSION=2.7
@@ -57,7 +58,3 @@ before_script:
    
 script:
   - nosetests GPy.testing
-
-cache:
-  directories:
-    - $HOME/.cache/pip

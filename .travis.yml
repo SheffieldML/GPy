@@ -14,20 +14,25 @@ os:
 #      - libatlas-base-dev
 #      - liblapack-dev
 
-python:
-  - 2.7
-  - 3.3
-  - 3.4
+env:
+  - PYTHON_VERSION=2.7
+  - PYTHON_VERSION=3.3
+  - PYTHON_VERSION=3.4
 
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  if [$TRAVIS_OS_NAME -eq linux]
+  then
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  elif [$TRAVIS_OS_NAME -eq osx]
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+  fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
 #  - conda update --yes conda
   
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
+  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
   - pip install .
 
 before_script:

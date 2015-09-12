@@ -13,8 +13,8 @@ class TestModel(GPy.core.Model):
     """
     A simple GPy model with one parameter.
     """
-    def __init__(self):
-        GPy.core.Model.__init__(self, 'test_model')
+    def __init__(self, name):
+        GPy.core.Model.__init__(self, name)
         theta = GPy.core.Param('theta', 1.)
         self.link_parameter(theta)
 
@@ -25,7 +25,7 @@ class TestModel(GPy.core.Model):
 class RVTransformationTestCase(unittest.TestCase):
 
     def _test_trans(self, trans):
-        m = TestModel()
+        m = TestModel(trans.name)
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.unconstrain()

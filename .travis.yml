@@ -44,8 +44,8 @@ before_install:
     fi;
   - if [ ! -d $HOME/download/ ]; then mkdir $HOME/download/; fi;
   - if [ ! -d $HOME/install/ ]; then mkdir $HOME/install/; fi;
-  - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION.sh
-  - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE
+  - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION
+  - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE.sh
   - export MINICONDA_INSTALL=$HOME/install/$MINICONDA_FILE
   - if [ ! -f $MINCONDA_CACHE_FILE ]; then
       export CONDA_CACHED=0;
@@ -53,7 +53,7 @@ before_install:
       chmod +x $MINCONDA_CACHE_FILE;
       bash $MINCONDA_CACHE_FILE -b -p $MINICONDA_INSTALL;
     fi;
-  - export PATH="$MINICONDA_INSTALL/bin:$PATH"
+  - export PATH="$MINICONDA_INSTALL/bin:$PATH";
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
   - python -V
   

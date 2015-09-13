@@ -47,6 +47,7 @@ before_install:
       export PATH="$HOME/miniconda/bin:$PATH";
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
+      export PATH="$HOME/miniconda/bin:$PATH";
       conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     fi;
    

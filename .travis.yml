@@ -25,7 +25,7 @@ env:
 
 before_install:
   - if [ ! -d $HOME/miniconda ]; then
-      export CONDA_CACHED=1;
+      export CONDA_CACHED=0;
       if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
         export OS=Linux;
       elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -47,7 +47,7 @@ before_install:
       ./miniconda.sh -b -p $HOME/miniconda;
     fi;
   - export PATH="$HOME/miniconda/bin:$PATH";
-  - if [ -z $CONDA_CACHED ]; then
+  - if [ ! -z $CONDA_CACHED ]; then
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
       conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;

@@ -54,7 +54,7 @@ before_install:
 #  - conda update --yes conda
   
 install:
-  - echo $CONDA_CACHED
+  - echo $PATH
   - if [[ $CONDA_CACHED == 0 ]]; then
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else

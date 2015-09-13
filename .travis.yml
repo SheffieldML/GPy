@@ -54,10 +54,10 @@ before_install:
       bash $MINCONDA_CACHE_FILE -b -p $MINICONDA_INSTALL;
     fi;
   - export PATH="$MINICONDA_INSTALL/bin:$PATH"
-  
-install:
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
   - python -V
+  
+install:
   - pip install --upgrade .
 
 before_script:

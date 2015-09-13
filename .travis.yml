@@ -21,9 +21,9 @@ cache:
 
 env:
   - PYTHON_VERSION=2.7
-  - PYTHON_VERSION=3.3
-  - PYTHON_VERSION=3.4
-  - PYTHON_VERSION=3.5
+#  - PYTHON_VERSION=3.3
+#  - PYTHON_VERSION=3.4
+#  - PYTHON_VERSION=3.5
 
 before_install:
   - export CONDA_CACHED=1
@@ -51,7 +51,6 @@ before_install:
   - if [ ! -f $MINCONDA_CACHE_FILE ]; then
       export CONDA_CACHED=0;
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $MINCONDA_CACHE_FILE;
-      chmod +x $MINCONDA_CACHE_FILE;
       bash $MINCONDA_CACHE_FILE -b -p $MINICONDA_INSTALL;
     fi;
   - export PATH="$MINICONDA_INSTALL/bin:$PATH";

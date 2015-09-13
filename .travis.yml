@@ -50,7 +50,7 @@ before_install:
     fi;
   - echo $PATH
   - ls $HOME/miniconda/bin
-  - alias conda=$HOME/miniconda/bin/conda
+  - export PATH="$HOME/miniconda/bin/conda:$PATH"
 #  - conda update --yes conda
   
 install:

@@ -47,9 +47,9 @@ before_install:
       chmod +x miniconda.sh;
       ./miniconda.sh -b -p $HOME/miniconda;
     fi;
-  - export PATH="$HOME/miniconda/bin:$PATH";
   - echo $PATH
   - ls $HOME/miniconda/bin
+  - alias conda=$HOME/miniconda/bin/conda
 #  - conda update --yes conda
   
 install:

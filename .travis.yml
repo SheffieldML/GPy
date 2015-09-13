@@ -14,10 +14,9 @@ os:
 #      - libatlas-base-dev
 #      - liblapack-dev
 
-# cache:
-#   directories:
-#     - $HOME/miniconda/
-#     - $HOME/.cache/pip
+cache:
+  directories:
+     - $HOME/miniconda/
 
 env:
   - PYTHON_VERSION=2.7
@@ -25,31 +24,35 @@ env:
   - PYTHON_VERSION=3.4
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      export OS=Linux;
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      export OS=MacOSX;
+  - if [ ! -d "~/miniconda" ]; then
+      if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        export OS=Linux;
+      elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+        export OS=MacOSX;
+      else
+        echo "OS not supported yet";
+        exit 1;
+      fi
+      if [[ $PYTHON_VERSION == "2.7" ]]; then
+        export MINICONDA=Miniconda;
+      elif [[ $PYTHON_VERSION == 3* ]]; then
+        export MINICONDA=Miniconda3;
+      else
+        echo "Could not find python version";
+        exit 1;
+      fi
+      wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O miniconda.sh;
+      chmod +x miniconda.sh;
+      ./miniconda.sh -b -p $HOME/miniconda;
+      export PATH="$HOME/miniconda/bin:$PATH";
+      conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
-      echo "OS not supported yet";
-      exit 1;
-    fi
-  - if [[ $PYTHON_VERSION == "2.7" ]]; then
-      export MINICONDA=Miniconda;
-    elif [[ $PYTHON_VERSION == 3* ]]; then
-      export MINICONDA=Miniconda3;
-    else
-      echo "Could not find python version";
-      exit 1;
-    fi
-  - wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O miniconda.sh;
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+      conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
+   
 #  - conda update --yes conda
   
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six
-  - pip install .
+  - pip install --upgrade .
 
 before_script:
   - cd $HOME

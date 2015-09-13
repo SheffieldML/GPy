@@ -57,13 +57,13 @@ class RVTransformationTestCase(unittest.TestCase):
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
         checks_failes = 0.
-        checks = 40.
+        checks = 40
         for i in range(checks):
             m.theta = theta_s[i]
             print(m.theta, m.optimizer_array, m.param_array)
             if not m.checkgrad(1):
                 checks_failes += 1.
-        self.assertTrue(checks_failed/checks > .5)
+        self.assertTrue(checks_failed/float(checks) > .7)
             
             
     def test_Logexp(self):

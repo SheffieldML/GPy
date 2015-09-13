@@ -23,27 +23,28 @@ env:
   - PYTHON_VERSION=2.7
   - PYTHON_VERSION=3.3
   - PYTHON_VERSION=3.4
+  - PYTHON_VERSION=3.5
 
 before_install:
   - export CONDA_CACHED=1
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      export OS=Linux;
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      export OS=MacOSX;
+    else
+      echo "OS not supported yet";
+      exit 1;
+    fi;
+  - if [[ $PYTHON_VERSION == "2.7" ]]; then
+      export MINICONDA=Miniconda;
+    elif [[ $PYTHON_VERSION == 3* ]]; then
+      export MINICONDA=Miniconda3;
+    else
+      echo "Could not find python version";
+      exit 1;
+    fi;
   - if [ ! -f download/$MINICONDA-latest-$OS-x86_64.sh ]; then
       export CONDA_CACHED=0;
-      if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-        export OS=Linux;
-      elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-        export OS=MacOSX;
-      else
-        echo "OS not supported yet";
-        exit 1;
-      fi;
-      if [[ $PYTHON_VERSION == "2.7" ]]; then
-        export MINICONDA=Miniconda;
-      elif [[ $PYTHON_VERSION == 3* ]]; then
-        export MINICONDA=Miniconda3;
-      else
-        echo "Could not find python version";
-        exit 1;
-      fi;
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $HOME/download/$MINICONDA-latest-$OS-x86_64.sh;
       chmod +x $HOME/download/$MINICONDA-latest-$OS-x86_64.sh;
       bash $HOME/download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/install/$MINICONDA-latest-$OS-x86_64/;

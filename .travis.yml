@@ -48,6 +48,7 @@ before_install:
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
       conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
+    fi;
    
 #  - conda update --yes conda
   

@@ -32,7 +32,7 @@ before_install:
       else
         echo "OS not supported yet";
         exit 1;
-      fi
+      fi;
       if [[ $PYTHON_VERSION == "2.7" ]]; then
         export MINICONDA=Miniconda;
       elif [[ $PYTHON_VERSION == 3* ]]; then
@@ -40,7 +40,7 @@ before_install:
       else
         echo "Could not find python version";
         exit 1;
-      fi
+      fi;
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O miniconda.sh;
       chmod +x miniconda.sh;
       ./miniconda.sh -b -p $HOME/miniconda;

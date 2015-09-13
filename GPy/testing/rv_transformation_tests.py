@@ -61,7 +61,7 @@ class RVTransformationTestCase(unittest.TestCase):
         for i in range(checks):
             m.theta = theta_s[i]
             print(m.theta, m.optimizer_array, m.param_array)
-            if not m.checkgrad():
+            if not m.checkgrad(1):
                 checks_failes += 1.
         self.assertTrue(checks_failed/checks > .5)
             

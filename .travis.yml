@@ -24,6 +24,7 @@ env:
   - PYTHON_VERSION=3.4
 
 before_install:
+  - export CONDA_CACHED=1
   - if [ ! -d $HOME/miniconda ]; then
       export CONDA_CACHED=0;
       if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -50,7 +51,7 @@ before_install:
 #  - conda update --yes conda
   
 install:
-  - if [ ! -z $CONDA_CACHED ]; then
+  - if [[ $CONDA_CACHED == 0 ]]; then
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
       conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;

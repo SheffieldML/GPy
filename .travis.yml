@@ -43,8 +43,8 @@ before_install:
       echo "Could not find python version";
       exit 1;
     fi;
-  - if [! -d $HOME/download/]; then mkdir $HOME/download/; fi;
-  - if [! -d $HOME/install/]; then mkdir $HOME/install/; fi;
+  - if [ ! -d $HOME/download/ ]; then mkdir $HOME/download/; fi;
+  - if [ ! -d $HOME/install/ ]; then mkdir $HOME/install/; fi;
   - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION.sh
   - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE
   - export MINICONDA_INSTALL=$HOME/install/$MINICONDA_FILE

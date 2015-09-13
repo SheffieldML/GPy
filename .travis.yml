@@ -44,9 +44,9 @@ before_install:
         echo "Could not find python version";
         exit 1;
       fi;
-      wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O download/$MINICONDA-latest-$OS-x86_64.sh;
-      chmod +x download/$MINICONDA-latest-$OS-x86_64.sh;
-      ./download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/install/$MINICONDA-latest-$OS-x86_64/;
+      wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $HOME/download/$MINICONDA-latest-$OS-x86_64.sh;
+      chmod +x $HOME/download/$MINICONDA-latest-$OS-x86_64.sh;
+      bash $HOME/download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/install/$MINICONDA-latest-$OS-x86_64/;
     fi;
   - export PATH="$HOME/install/$MINICONDA-latest-$OS-x86_64/bin:$PATH"
   

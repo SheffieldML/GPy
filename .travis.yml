@@ -45,6 +45,7 @@ before_install:
       fi;
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O miniconda.sh;
       chmod +x miniconda.sh;
+      rm -r $HOME/miniconda;
       ./miniconda.sh -b -p $HOME/miniconda;
     fi;
   - echo $PATH

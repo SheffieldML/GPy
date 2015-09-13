@@ -65,7 +65,7 @@ class RVTransformationTestCase(unittest.TestCase):
                 self.assertTrue(m.checkgrad(1))
 
     def test_Logexp(self):
-        raise self.SkipTest("Test failes randomly on python 2 and 3? O_o")
+        raise unittest.SkipTest("Test failes randomly on python 2 and 3? O_o")
         self._test_trans(GPy.constraints.Logexp())
         
     def test_Exponent(self):

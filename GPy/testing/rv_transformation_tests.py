@@ -64,7 +64,7 @@ class RVTransformationTestCase(unittest.TestCase):
             if not m.checkgrad():
                 checks_failed += 1.
                 m.checkgrad(1)
-        self.assertTrue(checks_failed/float(checks) > .7)
+        self.assertTrue(checks_failed/float(checks) <= .3)
             
             
     def test_Logexp(self):

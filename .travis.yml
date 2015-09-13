@@ -17,6 +17,7 @@ os:
 cache:
   directories:
      - $HOME/download/
+     - $HOME/install/
 
 env:
   - PYTHON_VERSION=2.7
@@ -46,18 +47,11 @@ before_install:
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O download/$MINICONDA-latest-$OS-x86_64.sh;
       chmod +x download/$MINICONDA-latest-$OS-x86_64.sh;
       rm -r $HOME/miniconda;
-      ./download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/miniconda;
+      ./download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/install/$MINICONDA-latest-$OS-x86_64/;
     fi;
-  - echo $PATH
-  - ls $HOME/miniconda/bin
-  - export PATH="$HOME/miniconda/bin:$PATH"
-#  - conda update --yes conda
-# else
-    #   conda update python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
-    
+  - export PATH="$HOME/install/$MINICONDA-latest-$OS-x86_64/bin:$PATH"
   
 install:
-  - echo $PATH
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
   - python -V
   - pip install --upgrade .

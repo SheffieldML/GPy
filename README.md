@@ -1,6 +1,5 @@
 # GPy
 
-
 A Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
@@ -8,18 +7,30 @@ A Gaussian processes framework in Python.
 * [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * [Online documentation](https://gpy.readthedocs.org/en/latest/)
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
+* [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
-##### Continuous integration: 
+#### Continuous integration
 
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) |
+| ---: | :--: |
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) |
 
-|   master   |   devel   |
-| ---------- | --------- |
-| [![Build Status](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![Build Status](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) |
+<script>
+$.ajax({
+  url: "https://api.travis-ci.org/",
+  headers: { Accept: "application/vnd.travis-ci.2+json" },
+  success: function() { alert("it worked!") }
+});
+</script>
 
-### Avalability
+### Availability:
 
-Python 2.7 and 3.4, Windows, MacOSX, Linux
+Supported python versions: 2.7, 3.x
 
+-----
+[<img src="https://www.python.org/static/img/python-logo.png" height="40">](https://www.python.org/) [<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Windows_logo_-_2012.svg" height="40">](http://www.microsoft.com/en-gb/windows) [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height="40">](http://www.apple.com/osx/) [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height="40">](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
+
+-----
 ### Citation
 
     @Misc{gpy2014,
@@ -33,7 +44,7 @@ Python 2.7 and 3.4, Windows, MacOSX, Linux
 
 We like to pronounce it 'g-pie'.
 
-### Getting started: installing with pip
+### Getting started: installing with pip 
 
 We are now requiring the newest version (0.16) of 
 [scipy](http://www.scipy.org/) and thus, we strongly recommend using 
@@ -57,6 +68,12 @@ If you're having trouble installing GPy via `pip install GPy` here is a probable
     git checkout devel
     python3 setup.py build_ext --inplace
     nosetests3 GPy/testing
+
+### Direct downloads
+
+[![PyPI version](https://badge.fury.io/py/GPy.svg)](https://pypi.python.org/pypi/GPy) [![source](https://img.shields.io/badge/download-source-green.svg)](https://github.com/SheffieldML/GPy/releases/latest)
+[![Windows](https://img.shields.io/badge/download-windows-orange.svg)](https://github.com/SheffieldML/GPy/releases/latest)
+[![MacOSX](https://img.shields.io/badge/download-macosx-blue.svg)](https://github.com/SheffieldML/GPy/releases/latest)
 
 ### Ubuntu hackers
 

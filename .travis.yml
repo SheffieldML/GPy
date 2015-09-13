@@ -26,7 +26,7 @@ env:
 
 before_install:
   - export CONDA_CACHED=1
-  - if [ ! -d $HOME/miniconda/bin ]; then
+  - if [ ! -f download/$MINICONDA-latest-$OS-x86_64.sh ]; then
       export CONDA_CACHED=0;
       if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
         export OS=Linux;
@@ -46,7 +46,6 @@ before_install:
       fi;
       wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O download/$MINICONDA-latest-$OS-x86_64.sh;
       chmod +x download/$MINICONDA-latest-$OS-x86_64.sh;
-      rm -r $HOME/miniconda;
       ./download/$MINICONDA-latest-$OS-x86_64.sh -b -p $HOME/install/$MINICONDA-latest-$OS-x86_64/;
     fi;
   - export PATH="$HOME/install/$MINICONDA-latest-$OS-x86_64/bin:$PATH"

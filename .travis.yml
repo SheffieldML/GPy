@@ -47,14 +47,14 @@ before_install:
       ./miniconda.sh -b -p $HOME/miniconda;
     fi;
   - export PATH="$HOME/miniconda/bin:$PATH";
+#  - conda update --yes conda
+  
+install:
   - if [ ! -z $CONDA_CACHED ]; then
       conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     else
       conda upgrade python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
     fi;
-#  - conda update --yes conda
-  
-install:
   - pip install --upgrade .
 
 before_script:

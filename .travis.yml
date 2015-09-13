@@ -46,7 +46,7 @@ before_install:
   - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION.sh
   - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE
   - export MINICONDA_INSTALL=$HOME/install/$MINICONDA_FILE
-  - if [ ! -f download/$MINICONDA-latest-$OS-x86_64.sh ]; then
+  - if [ ! -f $MINCONDA_CACHE_FILE ]; then
       export CONDA_CACHED=0;
       wget -v http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $MINCONDA_CACHE_FILE;
       chmod +x $MINCONDA_CACHE_FILE;

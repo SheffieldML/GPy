@@ -59,7 +59,10 @@ class RVTransformationTestCase(unittest.TestCase):
         for i in range(5):
             m.theta = theta_s[i]
             print(m.theta, m.optimizer_array, m.param_array)
-            self.assertTrue(m.checkgrad(verbose=True))
+            try:
+                self.assertTrue(m.checkgrad())
+            except:
+                self.assertTrue(m.checkgrad(1))
 
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())

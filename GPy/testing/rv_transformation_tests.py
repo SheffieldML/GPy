@@ -56,7 +56,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
 
-    def _test_grad(self):
+    def _test_grad(self, trans):
         m = TestModel(np.random.uniform(.5, 1.5, 20))
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)
@@ -65,9 +65,11 @@ class RVTransformationTestCase(unittest.TestCase):
 
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
+        self._test_grad(GPy.constraints.Logexp())
         
     def test_Exponent(self):
         self._test_trans(GPy.constraints.Exponent())
+        self._test_grad(GPy.constraints.Exponent())
 
 
 if __name__ == '__main__':

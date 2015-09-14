@@ -62,6 +62,7 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.set_prior(prior)
         m.theta.constrain(trans)
         m.randomize()
+        print(m)
         self.assertTrue(m.checkgrad(1))
 
     def test_Logexp(self):

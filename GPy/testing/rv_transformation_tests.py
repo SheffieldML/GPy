@@ -57,6 +57,7 @@ class RVTransformationTestCase(unittest.TestCase):
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
 
     def _test_grad(self, trans):
+        np.random.seed(1234)
         m = TestModel(np.random.uniform(.5, 1.5, 20))
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)

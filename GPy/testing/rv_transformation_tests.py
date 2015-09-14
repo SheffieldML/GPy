@@ -14,9 +14,9 @@ class TestModel(GPy.core.Model):
     """
     A simple GPy model with one parameter.
     """
-    def __init__(self):
+    def __init__(self, theta=1.):
         GPy.core.Model.__init__(self, 'test_model')
-        theta = GPy.core.Param('theta', 1.)
+        theta = GPy.core.Param('theta', theta)
         self.link_parameter(theta)
 
     def log_likelihood(self):
@@ -55,18 +55,14 @@ class RVTransformationTestCase(unittest.TestCase):
         # END OF PLOT
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
-        # Check the gradients at a few random points
-        checks_failed = 0.
-        checks = 5
-        for i in range(checks):
-            m.theta = theta_s[i]
-            print(m.theta, m.optimizer_array, m.param_array)
-            if not m.checkgrad():
-                checks_failed += 1.
-                m.checkgrad(1)
-        self.assertTrue(checks_failed/float(checks) <= .3)
-            
-            
+
+    def _test_grad(self):
+        m = TestModel(np.random.uniform(.5, 1.5, 20))
+        prior = GPy.priors.LogGaussian(.5, 0.1)
+        m.theta.set_prior(prior)
+        m.theta.constrain(trans)
+        self.assertTrue(m.checkgrad())
+
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
         

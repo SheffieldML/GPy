@@ -1,6 +1,7 @@
 # #Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from matplotlib import pyplot as pb
+import numpy as np
 
 def ax_default(fignum, ax):
     if ax is None:

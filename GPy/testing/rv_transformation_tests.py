@@ -61,7 +61,8 @@ class RVTransformationTestCase(unittest.TestCase):
         prior = GPy.priors.LogGaussian(.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.constrain(trans)
-        self.assertTrue(m.checkgrad())
+        m.randomize()
+        self.assertTrue(m.checkgrad(1))
 
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())

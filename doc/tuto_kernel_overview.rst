@@ -13,9 +13,9 @@ First we import the libraries we will need ::
 
 For most kernels, the dimension is the only mandatory parameter to define a kernel object. However, it is also possible to specify the values of the parameters. For example, the three following commands are valid for defining a squared exponential kernel (ie rbf or Gaussian) ::
 
-    ker1 = GPy.kern.rbf(1)  # Equivalent to ker1 = GPy.kern.rbf(input_dim=1, variance=1., lengthscale=1.)
-    ker2 = GPy.kern.rbf(input_dim=1, variance = .75, lengthscale=2.)
-    ker3 = GPy.kern.rbf(1, .5, .5)
+    ker1 = GPy.kern.RBF(1)  # Equivalent to ker1 = GPy.kern.RBF(input_dim=1, variance=1., lengthscale=1.)
+    ker2 = GPy.kern.RBF(input_dim=1, variance = .75, lengthscale=2.)
+    ker3 = GPy.kern.RBF(1, .5, .5)
 
 A ``print`` and a ``plot`` functions are implemented to represent kernel objects. The commands ::
     
@@ -52,21 +52,18 @@ Operations to combine kernels
 
 In ``GPy``, kernel objects can be added or multiplied. In both cases, two kinds of operations are possible since one can assume that the kernels to add/multiply are defined on the same space or on different subspaces. In other words, it is possible to use two kernels :math:`k_1,\ k_2` over :math:`\mathbb{R} \times \mathbb{R}` to create 
 
-    * a kernel over :math:`\mathbb{R} \times \mathbb{R}`:  :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`
-    * a kernel over :math:`\mathbb{R}^2 \times \mathbb{R}^2`:  :math:`k(\mathbf{x},\mathbf{y}) = k_1(x_1,y_1) \times k_2(x_2,y_2)`
+    * a kernel over :math:`\mathbb{R} \times \mathbb{R}`:  :math:`k(x,y) = k_1(x,y) \times k_2(x,y)`.
 
-These two options are available in GPy using the flag ``tensor`` in the ``add`` and ``prod`` functions. Here is a quick example ::
+This is available in GPy via the ``add`` and ``prod`` functions. Here is a quick example ::
 
-    k1 = GPy.kern.rbf(1,1.,2.)
+    k1 = GPy.kern.RBF(1,1.,2.)
     k2 = GPy.kern.Matern32(1, 0.5, 0.2)
 
     # Product of kernels
-    k_prod = k1.prod(k2)                        # By default, tensor=False
-    k_prodtens = k1.prod(k2,tensor=True)
+    k_prod = k1.prod(k2)
 
     # Sum of kernels
-    k_add = k1.add(k2)                          # By default, tensor=False
-    k_addtens = k1.add(k2,tensor=True)    
+    k_add = k1.add(k2)
 
 ..  # plots
     pb.figure(figsize=(8,8))
@@ -75,23 +72,23 @@ These two options are available in GPy using the flag ``tensor`` in the ``add`` 
     pb.title('prod')
     pb.subplot(2,2,2)
     k_prodtens.plot()
-    pb.title('tensor prod')
+    pb.title('prod')
     pb.subplot(2,2,3)
     k_add.plot()
     pb.title('sum')
     pb.subplot(2,2,4)
     k_addtens.plot()
-    pb.title('tensor sum')
+    pb.title('sum')
     pb.subplots_adjust(wspace=0.3, hspace=0.3)
 
 .. figure::  Figures/tuto_kern_overview_multadd.png
     :align:  center
     :height: 500px
 
-A shortcut for ``add`` and ``prod`` (with default flag ``tensor=False``) is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
+A shortcut for ``add`` and ``prod`` is provided by the usual ``+`` and ``*`` operators. Here is another example where we create a periodic kernel with some decay ::
     
-    k1 = GPy.kern.rbf(1,1.,2)
-    k2 = GPy.kern.periodic_Matern52(1,variance=1e3, lengthscale=1, period = 1.5, lower=-5., upper = 5)
+    k1 = GPy.kern.RBF(1,1.,2)
+    k2 = GPy.kern.PeriodicMatern52(1,variance=1e3, lengthscale=1, period = 1.5, lower=-5., upper = 5)
 
     k = k1 * k2  # equivalent to k = k1.prod(k2)
     print k
@@ -116,14 +113,14 @@ A shortcut for ``add`` and ``prod`` (with default flag ``tensor=False``) is prov
 In general, ``kern`` objects can be seen as a sum of ``kernparts`` objects, where the later are covariance functions defined on the same space. For example, the following code ::
 
     k = (k1+k2)*(k1+k2)
-    print k.parts[0].name, '\n', k.parts[1].name, '\n', k.parts[2].name, '\n', k.parts[3].name
+    print k.parts[0].name, '\n', k.parts[1].name, '\n', k.parts[1].parts[0].name, '\n', k.parts[1].parts[1].name, '\n'
 
 returns ::
+  add_1 
+  add_2 
+  rbf 
+  periodic_Matern52 
 
-    rbf<times>rbf 
-    rbf<times>periodic_Mat52 
-    periodic_Mat52<times>rbf 
-    periodic_Mat52<times>periodic_Mat52
 
 Constraining the parameters
 ===========================
@@ -137,9 +134,9 @@ Various constrains can be applied to the parameters of a kernel
 
 When calling one of these functions, the parameters to constrain can either by specified by a regular expression that matches its name or by a number that corresponds to the rank of the parameter. Here is an example ::
 
-    k1 = GPy.kern.rbf(1)
+    k1 = GPy.kern.RBF(1)
     k2 = GPy.kern.Matern32(1)
-    k3 = GPy.kern.white(1)
+    k3 = GPy.kern.White(1)
 
     k = k1 + k2 + k3
     print k
@@ -182,9 +179,9 @@ In two dimensions ANOVA kernels have the following form:
 
 Let us assume that we want to define an ANOVA kernel with a Matern 3/2 kernel for :math:`k_i`. As seen previously, we can define this kernel as follows ::
 
-    k_cst = GPy.kern.bias(1,variance=1.)
-    k_mat = GPy.kern.Matern52(1,variance=1., lengthscale=3)
-    Kanova = (k_cst + k_mat).prod(k_cst + k_mat,tensor=True)
+    k_cst = GPy.kern.Bias(1,variance=1.)
+    k_mat = GPy.kern.Matern52(1,variance=1.,lengthscale=3)
+    Kanova = (k_cst + k_mat).prod(k_cst + k_mat)
     print Kanova
 
 Printing the resulting kernel outputs the following ::
@@ -257,17 +254,17 @@ The submodels can be represented with the option ``which_function`` of ``plot``:
     import GPy
     pb.ion()
 
-    ker1 = GPy.kern.rbf(D=1)  # Equivalent to ker1 = GPy.kern.rbf(D=1, variance=1., lengthscale=1.)
-    ker2 = GPy.kern.rbf(D=1, variance = .75, lengthscale=3.)
-    ker3 = GPy.kern.rbf(1, .5, .25)
+    ker1 = GPy.kern.RBF(D=1)  # Equivalent to ker1 = GPy.kern.RBF(D=1, variance=1., lengthscale=1.)
+    ker2 = GPy.kern.RBF(D=1, variance = .75, lengthscale=3.)
+    ker3 = GPy.kern.RBF(1, .5, .25)
 
     ker1.plot()
     ker2.plot()
     ker3.plot()
     #pb.savefig("Figures/tuto_kern_overview_basicdef.png")
 
-    kernels = [GPy.kern.rbf(1), GPy.kern.exponential(1), GPy.kern.Matern32(1), GPy.kern.Matern52(1),  GPy.kern.Brownian(1), GPy.kern.bias(1), GPy.kern.linear(1), GPy.kern.spline(1), GPy.kern.periodic_exponential(1), GPy.kern.periodic_Matern32(1), GPy.kern.periodic_Matern52(1), GPy.kern.white(1)]
-    kernel_names = ["GPy.kern.rbf", "GPy.kern.exponential", "GPy.kern.Matern32", "GPy.kern.Matern52", "GPy.kern.Brownian", "GPy.kern.bias", "GPy.kern.linear", "GPy.kern.spline", "GPy.kern.periodic_exponential", "GPy.kern.periodic_Matern32", "GPy.kern.periodic_Matern52", "GPy.kern.white"]
+    kernels = [GPy.kern.RBF(1), GPy.kern.Exponential(1), GPy.kern.Matern32(1), GPy.kern.Matern52(1),  GPy.kern.Brownian(1), GPy.kern.Bias(1), GPy.kern.Linear(1), GPy.kern.PeriodicExponential(1), GPy.kern.PeriodicMatern32(1), GPy.kern.PeriodicMatern52(1), GPy.kern.White(1)]
+    kernel_names = ["GPy.kern.RBF", "GPy.kern.Exponential", "GPy.kern.Matern32", "GPy.kern.Matern52", "GPy.kern.Brownian", "GPy.kern.Bias", "GPy.kern.Linear", "GPy.kern.PeriodicExponential", "GPy.kern.PeriodicMatern32", "GPy.kern.PeriodicMatern52", "GPy.kern.White"]
     
     pb.figure(figsize=(16,12))
     pb.subplots_adjust(wspace=.5, hspace=.5)

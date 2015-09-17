@@ -1,11 +1,14 @@
 # Copyright James Hensman and Max Zwiessele 2014, 2015
-# Licensed under the GNU GPL version 3.0
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
 from . import linalg
 from .config import config
-
-from . import choleskies_cython
+try:
+    from . import choleskies_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
 def safe_root(N):
     i = np.sqrt(N)

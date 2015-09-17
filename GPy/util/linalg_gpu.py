@@ -61,12 +61,5 @@ try:
 except:
     pass
 
-try:
-    import scikits.cuda.linalg as culinalg
-    from scikits.cuda import cublas
-    from scikits.cuda.cula import culaExceptions
-except:
-    pass
-
     
     

@@ -145,5 +145,7 @@ class Poisson(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
+        # Ysim = np.random.poisson(self.gp_link.transf(gp), [samples, gp.size]).T
+        # return Ysim.reshape(orig_shape+(samples,))
         Ysim = np.random.poisson(self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)

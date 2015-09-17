@@ -77,7 +77,7 @@ def student_t_approx(optimize=True, plot=True):
     debug=True
     if debug:
         m4.optimize(messages=1)
-        import pylab as pb
+        from matplotlib import pyplot as pb
         pb.plot(m4.X, m4.inference_method.f_hat)
         pb.plot(m4.X, m4.Y, 'rx')
         m4.plot()

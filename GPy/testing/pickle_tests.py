@@ -20,6 +20,8 @@ from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 from functools import reduce
+from GPy.util.caching import Cacher
+from pickle import PicklingError
 
 def toy_model():
     X = np.linspace(0,1,50)[:, None]
@@ -205,23 +207,6 @@ class Test(ListDictTestCase):
     def _callback(self, what, which):
         what.count += 1
 
-    @unittest.skip
-    def test_add_observer(self):
-        par = toy_model()
-        par.name = "original"
-        par.count = 0
-        par.add_observer(self, self._callback, 1)
-        pcopy = GPRegression(par.X.copy(), par.Y.copy(), kernel=par.kern.copy())
-        self.assertNotIn(par.observers[0], pcopy.observers)
-        pcopy = par.copy()
-        pcopy.name = "copy"
-        self.assertTrue(par.checkgrad())
-        self.assertTrue(pcopy.checkgrad())
-        self.assertTrue(pcopy.kern.checkgrad())
-        import ipdb;ipdb.set_trace()
-        self.assertIn(par.observers[0], pcopy.observers)
-        self.assertEqual(par.count, 3)
-        self.assertEqual(pcopy.count, 6) # 3 of each call to checkgrad
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_parameter_index_operations']

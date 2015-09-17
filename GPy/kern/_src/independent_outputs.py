@@ -105,7 +105,7 @@ class IndependentOutputs(CombinationKernel):
         if X2 is None:
             # TODO: make use of index_to_slices
             # FIXME: Broken as X is already sliced out
-            print("Warning, gradients_X may not be working, I believe X has already been sliced out by the slicer!")
+            # print("Warning, gradients_X may not be working, I believe X has already been sliced out by the slicer!")
             values = np.unique(X[:,self.index_dim])
             slices = [X[:,self.index_dim]==i for i in values]
             [target.__setitem__(s, kern.gradients_X(dL_dK[s,s],X[s],None))

@@ -49,7 +49,7 @@ class SparseGP(GP):
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")
-            print("defaulting to ", inference_method, "for latent function inference")
+            print(("defaulting to ", inference_method, "for latent function inference"))
 
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
@@ -59,6 +59,10 @@ class SparseGP(GP):
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
         self.posterior = None
+
+    @property
+    def _predictive_variable(self):
+        return self.Z
 
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
@@ -114,63 +118,66 @@ class SparseGP(GP):
         Make a prediction for the latent function values.
 
         For certain inputs we give back a full_cov of shape NxN,
-        if there is missing data, each dimension has its own full_cov of shape NxNxD, and if full_cov is of, 
+        if there is missing data, each dimension has its own full_cov of shape NxNxD, and if full_cov is of,
         we take only the diagonal elements across N.
-        
-        For uncertain inputs, the SparseGP bound produces a full covariance structure across D, so for full_cov we 
-        return a NxDxD matrix and in the not full_cov case, we return the diagonal elements across D (NxD).
-        This is for both with and without missing data. See for missing data SparseGP implementation py:class:'~GPy.models.sparse_gp_minibatch.SparseGPMiniBatch'.
+
+        For uncertain inputs, the SparseGP bound produces cannot predict the full covariance matrix full_cov for now.
+        The implementation of that will follow. However, for each dimension the
+        covariance changes, so if full_cov is False (standard), we return the variance
+        for each dimension [NxD].
         """
 
         if kern is None: kern = self.kern
 
         if not isinstance(Xnew, VariationalPosterior):
-            Kx = kern.K(self.Z, Xnew)
-            mu = np.dot(Kx.T, self.posterior.woodbury_vector)
-            if full_cov:
-                Kxx = kern.K(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
-                    for i in range(var.shape[2]):
-                        var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
-                var = var
-            else:
-                Kxx = kern.Kdiag(Xnew)
-                if self.posterior.woodbury_inv.ndim == 2:
-                    var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
-                elif self.posterior.woodbury_inv.ndim == 3:
-                    var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
-                    for i in range(var.shape[1]):
-                        var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
-                var = var
-            #add in the mean function
-            if self.mean_function is not None:
-                mu += self.mean_function.f(Xnew)
+            # Kx = kern.K(self._predictive_variable, Xnew)
+            # mu = np.dot(Kx.T, self.posterior.woodbury_vector)
+            # if full_cov:
+            #     Kxx = kern.K(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[2]):
+            #             var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
+            #     var = var
+            # else:
+            #     Kxx = kern.Kdiag(Xnew)
+            #     if self.posterior.woodbury_inv.ndim == 2:
+            #         var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
+            #     elif self.posterior.woodbury_inv.ndim == 3:
+            #         var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
+            #         for i in range(var.shape[1]):
+            #             var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+            #     var = var
+            # #add in the mean function
+            # if self.mean_function is not None:
+            #     mu += self.mean_function.f(Xnew)
+            mu, var = super(SparseGP, self)._raw_predict(Xnew, full_cov, kern)
         else:
-            psi0_star = kern.psi0(self.Z, Xnew)
-            psi1_star = kern.psi1(self.Z, Xnew)
+            psi0_star = kern.psi0(self._predictive_variable, Xnew)
+            psi1_star = kern.psi1(self._predictive_variable, Xnew)
             #psi2_star = kern.psi2(self.Z, Xnew) # Only possible if we get NxMxM psi2 out of the code.
             la = self.posterior.woodbury_vector
             mu = np.dot(psi1_star, la) # TODO: dimensions?
-            
-            if full_cov: 
+
+            if full_cov:
+                raise NotImplementedError("Full covariance for Sparse GP predicted with uncertain inputs not implemented yet.")
                 var = np.empty((Xnew.shape[0], la.shape[1], la.shape[1]))
                 di = np.diag_indices(la.shape[1])
-            else: 
+            else:
                 var = np.empty((Xnew.shape[0], la.shape[1]))
-                
+
             for i in range(Xnew.shape[0]):
                 _mu, _var = Xnew.mean.values[[i]], Xnew.variance.values[[i]]
-                psi2_star = kern.psi2(self.Z, NormalPosterior(_mu, _var))
+                psi2_star = kern.psi2(self._predictive_variable, NormalPosterior(_mu, _var))
                 tmp = (psi2_star[:, :] - psi1_star[[i]].T.dot(psi1_star[[i]]))
 
                 var_ = mdot(la.T, tmp, la)
                 p0 = psi0_star[i]
                 t = np.atleast_3d(self.posterior.woodbury_inv)
                 t2 = np.trace(t.T.dot(psi2_star), axis1=1, axis2=2)
-                
+
                 if full_cov:
                     var_[di] += p0
                     var_[di] += -t2

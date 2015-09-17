@@ -5,13 +5,7 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from GPy.util.caching import Cacher
 
-def psicomputations(variance, lengthscale, Z, variational_posterior):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
@@ -21,16 +15,11 @@ def psicomputations(variance, lengthscale, Z, variational_posterior):
     psi0 = np.empty(mu.shape[0])
     psi0[:] = variance
     psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S).sum(axis=0)
+    psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
+    if not return_psi2_n: psi2 = psi2.sum(axis=0)
     return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi1
     # Produced intermediate results:
     # _psi1                NxM
@@ -45,26 +34,19 @@ def __psi1computations(variance, lengthscale, Z, mu, S):
     return _psi1
 
 def __psi2computations(variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi2
     # Produced intermediate results:
     # _psi2                MxM
 
+    N,M,Q = mu.shape[0], Z.shape[0], mu.shape[1]
     lengthscale2 = np.square(lengthscale)
 
     _psi2_logdenom = np.log(2.*S/lengthscale2+1.).sum(axis=-1)/(-2.) # N
     _psi2_exp1 = (np.square(Z[:,None,:]-Z[None,:,:])/lengthscale2).sum(axis=-1)/(-4.) #MxM
     Z_hat = (Z[:,None,:]+Z[None,:,:])/2. #MxMxQ
     denom = 1./(2.*S+lengthscale2)
-    _psi2_exp2 = -(np.square(mu)*denom).sum(axis=-1)[:,None,None]+2.*np.einsum('nq,moq,nq->nmo',mu,Z_hat,denom)-np.einsum('moq,nq->nmo',np.square(Z_hat),denom)
+    _psi2_exp2 = -(np.square(mu)*denom).sum(axis=-1)[:,None,None]+(2*(mu*denom).dot(Z_hat.reshape(M*M,Q).T) - denom.dot(np.square(Z_hat).reshape(M*M,Q).T)).reshape(N,M,M)
     _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
-
-
     return _psi2
 
 def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
@@ -86,13 +68,6 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscal
     return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
 
 def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
-    """
-    dL_dpsi1 - NxM
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    """
     # here are the "statistics" for psi1
     # Produced intermediate results: dL_dparams w.r.t. psi1
     # _dL_dvariance     1
@@ -118,13 +93,6 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
 def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
-    """
-    Z - MxQ
-    mu - NxQ
-    S - NxQ
-    gamma - NxQ
-    dL_dpsi2 - MxM
-    """
     # here are the "statistics" for psi2
     # Produced the derivatives w.r.t. psi2:
     # _dL_dvariance      1
@@ -157,5 +125,5 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
-_psi1computations = Cacher(__psi1computations, limit=1)
-_psi2computations = Cacher(__psi2computations, limit=1)
+_psi1computations = Cacher(__psi1computations, limit=5)
+_psi2computations = Cacher(__psi2computations, limit=5)

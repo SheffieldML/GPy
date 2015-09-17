@@ -2,11 +2,21 @@ import numpy as np
 import scipy as sp
 from GPy.util import choleskies
 import GPy
+from ..util.config import config
+import unittest
+
+try:
+    from ..util import linalg_cython
+    from ..util import choleskies_cython
+    config.set('cython', 'working', 'True')
+except ImportError:
+    config.set('cython', 'working', 'False')
 
 """
-These tests make sure that the opure python and cython codes work the same
+These tests make sure that the pure python and cython codes work the same
 """
 
+@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
 class CythonTestChols(np.testing.TestCase):
     def setUp(self):
         self.flat = np.random.randn(45,5)
@@ -20,6 +30,7 @@ class CythonTestChols(np.testing.TestCase):
         A2 = choleskies._triang_to_flat_cython(self.triang)
         np.testing.assert_allclose(A1, A2)
 
+@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
 class test_stationary(np.testing.TestCase):
     def setUp(self):
         self.k = GPy.kern.RBF(10)
@@ -49,17 +60,16 @@ class test_stationary(np.testing.TestCase):
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
         np.testing.assert_allclose(g1, g2)
 
+@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
 class test_choleskies_backprop(np.testing.TestCase):
     def setUp(self):
-        self.dL, self.L = np.random.randn(2, 100, 100)
+        a =np.random.randn(10,12)
+        A = a.dot(a.T)
+        self.L = GPy.util.linalg.jitchol(A)
+        self.dL = np.random.randn(10,10)
     def test(self):
-        r1 = GPy.util.choleskies._backprop_gradient_pure(self.dL, self.L)
-        r2 = GPy.util.choleskies.choleskies_cython.backprop_gradient(self.dL, self.L)
+        r1 = choleskies._backprop_gradient_pure(self.dL, self.L)
+        r2 = choleskies_cython.backprop_gradient(self.dL, self.L)
+        r3 = choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
         np.testing.assert_allclose(r1, r2)
-
-
-
-
-
-
-
+        np.testing.assert_allclose(r1, r3)

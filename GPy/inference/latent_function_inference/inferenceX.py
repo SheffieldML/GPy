@@ -4,6 +4,8 @@
 import numpy as np
 from ...core import Model
 from ...core.parameterization import variational
+from ...util.linalg import tdot
+from GPy.core.parameterization.variational import VariationalPosterior
 
 def infer_newX(model, Y_new, optimize=True, init='L2'):
     """
@@ -60,18 +62,19 @@ class InferenceX(Model):
 #                 self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
-        if hasattr(model, 'variational_prior'):
+        from ...core.parameterization.variational import VariationalPosterior
+        if isinstance(model.X, VariationalPosterior):
             self.uncertain_input = True
             from ...models.ss_gplvm import IBPPrior
             from ...models.ss_mrd import IBPPrior_SSMRD
             if isinstance(model.variational_prior, IBPPrior) or isinstance(model.variational_prior, IBPPrior_SSMRD):
                 from ...core.parameterization.variational import SpikeAndSlabPrior
-                self.variational_prior = SpikeAndSlabPrior(pi=05,learnPi=False, group_spike=False)
+                self.variational_prior = SpikeAndSlabPrior(pi=0.5, learnPi=False, group_spike=False)
             else:
                 self.variational_prior = model.variational_prior.copy()
         else:
             self.uncertain_input = False
-        if hasattr(model, 'inducing_inputs'):
+        if hasattr(model, 'Z'):
             self.sparse_gp = True
             self.Z = model.Z.copy()
         else:
@@ -125,13 +128,13 @@ class InferenceX(Model):
             wv = wv[:,self.valid_dim]
             output_dim = self.valid_dim.sum()
             if self.ninan is not None:
-                self.dL_dpsi2 = beta/2.*(self.posterior.woodbury_inv[:,:,self.valid_dim] - np.einsum('md,od->mo',wv, wv)[:, :, None]).sum(-1)
+                self.dL_dpsi2 = beta/2.*(self.posterior.woodbury_inv[:,:,self.valid_dim] - tdot(wv)[:, :, None]).sum(-1)
             else:
-                self.dL_dpsi2 = beta/2.*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))
+                self.dL_dpsi2 = beta/2.*(output_dim*self.posterior.woodbury_inv - tdot(wv))
             self.dL_dpsi1 = beta*np.dot(self.Y[:,self.valid_dim], wv.T)
             self.dL_dpsi0 = - beta/2.* np.ones(self.Y.shape[0])
         else:
-            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - np.einsum('md,od->mo',wv, wv))/2.
+            self.dL_dpsi2 = beta*(output_dim*self.posterior.woodbury_inv - tdot(wv))/2. #np.einsum('md,od->mo',wv, wv)
             self.dL_dpsi1 = beta*np.dot(self.Y, wv.T)
             self.dL_dpsi0 = -beta/2.*output_dim* np.ones(self.Y.shape[0])
 

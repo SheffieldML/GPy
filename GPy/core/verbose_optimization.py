@@ -24,7 +24,6 @@ class VerboseOptimization(object):
             self.model.add_observer(self, self.print_status)
             self.status = 'running'
             self.clear = clear_after_finish
-            self.deltat = .2
 
             self.update()
 
@@ -80,6 +79,7 @@ class VerboseOptimization(object):
 
     def __enter__(self):
         self.start = time.time()
+        self._time = self.start
         return self
 
     def print_out(self, seconds):
@@ -143,12 +143,12 @@ class VerboseOptimization(object):
     def print_status(self, me, which=None):
         self.update()
 
-        seconds = time.time()-self.start
+        t = time.time()
+        seconds = t-self.start
         #sys.stdout.write(" "*len(self.message))
-        self.deltat += seconds
-        if self.deltat > .2:
+        if t-self._time > .3 or seconds < .3:
             self.print_out(seconds)
-            self.deltat = 0
+            self._time = t
 
         self.iteration += 1
 

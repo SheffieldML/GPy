@@ -4,7 +4,7 @@
 
 import numpy as np
 try:
-    import pylab as pb
+    from matplotlib import pyplot as pb
 except:
     pass
 

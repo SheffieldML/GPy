@@ -74,7 +74,7 @@ class Parameterized(Parameterizable):
     # Metaclass for parameters changed after init.
     # This makes sure, that parameters changed will always be called after __init__
     # **Never** call parameters_changed() yourself
-    #This is ignored in Python 3 -- you need to put the meta class in the function definition. 
+    #This is ignored in Python 3 -- you need to put the meta class in the function definition.
     #__metaclass__ = ParametersChangedMeta
     #The six module is used to support both Python 2 and 3 simultaneously
     #===========================================================================
@@ -197,9 +197,10 @@ class Parameterized(Parameterizable):
                 raise RuntimeError("{} does not seem to be a parameter, remove parameters directly from their respective parents".format(str(param)))
 
         start = sum([p.size for p in self.parameters[:param._parent_index_]])
-        self._remove_parameter_name(param)
         self.size -= param.size
         del self.parameters[param._parent_index_]
+        self._remove_parameter_name(param)
+
 
         param._disconnect_parent()
         param.remove_observer(self, self._pass_through_notify_observers)
@@ -315,7 +316,7 @@ class Parameterized(Parameterizable):
                     param[:] = val; return
             except AttributeError:
                 pass
-        object.__setattr__(self, name, val);
+        return object.__setattr__(self, name, val);
 
     #===========================================================================
     # Pickling

@@ -58,20 +58,9 @@ class Kern(Parameterized):
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
-        self._return_psi2_n_flag = ObsAr(np.zeros(1)).astype(bool)
 
-    @property
-    def return_psi2_n(self):
-        """
-        Flag whether to pass back psi2 as NxMxM or MxM, by summing out N.
-        """
-        return self._return_psi2_n_flag[0]
-    @return_psi2_n.setter
-    def return_psi2_n(self, val):
-        def visit(self):
-            if isinstance(self, Kern):
-                self._return_psi2_n_flag[0]=val
-        self.traverse(visit)
+        from .psi_comp import PSICOMP_GH
+        self.psicomp = PSICOMP_GH()
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
@@ -81,6 +70,9 @@ class Kern(Parameterized):
         """
         Compute the kernel function.
 
+        .. math::
+            K_{ij} = k(X_i, X_j)
+
         :param X: the first set of inputs to the kernel
         :param X2: (optional) the second set of arguments to the kernel. If X2
                    is None, this is passed throgh to the 'part' object, which
@@ -88,16 +80,64 @@ class Kern(Parameterized):
         """
         raise NotImplementedError
     def Kdiag(self, X):
+        """
+        The diagonal of the kernel matrix K
+
+        .. math::
+            Kdiag_{i} = k(X_i, X_i)
+        """
         raise NotImplementedError
     def psi0(self, Z, variational_posterior):
-        raise NotImplementedError
+        """
+        .. math::
+            \psi_0 = \sum_{i=0}^{n}E_{q(X)}[k(X_i, X_i)]
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
     def psi1(self, Z, variational_posterior):
-        raise NotImplementedError
+        """
+        .. math::
+            \psi_1^{n,m} = E_{q(X)}[k(X_n, Z_m)]
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
-        raise NotImplementedError
+        """
+        .. math::
+            \psi_2^{m,m'} = \sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+    def psi2n(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_2^{n,m,m'} = E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})]
+
+        Thus, we do not sum out n, compared to psi2
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
     def gradients_X(self, dL_dK, X, X2):
+        """
+        .. math::
+
+            \\frac{\partial L}{\partial X} = \\frac{\partial L}{\partial K}\\frac{\partial K}{\partial X}
+        """
         raise NotImplementedError
+    def gradients_X_X2(self, dL_dK, X, X2):
+        return self.gradients_X(dL_dK, X, X2), self.gradients_X(dL_dK.T, X2, X)
+    def gradients_XX(self, dL_dK, X, X2):
+        """
+        .. math::
+
+            \\frac{\partial^2 L}{\partial X\partial X_2} = \\frac{\partial L}{\partial K}\\frac{\partial^2 K}{\partial X\partial X_2}
+        """
+        raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
+    def gradients_XX_diag(self, dL_dKdiag, X):
+        """
+        The diagonal of the second derivative w.r.t. X and X2
+        """
+        raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
+        """
+        The diagonal of the derivative w.r.t. X
+        """
         raise NotImplementedError
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -113,27 +153,35 @@ class Kern(Parameterized):
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
 
-        The esential maths is
+        The essential maths is
 
-        dL_d{theta_i} = dL_dpsi0 * dpsi0_d{theta_i} +
-                        dL_dpsi1 * dpsi1_d{theta_i} +
-                        dL_dpsi2 * dpsi2_d{theta_i}
+        .. math::
+
+            \\frac{\partial L}{\partial \\theta_i} & = \\frac{\partial L}{\partial \psi_0}\\frac{\partial \psi_0}{\partial \\theta_i}\\
+                & \quad + \\frac{\partial L}{\partial \psi_1}\\frac{\partial \psi_1}{\partial \\theta_i}\\
+                & \quad + \\frac{\partial L}{\partial \psi_2}\\frac{\partial \psi_2}{\partial \\theta_i}
+
+        Thus, we push the different derivatives through the gradients of the psi
+        statistics. Be sure to set the gradients for all kernel
+        parameters here.
         """
-        raise NotImplementedError
+        dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
+        self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
+                                psi0=None, psi1=None, psi2=None):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
-        raise NotImplementedError
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
-        raise NotImplementedError
+        return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
 
     def plot(self, x=None, fignum=None, ax=None, title=None, plot_limits=None, resolution=None, **mpl_kwargs):
         """
@@ -172,7 +220,7 @@ class Kern(Parameterized):
     def __iadd__(self, other):
         return self.add(other)
 
-    def add(self, other, name='add'):
+    def add(self, other, name='sum'):
         """
         Add another kernel to this one.
 
@@ -208,8 +256,6 @@ class Kern(Parameterized):
 
         :param other: the other kernel to be added
         :type other: GPy.kern
-        :param tensor: whether or not to use the tensor space (default is false).
-        :type tensor: bool
 
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."

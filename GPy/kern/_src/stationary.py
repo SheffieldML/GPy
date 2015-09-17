@@ -15,7 +15,7 @@ from ...util.caching import Cache_this
 try:
     from . import stationary_cython
 except ImportError:
-    print('warning in sationary: failed to import cython module: falling back to numpy')
+    print('warning in stationary: failed to import cython module: falling back to numpy')
     config.set('cython', 'working', 'false')
 
 
@@ -25,13 +25,16 @@ class Stationary(Kern):
 
     Stationary covariance fucntion depend only on r, where r is defined as
 
-      r = \sqrt{ \sum_{q=1}^Q (x_q - x'_q)^2 }
+    .. math::
+        r(x, x') = \\sqrt{ \\sum_{q=1}^Q (x_q - x'_q)^2 }
 
     The covariance function k(x, x' can then be written k(r).
 
     In this implementation, r is scaled by the lengthscales parameter(s):
 
-      r = \sqrt{ \sum_{q=1}^Q \frac{(x_q - x'_q)^2}{\ell_q^2} }.
+    .. math::
+
+        r(x, x') = \\sqrt{ \\sum_{q=1}^Q \\frac{(x_q - x'_q)^2}{\ell_q^2} }.
 
     By default, there's only one lengthscale: seaprate lengthscales for each
     dimension can be enables by setting ARD=True.
@@ -39,11 +42,12 @@ class Stationary(Kern):
     To implement a stationary covariance function using this class, one need
     only define the covariance function k(r), and it derivative.
 
-      ...
-      def K_of_r(self, r):
-          return foo
-      def dK_dr(self, r):
-          return bar
+    ```
+    def K_of_r(self, r):
+        return foo
+    def dK_dr(self, r):
+        return bar
+    ```
 
     The lengthscale(s) and variance parameters are added to the structure automatically.
 
@@ -77,6 +81,10 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
+    @Cache_this(limit=20, ignore_args=())
+    def dK2_drdr(self, r):
+        raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
+
     @Cache_this(limit=5, ignore_args=())
     def K(self, X, X2=None):
         """
@@ -89,10 +97,15 @@ class Stationary(Kern):
         r = self._scaled_dist(X, X2)
         return self.K_of_r(r)
 
-    @Cache_this(limit=3, ignore_args=())
+    @Cache_this(limit=20, ignore_args=())
     def dK_dr_via_X(self, X, X2):
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_drdr_via_X(self, X, X2):
+        #a convenience function, so we can cache dK_dr
+        return self.dK2_drdr(self._scaled_dist(X, X2))
 
     def _unscaled_dist(self, X, X2=None):
         """
@@ -114,12 +127,13 @@ class Stationary(Kern):
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=20, ignore_args=())
     def _scaled_dist(self, X, X2=None):
         """
         Efficiently compute the scaled distance, r.
 
-        r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
+        ..math::
+            r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
 
         Note that if thre is only one lengthscale, l comes outside the sum. In
         this case we compute the unscaled distance first (in a separate
@@ -201,6 +215,59 @@ class Stationary(Kern):
         else:
             return self._gradients_X_pure(dL_dK, X, X2)
 
+    def gradients_XX(self, dL_dK, X, X2=None):
+        """
+        Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
+
+        ..math:
+          \frac{\partial^2 K}{\partial X\partial X2}
+
+        ..returns:
+            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
+            Thus, we return the second derivative in X2.
+        """
+        # The off diagonals in Q are always zero, this should also be true for the Linear kernel...
+        # According to multivariable chain rule, we can chain the second derivative through r:
+        # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
+        invdist = self._inv_dist(X, X2)
+        invdist2 = invdist**2
+
+        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
+        tmp1 = dL_dr * invdist
+
+        dL_drdr = self.dK2_drdr_via_X(X, X2) * dL_dK
+        tmp2 = dL_drdr * invdist2
+
+        l2 = np.ones(X.shape[1]) * self.lengthscale**2
+
+        if X2 is None:
+            X2 = X
+            tmp1 -= np.eye(X.shape[0])*self.variance
+        else:
+            tmp1[X==X2.T] -= self.variance
+
+        grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
+        #grad = np.empty(X.shape, dtype=np.float64)
+        for q in range(self.input_dim):
+            tmpdist2 = (X[:,[q]]-X2[:,[q]].T) ** 2
+            grad[:, :, q] = ((tmp1*invdist2 - tmp2)*tmpdist2/l2[q] - tmp1)/l2[q]
+            #grad[:, :, q] = ((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q]
+            #np.sum(((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q], axis=1, out=grad[:,q])
+            #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
+        return grad
+
+    def gradients_XX_diag(self, dL_dK, X):
+        """
+        Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
+
+        ..math:
+          \frac{\partial^2 K}{\partial X\partial X2}
+
+        ..returns:
+            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ]
+        """
+        return np.ones(X.shape) * self.variance/self.lengthscale**2
+
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
@@ -259,7 +326,7 @@ class OU(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
 
@@ -279,7 +346,7 @@ class Matern32(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^input_dim \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
 
@@ -326,7 +393,7 @@ class Matern52(Stationary):
     .. math::
 
        k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
-       """
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 

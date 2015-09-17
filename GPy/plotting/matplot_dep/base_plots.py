@@ -3,8 +3,8 @@
 
 
 try:
-    import Tango
-    import pylab as pb
+    #import Tango
+    from matplotlib import pyplot as pb
 except:
     pass
 import numpy as np
@@ -17,11 +17,11 @@ def ax_default(fignum, ax):
         fig = ax.figure
     return fig, ax
 
-def meanplot(x, mu, color=Tango.colorsHex['darkBlue'], ax=None, fignum=None, linewidth=2,**kw):
+def meanplot(x, mu, color='#3300FF', ax=None, fignum=None, linewidth=2,**kw):
     _, axes = ax_default(fignum, ax)
     return axes.plot(x,mu,color=color,linewidth=linewidth,**kw)
 
-def gpplot(x, mu, lower, upper, edgecol=Tango.colorsHex['darkBlue'], fillcol=Tango.colorsHex['lightBlue'], ax=None, fignum=None, **kwargs):
+def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, fignum=None, **kwargs):
     _, axes = ax_default(fignum, ax)
 
     mu = mu.flatten()
@@ -44,6 +44,32 @@ def gpplot(x, mu, lower, upper, edgecol=Tango.colorsHex['darkBlue'], fillcol=Tan
     plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,ax=axes))
     plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,ax=axes))
 
+    return plots
+
+
+def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
+    _, axes = ax_default(fignum, ax)
+
+    mu = mu.flatten()
+    x = x.flatten()
+    lower = lower.flatten()
+    upper = upper.flatten()
+
+    plots = []
+
+    if edgecol is None:
+        edgecol='#3300FF'
+
+    if not 'alpha' in kwargs.keys():
+        kwargs['alpha'] = 1.
+
+
+    if not 'lw' in kwargs.keys():
+        kwargs['lw'] = 1.
+
+
+    plots.append(axes.errorbar(x,mu,yerr=np.vstack([mu-lower,upper-mu]),color=edgecol,**kwargs))
+    plots[-1][0].remove()
     return plots
 
 

@@ -94,8 +94,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               #'sphinx.ext.pngmath',
               'sphinx.ext.mathjax',
-              'ipython_directive',
-              'ipython_console_highlighting'
+              # 'ipython_directive',
+              # 'ipython_console_highlighting'
               #'matplotlib.sphinxext.plot_directive'
              ]
 plot_formats = [('png', 80), ('pdf', 50)]

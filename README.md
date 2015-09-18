@@ -166,6 +166,8 @@ or from within IPython
 
 Current support for the GPy software is coming through the following projects. 
 
+* [EU FP7-HEALTH Project Ref 305626](http://radiant-project.eu) "RADIANT: Rapid Development and Distribution of Statistical Tools for High-Throughput Sequencing Data"
+
 * [EU FP7-PEOPLE Project Ref 316861](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/mlpm/) "MLPM2012: Machine Learning for Personalized Medicine"
 
 * MRC Special Training Fellowship "Bayesian models of expression in the transcriptome for clinical RNA-seq"

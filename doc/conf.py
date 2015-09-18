@@ -132,7 +132,7 @@ class Mock(object):
 #import mock
 
 print "Mocking"
-MOCK_MODULES = ['sympy', 'scipy', 'scipy.linalg', 'scipy.linalg.lapack',
+MOCK_MODULES = ['sympy', 'scipy', 'scipy.linalg', 'scipy.linalg.lapack', 'scipy.special',
     'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
     'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'Tango', 'numdifftools'
     ]

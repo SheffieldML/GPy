@@ -12,8 +12,8 @@ A Gaussian processes framework in Python.
 #### Continuous integration
 |      | Travis-CI | Readthedocs |
 | ---: | :--: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![mdocs](https://img.shields.io/badge/docs-master-yellow.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![ddocs](https://img.shields.io/badge/docs-devel-yellow.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![mdocs](https://img.shields.io/badge/docs-master-blue.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![ddocs](https://img.shields.io/badge/docs-devel-blue.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
 
 ### Supported Platforms:
 

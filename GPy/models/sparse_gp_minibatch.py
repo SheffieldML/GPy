@@ -99,13 +99,8 @@ class SparseGPMiniBatch(SparseGP):
         like them into this dictionary for inner use of the indices inside the
         algorithm.
         """
-        if psi2 is None:
-            psi2_sum_n = None
-        else:
-            psi2_sum_n = psi2.sum(axis=0)
-        posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
-                                                                                        dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2_sum_n, **kwargs)
-        return posterior, log_marginal_likelihood, grad_dict
+        return self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
+                                               dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2, **kwargs)
 
     def _inner_take_over_or_update(self, full_values=None, current_values=None, value_indices=None):
         """

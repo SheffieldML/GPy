@@ -37,22 +37,23 @@ else:
     link_args = ['-lgomp']
 
 ext_mods = [Extension(name='GPy.kern._src.stationary_cython',
-                      sources=['GPy/kern/_src/stationary_cython.c','GPy/kern/_src/stationary_utils.c'],
-                      include_dirs=[np.get_include()],
+                      sources=['GPy/kern/_src/stationary_cython.c',
+                               'GPy/kern/_src/stationary_utils.c'],
+                      include_dirs=[np.get_include(),'.'],
                       extra_compile_args=compile_flags,
                       extra_link_args = link_args),
             Extension(name='GPy.util.choleskies_cython',
                       sources=['GPy/util/choleskies_cython.c'],
-                      include_dirs=[np.get_include()],
+                      include_dirs=[np.get_include(),'.'],
                       extra_link_args = link_args,
                       extra_compile_args=compile_flags),
             Extension(name='GPy.util.linalg_cython',
                       sources=['GPy/util/linalg_cython.c'],
-                      include_dirs=[np.get_include()],
+                      include_dirs=[np.get_include(),'.'],
                       extra_compile_args=compile_flags),
             Extension(name='GPy.kern._src.coregionalize_cython',
                       sources=['GPy/kern/_src/coregionalize_cython.c'],
-                      include_dirs=[np.get_include()],
+                      include_dirs=[np.get_include(),'.'],
                       extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',

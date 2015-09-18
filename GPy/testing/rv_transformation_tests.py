@@ -34,7 +34,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The PDF of the transformed variables
         p_phi = lambda phi : np.exp(-m._objective_grads(phi)[0])
         # To the empirical PDF of:
-        theta_s = prior.rvs(100000)
+        theta_s = prior.rvs(1e6)
         phi_s = trans.finv(theta_s)
         # which is essentially a kernel density estimation
         kde = st.gaussian_kde(phi_s)
@@ -56,7 +56,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # The following test cannot be very accurate
         self.assertTrue(np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1)
         # Check the gradients at a few random points
-        for i in range(10):
+        for i in range(5):
             m.theta = theta_s[i]
             self.assertTrue(m.checkgrad(verbose=True))
 

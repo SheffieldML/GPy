@@ -10,10 +10,10 @@ A Gaussian processes framework in Python.
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
 #### Continuous integration
-
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) |
+|      | Travis-CI | Readthedocs |
 | ---: | :--: |
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) |
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | https://readthedocs.org/projects/pip/badge/?version=master |
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | https://readthedocs.org/projects/pip/badge/?version=devel |
 
 ### Supported Platforms:
 

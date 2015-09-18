@@ -28,6 +28,14 @@ GPy.core.parameterization.lists_and_dicts module
     :undoc-members:
     :show-inheritance:
 
+GPy.core.parameterization.observable module
+-------------------------------------------
+
+.. automodule:: GPy.core.parameterization.observable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.core.parameterization.observable_array module
 -------------------------------------------------
 
@@ -80,6 +88,14 @@ GPy.core.parameterization.transformations module
 ------------------------------------------------
 
 .. automodule:: GPy.core.parameterization.transformations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.core.parameterization.updateable module
+-------------------------------------------
+
+.. automodule:: GPy.core.parameterization.updateable
     :members:
     :undoc-members:
     :show-inheritance:

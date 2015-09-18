@@ -47,7 +47,8 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return Mock()
 
-MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'GPy.util.choleskies_cython']
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
+                'sympy', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser' ]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # Add any paths that contain templates here, relative to this directory.

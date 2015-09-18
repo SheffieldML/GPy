@@ -94,8 +94,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               #'sphinx.ext.pngmath',
               'sphinx.ext.mathjax',
-              'ipython_directive',
-              'ipython_console_highlighting'
+              # 'ipython_directive',
+              # 'ipython_console_highlighting'
               #'matplotlib.sphinxext.plot_directive'
              ]
 plot_formats = [('png', 80), ('pdf', 50)]
@@ -132,7 +132,7 @@ class Mock(object):
 #import mock
 
 print "Mocking"
-MOCK_MODULES = ['sympy',
+MOCK_MODULES = ['sympy', 'scipy', 'scipy.linalg', 'scipy.linalg.lapack', 'scipy.special', 'scipy.io', 'scipy.integrate', 'scipy.linalg', 'scipy.linalg.cython_blas', 'scipy.optimize',
     'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
     'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser', 'Tango', 'numdifftools'
     ]

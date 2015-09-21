@@ -341,7 +341,7 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_
         return X
 
 
-def errorbars_trainset(model, which_data_rows='all',
+def plot_errorbars_trainset(model, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         fignum=None, ax=None,
         linecol='red', data_symbol='kx',

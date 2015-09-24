@@ -74,7 +74,7 @@ class PSICOMP_GH(PSICOMP):
             dZ = np.zeros_like(Z)
         dmu = np.zeros_like(mu)
         dS = np.zeros_like(S)
-        for i in xrange(self.degree):
+        for i in range(self.degree):
             if self.cache_K:
                 X = Xs[i]
             else:

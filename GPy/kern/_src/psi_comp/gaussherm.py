@@ -32,7 +32,7 @@ class PSICOMP_GH(PSICOMP):
             self.Xs = ObsAr(np.empty((self.degree,)+qX.mean.shape))
         mu, S = qX.mean.values, qX.variance.values
         S_sq = np.sqrt(S)
-        for i in xrange(self.degree):
+        for i in range(self.degree):
             self.Xs[i] = self.locs[i]*S_sq+mu
         return self.Xs
     
@@ -46,7 +46,7 @@ class PSICOMP_GH(PSICOMP):
         psi0 = np.zeros((N,))
         psi1 = np.zeros((N,M))
         psi2 = np.zeros((N,M,M)) if return_psi2_n else np.zeros((M,M))
-        for i in xrange(self.degree):
+        for i in range(self.degree):
             if self.cache_K:
                 X = Xs[i]
             else:

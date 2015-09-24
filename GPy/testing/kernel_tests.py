@@ -469,9 +469,10 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         self.w3n = self.w3n+np.swapaxes(self.w3n, 1,2)
 
     def test_kernels(self):
-        from GPy.kern import RBF,Linear,MLP
+        from GPy.kern import RBF,Linear,MLP,Bias,White
         Q = self.Z.shape[1]
-        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True)]
+        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True),MLP(Q,ARD=True), RBF(Q,ARD=True)+Linear(Q,ARD=True)+Bias(Q)+White(Q)
+                   ,RBF(Q,ARD=True)+Bias(Q)+White(Q),  Linear(Q,ARD=True)+Bias(Q)+White(Q)]
 
         for k in kernels:
             k.randomize()

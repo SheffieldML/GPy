@@ -13,9 +13,6 @@ from ....util.linalg import tdot
 from . import PSICOMP
 
 class PSICOMP_GH(PSICOMP):
-    """
-    TODO: support Psi2 with shape NxMxM
-    """
     
     def __init__(self, degree=5, cache_K=True):
         self.degree = degree
@@ -48,7 +45,7 @@ class PSICOMP_GH(PSICOMP):
         
         psi0 = np.zeros((N,))
         psi1 = np.zeros((N,M))
-        psi2 = np.zeros((M,M))
+        psi2 = np.zeros((N,M,M)) if return_psi2_n else np.zeros((M,M))
         for i in xrange(self.degree):
             if self.cache_K:
                 X = Xs[i]
@@ -57,7 +54,10 @@ class PSICOMP_GH(PSICOMP):
             psi0 += self.weights[i]* kern.Kdiag(X)
             Kfu = kern.K(X,Z)
             psi1 += self.weights[i]* Kfu
-            psi2 += self.weights[i]* tdot(Kfu.T)
+            if return_psi2_n:
+                psi2 += self.weights[i]* Kfu[:,None,:]*Kfu[:,:,None]
+            else:
+                psi2 += self.weights[i]* tdot(Kfu.T)
         return psi0, psi1, psi2
     
     @Cache_this(limit=10, ignore_args=(0, 2,3,4))
@@ -84,7 +84,10 @@ class PSICOMP_GH(PSICOMP):
             dtheta += kern.gradient
             dX = kern.gradients_X_diag(dL_dpsi0_i, X)
             Kfu = kern.K(X,Z)
-            dL_dkfu = (dL_dpsi1+ 2.*Kfu.dot(dL_dpsi2))*self.weights[i]
+            if len(dL_dpsi2.shape)==2:
+                dL_dkfu = (dL_dpsi1+ Kfu.dot(dL_dpsi2+dL_dpsi2.T))*self.weights[i]
+            else:
+                dL_dkfu = (dL_dpsi1+ (Kfu[:,:,None]*(dL_dpsi2+np.swapaxes(dL_dpsi2, 1,2))).sum(1))*self.weights[i]
             kern.update_gradients_full(dL_dkfu, X, Z)
             dtheta += kern.gradient
             dX_i, dZ_i = kern.gradients_X_X2(dL_dkfu, X, Z)

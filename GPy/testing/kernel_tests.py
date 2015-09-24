@@ -503,6 +503,7 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, kernel.param_array.copy())
+        m.checkgrad(verbose=1)
         self.assertTrue(m.checkgrad())
 
     def _test_Z(self, kernel, psi2n=False):

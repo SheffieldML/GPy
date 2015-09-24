@@ -23,7 +23,7 @@ class Add(CombinationKernel):
                     subkerns.insert(i, part)
         super(Add, self).__init__(subkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
-        
+
     def _check_exact_psicomp(self):
         from .. import RBF,Linear,Bias,White
         n_kerns = len(self.parts)
@@ -164,11 +164,11 @@ class Add(CombinationKernel):
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                tmp = p2.psi1(Z, variational_posterior).sum(axis=0)
+                tmp = p2.psi1(Z, variational_posterior)
                 psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                tmp = p1.psi1(Z, variational_posterior).sum(axis=0)
+                tmp = p1.psi1(Z, variational_posterior)
                 psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
                 assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"

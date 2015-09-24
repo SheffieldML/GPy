@@ -112,6 +112,7 @@ class SparseGP(GP):
             #gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+        self._Zgrad = self.Z.gradient.copy()
 
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):

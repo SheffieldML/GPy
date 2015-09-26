@@ -46,6 +46,8 @@ def plot_data(model, which_data_rows='all',
     #data
     X = model.X
     Y = model.Y
+    if isinstance(model, WarpedGP) and model.predict_in_warped_space:
+        Y = model.Y_untransformed
 
     #work out what the inputs are for plotting (1D or 2D)
     if visible_dims is None:
@@ -184,11 +186,12 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
             if isinstance(model, WarpedGP):
                 m, v = model.predict(Xgrid, full_cov=False, median=True, Y_metadata=Y_metadata, **predict_kw)
+                lower, upper = model.predict_quantiles(Xgrid)
                 #print np.concatenate((Xgrid, m), axis=1)
             else:
                 m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
-            fmu, fv = model._raw_predict(Xgrid, full_cov=False, **predict_kw)
-            lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
+                fmu, fv = model._raw_predict(Xgrid, full_cov=False, **predict_kw)
+                lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
 
 
 

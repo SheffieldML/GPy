@@ -137,6 +137,7 @@ class WarpedGP(GP):
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        #return [a, b]
         if not self.predict_in_warped_space:
             return [a, b]
         #print a.shape

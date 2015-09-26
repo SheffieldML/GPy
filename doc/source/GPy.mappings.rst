@@ -12,6 +12,30 @@ GPy.mappings.additive module
     :undoc-members:
     :show-inheritance:
 
+GPy.mappings.compound module
+----------------------------
+
+.. automodule:: GPy.mappings.compound
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.mappings.constant module
+----------------------------
+
+.. automodule:: GPy.mappings.constant
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.mappings.identity module
+----------------------------
+
+.. automodule:: GPy.mappings.identity
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.mappings.kernel module
 --------------------------
 
@@ -32,6 +56,14 @@ GPy.mappings.mlp module
 -----------------------
 
 .. automodule:: GPy.mappings.mlp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.mappings.piecewise_linear module
+------------------------------------
+
+.. automodule:: GPy.mappings.piecewise_linear
     :members:
     :undoc-members:
     :show-inheritance:

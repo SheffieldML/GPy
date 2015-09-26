@@ -28,6 +28,14 @@ GPy.models.bcgplvm module
     :undoc-members:
     :show-inheritance:
 
+GPy.models.dpgplvm module
+-------------------------
+
+.. automodule:: GPy.models.dpgplvm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.models.gp_classification module
 -----------------------------------
 
@@ -56,14 +64,6 @@ GPy.models.gp_kronecker_gaussian_regression module
 --------------------------------------------------
 
 .. automodule:: GPy.models.gp_kronecker_gaussian_regression
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.models.gp_multioutput_regression module
--------------------------------------------
-
-.. automodule:: GPy.models.gp_multioutput_regression
     :members:
     :undoc-members:
     :show-inheritance:
@@ -108,6 +108,22 @@ GPy.models.mrd module
     :undoc-members:
     :show-inheritance:
 
+GPy.models.one_vs_all_classification module
+-------------------------------------------
+
+.. automodule:: GPy.models.one_vs_all_classification
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.models.one_vs_all_sparse_classification module
+--------------------------------------------------
+
+.. automodule:: GPy.models.one_vs_all_sparse_classification
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.models.sparse_gp_classification module
 ------------------------------------------
 
@@ -128,14 +144,6 @@ GPy.models.sparse_gp_minibatch module
 -------------------------------------
 
 .. automodule:: GPy.models.sparse_gp_minibatch
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.models.sparse_gp_multioutput_regression module
---------------------------------------------------
-
-.. automodule:: GPy.models.sparse_gp_multioutput_regression
     :members:
     :undoc-members:
     :show-inheritance:
@@ -168,14 +176,6 @@ GPy.models.ss_mrd module
 ------------------------
 
 .. automodule:: GPy.models.ss_mrd
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.models.svigp_regression module
-----------------------------------
-
-.. automodule:: GPy.models.svigp_regression
     :members:
     :undoc-members:
     :show-inheritance:

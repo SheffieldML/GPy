@@ -314,8 +314,8 @@ class Parameterized(Parameterizable):
                 if name in pnames:
                     param = self.parameters[pnames.index(name)]
                     param[:] = val; return
-            except AttributeError:
-                pass
+            except AttributeError as a:
+                raise
         return object.__setattr__(self, name, val);
 
     #===========================================================================

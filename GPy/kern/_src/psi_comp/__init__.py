@@ -24,7 +24,7 @@ class PSICOMP(Pickleable):
 from .gaussherm import PSICOMP_GH
 
 class PSICOMP_RBF(PSICOMP):
-    @Cache_this(limit=5, ignore_args=(0,))
+    @Cache_this(limit=10, ignore_args=(0,))
     def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
         variance, lengthscale = kern.variance, kern.lengthscale
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -34,7 +34,7 @@ class PSICOMP_RBF(PSICOMP):
         else:
             raise ValueError("unknown distriubtion received for psi-statistics")
 
-    @Cache_this(limit=5, ignore_args=(0,2,3,4))
+    @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         variance, lengthscale = kern.variance, kern.lengthscale
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -46,7 +46,7 @@ class PSICOMP_RBF(PSICOMP):
 
 class PSICOMP_Linear(PSICOMP):
 
-    @Cache_this(limit=5, ignore_args=(0,))
+    @Cache_this(limit=10, ignore_args=(0,))
     def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
         variances = kern.variances
         if isinstance(variational_posterior, variational.NormalPosterior):
@@ -56,7 +56,7 @@ class PSICOMP_Linear(PSICOMP):
         else:
             raise ValueError("unknown distriubtion received for psi-statistics")
 
-    @Cache_this(limit=2, ignore_args=(0,2,3,4))
+    @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         variances = kern.variances
         if isinstance(variational_posterior, variational.NormalPosterior):

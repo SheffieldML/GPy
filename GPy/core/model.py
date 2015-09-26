@@ -255,7 +255,7 @@ class Model(Parameterized):
             opt.model = self
         else:
             optimizer = optimization.get_optimizer(optimizer)
-            opt = optimizer(start, model=self, max_iters=max_iters, **kwargs)
+            opt = optimizer(x_init=start, model=self, max_iters=max_iters, **kwargs)
 
         with VerboseOptimization(self, opt, maxiters=max_iters, verbose=messages, ipython_notebook=ipython_notebook, clear_after_finish=clear_after_finish) as vo:
             opt.run(f_fp=self._objective_grads, f=self._objective, fp=self._grads)

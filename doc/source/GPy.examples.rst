@@ -44,22 +44,6 @@ GPy.examples.regression module
     :undoc-members:
     :show-inheritance:
 
-GPy.examples.stochastic module
-------------------------------
-
-.. automodule:: GPy.examples.stochastic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.examples.tutorials module
------------------------------
-
-.. automodule:: GPy.examples.tutorials
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

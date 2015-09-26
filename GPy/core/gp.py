@@ -98,7 +98,7 @@ class GP(Model):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
-                print("defaulting to ", inference_method, "for latent function inference")
+                print("defaulting to " + str(inference_method) + " for latent function inference")
         self.inference_method = inference_method
 
         logger.info("adding kernel and likelihood as parameters")
@@ -640,7 +640,7 @@ class GP(Model):
                                      fignum, ax, data_symbol, **kw)
 
 
-    def errorbars_trainset(self, which_data_rows='all',
+    def plot_errorbars_trainset(self, which_data_rows='all',
             which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
             linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True,lw=None):
 
@@ -669,7 +669,7 @@ class GP(Model):
         kw = {}
         if lw is not None:
             kw['lw'] = lw
-        return models_plots.errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
+        return models_plots.plot_errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
                                     fignum, ax, linecol, data_symbol,
                                     predict_kw, plot_training_data, **kw)
 

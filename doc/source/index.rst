@@ -1,5 +1,5 @@
 .. GPy documentation master file, created by
-   sphinx-quickstart on Fri Jan 18 17:36:01 2013.
+   sphinx-quickstart on Fri Sep 18 18:16:28 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -13,26 +13,18 @@ This documentation is mostly aimed at developers interacting closely with the co
 
 The code can be found on our `Github project page <https://github.com/SheffieldML/GPy>`_. It is open source and provided under the BSD license.
 
-.. * `Basic Gaussian process regression <tuto_GP_regression.html>`_  
-.. * `Interacting with models <tuto_interacting_with_models.html>`_
-.. * `A kernel overview <tuto_kernel_overview.html>`_ 
-.. * `Writing new kernels <tuto_creating_new_kernels.html>`_
-.. * `Writing new models <tuto_creating_new_models.html>`_
-.. * `Parameterization handles <tuto_parameterized.html>`_
-
-.. You may also be interested by some examples in the GPy/examples folder.
-
 Contents:
 
 .. toctree::
-   :maxdepth: 3
-   
+   :maxdepth: 4
+
    GPy
 
-
+	      
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

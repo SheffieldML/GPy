@@ -51,10 +51,10 @@ GPy.core.sparse_gp_mpi module
     :undoc-members:
     :show-inheritance:
 
-GPy.core.svigp module
----------------------
+GPy.core.svgp module
+--------------------
 
-.. automodule:: GPy.core.svigp
+.. automodule:: GPy.core.svgp
     :members:
     :undoc-members:
     :show-inheritance:
@@ -63,6 +63,14 @@ GPy.core.symbolic module
 ------------------------
 
 .. automodule:: GPy.core.symbolic
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.core.verbose_optimization module
+------------------------------------
+
+.. automodule:: GPy.core.verbose_optimization
     :members:
     :undoc-members:
     :show-inheritance:

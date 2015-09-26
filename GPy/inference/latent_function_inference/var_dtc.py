@@ -64,31 +64,30 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+        assert mean_function is None, "inference with a mean function not implemented"
 
-        _, output_dim = Y.shape
+        num_data, output_dim = Y.shape
+        num_inducing = Z.shape[0]
+
         uncertain_inputs = isinstance(X, VariationalPosterior)
 
-        #see whether we've got a different noise variance for each datum
-        beta = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), 1e-6)
-        # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
-        #self.YYTfactor = self.get_YYTfactor(Y)
-        #VVT_factor = self.get_VVTfactor(self.YYTfactor, beta)
-        het_noise = beta.size > 1
-        if beta.ndim == 1:
-            beta = beta[:, None]
-        VVT_factor = beta*Y
-        #VVT_factor = beta*Y
+        if precision is None:
+            #assume Gaussian likelihood
+            precision = 1./np.fmax(likelihood.gaussian_variance(Y_metadata), self.const_jitter)
+
+        if precision.ndim == 1:
+            precision = precision[:, None]
+        het_noise = precision.size > 1
+
+        VVT_factor = precision*Y
+        #VVT_factor = precision*Y
         trYYT = self.get_trYYT(Y)
 
-        # do the inference:
-        num_inducing = Z.shape[0]
-        num_data = Y.shape[0]
         # kernel computations, using BGPLVM notation
-
-        Kmm = kern.K(Z).copy()
-        diag.add(Kmm, self.const_jitter)
         if Lm is None:
+            Kmm = kern.K(Z).copy()
+            diag.add(Kmm, self.const_jitter)
             Lm = jitchol(Kmm)
 
         # The rather complex computations of A, and the psi stats
@@ -99,15 +98,16 @@ class VarDTC(LatentFunctionInference):
                 psi1 = kern.psi1(Z, X)
             if het_noise:
                 if psi2 is None:
-                    assert len(psi2.shape) == 3  # Need to have not summed out N
-                    #FIXME: Need testing
-                    psi2_beta = np.sum([psi2[X[i:i+1,:], :, :] * beta_i for i,beta_i in enumerate(beta)],0)
+                    psi2_beta = (kern.psi2n(Z, X) * precision[:, :, None]).sum(0)
                 else:
-                    psi2_beta = np.sum([kern.psi2(Z,X[i:i+1,:]) * beta_i for i,beta_i in enumerate(beta)],0)
+                    psi2_beta = (psi2 * precision[:, :, None]).sum(0)
             else:
                 if psi2 is None:
-                    psi2 = kern.psi2(Z,X)
-                psi2_beta =  psi2 * beta
+                    psi2_beta = kern.psi2(Z,X) * precision
+                elif psi2.ndim == 3:
+                    psi2_beta = psi2.sum(0) * precision
+                else:
+                    psi2_beta = psi2 * precision
             LmInv = dtrtri(Lm)
             A = LmInv.dot(psi2_beta.dot(LmInv.T))
         else:
@@ -116,9 +116,9 @@ class VarDTC(LatentFunctionInference):
             if psi1 is None:
                 psi1 = kern.K(X, Z)
             if het_noise:
-                tmp = psi1 * (np.sqrt(beta))
+                tmp = psi1 * (np.sqrt(precision))
             else:
-                tmp = psi1 * (np.sqrt(beta))
+                tmp = psi1 * (np.sqrt(precision))
             tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
             A = tdot(tmp) #print A.sum()
 
@@ -144,19 +144,19 @@ class VarDTC(LatentFunctionInference):
             dL_dKmm = backsub_both_sides(Lm, delit)
 
         # derivatives of L w.r.t. psi
-        dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, beta, Lm,
+        dL_dpsi0, dL_dpsi1, dL_dpsi2 = _compute_dL_dpsi(num_inducing, num_data, output_dim, precision, Lm,
             VVT_factor, Cpsi1Vf, DBi_plus_BiPBi,
             psi1, het_noise, uncertain_inputs)
 
         # log marginal likelihood
-        log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, beta, het_noise,
+        log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, precision, het_noise,
             psi0, A, LB, trYYT, data_fit, Y)
 
         #noise derivatives
         dL_dR = _compute_dL_dR(likelihood,
             het_noise, uncertain_inputs, LB,
             _LBi_Lmi_psi1Vf, DBi_plus_BiPBi, Lm, A,
-            psi0, psi1, beta,
+            psi0, psi1, precision,
             data_fit, num_data, output_dim, trYYT, Y, VVT_factor)
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR,Y_metadata)
@@ -181,7 +181,7 @@ class VarDTC(LatentFunctionInference):
         else:
             print('foobar')
             import ipdb; ipdb.set_trace()
-            psi1V = np.dot(Y.T*beta, psi1).T
+            psi1V = np.dot(Y.T*precision, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)
             woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)

@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 try:
+    import matplotlib
     from . import matplot_dep
 except (ImportError, NameError):
     # Matplotlib not available

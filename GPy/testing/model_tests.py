@@ -505,16 +505,14 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2)
 
-    def test_SparseGPRegression_rbf_linear_white_kern_2D_uncertain_inputs(self):
+    def test_SparseGPRegression_rbf_white_kern_2D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 2d data with uncertain inputs'''
-        rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
-        raise unittest.SkipTest("This is not implemented yet!")
+        rbflin = GPy.kern.RBF(2) + GPy.kern.White(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2, uncertain_inputs=1)
 
-    def test_SparseGPRegression_rbf_linear_white_kern_1D_uncertain_inputs(self):
+    def test_SparseGPRegression_rbf_white_kern_1D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs'''
-        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
-        raise unittest.SkipTest("This is not implemented yet!")
+        rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
@@ -563,6 +561,17 @@ class GradientTests(np.testing.TestCase):
         kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, Z=Z)
         self.assertTrue(m.checkgrad())
+
+    def test_sparse_EP_DTC_probit_uncertain_inputs(self):
+        N = 20
+        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
+        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Z = np.linspace(0, 15, 4)[:, None]
+        X_var = np.random.uniform(0.1, 0.2, X.shape)
+        kernel = GPy.kern.RBF(1)
+        m = GPy.models.SparseGPClassificationUncertainInput(X, X_var, Y, kernel=kernel, Z=Z)
+        self.assertTrue(m.checkgrad())
+
 
     def test_multioutput_regression_1D(self):
         X1 = np.random.rand(50, 1) * 8

@@ -230,10 +230,16 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
         #set the limits of the plot to some sensible values
-        ymin, ymax = min(np.append(Y[which_data_rows, which_data_ycols].flatten(), lower)), max(np.append(Y[which_data_rows, which_data_ycols].flatten(), upper))
-        ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
+        try:
+            ymin, ymax = min(np.append(Y[which_data_rows, which_data_ycols].flatten(), lower)), max(np.append(Y[which_data_rows, which_data_ycols].flatten(), upper))
+            if ymin != ymax:
+                ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(ymin, ymax)
+        except:
+            # do nothing
+            # No training data on model
+            pass
 
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):

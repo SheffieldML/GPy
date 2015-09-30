@@ -43,12 +43,10 @@ class SparseGP(GP):
     def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, X_variance=None, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False):
 
-        self.missing_data = np.isnan(Y).any()
-        
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
+                inference_method = var_dtc.VarDTC(limit=1)
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")

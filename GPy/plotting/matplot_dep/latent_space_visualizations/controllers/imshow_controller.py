@@ -3,7 +3,7 @@ Created on 24 Jul 2013
 
 @author: maxz
 '''
-from axis_event_controller import BufferedAxisChangedController
+from .axis_event_controller import BufferedAxisChangedController
 import itertools
 import numpy
 

@@ -36,14 +36,6 @@ GPy.inference.optimization.scg module
     :undoc-members:
     :show-inheritance:
 
-GPy.inference.optimization.sgd module
--------------------------------------
-
-.. automodule:: GPy.inference.optimization.sgd
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.inference.optimization.stochastics module
 ---------------------------------------------
 

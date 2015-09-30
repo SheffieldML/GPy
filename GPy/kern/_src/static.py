@@ -103,12 +103,17 @@ class Bias(Static):
         return ret
 
     def psi2n(self, Z, variational_posterior):
-        ret = np.empty((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret = np.empty((variational_posterior.mean.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
         ret[:] = self.variance*self.variance
         return ret
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0]
+        if dL_dpsi2.ndim == 2:
+            self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
+                                    + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0])
+        else:
+            self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
+                                    + 2.*self.variance*dL_dpsi2.sum())
 
 class Fixed(Static):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):

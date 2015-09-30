@@ -15,6 +15,7 @@ from ..util.initialization import initialize_latent
 from ..core.sparse_gp import SparseGP, GP
 from GPy.core.parameterization.variational import VariationalPosterior
 from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
+from GPy.models.bayesian_gplvm import BayesianGPLVM
 from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 
 class MRD(BayesianGPLVMMiniBatch):
@@ -170,7 +171,8 @@ class MRD(BayesianGPLVMMiniBatch):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
             self.logger.info('working on im <{}>'.format(hex(id(i))))
-            self.Z.gradient[:] += b.Z.gradient#full_values['Zgrad']
+            self.Z.gradient[:] += b._Zgrad  # b.Z.gradient  # full_values['Zgrad']
+
             #grad_dict = b.full_values
 
             if self.has_uncertain_inputs():

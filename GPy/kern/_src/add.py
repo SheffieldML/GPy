@@ -4,7 +4,7 @@
 import numpy as np
 import itertools
 from ...util.caching import Cache_this
-from .kern import CombinationKernel
+from .kern import CombinationKernel, Kern
 from functools import reduce
 
 class Add(CombinationKernel):
@@ -21,8 +21,21 @@ class Add(CombinationKernel):
                 for part in kern.parts[::-1]:
                     kern.unlink_parameter(part)
                     subkerns.insert(i, part)
-
         super(Add, self).__init__(subkerns, name)
+        self._exact_psicomp = self._check_exact_psicomp()
+
+    def _check_exact_psicomp(self):
+        from .. import RBF,Linear,Bias,White
+        n_kerns = len(self.parts)
+        n_rbf = len([k  for k in self.parts if isinstance(k,RBF)])
+        n_linear = len([k  for k in self.parts if isinstance(k,Linear)])
+        n_bias = len([k  for k in self.parts if isinstance(k,Bias)])
+        n_white = len([k  for k in self.parts if isinstance(k,White)])
+        n_others = n_kerns - n_rbf - n_linear - n_bias - n_white
+        if n_rbf+n_linear<=1 and n_bias<=1 and n_white<=1 and n_others==0:
+            return True
+        else:
+            return False
 
     @Cache_this(limit=2, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):
@@ -87,14 +100,17 @@ class Add(CombinationKernel):
 
     @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.psi0(self,Z,variational_posterior)
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
 
     @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.psi1(self,Z,variational_posterior)
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
 
     @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi2(self, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.psi2(self,Z,variational_posterior)
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
         #return psi2
         # compute the "cross" terms
@@ -130,6 +146,7 @@ class Add(CombinationKernel):
 
     @Cache_this(limit=1, force_kwargs=['which_parts'])
     def psi2n(self, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.psi2n(self, Z, variational_posterior)
         psi2 = reduce(np.add, (p.psi2n(Z, variational_posterior) for p in self.parts))
         #return psi2
         # compute the "cross" terms
@@ -147,11 +164,11 @@ class Add(CombinationKernel):
             # rbf X bias
             #elif isinstance(p1, (Bias, Fixed)) and isinstance(p2, (RBF, RBFInv)):
             elif isinstance(p1,  Bias) and isinstance(p2, (RBF, Linear)):
-                tmp = p2.psi1(Z, variational_posterior).sum(axis=0)
+                tmp = p2.psi1(Z, variational_posterior)
                 psi2 += p1.variance * (tmp[:, :, None] + tmp[:, None, :])
             #elif isinstance(p2, (Bias, Fixed)) and isinstance(p1, (RBF, RBFInv)):
             elif isinstance(p2, Bias) and isinstance(p1, (RBF, Linear)):
-                tmp = p1.psi1(Z, variational_posterior).sum(axis=0)
+                tmp = p1.psi1(Z, variational_posterior)
                 psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
                 assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
@@ -164,6 +181,7 @@ class Add(CombinationKernel):
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         for p1 in self.parts:
             #compute the effective dL_dpsi1. Extra terms appear becaue of the cross terms in psi2!
@@ -180,6 +198,7 @@ class Add(CombinationKernel):
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
     def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         target = np.zeros(Z.shape)
         for p1 in self.parts:
@@ -198,6 +217,7 @@ class Add(CombinationKernel):
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        if not self._exact_psicomp: return Kern.gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
         for p1 in self.parameters:

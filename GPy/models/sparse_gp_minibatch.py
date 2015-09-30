@@ -321,3 +321,4 @@ class SparseGPMiniBatch(SparseGP):
         else:
             self.posterior, self._log_marginal_likelihood, self.grad_dict = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
             self._outer_values_update(self.grad_dict)
+        self._Zgrad = self.Z.gradient.copy()

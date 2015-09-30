@@ -3,7 +3,7 @@
 
 import numpy as np
 from matplotlib import pyplot as pb
-import Tango
+from . import Tango
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import offset_copy
 from .base_plots import ax_default

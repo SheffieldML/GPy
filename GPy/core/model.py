@@ -422,7 +422,7 @@ class Model(Parameterized):
         to_print.append(super(Model, self)._repr_html_())
         return "\n".join(to_print)
 
-    def __str__(self):
+    def __str__(self, VT100=True):
         model_details = [['Name', self.name],
                          ['Log-likelihood', '{}'.format(float(self.log_likelihood()))],
                          ["Number of Parameters", '{}'.format(self.size)],
@@ -432,6 +432,6 @@ class Model(Parameterized):
         from operator import itemgetter
         max_len = reduce(lambda a, b: max(len(b[0]), a), model_details, 0)
         to_print = [""] + ["{0:{l}} : {1}".format(name, detail, l=max_len) for name, detail in model_details] + ["Parameters:"]
-        to_print.append(super(Model, self).__str__())
+        to_print.append(super(Model, self).__str__(VT100=VT100))
         return "\n".join(to_print)
 

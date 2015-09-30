@@ -405,7 +405,7 @@ class Parameterized(Parameterizable):
 </style>"""
         return style + '\n' + '<table class="tg">' + '\n'.format(sep).join(to_print) + '\n</table>'
 
-    def __str__(self, header=True):
+    def __str__(self, header=True, VT100=True):
         name = adjust_name_for_printing(self.name) + "."
         constrs = self._constraints_str;
         ts = self._ties_str
@@ -416,7 +416,10 @@ class Parameterized(Parameterizable):
         cl = max([len(str(x)) if x else 0 for x in constrs + ["Constraint"]])
         tl = max([len(str(x)) if x else 0 for x in ts + ["Tied to"]])
         pl = max([len(str(x)) if x else 0 for x in prirs + ["Prior"]])
-        format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:>{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
+        if VT100:
+            format_spec = "  \033[1m{{name:<{0}s}}\033[0;0m  |  {{desc:>{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
+        else:
+            format_spec = "  {{name:<{0}s}}  |  {{desc:>{1}s}}  |  {{const:^{2}s}}  |  {{pri:^{3}s}}  |  {{t:^{4}s}}".format(nl, sl, cl, pl, tl)
         to_print = []
         for n, d, c, t, p in zip(names, desc, constrs, ts, prirs):
             to_print.append(format_spec.format(name=n, desc=d, const=c, t=t, pri=p))

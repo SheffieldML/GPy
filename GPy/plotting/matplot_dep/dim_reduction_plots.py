@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from latent_space_visualizations.controllers.imshow_controller import ImshowController,ImAnnotateController
+from .latent_space_visualizations.controllers.imshow_controller import ImshowController,ImAnnotateController
 from ...core.parameterization.variational import VariationalPosterior
 from .base_plots import x_frame2D
 import itertools

@@ -228,13 +228,35 @@ class opt_SCG(Optimizer):
         self.f_opt = self.trace[-1]
         self.funct_eval = opt_result[2]
         self.status = opt_result[3]
+        
+class Opt_Adadelta(Optimizer):
+    def __init__(self, step_rate=0.1, decay=0.9, momentum=0, *args, **kwargs):
+        Optimizer.__init__(self, *args, **kwargs)
+        self.opt_name = "Adadelta (climin)"
+        self.step_rate=step_rate
+        self.decay = decay
+        self.momentum = momentum
+
+    def opt(self, f_fp=None, f=None, fp=None):
+        assert not fp is None
+        
+        import climin
+                    
+        opt = climin.adadelta.Adadelta(self.x_init, fp, step_rate=self.step_rate, decay=self.decay, momentum=self.momentum)
+        
+        for info in opt:
+            if info['n_iter']>=self.max_iters:
+                self.x_opt =  opt.wrt
+                self.status = 'maximum number of function evaluations exceeded '
+                break
 
 def get_optimizer(f_min):
 
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
-          'scg': opt_SCG}
+          'scg': opt_SCG,
+          'adadelta':Opt_Adadelta}
 
     if rasm_available:
         optimizers['rasmussen'] = opt_rasm

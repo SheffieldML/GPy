@@ -20,6 +20,22 @@ GPy.util.caching module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.choleskies module
+--------------------------
+
+.. automodule:: GPy.util.choleskies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.util.choleskies_cython module
+---------------------------------
+
+.. automodule:: GPy.util.choleskies_cython
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.classification module
 ------------------------------
 
@@ -68,14 +84,6 @@ GPy.util.diag module
     :undoc-members:
     :show-inheritance:
 
-GPy.util.erfcx module
----------------------
-
-.. automodule:: GPy.util.erfcx
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.util.functions module
 -------------------------
 
@@ -108,6 +116,14 @@ GPy.util.linalg module
     :undoc-members:
     :show-inheritance:
 
+GPy.util.linalg_cython module
+-----------------------------
+
+.. automodule:: GPy.util.linalg_cython
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.util.linalg_gpu module
 --------------------------
 
@@ -136,14 +152,6 @@ GPy.util.mocap module
 ---------------------
 
 .. automodule:: GPy.util.mocap
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.util.mpi module
--------------------
-
-.. automodule:: GPy.util.mpi
     :members:
     :undoc-members:
     :show-inheritance:

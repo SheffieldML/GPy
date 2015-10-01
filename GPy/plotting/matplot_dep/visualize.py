@@ -4,7 +4,7 @@ import GPy
 import numpy as np
 import matplotlib as mpl
 import time
-from GPy.core.parameterization.variational import VariationalPosterior
+from ...core.parameterization.variational import VariationalPosterior
 try:
     import visual
     visual_available = True

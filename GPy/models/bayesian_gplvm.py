@@ -97,7 +97,7 @@ class BayesianGPLVM(SparseGP_MPI):
                                             dL_dpsi2=self.grad_dict['dL_dpsi2'])
 
         self.variational_prior.update_gradients_KL(self.X)
-
+        self._Xgrad = self.X.gradient.copy()
 
         #super(BayesianGPLVM, self).parameters_changed()
         #self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)

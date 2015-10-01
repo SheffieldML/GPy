@@ -361,7 +361,7 @@ class SkewChecker(HessianChecker):
 
             #Check every block individually (for ease)
             check_passed = [False]*numeric_hess.shape[2]
-            for block_ind in xrange(numeric_hess.shape[2]):
+            for block_ind in range(numeric_hess.shape[2]):
                 #Unless super_plot is set, just plot the first one
                 p = True if (plot and block_ind == numeric_hess.shape[2]-1) or super_plot else False
                 if verbose:

@@ -28,14 +28,6 @@ GPy.inference.latent_function_inference.expectation_propagation module
     :undoc-members:
     :show-inheritance:
 
-GPy.inference.latent_function_inference.expectation_propagation_dtc module
---------------------------------------------------------------------------
-
-.. automodule:: GPy.inference.latent_function_inference.expectation_propagation_dtc
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.inference.latent_function_inference.fitc module
 ---------------------------------------------------
 
@@ -68,6 +60,14 @@ GPy.inference.latent_function_inference.posterior module
     :undoc-members:
     :show-inheritance:
 
+GPy.inference.latent_function_inference.svgp module
+---------------------------------------------------
+
+.. automodule:: GPy.inference.latent_function_inference.svgp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.inference.latent_function_inference.var_dtc module
 ------------------------------------------------------
 
@@ -76,18 +76,18 @@ GPy.inference.latent_function_inference.var_dtc module
     :undoc-members:
     :show-inheritance:
 
-GPy.inference.latent_function_inference.var_dtc_gpu module
-----------------------------------------------------------
-
-.. automodule:: GPy.inference.latent_function_inference.var_dtc_gpu
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 GPy.inference.latent_function_inference.var_dtc_parallel module
 ---------------------------------------------------------------
 
 .. automodule:: GPy.inference.latent_function_inference.var_dtc_parallel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.inference.latent_function_inference.var_gauss module
+--------------------------------------------------------
+
+.. automodule:: GPy.inference.latent_function_inference.var_gauss
     :members:
     :undoc-members:
     :show-inheritance:

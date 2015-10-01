@@ -12,6 +12,14 @@ GPy.likelihoods.bernoulli module
     :undoc-members:
     :show-inheritance:
 
+GPy.likelihoods.binomial module
+-------------------------------
+
+.. automodule:: GPy.likelihoods.binomial
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.likelihoods.exponential module
 ----------------------------------
 

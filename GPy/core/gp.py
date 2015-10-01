@@ -640,7 +640,7 @@ class GP(Model):
                                      fignum, ax, data_symbol, **kw)
 
 
-    def errorbars_trainset(self, which_data_rows='all',
+    def plot_errorbars_trainset(self, which_data_rows='all',
             which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
             linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True,lw=None):
 
@@ -669,7 +669,7 @@ class GP(Model):
         kw = {}
         if lw is not None:
             kw['lw'] = lw
-        return models_plots.errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
+        return models_plots.plot_errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
                                     fignum, ax, linecol, data_symbol,
                                     predict_kw, plot_training_data, **kw)
 

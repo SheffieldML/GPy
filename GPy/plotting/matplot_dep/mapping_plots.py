@@ -3,11 +3,11 @@
 
 import numpy as np
 try:
-    import Tango
+    from . import Tango
     from matplotlib import pyplot as pb
 except:
     pass
-from base_plots import x_frame1D, x_frame2D
+from .base_plots import x_frame1D, x_frame2D
 
 
 def plot_mapping(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue']):

@@ -63,7 +63,7 @@ def plot_data(model, which_data_rows='all',
         for d in which_data_ycols:
             plots['dataplot'].append(ax.plot(X[which_data_rows, free_dims], Y[which_data_rows, d], data_symbol, mew=mew))
             if X_variance is not None:
-                plots['xerrorbar'] = ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, which_data_ycols].flatten(),
+                plots['xerrorbar'] = ax.errorbar(X[which_data_rows, free_dims].flatten(), Y[which_data_rows, d].flatten(),
                             xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
                             ecolor='k', fmt='none', elinewidth=.5, alpha=.5)
 
@@ -230,10 +230,16 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
 
         #set the limits of the plot to some sensible values
-        ymin, ymax = min(np.append(Y[which_data_rows, which_data_ycols].flatten(), lower)), max(np.append(Y[which_data_rows, which_data_ycols].flatten(), upper))
-        ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
+        try:
+            ymin, ymax = min(np.append(Y[which_data_rows, which_data_ycols].flatten(), lower)), max(np.append(Y[which_data_rows, which_data_ycols].flatten(), upper))
+            if ymin != ymax:
+                ymin, ymax = ymin - 0.1 * (ymax - ymin), ymax + 0.1 * (ymax - ymin)
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(ymin, ymax)
+        except:
+            # do nothing
+            # No training data on model
+            pass
 
         #add inducing inputs (if a sparse model is used)
         if hasattr(model,"Z"):
@@ -341,7 +347,7 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_
         return X
 
 
-def errorbars_trainset(model, which_data_rows='all',
+def plot_errorbars_trainset(model, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         fignum=None, ax=None,
         linecol='red', data_symbol='kx',

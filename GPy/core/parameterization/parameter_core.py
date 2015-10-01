@@ -227,8 +227,8 @@ class Nameable(Gradcheckable):
     Make an object nameable inside the hierarchy.
     """
     def __init__(self, name, *a, **kw):
-        super(Nameable, self).__init__(*a, **kw)
         self._name = name or self.__class__.__name__
+        super(Nameable, self).__init__(*a, **kw)
 
     @property
     def name(self):

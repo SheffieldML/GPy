@@ -5,7 +5,7 @@ The module plotting results for SSGPLVM
 import pylab
 
 from ...models import SSGPLVM
-from img_plots import plot_2D_images
+from .img_plots import plot_2D_images
 
 class SSGPLVM_plot(object):
     def __init__(self,model, imgsize):

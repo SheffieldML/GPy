@@ -368,9 +368,9 @@ class Model(Parameterized):
             for nind, xind in zip(param_index, transformed_index):
                 xx = x.copy()
                 xx[xind] += step
-                f1 = self._objective(xx)
+                f1 = float(self._objective(xx))
                 xx[xind] -= 2.*step
-                f2 = self._objective(xx)
+                f2 = float(self._objective(xx))
                 #Avoid divide by zero, if any of the values are above 1e-15, otherwise both values are essentiall
                 #the same
                 if f1 > 1e-15 or f1 < -1e-15 or f2 > 1e-15 or f2 < -1e-15:
@@ -378,9 +378,9 @@ class Model(Parameterized):
                 else:
                     df_ratio = 1.0
                 df_unstable = df_ratio < df_tolerance
-                numerical_gradient = (f1 - f2) / (2 * step)
+                numerical_gradient = (f1 - f2) / (2. * step)
                 if np.all(gradient[xind] == 0): ratio = (f1 - f2) == gradient[xind]
-                else: ratio = (f1 - f2) / (2 * step * gradient[xind])
+                else: ratio = (f1 - f2) / (2. * step * gradient[xind])
                 difference = np.abs(numerical_gradient - gradient[xind])
 
                 if (np.abs(1. - ratio) < tolerance) or np.abs(difference) < tolerance:

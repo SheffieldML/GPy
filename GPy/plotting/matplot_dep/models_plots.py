@@ -9,6 +9,7 @@ from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalized
 from scipy import sparse
 from ...core.parameterization.variational import VariationalPosterior
 from matplotlib import pyplot as plt
+from GPy.plotting.matplot_dep.base_plots import plot_gradient_fill
 
 
 def plot_data(model, which_data_rows='all',
@@ -297,6 +298,70 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
     else:
         raise NotImplementedError("Cannot define a frame with more than two input dimensions")
+    return plots
+
+def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None, 
+        fixed_inputs=[], plot_raw=False, edgecolor='none', facecolor='#3465a4',  
+        predict_kw=None,Y_metadata=None, 
+        apply_link=False, resolution=200, **patch_kwargs):
+    #deal with optional arguments
+    if ax is None:
+        fig = plt.figure(num=fignum)
+        ax = fig.add_subplot(111)
+
+    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
+        X = model.X.mean
+    else:
+        X = model.X
+    Y = model.Y
+    if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
+
+    if predict_kw is None:
+        predict_kw = {}
+
+    #work out what the inputs are for plotting (1D or 2D)
+    fixed_dims = np.array([i for i,v in fixed_inputs])
+    free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
+    plots = {}
+    #one dimensional plotting
+    if len(free_dims) == 1:
+        #define the frame on which to plot
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution)
+        Xgrid = np.empty((Xnew.shape[0],model.input_dim))
+        Xgrid[:,free_dims] = Xnew
+        for i,v in fixed_inputs:
+            Xgrid[:,i] = v
+
+        percs = np.linspace(2.5, 97.5, levels*2)
+
+        #make a prediction on the frame and plot it
+        if plot_raw:
+            raise NotImplementedError('What to do? What to do?')
+            #===================================================================
+            # m, v = model._raw_predict(Xgrid, **predict_kw)
+            # percentiles = model.predict_quantiles(Xgrid, )
+            # if apply_link:
+            #     lower = model.likelihood.gp_link.transf(m - 2*np.sqrt(v))
+            #     upper = model.likelihood.gp_link.transf(m + 2*np.sqrt(v))
+            #     #Once transformed this is now the median of the function
+            #     m = model.likelihood.gp_link.transf(m)
+            # else:
+            #     lower = m - 2*np.sqrt(v)
+            #     upper = m + 2*np.sqrt(v)
+            #===================================================================
+        else:
+            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+                extra_data = Xgrid[:,-1:].astype(np.int)
+                if Y_metadata is None:
+                    Y_metadata = {'output_index': extra_data}
+                else:
+                    Y_metadata['output_index'] = extra_data
+            percentiles = [i[:, 0] for i in model.predict_quantiles(Xgrid, percs, Y_metadata=Y_metadata, **predict_kw)]
+        patch_kwargs['facecolor'] = facecolor
+        patch_kwargs['edgecolor'] = edgecolor
+        plots['density'] = plot_gradient_fill(ax, Xgrid[:, 0], percentiles, **patch_kwargs)
+    else:
+        raise NotImplementedError('Only 1D density plottable.')
     return plots
 
 def plot_fit_f(model, *args, **kwargs):

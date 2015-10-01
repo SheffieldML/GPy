@@ -40,6 +40,88 @@ def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, f
 
     return plots
 
+def plot_gradient_fill(ax, x, percentiles, **kwargs):
+    plots = []
+
+    #here's the box
+    if 'linewidth' not in kwargs:
+        kwargs['linewidth'] = 0.5
+    if not 'alpha' in kwargs.keys():
+        kwargs['alpha'] = 1./(len(percentiles))
+    
+    # pop where from kwargs
+    where = kwargs.pop('where') if 'where' in kwargs else None
+    # pop interpolate, which we actually do not do here!
+    if 'interpolate' in kwargs: kwargs.pop('interpolate')
+    
+    def pairwise(inlist):
+        l = len(inlist)
+        for i in range(int(np.ceil(l/2.))):
+            yield inlist[:][i], inlist[:][(l-1)-i]
+    
+    polycol = []
+    for y1, y2 in pairwise(percentiles):
+        import matplotlib.mlab as mlab
+        # Handle united data, such as dates
+        ax._process_unit_info(xdata=x, ydata=y1)
+        ax._process_unit_info(ydata=y2)
+    
+        # Convert the arrays so we can work with them
+        from numpy import ma
+        x = ma.masked_invalid(ax.convert_xunits(x))
+        y1 = ma.masked_invalid(ax.convert_yunits(y1))
+        y2 = ma.masked_invalid(ax.convert_yunits(y2))
+    
+        if y1.ndim == 0:
+            y1 = np.ones_like(x) * y1
+        if y2.ndim == 0:
+            y2 = np.ones_like(x) * y2
+    
+        if where is None:
+            where = np.ones(len(x), np.bool)
+        else:
+            where = np.asarray(where, np.bool)
+    
+        if not (x.shape == y1.shape == y2.shape == where.shape):
+            raise ValueError("Argument dimensions are incompatible")
+    
+        mask = reduce(ma.mask_or, [ma.getmask(a) for a in (x, y1, y2)])
+        if mask is not ma.nomask:
+            where &= ~mask
+        
+        polys = []
+        for ind0, ind1 in mlab.contiguous_regions(where):
+            xslice = x[ind0:ind1]
+            y1slice = y1[ind0:ind1]
+            y2slice = y2[ind0:ind1]
+    
+            if not len(xslice):
+                continue
+    
+            N = len(xslice)
+            X = np.zeros((2 * N + 2, 2), np.float)
+    
+            # the purpose of the next two lines is for when y2 is a
+            # scalar like 0 and we want the fill to go all the way
+            # down to 0 even if none of the y1 sample points do
+            start = xslice[0], y2slice[0]
+            end = xslice[-1], y2slice[-1]
+    
+            X[0] = start
+            X[N + 1] = end
+    
+            X[1:N + 1, 0] = xslice
+            X[1:N + 1, 1] = y1slice
+            X[N + 2:, 0] = xslice[::-1]
+            X[N + 2:, 1] = y2slice[::-1]
+    
+            polys.append(X)
+        polycol.extend(polys)
+    from matplotlib.collections import PolyCollection
+    plots.append(PolyCollection(polycol, **kwargs))
+    ax.add_collection(plots[-1], autolim=True)
+    ax.autoscale_view()
+    return plots
 
 def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
     _, axes = ax_default(fignum, ax)

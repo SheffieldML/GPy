@@ -595,6 +595,45 @@ class GP(Model):
                                      data_symbol=data_symbol, predict_kw=predict_kw,
                                      plot_training_data=plot_training_data, samples_y=samples_y, apply_link=apply_link, **kw)
 
+    def plot_density(self, levels=20, plot_limits=None, fignum=None, ax=None, 
+        fixed_inputs=[], plot_raw=False, edgecolor='none', facecolor='#3465a4', 
+        predict_kw=None,Y_metadata=None, 
+        apply_link=False, resolution=200, **patch_kw):
+        """
+        Plot the posterior density of the GP.
+          - In one dimension, the function is plotted with a shaded gradient, visualizing the density of the posterior.
+          - Only implemented for one dimension, for higher dimensions use `plot`.
+
+        :param levels: number of levels to plot in the density plot. This is a number between 1 and 100. 1 corresponds to the normal plot_fit.
+        :type levels: int
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+        :type fixed_inputs: a list of tuples
+        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+        :type resolution: int
+        :param edgecolor: color of line to plot [Tango.colorsHex['darkBlue']]
+        :type edgecolor: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param facecolor: color of fill [Tango.colorsHex['lightBlue']]
+        :type facecolor: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+        :param Y_metadata: additional data associated with Y which may be needed
+        :type Y_metadata: dict
+        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*, when plotting posterior samples f
+        :type apply_link: boolean
+        :param resolution: resolution of interpolation (how many points to interpolate of the posterior).
+        :type resolution: int
+        :param: patch_kw: the keyword arguments for the patchcollection fill.
+        """
+        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+        from ..plotting.matplot_dep import models_plots
+        return models_plots.plot_density(self, levels, plot_limits, fignum, ax,
+                                         fixed_inputs, plot_raw=plot_raw, 
+                                         Y_metadata=Y_metadata,
+                                         predict_kw=predict_kw,
+                                         apply_link=apply_link, 
+                                         edgecolor=edgecolor, facecolor=facecolor,
+                                         **patch_kw)
+        
 
     def plot_data(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,

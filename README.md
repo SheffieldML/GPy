@@ -10,10 +10,10 @@ A Gaussian processes framework in Python.
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
 #### Continuous integration
-|      | Travis-CI | Readthedocs |
-| ---: | :--: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![mdocs](https://img.shields.io/badge/docs-master-blue.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![ddocs](https://img.shields.io/badge/docs-devel-blue.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
+|      | Travis-CI | Codecov | Readthedocs |
+| ---: | :--: | :---: | :---: |
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![mdocs](https://img.shields.io/badge/docs-master-blue.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![ddocs](https://img.shields.io/badge/docs-devel-blue.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
 
 ### Supported Platforms:
 

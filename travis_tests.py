@@ -10,5 +10,5 @@ import matplotlib
 matplotlib.use('svg')
 
 import nose 
-nose.main('applygpy', defaultTest='applygpy/tests')  
+nose.main('GPy', defaultTest='GPy/testing')  
 

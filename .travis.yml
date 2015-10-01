@@ -21,8 +21,6 @@ cache:
 
 env:
   - PYTHON_VERSION=2.7
-  - PYTHON_VERSION=3.3
-  - PYTHON_VERSION=3.4
   - PYTHON_VERSION=3.5
 
 before_install:
@@ -59,11 +57,9 @@ install:
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
   - python -V
   - python setup.py develop
-
-before_script:
-  - cd $HOME
-  - mkdir empty
-  - cd empty
    
 script:
-  - nosetests GPy.testing
+  - coverage run travis_testing.py
+
+after_success:
+  - codecov

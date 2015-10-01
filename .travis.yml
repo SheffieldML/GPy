@@ -55,7 +55,7 @@ before_install:
   
 install:
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
-  - python -V
+  - pip install codecov
   - python setup.py develop
    
 script:

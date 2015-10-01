@@ -6,7 +6,7 @@ import numpy as np
 import GPy
 
 class MFtests(unittest.TestCase):
-    def simple_mean_function():
+    def test_simple_mean_function(self):
         """
         The simplest possible mean function. No parameters, just a simple Sinusoid.
         """

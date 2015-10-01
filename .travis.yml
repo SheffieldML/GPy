@@ -54,12 +54,12 @@ before_install:
   - export PATH="$MINICONDA_INSTALL/bin:$PATH";
   
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six;
+  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib;
   - pip install codecov
   - python setup.py develop
    
 script:
-  - coverage run travis_testing.py
+  - coverage run travis_tests.py
 
 after_success:
   - codecov

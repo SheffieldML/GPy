@@ -392,9 +392,9 @@ class MRD(BayesianGPLVMMiniBatch):
             privateDims[i].sort()
 
         if printOut:
-            print '# Shared dimensions: ' + str(sharedDims)
+            print('# Shared dimensions: ' + str(sharedDims))
             for i in range(len(retainedScales)):
-                print '# Private dimensions model ' + str(i) + ':' + str(privateDims[i])
+                print('# Private dimensions model ' + str(i) + ':' + str(privateDims[i]))
 
         return sharedDims, privateDims
 

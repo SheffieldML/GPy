@@ -35,5 +35,5 @@ import matplotlib
 matplotlib.use('agg')
 
 import nose 
-nose.main('GPy', defaultTest='GPy/testing/plotting_tests.py')  
+nose.main('GPy', defaultTest='GPy/testing')  
 

@@ -272,7 +272,7 @@ class GP(Model):
         mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -288,7 +288,9 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
+        if likelihood is None:
+            likelihood = self.likelihood
+        return likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
     def predictive_gradients(self, Xnew):
         """

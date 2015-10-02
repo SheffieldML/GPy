@@ -9,7 +9,7 @@ from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalized
 from scipy import sparse
 from ...core.parameterization.variational import VariationalPosterior
 from matplotlib import pyplot as plt
-from GPy.plotting.matplot_dep.base_plots import plot_gradient_fill
+from .base_plots import plot_gradient_fill
 
 
 def plot_data(model, which_data_rows='all',
@@ -336,19 +336,9 @@ def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None,
 
         #make a prediction on the frame and plot it
         if plot_raw:
-            raise NotImplementedError('What to do? What to do?')
-            #===================================================================
-            # m, v = model._raw_predict(Xgrid, **predict_kw)
-            # percentiles = model.predict_quantiles(Xgrid, )
-            # if apply_link:
-            #     lower = model.likelihood.gp_link.transf(m - 2*np.sqrt(v))
-            #     upper = model.likelihood.gp_link.transf(m + 2*np.sqrt(v))
-            #     #Once transformed this is now the median of the function
-            #     m = model.likelihood.gp_link.transf(m)
-            # else:
-            #     lower = m - 2*np.sqrt(v)
-            #     upper = m + 2*np.sqrt(v)
-            #===================================================================
+            from scipy import stats
+            from ...likelihoods import Gaussian
+            lik = Gaussian(variance=0)
         else:
             if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
                 extra_data = Xgrid[:,-1:].astype(np.int)
@@ -356,7 +346,11 @@ def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None,
                     Y_metadata = {'output_index': extra_data}
                 else:
                     Y_metadata['output_index'] = extra_data
-            percentiles = [i[:, 0] for i in model.predict_quantiles(Xgrid, percs, Y_metadata=Y_metadata, **predict_kw)]
+            lik = None
+        percentiles = [i[:, 0] for i in model.predict_quantiles(Xgrid, percs, Y_metadata=Y_metadata, likelihood=lik, **predict_kw)]
+        if apply_link:
+            percentiles = model.likelihood.gp_link.transf(percentiles)
+        
         patch_kwargs['facecolor'] = facecolor
         patch_kwargs['edgecolor'] = edgecolor
         plots['density'] = plot_gradient_fill(ax, Xgrid[:, 0], percentiles, **patch_kwargs)

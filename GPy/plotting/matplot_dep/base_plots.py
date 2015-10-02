@@ -1,11 +1,11 @@
 # #Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from matplotlib import pyplot as pb
+from matplotlib import pyplot as plt
 import numpy as np
 
 def ax_default(fignum, ax):
     if ax is None:
-        fig = pb.figure(fignum)
+        fig = plt.figure(fignum)
         ax = fig.add_subplot(111)
     else:
         fig = ax.figure
@@ -35,12 +35,14 @@ def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, f
     plots.append(axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs))
 
     #this is the edge:
-    plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,ax=axes))
-    plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,ax=axes))
+    plots.append(meanplot(x, upper,color=edgecol, linewidth=0.2, ax=axes))
+    plots.append(meanplot(x, lower,color=edgecol, linewidth=0.2, ax=axes))
 
     return plots
 
-def plot_gradient_fill(ax, x, percentiles, **kwargs):
+def gradient_fill(x, percentiles, ax=None, fignum=None, **kwargs):
+    _, ax = ax_default(fignum, ax)
+
     plots = []
 
     #here's the box
@@ -150,19 +152,19 @@ def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
 
 
 def removeRightTicks(ax=None):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     for i, line in enumerate(ax.get_yticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
 
 def removeUpperTicks(ax=None):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     for i, line in enumerate(ax.get_xticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
 
 def fewerXticks(ax=None,divideby=2):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     ax.set_xticks(ax.get_xticks()[::divideby])
 
 def align_subplots(N,M,xlim=None, ylim=None):
@@ -171,33 +173,33 @@ def align_subplots(N,M,xlim=None, ylim=None):
     if xlim is None:
         xlim = [np.inf,-np.inf]
         for i in range(N*M):
-            pb.subplot(N,M,i+1)
-            xlim[0] = min(xlim[0],pb.xlim()[0])
-            xlim[1] = max(xlim[1],pb.xlim()[1])
+            plt.subplot(N,M,i+1)
+            xlim[0] = min(xlim[0],plt.xlim()[0])
+            xlim[1] = max(xlim[1],plt.xlim()[1])
     if ylim is None:
         ylim = [np.inf,-np.inf]
         for i in range(N*M):
-            pb.subplot(N,M,i+1)
-            ylim[0] = min(ylim[0],pb.ylim()[0])
-            ylim[1] = max(ylim[1],pb.ylim()[1])
+            plt.subplot(N,M,i+1)
+            ylim[0] = min(ylim[0],plt.ylim()[0])
+            ylim[1] = max(ylim[1],plt.ylim()[1])
 
     for i in range(N*M):
-        pb.subplot(N,M,i+1)
-        pb.xlim(xlim)
-        pb.ylim(ylim)
+        plt.subplot(N,M,i+1)
+        plt.xlim(xlim)
+        plt.ylim(ylim)
         if (i)%M:
-            pb.yticks([])
+            plt.yticks([])
         else:
             removeRightTicks()
         if i<(M*(N-1)):
-            pb.xticks([])
+            plt.xticks([])
         else:
             removeUpperTicks()
 
 def align_subplot_array(axes,xlim=None, ylim=None):
     """
     Make all of the axes in the array hae the same limits, turn off unnecessary ticks
-    use pb.subplots() to get an array of axes
+    use plt.subplots() to get an array of axes
     """
     #find sensible xlim,ylim
     if xlim is None:

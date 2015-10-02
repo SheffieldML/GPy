@@ -9,12 +9,13 @@ from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalized
 from scipy import sparse
 from ...core.parameterization.variational import VariationalPosterior
 from matplotlib import pyplot as plt
-from .base_plots import plot_gradient_fill
+from .base_plots import gradient_fill
+from functools import wraps
 
 
-def plot_data(model, which_data_rows='all',
+def plot_data(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        fignum=None, ax=None, data_symbol='kx',mew=1.5):
+        fignum=None, ax=None, data_symbol='kx',mew=1.5,**kwargs):
     """
     Plot the training data
       - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
@@ -23,7 +24,7 @@ def plot_data(model, which_data_rows='all',
     using which_data_rows and which_data_ycols.
 
     :param which_data_rows: which of the training data to plot (default all)
-    :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+    :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
     :param which_data_ycols: when the data has several columns (independant outputs), only plot these
     :type which_data_rows: 'all' or a list of integers
     :param visible_dims: an array specifying the input dimensions to plot (maximum two)
@@ -37,23 +38,23 @@ def plot_data(model, which_data_rows='all',
     if which_data_rows == 'all':
         which_data_rows = slice(None)
     if which_data_ycols == 'all':
-        which_data_ycols = np.arange(model.output_dim)
+        which_data_ycols = np.arange(self.output_dim)
 
     if ax is None:
         fig = plt.figure(num=fignum)
         ax = fig.add_subplot(111)
 
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
-        X = model.X.mean
-        X_variance = model.X.variance
+    if hasattr(self, 'has_uncertain_inputs') and self.has_uncertain_inputs():
+        X = self.X.mean
+        X_variance = self.X.variance
     else:
-        X = model.X
+        X = self.X
         X_variance = None
-    Y = model.Y
+    Y = self.Y
 
     #work out what the inputs are for plotting (1D or 2D)
     if visible_dims is None:
-        visible_dims = np.arange(model.input_dim)
+        visible_dims = np.arange(self.input_dim)
     assert visible_dims.size <= 2, "Visible inputs cannot be larger than two"
     free_dims = visible_dims
     plots = {}
@@ -80,7 +81,7 @@ def plot_data(model, which_data_rows='all',
     return plots
 
 
-def plot_fit(model, plot_limits=None, which_data_rows='all',
+def plot_fit(self, plot_limits=None, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=[],
         levels=20, samples=0, fignum=None, ax=None, resolution=None,
         plot_raw=False,
@@ -98,7 +99,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
     :param which_data_rows: which of the training data to plot (default all)
-    :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
+    :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
     :param which_data_ycols: when the data has several columns (independant outputs), only plot these
     :type which_data_rows: 'all' or a list of integers
     :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
@@ -134,98 +135,98 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
     if which_data_rows == 'all':
         which_data_rows = slice(None)
     if which_data_ycols == 'all':
-        which_data_ycols = np.arange(model.output_dim)
+        which_data_ycols = np.arange(self.output_dim)
     #if len(which_data_ycols)==0:
         #raise ValueError('No data selected for plotting')
     if ax is None:
         fig = plt.figure(num=fignum)
         ax = fig.add_subplot(111)
 
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
-        X = model.X.mean
-        X_variance = model.X.variance
+    if hasattr(self, 'has_uncertain_inputs') and self.has_uncertain_inputs():
+        X = self.X.mean
+        X_variance = self.X.variance
     else:
-        X = model.X
-    Y = model.Y
+        X = self.X
+    Y = self.Y
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
 
-    if hasattr(model, 'Z'): Z = model.Z
+    if hasattr(self, 'Z'): Z = self.Z
 
     if predict_kw is None:
         predict_kw = {}
 
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
-    free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
+    free_dims = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
     plots = {}
     #one dimensional plotting
     if len(free_dims) == 1:
 
         #define the frame on which to plot
         Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution or 200)
-        Xgrid = np.empty((Xnew.shape[0],model.input_dim))
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
 
         #make a prediction on the frame and plot it
         if plot_raw:
-            m, v = model._raw_predict(Xgrid, **predict_kw)
+            m, v = self._raw_predict(Xgrid, **predict_kw)
             if apply_link:
-                lower = model.likelihood.gp_link.transf(m - 2*np.sqrt(v))
-                upper = model.likelihood.gp_link.transf(m + 2*np.sqrt(v))
+                lower = self.likelihood.gp_link.transf(m - 2*np.sqrt(v))
+                upper = self.likelihood.gp_link.transf(m + 2*np.sqrt(v))
                 #Once transformed this is now the median of the function
-                m = model.likelihood.gp_link.transf(m)
+                m = self.likelihood.gp_link.transf(m)
             else:
                 lower = m - 2*np.sqrt(v)
                 upper = m + 2*np.sqrt(v)
         else:
-            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+            if isinstance(self,GPCoregionalizedRegression) or isinstance(self,SparseGPCoregionalizedRegression):
                 extra_data = Xgrid[:,-1:].astype(np.int)
                 if Y_metadata is None:
                     Y_metadata = {'output_index': extra_data}
                 else:
                     Y_metadata['output_index'] = extra_data
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
-            fmu, fv = model._raw_predict(Xgrid, full_cov=False, **predict_kw)
-            lower, upper = model.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
+            m, v = self.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
+            fmu, fv = self._raw_predict(Xgrid, full_cov=False, **predict_kw)
+            lower, upper = self.likelihood.predictive_quantiles(fmu, fv, (2.5, 97.5), Y_metadata=Y_metadata)
 
 
         for d in which_data_ycols:
             plots['gpplot'] = gpplot(Xnew, m[:, d], lower[:, d], upper[:, d], ax=ax, edgecol=linecol, fillcol=fillcol)
             #if not plot_raw: plots['dataplot'] = ax.plot(X[which_data_rows,free_dims], Y[which_data_rows, d], data_symbol, mew=1.5)
             if not plot_raw and plot_training_data:
-                plots['dataplot'] = plot_data(model=model, which_data_rows=which_data_rows,
+                plots['dataplot'] = plot_data(self=self, which_data_rows=which_data_rows,
                 visible_dims=free_dims, data_symbol=data_symbol, mew=1.5, ax=ax, fignum=fignum)
 
 
         #optionally plot some samples
         if samples: #NOTE not tested with fixed_inputs
-            Fsim = model.posterior_samples_f(Xgrid, samples)
+            Fsim = self.posterior_samples_f(Xgrid, samples)
             if apply_link:
-                Fsim = model.likelihood.gp_link.transf(Fsim)
+                Fsim = self.likelihood.gp_link.transf(Fsim)
             for fi in Fsim.T:
                 plots['posterior_samples'] = ax.plot(Xnew, fi[:,None], '#3300FF', linewidth=0.25)
                 #ax.plot(Xnew, fi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
         if samples_y: #NOTE not tested with fixed_inputs
-            Ysim = model.posterior_samples(Xgrid, samples_y, Y_metadata=Y_metadata)
+            Ysim = self.posterior_samples(Xgrid, samples_y, Y_metadata=Y_metadata)
             for yi in Ysim.T:
                 plots['posterior_samples_y'] = ax.scatter(Xnew, yi[:,None], s=5, c=Tango.colorsHex['darkBlue'], marker='o', alpha=0.5)
                 #ax.plot(Xnew, yi[:,None], marker='x', linestyle='--',color=Tango.colorsHex['darkBlue']) #TODO apply this line for discrete outputs.
 
 
         #add error bars for uncertain (if input uncertainty is being modelled)
-        if hasattr(model,"has_uncertain_inputs") and model.has_uncertain_inputs() and plot_uncertain_inputs:
+        if hasattr(self,"has_uncertain_inputs") and self.has_uncertain_inputs() and plot_uncertain_inputs:
             if plot_raw:
                 #add error bars for uncertain (if input uncertainty is being modelled), for plot_f
                 #Hack to plot error bars on latent function, rather than on the data
-                vs = model.X.mean.values.copy()
+                vs = self.X.mean.values.copy()
                 for i,v in fixed_inputs:
                     vs[:,i] = v
-                m_X, _ = model._raw_predict(vs)
+                m_X, _ = self._raw_predict(vs)
                 if apply_link:
-                    m_X = model.likelihood.gp_link.transf(m_X)
+                    m_X = self.likelihood.gp_link.transf(m_X)
                 plots['xerrorbar'] = ax.errorbar(X[which_data_rows, free_dims].flatten(), m_X[which_data_rows, which_data_ycols].flatten(),
                             xerr=2 * np.sqrt(X_variance[which_data_rows, free_dims].flatten()),
                             ecolor='k', fmt=None, elinewidth=.5, alpha=.5)
@@ -243,9 +244,9 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
             pass
 
         #add inducing inputs (if a sparse model is used)
-        if hasattr(model,"Z"):
-            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
-            if isinstance(model,SparseGPCoregionalizedRegression):
+        if hasattr(self,"Z"):
+            #Zu = self.Z[:,free_dims] * self._Xscale[:,free_dims] + self._Xoffset[:,free_dims]
+            if isinstance(self,SparseGPCoregionalizedRegression):
                 Z = Z[Z[:,-1] == Y_metadata['output_index'],:]
             Zu = Z[:,free_dims]
             z_height = ax.get_ylim()[0]
@@ -259,7 +260,7 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         #define the frame for plotting on
         resolution = resolution or 50
         Xnew, _, _, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
-        Xgrid = np.empty((Xnew.shape[0],model.input_dim))
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
@@ -267,15 +268,15 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
 
         #predict on the frame and plot
         if plot_raw:
-            m, _ = model._raw_predict(Xgrid, **predict_kw)
+            m, _ = self._raw_predict(Xgrid, **predict_kw)
         else:
-            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+            if isinstance(self,GPCoregionalizedRegression) or isinstance(self,SparseGPCoregionalizedRegression):
                 extra_data = Xgrid[:,-1:].astype(np.int)
                 if Y_metadata is None:
                     Y_metadata = {'output_index': extra_data}
                 else:
                     Y_metadata['output_index'] = extra_data
-            m, v = model.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
+            m, v = self.predict(Xgrid, full_cov=False, Y_metadata=Y_metadata, **predict_kw)
         for d in which_data_ycols:
             m_d = m[:,d].reshape(resolution, resolution).T
             plots['contour'] = ax.contour(x, y, m_d, levels, vmin=m.min(), vmax=m.max(), cmap=plt.cm.jet)
@@ -290,9 +291,9 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         if samples:
             warnings.warn("Samples are rather difficult to plot for 2D inputs...")
 
-        #add inducing inputs (if a sparse model is used)
-        if hasattr(model,"Z"):
-            #Zu = model.Z[:,free_dims] * model._Xscale[:,free_dims] + model._Xoffset[:,free_dims]
+        #add inducing inputs (if a sparse self is used)
+        if hasattr(self,"Z"):
+            #Zu = self.Z[:,free_dims] * self._Xscale[:,free_dims] + self._Xoffset[:,free_dims]
             Zu = Z[:,free_dims]
             plots['inducing_inputs'] = ax.plot(Zu[:,0], Zu[:,1], 'wo')
 
@@ -300,20 +301,41 @@ def plot_fit(model, plot_limits=None, which_data_rows='all',
         raise NotImplementedError("Cannot define a frame with more than two input dimensions")
     return plots
 
-def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None, 
+def plot_density(self, levels=20, plot_limits=None,
         fixed_inputs=[], plot_raw=False, edgecolor='none', facecolor='#3465a4',  
         predict_kw=None,Y_metadata=None, 
         apply_link=False, resolution=200, **patch_kwargs):
-    #deal with optional arguments
-    if ax is None:
-        fig = plt.figure(num=fignum)
-        ax = fig.add_subplot(111)
+    """
+    Plot the posterior density of the GP.
+      - In one dimension, the function is plotted with a shaded gradient, visualizing the density of the posterior.
+      - Only implemented for one dimension, for higher dimensions use `plot`.
 
-    if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
-        X = model.X.mean
+    :param levels: number of levels to plot in the density plot. This is a number between 1 and 100. 1 corresponds to the normal plot_fit.
+    :type levels: int
+    :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+    :type plot_limits: np.array
+    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+    :type fixed_inputs: a list of tuples
+    :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
+    :type resolution: int
+    :param edgecolor: color of line to plot [Tango.colorsHex['darkBlue']]
+    :type edgecolor: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+    :param facecolor: color of fill [Tango.colorsHex['lightBlue']]
+    :type facecolor: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
+    :param Y_metadata: additional data associated with Y which may be needed
+    :type Y_metadata: dict
+    :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*, when plotting posterior samples f
+    :type apply_link: boolean
+    :param resolution: resolution of interpolation (how many points to interpolate of the posterior).
+    :type resolution: int
+    :param: patch_kw: the keyword arguments for the patchcollection fill.
+    """
+    #deal with optional arguments
+    if hasattr(self, 'has_uncertain_inputs') and self.has_uncertain_inputs():
+        X = self.X.mean
     else:
-        X = model.X
-    Y = model.Y
+        X = self.X
+    Y = self.Y
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
 
     if predict_kw is None:
@@ -321,13 +343,13 @@ def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None,
 
     #work out what the inputs are for plotting (1D or 2D)
     fixed_dims = np.array([i for i,v in fixed_inputs])
-    free_dims = np.setdiff1d(np.arange(model.input_dim),fixed_dims)
+    free_dims = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
     plots = {}
     #one dimensional plotting
     if len(free_dims) == 1:
         #define the frame on which to plot
         Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution)
-        Xgrid = np.empty((Xnew.shape[0],model.input_dim))
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
@@ -340,32 +362,32 @@ def plot_density(model, levels=20, plot_limits=None, fignum=None, ax=None,
             from ...likelihoods import Gaussian
             lik = Gaussian(variance=0)
         else:
-            if isinstance(model,GPCoregionalizedRegression) or isinstance(model,SparseGPCoregionalizedRegression):
+            if isinstance(self,GPCoregionalizedRegression) or isinstance(self,SparseGPCoregionalizedRegression):
                 extra_data = Xgrid[:,-1:].astype(np.int)
                 if Y_metadata is None:
                     Y_metadata = {'output_index': extra_data}
                 else:
                     Y_metadata['output_index'] = extra_data
             lik = None
-        percentiles = [i[:, 0] for i in model.predict_quantiles(Xgrid, percs, Y_metadata=Y_metadata, likelihood=lik, **predict_kw)]
+        percentiles = [i[:, 0] for i in self.predict_quantiles(Xgrid, percs, Y_metadata=Y_metadata, likelihood=lik, **predict_kw)]
         if apply_link:
-            percentiles = model.likelihood.gp_link.transf(percentiles)
+            percentiles = self.likelihood.gp_link.transf(percentiles)
         
         patch_kwargs['facecolor'] = facecolor
         patch_kwargs['edgecolor'] = edgecolor
-        plots['density'] = plot_gradient_fill(ax, Xgrid[:, 0], percentiles, **patch_kwargs)
+        plots['density'] = gradient_fill(Xgrid[:, 0], percentiles, **patch_kwargs)
     else:
         raise NotImplementedError('Only 1D density plottable.')
     return plots
 
-def plot_fit_f(model, *args, **kwargs):
-    """
-    Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
-
-    All args and kwargs are passed on to models_plots.plot.
-    """
-    kwargs['plot_raw'] = True
-    plot_fit(model,*args, **kwargs)
+@wraps(plot_fit)
+def plot_fit_f(self, plot_limits=None, which_data_rows='all',
+        which_data_ycols='all', fixed_inputs=[],
+        levels=20, samples=0, fignum=None, ax=None, resolution=None,
+        plot_raw=True,
+        linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue'], Y_metadata=None, data_symbol='kx',
+        apply_link=False, samples_y=0, plot_uncertain_inputs=True, predict_kw=None, plot_training_data=True):
+    return plot_fit(self, plot_limits, which_data_rows, which_data_ycols, fixed_inputs, levels, samples, fignum, ax, resolution, plot_raw, linecol, fillcol, Y_metadata, data_symbol, apply_link, samples_y, plot_uncertain_inputs, predict_kw, plot_training_data)
 
 def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_all=False):
     """
@@ -465,7 +487,7 @@ def plot_errorbars_trainset(model, which_data_rows='all',
         for d in which_data_ycols:
             plots['gperrors'] = gperrors(X, m[:, d], lower[:, d], upper[:, d], edgecol=linecol, ax=ax, fignum=fignum, **kwargs )
             if plot_training_data:
-                plots['dataplot'] = plot_data(model=model, which_data_rows=which_data_rows,
+                plots['dataplot'] = plot_data(self=model, which_data_rows=which_data_rows,
                 visible_dims=free_dims, data_symbol=data_symbol, mew=1.5, ax=ax, fignum=fignum)
 
 

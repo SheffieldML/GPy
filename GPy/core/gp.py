@@ -242,7 +242,7 @@ class GP(Model):
 
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -269,7 +269,9 @@ class GP(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+        if likelihood is None:
+            likelihood = self.likelihood
+        mean, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):

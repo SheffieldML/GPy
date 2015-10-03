@@ -30,6 +30,10 @@
 import numpy as np
 import GPy, os, sys
 from nose import SkipTest
+
+raise SkipTest('Not Testing plotting yet, will be later')
+
+
 try:
     from matplotlib import cbook
 except:

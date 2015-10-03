@@ -259,12 +259,12 @@ def plot_fit(self, plot_limits=None, which_data_rows='all',
 
         #define the frame for plotting on
         resolution = resolution or 50
-        Xnew, _, _, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
+        Xnew, x, y, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
         Xgrid = np.empty((Xnew.shape[0],self.input_dim))
         Xgrid[:,free_dims] = Xnew
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
-        x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
+        #x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
 
         #predict on the frame and plot
         if plot_raw:

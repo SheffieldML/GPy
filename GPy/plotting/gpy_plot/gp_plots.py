@@ -28,78 +28,140 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from . import pl
-from . import update_not_existing_kwargs, defaults
-from .util import x_frame1D
-from scipy import sparse
 import numpy as np
+from functools import wraps
 
-def plot_mean(self, plot_limits=None, fixed_inputs=[],
+from . import pl
+from .plot_util import get_x_y_var, get_fixed_dims, get_free_dims, \
+    x_frame1D, x_frame2D, update_not_existing_kwargs, \
+    helper_predict_with_model
+
+def _helper_for_plots(self, plot_limits, fixed_inputs, resolution):
+    """
+    Figure out the data, free_dims and create an Xgrid for
+    the prediction. 
+    """
+    X, Xvar, Y = get_x_y_var(self)
+
+    #work out what the inputs are for plotting (1D or 2D)
+    fixed_dims = get_fixed_dims(self, fixed_inputs)
+    free_dims = get_free_dims(self, None, fixed_dims)
+    
+    if len(free_dims) == 1:
+        #define the frame on which to plot
+        resolution = resolution or 200
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution)
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
+        Xgrid[:,free_dims] = Xnew
+        for i,v in fixed_dims:
+            Xgrid[:,i] = v
+        x = Xgrid
+        y = None
+    elif len(free_dims) == 2:
+        #define the frame for plotting on
+        resolution = resolution or 50
+        Xnew, x, y, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
+        Xgrid[:,free_dims] = Xnew
+        for i,v in fixed_dims:
+            Xgrid[:,i] = v    
+    return X, Xvar, Y, fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
+
+def plot_mean(self, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
               Y_metadata=None, apply_link=False, 
-              plot_uncertain_inputs=True, predict_kw=None, 
+              which_data_ycols='all',
+              levels=20,
+              predict_kw=None,
               **kwargs):
     """
-    Plot the mean of a GP.
+    Plot the mean of the GP.
     
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
-    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
+    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input dimension i should be set to value v.
     :type fixed_inputs: a list of tuples
-    :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
-    :type levels: int
+    :param int resolution: The resolution of the prediction [defaults are 1D:200, 2D:50]
+    :param bool plot_raw: plot the latent function (usually denoted f) only?
+    :param dict Y_metadata: the Y_metadata (for e.g. heteroscedastic GPs)
+    :param bool apply_link: whether to apply the link function of the GP to the raw prediction.
+    :param array-like which_data_ycols: which columns of y to plot (array-like or list of ints)
+    :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
+    :param int levels: for 2D plotting, the number of contour levels to use is 
     """
-    if hasattr(self, 'has_uncertain_inputs') and self.has_uncertain_inputs():
-        X = self.X.mean
-        X_variance = self.X.variance
-    else:
-        X = self.X
+    canvas, kwargs = pl.get_new_canvas(kwargs)
+    plots = _plot_mean(self, canvas, plot_limits, fixed_inputs, resolution, plot_raw, Y_metadata, apply_link, which_data_ycols, levels, predict_kw, **kwargs)
+    return pl.show_canvas(canvas, plots)
 
-    Y = self.Y
-    
-    if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
-
+@wraps(plot_mean)
+def _plot_mean(self, canvas, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_raw=False,
+              Y_metadata=None, apply_link=False, 
+              which_data_ycols=None,
+              levels=20, 
+              predict_kw=None, **kwargs):
     if predict_kw is None:
         predict_kw = {}
 
-    #work out what the inputs are for plotting (1D or 2D)
-    fixed_dims = np.array([i for i,v in fixed_inputs])
-    free_dims = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
+    _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = _helper_for_plots(self, plot_limits, fixed_inputs, resolution)
+
+    if len(free_dims<=2):
+        which_data_ycols = get_which_data_ycols(self, which_data_ycols)
+        mu, _ = helper_predict_with_model(self, Xgrid, plot_raw, apply_link, None, which_data_ycols, **predict_kw)
+        if len(free_dims)==1:
+            # 1D plotting:
+            update_not_existing_kwargs(kwargs, pl.defaults.meanplot_1d)
+            return dict(gpmean=[pl.plot(canvas, Xgrid, mu, **kwargs)])
+        else:
+            update_not_existing_kwargs(kwargs, pl.defaults.meanplot_2d)
+            return dict(gpmean=[pl.contour(canvas, x, y, 
+                                           mu.reshape(resolution, resolution), 
+                                           levels=levels, **kwargs)])
+
+def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_raw=False,
+              Y_metadata=None, apply_link=False, 
+              which_data_ycols='all',
+              predict_kw=None, 
+              **kwargs):
+    """
+    Plot the confidence interval between the percentiles lower and upper.
+    E.g. the 95% confidence interval is $2.5, 97.5$.
+    Note: Only implemented for one dimension!
     
-    #define the frame on which to plot
-    Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution or 200)
-    Xgrid = np.empty((Xnew.shape[0],self.input_dim))
-    Xgrid[:,free_dims] = Xnew
-    for i,v in fixed_inputs:
-        Xgrid[:,i] = v
+    :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+    :type plot_limits: np.array
+    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input dimension i should be set to value v.
+    :type fixed_inputs: a list of tuples
+    :param int resolution: The resolution of the prediction [default:200]
+    :param bool plot_raw: plot the latent function (usually denoted f) only?
+    :param dict Y_metadata: the Y_metadata (for e.g. heteroscedastic GPs)
+    :param bool apply_link: whether to apply the link function of the GP to the raw prediction.
+    :param array-like which_data_ycols: which columns of y to plot (array-like or list of ints)
+    :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
+    """
+    canvas, kwargs = pl.get_new_canvas(kwargs)
+    plots = _plot_confidence(self, canvas, lower, upper, plot_limits, 
+                             fixed_inputs, resolution, plot_raw, Y_metadata, 
+                             apply_link, which_data_ycols, 
+                             predict_kw, **kwargs)
+    return pl.show_canvas(canvas, plots)
 
-    if plot_raw:
-        mu = self._raw_predict(Xgrid)[0]
-        
-    update_not_existing_kwargs(kwargs, defaults.meanplot)
-    return pl.plot(Xgrid, mu, **kwargs)
+def _plot_confidence(self, canvas, lower, upper, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_raw=False,
+              Y_metadata=None, apply_link=False, 
+              which_data_ycols=None, 
+              predict_kw=None, 
+              **kwargs):
+    if predict_kw is None:
+        predict_kw = {}
+    
+    _, _, _, _, _, Xgrid, _, _, _, _, _ = _helper_for_plots(self, plot_limits, fixed_inputs, resolution)
 
-def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, fignum=None, **kwargs):
-    _, axes = ax_default(fignum, ax)
+    update_not_existing_kwargs(kwargs, pl.defaults.confidence_interval)
+    _, percs = helper_predict_with_model(self, Xgrid, plot_raw, apply_link, (lower, upper), which_data_ycols, **predict_kw)
 
-    mu = mu.flatten()
-    x = x.flatten()
-    lower = lower.flatten()
-    upper = upper.flatten()
+    return dict(gpconfidence=pl.fill_between(canvas, Xgrid, percs[0], percs[1], **kwargs))
 
-    plots = []
-
-    #here's the mean
-    plots.append(meanplot(x, mu, edgecol, axes))
-
-    #here's the box
-    kwargs['linewidth']=0.5
-    if not 'alpha' in kwargs.keys():
-        kwargs['alpha'] = 0.3
-    plots.append(axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs))
-
-    #this is the edge:
-    plots.append(meanplot(x, upper,color=edgecol, linewidth=0.2, ax=axes))
-    plots.append(meanplot(x, lower,color=edgecol, linewidth=0.2, ax=axes))
-
-    return plots
+    
+    

@@ -39,12 +39,15 @@ it gives back an empty default, when defaults are not defined.
 '''
 
 from matplotlib import cm
+from . import Tango
 
 # Data:
 data_1d = dict(lw=1.5, marker='x', edgecolor='k')
 data_2d = dict(s=35, edgecolors='none', linewidth=0., cmap=cm.get_cmap('hot'))
 xerrorbar = dict(ecolor='k', fmt='none', elinewidth=.5, alpha=.5)
-yerrorbar = dict(ecolor='darkred', fmt='none', elinewidth=.5, alpha=.5)
+yerrorbar = dict(ecolor=Tango.colorsHex['darkBlue'], fmt='none', elinewidth=.5, alpha=.5)
 
 # GP plots
-meanplot = dict(color='#3300FF', linewidth=2)
+meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
+meanplot_2d = dict(cmap='hot', linewidth=.5)
+confidence_interval = dict(linecolor=Tango.colorsHex['darkBlue'],fillcolor=Tango.colorsHex['lightBlue'])

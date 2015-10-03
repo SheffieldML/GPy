@@ -87,18 +87,35 @@ class AbstractPlottingLibrary(object):
         the kwargs are plotting library specific kwargs!
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
-    
-    def scatter(self, canvas, X, Y, **kwargs):
+
+    def plot_axis_lines(self, ax, X, **kwargs):
+        """
+        Plot lines at the bottom of the axis at input location X.
+        
+        the kwargs are plotting library specific kwargs!
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def scatter(self, canvas, X, Y, c=None, vmin=None, vmax=None, **kwargs):
         """
         Make a scatter plot between X and Y on the canvas given.
         
         the kwargs are plotting library specific kwargs!
+        
+        :param canvas: the plotting librarys specific canvas to plot on.
+        :param array-like X: the inputs to plot.
+        :param array-like Y: the outputs to plot.
+        :param array-like c: the colorlevel for each point.
+        :param float vmin: minimum colorscale
+        :param float vmax: maximum colorscale
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
     def xerrorbar(self, canvas, X, Y, error, **kwargs):
         """
         Make an errorbar along the xaxis for points at (X,Y) on the canvas.
+        if error is two dimensional, the lower error is error[:,0] and
+        the upper error is error[:,1]
         
         the kwargs are plotting library specific kwargs!
         """
@@ -107,6 +124,8 @@ class AbstractPlottingLibrary(object):
     def yerrorbar(self, canvas, X, Y, error, **kwargs):
         """
         Make errorbars along the yaxis on the canvas given.
+        if error is two dimensional, the lower error is error[:,0] and
+        the upper error is error[:,1]
                 
         the kwargs are plotting library specific kwargs!
         """

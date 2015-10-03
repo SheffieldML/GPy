@@ -29,15 +29,18 @@ if config.get('plotting', 'library') is not 'none':
     
     from ..core import GP
     GP.plot_data = gpy_plot.data_plots.plot_data
+    GP.plot_errorbars_trainset = gpy_plot.data_plots.plot_errorbars_trainset
     GP.plot_mean = gpy_plot.gp_plots.plot_mean
     GP.plot_confidence = gpy_plot.gp_plots.plot_confidence
-
+    GP.plot_density = gpy_plot.gp_plots.plot_density
+    
+    from ..core import SparseGP
+    SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
+    
     from . import matplot_dep
     # Still to convert to new style:
     GP.plot = matplot_dep.models_plots.plot_fit
     GP.plot_f = matplot_dep.models_plots.plot_fit_f
-    GP.plot_density = matplot_dep.models_plots.plot_density
     
-    GP.plot_errorbars_trainset = matplot_dep.models_plots.plot_errorbars_trainset
     GP.plot_magnification = matplot_dep.dim_reduction_plots.plot_magnification
         

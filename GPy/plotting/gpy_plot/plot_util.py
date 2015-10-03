@@ -31,7 +31,7 @@
 import numpy as np
 from scipy import sparse
 
-def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, which_data_ycols, percentiles, **predict_kw):
+def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, which_data_ycols, predict_kw):
     """
     Make the right decisions for prediction with a model 
     based on the standard arguments of plotting.
@@ -39,29 +39,73 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, which_data_ycol
     This is quite complex and will take a while to understand,
     so do not change anything in here lightly!!! 
     """
+    # Put some standards into the predict_kw so that prediction is done automatically:
+    if predict_kw is None:
+        predict_kw = {}
     if 'likelihood' not in predict_kw:
         if plot_raw:
             from ...likelihoods import Gaussian
-            lik = Gaussian(0) # Make the likelihood not add any noise
+            from ...likelihoods.link_functions import Identity
+            lik = Gaussian(Identity(), 0) # Make the likelihood not add any noise
         else:
             lik = None
         predict_kw['likelihood'] = lik
+    if 'Y_metadata' not in predict_kw:
+        predict_kw['Y_metadata'] = self.Y_metadata or {}
+    if 'output_index' not in predict_kw['Y_metadata']:
+        predict_kw['Y_metadata']['output_index'] = Xgrid[:,-1:].astype(np.int)
 
     mu, _ = self.predict(Xgrid, **predict_kw)
     
     if percentiles is not None:
         percentiles = self.predict_quantiles(Xgrid, quantiles=percentiles, **predict_kw)
-    else: percentiles = {}
+    else: percentiles = []
 
-    retmu = np.empty((Xgrid.shape[0], len(ycols)))
+    # Filter out the ycolums which we want to plot:
+    retmu = mu[:, which_data_ycols]
+    percs = [p[:, which_data_ycols] for p in percentiles]
     
     if plot_raw and apply_link:
-        for i, d in enumerate(ycols):
-            retmu = self.likelihood.gp_link.transf(mu[:, [i]])
-            for perc in percentiles:
+        for i in range(len(which_data_ycols)):
+            retmu[:, [i]] = self.likelihood.gp_link.transf(mu[:, [i]])
+            for perc in percs:
                 perc[:, [i]] = self.likelihood.gp_link.transf(perc[:, [i]])
 
-    return mu, percentiles
+    return retmu, percs
+
+def helper_for_plot_data(self, plot_limits, fixed_inputs, resolution):
+    """
+    Figure out the data, free_dims and create an Xgrid for
+    the prediction. 
+    """
+    X, Xvar, Y = get_x_y_var(self)
+
+    #work out what the inputs are for plotting (1D or 2D)
+    if fixed_inputs is None:
+        fixed_inputs = []
+    fixed_dims = get_fixed_dims(self, fixed_inputs)
+    free_dims = get_free_dims(self, None, fixed_dims)
+    
+    if len(free_dims) == 1:
+        #define the frame on which to plot
+        resolution = resolution or 200
+        Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution)
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
+        Xgrid[:,free_dims] = Xnew
+        for i,v in fixed_inputs:
+            Xgrid[:,i] = v
+        x = Xgrid
+        y = None
+    elif len(free_dims) == 2:
+        #define the frame for plotting on
+        resolution = resolution or 50
+        Xnew, x, y, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
+        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
+        Xgrid[:,free_dims] = Xnew
+        for i,v in fixed_inputs:
+            Xgrid[:,i] = v    
+    return X, Xvar, Y, fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
+
 
 def update_not_existing_kwargs(to_update, update_from):
     """
@@ -112,8 +156,6 @@ def get_fixed_dims(model, fixed_inputs):
     """
     Work out the fixed dimensions from the fixed_inputs list of tuples.
     """
-    if fixed_inputs is None:
-        fixed_inputs = []
     return np.array([i for i,_ in fixed_inputs])
 
 def get_which_data_ycols(model, which_data_ycols):

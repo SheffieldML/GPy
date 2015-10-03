@@ -32,7 +32,7 @@ from . import pl
 
 import numpy as np
 from .plot_util import get_x_y_var, get_free_dims, get_which_data_ycols,\
-    get_which_data_rows, update_not_existing_kwargs
+    get_which_data_rows, update_not_existing_kwargs, helper_predict_with_model
 
 def _plot_data(self, canvas, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
@@ -65,6 +65,8 @@ def _plot_data(self, canvas, which_data_rows='all',
             update_not_existing_kwargs(plot_kwargs, pl.defaults.data_2d)
             plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims[0]], X[rows, free_dims[1]], 
                                            c=Y[rows, d], vmin=Y.min(), vmax=Y.max(), **plot_kwargs))
+    elif len(free_dims) == 0:
+        pass #Nothing to plot!
     else:
         raise NotImplementedError("Cannot plot in more then two dimensions")
     return plots
@@ -93,3 +95,100 @@ def plot_data(self, which_data_rows='all',
     canvas, kwargs = pl.get_new_canvas(plot_kwargs)
     plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, error_kwargs, **kwargs)
     return pl.show_canvas(canvas, plots)
+
+
+def plot_inducing(self, visible_dims=None, **plot_kwargs):
+    """
+    Plot the inducing inputs of a sparse gp model
+    
+    :param array-like visible_dims: an array specifying the input dimensions to plot (maximum two)
+    :param kwargs plot_kwargs: keyword arguments for the plotting library
+    """
+    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
+    plots = _plot_inducing(self, canvas, visible_dims, **kwargs)
+    return pl.show_canvas(canvas, plots)
+
+def _plot_inducing(self, canvas, visible_dims, **plot_kwargs):
+    free_dims = get_free_dims(self, visible_dims, None)
+
+    Z = self.Z[:, free_dims]
+    plots = {}
+
+    #one dimensional plotting
+    if len(free_dims) == 1:
+        update_not_existing_kwargs(plot_kwargs, pl.defaults.inducing_1d)
+        plots['inducing'] = pl.plot_axis_lines(canvas, Z[:, free_dims], **plot_kwargs)
+    #2D plotting
+    elif len(free_dims) == 2:
+        update_not_existing_kwargs(plot_kwargs, pl.defaults.inducing_2d)
+        plots['inducing'] = pl.scatter(canvas, Z[:, free_dims[0]], Z[:, free_dims[1]], 
+                                       **plot_kwargs)
+    elif len(free_dims) == 0:
+        pass #Nothing to plot!
+    else:
+        raise NotImplementedError("Cannot plot in more then two dimensions")
+    return plots
+
+def plot_errorbars_trainset(self, which_data_rows='all',
+        which_data_ycols='all', fixed_inputs=None, 
+        plot_raw=False, apply_link=False,
+        predict_kw=None, **plot_kwargs):
+    """
+    Plot the errorbars of the GP likelihood on the training data.
+    These are the errorbars after the appropriate 
+    approximations according to the likelihood are done.
+    
+    This also works for heteroscedastic likelihoods.
+    
+    Give the Y_metadata in the predict_kw if you need it.
+    
+    :param which_data_rows: which of the training data to plot (default all)
+    :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
+    :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input dimension i should be set to value v.
+    :type fixed_inputs: a list of tuples
+    :param dict predict_kwargs: kwargs for the prediction used to predict the right quantiles.
+    :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
+    """
+    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
+    plots = _plot_errorbars_trainset(self, canvas, which_data_rows, which_data_ycols, 
+                                     fixed_inputs, plot_raw, apply_link, predict_kw, **kwargs)
+    return pl.show_canvas(canvas, plots)
+
+def _plot_errorbars_trainset(self, canvas, 
+        which_data_rows='all', which_data_ycols='all', 
+        fixed_inputs=None,
+        plot_raw=False, apply_link=False,
+        predict_kw=None, **plot_kwargs):
+
+    ycols = get_which_data_ycols(self, which_data_ycols)
+    rows = get_which_data_rows(self, which_data_rows)
+
+    X, _, Y = get_x_y_var(self)
+    
+    if fixed_inputs is None:
+        fixed_inputs = []
+    free_dims = get_free_dims(self, None, fixed_inputs)    
+
+    Xgrid = X.copy()
+    for i, v in fixed_inputs:
+        Xgrid[:, i] = v
+
+    plots = []
+    
+    if len(free_dims)<2:
+        if len(free_dims)==1:
+            update_not_existing_kwargs(plot_kwargs, pl.defaults.yerrorbar)
+            _, percs = helper_predict_with_model(self, Xgrid, plot_raw, 
+                                              apply_link, (2.5, 97.5), 
+                                              ycols, predict_kw)
+            for d in ycols:
+                plots.append(pl.yerrorbar(canvas, X[rows,free_dims[0]], Y[rows,d], 
+                                          np.vstack([Y[rows,d]-percs[0][rows,d], percs[1][rows,d]-Y[rows,d]]),
+                                          **plot_kwargs))
+            return dict(yerrorbars=plots)
+        else:
+            pass #Nothing to plot!
+    else:
+        raise NotImplementedError("Cannot plot in more then one dimension.")
+    return plots

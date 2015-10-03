@@ -59,14 +59,24 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             ax.figure.tight_layout()
         except:
             pass
-        return ax
+        return plots
     
     def scatter(self, ax, X, Y, **kwargs):
         return ax.scatter(X, Y, **kwargs)
     
     def plot(self, ax, X, Y, **kwargs):
         return ax.plot(X, Y, **kwargs)
-    
+
+    def plot_axis_lines(self, ax, X, **kwargs):
+        from matplotlib import transforms
+        from matplotlib.path import Path
+        if 'transform' not in kwargs:
+            kwargs['transform'] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
+        if 'marker' not in kwargs:
+            kwargs['marker'] = Path([[-.2,0.],    [-.2,.5],    [0.,1.],    [.2,.5],     [.2,0.],     [-.2,0.]],
+                                    [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
+        return ax.scatter(X, np.zeros_like(X), **kwargs)
+
     def xerrorbar(self, ax, X, Y, error, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none' 
@@ -74,7 +84,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     
     def yerrorbar(self, ax, X, Y, error, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
-            kwargs['ls'] = 'none' 
+            kwargs['ls'] = 'none'
         return ax.errorbar(X, Y, yerr=error, **kwargs)
     
     def imshow(self, ax, X, **kwargs):
@@ -84,7 +94,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), **kwargs)
 
     def fill_between(self, ax, X, lower, upper, **kwargs):
-        return ax.fill_between(X.flatten(), lower.flatten(), upper.flatten(), **kwargs)
+        return ax.fill_between(X, lower, upper, **kwargs)
 
     def fill_gradient(self, canvas, X, percentiles, **kwargs):
         ax = canvas
@@ -141,7 +151,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                     continue
         
                 N = len(xslice)
-                X = np.zeros((2 * N + 2, 2), np.float)
+                p = np.zeros((2 * N + 2, 2), np.float)
         
                 # the purpose of the next two lines is for when y2 is a
                 # scalar like 0 and we want the fill to go all the way
@@ -149,15 +159,15 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                 start = xslice[0], y2slice[0]
                 end = xslice[-1], y2slice[-1]
         
-                X[0] = start
-                X[N + 1] = end
+                p[0] = start
+                p[N + 1] = end
         
-                X[1:N + 1, 0] = xslice
-                X[1:N + 1, 1] = y1slice
-                X[N + 2:, 0] = xslice[::-1]
-                X[N + 2:, 1] = y2slice[::-1]
+                p[1:N + 1, 0] = xslice
+                p[1:N + 1, 1] = y1slice
+                p[N + 2:, 0] = xslice[::-1]
+                p[N + 2:, 1] = y2slice[::-1]
         
-                polys.append(X)
+                polys.append(p)
             polycol.extend(polys)
         from matplotlib.collections import PolyCollection
         plots.append(PolyCollection(polycol, **kwargs))

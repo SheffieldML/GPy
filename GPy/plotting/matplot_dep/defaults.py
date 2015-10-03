@@ -52,5 +52,6 @@ yerrorbar = dict(ecolor=Tango.colorsHex['darkRed'], fmt='none', elinewidth=.5, a
 # GP plots
 meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
 meanplot_2d = dict(cmap='hot', linewidth=.5)
+samples_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=.3)
 confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'],linewidth=.5,facecolor=Tango.colorsHex['lightBlue'],alpha=.3)
 density = dict(facecolor=Tango.colorsHex['mediumBlue'],edgecolors='none')

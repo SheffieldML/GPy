@@ -100,7 +100,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         ax = canvas
         plots = []
         if not 'alpha' in kwargs.keys():
-            kwargs['alpha'] = 1./(len(percentiles))
+            kwargs['alpha'] = 3./max(4, (len(percentiles)))
     
         # pop where from kwargs
         where = kwargs.pop('where') if 'where' in kwargs else None

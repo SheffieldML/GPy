@@ -37,7 +37,7 @@ from .plot_util import helper_for_plot_data, update_not_existing_kwargs, \
 
 def plot_mean(self, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
-              Y_metadata=None, apply_link=False, 
+              apply_link=False, 
               which_data_ycols='all',
               levels=20,
               predict_kw=None,
@@ -62,22 +62,21 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
     """
     canvas, kwargs = pl.get_new_canvas(kwargs)
     plots = _plot_mean(self, canvas, plot_limits, fixed_inputs, 
-                       resolution, plot_raw, Y_metadata, 
+                       resolution, plot_raw, 
                        apply_link, which_data_ycols, levels, 
                        predict_kw, **kwargs)
     return pl.show_canvas(canvas, plots)
 
-@wraps(plot_mean)
 def _plot_mean(self, canvas, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
-              Y_metadata=None, apply_link=False, 
+              apply_link=False, 
               which_data_ycols=None,
               levels=20, 
               predict_kw=None, **kwargs):
     _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_for_plot_data(self, plot_limits, fixed_inputs, resolution)
 
     if len(free_dims)<=2:
-        mu, _ = helper_predict_with_model(self, Xgrid, plot_raw, 
+        mu, _, _ = helper_predict_with_model(self, Xgrid, plot_raw, 
                                           apply_link, None, 
                                           get_which_data_ycols(self, which_data_ycols), 
                                           predict_kw)
@@ -141,7 +140,7 @@ def _plot_confidence(self, canvas, lower, upper, plot_limits=None, fixed_inputs=
     
     if len(free_dims)<=1:
         if len(free_dims)==1:
-            _, percs = helper_predict_with_model(self, Xgrid, plot_raw, apply_link, 
+            _, percs, _ = helper_predict_with_model(self, Xgrid, plot_raw, apply_link, 
                                                  (lower, upper), 
                                                  ycols, predict_kw)
     
@@ -155,11 +154,63 @@ def _plot_confidence(self, canvas, lower, upper, plot_limits=None, fixed_inputs=
         raise RuntimeError('Can only plot confidence interval in one input dimension')
 
 
+def plot_samples(self, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_raw=True,
+              apply_link=False, 
+              which_data_ycols='all',
+              samples=3, predict_kw=None,
+              **kwargs):
+    """
+    Plot the mean of the GP.
+
+    Give the Y_metadata in the predict_kw if you need it.
+   
+    
+    :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+    :type plot_limits: np.array
+    :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input dimension i should be set to value v.
+    :type fixed_inputs: a list of tuples
+    :param int resolution: The resolution of the prediction [defaults are 1D:200, 2D:50]
+    :param bool plot_raw: plot the latent function (usually denoted f) only? This is usually what you want!
+    :param bool apply_link: whether to apply the link function of the GP to the raw prediction.
+    :param array-like which_data_ycols: which columns of y to plot (array-like or list of ints)
+    :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
+    :param int levels: for 2D plotting, the number of contour levels to use is 
+    """
+    canvas, kwargs = pl.get_new_canvas(kwargs)
+    plots = _plot_samples(self, canvas, plot_limits, fixed_inputs, 
+                       resolution, plot_raw, 
+                       apply_link, which_data_ycols, samples, 
+                       predict_kw, **kwargs)
+    return pl.show_canvas(canvas, plots)
+
+def _plot_samples(self, canvas, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_raw=False,
+              apply_link=False, 
+              which_data_ycols=None,
+              samples=3, 
+              predict_kw=None, **kwargs):
+    _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_for_plot_data(self, plot_limits, fixed_inputs, resolution)
+
+    if len(free_dims)<2:
+        
+        if len(free_dims)==1:
+            # 1D plotting:
+            _, _, samples = helper_predict_with_model(self, Xgrid, plot_raw, apply_link, 
+                                     None, get_which_data_ycols(self, which_data_ycols), predict_kw, samples)
+            update_not_existing_kwargs(kwargs, pl.defaults.samples_1d)
+            return dict(gpmean=[pl.plot(canvas, Xgrid[:, free_dims], samples, **kwargs)])
+        else:
+            pass # Nothing to plot!
+    else:
+        raise RuntimeError('Cannot plot mean in more then 1 input dimensions')
+
+
 def plot_density(self, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
               apply_link=False, 
               which_data_ycols='all',
-              levels=20,
+              levels=35,
               predict_kw=None, 
               **kwargs):
     """
@@ -178,7 +229,7 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     :param dict Y_metadata: the Y_metadata (for e.g. heteroscedastic GPs)
     :param bool apply_link: whether to apply the link function of the GP to the raw prediction.
     :param array-like which_data_ycols: which columns of y to plot (array-like or list of ints)
-    :param int levels: the number of levels in the density (number between 1 and 50, where 50 is very smooth and 1 is the same as plot_confidence) 
+    :param int levels: the number of levels in the density (number bigger then 1, where 35 is smooth and 1 is the same as plot_confidence). You can go higher then 50 if the result is not smooth enough for you. 
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
     canvas, kwargs = pl.get_new_canvas(kwargs)
@@ -193,7 +244,7 @@ def _plot_density(self, canvas, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
               apply_link=False, 
               which_data_ycols=None,
-              levels=20, 
+              levels=35, 
               predict_kw=None, **kwargs):
     _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_for_plot_data(self, plot_limits, fixed_inputs, resolution)
 
@@ -203,7 +254,7 @@ def _plot_density(self, canvas, plot_limits=None, fixed_inputs=None,
 
     if len(free_dims)<=1:
         if len(free_dims)==1:
-            _, percs = helper_predict_with_model(self, Xgrid, plot_raw, 
+            _, percs, _ = helper_predict_with_model(self, Xgrid, plot_raw, 
                                           apply_link, np.linspace(2.5, 97.5, levels*2), 
                                           get_which_data_ycols(self, which_data_ycols), 
                                           predict_kw)

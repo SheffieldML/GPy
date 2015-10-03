@@ -179,8 +179,12 @@ def _plot_errorbars_trainset(self, canvas,
     if len(free_dims)<2:
         if len(free_dims)==1:
             update_not_existing_kwargs(plot_kwargs, pl.defaults.yerrorbar)
-            _, percs = helper_predict_with_model(self, Xgrid, plot_raw, 
-                                              apply_link, (2.5, 97.5), 
+            if predict_kw is None:
+                predict_kw = {}
+            if 'Y_metadata' not in predict_kw:
+                predict_kw['Y_metadata'] = self.Y_metadata or {}
+            _, percs, _ = helper_predict_with_model(self, Xgrid, plot_raw, 
+                                              apply_link, (0, 100), 
                                               ycols, predict_kw)
             for d in ycols:
                 plots.append(pl.yerrorbar(canvas, X[rows,free_dims[0]], Y[rows,d], 

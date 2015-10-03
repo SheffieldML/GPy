@@ -33,6 +33,7 @@ if config.get('plotting', 'library') is not 'none':
     GP.plot_mean = gpy_plot.gp_plots.plot_mean
     GP.plot_confidence = gpy_plot.gp_plots.plot_confidence
     GP.plot_density = gpy_plot.gp_plots.plot_density
+    GP.plot_samples = gpy_plot.gp_plots.plot_samples
     
     from ..core import SparseGP
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing

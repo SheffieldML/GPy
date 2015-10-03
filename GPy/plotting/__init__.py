@@ -34,9 +34,19 @@ if config.get('plotting', 'library') is not 'none':
     GP.plot_confidence = gpy_plot.gp_plots.plot_confidence
     GP.plot_density = gpy_plot.gp_plots.plot_density
     GP.plot_samples = gpy_plot.gp_plots.plot_samples
+    GP.plot = gpy_plot.gp_plots.plot
+    GP.plot_magnificaion = gpy_plot.latent_plots.plot_magnification
     
     from ..core import SparseGP
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
+    
+    from ..core import GPLVM
+    GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    
+    from ..kern import Kern
+    Kern.plot_covariance = gpy_plot.kern_plots.plot_kern
+    
+    # Variational plot!
     
     from . import matplot_dep
     # Still to convert to new style:

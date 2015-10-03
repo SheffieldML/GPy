@@ -346,6 +346,10 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
+    def test_active_dims(self):
+        np.testing.assert_array_equal(self.sumkern.active_dims, [0,1,2,3,7,9])
+        np.testing.assert_array_equal(self.sumkern._all_dims_active, range(10))
+
 class KernelTestsNonContinuous(unittest.TestCase):
     def setUp(self):
         N0 = 3

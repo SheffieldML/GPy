@@ -5,7 +5,7 @@ Created on 11 Mar 2014
 
 This module provides a meta class for the kernels. The meta class is for
 slicing the inputs (X, X2) for the kernels, before K (or any other method involving X)
-gets calls. The `active_dims` of a kernel decide which dimensions the kernel works on.
+gets calls. The `_all_dims_active` of a kernel decide which dimensions the kernel works on.
 '''
 from ...core.parameterization.parameterized import ParametersChangedMeta
 import numpy as np
@@ -47,7 +47,7 @@ class _Slice_wrap(object):
         assert X.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X.shape={!s}".format(X.shape)
         if X2 is not None:
             assert X2.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
-        if (self.k.active_dims is not None) and (self.k._sliced_X == 0):
+        if (self.k._all_dims_active is not None) and (self.k._sliced_X == 0):
             self.k._check_active_dims(X)
             self.X = self.k._slice_X(X)
             self.X2 = self.k._slice_X(X2) if X2 is not None else X2
@@ -66,9 +66,9 @@ class _Slice_wrap(object):
         if self.ret:
             ret = np.zeros(self.shape)
             if len(self.shape) == 2:
-                ret[:, self.k.active_dims] = return_val
+                ret[:, self.k._all_dims_active] = return_val
             elif len(self.shape) == 3:
-                ret[:, :, self.k.active_dims] = return_val
+                ret[:, :, self.k._all_dims_active] = return_val
             return ret
         return return_val
 

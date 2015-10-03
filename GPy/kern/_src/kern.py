@@ -34,15 +34,15 @@ class Kern(Parameterized):
             If this is not an integer (!) we will work on the whole input matrix X,
             and not check whether dimensions match or not (!).
 
-        active_dims:
+        _all_dims_active:
 
             is the active_dimensions of inputs X we will work on.
-            All kernels will get sliced Xes as inputs, if active_dims is not None
-            Only positive integers are allowed in active_dims!
-            if active_dims is None, slicing is switched off and all X will be passed through as given.
+            All kernels will get sliced Xes as inputs, if _all_dims_active is not None
+            Only positive integers are allowed in _all_dims_active!
+            if _all_dims_active is None, slicing is switched off and all X will be passed through as given.
 
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
+        :param array-like|None _all_dims_active: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """
@@ -52,19 +52,20 @@ class Kern(Parameterized):
         if active_dims is None:
             active_dims = np.arange(input_dim)
 
-        self.active_dims = np.atleast_1d(active_dims).astype(int)
+        self.active_dims = active_dims
+        self._all_dims_active = np.atleast_1d(active_dims).astype(int)
 
-        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, self.active_dims.size, self.active_dims)
+        assert self._all_dims_active.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, _all_dims_active={}".format(self.input_dim, self._all_dims_active.size, self._all_dims_active)
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
         from .psi_comp import PSICOMP_GH
-        self.psicomp = PSICOMP_GH()
+        self.psicomp = PSICOMP_GH()        
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
-        return X[:, self.active_dims]
+        return X[:, self._all_dims_active]
 
     def K(self, X, X2):
         """
@@ -244,9 +245,9 @@ class Kern(Parameterized):
         """
         Shortcut for tensor `prod`.
         """
-        assert np.all(self.active_dims == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
-        assert np.all(other.active_dims == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
-        other.active_dims += self.input_dim
+        assert np.all(self._all_dims_active == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        assert np.all(other._all_dims_active == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        other._all_dims_active += self.input_dim
         return self.prod(other)
 
     def prod(self, other, name='mul'):
@@ -268,10 +269,10 @@ class Kern(Parameterized):
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+        assert X.shape[1] == self.input_dim, "{} did not specify _all_dims_active and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
 
     def _check_active_dims(self, X):
-        assert X.shape[1] >= len(self.active_dims), "At least {} dimensional X needed, X.shape={!s}".format(len(self.active_dims), X.shape)
+        assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
 
 
 class CombinationKernel(Kern):
@@ -303,15 +304,15 @@ class CombinationKernel(Kern):
         return self.parameters
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
-        #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = reduce(max, (k.active_dims.max() for k in kernels)) + 1
+        self.active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        #_all_dims_active = np.array(np.concatenate((_all_dims_active, extra_dims if extra_dims is not None else [])), dtype=int)
+        input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
 
         if extra_dims is not None:
             input_dim += extra_dims.size
 
-        active_dims = np.arange(input_dim)
-        return input_dim, active_dims
+        _all_dims_active = np.arange(input_dim)
+        return input_dim, _all_dims_active
 
     def input_sensitivity(self, summarize=True):
         """

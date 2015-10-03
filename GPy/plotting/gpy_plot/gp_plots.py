@@ -268,4 +268,12 @@ def _plot_density(self, canvas, plot_limits=None, fixed_inputs=None,
     else:
         raise RuntimeError('Can only plot density in one input dimension')
 
-            
+def plot(self, plot_limits=None, fixed_inputs=None,
+              resolution=None, plot_inducing=True,
+              plot_raw=False, apply_link=False, 
+              which_data_ycols='all', which_data_rows='all',
+              levels=20, samples=0, 
+              predict_kw=None,
+              **kwargs):  
+        #maybe get the prediction to be only done once here
+        pass #for now

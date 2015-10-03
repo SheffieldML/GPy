@@ -27,6 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
+
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib import cm
+from . import Tango
+
 '''
 This file is for defaults for the gpy plot, specific to the plotting library.
 
@@ -37,9 +42,6 @@ the plotting library will be used.
 In the code, always ise plotting.gpy_plots.defaults to get the defaults, as 
 it gives back an empty default, when defaults are not defined.
 '''
-
-from matplotlib import cm
-from . import Tango
 
 # Data:
 data_1d = dict(lw=1.5, marker='x', edgecolor='k')
@@ -53,5 +55,5 @@ yerrorbar = dict(ecolor=Tango.colorsHex['darkRed'], fmt='none', elinewidth=.5, a
 meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
 meanplot_2d = dict(cmap='hot', linewidth=.5)
 samples_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=.3)
-confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'],linewidth=.5,facecolor=Tango.colorsHex['lightBlue'],alpha=.3)
-density = dict(facecolor=Tango.colorsHex['mediumBlue'],edgecolors='none')
+confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'],linewidth=.5,facecolor=Tango.colorsHex['lightBlue'],alpha=.2)
+density = dict(alpha=.5, facecolor=Tango.colorsHex['mediumBlue'], edgecolors='none')

@@ -31,6 +31,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from ..abstract_plotting_library import AbstractPlottingLibrary
 from . import defaults
+from matplotlib.colors import LinearSegmentedColormap
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):
@@ -99,19 +100,37 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     def fill_gradient(self, canvas, X, percentiles, **kwargs):
         ax = canvas
         plots = []
-        if not 'alpha' in kwargs.keys():
-            kwargs['alpha'] = 3./max(4, (len(percentiles)))
-    
+        
+        if 'facecolors' in kwargs:
+            kwargs['facecolor'] = kwargs.pop('facecolors')
+            
+        if 'cmap' not in kwargs:
+            kwargs['cmap'] = LinearSegmentedColormap.from_list('WhToColor', ((1., 1., 1.), kwargs['facecolor']), N=len(percentiles)-1)
+            kwargs['cmap']._init()
+            
+        if 'alpha' in kwargs:
+            kwargs['cmap']._lut[:, -1] = kwargs['alpha']
+        
+        if 'array' not in kwargs:
+            if (len(percentiles)%2) == 0:
+                up = np.linspace(0, 1, len(percentiles)/2)
+                kwargs['array'] = np.r_[up, up[::-1][1:]]
+            else:
+                up = np.linspace(0, 1, len(percentiles)/2)
+                kwargs['array'] = np.r_[up, up[::-1]]
+
         # pop where from kwargs
         where = kwargs.pop('where') if 'where' in kwargs else None
         # pop interpolate, which we actually do not do here!
         if 'interpolate' in kwargs: kwargs.pop('interpolate')
         
-        def pairwise(inlist):
-            l = len(inlist)
-            for i in range(int(np.ceil(l/2.))):
-                yield inlist[:][i], inlist[:][(l-1)-i]
-        
+        from itertools import tee, izip
+        def pairwise(iterable):
+            "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+            a, b = tee(iterable)
+            next(b, None)
+            return izip(a, b)            
+            
         polycol = []
         for y1, y2 in pairwise(percentiles):
             import matplotlib.mlab as mlab

@@ -38,6 +38,8 @@ try:
 except:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
+extensions = ['pdf']
+
 def _image_directories(func):
     """
     Compute the baseline and result image directories for testing *func*.
@@ -65,7 +67,7 @@ matplotlib.testing.decorators._image_directories = _image_directories
 from matplotlib.testing.decorators import image_comparison
 import matplotlib.pyplot as plt
 
-@image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error']], extensions=['pdf','png'])
+@image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error']], extensions=extensions)
 def testPlot():
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
@@ -79,7 +81,7 @@ def testPlot():
     m.plot_density()
     m.plot_errorbars_trainset()
 
-@image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'inducing']], extensions=['pdf','png'])
+@image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'inducing']], extensions=extensions)
 def testPlotSparse():
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
@@ -94,7 +96,7 @@ def testPlotSparse():
     m.plot_errorbars_trainset()
     m.plot_inducing()
 
-@image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=['pdf','png'])
+@image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
 def testPlotClassification():
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
@@ -107,7 +109,7 @@ def testPlotClassification():
     m.plot(plot_raw=False, apply_link=True)
     m.plot(plot_raw=True, apply_link=True)
 
-@image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=['pdf','png'])
+@image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
 def testPlotSparseClassification():
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))

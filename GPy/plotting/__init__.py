@@ -35,6 +35,7 @@ if config.get('plotting', 'library') is not 'none':
     GP.plot_density = gpy_plot.gp_plots.plot_density
     GP.plot_samples = gpy_plot.gp_plots.plot_samples
     GP.plot = gpy_plot.gp_plots.plot
+    GP.plot_f = gpy_plot.gp_plots.plot_f
     #GP.plot_magnificaion = gpy_plot.latent_plots.plot_magnification
     
     from ..core import SparseGP
@@ -54,5 +55,5 @@ if config.get('plotting', 'library') is not 'none':
     #GP.plot = matplot_dep.models_plots.plot_fit
     #GP.plot_f = matplot_dep.models_plots.plot_fit_f
     
-    GP.plot_magnification = matplot_dep.dim_reduction_plots.plot_magnification
+    #GP.plot_magnification = matplot_dep.dim_reduction_plots.plot_magnification
         

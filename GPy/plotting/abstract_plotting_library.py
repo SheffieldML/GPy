@@ -57,7 +57,7 @@ class AbstractPlottingLibrary(object):
         return self.__defaults
         #===============================================================================
     
-    def get_new_canvas(self, plot_3d=False, **kwargs):
+    def get_new_canvas(self, plot_3d=False, xlabel=None, ylabel=None, zlabel=None, title=None, legend=True, **kwargs):
         """
         Return a canvas, kwargupdate for your plotting library. 
         
@@ -68,13 +68,18 @@ class AbstractPlottingLibrary(object):
         the kwargs are plotting library specific kwargs!
 
         :param bool plot_3d: whether to plot in 3d.
-        
+        :param xlabel: the label to put on the xaxis
+        :param ylabel: the label to put on the yaxis
+        :param zlabel: the label to put on the zaxis (if plotting in 3d)
+        :param title: the title of the plot
+        :param legend: whether to put a legend on
+
         E.g. in matplotlib this means it deletes references to ax, as
         plotting is done on the axis itself and is not a kwarg. 
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def show_canvas(self, canvas, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, legend=True, **kwargs):
+    def show_canvas(self, canvas, plots, xlim=None, ylim=None, zlim=None, **kwargs):
         """
         Show the canvas given. 
         plots is a dictionary with the plots
@@ -82,14 +87,9 @@ class AbstractPlottingLibrary(object):
         
         the kwargs are plotting library specific kwargs!
 
-        :param xlabel: the label to put on the xaxis
-        :param ylabel: the label to put on the yaxis
-        :param zlabel: the label to put on the zaxis (if plotting in 3d)
-        :param title: the title of the plot
         :param (float, float) xlim: the limits for the xaxis
         :param (float, float) ylim: the limits for the yaxis
         :param (float, float) zlim: the limits for the zaxis (if plotting in 3d)
-        :param legend: whether to put a legend on
         
         E.g. in matplotlib this does not have to do anything, we make the tight plot, though.
         """
@@ -114,7 +114,15 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def scatter(self, canvas, X, Y, Z=None, c=None, vmin=None, vmax=None, label=None, **kwargs):
+    def surface(self, canvas, X, Y, Z, color=None, label=None, **kwargs):
+        """
+        Plot a surface for 3d plotting for the inputs (X, Y, Z).
+        
+        the kwargs are plotting library specific kwargs!
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def scatter(self, canvas, X, Y, Z=None, color=None, vmin=None, vmax=None, label=None, **kwargs):
         """
         Make a scatter plot between X and Y on the canvas given.
         
@@ -174,10 +182,12 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def contour(self, canvas, X, Y, C, color=None, label=None, **kwargs):
+    def contour(self, canvas, X, Y, C, Z=None, color=None, label=None, **kwargs):
         """
-        Make a contour plot at (X, Y) with heights stored in C on the canvas.
-                
+        Make a contour plot at (X, Y) with heights/colors stored in C on the canvas.
+        
+        if Z is not None: make 3d contour plot at (X, Y, Z) with heights/colors stored in C on the canvas.
+        
         the kwargs are plotting library specific kwargs!
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")

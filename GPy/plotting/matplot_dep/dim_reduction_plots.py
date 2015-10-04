@@ -7,7 +7,7 @@ from ...core.parameterization.variational import VariationalPosterior
 from .base_plots import x_frame2D
 import itertools
 try:
-from GPy.plotting.gpy_plot import Tango
+from GPy.plotting import Tango
     from matplotlib.cm import get_cmap
     from matplotlib import pyplot as pb
     from matplotlib import cm

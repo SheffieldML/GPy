@@ -32,48 +32,9 @@ from . import pl
 from .plot_util import get_x_y_var, get_free_dims, get_which_data_ycols,\
     get_which_data_rows, update_not_existing_kwargs, helper_predict_with_model
 
-def _plot_data(self, canvas, which_data_rows='all',
-        which_data_ycols='all', visible_dims=None,
-        error_kwargs=None, **plot_kwargs):
-    if error_kwargs is None:
-        error_kwargs = {}
-    ycols = get_which_data_ycols(self, which_data_ycols)
-    rows = get_which_data_rows(self, which_data_rows)
-
-    X, X_variance, Y = get_x_y_var(self)
-    free_dims = get_free_dims(self, visible_dims, None)
-    
-    plots = {}
-    plots['dataplot'] = []
-    
-    if X_variance is not None: plots['xerrorplot'] = []
-
-    
-    #one dimensional plotting
-    if len(free_dims) == 1:
-        for d in ycols:
-            update_not_existing_kwargs(plot_kwargs, pl.defaults.data_1d)  # @UndefinedVariable
-            plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims], Y[rows, d], **plot_kwargs))
-            if X_variance is not None:
-                update_not_existing_kwargs(error_kwargs, pl.defaults.xerrorbar)
-                plots['xerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims].flatten(), Y[rows, d].flatten(),
-                            2 * np.sqrt(X_variance[rows, free_dims].flatten()),
-                            **error_kwargs))
-    #2D plotting
-    elif len(free_dims) == 2:
-        for d in ycols:
-            update_not_existing_kwargs(plot_kwargs, pl.defaults.data_2d)  # @UndefinedVariable
-            plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims[0]], X[rows, free_dims[1]], 
-                                           c=Y[rows, d], vmin=Y.min(), vmax=Y.max(), **plot_kwargs))
-    elif len(free_dims) == 0:
-        pass #Nothing to plot!
-    else:
-        raise NotImplementedError("Cannot plot in more then two dimensions")
-    return plots
-
 def plot_data(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        error_kwargs=None, **plot_kwargs):
+        projection='2d', label=None, **plot_kwargs):
     """
     Plot the training data
       - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
@@ -87,28 +48,128 @@ def plot_data(self, which_data_rows='all',
     :type which_data_ycols: 'all' or a list of integers
     :param visible_dims: an array specifying the input dimensions to plot (maximum two)
     :type visible_dims: a numpy array
-    :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
+    :param {'2d','3d'} projection: whether to plot in 2d or 3d. This only applies when plotting two dimensional inputs!
+    :param str label: the label for the plot
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     
     :returns list: of plots created.
     """
-    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
-    plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, error_kwargs, **kwargs)
-    return pl.show_canvas(canvas, plots, xlabel='x', ylabel='y', legend='dataplot')
+    canvas, plot_kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
+    plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **plot_kwargs)
+    return pl.show_canvas(canvas, plots)
 
+def _plot_data(self, canvas, which_data_rows='all',
+        which_data_ycols='all', visible_dims=None,
+        projection='2d', label=None, **plot_kwargs):
+    ycols = get_which_data_ycols(self, which_data_ycols)
+    rows = get_which_data_rows(self, which_data_rows)
 
-def plot_inducing(self, visible_dims=None, **plot_kwargs):
+    X, _, Y = get_x_y_var(self)
+    free_dims = get_free_dims(self, visible_dims, None)
+    
+    plots = {}
+    plots['dataplot'] = []
+    
+    #one dimensional plotting
+    if len(free_dims) == 1:
+        for d in ycols:
+            update_not_existing_kwargs(plot_kwargs, pl.defaults.data_1d)  # @UndefinedVariable
+            plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims], Y[rows, d], label=label, **plot_kwargs))
+    #2D plotting
+    elif len(free_dims) == 2:
+        if projection=='2d':
+            for d in ycols:
+                update_not_existing_kwargs(plot_kwargs, pl.defaults.data_2d)  # @UndefinedVariable
+                plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims[0]], X[rows, free_dims[1]], 
+                                               color=Y[rows, d], vmin=Y.min(), vmax=Y.max(), label=label, **plot_kwargs))
+        else:
+            for d in ycols:
+                update_not_existing_kwargs(plot_kwargs, pl.defaults.data_2d)  # @UndefinedVariable
+                plots['dataplot'].append(pl.scatter(canvas, X[rows, free_dims[0]], X[rows, free_dims[1]], 
+                                                    Z=Y[rows, d], vmin=Y.min(), color=Y[rows, d], vmax=Y.max(), label=label, **plot_kwargs))
+    elif len(free_dims) == 0:
+        pass #Nothing to plot!
+    else:
+        raise NotImplementedError("Cannot plot in more then two dimensions")
+    return plots
+
+def plot_data_error(self, which_data_rows='all',
+        which_data_ycols='all', visible_dims=None,
+        projection='2d', label=None, **error_kwargs):
+    """
+    Plot the training data input error.
+    
+    For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
+
+    Can plot only part of the data
+    using which_data_rows and which_data_ycols.
+
+    :param which_data_rows: which of the training data to plot (default all)
+    :type which_data_rows: 'all' or a slice object to slice self.X, self.Y
+    :param which_data_ycols: when the data has several columns (independant outputs), only plot these
+    :type which_data_ycols: 'all' or a list of integers
+    :param visible_dims: an array specifying the input dimensions to plot (maximum two)
+    :type visible_dims: a numpy array
+    :param {'2d','3d'} projection: whether to plot in 2d or 3d. This only applies when plotting two dimensional inputs!
+    :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
+    :param str label: the label for the plot
+    :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
+    
+    :returns list: of plots created.
+    """
+    canvas, error_kwargs = pl.get_new_canvas(projection=='3d', **error_kwargs)
+    plots = _plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **error_kwargs)
+    return pl.show_canvas(canvas, plots)
+
+def _plot_data_error(self, canvas, which_data_rows='all',
+        which_data_ycols='all', visible_dims=None,
+        projection='2d', **error_kwargs):
+    ycols = get_which_data_ycols(self, which_data_ycols)
+    rows = get_which_data_rows(self, which_data_rows)
+
+    X, X_variance, Y = get_x_y_var(self)
+    free_dims = get_free_dims(self, visible_dims, None)
+    
+    plots = {}
+    
+    if X_variance is not None: 
+        plots['xerrorplot'] = []    
+        #one dimensional plotting
+        if len(free_dims) == 1:
+            for d in ycols:
+                    update_not_existing_kwargs(error_kwargs, pl.defaults.xerrorbar)
+                    plots['xerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims].flatten(), Y[rows, d].flatten(),
+                                2 * np.sqrt(X_variance[rows, free_dims].flatten()),
+                                **error_kwargs))
+        #2D plotting
+        elif len(free_dims) == 2:
+            update_not_existing_kwargs(error_kwargs, pl.defaults.xerrorbar)  # @UndefinedVariable
+            for d in ycols:
+                plots['xerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims[0]].flatten(), Y[rows, d].flatten(),
+                                2 * np.sqrt(X_variance[rows, free_dims[0]].flatten()),
+                                **error_kwargs))
+                plots['yerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims[1]].flatten(), Y[rows, d].flatten(),
+                                2 * np.sqrt(X_variance[rows, free_dims[1]].flatten()),
+                                **error_kwargs))
+        elif len(free_dims) == 0:
+            pass #Nothing to plot!
+        else:
+            raise NotImplementedError("Cannot plot in more then two dimensions")
+
+    return plots
+
+def plot_inducing(self, visible_dims=None, projection='2d', label=None, **plot_kwargs):
     """
     Plot the inducing inputs of a sparse gp model
     
     :param array-like visible_dims: an array specifying the input dimensions to plot (maximum two)
     :param kwargs plot_kwargs: keyword arguments for the plotting library
     """
-    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
-    plots = _plot_inducing(self, canvas, visible_dims, **kwargs)
+    canvas, kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
+    plots = _plot_inducing(self, canvas, visible_dims, projection, label, **kwargs)
     return pl.show_canvas(canvas, plots)
 
-def _plot_inducing(self, canvas, visible_dims, **plot_kwargs):
+def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs):
     free_dims = get_free_dims(self, visible_dims, None)
 
     Z = self.Z[:, free_dims]
@@ -119,6 +180,9 @@ def _plot_inducing(self, canvas, visible_dims, **plot_kwargs):
         update_not_existing_kwargs(plot_kwargs, pl.defaults.inducing_1d)  # @UndefinedVariable
         plots['inducing'] = pl.plot_axis_lines(canvas, Z[:, free_dims], **plot_kwargs)
     #2D plotting
+    elif len(free_dims) == 2 and projection == '3d':
+        update_not_existing_kwargs(plot_kwargs, pl.defaults.inducing_3d)  # @UndefinedVariable
+        plots['inducing'] = pl.plot_axis_lines(canvas, Z[:, free_dims], **plot_kwargs)
     elif len(free_dims) == 2:
         update_not_existing_kwargs(plot_kwargs, pl.defaults.inducing_2d)  # @UndefinedVariable
         plots['inducing'] = pl.scatter(canvas, Z[:, free_dims[0]], Z[:, free_dims[1]], 
@@ -131,7 +195,7 @@ def _plot_inducing(self, canvas, visible_dims, **plot_kwargs):
 
 def plot_errorbars_trainset(self, which_data_rows='all',
         which_data_ycols='all', fixed_inputs=None, 
-        plot_raw=False, apply_link=False,
+        plot_raw=False, apply_link=False, label=None, projection='2d',
         predict_kw=None, **plot_kwargs):
     """
     Plot the errorbars of the GP likelihood on the training data.
@@ -150,16 +214,16 @@ def plot_errorbars_trainset(self, which_data_rows='all',
     :param dict predict_kwargs: kwargs for the prediction used to predict the right quantiles.
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
+    canvas, kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
     plots = _plot_errorbars_trainset(self, canvas, which_data_rows, which_data_ycols, 
-                                     fixed_inputs, plot_raw, apply_link, predict_kw, **kwargs)
+                                     fixed_inputs, plot_raw, apply_link, label, projection, predict_kw, **kwargs)
     return pl.show_canvas(canvas, plots)
 
 def _plot_errorbars_trainset(self, canvas, 
         which_data_rows='all', which_data_ycols='all', 
         fixed_inputs=None,
         plot_raw=False, apply_link=False,
-        predict_kw=None, **plot_kwargs):
+        label=None, projection='2d', predict_kw=None, **plot_kwargs):
 
     ycols = get_which_data_ycols(self, which_data_ycols)
     rows = get_which_data_rows(self, which_data_rows)
@@ -176,9 +240,9 @@ def _plot_errorbars_trainset(self, canvas,
 
     plots = []
     
-    if len(free_dims)<2:
+    if len(free_dims)<=2:
+        update_not_existing_kwargs(plot_kwargs, pl.defaults.yerrorbar)
         if len(free_dims)==1:
-            update_not_existing_kwargs(plot_kwargs, pl.defaults.yerrorbar)
             if predict_kw is None:
                 predict_kw = {}
             if 'Y_metadata' not in predict_kw:
@@ -189,8 +253,14 @@ def _plot_errorbars_trainset(self, canvas,
             for d in ycols:
                 plots.append(pl.yerrorbar(canvas, X[rows,free_dims[0]], Y[rows,d], 
                                           np.vstack([Y[rows,d]-percs[0][rows,d], percs[1][rows,d]-Y[rows,d]]),
+                                          label=label, 
                                           **plot_kwargs))
-        else:
+        elif len(free_dims) == 2:
+            plots.append(pl.yerrorbar(canvas, X[rows,free_dims[0]], X[rows,free_dims[1]], 
+                          np.vstack([Y[rows,d]-percs[0][rows,d], percs[1][rows,d]-Y[rows,d]]),
+                          Y[rows,d],
+                          label=label, 
+                          **plot_kwargs))
             pass #Nothing to plot!
     else:
         raise NotImplementedError("Cannot plot in more then one dimension.")

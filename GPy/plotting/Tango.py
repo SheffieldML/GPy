@@ -1,8 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import sys
-
 colorsHex = {\
 "Aluminium6":"#2e3436",\
 "Aluminium5":"#555753",\

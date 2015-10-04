@@ -30,6 +30,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from ..abstract_plotting_library import AbstractPlottingLibrary
+from .. import Tango
 from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -38,75 +39,81 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
     
-    def get_new_canvas(self, plot_3d=False, kwargs):
-        if plot_3d:
-            from matplotlib.mplot3d import Axis3D  # @UnusedImport
-            pr = '3d'
-        else: pr=None
+    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, legend=True, projection='2d', **kwargs):
+        if projection == '3d':
+            from mpl_toolkits.mplot3d import Axes3D
+        elif projection == '2d':
+            projection = None
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
         elif 'num' in kwargs and 'figsize' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=pr) 
+            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection) 
         elif 'num' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num')).add_subplot(111, projection=pr)
+            ax = plt.figure(num=kwargs.pop('num')).add_subplot(111, projection=projection)
         elif 'figsize' in kwargs:
-            ax = plt.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=pr)
+            ax = plt.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection)
         else:
-            ax = plt.figure().add_subplot(111, projection=pr)
-        # Add ax to kwargs to add all subsequent plots to this axis:
-        #kwargs['ax'] = ax
+            ax = plt.figure().add_subplot(111, projection=projection)
+            
+        if xlabel is not None: ax.set_xlabel(xlabel)
+        if ylabel is not None: ax.set_ylabel(ylabel)
+        if zlabel is not None: ax.set_zlabel(zlabel)
+        if title is not None: ax.set_title(title)
         return ax, kwargs
     
-    def show_canvas(self, ax, plots, xlabel=None, ylabel=None, 
-                    zlabel=None, title=None, xlim=None, ylim=None, 
-                    zlim=None, legend=True, **kwargs):
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        
-        if zlabel is not None:
-            ax.set_zlabel(zlabel)
-        
-        ax.set_title(title)
-        
+    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, **kwargs):
         try:
             ax.autoscale_view()
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            if zlim is not None:
+                ax.set_zlim(zlim)
             ax.figure.canvas.draw()
-            ax.figure.tight_layout()
+            #ax.figure.tight_layout()
         except:
             pass
         return plots
     
-    def scatter(self, ax, X, Y, color=None, label=None, **kwargs):
+    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+        if Z is not None:
+            return ax.scatter(X, Y, c=color, zs=Z, label=label, **kwargs)
         return ax.scatter(X, Y, c=color, label=label, **kwargs)
     
     def plot(self, ax, X, Y, color=None, label=None, **kwargs):
         return ax.plot(X, Y, color=color, label=label, **kwargs)
 
-    def plot_axis_lines(self, ax, X, color=None, label=None, **kwargs):
+    def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         from matplotlib import transforms
         from matplotlib.path import Path
-        if 'transform' not in kwargs:
-            kwargs['transform'] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if 'marker' not in kwargs:
             kwargs['marker'] = Path([[-.2,0.],    [-.2,.5],    [0.,1.],    [.2,.5],     [.2,0.],     [-.2,0.]],
                                     [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
+        if 'transform' not in kwargs:
+            if X.shape[1] == 1:
+                kwargs['transform'] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
+        if X.shape[1] == 2:
+            return ax.scatter(X[:,0], X[:,1], ax.get_zlim()[0], c=color, label=label, **kwargs)
         return ax.scatter(X, np.zeros_like(X), c=color, label=label, **kwargs)
 
-    def barplot(self, ax, x, height, width=0.8, bottom=0, color=None, label=None, **kwargs):
+    def barplot(self, ax, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if 'align' not in kwargs:
             kwargs['align'] = 'center'
         return ax.bar(left=x, height=height, width=width,
                bottom=bottom, label=label, color=color,  
                **kwargs)
         
-    def xerrorbar(self, ax, X, Y, error, color=None, label=None, **kwargs):
-        if not('linestyle' in kwargs or 'ls' in kwargs):
-            kwargs['ls'] = 'none' 
-        return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
-    
-    def yerrorbar(self, ax, X, Y, error, color=None, label=None, **kwargs):
+    def xerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
+        if Z is not None:
+            return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
+        return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
+    
+    def yerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+        if not('linestyle' in kwargs or 'ls' in kwargs):
+            kwargs['ls'] = 'none'
+        if Z is not None:
+            return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
     def imshow(self, ax, X, label=None, **kwargs):
@@ -115,10 +122,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)
 
-    def fill_between(self, ax, X, lower, upper, color=None, label=None, **kwargs):
+    def surface(self, ax, X, Y, Z, color=None, label=None, **kwargs):
+        return ax.plot_surface(X, Y, Z, label=label, **kwargs)
+
+    def fill_between(self, ax, X, lower, upper, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         return ax.fill_between(X, lower, upper, facecolor=color, label=label, **kwargs)
 
-    def fill_gradient(self, canvas, X, percentiles, color=None, label=None, **kwargs):
+    def fill_gradient(self, canvas, X, percentiles, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         ax = canvas
         plots = []
         
@@ -132,7 +142,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             kwargs['facecolor'] = kwargs.pop('facecolors')
             
         if 'cmap' not in kwargs:
-            kwargs['cmap'] = LinearSegmentedColormap.from_list('WhToColor', ((1., 1., 1.), kwargs['facecolor']), N=len(percentiles)-1)
+            kwargs['cmap'] = LinearSegmentedColormap.from_list('WhToColor', ((1., 1., 1.), kwargs['facecolor']), N=len(percentiles))
             kwargs['cmap']._init()
             
         if 'alpha' in kwargs:
@@ -216,6 +226,8 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                 polys.append(p)
             polycol.extend(polys)
         from matplotlib.collections import PolyCollection
+        if 'zorder' not in kwargs:
+            kwargs['zorder'] = 0
         plots.append(PolyCollection(polycol, **kwargs))
         ax.add_collection(plots[-1], autolim=True)
         ax.autoscale_view()

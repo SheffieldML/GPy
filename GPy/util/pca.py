@@ -81,7 +81,7 @@ class PCA(object):
         """
         Plot fractions of Eigenvalues sorted in descending order.
         """
-        from GPy.plotting.gpy_plot import Tango
+        from ..plotting import Tango
         Tango.reset()
         col = Tango.nextMedium()
         if ax is None:

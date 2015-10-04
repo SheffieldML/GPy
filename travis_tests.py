@@ -32,7 +32,7 @@
 #!/usr/bin/env python
 
 import matplotlib 
-matplotlib.use('svg')
+matplotlib.use('pdf')
 
 import nose 
 nose.main('GPy', defaultTest='GPy/testing')  

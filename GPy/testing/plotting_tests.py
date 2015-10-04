@@ -40,7 +40,7 @@ try:
 except:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['png', 'pdf']
+extensions = ['png']
 
 def _image_directories(func):
     """
@@ -89,7 +89,6 @@ class test_image_comparison(object):
                     fig.axes[0].set_axis_off()
                     fig.set_frameon(False)
                     fig.savefig(os.path.join(self.result_dir, "{}.{}".format(base, ext)), frameon=False)
-                    print os.path.join(self.result_dir, "{}.{}".format(base, ext))
                     actual = os.path.join(self.result_dir, "{}.{}".format(base, ext))
                     expected = os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
                     yield compare_images, actual, expected, 1e-3

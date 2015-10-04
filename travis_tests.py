@@ -32,7 +32,7 @@
 #!/usr/bin/env python
 
 import matplotlib 
-matplotlib.use('agg')
+matplotlib.use('svg')
 
 import nose 
 nose.main('GPy', defaultTest='GPy/testing')  

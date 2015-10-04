@@ -17,4 +17,4 @@
 # from .ssgplvm import SSGPLVM_plot
 
 
-from util import align_subplot_array, align_subplots, fewerXticks, removeRightTicks, removeUpperTicks
+from .util import align_subplot_array, align_subplots, fewerXticks, removeRightTicks, removeUpperTicks

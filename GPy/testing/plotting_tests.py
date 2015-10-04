@@ -31,6 +31,7 @@ import numpy as np
 import GPy, os, sys
 from nose import SkipTest
 import unittest
+from matplotlib.testing.compare import compare_images
 
 try:
     from matplotlib import cbook, pyplot as plt
@@ -39,7 +40,7 @@ try:
 except:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['svg', 'pdf']
+extensions = ['png', 'pdf']
 
 def _image_directories(func):
     """
@@ -89,12 +90,15 @@ class test_image_comparison(object):
                     fig.set_frameon(False)
                     fig.savefig(os.path.join(self.result_dir, "{}.{}".format(base, ext)), frameon=False)
                     print os.path.join(self.result_dir, "{}.{}".format(base, ext))
-                    with open(os.path.join(self.result_dir, "{}.{}".format(base, ext)), 'r') as f:
-                        try:
-                            with open(os.path.join(self.baseline_dir, "{}.{}".format(base, ext)), 'r') as b:
-                                yield sequenceEqual, f.read(), b.read()
-                        except:
-                            yield notFound, os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
+                    actual = os.path.join(self.result_dir, "{}.{}".format(base, ext))
+                    expected = os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
+                    yield compare_images, actual, expected, 1e-3
+            plt.close('all')
+                    #with open(os.path.join(self.result_dir, "{}.{}".format(base, ext)), 'r') as f:
+                    #    try:
+                    #        with open(os.path.join(self.baseline_dir, "{}.{}".format(base, ext)), 'r') as b:
+                    #    except:
+                    #        yield notFound, os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
             #plt.close(num)
 
         return test_wrap

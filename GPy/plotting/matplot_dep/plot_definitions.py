@@ -135,26 +135,27 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if 'edgecolors' not in kwargs:
             kwargs['edgecolors'] = 'none'
         
-        if 'facecolors' not in kwargs:
-            kwargs['facecolors'] = color
-            
         if 'facecolors' in kwargs:
-            kwargs['facecolor'] = kwargs.pop('facecolors')
+            color = kwargs.pop('facecolors')
             
-        if 'cmap' not in kwargs:
-            kwargs['cmap'] = LinearSegmentedColormap.from_list('WhToColor', ((1., 1., 1.), kwargs['facecolor']), N=len(percentiles))
-            kwargs['cmap']._init()
-            
+        if 'array' in kwargs:
+            array = kwargs.pop('array')
+        else:
+            array = 1.-np.abs(np.linspace(-.97, .97, len(percentiles)-1))
+
         if 'alpha' in kwargs:
-            kwargs['cmap']._lut[:, -1] = kwargs['alpha']
-        
-        if 'array' not in kwargs:
-            if (len(percentiles)%2) == 0:
-                up = np.linspace(0, 1, len(percentiles)/2)
-                kwargs['array'] = np.r_[up, up[::-1][1:]]
-            else:
-                up = np.linspace(0, 1, len(percentiles)/2)
-                kwargs['array'] = np.r_[up, up[::-1]]
+            alpha = kwargs.pop('alpha')
+        else:
+            alpha = .8
+
+        if 'cmap' in kwargs:
+            cmap = kwargs.pop('cmap')
+        else:
+            cmap = LinearSegmentedColormap.from_list('WhToColor', (color, color), N=array.size)
+        cmap._init()
+        cmap._lut[:-3, -1] = alpha*array
+
+        kwargs['facecolors'] = [cmap(i) for i in np.linspace(0,1,cmap.N)]
 
         # pop where from kwargs
         where = kwargs.pop('where') if 'where' in kwargs else None

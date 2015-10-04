@@ -7,31 +7,13 @@ from ...core.parameterization.variational import VariationalPosterior
 from .base_plots import x_frame2D
 import itertools
 try:
-    from . import Tango
+from GPy.plotting.gpy_plot import Tango
     from matplotlib.cm import get_cmap
     from matplotlib import pyplot as pb
     from matplotlib import cm
 except:
     pass
 
-def most_significant_input_dimensions(model, which_indices):
-    """
-    Determine which dimensions should be plotted
-    """
-    if which_indices is None:
-        if model.input_dim == 1:
-            input_1 = 0
-            input_2 = None
-        if model.input_dim == 2:
-            input_1, input_2 = 0, 1
-        else:
-            try:
-                input_1, input_2 = np.argsort(model.input_sensitivity())[::-1][:2]
-            except:
-                raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
-    else:
-        input_1, input_2 = which_indices
-    return input_1, input_2
 
 def plot_latent(model, labels=None, which_indices=None,
                 resolution=50, ax=None, marker='o', s=40,
@@ -52,7 +34,7 @@ def plot_latent(model, labels=None, which_indices=None,
     if labels is None:
         labels = np.ones(model.num_data)
 
-    input_1, input_2 = most_significant_input_dimensions(model, which_indices)
+    input_1, input_2 = model.get_most_significant_input_dimensions(which_indices)
 
     #fethch the data points X that we'd like to plot
     X = model.X
@@ -219,7 +201,7 @@ def plot_magnification(model, labels=None, which_indices=None,
     if labels is None:
         labels = np.ones(model.num_data)
 
-    input_1, input_2 = most_significant_input_dimensions(model, which_indices)
+    input_1, input_2 = model.get_most_significant_input_dimensions(which_indices)
 
     #fethch the data points X that we'd like to plot
     X = model.X
@@ -366,7 +348,7 @@ def plot_magnification(model, labels=None, which_indices=None,
 
 def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, labels=None, data_labels=None, data_marker='o', data_s=40, resolution=20, aspect='auto', updates=False, ** kwargs):
 
-    input_1, input_2 = significant_dims = most_significant_input_dimensions(model, which_indices)
+    input_1, input_2 = significant_dims = model.get_most_significant_input_dimensions(which_indices)
 
     X = np.zeros((resolution ** 2, model.input_dim))
     indices = np.r_[:X.shape[0]]

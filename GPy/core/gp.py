@@ -504,6 +504,9 @@ class GP(Model):
         """
         return self.kern.input_sensitivity(summarize=summarize)
 
+    def get_most_significant_input_dimensions(self, which_indices=None):
+        return self.kern.get_most_significant_input_dimensions(which_indices)
+
     def optimize(self, optimizer=None, start=None, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.

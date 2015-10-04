@@ -38,22 +38,36 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
     
-    def get_new_canvas(self, kwargs):
+    def get_new_canvas(self, plot_3d=False, kwargs):
+        if plot_3d:
+            from matplotlib.mplot3d import Axis3D  # @UnusedImport
+            pr = '3d'
+        else: pr=None
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
         elif 'num' in kwargs and 'figsize' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111) 
+            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=pr) 
         elif 'num' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num')).add_subplot(111)
+            ax = plt.figure(num=kwargs.pop('num')).add_subplot(111, projection=pr)
         elif 'figsize' in kwargs:
-            ax = plt.figure(figsize=kwargs.pop('figsize')).add_subplot(111)
+            ax = plt.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=pr)
         else:
-            ax = plt.figure().add_subplot(111)
+            ax = plt.figure().add_subplot(111, projection=pr)
         # Add ax to kwargs to add all subsequent plots to this axis:
         #kwargs['ax'] = ax
         return ax, kwargs
     
-    def show_canvas(self, ax, plots):
+    def show_canvas(self, ax, plots, xlabel=None, ylabel=None, 
+                    zlabel=None, title=None, xlim=None, ylim=None, 
+                    zlim=None, legend=True, **kwargs):
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        
+        if zlabel is not None:
+            ax.set_zlabel(zlabel)
+        
+        ax.set_title(title)
+        
         try:
             ax.autoscale_view()
             ax.figure.canvas.draw()
@@ -62,13 +76,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             pass
         return plots
     
-    def scatter(self, ax, X, Y, **kwargs):
-        return ax.scatter(X, Y, **kwargs)
+    def scatter(self, ax, X, Y, color=None, label=None, **kwargs):
+        return ax.scatter(X, Y, c=color, label=label, **kwargs)
     
-    def plot(self, ax, X, Y, **kwargs):
-        return ax.plot(X, Y, **kwargs)
+    def plot(self, ax, X, Y, color=None, label=None, **kwargs):
+        return ax.plot(X, Y, color=color, label=label, **kwargs)
 
-    def plot_axis_lines(self, ax, X, **kwargs):
+    def plot_axis_lines(self, ax, X, color=None, label=None, **kwargs):
         from matplotlib import transforms
         from matplotlib.path import Path
         if 'transform' not in kwargs:
@@ -76,31 +90,44 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if 'marker' not in kwargs:
             kwargs['marker'] = Path([[-.2,0.],    [-.2,.5],    [0.,1.],    [.2,.5],     [.2,0.],     [-.2,0.]],
                                     [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
-        return ax.scatter(X, np.zeros_like(X), **kwargs)
+        return ax.scatter(X, np.zeros_like(X), c=color, label=label, **kwargs)
 
-    def xerrorbar(self, ax, X, Y, error, **kwargs):
+    def barplot(self, ax, x, height, width=0.8, bottom=0, color=None, label=None, **kwargs):
+        if 'align' not in kwargs:
+            kwargs['align'] = 'center'
+        return ax.bar(left=x, height=height, width=width,
+               bottom=bottom, label=label, color=color,  
+               **kwargs)
+        
+    def xerrorbar(self, ax, X, Y, error, color=None, label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none' 
-        return ax.errorbar(X, Y, xerr=error, **kwargs)
+        return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
     
-    def yerrorbar(self, ax, X, Y, error, **kwargs):
+    def yerrorbar(self, ax, X, Y, error, color=None, label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
-        return ax.errorbar(X, Y, yerr=error, **kwargs)
+        return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
-    def imshow(self, ax, X, **kwargs):
-        return ax.imshow(**kwargs)
+    def imshow(self, ax, X, label=None, **kwargs):
+        return ax.imshow(X, label=label, **kwargs)
     
-    def contour(self, ax, X, Y, C, levels=20, **kwargs):
-        return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), **kwargs)
+    def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
+        return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)
 
-    def fill_between(self, ax, X, lower, upper, **kwargs):
-        return ax.fill_between(X, lower, upper, **kwargs)
+    def fill_between(self, ax, X, lower, upper, color=None, label=None, **kwargs):
+        return ax.fill_between(X, lower, upper, facecolor=color, label=label, **kwargs)
 
-    def fill_gradient(self, canvas, X, percentiles, **kwargs):
+    def fill_gradient(self, canvas, X, percentiles, color=None, label=None, **kwargs):
         ax = canvas
         plots = []
         
+        if 'edgecolors' not in kwargs:
+            kwargs['edgecolors'] = 'none'
+        
+        if 'facecolors' not in kwargs:
+            kwargs['facecolors'] = color
+            
         if 'facecolors' in kwargs:
             kwargs['facecolor'] = kwargs.pop('facecolors')
             

@@ -30,7 +30,7 @@
 
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
-from . import Tango
+from GPy.plotting.gpy_plot import Tango
 
 '''
 This file is for defaults for the gpy plot, specific to the plotting library.
@@ -43,17 +43,24 @@ In the code, always ise plotting.gpy_plots.defaults to get the defaults, as
 it gives back an empty default, when defaults are not defined.
 '''
 
-# Data:
+# Data plots:
 data_1d = dict(lw=1.5, marker='x', edgecolor='k')
 data_2d = dict(s=35, edgecolors='none', linewidth=0., cmap=cm.get_cmap('hot'), alpha=.5)
 inducing_1d = dict(lw=0, s=500, facecolors=Tango.colorsHex['darkRed'])
 inducing_2d = dict(s=14, edgecolors='k', linewidth=.4, facecolors='white', alpha=.5)
-xerrorbar = dict(ecolor='k', fmt='none', elinewidth=.5, alpha=.5)
-yerrorbar = dict(ecolor=Tango.colorsHex['darkRed'], fmt='none', elinewidth=.5, alpha=.5)
+xerrorbar = dict(color='k', fmt='none', elinewidth=.5, alpha=.5)
+yerrorbar = dict(color=Tango.colorsHex['darkRed'], fmt='none', elinewidth=.5, alpha=.5)
 
-# GP plots
+# GP plots:
 meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
 meanplot_2d = dict(cmap='hot', linewidth=.5)
 samples_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=.3)
-confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'],linewidth=.5,facecolor=Tango.colorsHex['lightBlue'],alpha=.2)
-density = dict(alpha=.5, facecolor=Tango.colorsHex['mediumBlue'], edgecolors='none')
+confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'], linewidth=.5, color=Tango.colorsHex['lightBlue'],alpha=.2)
+density = dict(alpha=.5, color=Tango.colorsHex['mediumBlue'])
+
+# GPLVM plots:
+data_y_1d = dict(linewidth=0, cmap='RdBu', s=40)
+data_y_1d_plot = dict(color='k', linewidth=1.5)
+
+# Kernel plots:
+ard = dict(edgecolor='k', linewidth=1.2)

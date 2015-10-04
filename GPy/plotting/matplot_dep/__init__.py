@@ -8,7 +8,7 @@ from . import variational_plots
 from . import kernel_plots
 from . import dim_reduction_plots
 from . import mapping_plots
-from . import Tango
+from GPy.plotting.gpy_plot import Tango
 from . import visualize
 from . import latent_space_visualizations
 from . import inference_plots

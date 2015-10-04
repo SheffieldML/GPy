@@ -84,7 +84,7 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
                     fsamples[:, s] = self.likelihood.gp_link.transf(fsamples[:, s])
     return retmu, percs, fsamples
 
-def helper_for_plot_data(self, plot_limits, fixed_inputs, resolution):
+def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution):
     """
     Figure out the data, free_dims and create an Xgrid for
     the prediction. 
@@ -95,7 +95,7 @@ def helper_for_plot_data(self, plot_limits, fixed_inputs, resolution):
     if fixed_inputs is None:
         fixed_inputs = []
     fixed_dims = get_fixed_dims(self, fixed_inputs)
-    free_dims = get_free_dims(self, None, fixed_dims)
+    free_dims = get_free_dims(self, visible_dims, fixed_dims)
     
     if len(free_dims) == 1:
         #define the frame on which to plot
@@ -157,11 +157,10 @@ def get_free_dims(model, visible_dims, fixed_dims):
     """
     if visible_dims is None:
         visible_dims = np.arange(model.input_dim)
-    assert visible_dims.size <= 2, "Visible inputs cannot be larger than two"
-    if fixed_dims is None:
-        return visible_dims
-    else:
+    visible_dims = np.asanyarray(visible_dims)
+    if fixed_dims is not None:
         return np.setdiff1d(visible_dims, fixed_dims)
+    return visible_dims
 
 def get_fixed_dims(model, fixed_inputs):
     """

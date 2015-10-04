@@ -214,6 +214,36 @@ class Kern(Parameterized):
         """
         return np.zeros(self.input_dim)
 
+    def get_most_significant_input_dimensions(self, which_indices=None):
+        """
+        Determine which dimensions should be plotted
+        
+        :param which_indices: force the indices to be the given indices. 
+        :type which_indices: int or tuple(int,int) 
+        """
+        if which_indices is None:
+            if self.input_dim == 1:
+                input_1 = 0
+                input_2 = None
+            if self.input_dim == 2:
+                input_1, input_2 = 0, 1
+            else:
+                try:
+                    which_indices = np.argsort(self.input_sensitivity())[::-1][:2]
+                except:
+                    raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
+        try:
+            input_1, input_2 = which_indices
+        except TypeError:
+            # which_indices was an int
+            input_1, input_2 = which_indices, None
+        except ValueError:
+            # which_indices was a list or array like with only one int
+            input_1, input_2 = which_indices[0], None
+
+        return input_1, input_2
+
+
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)

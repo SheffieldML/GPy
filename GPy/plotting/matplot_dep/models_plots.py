@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from . import Tango
 from .base_plots import gpplot, x_frame1D, x_frame2D,gperrors
 from ...models.gp_coregionalized_regression import GPCoregionalizedRegression
 from ...models.sparse_gp_coregionalized_regression import SparseGPCoregionalizedRegression
@@ -11,7 +10,7 @@ from ...core.parameterization.variational import VariationalPosterior
 from matplotlib import pyplot as plt
 from .base_plots import gradient_fill
 from functools import wraps
-
+from .gpy_plot import Tango
 
 def plot_data(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,

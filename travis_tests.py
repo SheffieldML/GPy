@@ -33,6 +33,7 @@
 
 import matplotlib 
 matplotlib.use('pdf')
+matplotlib.rcParams['figure.size'] = (4,3)
 
 import nose 
 nose.main('GPy', defaultTest='GPy/testing/plotting_tests.py')  

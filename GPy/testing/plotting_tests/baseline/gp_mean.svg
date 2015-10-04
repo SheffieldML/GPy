@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with matplotlib (http://matplotlib.org/) -->
+<svg height="216pt" version="1.1" viewBox="0 0 288 216" width="288pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <style type="text/css">
+*{stroke-linecap:butt;stroke-linejoin:round;}
+  </style>
+ </defs>
+ <g id="figure_1">
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path clip-path="url(#pe40536ea7a)" d="
+M36.8864 36.7031
+L42.4519 35.548
+L48.0174 34.6335
+L53.5829 33.974
+L59.1484 33.5829
+L63.6008 33.4715
+L68.0532 33.5457
+L72.5056 33.8106
+L76.958 34.2709
+L81.4103 34.9306
+L85.8627 35.7934
+L90.3151 36.8619
+L94.7675 38.1382
+L99.2199 39.6237
+L103.672 41.3191
+L108.125 43.2243
+L112.577 45.3383
+L117.029 47.6596
+L121.482 50.1856
+L127.047 53.6261
+L132.613 57.3734
+L138.178 61.4175
+L143.744 65.7467
+L149.309 70.3472
+L154.875 75.2037
+L161.553 81.3453
+L168.232 87.7986
+L176.024 95.6739
+L183.815 103.865
+L193.833 114.754
+L207.19 129.664
+L230.566 155.822
+L240.583 166.663
+L248.375 174.803
+L256.167 182.619
+L258.393 184.783
+L258.393 184.783" style="fill:none;stroke:#3465a4;stroke-linecap:square;stroke-width:2;"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pe40536ea7a">
+   <rect height="172.8" width="223.2" x="36.0" y="21.6"/>
+  </clipPath>
+ </defs>
+</svg>

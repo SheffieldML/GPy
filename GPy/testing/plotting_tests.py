@@ -30,15 +30,16 @@
 import numpy as np
 import GPy, os, sys
 from nose import SkipTest
+import unittest
 
 try:
-    from matplotlib import cbook
+    from matplotlib import cbook, pyplot as plt
     import matplotlib
     matplotlib.rcParams['text.usetex'] = False
 except:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['pdf']
+extensions = ['svg', 'pdf']
 
 def _image_directories(func):
     """
@@ -62,13 +63,44 @@ def _image_directories(func):
 
     return baseline_dir, result_dir
 
-import matplotlib.testing.decorators
-matplotlib.testing.decorators._image_directories = _image_directories
-from matplotlib.testing.decorators import image_comparison
-import matplotlib.pyplot as plt
 
-@image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error']], extensions=extensions)
-def testPlot():
+def sequenceEqual(a, b):
+    assert len(a) == len(b), "Sequences not same length"
+    for i, [x, y], in enumerate(zip(a, b)):
+        assert x == y, "element not matching {}".format(i) 
+
+def notFound(path):
+    raise IOError('File {} not in baseline')
+
+class test_image_comparison(object):
+    def __init__(self, baseline_images=[], extensions=['pdf','svg','ong']):
+        self.baseline_images = baseline_images
+        self.extensions = extensions
+        self.f = None
+    
+    def __call__(self, func):
+        self.baseline_dir, self.result_dir = _image_directories(func)
+        def test_wrap():
+            func()
+            for num, base in zip(plt.get_fignums(), self.baseline_images):
+                for ext in self.extensions:
+                    fig = plt.figure(num)
+                    fig.axes[0].set_axis_off()
+                    fig.set_frameon(False)
+                    fig.savefig(os.path.join(self.result_dir, "{}.{}".format(base, ext)), frameon=False)
+                    print os.path.join(self.result_dir, "{}.{}".format(base, ext))
+                    with open(os.path.join(self.result_dir, "{}.{}".format(base, ext)), 'r') as f:
+                        try:
+                            with open(os.path.join(self.baseline_dir, "{}.{}".format(base, ext)), 'r') as b:
+                                yield sequenceEqual, f.read(), b.read()
+                        except:
+                            yield notFound, os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
+            #plt.close(num)
+
+        return test_wrap
+        
+@test_image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error']], extensions=extensions)
+def Plot(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -81,8 +113,8 @@ def testPlot():
     m.plot_density()
     m.plot_errorbars_trainset()
 
-@image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'inducing']], extensions=extensions)
-def testPlotSparse():
+@test_image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'inducing']], extensions=extensions)
+def PlotSparse(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -96,8 +128,8 @@ def testPlotSparse():
     m.plot_errorbars_trainset()
     m.plot_inducing()
 
-@image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
-def testPlotClassification():
+@test_image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
+def PlotClassification(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -109,8 +141,8 @@ def testPlotClassification():
     m.plot(plot_raw=False, apply_link=True)
     m.plot(plot_raw=True, apply_link=True)
 
-@image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
-def testPlotSparseClassification():
+@test_image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
+def PlotSparseClassification(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)

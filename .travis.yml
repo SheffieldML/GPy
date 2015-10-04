@@ -9,16 +9,12 @@ os:
 addons:
   apt:
     packages:
-      - inkscape
-      - libav-tools
-      - gdb
-      - mencoder
+#      - inkscape
+#      - libav-tools
+#      - gdb
+#      - mencoder
       - dvipng
-      - texlive-latex-base
-      - texlive-latex-extra
-      - texlive-fonts-recommended
-      - texlive-latex-recommended
-      - graphviz
+      - libpng
 #      - gfortran
 #      - libatlas-dev
 #      - libatlas-base-dev
@@ -64,7 +60,7 @@ before_install:
   - export PATH="$MINICONDA_INSTALL/bin:$PATH";
   
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib;
+  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib pillow;
   - pip install codecov
   - python setup.py develop
    

@@ -28,9 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 import numpy as np
-import GPy, os, sys
+import GPy, os
 from nose import SkipTest
-import unittest
 from matplotlib.testing.compare import compare_images
 
 try:
@@ -48,20 +47,12 @@ def _image_directories(func):
     Create the result directory if it doesn't exist.
     """
     module_name = func.__module__
-
-    path = module_name
-    
     mods = module_name.split('.')
-    subdir = os.path.join(*mods)
-    
     basedir = os.path.join(*mods)
-    
     result_dir = os.path.join(basedir, 'testresult')
     baseline_dir = os.path.join(basedir, 'baseline')
-
     if not os.path.exists(result_dir):
         cbook.mkdirs(result_dir)
-
     return baseline_dir, result_dir
 
 

@@ -161,13 +161,19 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         where = kwargs.pop('where') if 'where' in kwargs else None
         # pop interpolate, which we actually do not do here!
         if 'interpolate' in kwargs: kwargs.pop('interpolate')
+
+        from itertools import tee
+        try:
+            from itertools import izip as zip
+        except ImportError:
+            # python 3 already is izip
+            pass
         
-        from itertools import tee, izip
         def pairwise(iterable):
             "s -> (s0,s1), (s1,s2), (s2, s3), ..."
             a, b = tee(iterable)
             next(b, None)
-            return izip(a, b)            
+            return zip(a, b)            
             
         polycol = []
         for y1, y2 in pairwise(percentiles):

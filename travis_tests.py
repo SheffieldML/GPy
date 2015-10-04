@@ -35,5 +35,5 @@ import matplotlib
 matplotlib.use('pdf')
 
 import nose 
-nose.main('GPy', defaultTest='GPy/testing')  
+nose.main('GPy', defaultTest='GPy/testing/plotting_test')  
 

@@ -167,15 +167,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         # pop interpolate, which we actually do not do here!
         if 'interpolate' in kwargs: kwargs.pop('interpolate')
 
-        from itertools import tee
-        try:
-            from itertools import izip as zip
-        except ImportError:
-            # python 3 already is izip
-            pass
-        
         def pairwise(iterable):
             "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+            from itertools import tee
+            #try:
+            #    from itertools import izip as zip
+            #except ImportError:
+            #    pass
             a, b = tee(iterable)
             next(b, None)
             return zip(a, b)            

@@ -343,6 +343,29 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
+def gplvm_simulation(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import GPLVM
+
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
+    Y = Ylist[0]
+    k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = GPLVM(Y, Q, init="PCA", kernel=k)
+    m.likelihood.variance = .1
+
+    if optimize:
+        print("Optimizing model:")
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.X.plot("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
 def ssgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
                       max_iters=2e4, useGPU=False

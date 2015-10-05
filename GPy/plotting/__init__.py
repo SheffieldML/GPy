@@ -36,14 +36,20 @@ if config.get('plotting', 'library') is not 'none':
     GP.plot_samples = gpy_plot.gp_plots.plot_samples
     GP.plot = gpy_plot.gp_plots.plot
     GP.plot_f = gpy_plot.gp_plots.plot_f
-    GP.plot_magnificaion = gpy_plot.latent_plots.plot_magnification
+    GP.plot_magnification = gpy_plot.latent_plots.plot_magnification
     
     from ..core import SparseGP
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
     
     from ..models import GPLVM
+    from ..models import BayesianGPLVM
+    from ..models import bayesian_gplvm_minibatch
     GPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
-    #GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    BayesianGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    BayesianGPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent = gpy_plot.latent_plots.plot_latent
+    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
     
     from ..kern import Kern
     #Kern.plot_covariance = gpy_plot.kern_plots.plot_kern

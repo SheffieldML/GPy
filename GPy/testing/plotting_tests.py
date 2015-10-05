@@ -31,6 +31,7 @@ import numpy as np
 import GPy, os
 from nose import SkipTest
 from matplotlib.testing.compare import compare_images
+from matplotlib.testing.noseclasses import ImageComparisonFailure
 
 try:
     from matplotlib import cbook, pyplot as plt
@@ -41,14 +42,15 @@ except:
 
 extensions = ['png']
 
-def _image_directories(func):
+def _image_directories():
     """
     Compute the baseline and result image directories for testing *func*.
     Create the result directory if it doesn't exist.
     """
-    module_name = func.__module__
-    mods = module_name.split('.')
-    basedir = os.path.join(*mods)
+    basedir = os.path.splitext(os.path.relpath(os.path.abspath(__file__)))[0]
+    #module_name = __init__.__module__
+    #mods = module_name.split('.')
+    #basedir = os.path.join(*mods)
     result_dir = os.path.join(basedir, 'testresult')
     baseline_dir = os.path.join(basedir, 'baseline')
     if not os.path.exists(result_dir):
@@ -56,45 +58,44 @@ def _image_directories(func):
     return baseline_dir, result_dir
 
 
-def sequenceEqual(a, b):
+def _sequenceEqual(a, b):
     assert len(a) == len(b), "Sequences not same length"
     for i, [x, y], in enumerate(zip(a, b)):
         assert x == y, "element not matching {}".format(i) 
 
-def notFound(path):
+def _notFound(path):
     raise IOError('File {} not in baseline')
 
-class test_image_comparison(object):
-    def __init__(self, baseline_images=[], extensions=['pdf','svg','ong']):
-        self.baseline_images = baseline_images
-        self.extensions = extensions
-        self.f = None
-    
-    def __call__(self, func):
-        self.baseline_dir, self.result_dir = _image_directories(func)
-        def test_wrap():
-            func()
-            for num, base in zip(plt.get_fignums(), self.baseline_images):
-                for ext in self.extensions:
-                    fig = plt.figure(num)
-                    fig.axes[0].set_axis_off()
-                    fig.set_frameon(False)
-                    fig.savefig(os.path.join(self.result_dir, "{}.{}".format(base, ext)), frameon=False)
-                    actual = os.path.join(self.result_dir, "{}.{}".format(base, ext))
-                    expected = os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
-                    yield compare_images, actual, expected, 1e-3
-            plt.close('all')
-                    #with open(os.path.join(self.result_dir, "{}.{}".format(base, ext)), 'r') as f:
-                    #    try:
-                    #        with open(os.path.join(self.baseline_dir, "{}.{}".format(base, ext)), 'r') as b:
-                    #    except:
-                    #        yield notFound, os.path.join(self.baseline_dir, "{}.{}".format(base, ext))
-            #plt.close(num)
+def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3):
+    baseline_dir, result_dir = _image_directories()
+    for num, base in zip(plt.get_fignums(), baseline_images):
+        for ext in extensions:
+            fig = plt.figure(num)
+            fig.axes[0].set_axis_off()
+            fig.set_frameon(False)
+            fig.canvas.draw()
+            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)))
+        for num, base in zip(plt.get_fignums(), baseline_images):
+            for ext in extensions:
+                #plt.close(num)
+                actual = os.path.join(result_dir, "{}.{}".format(base, ext))
+                expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
+                def do_test():
+                    err = compare_images(actual, expected, tol)
+                    try:
+                        if not os.path.exists(expected):
+                            raise ImageComparisonFailure(
+                                'image does not exist: %s' % expected)
+                        if err:
+                            raise ImageComparisonFailure(
+                                'images not close: %(actual)s vs. %(expected)s '
+                                '(RMS %(rms).3f)'%err)
+                    except ImageComparisonFailure:
+                        pass
+                yield do_test
+    plt.close('all')
 
-        return test_wrap
-        
-@test_image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error']], extensions=extensions)
-def Plot(self=None):
+def test_plot(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -106,24 +107,22 @@ def Plot(self=None):
     m.plot_confidence()
     m.plot_density()
     m.plot_errorbars_trainset()
+    m.plot_samples()
+    for do_test in _image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'samples']], extensions=extensions):
+        yield (do_test, )
 
-@test_image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'inducing']], extensions=extensions)
-def PlotSparse(self=None):
+def test_plot_sparse(self=None):
     np.random.seed(11111)
-    X = np.random.uniform(0, 1, (40, 1))
+    X = np.random.uniform(-1, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPRegression(X, Y)
     m.optimize()
-    m.plot_data()
-    m.plot_mean()
-    m.plot_confidence()
-    m.plot_density()
-    m.plot_errorbars_trainset()
     m.plot_inducing()
+    for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['inducing']], extensions=extensions):
+        yield (do_test, )
 
-@test_image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
-def PlotClassification(self=None):
+def test_plot_classification(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -134,9 +133,11 @@ def PlotClassification(self=None):
     m.plot(plot_raw=True)
     m.plot(plot_raw=False, apply_link=True)
     m.plot(plot_raw=True, apply_link=True)
+    for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions):
+        yield (do_test, )
 
-@test_image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions)
-def PlotSparseClassification(self=None):
+ 
+def test_plot_sparse_classification(self=None):
     np.random.seed(11111)
     X = np.random.uniform(0, 1, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -147,3 +148,29 @@ def PlotSparseClassification(self=None):
     m.plot(plot_raw=True)
     m.plot(plot_raw=False, apply_link=True)
     m.plot(plot_raw=True, apply_link=True)
+    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions):
+        yield (do_test, )
+
+def test_gplvm_plot(self=None):
+    from ..examples.dimensionality_reduction import _simulate_matern
+    from ..kern import RBF
+    from ..models import GPLVM
+    Q = 3
+    _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
+    Y = Ylist[0]
+    k = RBF(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = GPLVM(Y, Q, init="PCA", kernel=k)
+    m.likelihood.variance = .1
+    m.optimize(messages=0)
+    labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
+    m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
+    plt.close('all')
+    m.plot_latent()
+    m.plot_magnification(labels=labels)
+    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification"]], extensions=extensions):
+        yield (do_test, )
+        
+if __name__ == '__main__':
+    import nose
+    nose.main()

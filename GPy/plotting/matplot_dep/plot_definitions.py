@@ -79,7 +79,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker='o', **kwargs):
         if Z is not None:
             return ax.scatter(X, Y, c=color, zs=Z, label=label, marker=marker, **kwargs)
-        return ax.scatter(X, Y, c=color, label=label, **kwargs)
+        return ax.scatter(X, Y, c=color, label=label, marker=marker, **kwargs)
     
     def plot(self, ax, X, Y, color=None, label=None, **kwargs):
         return ax.plot(X, Y, color=color, label=label, **kwargs)

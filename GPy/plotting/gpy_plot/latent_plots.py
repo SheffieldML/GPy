@@ -33,6 +33,15 @@ from .plot_util import get_x_y_var, get_free_dims, get_which_data_ycols,\
     get_which_data_rows, update_not_existing_kwargs, helper_predict_with_model,\
     helper_for_plot_data
 import itertools
+from GPy.plotting.gpy_plot.plot_util import scatter_label_generator, subsample_X
+
+def _wait_for_updates(view, updates):
+    if updates:
+        clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
+        if clear.lower() in 'yes' or clear == '':
+            view.deactivate()
+    else:
+        view.deactivate()
 
 def plot_prediction_fit(self, plot_limits=None,
         which_data_rows='all', which_data_ycols='all', 
@@ -88,7 +97,7 @@ def _plot_prediction_fit(self, canvas, plot_limits=None,
                 scatter_kwargs = {}
             update_not_existing_kwargs(scatter_kwargs, pl.defaults.data_y_1d)  # @UndefinedVariable
             plots['output'] = pl.scatter(canvas, Y[rows, ycols[0]], Y[rows, ycols[1]],
-                                      c=X[rows, free_dims[0]],
+                                      color=X[rows, free_dims[0]],
                                       **scatter_kwargs)
             if predict_kw is None:
                 predict_kw = {}
@@ -108,7 +117,9 @@ def plot_magnification(self, labels=None, which_indices=None,
                 plot_limits=None,
                 updates=False, 
                 mean=True, covariance=True, 
-                kern=None, marker='<>^vsd', imshow_kwargs=None, **kwargs):
+                kern=None, marker='<>^vsd', 
+                num_samples=1000,
+                imshow_kwargs=None, **kwargs):
     """
     Plot the magnification factor of the GP on the inputs. This is the 
     density of the GP as a gray scale.
@@ -124,95 +135,23 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param bool covariance: use the covariance of the Wishart embedding for the magnification factor
     :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
     :param str marker: markers to use - cycle if more labels then markers are given
+    :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples. 
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-
-    #fethch the data points X that we'd like to plot
-    X, _, _ = get_x_y_var(self)
-
-    if plot_limits is None:
-        xmin, ymin = X[:, [input_1, input_2]].min(0)
-        xmax, ymax = X[:, [input_1, input_2]].max(0)
-        x_r, y_r = xmax-xmin, ymax-ymin
-        xmin -= .1*x_r
-        xmax += .1*x_r
-        ymin -= .1*y_r
-        ymax += .1*y_r
-    else:
-        try:
-            xmin, xmax, ymin, ymax = plot_limits
-        except (TypeError, ValueError) as e:
-            try:
-                xmin, xmax = plot_limits
-                ymin, ymax = xmin, xmax
-            except (TypeError, ValueError) as e:
-                raise e.__class__("Wrong plot limits: {} given -> need (xmin, xmax, ymin, ymax)".format(plot_limits))
-    xlim = (xmin, xmax)
-    ylim = (ymin, ymax)
 
     from .. import Tango
     Tango.reset()
     
     if labels is None:
         labels = np.ones(self.num_data)
-
-    if X.shape[0] > 1000:
-        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
-        subsample = np.random.choice(X.shape[0], size=1000, replace=False)
-        X = X[subsample]
-        labels = labels[subsample]
-        #=======================================================================
-        #     <<<WORK IN PROGRESS>>>
-        #     <<<DO NOT DELETE>>>
-        #     plt.close('all')
-        #     fig, ax = plt.subplots(1,1)
-        #     from GPy.plotting.matplot_dep.dim_reduction_plots import most_significant_input_dimensions
-        #     import matplotlib.patches as mpatches
-        #     i1, i2 = most_significant_input_dimensions(m, None)
-        #     xmin, xmax = 100, -100
-        #     ymin, ymax = 100, -100
-        #     legend_handles = []
-        #
-        #     X = m.X.mean[:, [i1, i2]]
-        #     X = m.X.variance[:, [i1, i2]]
-        #
-        #     xmin = X[:,0].min(); xmax = X[:,0].max()
-        #     ymin = X[:,1].min(); ymax = X[:,1].max()
-        #     range_ = [[xmin, xmax], [ymin, ymax]]
-        #     ul = np.unique(labels)
-        #
-        #     for i, l in enumerate(ul):
-        #         #cdict = dict(red  =[(0., colors[i][0], colors[i][0]), (1., colors[i][0], colors[i][0])],
-        #         #             green=[(0., colors[i][0], colors[i][1]), (1., colors[i][1], colors[i][1])],
-        #         #             blue =[(0., colors[i][0], colors[i][2]), (1., colors[i][2], colors[i][2])],
-        #         #             alpha=[(0., 0., .0), (.5, .5, .5), (1., .5, .5)])
-        #         #cmap = LinearSegmentedColormap('{}'.format(l), cdict)
-        #         cmap = LinearSegmentedColormap.from_list('cmap_{}'.format(str(l)), [colors[i], colors[i]], 255)
-        #         cmap._init()
-        #         #alphas = .5*(1+scipy.special.erf(np.linspace(-2,2, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
-        #         alphas = (scipy.special.erf(np.linspace(0,2.4, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
-        #         cmap._lut[:, -1] = alphas
-        #         print l
-        #         x, y = X[labels==l].T
-        #
-        #         heatmap, xedges, yedges = np.histogram2d(x, y, bins=300, range=range_)
-        #         #heatmap, xedges, yedges = np.histogram2d(x, y, bins=100)
-        #
-        #         im = ax.imshow(heatmap, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], cmap=cmap, aspect='auto', interpolation='nearest', label=str(l))
-        #         legend_handles.append(mpatches.Patch(color=colors[i], label=l))
-        #     ax.set_xlim(xmin, xmax)
-        #     ax.set_ylim(ymin, ymax)
-        #     plt.legend(legend_handles, [l.get_label() for l in legend_handles])
-        #     plt.draw()
-        #     plt.show()
-        #=======================================================================
-    
+        legend = False # No legend if there is no labels given
     
     canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
 
-    _, _, _, _, _, Xgrid, _, _, _, _, resolution = helper_for_plot_data(self, ((xmin, ymin), (xmax, ymax)), (input_1, input_2), None, resolution)
+    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)
+    X, labels = subsample_X(X, labels)
     
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], X.shape[1]))
@@ -223,44 +162,79 @@ def plot_magnification(self, labels=None, which_indices=None,
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.magnification)
     Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
     view = pl.imshow(canvas, Y, 
-                     (xmin, ymin, xmax, ymax), 
+                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
                      None, plot_function, resolution,
                      vmin=Y.min(), vmax=Y.max(), 
                      **imshow_kwargs)
-    
-    # make sure labels are in order of input:
-    ulabels = []
-    for lab in labels:
-        if not lab in ulabels:
-            ulabels.append(lab)
 
-    marker = itertools.cycle(list(marker))
-    scatters = []
-
-    for ul in ulabels:
-        if type(ul) is np.string_:
-            this_label = ul
-        elif type(ul) is np.int64:
-            this_label = 'class %i' % ul
-        else:
-            this_label = unicode(ul)
-        m = marker.next()
-
-        index = np.nonzero(labels == ul)[0]
-        if self.input_dim == 1:
-            x = X[index, input_1]
-            y = np.zeros(index.size)
-        else:
-            x = X[index, input_1]
-            y = X[index, input_2]
+    scatters = []    
+    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
         update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
         scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
     
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=xlim, ylim=ylim)
-    if updates:
-        clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
-        if clear.lower() in 'yes' or clear == '':
-            view.deactivate()
-    else:
-        view.deactivate()
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    _wait_for_updates(view, updates)
+    return plots
+
+
+def plot_latent(self, labels=None, which_indices=None,
+                resolution=60, legend=True,
+                plot_limits=None,
+                updates=False, 
+                kern=None, marker='<>^vsd', 
+                num_samples=1000,
+                imshow_kwargs=None, **kwargs):
+    """
+    Plot the latent space of the GP on the inputs. This is the 
+    density of the GP posterior as a grey scale and the 
+    scatter plot of the input dimemsions selected by which_indices.
+    
+    :param array-like labels: a label for each data point (row) of the inputs
+    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param int resolution: the resolution at which we predict the magnification factor
+    :param bool legend: whether to plot the legend on the figure
+    :param plot_limits: the plot limits for the plot
+    :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
+    :param bool updates: if possible, make interactive updates using the specific library you are using
+    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param str marker: markers to use - cycle if more labels then markers are given
+    :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples. 
+    :param imshow_kwargs: the kwargs for the imshow (magnification factor)
+    :param kwargs: the kwargs for the scatter plots
+    """
+    input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
+
+    from .. import Tango
+    Tango.reset()
+    
+    if labels is None:
+        labels = np.ones(self.num_data)
+        legend = False # No legend if there is no labels given
+    
+    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
+
+    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)
+    X, labels = subsample_X(X, labels)
+    
+    def plot_function(x):
+        Xtest_full = np.zeros((x.shape[0], X.shape[1]))
+        Xtest_full[:, [input_1, input_2]] = x
+        mf = np.log(self.predict(Xtest_full, kern=kern)[1])
+        return mf
+
+    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
+    Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
+    view = pl.imshow(canvas, Y, 
+                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
+                     None, plot_function, resolution,
+                     vmin=Y.min(), vmax=Y.max(), 
+                     **imshow_kwargs)
+
+    scatters = []    
+    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
+        update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
+        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
+    
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    _wait_for_updates(view, updates)
     return plots

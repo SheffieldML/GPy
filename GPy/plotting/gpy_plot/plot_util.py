@@ -30,6 +30,7 @@
 
 import numpy as np
 from scipy import sparse
+import itertools
 
 def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, which_data_ycols, predict_kw, samples=0):
     """
@@ -117,6 +118,102 @@ def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resoluti
             Xgrid[:,i] = v    
     return X, Xvar, Y, fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
 
+def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
+    ulabels = []
+    for lab in labels:
+        if not lab in ulabels:
+            ulabels.append(lab)
+
+    if marker is not None:
+        marker = itertools.cycle(list(marker))    
+    else:
+        m = None
+    
+    for ul in ulabels:
+        if type(ul) is np.string_:
+            this_label = ul
+        elif type(ul) is np.int64:
+            this_label = 'class %i' % ul
+        else:
+            this_label = unicode(ul)
+        
+        if marker is not None:
+            m = marker.next()
+
+        index = np.nonzero(labels == ul)[0]
+        
+        if input_2 is None:
+            x = X[index, input_1]
+            y = np.zeros(index.size)
+        else:
+            x = X[index, input_1]
+            y = X[index, input_2]
+        yield x, y, this_label, index, m
+
+def subsample_X(X, labels, num_samples=1000):
+    """
+    Stratified subsampling if labels are given. 
+    This means due to rounding errors you might get a little differences between the 
+    num_samples and the returned subsampled X.
+    """
+    if X.shape[0] > num_samples:
+        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
+        if labels is not None:
+            subsample = []
+            for _, _, _, index, _ in scatter_label_generator(labels, X, 0):
+                subsample.append(np.random.choice(index, size=max(2, int(index.size*(float(num_samples)/X.shape[0]))), replace=False))
+            subsample = np.hstack(subsample)
+        else:
+            subsample = np.random.choice(X.shape[0], size=1000, replace=False)
+        X = X[subsample]
+        labels = labels[subsample]
+        #=======================================================================
+        #     <<<WORK IN PROGRESS>>>
+        #     <<<DO NOT DELETE>>>
+        #     plt.close('all')
+        #     fig, ax = plt.subplots(1,1)
+        #     from GPy.plotting.matplot_dep.dim_reduction_plots import most_significant_input_dimensions
+        #     import matplotlib.patches as mpatches
+        #     i1, i2 = most_significant_input_dimensions(m, None)
+        #     xmin, xmax = 100, -100
+        #     ymin, ymax = 100, -100
+        #     legend_handles = []
+        #
+        #     X = m.X.mean[:, [i1, i2]]
+        #     X = m.X.variance[:, [i1, i2]]
+        #
+        #     xmin = X[:,0].min(); xmax = X[:,0].max()
+        #     ymin = X[:,1].min(); ymax = X[:,1].max()
+        #     range_ = [[xmin, xmax], [ymin, ymax]]
+        #     ul = np.unique(labels)
+        #
+        #     for i, l in enumerate(ul):
+        #         #cdict = dict(red  =[(0., colors[i][0], colors[i][0]), (1., colors[i][0], colors[i][0])],
+        #         #             green=[(0., colors[i][0], colors[i][1]), (1., colors[i][1], colors[i][1])],
+        #         #             blue =[(0., colors[i][0], colors[i][2]), (1., colors[i][2], colors[i][2])],
+        #         #             alpha=[(0., 0., .0), (.5, .5, .5), (1., .5, .5)])
+        #         #cmap = LinearSegmentedColormap('{}'.format(l), cdict)
+        #         cmap = LinearSegmentedColormap.from_list('cmap_{}'.format(str(l)), [colors[i], colors[i]], 255)
+        #         cmap._init()
+        #         #alphas = .5*(1+scipy.special.erf(np.linspace(-2,2, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         alphas = (scipy.special.erf(np.linspace(0,2.4, cmap.N+3)))#np.log(np.linspace(np.exp(0), np.exp(1.), cmap.N+3))
+        #         cmap._lut[:, -1] = alphas
+        #         print l
+        #         x, y = X[labels==l].T
+        #
+        #         heatmap, xedges, yedges = np.histogram2d(x, y, bins=300, range=range_)
+        #         #heatmap, xedges, yedges = np.histogram2d(x, y, bins=100)
+        #
+        #         im = ax.imshow(heatmap, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], cmap=cmap, aspect='auto', interpolation='nearest', label=str(l))
+        #         legend_handles.append(mpatches.Patch(color=colors[i], label=l))
+        #     ax.set_xlim(xmin, xmax)
+        #     ax.set_ylim(ymin, ymax)
+        #     plt.legend(legend_handles, [l.get_label() for l in legend_handles])
+        #     plt.draw()
+        #     plt.show()
+        #=======================================================================
+    return X, labels
+    
 
 def update_not_existing_kwargs(to_update, update_from):
     """

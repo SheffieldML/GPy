@@ -57,7 +57,7 @@ class AbstractPlottingLibrary(object):
         return self.__defaults
         #===============================================================================
     
-    def get_new_canvas(self, plot_3d=False, xlabel=None, ylabel=None, zlabel=None, title=None, legend=True, **kwargs):
+    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, projection='2d', legend=True, **kwargs):
         """
         Return a canvas, kwargupdate for your plotting library. 
         
@@ -174,10 +174,17 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def imshow(self, canvas, X, label=None, color=None, **kwargs):
+    def imshow(self, canvas, X, extent=None, label=None, plot_function=None, vmin=None, vmax=None, **kwargs):
         """
-        Show the image stored in X on the canvas/
-                
+        Show the image stored in X on the canvas.
+        
+        if X is a function, create an imshow controller to stream 
+        the image. There is an imshow controller written for 
+        mmatplotlib, which updates the imshow on changes in axis.
+        
+        Just ignore the plot_function, if you do not have the option
+        to have interactive changes.
+        
         the kwargs are plotting library specific kwargs!
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")

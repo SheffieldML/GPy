@@ -125,7 +125,10 @@ def update_not_existing_kwargs(to_update, update_from):
     
     This is used for updated kwargs from the default dicts.
     """
-    return to_update.update({k:v for k,v in update_from.items() if k not in to_update})
+    if to_update is None:
+        to_update = {}
+    to_update.update({k:v for k,v in update_from.items() if k not in to_update})
+    return to_update
 
 def get_x_y_var(model):
     """
@@ -208,12 +211,14 @@ def x_frame2D(X,plot_limits=None,resolution=None):
     """
     Internal helper function for making plots, returns a set of input values to plot as well as lower and upper limits
     """
-    assert X.shape[1] ==2, "x_frame2D is defined for two-dimensional inputs"
+    assert X.shape[1]==2, "x_frame2D is defined for two-dimensional inputs"
     if plot_limits is None:
-        xmin,xmax = X.min(0),X.max(0)
+        xmin, xmax = X.min(0),X.max(0)
         xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits
+    elif len(plot_limits)==4:
+        xmin, xmax = (plot_limits[0], plot_limits[2]), (plot_limits[1], plot_limits[3])
     else:
         raise ValueError("Bad limits for plotting")
 

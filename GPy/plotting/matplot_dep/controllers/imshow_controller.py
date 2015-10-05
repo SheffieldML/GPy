@@ -22,11 +22,10 @@ class ImshowController(BufferedAxisChangedController):
         """
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
-    def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, **kwargs):
-        return pl.imshow(canvas, X, extent=(xmin, xmax,
+    def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, vmin=None, vmax=None, **kwargs):
+        return canvas.imshow(X, extent=(xmin, xmax,
                                     ymin, ymax),
-                         vmin=X.min(),
-                         vmax=X.max(),
+                             vmin=vmin, vmax=vmax,
                          **kwargs)
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):

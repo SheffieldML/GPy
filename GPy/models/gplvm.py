@@ -6,7 +6,6 @@ import numpy as np
 from .. import kern
 from ..core import GP, Param
 from ..likelihoods import Gaussian
-from .. import util
 
 
 class GPLVM(GP):
@@ -43,17 +42,3 @@ class GPLVM(GP):
     def parameters_changed(self):
         super(GPLVM, self).parameters_changed()
         self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
-
-    def plot_latent(self, labels=None, which_indices=None,
-                resolution=50, ax=None, marker='o', s=40,
-                fignum=None, legend=True,
-                plot_limits=None,
-                aspect='auto', updates=False, **kwargs):
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
-
-        return dim_reduction_plots.plot_latent(self, labels, which_indices,
-                resolution, ax, marker, s,
-                fignum, False, legend,
-                plot_limits, aspect, updates, **kwargs)

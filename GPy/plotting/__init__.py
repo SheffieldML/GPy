@@ -36,7 +36,7 @@ if config.get('plotting', 'library') is not 'none':
     GP.plot_samples = gpy_plot.gp_plots.plot_samples
     GP.plot = gpy_plot.gp_plots.plot
     GP.plot_f = gpy_plot.gp_plots.plot_f
-    #GP.plot_magnificaion = gpy_plot.latent_plots.plot_magnification
+    GP.plot_magnificaion = gpy_plot.latent_plots.plot_magnification
     
     from ..core import SparseGP
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
@@ -49,8 +49,9 @@ if config.get('plotting', 'library') is not 'none':
     #Kern.plot_covariance = gpy_plot.kern_plots.plot_kern
     
     # Variational plot!
+
     
-    from . import matplot_dep
+    #from . import matplot_dep
     # Still to convert to new style:
     #GP.plot = matplot_dep.models_plots.plot_fit
     #GP.plot_f = matplot_dep.models_plots.plot_fit_f

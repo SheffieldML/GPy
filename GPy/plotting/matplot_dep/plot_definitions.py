@@ -33,13 +33,14 @@ from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
+from .controllers.imshow_controller import ImshowController
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
     
-    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, legend=True, projection='2d', **kwargs):
+    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, projection='2d', **kwargs):
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
         elif projection == '2d':
@@ -61,22 +62,23 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if title is not None: ax.set_title(title)
         return ax, kwargs
     
-    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, **kwargs):
+    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, legend=True, **kwargs):
         try:
             ax.autoscale_view()
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)
+            if legend:
+                ax.legend()
             if zlim is not None:
                 ax.set_zlim(zlim)
             ax.figure.canvas.draw()
-            #ax.figure.tight_layout()
         except:
             pass
         return plots
     
-    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker='o', **kwargs):
         if Z is not None:
-            return ax.scatter(X, Y, c=color, zs=Z, label=label, **kwargs)
+            return ax.scatter(X, Y, c=color, zs=Z, label=label, marker=marker, **kwargs)
         return ax.scatter(X, Y, c=color, label=label, **kwargs)
     
     def plot(self, ax, X, Y, color=None, label=None, **kwargs):
@@ -116,8 +118,11 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
-    def imshow(self, ax, X, label=None, **kwargs):
-        return ax.imshow(X, label=label, **kwargs)
+    def imshow(self, ax, X, extent=None, label=None, plot_function=None, resolution=None, vmin=None, vmax=None, **kwargs):
+        if plot_function is not None:
+            self.controller = ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **kwargs)
+            return self.controller
+        return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **kwargs)
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)

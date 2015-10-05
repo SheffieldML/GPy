@@ -66,3 +66,8 @@ data_y_1d_plot = dict(color='k', linewidth=1.5)
 
 # Kernel plots:
 ard = dict(edgecolor='k', linewidth=1.2)
+
+# Input plots:
+latent = dict(aspect='auto', cmap='Greys', interpolation='bilinear')
+magnification = dict(aspect='auto', cmap='Greys', interpolation='bilinear')
+latent_scatter = dict(s=40, linewidth=.2, edgecolor='k', alpha=.9)

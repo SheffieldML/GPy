@@ -142,7 +142,7 @@ def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
                 this_label = ul
                 
         if marker is not None:
-            m = marker.next()
+            m = next(marker)
 
         index = np.nonzero(labels == ul)[0]
         

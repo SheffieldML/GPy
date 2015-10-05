@@ -135,8 +135,12 @@ def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
         elif type(ul) is np.int64:
             this_label = 'class %i' % ul
         else:
-            this_label = unicode(ul)
-        
+            try:
+                this_label = unicode(ul)
+            except NameError:
+                #python3
+                this_label = ul
+                
         if marker is not None:
             m = marker.next()
 

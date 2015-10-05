@@ -33,7 +33,8 @@ from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
-from .controllers import ImshowController
+from .controllers import ImshowController, ImAnnotateController
+import itertools
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):
@@ -120,9 +121,25 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     
     def imshow(self, ax, X, extent=None, label=None, plot_function=None, resolution=None, vmin=None, vmax=None, **kwargs):
         if plot_function is not None:
-            self.controller = ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **kwargs)
-            return self.controller
+            return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **kwargs)
         return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **kwargs)
+    
+    def annotation_heatmap(self, ax, X, annotation, extent, label=None, plot_function=None, resolution=None, imshow_kwargs=None, **annotation_kwargs):
+        if plot_function is not None:
+            return ImAnnotateController(ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs)
+        if ('ha' not in annotation_kwargs) and ('horizontalalignment' not in annotation_kwargs):
+            annotation_kwargs['ha'] = 'center'
+        if ('va' not in annotation_kwargs) and ('verticalalignment' not in annotation_kwargs):
+            annotation_kwargs['va'] = 'center'
+        xmin, xmax, ymin, ymax = extent
+        self.imshow(X, extent, label, None, resolution, **imshow_kwargs or {})
+        xoffset, yoffset = (xmax - xmin) / (2 * self.resolution), (ymax - ymin) / (2 * self.resolution)
+        xlin = np.linspace(xmin, xmax, self.resolution, endpoint=False)
+        ylin = np.linspace(ymin, ymax, self.resolution, endpoint=False)
+        annotations = []
+        for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
+            annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
+        return annotations
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)

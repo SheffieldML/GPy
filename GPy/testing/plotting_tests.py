@@ -167,7 +167,8 @@ def test_gplvm_plot(self=None):
     plt.close('all')
     m.plot_latent()
     m.plot_magnification(labels=labels)
-    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification"]], extensions=extensions):
+    m.plot_steepest_gradient_map(resolution=5)
+    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
         
 if __name__ == '__main__':

@@ -189,6 +189,31 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
+    def annotation_heatmap(self, canvas, X, annotation, extent, label=None, plot_function=None, resolution=15, **kwargs):
+        """
+        Plot an annotation heatmap. That is like an imshow, but
+        put the text of the labels inside the cells of the heatmap (centered).
+        
+        if the labels are not given, just plot the heatmap.
+        
+        if plot_function is not None, return an interactive updated
+        heatmap, which updates on axis events, so that one can zoom in 
+        and out and the heatmap gets updated. See the matplotlib implementation
+        in matplot_dep.controllers.
+        
+        the plot_function returns a pair (X, annotation) to plot, when called with
+        a new input X (which would be the grid, which is visible on the plot
+        right now)
+        
+        :param canvas: the canvas to plot on
+        :param array-like annotation: the annotation labels for the heatmap
+        :param [horizontal_min,horizontal_max,vertical_min,vertical_max] extent: the extent of where to place the heatmap
+        :param str label: the label for the heatmap
+        :param plot_function: the function, which generates new data for given input locations X
+        :param int resolution: the resolution of the interactive plot redraw - this is only needed when giving a plot_function
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
     def contour(self, canvas, X, Y, C, Z=None, color=None, label=None, **kwargs):
         """
         Make a contour plot at (X, Y) with heights/colors stored in C on the canvas.

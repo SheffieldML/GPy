@@ -129,13 +129,7 @@ class BufferedAxisChangedController(AxisChangedController):
         return numpy.hstack((x.flatten()[:, None], y.flatten()[:, None]))
 
     def recompute_X(self, buffered=True):
-        X = self.plot_function(self.get_grid(buffered))
-        if isinstance(X, (tuple, list)):
-            for x in X:
-                x.shape = [self.resolution, self.resolution]
-                x[:, :] = x.T[::-1, :]
-            return X
-        return X.reshape(self.resolution, self.resolution).T[::-1, :]
+        return self.plot_function(self.get_grid(buffered))
 
     def _compute_buffered(self, mi, ma):
         buffersize = self._buffersize()

@@ -294,7 +294,7 @@ class GP(Model):
             likelihood = self.likelihood
         return likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
-    def predictive_gradients(self, Xnew):
+    def predictive_gradients(self, Xnew, kern=None):
         """
         Compute the derivatives of the predicted latent function with respect to X*
 
@@ -311,16 +311,19 @@ class GP(Model):
         :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q) ]
 
         """
-        dmu_dX = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+        if kern is None:
+            kern = self.kern
+        mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+
         for i in range(self.output_dim):
-            dmu_dX[:,:,i] = self.kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self.X)
+            mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
 
         # gradients wrt the diagonal part k_{xx}
-        dv_dX = self.kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
+        dv_dX = kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
         #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
-        alpha = -2.*np.dot(self.kern.K(Xnew, self.X),self.posterior.woodbury_inv)
-        dv_dX += self.kern.gradients_X(alpha, Xnew, self.X)
-        return dmu_dX, dv_dX
+        alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
+        dv_dX += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        return mean_jac, dv_dX
 
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=True):

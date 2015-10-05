@@ -111,15 +111,74 @@ def _plot_prediction_fit(self, canvas, plot_limits=None,
     else:
         raise NotImplementedError("Cannot plot in more then one dimension.")
     return plots
+
+def _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **kwargs):
+    from .. import Tango
+    Tango.reset()
+    if labels is None:
+        labels = np.ones(self.num_data)
+    X, labels = subsample_X(X, labels, num_samples)
+    scatters = []    
+    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
+        update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
+        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
+    return scatters
+
+def plot_latent_scatter(self, labels=None, 
+                        which_indices=None,
+                        legend=True,
+                        plot_limits=None,
+                        marker='<>^vsd', 
+                        num_samples=1000,
+                        **kwargs):
+    """
+    Plot a scatter plot of the latent space.
+    
+    :param array-like labels: a label for each data point (row) of the inputs
+    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param bool legend: whether to plot the legend on the figure
+    :param plot_limits: the plot limits for the plot
+    :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
+    :param str marker: markers to use - cycle if more labels then markers are given
+    :param kwargs: the kwargs for the scatter plots
+    """    
+    input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
+    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
+    X, _, _ = get_x_y_var(self)
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **kwargs)
+    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend and (labels is not None))
+
+
+
+
+def _plot_magnification(self, canvas, input_1, input_2, Xgrid, 
+                        xmin, xmax, resolution,
+                        mean=True, covariance=True, 
+                        kern=None,  
+                        **imshow_kwargs):
+    def plot_function(x):
+        Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
+        Xtest_full[:, [input_1, input_2]] = x
+        mf = self.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
+        return mf.reshape(resolution, resolution).T[::-1, :]
+
+    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.magnification)
+    Y = plot_function(Xgrid[:, [input_1, input_2]])
+    view = pl.imshow(canvas, Y, 
+                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
+                     None, plot_function, resolution,
+                     vmin=Y.min(), vmax=Y.max(), 
+                     **imshow_kwargs)
+    return view
     
 def plot_magnification(self, labels=None, which_indices=None,
-                resolution=60, legend=True,
+                resolution=60, marker='<>^vsd', legend=True,
                 plot_limits=None,
                 updates=False, 
                 mean=True, covariance=True, 
-                kern=None, marker='<>^vsd', 
-                num_samples=1000,
-                imshow_kwargs=None, **kwargs):
+                kern=None, num_samples=1000,
+                imshow_kwargs=None,
+                **scatter_kwargs):
     """
     Plot the magnification factor of the GP on the inputs. This is the 
     density of the GP as a gray scale.
@@ -127,6 +186,7 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param array-like labels: a label for each data point (row) of the inputs
     :param (int, int) which_indices: which input dimensions to plot against each other
     :param int resolution: the resolution at which we predict the magnification factor
+    :param str marker: markers to use - cycle if more labels then markers are given
     :param bool legend: whether to plot the legend on the figure
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
@@ -134,48 +194,41 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param bool mean: use the mean of the Wishart embedding for the magnification factor
     :param bool covariance: use the covariance of the Wishart embedding for the magnification factor
     :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
-    :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples. 
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
+    canvas, scatter_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **scatter_kwargs)
+    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs)
+    if imshow_kwargs is None: imshow_kwargs = {}
+    view = _plot_magnification(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, mean, covariance, kern, **imshow_kwargs)
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    _wait_for_updates(view, updates)
+    return plots
 
-    from .. import Tango
-    Tango.reset()
-    
-    if labels is None:
-        labels = np.ones(self.num_data)
-        legend = False # No legend if there is no labels given
-    
-    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
 
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)
-    X, labels = subsample_X(X, labels)
-    
+
+
+def _plot_latent(self, canvas, input_1, input_2, Xgrid, 
+                        xmin, xmax, resolution,
+                        kern=None,  
+                        **imshow_kwargs):
     def plot_function(x):
-        Xtest_full = np.zeros((x.shape[0], X.shape[1]))
+        Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
-        mf = self.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
-        return mf
+        mf = np.log(self.predict(Xtest_full, kern=kern)[1])
+        return mf.reshape(resolution, resolution).T[::-1, :]
 
-    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.magnification)
+    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
     Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
     view = pl.imshow(canvas, Y, 
                      (xmin[0], xmin[1], xmax[1], xmax[1]), 
                      None, plot_function, resolution,
                      vmin=Y.min(), vmax=Y.max(), 
                      **imshow_kwargs)
-
-    scatters = []    
-    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
-        update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
-        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
-    
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
-    _wait_for_updates(view, updates)
-    return plots
-
+    return view
 
 def plot_latent(self, labels=None, which_indices=None,
                 resolution=60, legend=True,
@@ -183,7 +236,7 @@ def plot_latent(self, labels=None, which_indices=None,
                 updates=False, 
                 kern=None, marker='<>^vsd', 
                 num_samples=1000,
-                imshow_kwargs=None, **kwargs):
+                imshow_kwargs=None, **scatter_kwargs):
     """
     Plot the latent space of the GP on the inputs. This is the 
     density of the GP posterior as a grey scale and the 
@@ -200,53 +253,44 @@ def plot_latent(self, labels=None, which_indices=None,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples. 
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
-    :param kwargs: the kwargs for the scatter plots
+    :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-
-    from .. import Tango
-    Tango.reset()
-    
-    if labels is None:
-        labels = np.ones(self.num_data)
-        legend = False # No legend if there is no labels given
-    
-    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
-
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)
-    X, labels = subsample_X(X, labels)
-    
-    def plot_function(x):
-        Xtest_full = np.zeros((x.shape[0], X.shape[1]))
-        Xtest_full[:, [input_1, input_2]] = x
-        mf = np.log(self.predict(Xtest_full, kern=kern)[1])
-        return mf
-
-    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
-    Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
-    view = pl.imshow(canvas, Y, 
-                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
-                     None, plot_function, resolution,
-                     vmin=Y.min(), vmax=Y.max(), 
-                     **imshow_kwargs)
-
-    scatters = []    
-    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
-        update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
-        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
-    
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    canvas, scatter_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **scatter_kwargs)
+    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs)
+    if imshow_kwargs is None: imshow_kwargs = {}
+    view = _plot_latent(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, kern, **imshow_kwargs)
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
     _wait_for_updates(view, updates)
     return plots
 
+def _plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid, 
+                        xmin, xmax, resolution, output_labels,
+                        kern=None, annotation_kwargs=None, 
+                        **imshow_kwargs):
+    if output_labels is None:
+        output_labels = range(self.output_dim)
+    def plot_function(x):
+        Xgrid[:, [input_1, input_2]] = x
+        dmu_dX = self.predictive_gradients(Xgrid, kern=kern)[0].sum(1)
+        argmax = np.argmax(dmu_dX, 1).astype(int)
+        return dmu_dX.max(1).reshape(resolution, resolution).T[::-1, :], np.array(output_labels)[argmax].reshape(resolution, resolution)
+    Y, annotation = plot_function(Xgrid[:, [input_1, input_2]])
+    annotation_kwargs = update_not_existing_kwargs(annotation_kwargs or {}, pl.defaults.annotation)
+    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs or {}, pl.defaults.gradient)
+    annotation = pl.annotation_heatmap(canvas, Y, annotation, (xmin[0], xmin[1], xmax[1], xmax[1]), 
+                       None, plot_function, resolution, imshow_kwargs=imshow_kwargs, **annotation_kwargs)
+    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.gradient)
+    return dict(annotation=annotation)
 
-def plot_steepest_gradient_map(self, labels=None, which_indices=None,
-                resolution=60, legend=True,
+def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which_indices=None,
+                resolution=15, legend=True,
                 plot_limits=None,
                 updates=False, 
                 kern=None, marker='<>^vsd', 
                 num_samples=1000,
-                imshow_kwargs=None, **kwargs):
+                annotation_kwargs=None, scatter_kwargs=None, **imshow_kwargs):
 
     """
     Plot the latent space of the GP on the inputs. This is the 
@@ -264,41 +308,19 @@ def plot_steepest_gradient_map(self, labels=None, which_indices=None,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples. 
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
-    :param kwargs: the kwargs for the scatter plots
+    :param annotation_kwargs: the kwargs for the annotation plot
+    :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-
-    from .. import Tango
-    Tango.reset()
-    
-    if labels is None:
-        labels = np.ones(self.num_data)
-        legend = False # No legend if there is no labels given
-    
-    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
-
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)
-    X, labels = subsample_X(X, labels)
-    
-    def plot_function(x):
-        X[:, [input_1, input_2]] = x
-        dmu_dX = self.predictive_gradients(X)[0]
-        argmax = np.argmax(dmu_dX, 1)
-        return dmu_dX[:, argmax], np.array(labels)[argmax]
-
-    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
-    Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
-    view = pl.imshow(canvas, Y, 
-                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
-                     None, plot_function, resolution,
-                     vmin=Y.min(), vmax=Y.max(), 
-                     **imshow_kwargs)
-
-    scatters = []    
-    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
-        update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
-        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
-    
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend, xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
-    _wait_for_updates(view, updates)
+    canvas, imshow_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
+    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, data_labels, marker, num_samples, **scatter_kwargs or {})
+    view = _plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, output_labels, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs)
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (data_labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    _wait_for_updates(view['annotation'], updates)
     return plots
+
+
+
+
+

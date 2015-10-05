@@ -33,7 +33,7 @@ class ImshowController(BufferedAxisChangedController):
         view.set_extent((xmin, xmax, ymin, ymax))
 
 class ImAnnotateController(ImshowController):
-    def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=.99, **kwargs):
+    def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=.99, imshow_kwargs=None, **kwargs):
         """
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
@@ -44,15 +44,16 @@ class ImAnnotateController(ImshowController):
         :param text_props: kwargs for pyplot.text(**text_props)
         :param kwargs: additional kwargs are for pyplot.imshow(**kwargs)
         """
+        self.imshow_kwargs = imshow_kwargs or {}
         super(ImAnnotateController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
-    def _init_view(self, ax, X, xmin, xmax, ymin, ymax, text_props={}, **kwargs):
-        view = [super(ImAnnotateController, self)._init_view(ax, X[0], xmin, xmax, ymin, ymax, **kwargs)]
+    def _init_view(self, ax, X, xmin, xmax, ymin, ymax, **kwargs):
+        view = [super(ImAnnotateController, self)._init_view(ax, X[0], xmin, xmax, ymin, ymax, **self.imshow_kwargs)]
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
         xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
         ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
-            view.append(ax.text(x + xoffset, y + yoffset, "{}".format(X[1][j, i]), ha='center', va='center', **text_props))
+            view.append(ax.text(x + xoffset, y + yoffset, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
         return view
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):

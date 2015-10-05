@@ -46,10 +46,13 @@ if config.get('plotting', 'library') is not 'none':
     from ..models import bayesian_gplvm_minibatch
     GPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
     GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    GPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     BayesianGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
     BayesianGPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    BayesianGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent = gpy_plot.latent_plots.plot_latent
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     
     from ..kern import Kern
     #Kern.plot_covariance = gpy_plot.kern_plots.plot_kern

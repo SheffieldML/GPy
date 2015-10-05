@@ -62,7 +62,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if title is not None: ax.set_title(title)
         return ax, kwargs
     
-    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, legend=True, **kwargs):
+    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, legend=False, **kwargs):
         try:
             ax.autoscale_view()
             ax.set_xlim(xlim)
@@ -203,6 +203,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             if not (x.shape == y1.shape == y2.shape == where.shape):
                 raise ValueError("Argument dimensions are incompatible")
         
+            from functools import reduce
             mask = reduce(ma.mask_or, [ma.getmask(a) for a in (x, y1, y2)])
             if mask is not ma.nomask:
                 where &= ~mask

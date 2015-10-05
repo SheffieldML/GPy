@@ -75,6 +75,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
             fig.set_frameon(False)
             fig.canvas.draw()
             fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)))
+    plt.close('all')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)
@@ -92,7 +93,6 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
                 except ImageComparisonFailure:
                     pass
             yield do_test
-    plt.close('all')
 
 def test_plot(self=None):
     np.random.seed(11111)

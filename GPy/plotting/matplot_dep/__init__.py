@@ -18,3 +18,4 @@
 
 
 from .util import align_subplot_array, align_subplots, fewerXticks, removeRightTicks, removeUpperTicks
+from . import controllers

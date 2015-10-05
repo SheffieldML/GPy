@@ -75,23 +75,23 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
             fig.set_frameon(False)
             fig.canvas.draw()
             fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)))
-        for num, base in zip(plt.get_fignums(), baseline_images):
-            for ext in extensions:
-                #plt.close(num)
-                actual = os.path.join(result_dir, "{}.{}".format(base, ext))
-                expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
-                def do_test():
-                    err = compare_images(expected, actual, tol)
-                    try:
-                        if not os.path.exists(expected):
-                            raise ImageComparisonFailure(
-                                'image does not exist: %s' % expected)
-                        if err:
-                            raise ImageComparisonFailure(
-                                'images not close: {err[actual]!s} vs. {err[expected]!s} (RMS {err[rms]:.3f})'.format(err=err))
-                    except ImageComparisonFailure:
-                        pass
-                yield do_test
+    for num, base in zip(plt.get_fignums(), baseline_images):
+        for ext in extensions:
+            #plt.close(num)
+            actual = os.path.join(result_dir, "{}.{}".format(base, ext))
+            expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
+            def do_test():
+                err = compare_images(expected, actual, tol)
+                try:
+                    if not os.path.exists(expected):
+                        raise ImageComparisonFailure(
+                            'image does not exist: %s' % expected)
+                    if err:
+                        raise ImageComparisonFailure(
+                            'images not close: {err[actual]!s} vs. {err[expected]!s} (RMS {err[rms]:.3f})'.format(err=err))
+                except ImageComparisonFailure:
+                    pass
+            yield do_test
     plt.close('all')
 
 def test_plot(self=None):

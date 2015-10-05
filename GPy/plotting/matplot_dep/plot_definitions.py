@@ -33,7 +33,7 @@ from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
-from .controllers.imshow_controller import ImshowController
+from .controllers import ImshowController
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):

@@ -81,7 +81,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
                 actual = os.path.join(result_dir, "{}.{}".format(base, ext))
                 expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
                 def do_test():
-                    err = compare_images(actual, expected, tol)
+                    err = compare_images(expected, actual, tol)
                     try:
                         if not os.path.exists(expected):
                             raise ImageComparisonFailure(

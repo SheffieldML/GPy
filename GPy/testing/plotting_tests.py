@@ -88,8 +88,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
                                 'image does not exist: %s' % expected)
                         if err:
                             raise ImageComparisonFailure(
-                                'images not close: %(actual)s vs. %(expected)s '
-                                '(RMS %(rms).3f)'%err)
+                                'images not close: {err[actual]!s} vs. {err[expected]!s} (RMS {err[rms]:.3f})'.format(err=err))
                     except ImageComparisonFailure:
                         pass
                 yield do_test

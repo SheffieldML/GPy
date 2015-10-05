@@ -357,7 +357,7 @@ def plot_steepest_gradient_map(model, fignum=None, ax=None, which_indices=None, 
 
     def plot_function(x):
         X[:, significant_dims] = x
-        dmu_dX = model.dmu_dXnew(X)
+        dmu_dX = model.predictive_gradients(X)[0]
         argmax = np.argmax(dmu_dX, 1)
         return dmu_dX[indices, argmax], np.array(labels)[argmax]
 

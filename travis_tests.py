@@ -32,7 +32,7 @@
 #!/usr/bin/env python
 
 import matplotlib 
-matplotlib.use('pdf')
+matplotlib.use('png')
 matplotlib.rcParams[u'figure.figsize'] = (4,3)
 matplotlib.rcParams[u'text.usetex'] = False
 

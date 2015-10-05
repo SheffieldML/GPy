@@ -75,28 +75,21 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=1e-3)
             fig.set_frameon(False)
             fig.canvas.draw()
             fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)))
-    plt.close('all')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)
             actual = os.path.join(result_dir, "{}.{}".format(base, ext))
             expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
             def do_test():
-                err = compare_images(expected, actual, tol)
-                try:
-                    if not os.path.exists(expected):
-                        raise ImageComparisonFailure(
-                            'image does not exist: %s' % expected)
-                    if err:
-                        raise ImageComparisonFailure(
-                            'images not close: {err[actual]!s} vs. {err[expected]!s} (RMS {err[rms]:.3f})'.format(err=err))
-                except ImageComparisonFailure:
-                    pass
+                err = compare_images(expected, actual, tol, in_decorator=True)
+                if err:
+                    raise ImageComparisonFailure("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
             yield do_test
-
-def test_plot(self=None):
+    plt.close('all')
+    
+def test_plot():
     np.random.seed(11111)
-    X = np.random.uniform(0, 1, (40, 1))
+    X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.GPRegression(X, Y)
@@ -110,9 +103,33 @@ def test_plot(self=None):
     for do_test in _image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'samples']], extensions=extensions):
         yield (do_test, )
 
-def test_plot_sparse(self=None):
+def test_twod():
     np.random.seed(11111)
-    X = np.random.uniform(-1, 1, (40, 1))
+    X = np.random.uniform(-2, 2, (40, 2))
+    f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
+    Y = f+np.random.normal(0, .1, f.shape)
+    m = GPy.models.GPRegression(X, Y)
+    m.optimize()
+    m.plot_data()
+    m.plot_mean()
+    for do_test in _image_comparison(baseline_images=['gp_2d_{}'.format(sub) for sub in ["data", "mean"]], extensions=extensions):
+        yield (do_test, )
+
+def test_threed():
+    np.random.seed(11111)
+    X = np.random.uniform(-2, 2, (40, 2))
+    f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
+    Y = f+np.random.normal(0, .1, f.shape)
+    m = GPy.models.GPRegression(X, Y)
+    m.optimize()
+    m.plot_data(projection='3d')
+    m.plot_mean(projection='3d')
+    for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean"]], extensions=extensions):
+        yield (do_test, )
+
+def test_sparse():
+    np.random.seed(11111)
+    X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPRegression(X, Y)
@@ -121,9 +138,9 @@ def test_plot_sparse(self=None):
     for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['inducing']], extensions=extensions):
         yield (do_test, )
 
-def test_plot_classification(self=None):
+def test_classification():
     np.random.seed(11111)
-    X = np.random.uniform(0, 1, (40, 1))
+    X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.GPClassification(X, Y>Y.mean())
@@ -136,9 +153,9 @@ def test_plot_classification(self=None):
         yield (do_test, )
 
  
-def test_plot_sparse_classification(self=None):
+def test_sparse_classification():
     np.random.seed(11111)
-    X = np.random.uniform(0, 1, (40, 1))
+    X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPClassification(X, Y>Y.mean())
@@ -150,7 +167,7 @@ def test_plot_sparse_classification(self=None):
     for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions):
         yield (do_test, )
 
-def test_gplvm_plot(self=None):
+def test_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import GPLVM
@@ -164,10 +181,11 @@ def test_gplvm_plot(self=None):
     m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
+    m.plot_steepest_gradient_map(resolution=7)
     plt.close('all')
     m.plot_latent()
     m.plot_magnification(labels=labels)
-    m.plot_steepest_gradient_map(resolution=5)
+    m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
         

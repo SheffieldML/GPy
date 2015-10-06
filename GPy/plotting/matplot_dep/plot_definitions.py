@@ -76,7 +76,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if zlim is not None:
             ax.set_zlim(zlim)
-        #ax.figure.show()
+        ax.figure.canvas.draw()
+        ax.figure.show()
+        #try:
+        #    ax.figure.tight_layout()
+        #except:
+        #    # couldnt do tight layout, python 2.7 on MacOSX
+        #    pass
         ax.figure.canvas.draw()
         return plots
     

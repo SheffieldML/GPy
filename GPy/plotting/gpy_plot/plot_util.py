@@ -138,7 +138,6 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
     for lab in labels:
         if not lab in ulabels:
             ulabels.append(lab)
-
     if marker is not None:
         marker = itertools.cycle(list(marker))    
     else:
@@ -154,19 +153,20 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
         except:
             input_1 = visible_dims
             input_2 = input_3 = None
-    
+
     for ul in ulabels:
-        if type(ul) is np.string_:
-            this_label = ul
-        elif type(ul) is np.int64:
-            this_label = 'class %i' % ul
-        else:
+        from numbers import Number
+        if isinstance(ul, str):
             try:
                 this_label = unicode(ul)
             except NameError:
                 #python3
                 this_label = ul
-                
+        elif isinstance(ul, Number):
+            this_label = 'class {!s}'.format(ul)
+        else:
+            this_label = ul
+        
         if marker is not None:
             m = next(marker)
 

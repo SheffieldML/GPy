@@ -35,7 +35,7 @@ def legend_ontop(ax, mode='expand', ncol=3, fontdict=None):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     handles, labels = ax.get_legend_handles_labels()
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("top", "5%", pad="1%")
+    cax = divider.append_axes("top", "5%", pad=0)
     lgd = cax.legend(handles, labels, bbox_to_anchor=(0., 0., 1., 1.), loc=3,
             ncol=ncol, mode=mode, borderaxespad=0., prop=fontdict or {})
     cax.set_axis_off()

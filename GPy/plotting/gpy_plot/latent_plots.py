@@ -52,7 +52,7 @@ def _plot_latent_scatter(canvas, X, visible_dims, labels, marker, num_samples, p
     Tango.reset()
     X, labels = subsample_X(X, labels, num_samples)
     scatters = []   
-    generate_colors = 'color' not in kwargs 
+    generate_colors = 'color' not in kwargs
     for x, y, z, this_label, _, m in scatter_label_generator(labels, X, visible_dims, marker):
         update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
         if generate_colors:
@@ -89,7 +89,7 @@ def plot_latent_scatter(self, labels=None,
         labels = np.ones(self.num_data)
         legend = False
     else:
-        legend = find_best_layout_for_subplots(len(np.unique(labels)))
+        legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
     if projection == '3d':
         return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
@@ -126,9 +126,9 @@ def plot_latent_inducing(self,
     if 'color' not in kwargs:
         kwargs['color'] = 'white'
     canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
-    X, _, _ = get_x_y_var(self)
-    labels = np.ones(self.num_data)
-    scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
+    Z = self.Z.values
+    labels = np.array(['inducing'] * Z.shape[0])
+    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
     if projection == '3d':
         return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
                               xlabel='latent dimension %i' % input_1, 

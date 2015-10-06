@@ -74,7 +74,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=10):
             fig.axes[0].set_axis_off()
             fig.set_frameon(False)
             fig.canvas.draw()
-            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)))
+            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)), transparent=True, edgecolor='none', facecolor='none')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)
@@ -145,9 +145,9 @@ def test_classification():
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.GPClassification(X, Y>Y.mean())
     m.optimize()
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     m.plot(plot_raw=False, apply_link=False, ax=ax)
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     m.plot(plot_raw=True, apply_link=False, ax=ax)
     m.plot(plot_raw=True, apply_link=True)
     for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
@@ -182,7 +182,7 @@ def test_gplvm():
     #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     m.plot_latent()
-    m.plot_latent_scatter(projection='3d', labels=labels)
+    m.plot_scatter(projection='3d', labels=labels)
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
@@ -202,9 +202,9 @@ def test_bayesian_gplvm():
     m.likelihood.variance = .1
     #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
-    m.plot_latent_inducing(projection='2d')
-    m.plot_latent_inducing(projection='3d')
-    m.plot_latent_scatter(projection='3d')
+    m.plot_inducing(projection='2d')
+    m.plot_inducing(projection='3d')
+    m.plot_scatter(projection='3d')
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent_3d", "magnification", 'gradient']], extensions=extensions):

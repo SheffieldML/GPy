@@ -41,9 +41,7 @@ if config.get('plotting', 'library') is not 'none':
     from ..core import SparseGP
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
     
-    from ..models import GPLVM
-    from ..models import BayesianGPLVM
-    from ..models import bayesian_gplvm_minibatch
+    from ..models import GPLVM, BayesianGPLVM, bayesian_gplvm_minibatch, SSGPLVM, SSMRD
     GPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
     GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
     GPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
@@ -53,6 +51,9 @@ if config.get('plotting', 'library') is not 'none':
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent = gpy_plot.latent_plots.plot_latent
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
+    SSGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    SSGPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    SSGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     
     from ..kern import Kern
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance

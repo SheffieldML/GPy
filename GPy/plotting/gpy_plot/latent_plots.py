@@ -72,7 +72,7 @@ def plot_prediction_fit(self, plot_limits=None,
     :param dict sactter_kwargs: kwargs for the scatter plot, specific for the plotting library you are using
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    canvas, kwargs = pl.get_new_canvas(plot_kwargs)
+    canvas, kwargs = pl.get_new_canvas(**plot_kwargs)
     plots = _plot_prediction_fit(self, canvas, plot_limits, which_data_rows, which_data_ycols, 
                                  fixed_inputs, resolution, plot_raw, 
                                  apply_link, visible_dims,
@@ -289,9 +289,10 @@ def _plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid,
     Y, annotation = plot_function(Xgrid[:, [input_1, input_2]])
     annotation_kwargs = update_not_existing_kwargs(annotation_kwargs or {}, pl.defaults.annotation)
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs or {}, pl.defaults.gradient)
-    imshow, annotation = pl.annotation_heatmap(canvas, Y, annotation, (xmin[0], xmax[0], xmin[1], xmax[1]), 
-                       None, plot_function, resolution, imshow_kwargs=imshow_kwargs, **annotation_kwargs)
-    imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.gradient)
+    imshow, annotation = pl.annotation_heatmap(canvas, Y, annotation, 
+                                               (xmin[0], xmax[0], xmin[1], xmax[1]), 
+                                               None, plot_function, resolution, 
+                                               imshow_kwargs=imshow_kwargs, **annotation_kwargs)
     return dict(heatmap=imshow, annotation=annotation)
 
 def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which_indices=None,

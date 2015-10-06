@@ -181,12 +181,32 @@ def test_gplvm():
     m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
-    m.plot_steepest_gradient_map(resolution=7)
     plt.close('all')
     m.plot_latent()
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
+        yield (do_test, )
+
+def test_bayesian_gplvm():
+    from ..examples.dimensionality_reduction import _simulate_matern
+    from ..kern import RBF
+    from ..models import BayesianGPLVM
+    Q = 3
+    _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
+    Y = Ylist[0]
+    k = RBF(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = BayesianGPLVM(Y, Q, init="PCA", kernel=k)
+    m.likelihood.variance = .1
+    m.optimize(messages=0)
+    labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
+    m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
+    plt.close('all')
+    m.plot_latent()
+    m.plot_magnification(labels=labels)
+    m.plot_steepest_gradient_map(resolution=7)
+    for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
         
 if __name__ == '__main__':

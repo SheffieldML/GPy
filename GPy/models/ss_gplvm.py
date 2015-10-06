@@ -191,11 +191,3 @@ class SSGPLVM(SparseGP_MPI):
             return self.kern.input_sensitivity()
         else:
             return self.variational_prior.pi
-
-    def plot_latent(self, plot_inducing=True, *args, **kwargs):
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
-
-        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
-

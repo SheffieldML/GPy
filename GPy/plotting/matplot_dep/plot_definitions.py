@@ -71,7 +71,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         fontdict=dict(family='sans-serif', weight='light', size=9)
         if legend >= 1:
             #ax.legend(prop=fontdict)
-            legend_ontop(ax, ncol=legend)
+            legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if zlim is not None:
             ax.set_zlim(zlim)
         ax.figure.canvas.draw()
@@ -144,7 +144,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         annotations = []
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
             annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
-        return [imshow, annotations]
+        return imshow, annotations
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)

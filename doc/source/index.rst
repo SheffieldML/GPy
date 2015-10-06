@@ -13,13 +13,30 @@ This documentation is mostly aimed at developers interacting closely with the co
 
 The code can be found on our `Github project page <https://github.com/SheffieldML/GPy>`_. It is open source and provided under the BSD license.
 
+For developers:
+
+- `Writing new kernels <tuto_creating_new_kernels.html>`_
+- `Writing new models <tuto_creating_new_models.html>`_
+- `Parameterization handles <tuto_parameterized.html>`_
+
 Contents:
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
-   GPy
-
+   GPy.models
+   GPy.kern
+   GPy.likelihoods
+   GPy.mappings
+   GPy.examples
+   GPy.util
+   GPy.plotting.gpy_plot
+   GPy.plotting.matplot_dep
+   GPy.core
+   GPy.core.parameterization
+   GPy.inference.optimization
+   GPy.inference.latent_function_inference
+   GPy.inference.mcmc
 	      
 Indices and tables
 ==================

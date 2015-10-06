@@ -32,6 +32,17 @@ import numpy as np
 from scipy import sparse
 import itertools
 
+
+def find_best_layout_for_subplots(num_subplots):
+    r, c = 1, 1
+    while (r*c) < num_subplots:
+        if (c==(r+1)) or (r==c):
+            c += 1
+        elif c==(r+2):
+            r += 1
+            c -= 1
+    return r, c
+
 def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, which_data_ycols, predict_kw, samples=0):
     """
     Make the right decisions for prediction with a model 

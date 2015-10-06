@@ -68,15 +68,7 @@ def plot_ARD(kernel, filtering=None, **kwargs):
     ax.set_xlim(-.5, kernel.input_dim - .5)
     add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
-    if legend:
-        if title is '':
-            mode = 'expand'
-            if len(bars) > 1:
-                mode = 'expand'
-            ax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
-                      ncol=len(bars), mode=mode, borderaxespad=0.)
-            fig.tight_layout(rect=(0, 0, 1, .9))
-        else:
-            ax.legend()
-
     return dict(barplots=bars)
+
+def plot_covariance():
+    pass

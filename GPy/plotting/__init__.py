@@ -55,7 +55,8 @@ if config.get('plotting', 'library') is not 'none':
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     
     from ..kern import Kern
-    #Kern.plot_covariance = gpy_plot.kern_plots.plot_kern
+    Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
+    Kern.plot_covariance = gpy_plot.kernel_plots.plot_ARD
     
     # Variational plot!
 

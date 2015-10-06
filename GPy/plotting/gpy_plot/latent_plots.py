@@ -29,19 +29,23 @@
 #===============================================================================
 import numpy as np
 from . import pl
-from .plot_util import get_x_y_var, get_free_dims, get_which_data_ycols,\
+from .plot_util import get_x_y_var, get_which_data_ycols,\
     get_which_data_rows, update_not_existing_kwargs, helper_predict_with_model,\
-    helper_for_plot_data
-import itertools
-from GPy.plotting.gpy_plot.plot_util import scatter_label_generator, subsample_X
+    helper_for_plot_data, scatter_label_generator, subsample_X,\
+    find_best_layout_for_subplots
 
 def _wait_for_updates(view, updates):
-    if updates:
-        clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
-        if clear.lower() in 'yes' or clear == '':
+    try:
+        if updates:
+            clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
+            if clear.lower() in 'yes' or clear == '':
+                view.deactivate()
+        else:
             view.deactivate()
-    else:
-        view.deactivate()
+    except AttributeError:
+        # No updateable view:
+        pass
+            
 
 def plot_prediction_fit(self, plot_limits=None,
         which_data_rows='all', which_data_ycols='all', 
@@ -160,12 +164,11 @@ def _plot_magnification(self, canvas, input_1, input_2, Xgrid,
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
         mf = self.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
-        return mf.reshape(resolution, resolution).T[::-1, :]
-
+        return mf.reshape(resolution, resolution).T
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.magnification)
     Y = plot_function(Xgrid[:, [input_1, input_2]])
     view = pl.imshow(canvas, Y, 
-                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
+                     (xmin[0], xmax[0], xmin[1], xmax[1]), 
                      None, plot_function, resolution,
                      vmin=Y.min(), vmax=Y.max(), 
                      **imshow_kwargs)
@@ -177,8 +180,7 @@ def plot_magnification(self, labels=None, which_indices=None,
                 updates=False, 
                 mean=True, covariance=True, 
                 kern=None, num_samples=1000,
-                imshow_kwargs=None,
-                **scatter_kwargs):
+                scatter_kwargs=None, **imshow_kwargs):
     """
     Plot the magnification factor of the GP on the inputs. This is the 
     density of the GP as a gray scale.
@@ -199,12 +201,16 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-    canvas, scatter_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **scatter_kwargs)
+    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
-    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs)
-    if imshow_kwargs is None: imshow_kwargs = {}
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs or {})
     view = _plot_magnification(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, mean, covariance, kern, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    if (legend is True) and (labels is not None):
+        legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), 
+                           legend=legend, 
+                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
     _wait_for_updates(view, updates)
     return plots
 
@@ -219,12 +225,12 @@ def _plot_latent(self, canvas, input_1, input_2, Xgrid,
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, [input_1, input_2]] = x
         mf = np.log(self.predict(Xtest_full, kern=kern)[1])
-        return mf.reshape(resolution, resolution).T[::-1, :]
+        return mf.reshape(resolution, resolution).T
 
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
-    Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T[::-1, :]
+    Y = plot_function(Xgrid[:, [input_1, input_2]]).reshape(resolution, resolution).T
     view = pl.imshow(canvas, Y, 
-                     (xmin[0], xmin[1], xmax[1], xmax[1]), 
+                     (xmin[0], xmax[0], xmin[1], xmax[1]), 
                      None, plot_function, resolution,
                      vmin=Y.min(), vmax=Y.max(), 
                      **imshow_kwargs)
@@ -236,7 +242,7 @@ def plot_latent(self, labels=None, which_indices=None,
                 updates=False, 
                 kern=None, marker='<>^vsd', 
                 num_samples=1000,
-                imshow_kwargs=None, **scatter_kwargs):
+                scatter_kwargs=None, **imshow_kwargs):
     """
     Plot the latent space of the GP on the inputs. This is the 
     density of the GP posterior as a grey scale and the 
@@ -256,12 +262,16 @@ def plot_latent(self, labels=None, which_indices=None,
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-    canvas, scatter_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **scatter_kwargs)
+    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
-    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs)
-    if imshow_kwargs is None: imshow_kwargs = {}
+    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **scatter_kwargs or {})
     view = _plot_latent(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, kern, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
+    if (legend is True) and (labels is not None):
+        legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), 
+                           legend=legend, 
+                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
     _wait_for_updates(view, updates)
     return plots
 
@@ -275,14 +285,14 @@ def _plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid,
         Xgrid[:, [input_1, input_2]] = x
         dmu_dX = self.predictive_gradients(Xgrid, kern=kern)[0].sum(1)
         argmax = np.argmax(dmu_dX, 1).astype(int)
-        return dmu_dX.max(1).reshape(resolution, resolution).T[::-1, :], np.array(output_labels)[argmax].reshape(resolution, resolution)
+        return dmu_dX.max(1).reshape(resolution, resolution).T, np.array(output_labels)[argmax].reshape(resolution, resolution)
     Y, annotation = plot_function(Xgrid[:, [input_1, input_2]])
     annotation_kwargs = update_not_existing_kwargs(annotation_kwargs or {}, pl.defaults.annotation)
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs or {}, pl.defaults.gradient)
-    annotation = pl.annotation_heatmap(canvas, Y, annotation, (xmin[0], xmin[1], xmax[1], xmax[1]), 
+    imshow, annotation = pl.annotation_heatmap(canvas, Y, annotation, (xmin[0], xmax[0], xmin[1], xmax[1]), 
                        None, plot_function, resolution, imshow_kwargs=imshow_kwargs, **annotation_kwargs)
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.gradient)
-    return dict(annotation=annotation)
+    return dict(heatmap=imshow, annotation=annotation)
 
 def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which_indices=None,
                 resolution=15, legend=True,
@@ -300,7 +310,7 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     :param array-like labels: a label for each data point (row) of the inputs
     :param (int, int) which_indices: which input dimensions to plot against each other
     :param int resolution: the resolution at which we predict the magnification factor
-    :param bool legend: whether to plot the legend on the figure
+    :param bool legend: whether to plot the legend on the figure, if int plot legend columns on legend
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
     :param bool updates: if possible, make interactive updates using the specific library you are using
@@ -312,12 +322,16 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-    canvas, imshow_kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
+    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, (input_1, input_2), None, resolution)    
-    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, data_labels, marker, num_samples, **scatter_kwargs or {})
-    view = _plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, output_labels, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend and (data_labels is not None), xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]))
-    _wait_for_updates(view['annotation'], updates)
+    plots = dict(scatter=_plot_latent_scatter(self, canvas, X, input_1, input_2, data_labels, marker, num_samples, **scatter_kwargs or {}))
+    plots.update(_plot_steepest_gradient_map(self, canvas, input_1, input_2, Xgrid, xmin, xmax, resolution, output_labels, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs))
+    if (legend is True) and (data_labels is not None):
+        legend = find_best_layout_for_subplots(len(np.unique(data_labels)))[1]
+    pl.show_canvas(canvas, plots, legend=legend, 
+                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
+    _wait_for_updates(plots['annotation'], updates)
     return plots
 
 

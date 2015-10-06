@@ -35,13 +35,14 @@ from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
 from .controllers import ImshowController, ImAnnotateController
 import itertools
+from GPy.plotting.matplot_dep.util import legend_ontop
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
     
-    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, projection='2d', **kwargs):
+    def get_new_canvas(self, projection='2d', **kwargs):
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
         elif projection == '2d':
@@ -57,24 +58,23 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         else:
             ax = plt.figure().add_subplot(111, projection=projection)
             
+        return ax, kwargs
+    
+    def show_canvas(self, ax, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, legend=False, **kwargs):
+        ax.autoscale_view()
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
         if xlabel is not None: ax.set_xlabel(xlabel)
         if ylabel is not None: ax.set_ylabel(ylabel)
         if zlabel is not None: ax.set_zlabel(zlabel)
         if title is not None: ax.set_title(title)
-        return ax, kwargs
-    
-    def show_canvas(self, ax, plots, xlim=None, ylim=None, zlim=None, legend=False, **kwargs):
-        try:
-            ax.autoscale_view()
-            ax.set_xlim(xlim)
-            ax.set_ylim(ylim)
-            if legend:
-                ax.legend()
-            if zlim is not None:
-                ax.set_zlim(zlim)
-            ax.figure.canvas.draw()
-        except:
-            pass
+        fontdict=dict(family='sans-serif', weight='light', size=9)
+        if legend >= 1:
+            #ax.legend(prop=fontdict)
+            legend_ontop(ax, ncol=legend)
+        if zlim is not None:
+            ax.set_zlim(zlim)
+        ax.figure.canvas.draw()
         return plots
     
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker='o', **kwargs):
@@ -119,27 +119,32 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
-    def imshow(self, ax, X, extent=None, label=None, plot_function=None, resolution=None, vmin=None, vmax=None, **kwargs):
+    def imshow(self, ax, X, extent=None, label=None, plot_function=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
+        if 'origin' not in imshow_kwargs:
+            imshow_kwargs['origin'] = 'lower'
         if plot_function is not None:
-            return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **kwargs)
-        return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **kwargs)
+            return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
+        return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs)
     
     def annotation_heatmap(self, ax, X, annotation, extent, label=None, plot_function=None, resolution=None, imshow_kwargs=None, **annotation_kwargs):
+        imshow_kwargs = imshow_kwargs or {}
+        if 'origin' not in imshow_kwargs:
+            imshow_kwargs['origin'] = 'lower'
         if plot_function is not None:
             return ImAnnotateController(ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs)
         if ('ha' not in annotation_kwargs) and ('horizontalalignment' not in annotation_kwargs):
             annotation_kwargs['ha'] = 'center'
         if ('va' not in annotation_kwargs) and ('verticalalignment' not in annotation_kwargs):
             annotation_kwargs['va'] = 'center'
+        imshow = self.imshow(ax, X, extent, label, None, resolution, **imshow_kwargs)
         xmin, xmax, ymin, ymax = extent
-        self.imshow(X, extent, label, None, resolution, **imshow_kwargs or {})
-        xoffset, yoffset = (xmax - xmin) / (2 * self.resolution), (ymax - ymin) / (2 * self.resolution)
-        xlin = np.linspace(xmin, xmax, self.resolution, endpoint=False)
-        ylin = np.linspace(ymin, ymax, self.resolution, endpoint=False)
+        xoffset, yoffset = (xmax - xmin) / (2. * resolution), (ymax - ymin) / (2. * resolution)
+        xlin = np.linspace(xmin, xmax, resolution, endpoint=False)
+        ylin = np.linspace(ymin, ymax, resolution, endpoint=False)
         annotations = []
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
             annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
-        return annotations
+        return [imshow, annotations]
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)

@@ -57,7 +57,7 @@ class AbstractPlottingLibrary(object):
         return self.__defaults
         #===============================================================================
     
-    def get_new_canvas(self, xlabel=None, ylabel=None, zlabel=None, title=None, projection='2d', legend=True, **kwargs):
+    def get_new_canvas(self, projection='2d', legend=True, **kwargs):
         """
         Return a canvas, kwargupdate for your plotting library. 
         
@@ -67,19 +67,14 @@ class AbstractPlottingLibrary(object):
         
         the kwargs are plotting library specific kwargs!
 
-        :param bool plot_3d: whether to plot in 3d.
-        :param xlabel: the label to put on the xaxis
-        :param ylabel: the label to put on the yaxis
-        :param zlabel: the label to put on the zaxis (if plotting in 3d)
-        :param title: the title of the plot
-        :param legend: whether to put a legend on
+        :param {'2d'|'3d'} projection: The projection to use.
 
         E.g. in matplotlib this means it deletes references to ax, as
         plotting is done on the axis itself and is not a kwarg. 
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def show_canvas(self, canvas, plots, xlim=None, ylim=None, zlim=None, **kwargs):
+    def show_canvas(self, canvas, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
         """
         Show the canvas given. 
         plots is a dictionary with the plots
@@ -87,6 +82,11 @@ class AbstractPlottingLibrary(object):
         
         the kwargs are plotting library specific kwargs!
 
+        :param xlabel: the label to put on the xaxis
+        :param ylabel: the label to put on the yaxis
+        :param zlabel: the label to put on the zaxis (if plotting in 3d)
+        :param title: the title of the plot
+        :param legend: if True, plot a legend, if int make legend rows in the legend
         :param (float, float) xlim: the limits for the xaxis
         :param (float, float) ylim: the limits for the yaxis
         :param (float, float) zlim: the limits for the zaxis (if plotting in 3d)
@@ -185,6 +185,8 @@ class AbstractPlottingLibrary(object):
         Just ignore the plot_function, if you do not have the option
         to have interactive changes.
         
+        The origin of the image show is (0,0), such that X[0,0] gets plotted at [0,0] of the image!
+        
         the kwargs are plotting library specific kwargs!
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
@@ -211,6 +213,7 @@ class AbstractPlottingLibrary(object):
         :param str label: the label for the heatmap
         :param plot_function: the function, which generates new data for given input locations X
         :param int resolution: the resolution of the interactive plot redraw - this is only needed when giving a plot_function
+        :return: a list of both the heatmap and annotation plots [heatmap, annotation] 
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 

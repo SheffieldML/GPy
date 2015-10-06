@@ -23,14 +23,21 @@ class ImshowController(BufferedAxisChangedController):
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
     def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, vmin=None, vmax=None, **kwargs):
-        return canvas.imshow(X, extent=(xmin, xmax,
-                                    ymin, ymax),
+        xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
+        return canvas.imshow(X, extent=(xmin-xoffset, xmax+xoffset, 
+                                        ymin-yoffset, ymax+yoffset),
                              vmin=vmin, vmax=vmax,
-                         **kwargs)
+                             **kwargs)
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         view.set_data(X)
-        view.set_extent((xmin, xmax, ymin, ymax))
+        xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
+        view.set_extent((xmin-xoffset, xmax+xoffset, 
+                         ymin-yoffset, ymax+yoffset))
+
+    def _offsets(self, xmin, xmax, ymin, ymax):
+        return (xmax - xmin) / (2 * self.resolution), (ymax - ymin) / (2 * self.resolution)
+
 
 class ImAnnotateController(ImshowController):
     def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=.99, imshow_kwargs=None, **kwargs):
@@ -66,6 +73,3 @@ class ImAnnotateController(ImshowController):
             text.set_y(y + yoffset)
             text.set_text("{}".format(X[1][j, i]))
         return view
-
-    def _offsets(self, xmin, xmax, ymin, ymax):
-        return (xmax - xmin) / (2 * self.resolution), (ymax - ymin) / (2 * self.resolution)

@@ -69,7 +69,7 @@ ard = dict(edgecolor='k', linewidth=1.2)
 
 # Input plots:
 latent = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
-gradient = dict(aspect='auto', cmap='RdBu', interpolation='nearest')
+gradient = dict(aspect='auto', cmap='RdBu', interpolation='nearest', alpha=.7)
 magnification = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
 latent_scatter = dict(s=40, linewidth=.2, edgecolor='k', alpha=.9)
-annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3)
+annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)

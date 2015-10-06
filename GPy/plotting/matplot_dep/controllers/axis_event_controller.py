@@ -14,7 +14,7 @@ class AxisEventController(object):
         return self
     def deactivate(self):
         for cb_class in self.ax.callbacks.callbacks.values():
-            for cb_num in cb_class.keys():
+            for cb_num in cb_class.keys()[:]:
                 self.ax.callbacks.disconnect(cb_num)
     def activate(self):
         self.ax.callbacks.connect('xlim_changed', self.xlim_changed)
@@ -98,7 +98,7 @@ class BufferedAxisChangedController(AxisChangedController):
         """
         super(BufferedAxisChangedController, self).__init__(ax, update_lim=update_lim)
         self.plot_function = plot_function
-        xmin, ymin, xmax, ymax = plot_limits#self._x_lim # self._compute_buffered(*self._x_lim)
+        xmin, xmax, ymin, ymax = plot_limits#self._x_lim # self._compute_buffered(*self._x_lim)
         # imshow acts on the limits of the plot, this is why we need to override the limits here, to make sure the right plot limits are used:
         self._x_lim = xmin, xmax
         self._y_lim = ymin, ymax

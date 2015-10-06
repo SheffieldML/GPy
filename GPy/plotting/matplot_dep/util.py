@@ -31,6 +31,18 @@
 from matplotlib import pyplot as plt
 import numpy as np
 
+def legend_ontop(ax, mode='expand', ncol=3, fontdict=None):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    handles, labels = ax.get_legend_handles_labels()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("top", "5%", pad="1%")
+    lgd = cax.legend(handles, labels, bbox_to_anchor=(0., 0., 1., 1.), loc=3,
+            ncol=ncol, mode=mode, borderaxespad=0., prop=fontdict or {})
+    cax.set_axis_off()
+    #lgd = cax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
+    #        ncol=ncol, mode=mode, borderaxespad=0., prop=fontdict or {})
+    return lgd
+
 def removeRightTicks(ax=None):
     ax = ax or plt.gca()
     for i, line in enumerate(ax.get_yticklines()):

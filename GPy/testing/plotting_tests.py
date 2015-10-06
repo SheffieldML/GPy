@@ -179,7 +179,7 @@ def test_gplvm():
     # k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = GPLVM(Y, Q, init="PCA", kernel=k)
     m.likelihood.variance = .1
-    m.optimize(messages=0)
+    #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     m.plot_latent()
     m.plot_latent_scatter(projection='3d', labels=labels)
@@ -200,7 +200,7 @@ def test_bayesian_gplvm():
     # k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = BayesianGPLVM(Y, Q, init="PCA", kernel=k)
     m.likelihood.variance = .1
-    m.optimize(messages=0)
+    #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     m.plot_latent_inducing(projection='2d')
     m.plot_latent_inducing(projection='3d')

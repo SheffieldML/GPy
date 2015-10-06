@@ -170,6 +170,9 @@ def plot_inducing(self, visible_dims=None, projection='2d', label=None, **plot_k
     return pl.show_canvas(canvas, plots)
 
 def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs):
+    if visible_dims is None:
+        sig_dims = self.get_most_significant_input_dimensions()
+        visible_dims = [i for i in sig_dims if i is not None]
     free_dims = get_free_dims(self, visible_dims, None)
 
     Z = self.Z[:, free_dims]

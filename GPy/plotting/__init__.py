@@ -59,13 +59,4 @@ if config.get('plotting', 'library') is not 'none':
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_ARD
     
-    # Variational plot!
-
-    
-    #from . import matplot_dep
-    # Still to convert to new style:
-    #GP.plot = matplot_dep.models_plots.plot_fit
-    #GP.plot_f = matplot_dep.models_plots.plot_fit_f
-    
-    #GP.plot_magnification = matplot_dep.dim_reduction_plots.plot_magnification
-        
+    # Variational plot!        

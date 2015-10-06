@@ -116,16 +116,16 @@ def _plot_prediction_fit(self, canvas, plot_limits=None,
         raise NotImplementedError("Cannot plot in more then one dimension.")
     return plots
 
-def _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **kwargs):
+def _plot_latent_scatter(self, canvas, X, visible_dims, labels, marker, num_samples, projection='2d', **kwargs):
     from .. import Tango
     Tango.reset()
     if labels is None:
         labels = np.ones(self.num_data)
     X, labels = subsample_X(X, labels, num_samples)
     scatters = []    
-    for x, y, this_label, _, m in scatter_label_generator(labels, X, input_1, input_2, marker):
+    for x, y, z, this_label, _, m in scatter_label_generator(labels, X, visible_dims, marker):
         update_not_existing_kwargs(kwargs, pl.defaults.latent_scatter)
-        scatters.append(pl.scatter(canvas, x, y, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
+        scatters.append(pl.scatter(canvas, x, y, Z=z, marker=m, color=Tango.nextMedium(), label=this_label, **kwargs))
     return scatters
 
 def plot_latent_scatter(self, labels=None, 
@@ -134,6 +134,7 @@ def plot_latent_scatter(self, labels=None,
                         plot_limits=None,
                         marker='<>^vsd', 
                         num_samples=1000,
+                        projection='2d',
                         **kwargs):
     """
     Plot a scatter plot of the latent space.
@@ -146,13 +147,23 @@ def plot_latent_scatter(self, labels=None,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param kwargs: the kwargs for the scatter plots
     """    
-    input_1, input_2 = self.get_most_significant_input_dimensions(which_indices)
-    canvas, kwargs = pl.get_new_canvas(xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **kwargs)
+    sig_dims = self.get_most_significant_input_dimensions(which_indices)
+    input_1, input_2, input_3 = [i for i in sig_dims if i is not None]
+
+    canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
     X, _, _ = get_x_y_var(self)
-    scatters = _plot_latent_scatter(self, canvas, X, input_1, input_2, labels, marker, num_samples, **kwargs)
-    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend and (labels is not None))
-
-
+    scatters = _plot_latent_scatter(self, canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
+    if projection == '3d':
+        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend and (labels is not None),
+                              xlabel='latent dimension %i' % input_1, 
+                              ylabel='latent dimension %i' % input_2,
+                              zlabel='latent dimension %i' % input_3)
+    else:
+        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend and (labels is not None),
+                              xlabel='latent dimension %i' % input_1, 
+                              ylabel='latent dimension %i' % input_2,
+                              #zlabel='latent dimension %i' % input_3
+                              )
 
 
 def _plot_magnification(self, canvas, input_1, input_2, Xgrid, 

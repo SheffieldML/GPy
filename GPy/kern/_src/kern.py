@@ -217,6 +217,12 @@ class Kern(Parameterized):
         """
         Determine which dimensions should be plotted
         
+        Returns the top three most signification input dimensions
+        
+        if less then three dimensions, the non existing dimensions are
+        labeled as None, so for a 1 dimensional input this returns
+        (0, None, None).
+        
         :param which_indices: force the indices to be the given indices. 
         :type which_indices: int or tuple(int,int) 
         """
@@ -224,23 +230,32 @@ class Kern(Parameterized):
             if self.input_dim == 1:
                 input_1 = 0
                 input_2 = None
+                input_3 = None
             if self.input_dim == 2:
                 input_1, input_2 = 0, 1
+                input_3 = None
+            if self.input_dim == 3:
+                input_1, input_2, input_3 = 0, 1, 2
             else:
                 try:
-                    which_indices = np.argsort(self.input_sensitivity())[::-1][:2]
+                    which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
                 except:
                     raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
         try:
-            input_1, input_2 = which_indices
+            input_1, input_2, input_3 = which_indices
         except TypeError:
-            # which_indices was an int
-            input_1, input_2 = which_indices, None
-        except ValueError:
-            # which_indices was a list or array like with only one int
-            input_1, input_2 = which_indices[0], None
+            # which indices is tuple or int
+            try:
+                input_3 = None
+                input_1, input_2 = which_indices
+            except TypeError:
+                # which_indices is an int
+                input_1, input_2 = which_indices, None
+            except ValueError:
+                # which_indices was a list or array like with only one int
+                input_1, input_2 = which_indices[0], None
 
-        return input_1, input_2
+        return input_1, input_2, input_3
 
 
     def __add__(self, other):

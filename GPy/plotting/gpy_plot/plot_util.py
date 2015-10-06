@@ -129,7 +129,7 @@ def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resoluti
             Xgrid[:,i] = v    
     return X, Xvar, Y, fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
 
-def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
+def scatter_label_generator(labels, X, visible_dims, marker=None):
     ulabels = []
     for lab in labels:
         if not lab in ulabels:
@@ -139,6 +139,8 @@ def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
         marker = itertools.cycle(list(marker))    
     else:
         m = None
+    
+    input_1, input_2, input_3 = visible_dims
     
     for ul in ulabels:
         if type(ul) is np.string_:
@@ -160,10 +162,16 @@ def scatter_label_generator(labels, X, input_1, input_2=None, marker=None):
         if input_2 is None:
             x = X[index, input_1]
             y = np.zeros(index.size)
-        else:
+            z = None
+        elif input_3 is None:
             x = X[index, input_1]
             y = X[index, input_2]
-        yield x, y, this_label, index, m
+            z = None
+        else:
+            x = X[index, input_1]
+            y = X[index, input_2]            
+            z = X[index, input_3]
+        yield x, y, z, this_label, index, m
 
 def subsample_X(X, labels, num_samples=1000):
     """
@@ -175,7 +183,7 @@ def subsample_X(X, labels, num_samples=1000):
         print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
         if labels is not None:
             subsample = []
-            for _, _, _, index, _ in scatter_label_generator(labels, X, 0):
+            for _, _, _, _, index, _ in scatter_label_generator(labels, X, (0, None, None)):
                 subsample.append(np.random.choice(index, size=max(2, int(index.size*(float(num_samples)/X.shape[0]))), replace=False))
             subsample = np.hstack(subsample)
         else:

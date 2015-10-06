@@ -82,7 +82,9 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.scatter(X, Y, c=color, zs=Z, label=label, marker=marker, **kwargs)
         return ax.scatter(X, Y, c=color, label=label, marker=marker, **kwargs)
     
-    def plot(self, ax, X, Y, color=None, label=None, **kwargs):
+    def plot(self, ax, X, Y, Z=None, color=None, label=None, **kwargs):
+        if Z is not None:
+            return ax.plot(X, Y, color=color, zs=Z, label=label, **kwargs)
         return ax.plot(X, Y, color=color, label=label, **kwargs)
 
     def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):

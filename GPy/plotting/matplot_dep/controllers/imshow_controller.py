@@ -68,7 +68,7 @@ class ImAnnotateController(ImshowController):
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
         xlin = numpy.linspace(xmin-xoffset, xmax+xoffset, self.resolution, endpoint=False)
         ylin = numpy.linspace(ymin-yoffset, ymax+yoffset, self.resolution, endpoint=False)
-        for [[i, x], [j, y]], text in itertools.izip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:]):
+        for [[i, x], [j, y]], text in zip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:]):
             text.set_x(x + xoffset)
             text.set_y(y + yoffset)
             text.set_text("{}".format(X[1][j, i]))

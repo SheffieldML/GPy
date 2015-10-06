@@ -14,7 +14,7 @@ class AxisEventController(object):
         return self
     def deactivate(self):
         for cb_class in self.ax.callbacks.callbacks.values():
-            for cb_num in cb_class.keys()[:]:
+            for cb_num in dict(cb_class).keys():
                 self.ax.callbacks.disconnect(cb_num)
     def activate(self):
         self.ax.callbacks.connect('xlim_changed', self.xlim_changed)

@@ -33,6 +33,7 @@
 
 import matplotlib 
 matplotlib.use('agg')
+matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 matplotlib.rcParams[u'figure.figsize'] = (4,3)
 matplotlib.rcParams[u'text.usetex'] = False
 

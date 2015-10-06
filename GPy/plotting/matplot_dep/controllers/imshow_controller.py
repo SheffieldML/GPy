@@ -57,18 +57,18 @@ class ImAnnotateController(ImshowController):
     def _init_view(self, ax, X, xmin, xmax, ymin, ymax, **kwargs):
         view = [super(ImAnnotateController, self)._init_view(ax, X[0], xmin, xmax, ymin, ymax, **self.imshow_kwargs)]
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
-        xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
-        ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
-        for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
-            view.append(ax.text(x + xoffset, y + yoffset, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
+        xlin = numpy.linspace(xmin-xoffset, xmax+xoffset, self.resolution, endpoint=False)
+        ylin = numpy.linspace(ymin-yoffset, ymax+yoffset, self.resolution, endpoint=False)
+        for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
+            view.append(ax.text(x, y, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
         return view
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         super(ImAnnotateController, self).update_view(view[0], X[0], xmin, xmax, ymin, ymax)
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
-        xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
-        ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
-        for [[i, x], [j, y]], text in itertools.izip(itertools.product(enumerate(xlin), enumerate(ylin[::-1])), view[1:]):
+        xlin = numpy.linspace(xmin-xoffset, xmax+xoffset, self.resolution, endpoint=False)
+        ylin = numpy.linspace(ymin-yoffset, ymax+yoffset, self.resolution, endpoint=False)
+        for [[i, x], [j, y]], text in itertools.izip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:]):
             text.set_x(x + xoffset)
             text.set_y(y + yoffset)
             text.set_text("{}".format(X[1][j, i]))

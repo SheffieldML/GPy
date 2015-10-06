@@ -174,16 +174,9 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def imshow(self, canvas, X, extent=None, label=None, plot_function=None, vmin=None, vmax=None, **kwargs):
+    def imshow(self, canvas, X, extent=None, label=None, vmin=None, vmax=None, **kwargs):
         """
         Show the image stored in X on the canvas.
-        
-        if X is a function, create an imshow controller to stream 
-        the image. There is an imshow controller written for 
-        mmatplotlib, which updates the imshow on changes in axis.
-        
-        Just ignore the plot_function, if you do not have the option
-        to have interactive changes.
         
         The origin of the image show is (0,0), such that X[0,0] gets plotted at [0,0] of the image!
         
@@ -191,13 +184,35 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def annotation_heatmap(self, canvas, X, annotation, extent, label=None, plot_function=None, resolution=15, **kwargs):
+    def imshow_interact(self, canvas, plot_function, extent=None, label=None, vmin=None, vmax=None, **kwargs):
+        """
+        This function is optional!
+
+        Create an imshow controller to stream 
+        the image returned by the plot_function. There is an imshow controller written for 
+        mmatplotlib, which updates the imshow on changes in axis.
+                
+        The origin of the image show is (0,0), such that X[0,0] gets plotted at [0,0] of the image!
+        
+        the kwargs are plotting library specific kwargs!
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def annotation_heatmap(self, canvas, X, annotation, extent, label=None, **kwargs):
         """
         Plot an annotation heatmap. That is like an imshow, but
-        put the text of the labels inside the cells of the heatmap (centered).
+        put the text of the annotation inside the cells of the heatmap (centered).
         
-        if the labels are not given, just plot the heatmap.
-        
+        :param canvas: the canvas to plot on
+        :param array-like annotation: the annotation labels for the heatmap
+        :param [horizontal_min,horizontal_max,vertical_min,vertical_max] extent: the extent of where to place the heatmap
+        :param str label: the label for the heatmap
+        :return: a list of both the heatmap and annotation plots [heatmap, annotation], or the interactive update object (alone)
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def annotation_heatmap_interact(self, canvas, plot_function, extent, label=None, resolution=15, **kwargs):
+        """
         if plot_function is not None, return an interactive updated
         heatmap, which updates on axis events, so that one can zoom in 
         and out and the heatmap gets updated. See the matplotlib implementation
@@ -206,14 +221,14 @@ class AbstractPlottingLibrary(object):
         the plot_function returns a pair (X, annotation) to plot, when called with
         a new input X (which would be the grid, which is visible on the plot
         right now)
-        
+
         :param canvas: the canvas to plot on
         :param array-like annotation: the annotation labels for the heatmap
         :param [horizontal_min,horizontal_max,vertical_min,vertical_max] extent: the extent of where to place the heatmap
         :param str label: the label for the heatmap
+        :return: a list of both the heatmap and annotation plots [heatmap, annotation], or the interactive update object (alone)
         :param plot_function: the function, which generates new data for given input locations X
         :param int resolution: the resolution of the interactive plot redraw - this is only needed when giving a plot_function
-        :return: a list of both the heatmap and annotation plots [heatmap, annotation] 
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 

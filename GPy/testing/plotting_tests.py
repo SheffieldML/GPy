@@ -145,11 +145,12 @@ def test_classification():
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.GPClassification(X, Y>Y.mean())
     m.optimize()
-    m.plot()
-    m.plot(plot_raw=True)
-    m.plot(plot_raw=False, apply_link=True)
+    fig, ax = plt.subplots()
+    m.plot(plot_raw=False, apply_link=False, ax=ax)
+    fig, ax = plt.subplots()
+    m.plot(plot_raw=True, apply_link=False, ax=ax)
     m.plot(plot_raw=True, apply_link=True)
-    for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )
 
  
@@ -160,17 +161,17 @@ def test_sparse_classification():
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPClassification(X, Y>Y.mean())
     m.optimize()
-    m.plot()
-    m.plot(plot_raw=True)
-    m.plot(plot_raw=False, apply_link=True)
+    m.plot(plot_raw=False, apply_link=False)
+    m.plot(plot_raw=True, apply_link=False)
     m.plot(plot_raw=True, apply_link=True)
-    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["", "raw", 'link', 'raw_link']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )
 
 def test_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import GPLVM
+    np.random.seed(11111)
     Q = 3
     _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
     Y = Ylist[0]
@@ -180,18 +181,18 @@ def test_gplvm():
     m.likelihood.variance = .1
     m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
-    m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
-    plt.close('all')
     m.plot_latent()
+    m.plot_latent_scatter(projection='3d', labels=labels)
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
-    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
 
 def test_bayesian_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import BayesianGPLVM
+    np.random.seed(11111)
     Q = 3
     _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
     Y = Ylist[0]
@@ -201,12 +202,12 @@ def test_bayesian_gplvm():
     m.likelihood.variance = .1
     m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
-    m.plot_prediction_fit(which_data_ycols=(0,1)) # ignore this test, as plotting is not consistent!!
-    plt.close('all')
-    m.plot_latent()
+    m.plot_latent_inducing(projection='2d')
+    m.plot_latent_inducing(projection='3d')
+    m.plot_latent_scatter(projection='3d')
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
-    for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["latent", "magnification", 'gradient']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
         
 if __name__ == '__main__':

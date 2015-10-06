@@ -69,11 +69,14 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if zlabel is not None: ax.set_zlabel(zlabel)
         if title is not None: ax.set_title(title)
         fontdict=dict(family='sans-serif', weight='light', size=9)
-        if legend >= 1:
+        if legend is True:
+            ax.legend(*ax.get_legend_handles_labels())
+        elif legend >= 1:
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if zlim is not None:
             ax.set_zlim(zlim)
+        #ax.figure.show()
         ax.figure.canvas.draw()
         return plots
     
@@ -121,32 +124,44 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
-    def imshow(self, ax, X, extent=None, label=None, plot_function=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
+    def imshow(self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs):
         if 'origin' not in imshow_kwargs:
             imshow_kwargs['origin'] = 'lower'
-        if plot_function is not None:
-            return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
+        #xmin, xmax, ymin, ymax = extent
+        #xoffset, yoffset = (xmax - xmin) / (2. * X.shape[0]), (ymax - ymin) / (2. * X.shape[1])
+        #xmin, xmax, ymin, ymax = extent = xmin-xoffset, xmax+xoffset, ymin-yoffset, ymax+yoffset
         return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs)
-    
-    def annotation_heatmap(self, ax, X, annotation, extent, label=None, plot_function=None, resolution=None, imshow_kwargs=None, **annotation_kwargs):
+
+    def imshow_interact(self, ax, plot_function, extent=None, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
+        if 'origin' not in imshow_kwargs:
+            imshow_kwargs['origin'] = 'lower'
+        return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
+
+    def annotation_heatmap(self, ax, X, annotation, extent=None, label=None, imshow_kwargs=None, **annotation_kwargs):
         imshow_kwargs = imshow_kwargs or {}
         if 'origin' not in imshow_kwargs:
             imshow_kwargs['origin'] = 'lower'
-        if plot_function is not None:
-            return ImAnnotateController(ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs)
         if ('ha' not in annotation_kwargs) and ('horizontalalignment' not in annotation_kwargs):
             annotation_kwargs['ha'] = 'center'
         if ('va' not in annotation_kwargs) and ('verticalalignment' not in annotation_kwargs):
             annotation_kwargs['va'] = 'center'
-        imshow = self.imshow(ax, X, extent, label, None, resolution, **imshow_kwargs)
+        imshow = self.imshow(ax, X, extent, label, **imshow_kwargs)
+        if extent is None:
+            extent = (0, X.shape[0], 0, X.shape[1])
         xmin, xmax, ymin, ymax = extent
-        xoffset, yoffset = (xmax - xmin) / (2. * resolution), (ymax - ymin) / (2. * resolution)
-        xlin = np.linspace(xmin, xmax, resolution, endpoint=False)
-        ylin = np.linspace(ymin, ymax, resolution, endpoint=False)
+        xoffset, yoffset = (xmax - xmin) / (2. * X.shape[0]), (ymax - ymin) / (2. * X.shape[1])
+        xmin, xmax, ymin, ymax = extent = xmin+xoffset, xmax-xoffset, ymin+yoffset, ymax-yoffset
+        xlin = np.linspace(xmin, xmax, X.shape[0], endpoint=False)
+        ylin = np.linspace(ymin, ymax, X.shape[1], endpoint=False)
         annotations = []
-        for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin[::-1])):
-            annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
+        for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
+            annotations.append(ax.text(x, y, "{}".format(annotation[j, i]), **annotation_kwargs))
         return imshow, annotations
+
+    def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):
+        if 'origin' not in imshow_kwargs:
+            imshow_kwargs['origin'] = 'lower'
+        return ImAnnotateController(ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs)
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)

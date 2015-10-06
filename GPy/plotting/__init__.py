@@ -42,17 +42,21 @@ if config.get('plotting', 'library') is not 'none':
     SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
     
     from ..models import GPLVM, BayesianGPLVM, bayesian_gplvm_minibatch, SSGPLVM, SSMRD
-    GPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
     GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
+    GPLVM.plot_latent_scatter = gpy_plot.latent_plots.plot_latent_scatter
+    GPLVM.plot_latent_inducing = gpy_plot.latent_plots.plot_latent_inducing
     GPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     BayesianGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
-    BayesianGPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    BayesianGPLVM.plot_latent_scatter = gpy_plot.latent_plots.plot_latent_scatter
+    BayesianGPLVM.plot_latent_inducing = gpy_plot.latent_plots.plot_latent_inducing
     BayesianGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent = gpy_plot.latent_plots.plot_latent
-    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent_scatter = gpy_plot.latent_plots.plot_latent_scatter
+    bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_latent_inducing = gpy_plot.latent_plots.plot_latent_inducing
     bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     SSGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
-    SSGPLVM.plot_prediction_fit = gpy_plot.latent_plots.plot_prediction_fit
+    SSGPLVM.plot_latent_scatter = gpy_plot.latent_plots.plot_latent_scatter
+    SSGPLVM.plot_latent_inducing = gpy_plot.latent_plots.plot_latent_inducing
     SSGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
     
     from ..kern import Kern

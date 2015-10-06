@@ -224,26 +224,13 @@ class Kern(Parameterized):
         (0, None, None).
         
         :param which_indices: force the indices to be the given indices. 
-        :type which_indices: int or tuple(int,int) 
+        :type which_indices: int or tuple(int,int) or tuple(int,int,int) 
         """
         if which_indices is None:
-            if self.input_dim == 1:
-                input_1 = 0
-                input_2 = None
-                input_3 = None
-            if self.input_dim == 2:
-                input_1, input_2 = 0, 1
-                input_3 = None
-            if self.input_dim == 3:
-                input_1, input_2, input_3 = 0, 1, 2
-            else:
-                try:
-                    which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
-                except:
-                    raise ValueError("cannot automatically determine which dimensions to plot, please pass 'which_indices'")
+            which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
         try:
             input_1, input_2, input_3 = which_indices
-        except TypeError:
+        except ValueError:
             # which indices is tuple or int
             try:
                 input_3 = None
@@ -253,8 +240,7 @@ class Kern(Parameterized):
                 input_1, input_2 = which_indices, None
             except ValueError:
                 # which_indices was a list or array like with only one int
-                input_1, input_2 = which_indices[0], None
-
+                input_1, input_2 = which_indices[0], None            
         return input_1, input_2, input_3
 
 

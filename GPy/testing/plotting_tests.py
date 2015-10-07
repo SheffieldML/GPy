@@ -66,7 +66,7 @@ def _sequenceEqual(a, b):
 def _notFound(path):
     raise IOError('File {} not in baseline')
 
-def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=20):
+def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=11):
     baseline_dir, result_dir = _image_directories()
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:

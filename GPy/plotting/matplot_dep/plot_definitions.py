@@ -50,7 +50,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
         elif 'num' in kwargs and 'figsize' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection) 
+            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(rows, cols, which, projection=projection) 
         elif 'num' in kwargs:
             ax = plt.figure(num=kwargs.pop('num')).add_subplot(111, projection=projection)
         elif 'figsize' in kwargs:

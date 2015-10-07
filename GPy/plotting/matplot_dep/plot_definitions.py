@@ -80,7 +80,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             if zlabel is not None: ax.set_zlabel(zlabel)
         return ax, kwargs
     
-    def show_canvas(self, ax, plots, legend=False, title=None, **kwargs):
+    def add_to_canvas(self, ax, plots, legend=False, title=None, **kwargs):
         ax.autoscale_view()
         fontdict=dict(family='sans-serif', weight='light', size=9)
         if legend is True:
@@ -89,8 +89,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if title is not None: ax.figure.suptitle(title)
+        return ax
+    
+    def show_canvas(self, ax, tight_layout=False, **kwargs):
+        if tight_layout:
+            ax.figure.tight_layout()
         ax.figure.canvas.draw()
-        return plots
+        return ax.figure
     
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker='o', **kwargs):
         if Z is not None:

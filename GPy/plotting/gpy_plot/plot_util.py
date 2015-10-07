@@ -32,6 +32,15 @@ import numpy as np
 from scipy import sparse
 import itertools
 
+def in_ipynb():
+    try:
+        cfg = get_ipython().config 
+        if cfg['IPKernelApp']['parent_appname'] == 'ipython-notebook':
+            return True
+        else:
+            return False
+    except NameError:
+        return False
 
 def find_best_layout_for_subplots(num_subplots):
     r, c = 1, 1
@@ -109,7 +118,7 @@ def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resoluti
     if fixed_inputs is None:
         fixed_inputs = []
     fixed_dims = get_fixed_dims(self, fixed_inputs)
-    free_dims = get_free_dims(self, visible_dims, fixed_dims)[:2]
+    free_dims = get_free_dims(self, visible_dims, fixed_dims)
     
     if len(free_dims) == 1:
         #define the frame on which to plot

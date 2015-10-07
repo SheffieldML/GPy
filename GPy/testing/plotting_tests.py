@@ -127,7 +127,9 @@ def test_threed():
     m.optimize()
     m.plot_data(projection='3d')
     m.plot_mean(projection='3d')
-    for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean"]], extensions=extensions):
+    m.plot_samples(projection='3d', samples=1)
+    m.plot_samples(projection='3d', plot_raw=False, samples=1)
+    for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean", "samples", "samples_lik"]], extensions=extensions):
         yield (do_test, )
 
 def test_sparse():
@@ -164,9 +166,9 @@ def test_sparse_classification():
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPClassification(X, Y>Y.mean())
     m.optimize()
-    m.plot(plot_raw=False, apply_link=False)
-    m.plot(plot_raw=True, apply_link=False)
-    m.plot(plot_raw=True, apply_link=True)
+    m.plot(plot_raw=False, apply_link=False, samples_likelihood=3)
+    m.plot(plot_raw=True, apply_link=False, samples=3)
+    m.plot(plot_raw=True, apply_link=True, samples=3)
     for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )
 

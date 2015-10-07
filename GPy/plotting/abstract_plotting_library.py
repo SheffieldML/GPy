@@ -81,16 +81,6 @@ class AbstractPlottingLibrary(object):
 
         E.g. in matplotlib this means it deletes references to ax, as
         plotting is done on the axis itself and is not a kwarg. 
-        """
-        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
-
-    def show_canvas(self, canvas, plots, legend=True, title=None, **kwargs):
-        """
-        Show the canvas given. 
-        plots is a dictionary with the plots
-        as the items.
-        
-        the kwargs are plotting library specific kwargs!
 
         :param xlabel: the label to put on the xaxis
         :param ylabel: the label to put on the yaxis
@@ -100,10 +90,31 @@ class AbstractPlottingLibrary(object):
         :param (float, float) xlim: the limits for the xaxis
         :param (float, float) ylim: the limits for the yaxis
         :param (float, float) zlim: the limits for the zaxis (if plotting in 3d)
-        
-        E.g. in matplotlib this does not have to do anything, we make the tight plot, though.
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def add_to_canvas(self, canvas, plots, legend=True, title=None, **kwargs):
+        """
+        Add plots is a dictionary with the plots as the 
+        items or a list of plots as items to canvas.
+        
+        The kwargs are plotting library specific kwargs!
+        
+        E.g. in matplotlib this does not have to do anything to add stuff, but
+        we set the legend and title.
+
+        !This function returns the updated canvas!
+
+        :param title: the title of the plot
+        :param legend: whether to plot a legend or not
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+
+    def show_canvas(self, canvas, **kwargs):
+        """
+        Draw/Plot the canvas given.
+        """
+        raise NotImplementedError
 
     def plot(self, cavas, X, Y, Z=None, color=None, label=None, **kwargs):
         """
@@ -177,8 +188,8 @@ class AbstractPlottingLibrary(object):
     def yerrorbar(self, canvas, X, Y, error, color=None, label=None, **kwargs):
         """
         Make errorbars along the yaxis on the canvas given.
-        if error is two dimensional, the lower error is error[:,0] and
-        the upper error is error[:,1]
+        if error is two dimensional, the lower error is error[0, :] and
+        the upper error is error[1, :]
                 
         the kwargs are plotting library specific kwargs!
         """

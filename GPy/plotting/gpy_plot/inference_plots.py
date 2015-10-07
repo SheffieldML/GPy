@@ -13,7 +13,7 @@ def plot_optimizer(optimizer, **kwargs):
     else:
         canvas, kwargs = pl.new_canvas(**kwargs)
         plots = dict(trace=pl.plot(range(len(optimizer.trace)), optimizer.trace))
-        return pl.show_canvas(canvas, plots, xlabel='Iteration', ylabel='f(x)')
+        return pl.add_to_canvas(canvas, plots, xlabel='Iteration', ylabel='f(x)')
 
 def plot_sgd_traces(optimizer):
     figure = pl.figure(2,1)
@@ -21,8 +21,8 @@ def plot_sgd_traces(optimizer):
     plots = dict(lines=[])
     for k in optimizer.param_traces.keys():
         plots['lines'].append(pl.plot(canvas, range(len(optimizer.param_traces[k])), optimizer.param_traces[k], label=k))
-    pl.show_canvas(canvas, legend=True)
+    pl.add_to_canvas(canvas, legend=True)
     canvas, _ = pl.new_canvas(figure, 1, 2, title="Objective function")
     pl.plot(canvas, range(len(optimizer.fopt_trace)), optimizer.fopt_trace)
-    return pl.show_canvas(canvas, plots, legend=True)
+    return pl.add_to_canvas(canvas, plots, legend=True)
     

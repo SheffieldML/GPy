@@ -34,7 +34,22 @@ from . import defaults
 import itertools
 from plotly import tools
 from plotly import plotly as py
-from plotly.graph_objs import Scatter, Line, Data
+from plotly import matplotlylib
+from plotly.graph_objs import Scatter, Scatter3d, Line, Marker, ErrorX, ErrorY, Bar
+
+SYMBOL_MAP = {
+    'o': 'dot',
+    'v': 'triangle-down',
+    '^': 'triangle-up',
+    '<': 'triangle-left',
+    '>': 'triangle-right',
+    's': 'square',
+    '+': 'cross',
+    'x': 'x',
+    '*': 'x',  # no star yet in plotly!!
+    'D': 'diamond',
+    'd': 'diamond',
+}
 
 class PlotlyPlots(AbstractPlottingLibrary):
     def __init__(self):
@@ -42,87 +57,61 @@ class PlotlyPlots(AbstractPlottingLibrary):
         self._defaults = defaults.__dict__
         self.current_states = dict()
     
-    def figure(self, rows=1, cols=1, **kwargs):
-        if 'filename' not in kwargs:
-            print('PlotlyWarning: filename was not given, this may clutter your plotly workspace')
-            filename = None
-        else: filename = kwargs.pop('filename')
-        figure = tools.make_subplots(rows, cols, **kwargs)
-        self.current_states[hex(id(figure))] = dict(filename=filename)
-        index = 1
-        for i in rows:
-            for j in cols:
-                self.current_states[hex(id(figure))][(i,j)] = ('xaxis{}'.format(index), 'yaxis{}'.format(index))
-                index += 1  
+    def figure(self, rows=1, cols=1, specs=None, is_3d=False):
+        if specs is None:
+            specs = [[{'is_3d': is_3d}]*cols]*rows
+        figure = tools.make_subplots(rows, cols, specs=specs)
         return figure
     
     def new_canvas(self, figure=None, row=1, col=1, projection='2d', xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
+        if 'filename' not in kwargs:
+            print('PlotlyWarning: filename was not given, this may clutter your plotly workspace')
+            filename = None
+        else: 
+            filename = kwargs.pop('filename')
         if figure is None:
-            figure = self.figure(**kwargs)
-        return (figure, self.current_states[hex(id(figure))][(row,col)]), kwargs
+            figure = self.figure(is_3d=projection=='3d')
+        self.current_states[hex(id(figure))] = dict(filename=filename)
+        return (figure, row, col), kwargs
     
-    def show_canvas(self, canvas, traces, legend=False, **kwargs):
-        fig = canvas[0] 
-        axis = fig['layout'][canvas[1]]
-        axis.update(title=title, label)
-        figure.add_traces(traces, row, col, **kwargs)
-        
-        # If shared_axes is False (default) use list_of_domains
-        # This is used for insets and irregular layouts
-        if not shared_xaxes and not shared_yaxes:
-            x_dom = list_of_domains[::2]
-            y_dom = list_of_domains[1::2]
-            subtitle_pos_x = []
-            subtitle_pos_y = []
-            for x_domains in x_dom:
-                subtitle_pos_x.append(sum(x_domains) / 2)
-            for y_domains in y_dom:
-                subtitle_pos_y.append(y_domains[1])
-        # If shared_axes is True the domin of each subplot is not returned so the
-        # title position must be calculated for each subplot
+    def add_to_canvas(self, canvas, traces, legend=False, **kwargs):
+        figure, row, col = canvas
+        def recursive_append(traces):
+            for _, trace in traces.items():
+                if isinstance(trace, (tuple, list)):
+                    for t in trace:
+                        figure.append_trace(t, row, col)
+                elif isinstance(trace, dict):
+                    recursive_append(trace)
+                else:
+                    figure.append_trace(trace, row, col)
+        recursive_append(traces)
+        figure.layout['showlegend'] = legend
+        return canvas
+    
+    def show_canvas(self, canvas, **kwargs):
+        figure, _, _ = canvas
+        from ..gpy_plot.plot_util import in_ipynb
+        if in_ipynb():
+            py.iplot(figure, filename=self.current_states[hex(id(figure))]['filename'])
         else:
-            subtitle_pos_x = [None] * cols
-            subtitle_pos_y = [None] * rows
-            delt_x = (x_e - x_s)
-            for index in range(cols):
-                subtitle_pos_x[index] = ((delt_x / 2) +
-                                         ((delt_x + horizontal_spacing) * index))
-            subtitle_pos_x *= rows
-            for index in range(rows):
-                subtitle_pos_y[index] = (1 - ((y_e + vertical_spacing) * index))
-            subtitle_pos_y *= cols
-            subtitle_pos_y = sorted(subtitle_pos_y, reverse=True)
+            py.plot(figure, filename=self.current_states[hex(id(figure))]['filename'])
+        return figure
     
-        plot_titles = []
-        for index in range(len(subplot_titles)):
-            if not subplot_titles[index]:
-                pass
-            else:
-                plot_titles.append({'y': subtitle_pos_y[index],
-                                    'xref': 'paper',
-                                    'x': subtitle_pos_x[index],
-                                    'yref': 'paper',
-                                    'text': subplot_titles[index],
-                                    'showarrow': False,
-                                    'font': graph_objs.Font(size=16),
-                                    'xanchor': 'center',
-                                    'yanchor': 'bottom'
-                                    })
-    
-                layout['annotations'] = plot_titles
+    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], cmap=None, label=None, marker='o', marker_kwargs=None, **kwargs):
         try:
-            url = py.iplot(figure, self.current_filename)
+            marker = SYMBOL_MAP[marker]
         except:
-            url = py.plot(figure, self.current_filename)
-        return url
-    
-    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker='o', **kwargs):
-        
-    
-    def plot(self, ax, X, Y, Z=None, color=None, label=None, **kwargs):
+            #not matplotlib marker
+            pass
         if Z is not None:
-            return ax.plot(X, Y, color=color, zs=Z, label=label, **kwargs)
-        return ax.plot(X, Y, color=color, label=label, **kwargs)
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers', marker=Marker(color=color, symbol=marker, colorscale=cmap, **marker_kwargs or {}), name=label, **kwargs)
+        return Scatter(x=X, y=Y, mode='markers', marker=Marker(color=color, symbol=marker, colorscale=cmap, **marker_kwargs or {}), name=label, **kwargs)
+    
+    def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):
+        if Z is not None:
+            return Scatter3d(x=X, y=Y, z=Z, mode='lines', line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
+        return Scatter(x=X, y=Y, mode='lines', line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
 
     def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         from matplotlib import transforms
@@ -137,26 +126,31 @@ class PlotlyPlots(AbstractPlottingLibrary):
             return ax.scatter(X[:,0], X[:,1], ax.get_zlim()[0], c=color, label=label, **kwargs)
         return ax.scatter(X, np.zeros_like(X), c=color, label=label, **kwargs)
 
-    def barplot(self, ax, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
-        if 'align' not in kwargs:
-            kwargs['align'] = 'center'
-        return ax.bar(left=x, height=height, width=width,
-               bottom=bottom, label=label, color=color,  
-               **kwargs)
+    def barplot(self, canvas, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+        figure, _, _ = canvas
+        if 'barmode' in kwargs:
+            figure.layout['barmode'] = kwargs.pop('barmode')
+        return Bar(x=x, y=height, marker=Marker(color=color), name=label)
         
-    def xerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
-        if not('linestyle' in kwargs or 'ls' in kwargs):
-            kwargs['ls'] = 'none'
+    def xerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, error_kwargs=None, **kwargs):
+        error_kwargs = error_kwargs or {}
+        if (error.shape[0] == 2) and (error.ndim == 2):
+            error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
+        else:
+            error_kwargs.update(dict(array=error, symmetric=True))
         if Z is not None:
-            return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
-        return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
-    
-    def yerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
-        if not('linestyle' in kwargs or 'ls' in kwargs):
-            kwargs['ls'] = 'none'
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers', error_x=ErrorX(color=color, **error_kwargs or {}), marker=Marker(size='0'), name=label, **kwargs)
+        return Scatter(x=X, y=Y, mode='markers', error_x=ErrorX(color=color, **error_kwargs or {}), marker=Marker(size='0'), name=label, **kwargs)
+
+    def yerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, error_kwargs=None, **kwargs):
+        error_kwargs = error_kwargs or {}
+        if (error.shape[0] == 2) and (error.ndim == 2):
+            error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
+        else:
+            error_kwargs.update(dict(array=error, symmetric=True))
         if Z is not None:
-            return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
-        return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers', error_y=ErrorY(color=color, **error_kwargs or {}), marker=Marker(size='0'), name=label, **kwargs)
+        return Scatter(x=X, y=Y, mode='markers', error_y=ErrorY(color=color, **error_kwargs or {}), marker=Marker(size='0'), name=label, **kwargs)
     
     def imshow(self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs):
         if 'origin' not in imshow_kwargs:
@@ -167,9 +161,8 @@ class PlotlyPlots(AbstractPlottingLibrary):
         return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs)
 
     def imshow_interact(self, ax, plot_function, extent=None, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
-        if 'origin' not in imshow_kwargs:
-            imshow_kwargs['origin'] = 'lower'
-        return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
+        # TODO stream interaction?
+        super(PlotlyPlots, self).imshow_interact(ax, plot_function)
 
     def annotation_heatmap(self, ax, X, annotation, extent=None, label=None, imshow_kwargs=None, **annotation_kwargs):
         imshow_kwargs = imshow_kwargs or {}

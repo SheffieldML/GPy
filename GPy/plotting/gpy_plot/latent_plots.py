@@ -94,7 +94,11 @@ def plot_latent_scatter(self, labels=None,
     else:
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
-    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend)
+    return pl.add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
+
+
+
+
 def plot_latent_inducing(self,  
                         which_indices=None,
                         legend=False,
@@ -125,7 +129,12 @@ def plot_latent_inducing(self,
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
     scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
-    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend)
+    return pl.add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
+    
+
+
+
+
 
 def _plot_magnification(self, canvas, which_indices, Xgrid, 
                         xmin, xmax, resolution, updates,
@@ -182,12 +191,12 @@ def plot_magnification(self, labels=None, which_indices=None,
         legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
     view = _plot_magnification(self, canvas, which_indices[:2], Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), 
+    retval = pl.add_to_canvas(canvas, dict(scatter=scatters, imshow=view), 
                            legend=legend, 
                            )
     _wait_for_updates(view, updates)
-    return plots
-
+    return retval
+    
 
 
 
@@ -245,10 +254,10 @@ def plot_latent(self, labels=None, which_indices=None,
         legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
     view = _plot_latent(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, kern, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend)
+    retval = pl.add_to_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend)
     _wait_for_updates(view, updates)
-    return plots
-
+    return retval
+    
 def _plot_steepest_gradient_map(self, canvas, which_indices, Xgrid, 
                         xmin, xmax, resolution, output_labels, updates,
                         kern=None, annotation_kwargs=None, 
@@ -310,10 +319,9 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
         legend = False
     plots = dict(scatter=_plot_latent_scatter(canvas, X, which_indices, data_labels, marker, num_samples, **scatter_kwargs or {}))
     plots.update(_plot_steepest_gradient_map(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, output_labels, updates, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs))
-    show = pl.show_canvas(canvas, plots, legend=legend)
+    retval = pl.add_to_canvas(canvas, plots, legend=legend)
     _wait_for_updates(plots['annotation'], updates)
-    return show
-
+    return retval
 
 
 

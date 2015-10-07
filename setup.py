@@ -42,7 +42,13 @@ import numpy as np
 
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    try:
+        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+            return unicode(f.read())
+    except NameError:
+        #python 3
+        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+            return (f.read())
 
 def read_to_rst(fname):
     try:
@@ -50,7 +56,7 @@ def read_to_rst(fname):
         #print 'Warning in installation: For rst formatting in pypi, consider installing pypandoc for conversion'
         with open('README.rst', 'w') as f:
             f.write(pypandoc.convert('README.md', 'rst'))
-    except:
+    except ImportError:
         return read(fname)
 
 version_dummy = {}

@@ -42,7 +42,12 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
     
-    def get_new_canvas(self, projection='2d', **kwargs):
+    def figure(self, rows=1, cols=1, **kwargs):
+        self.rows = rows
+        self.cols = cols 
+        return plt.figure(**kwargs)
+    
+    def get_new_canvas(self, projection='2d', figure=None, col=1, row=1, **kwargs):
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
         elif projection == '2d':
@@ -50,13 +55,13 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
         elif 'num' in kwargs and 'figsize' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(rows, cols, which, projection=projection) 
+            fig = self.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection) 
         elif 'num' in kwargs:
-            ax = plt.figure(num=kwargs.pop('num')).add_subplot(111, projection=projection)
+            ax = self.figure(num=kwargs.pop('num')).add_subplot(111, projection=projection)
         elif 'figsize' in kwargs:
-            ax = plt.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection)
+            ax = self.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection)
         else:
-            ax = plt.figure().add_subplot(111, projection=projection)
+            ax = self.figure().add_subplot(111, projection=projection)
             
         return ax, kwargs
     

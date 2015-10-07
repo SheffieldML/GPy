@@ -57,9 +57,19 @@ class AbstractPlottingLibrary(object):
         return self.__defaults
         #===============================================================================
     
-    def get_new_canvas(self, projection='2d', legend=True, **kwargs):
+    def figure(self, nrows, ncols, **kwargs):
+        """
+        Get a new figure with nrows and ncolumns subplots.
+        Does not initialize the canvases yet.
+        """
+        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+    
+    def get_new_canvas(self, projection='2d', figure=None, col=1, row=1, **kwargs):
         """
         Return a canvas, kwargupdate for your plotting library. 
+
+        if figure is not None, create a canvas in the figure
+        at subplot position (col, row).
         
         This method does two things, it creates an empty canvas
         and updates the kwargs (deletes the unnecessary kwargs)
@@ -74,7 +84,7 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def show_canvas(self, canvas, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
+    def show_canvas(self, canvas, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, legend=True, **kwargs):
         """
         Show the canvas given. 
         plots is a dictionary with the plots

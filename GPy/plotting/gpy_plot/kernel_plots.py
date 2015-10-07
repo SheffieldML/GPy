@@ -41,7 +41,7 @@ def plot_ARD(kernel, filtering=None, **kwargs):
                       will be used for plotting.
     :type filtering: list of names to use for ARD plot
     """
-    canvas, kwargs = pl.get_new_canvas(kwargs)
+    canvas, kwargs = pl.new_canvas(kwargs)
 
     Tango.reset()
     

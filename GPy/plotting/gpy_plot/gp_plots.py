@@ -62,7 +62,7 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
     :param str label: the label for the plot.
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection, **kwargs)
     plots = _plot_mean(self, canvas, plot_limits, fixed_inputs, 
                        resolution, plot_raw, 
                        apply_link, visible_dims, which_data_ycols, 
@@ -131,7 +131,7 @@ def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=
     :param array-like which_data_ycols: which columns of the output y (!) to plot (array-like or list of ints)
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
-    canvas, kwargs = pl.get_new_canvas(**kwargs)
+    canvas, kwargs = pl.new_canvas(**kwargs)
     plots = _plot_confidence(self, canvas, lower, upper, plot_limits, 
                              fixed_inputs, resolution, plot_raw, 
                              apply_link, visible_dims, which_data_ycols, 
@@ -190,7 +190,7 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     :param int levels: for 2D plotting, the number of contour levels to use is 
     """
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection, **kwargs)
     plots = _plot_samples(self, canvas, plot_limits, fixed_inputs, 
                        resolution, plot_raw, 
                        apply_link, visible_dims, which_data_ycols, samples, projection, 
@@ -253,7 +253,7 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     :param int levels: the number of levels in the density (number bigger then 1, where 35 is smooth and 1 is the same as plot_confidence). You can go higher then 50 if the result is not smooth enough for you. 
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
-    canvas, kwargs = pl.get_new_canvas(**kwargs)
+    canvas, kwargs = pl.new_canvas(**kwargs)
     plots = _plot_density(self, canvas, plot_limits, 
                              fixed_inputs, resolution, plot_raw,  
                              apply_link, visible_dims, which_data_ycols, 
@@ -326,7 +326,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     :param bool plot_density: plot density instead of the confidence interval?
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
-    canvas, _ = pl.get_new_canvas(projection=projection, **kwargs)
+    canvas, _ = pl.new_canvas(projection=projection, **kwargs)
     plots = _plot(self, canvas, plot_limits, fixed_inputs, resolution, plot_raw, 
                   apply_link, which_data_ycols, which_data_rows, visible_dims, 
                   levels, samples, samples_likelihood, lower, upper, plot_data, 
@@ -375,7 +375,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
     :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    canvas, _ = pl.get_new_canvas(projection=='3d', **kwargs)
+    canvas, _ = pl.new_canvas(projection=='3d', **kwargs)
     plots = _plot(self, canvas, plot_limits, fixed_inputs, resolution, 
                   True, apply_link, which_data_ycols, which_data_rows, 
                   visible_dims, levels, samples, 0, lower, upper, 

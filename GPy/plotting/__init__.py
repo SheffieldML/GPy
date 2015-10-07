@@ -13,7 +13,10 @@ try:
         import matplotlib
         from .matplot_dep import plot_definitions
         plotting_library = plot_definitions.MatplotlibPlots()
-
+    if lib == 'plotly':
+        import plotly
+        from .plotly_dep import plot_definitions
+        plotting_library = plot_definitions.PlotlyPlots()
     #===========================================================================
 except (ImportError, NameError):
     raise
@@ -63,4 +66,6 @@ if config.get('plotting', 'library') is not 'none':
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_ARD
     
+    from ..inference.optimization import Optimizer
+    Optimizer.plot = gpy_plot.inference_plots.plot_optimizer
     # Variational plot!        

@@ -54,7 +54,7 @@ def plot_data(self, which_data_rows='all',
     
     :returns list: of plots created.
     """
-    canvas, plot_kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
+    canvas, plot_kwargs = pl.new_canvas(projection=projection, **plot_kwargs)
     plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **plot_kwargs)
     return pl.show_canvas(canvas, plots)
 
@@ -117,7 +117,7 @@ def plot_data_error(self, which_data_rows='all',
     
     :returns list: of plots created.
     """
-    canvas, error_kwargs = pl.get_new_canvas(projection=='3d', **error_kwargs)
+    canvas, error_kwargs = pl.new_canvas(projection=='3d', **error_kwargs)
     plots = _plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **error_kwargs)
     return pl.show_canvas(canvas, plots)
 
@@ -165,7 +165,7 @@ def plot_inducing(self, visible_dims=None, projection='2d', label=None, **plot_k
     :param array-like visible_dims: an array specifying the input dimensions to plot (maximum two)
     :param kwargs plot_kwargs: keyword arguments for the plotting library
     """
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection, **plot_kwargs)
     plots = _plot_inducing(self, canvas, visible_dims, projection, label, **kwargs)
     return pl.show_canvas(canvas, plots)
 
@@ -217,7 +217,7 @@ def plot_errorbars_trainset(self, which_data_rows='all',
     :param dict predict_kwargs: kwargs for the prediction used to predict the right quantiles.
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **plot_kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection, **plot_kwargs)
     plots = _plot_errorbars_trainset(self, canvas, which_data_rows, which_data_ycols, 
                                      fixed_inputs, plot_raw, apply_link, label, projection, predict_kw, **kwargs)
     return pl.show_canvas(canvas, plots)

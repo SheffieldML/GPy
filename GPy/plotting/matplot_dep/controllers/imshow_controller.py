@@ -9,7 +9,7 @@ import numpy
 
 
 class ImshowController(BufferedAxisChangedController):
-    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.8, **kwargs):
+    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.9, **kwargs):
         """
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
@@ -23,7 +23,7 @@ class ImshowController(BufferedAxisChangedController):
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
     def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, vmin=None, vmax=None, **kwargs):
-        xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
+        xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
         return canvas.imshow(X, extent=(xmin-xoffset, xmax+xoffset, 
                                         ymin-yoffset, ymax+yoffset),
                              vmin=vmin, vmax=vmax,
@@ -31,7 +31,7 @@ class ImshowController(BufferedAxisChangedController):
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         view.set_data(X)
-        xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
+        xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
         view.set_extent((xmin-xoffset, xmax+xoffset, 
                          ymin-yoffset, ymax+yoffset))
 
@@ -57,19 +57,19 @@ class ImAnnotateController(ImshowController):
     def _init_view(self, ax, X, xmin, xmax, ymin, ymax, **kwargs):
         view = [super(ImAnnotateController, self)._init_view(ax, X[0], xmin, xmax, ymin, ymax, **self.imshow_kwargs)]
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
-        xlin = numpy.linspace(xmin-xoffset, xmax+xoffset, self.resolution, endpoint=False)
-        ylin = numpy.linspace(ymin-yoffset, ymax+yoffset, self.resolution, endpoint=False)
+        xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
+        ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            view.append(ax.text(x, y, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
+            view.append(ax.text(x+xoffset, y+yoffset, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
         return view
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         super(ImAnnotateController, self).update_view(view[0], X[0], xmin, xmax, ymin, ymax)
         xoffset, yoffset = self._offsets(xmin, xmax, ymin, ymax)
-        xlin = numpy.linspace(xmin-xoffset, xmax+xoffset, self.resolution, endpoint=False)
-        ylin = numpy.linspace(ymin-yoffset, ymax+yoffset, self.resolution, endpoint=False)
+        xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
+        ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [[i, x], [j, y]], text in zip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:]):
-            text.set_x(x + xoffset)
-            text.set_y(y + yoffset)
+            text.set_x(x+xoffset)
+            text.set_y(y+yoffset)
             text.set_text("{}".format(X[1][j, i]))
         return view

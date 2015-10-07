@@ -29,8 +29,8 @@
 #===============================================================================
 import numpy as np
 from . import pl
-from .plot_util import get_x_y_var, get_which_data_ycols,\
-    get_which_data_rows, update_not_existing_kwargs, helper_predict_with_model,\
+from .plot_util import get_x_y_var,\
+    update_not_existing_kwargs, \
     helper_for_plot_data, scatter_label_generator, subsample_X,\
     find_best_layout_for_subplots
 
@@ -83,7 +83,10 @@ def plot_latent_scatter(self, labels=None,
     """    
     input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
     
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection,
+                              xlabel='latent dimension %i' % input_1, 
+                              ylabel='latent dimension %i' % input_2,
+                              zlabel='latent dimension %i' % input_3, **kwargs)
     X, _, _ = get_x_y_var(self)
     if labels is None:
         labels = np.ones(self.num_data)
@@ -91,17 +94,7 @@ def plot_latent_scatter(self, labels=None,
     else:
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
-    if projection == '3d':
-        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
-                              xlabel='latent dimension %i' % input_1, 
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel='latent dimension %i' % input_3)
-    else:
-        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
-                              xlabel='latent dimension %i' % input_1, 
-                              ylabel='latent dimension %i' % input_2,
-                              #zlabel='latent dimension %i' % input_3
-                              )
+    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend)
 def plot_latent_inducing(self,  
                         which_indices=None,
                         legend=False,
@@ -125,24 +118,17 @@ def plot_latent_inducing(self,
     
     if 'color' not in kwargs:
         kwargs['color'] = 'white'
-    canvas, kwargs = pl.get_new_canvas(projection=projection, **kwargs)
+    canvas, kwargs = pl.new_canvas(projection=projection,
+                              xlabel='latent dimension %i' % input_1, 
+                              ylabel='latent dimension %i' % input_2,
+                              zlabel='latent dimension %i' % input_3, **kwargs)
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
     scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
-    if projection == '3d':
-        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
-                              xlabel='latent dimension %i' % input_1, 
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel='latent dimension %i' % input_3)
-    else:
-        return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend,
-                              xlabel='latent dimension %i' % input_1, 
-                              ylabel='latent dimension %i' % input_2,
-                              #zlabel='latent dimension %i' % input_3
-                              )
+    return pl.show_canvas(canvas, dict(scatter=scatters), legend=legend)
 
 def _plot_magnification(self, canvas, which_indices, Xgrid, 
-                        xmin, xmax, resolution,
+                        xmin, xmax, resolution, updates,
                         mean=True, covariance=True, 
                         kern=None,  
                         **imshow_kwargs):
@@ -153,9 +139,11 @@ def _plot_magnification(self, canvas, which_indices, Xgrid,
         return mf.reshape(resolution, resolution).T
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.magnification)
     try:
-        return pl.imshow_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, **imshow_kwargs)
+        if updates:
+            return pl.imshow_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, **imshow_kwargs)
+        else: raise NotImplementedError
     except NotImplementedError:
-        return pl.imshow(canvas, plot_function(Xgrid), (xmin[0], xmax[0], xmin[1], xmax[1]), **imshow_kwargs)
+        return pl.imshow(canvas, plot_function(Xgrid[:, which_indices]), (xmin[0], xmax[0], xmin[1], xmax[1]), **imshow_kwargs)
     
 def plot_magnification(self, labels=None, which_indices=None,
                 resolution=60, marker='<>^vsd', legend=True,
@@ -184,19 +172,19 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)    
+    canvas, imshow_kwargs = pl.new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (labels is not None):
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     else:
         labels = np.ones(self.num_data)
         legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
-    view = _plot_magnification(self, canvas, which_indices[:2], Xgrid, xmin, xmax, resolution, mean, covariance, kern, **imshow_kwargs)
+    view = _plot_magnification(self, canvas, which_indices[:2], Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
     plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), 
                            legend=legend, 
-                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
-                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
+                           )
     _wait_for_updates(view, updates)
     return plots
 
@@ -204,7 +192,7 @@ def plot_magnification(self, labels=None, which_indices=None,
 
 
 def _plot_latent(self, canvas, which_indices, Xgrid, 
-                        xmin, xmax, resolution,
+                        xmin, xmax, resolution, updates,
                         kern=None,  
                         **imshow_kwargs):
     def plot_function(x):
@@ -215,9 +203,11 @@ def _plot_latent(self, canvas, which_indices, Xgrid,
 
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl.defaults.latent)
     try:
-        return pl.imshow_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, **imshow_kwargs)
+        if updates:
+            return pl.imshow_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, **imshow_kwargs)
+        else: raise NotImplementedError
     except NotImplementedError:
-        return pl.imshow(canvas, plot_function(Xgrid), (xmin[0], xmax[0], xmin[1], xmax[1]), **imshow_kwargs)
+        return pl.imshow(canvas, plot_function(Xgrid[:, which_indices]), (xmin[0], xmax[0], xmin[1], xmax[1]), **imshow_kwargs)
 
 def plot_latent(self, labels=None, which_indices=None,
                 resolution=60, legend=True,
@@ -245,24 +235,22 @@ def plot_latent(self, labels=None, which_indices=None,
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)    
+    canvas, imshow_kwargs = pl.new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (labels is not None):
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     else:
         labels = np.ones(self.num_data)
         legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
-    view = _plot_latent(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, kern, **imshow_kwargs)
-    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), 
-                           legend=legend, 
-                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
-                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
+    view = _plot_latent(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, kern, **imshow_kwargs)
+    plots = pl.show_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend)
     _wait_for_updates(view, updates)
     return plots
 
 def _plot_steepest_gradient_map(self, canvas, which_indices, Xgrid, 
-                        xmin, xmax, resolution, output_labels,
+                        xmin, xmax, resolution, output_labels, updates,
                         kern=None, annotation_kwargs=None, 
                         **imshow_kwargs):
     if output_labels is None:
@@ -276,9 +264,12 @@ def _plot_steepest_gradient_map(self, canvas, which_indices, Xgrid,
     annotation_kwargs = update_not_existing_kwargs(annotation_kwargs or {}, pl.defaults.annotation)
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs or {}, pl.defaults.gradient)
     try:
-        return dict(annotation=pl.annotation_heatmap_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, imshow_kwargs=imshow_kwargs, **annotation_kwargs))
+        if updates:
+            return dict(annotation=pl.annotation_heatmap_interact(canvas, plot_function, (xmin[0], xmax[0], xmin[1], xmax[1]), resolution=resolution, imshow_kwargs=imshow_kwargs, **annotation_kwargs))
+        else:
+            raise NotImplementedError
     except NotImplementedError:
-        imshow, annotation = pl.annotation_heatmap(canvas, *plot_function(Xgrid), extent=(xmin[0], xmax[0], xmin[1], xmax[1]), imshow_kwargs=imshow_kwargs, **annotation_kwargs)
+        imshow, annotation = pl.annotation_heatmap(canvas, *plot_function(Xgrid[:, which_indices]), extent=(xmin[0], xmax[0], xmin[1], xmax[1]), imshow_kwargs=imshow_kwargs, **annotation_kwargs)
         return dict(heatmap=imshow, annotation=annotation)
 
 def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which_indices=None,
@@ -309,20 +300,19 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    canvas, imshow_kwargs = pl.get_new_canvas(**imshow_kwargs)
     X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)    
+    canvas, imshow_kwargs = pl.new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
+                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (data_labels is not None):
         legend = find_best_layout_for_subplots(len(np.unique(data_labels)))[1]
     else:
         data_labels = np.ones(self.num_data)
         legend = False
     plots = dict(scatter=_plot_latent_scatter(canvas, X, which_indices, data_labels, marker, num_samples, **scatter_kwargs or {}))
-    plots.update(_plot_steepest_gradient_map(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, output_labels, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs))
-    pl.show_canvas(canvas, plots, legend=legend, 
-                           xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
-                           xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2)
+    plots.update(_plot_steepest_gradient_map(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, output_labels, updates, kern, annotation_kwargs=annotation_kwargs, **imshow_kwargs))
+    show = pl.show_canvas(canvas, plots, legend=legend)
     _wait_for_updates(plots['annotation'], updates)
-    return plots
+    return show
 
 
 

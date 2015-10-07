@@ -35,7 +35,7 @@ from . import defaults
 from matplotlib.colors import LinearSegmentedColormap
 from .controllers import ImshowController, ImAnnotateController
 import itertools
-from GPy.plotting.matplot_dep.util import legend_ontop
+from .util import legend_ontop
 
 class MatplotlibPlots(AbstractPlottingLibrary):
     def __init__(self):
@@ -43,48 +43,52 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         self._defaults = defaults.__dict__
     
     def figure(self, rows=1, cols=1, **kwargs):
-        self.rows = rows
-        self.cols = cols 
-        return plt.figure(**kwargs)
+        fig = plt.figure(**kwargs)
+        fig.rows = rows
+        fig.cols = cols
+        return fig
     
-    def get_new_canvas(self, projection='2d', figure=None, col=1, row=1, **kwargs):
+    def new_canvas(self, figure=None, col=1, row=1, projection='2d', xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
         elif projection == '2d':
             projection = None
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
-        elif 'num' in kwargs and 'figsize' in kwargs:
-            fig = self.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize'))
-        elif 'num' in kwargs:
-            fig = self.figure(num=kwargs.pop('num'))
-        elif 'figsize' in kwargs:
-            fig = self.figure(figsize=kwargs.pop('figsize'))
         else:
-            fig = self.figure()
+            if 'num' in kwargs and 'figsize' in kwargs:
+                fig = self.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize'))
+            elif 'num' in kwargs:
+                fig = self.figure(num=kwargs.pop('num'))
+            elif 'figsize' in kwargs:
+                fig = self.figure(figsize=kwargs.pop('figsize'))
+            else:
+                fig = self.figure()
         
-        ax = fig.add_subplot(self.rows, self.cols, )
+            if hasattr(fig, 'rows') and hasattr(fig, 'cols'):
+                ax = fig.add_subplot(fig.rows, fig.cols, (col,row), projection=projection)
+            else:
+                ax = fig.add_subplot(1, 1, (1, 1), projection=projection)
             
-        return ax, kwargs
-    
-    def show_canvas(self, ax, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, legend=False, **kwargs):
-        ax.autoscale_view()
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        if xlim is not None: ax.set_xlim(xlim)
+        if ylim is not None: ax.set_ylim(ylim)
         if xlabel is not None: ax.set_xlabel(xlabel)
         if ylabel is not None: ax.set_ylabel(ylabel)
-        if zlabel is not None: ax.set_zlabel(zlabel)
         if title is not None: ax.set_title(title)
+        if projection == '3d':
+            if zlim is not None: ax.set_zlim(zlim)
+            if zlabel is not None: ax.set_zlabel(zlabel)
+        return ax, kwargs
+    
+    def show_canvas(self, ax, plots, legend=False, title=None, **kwargs):
+        ax.autoscale_view()
         fontdict=dict(family='sans-serif', weight='light', size=9)
         if legend is True:
             ax.legend(*ax.get_legend_handles_labels())
         elif legend >= 1:
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
-        if zlim is not None:
-            ax.set_zlim(zlim)
-        ax.figure.canvas.draw()
-        ax.figure.show()
+        if title is not None: ax.figure.suptitle(title)
         ax.figure.canvas.draw()
         return plots
     
@@ -158,12 +162,11 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             extent = (0, X.shape[0], 0, X.shape[1])
         xmin, xmax, ymin, ymax = extent
         xoffset, yoffset = (xmax - xmin) / (2. * X.shape[0]), (ymax - ymin) / (2. * X.shape[1])
-        xmin, xmax, ymin, ymax = extent = xmin+xoffset, xmax-xoffset, ymin+yoffset, ymax-yoffset
         xlin = np.linspace(xmin, xmax, X.shape[0], endpoint=False)
         ylin = np.linspace(ymin, ymax, X.shape[1], endpoint=False)
         annotations = []
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            annotations.append(ax.text(x, y, "{}".format(annotation[j, i]), **annotation_kwargs))
+            annotations.append(ax.text(x+xoffset, y+yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
         return imshow, annotations
 
     def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):

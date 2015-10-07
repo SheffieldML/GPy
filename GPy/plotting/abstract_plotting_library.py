@@ -64,7 +64,7 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
     
-    def get_new_canvas(self, projection='2d', figure=None, col=1, row=1, **kwargs):
+    def new_canvas(self, figure=None, col=1, row=1, projection='2d', xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
         """
         Return a canvas, kwargupdate for your plotting library. 
 
@@ -84,7 +84,7 @@ class AbstractPlottingLibrary(object):
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
 
-    def show_canvas(self, canvas, plots, xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, legend=True, **kwargs):
+    def show_canvas(self, canvas, plots, legend=True, title=None, **kwargs):
         """
         Show the canvas given. 
         plots is a dictionary with the plots

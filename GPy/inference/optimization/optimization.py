@@ -12,7 +12,7 @@ except ImportError:
     rasm_available = False
 from .scg import SCG
 
-class Optimizer():
+class Optimizer(object):
     """
     Superclass for all the optimizers.
 
@@ -55,16 +55,6 @@ class Optimizer():
 
     def opt(self, f_fp=None, f=None, fp=None):
         raise NotImplementedError("this needs to be implemented to use the optimizer class")
-
-    def plot(self):
-        """
-        See GPy.plotting.matplot_dep.inference_plots
-        """
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ...plotting.matplot_dep import inference_plots
-        inference_plots.plot_optimizer(self)
-
 
     def __str__(self):
         diagnostics = "Optimizer: \t\t\t\t %s\n" % self.opt_name

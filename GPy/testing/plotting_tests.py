@@ -30,14 +30,17 @@
 import numpy as np
 import GPy, os
 from nose import SkipTest
-from matplotlib.testing.compare import compare_images
-from matplotlib.testing.noseclasses import ImageComparisonFailure
+
+from ..util.config import config
+
+if config.get('plotting', 'library') != 'matplotlib':
+    raise SkipTest("Matplotlib not installed, not testing plots")
 
 try:
     from matplotlib import cbook, pyplot as plt
-    import matplotlib
-    matplotlib.rcParams['text.usetex'] = False
-except:
+    from matplotlib.testing.compare import compare_images
+    from matplotlib.testing.noseclasses import ImageComparisonFailure
+except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
 extensions = ['png']

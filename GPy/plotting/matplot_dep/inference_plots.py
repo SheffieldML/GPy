@@ -1,23 +1,19 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-try:
-    from matplotlib import pyplot as pb
-except:
-    pass
 #import numpy as np
 #import Tango
 #from base_plots import gpplot, x_frame1D, x_frame2D
 
+from . import plotting_library as pl
 
-def plot_optimizer(optimizer):
+def plot_optimizer(optimizer, **kwargs):
     if optimizer.trace == None:
         print("No trace present so I can't plot it. Please check that the optimizer actually supplies a trace.")
     else:
-        pb.figure()
-        pb.plot(optimizer.trace)
-        pb.xlabel('Iteration')
-        pb.ylabel('f(x)')
+        canvas, kwargs = pl.get_new_canvas(**kwargs)
+        plots = dict(trace=pl.plot(range(len(optimizer.trace)), optimizer.trace))
+        return pl.show_canvas(canvas, plots, xlabel='Iteration', ylabel='f(x)')
 
 def plot_sgd_traces(optimizer):
     pb.figure()

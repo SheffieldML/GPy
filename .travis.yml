@@ -6,15 +6,15 @@ os:
 
 #language: python
 
-addons:
-  apt:
-    packages:
-      - inkscape
-      - libav-tools
-      - gdb
+#addons:
+#  apt:
+#    packages:
+#      - inkscape
+#      - libav-tools
+#      - gdb
 #      - mencoder
-      - dvipng
-      - libpng
+#      - dvipng
+#      - libpng
 #      - gfortran
 #      - libatlas-dev
 #      - libatlas-base-dev

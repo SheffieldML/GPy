@@ -66,8 +66,8 @@ class InferenceXTestCase(unittest.TestCase):
         x, mi = m.infer_newX(m.Y)
 
         print(m.X.mean - mi.X.mean)
-        self.assertTrue(np.allclose(m.X.mean, mi.X.mean, rtol=1e-4, atol=1e-4))
-        self.assertTrue(np.allclose(m.X.variance, mi.X.variance, rtol=1e-4, atol=1e-4))
+        np.testing.assert_array_almost_equal(m.X.mean, mi.X.mean, decimal=2)
+        np.testing.assert_array_almost_equal(m.X.variance, mi.X.variance, decimal=2)
 
     def test_inferenceX_GPLVM(self):
         Ys = self.genData()

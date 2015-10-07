@@ -55,13 +55,15 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if 'ax' in kwargs:
             ax = kwargs.pop('ax')
         elif 'num' in kwargs and 'figsize' in kwargs:
-            fig = self.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection) 
+            fig = self.figure(num=kwargs.pop('num'), figsize=kwargs.pop('figsize'))
         elif 'num' in kwargs:
-            ax = self.figure(num=kwargs.pop('num')).add_subplot(111, projection=projection)
+            fig = self.figure(num=kwargs.pop('num'))
         elif 'figsize' in kwargs:
-            ax = self.figure(figsize=kwargs.pop('figsize')).add_subplot(111, projection=projection)
+            fig = self.figure(figsize=kwargs.pop('figsize'))
         else:
-            ax = self.figure().add_subplot(111, projection=projection)
+            fig = self.figure()
+        
+        ax = fig.add_subplot(self.rows, self.cols, )
             
         return ax, kwargs
     
@@ -83,11 +85,6 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             ax.set_zlim(zlim)
         ax.figure.canvas.draw()
         ax.figure.show()
-        #try:
-        #    ax.figure.tight_layout()
-        #except:
-        #    # couldnt do tight layout, python 2.7 on MacOSX
-        #    pass
         ax.figure.canvas.draw()
         return plots
     

@@ -48,7 +48,7 @@ def read(fname):
     except NameError:
         #python 3
         with open(os.path.join(os.path.dirname(__file__), fname)) as f:
-            return unicode(f.read(), 'utf-8')
+            return str(f.read(), 'utf-8')
 
 def read_to_rst(fname):
     try:

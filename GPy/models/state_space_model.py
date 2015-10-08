@@ -29,9 +29,10 @@ import GPy
 from .. import likelihoods
 
 from . import state_space_main as ssm
+from . import state_space_setup as ss_setup
 
 class StateSpace(Model):
-    def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', name='StateSpace'):
+    def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', use_cython = False, name='StateSpace'):
         super(StateSpace, self).__init__(name=name)
         self.num_data, input_dim = X.shape
         assert input_dim==1, "State space methods for time only"
@@ -43,9 +44,15 @@ class StateSpace(Model):
         assert self.output_dim == 1, "State space methods for single outputs only"
 
         self.kalman_filter_type = kalman_filter_type
-        self.kalman_filter_type = 'svd' # temp test
+        #self.kalman_filter_type = 'svd' # temp test
+        ss_setup.use_cython = use_cython
         
+        #import pdb; pdb.set_trace()
         
+        global ssm
+        #from . import state_space_main as ssm
+        if (ssm.cython_code_available) and (ssm.use_cython != ss_setup.use_cython):
+            reload(ssm)
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
         self.X = X[sort_index]
@@ -73,7 +80,7 @@ class StateSpace(Model):
         Parameters have now changed
         """
         np.set_printoptions(16)
-        print(self.param_array)
+        #print(self.param_array)
         #import pdb; pdb.set_trace()
         
         # Get the model matrices from the kernel
@@ -111,6 +118,10 @@ class StateSpace(Model):
         grad_calc_params['dP_init'] = dP0
         
         kalman_filter_type = self.kalman_filter_type
+             
+#        if ss_use_cython:
+#            reload(ssm)
+#        from . import state_space_main as ssm
         
         (filter_means, filter_covs, log_likelihood, 
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
@@ -123,10 +134,12 @@ class StateSpace(Model):
         #import pdb; pdb.set_trace()
         
         if np.any( np.isfinite(log_likelihood) == False):
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
+            print("State-Space: NaN valkues in the log_likelihood")
         
         if np.any( np.isfinite(grad_log_likelihood) == False):
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
+            print("State-Space: NaN valkues in the grad_log_likelihood")
         #print(grad_log_likelihood)
         
         grad_log_likelihood_sum = np.sum(grad_log_likelihood,axis=1)
@@ -191,16 +204,14 @@ class StateSpace(Model):
         (F,L,Qc,H,P_inf, P0, dF,dQc,dP_inf,dP0) = self.kern.sde()
         state_dim = F.shape[0]        
         
-        #import pdb; pdb.set_trace()
         #Y = self.Y[:, 0,0]
         # Run the Kalman filter
         #import pdb; pdb.set_trace()
-        
         kalman_filter_type = self.kalman_filter_type
         
-        (M, P, log_likelihood, 
+        (M, P, log_likelihood,
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(
-                                      F,L,Qc,H,float(self.Gaussian_noise.variance),P_inf,self.X,Y,m_init=None,
+                                      F,L,Qc,H,float(self.Gaussian_noise.variance),P_inf,X,Y,m_init=None,
                                       P_init=P0, p_kalman_filter_type = kalman_filter_type, 
                                       calc_log_likelihood=False, 
                                       calc_grad_log_likelihood=False)

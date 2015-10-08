@@ -12,21 +12,37 @@ import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
 
+
+#import pdb; pdb.set_trace()
+
+try:
+    import state_space_setup
+    setup_available = True
+except ImportError as e:
+    setup_available = False
+
+
 print_verbose = False
 
 try:
     import state_space_cython 
     cython_code_available = True
-    print("state_space: cython is available")
+    if print_verbose:
+        print("state_space: cython is available")
 except ImportError as e:
     cython_code_available = False
 
-
 #cython_code_available = False
-if cython_code_available:
-    print("state_space: cython is used")
-else:
-    print("state_space: cython is NOT used")
+# Use cython by default
+use_cython = False
+if setup_available:
+    use_cython = state_space_setup.use_cython
+
+if print_verbose:
+    if use_cython:
+        print("state_space: cython is used")
+    else:
+        print("state_space: cython is NOT used")
     
 class Dynamic_Callables_Python(object):
     
@@ -88,7 +104,7 @@ class Dynamic_Callables_Python(object):
         
         raise NotImplemented("reset is not implemented!")
         
-if cython_code_available:
+if use_cython:
     Dynamic_Callables_Class = state_space_cython.Dynamic_Callables_Cython
 else:
     Dynamic_Callables_Class = Dynamic_Callables_Python
@@ -157,7 +173,7 @@ class Measurement_Callables_Python(object):
         
         raise NotImplemented("reset is not implemented!")
 
-if cython_code_available:
+if use_cython:
     Measurement_Callables_Class = state_space_cython.Measurement_Callables_Cython
 else:
     Measurement_Callables_Class = Measurement_Callables_Python
@@ -241,7 +257,7 @@ class R_handling_Python(Measurement_Callables_Class):
                 
         return inv_square_root
 
-if cython_code_available:
+if use_cython:
     R_handling_Class = state_space_cython.R_handling_Cython
 else:
     R_handling_Class = R_handling_Python
@@ -281,7 +297,7 @@ class Std_Measurement_Callables_Python(R_handling_Class):
     
         return self.dH # the same dirivative on each iteration
 
-if cython_code_available:
+if use_cython:
     Std_Measurement_Callables_Class = state_space_cython.Std_Measurement_Callables_Cython
 else:
     Std_Measurement_Callables_Class = Std_Measurement_Callables_Python
@@ -374,7 +390,7 @@ class Q_handling_Python(Dynamic_Callables_Class):
             
         return square_root
 
-if cython_code_available:
+if use_cython:
     Q_handling_Class = state_space_cython.Q_handling_Cython
 else:
     Q_handling_Class = Q_handling_Python
@@ -382,7 +398,7 @@ else:
 class Std_Dynamic_Callables_Python(Q_handling_Class):
     
     def __init__(self, A, A_time_var_index, Q, index, Q_time_var_index, unique_Q_number, dA = None, dQ=None):
-        super(Std_Measurement_Callables_Python,self).__init__(Q, index, Q_time_var_index, unique_Q_number,dQ)
+        super(Std_Dynamic_Callables_Python,self).__init__(Q, index, Q_time_var_index, unique_Q_number,dQ)
     
         self.A = A
         self.A_time_var_index = A_time_var_index
@@ -414,8 +430,15 @@ class Std_Dynamic_Callables_Python(Q_handling_Class):
             raise ValueError("dA derivative is None")
     
         return self.dA # the same dirivative on each iteration
-
-if cython_code_available:
+        
+    def reset(self,compute_derivatives = False):
+        """
+        Return the state of this object to the beginning of iteration (to k eq. 0)
+        """        
+        
+        return self
+    
+if use_cython:
     Std_Dynamic_Callables_Class = state_space_cython.Std_Dynamic_Callables_Cython
 else:
     Std_Dynamic_Callables_Class = Std_Dynamic_Callables_Python
@@ -460,7 +483,7 @@ class DescreteStateSpaceMeta(type):
         After thos method the class object is created
         """
         
-        if cython_code_available:
+        if use_cython:
             if '_kalman_prediction_step_SVD' in attributes:
                 attributes['_kalman_prediction_step_SVD'] = AddMethodToClass(state_space_cython._kalman_prediction_step_SVD_Cython)
                 
@@ -542,7 +565,8 @@ class DescreteStateSpace(object):
             
     @classmethod
     def kalman_filter(cls,p_A, p_Q, p_H, p_R, Y, index = None, m_init=None,
-                      P_init=None, calc_log_likelihood=False, 
+                      P_init=None, p_kalman_filter_type='regular',
+                      calc_log_likelihood=False, 
                       calc_grad_log_likelihood=False, grad_params_no=None,
                       grad_calc_params=None):
         """
@@ -670,7 +694,9 @@ class DescreteStateSpace(object):
             use in smoother for convenience. They are: 'p_a', 'p_f_A', 'p_f_Q'
             The dictionary contains the same fields.
         """
-    
+        
+        #import pdb; pdb.set_trace()
+        
         # Parameters checking ->
         # index        
         p_A = np.atleast_1d(p_A)
@@ -735,6 +761,9 @@ class DescreteStateSpace(object):
             P_init = np.eye(state_dim)    
         elif not isinstance(P_init, collections.Iterable): #scalar
             P_init = P_init*np.eye(state_dim)
+        
+        if p_kalman_filter_type not in ('regular', 'svd'):
+            raise ValueError("Kalman filer type neither 'regular nor 'svd'.")
             
         # Functions to pass to the kalman_filter algorithm:
         # Parameters:
@@ -745,7 +774,6 @@ class DescreteStateSpace(object):
         c_p_Q = p_A.copy() # create a copy because this object is passed to the smoother
         c_index = index.copy() # create a copy because this object is passed to the smoother
         
-        grad_calc_params_pass_further = None
         if calc_grad_log_likelihood:
             if model_matrices_chage_with_time:
                 raise ValueError("When computing likelihood gradient A and Q can not change over time.")    
@@ -757,25 +785,32 @@ class DescreteStateSpace(object):
 
             dm_init = grad_calc_params.get('dm_init')
             if dm_init is None:
+                 # multiple time series mode. Keep grad_params always as a last dimension
                 dm_init = np.zeros((state_dim, time_series_no, grad_params_no))
                 
             dP_init = grad_calc_params.get('dP_init')
             if dP_init is None:
                 dP_init = np.zeros((state_dim,state_dim,grad_params_no))
+        else:
+            dA = None
+            dQ = None
+            dH = None
+            dR = None
+            dm_init = None
+            dP_init = None
             
-            grad_calc_params_pass_further = {}
-            grad_calc_params_pass_further['dm_init'] = dm_init
-            grad_calc_params_pass_further['dP_init'] = dP_init
-        
         dynamic_callables = Std_Dynamic_Callables_Class(c_p_A, A_time_var_index, c_p_Q, c_index, Q_time_var_index, 20, dA, dQ)
         measurement_callables = Std_Measurement_Callables_Class(p_H, H_time_var_index, p_R, index, R_time_var_index, 20, dH, dR)
         
-        (M, P,log_likelihood, grad_log_likelihood) = cls._kalman_algorithm_raw(state_dim, dynamic_callables,
+        (M, P,log_likelihood, grad_log_likelihood, dynamic_callables) = \
+            cls._kalman_algorithm_raw(state_dim, dynamic_callables,
                                     measurement_callables, Y, m_init,
-                                    P_init, calc_log_likelihood=calc_log_likelihood, 
+                                    P_init, p_kalman_filter_type = p_kalman_filter_type,
+                                    calc_log_likelihood=calc_log_likelihood, 
                                     calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                                    grad_calc_params=grad_calc_params_pass_further)
-                          
+                                    grad_params_no=grad_params_no,
+                                    dm_init=dm_init, dP_init=dP_init)
+        
         # restore shapes so that input parameters are unchenged
         if old_index_shape is not None:
             index.shape = old_index_shape
@@ -968,8 +1003,10 @@ class DescreteStateSpace(object):
         
     @classmethod
     def _kalman_algorithm_raw(cls,state_dim, p_dynamic_callables, p_measurement_callables, Y, m_init,
-                          P_init, calc_log_likelihood=False, 
-                          calc_grad_log_likelihood=False, grad_calc_params=None):
+                          P_init, p_kalman_filter_type='regular',
+                          calc_log_likelihood=False, 
+                          calc_grad_log_likelihood=False, grad_params_no=None,
+                          dm_init=None, dP_init=None):
         """
         General nonlinear filtering algorithm for inference in the state-space 
         model:
@@ -1040,6 +1077,9 @@ class DescreteStateSpace(object):
             "multiple time series mode" does not affect it, since it does not
             affect anything related to state variaces.
             
+        p_kalman_filter_type: string
+        
+        
         calc_log_likelihood: boolean
             Whether to calculate marginal likelihood of the state-space model.
             
@@ -1081,19 +1121,21 @@ class DescreteStateSpace(object):
         steps_no = Y.shape[0] # number of steps in the Kalman Filter
         time_series_no = Y.shape[2] # multiple time series mode
             
-        if calc_grad_log_likelihood:
-            dm_init = grad_calc_params['dm_init']; dP_init = grad_calc_params['dP_init']
-        else:
-            dm_init = None; dP_init = None
-                    
         # Allocate space for results
         # Mean estimations. Initial values will be included
         M = np.empty(((steps_no+1),state_dim,time_series_no))
         M[0,:,:] = m_init # Initialize mean values
         # Variance estimations. Initial values will be included
         P = np.empty(((steps_no+1),state_dim,state_dim))
+        P_init = 0.5*( P_init + P_init.T) # symmetrize initial covariance. In some ustable cases this is uiseful
         P[0,:,:] = P_init # Initialize initial covariance matrix
         
+        if p_kalman_filter_type == 'svd':
+            (U,S,Vh) = sp.linalg.svd( P_init,full_matrices=False, compute_uv=True, 
+                      overwrite_a=False,check_finite=True)
+            S[ (S==0) ] = 1e-17 # allows to run algorithm for singular initial variance
+            P_upd = (P_init, S,U)
+            
         log_likelihood = 0 if calc_log_likelihood else None
         grad_log_likelihood = 0 if calc_grad_log_likelihood else None
         
@@ -1107,21 +1149,63 @@ class DescreteStateSpace(object):
                 
             prev_mean = M[k,:,:] # mean from the previous step
 
-            m_pred, P_pred, dm_pred, dP_pred = \
-            cls._kalman_prediction_step(k, prev_mean ,P[k,:,:], p_dynamic_callables, 
-                calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                p_dm = dm_upd, p_dP = dP_upd)
+            if p_kalman_filter_type == 'svd':            
+                m_pred, P_pred, dm_pred, dP_pred = \
+                cls._kalman_prediction_step_SVD(k, prev_mean ,P_upd, p_dynamic_callables,
+                    calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                    p_dm = dm_upd, p_dP = dP_upd)
+            else:
+                m_pred, P_pred, dm_pred, dP_pred = \
+                cls._kalman_prediction_step(k, prev_mean ,P[k,:,:], p_dynamic_callables, 
+                    calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                    p_dm = dm_upd, p_dP = dP_upd )            
             
             k_measurment = Y[k,:,:]
                 
-            if np.any(np.isnan(k_measurment)):
-                raise ValueError("Nan measurements are currently not supported")
+            if (np.any(np.isnan(k_measurment)) == False):
+                if p_kalman_filter_type == 'svd':            
+                    m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+                    cls._kalman_update_step_SVD(k,  m_pred , P_pred, p_measurement_callables, 
+                            k_measurment, calc_log_likelihood=calc_log_likelihood, 
+                            calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                            p_dm = dm_pred, p_dP = dP_pred )
+                            
+                            
+    #                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+    #                cls._kalman_update_step(k,  m_pred , P_pred[0], f_h, f_H, p_R.f_R, k_measurment, 
+    #                        calc_log_likelihood=calc_log_likelihood, 
+    #                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
+    #                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = (dH, dR))
+    #                        
+    #                (U,S,Vh) = sp.linalg.svd( P_upd,full_matrices=False, compute_uv=True, 
+    #                      overwrite_a=False,check_finite=True)
+    #                P_upd = (P_upd, S,U)
+                else:
+                    m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+                    cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
+                            calc_log_likelihood=calc_log_likelihood, 
+                            calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                            p_dm = dm_pred, p_dP = dP_pred )
+                            
+            else:
+#                if k_measurment.shape != (1,1):
+#                    raise ValueError("Nan measurements are currently not supported for \
+#                                     multidimensional output and multiple time series.")
+#                else:
+#                    m_upd = m_pred; P_upd = P_pred; dm_upd = dm_pred; dP_upd = dP_pred
+#                    log_likelihood_update = 0.0;
+#                    d_log_likelihood_update = 0.0;
             
-            m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-            cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
-                        calc_log_likelihood=calc_log_likelihood, 
-                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred)                
+                if not np.all(np.isnan(k_measurment)):
+                    raise ValueError("""Nan measurements are currently not supported if
+                                     they are intermixed with not NaN measurements""")
+                else:
+                    m_upd = m_pred; P_upd = P_pred; dm_upd = dm_pred; dP_upd = dP_pred
+                    if calc_log_likelihood:
+                        log_likelihood_update = np.zeros((time_series_no,))
+                    if calc_grad_log_likelihood:
+                        d_log_likelihood_update = np.zeros((grad_params_no,time_series_no))
+            
             
             if calc_log_likelihood:
                 log_likelihood += log_likelihood_update
@@ -1131,7 +1215,10 @@ class DescreteStateSpace(object):
                 
             M[k+1,:,:] = m_upd # separate mean value for each time series
                 
-            P[k+1,:,:] = P_upd
+            if p_kalman_filter_type == 'svd':            
+                P[k+1,:,:] = P_upd[0]
+            else:
+                P[k+1,:,:] = P_upd
         
         # !!!Print statistics! Print sizes of matrices
         # !!!Print statistics! Print iteration time base on another boolean variable
@@ -1372,6 +1459,7 @@ class DescreteStateSpace(object):
             adds extra columns to the gradient.
         
         """        
+        #import pdb; pdb.set_trace()
         
         m_pred = p_m # from prediction step
         P_pred = p_P # from prediction step      
@@ -1596,19 +1684,27 @@ class DescreteStateSpace(object):
         S = H.dot(P_pred).dot(H.T) + R
         if measurement.shape[0]==1: # measurements are one dimensional
             if (S < 0):
-                raise ValueError("Kalman Filter Update SVD: S is negative step %i" % k )
-                #import pdb; pdb.set_trace()
+                raise ValueError("Kalman Filter Update: S is negative step %i" % k )
+                 #import pdb; pdb.set_trace()
                  
             K = P_pred.dot(H.T) / S
             if calc_log_likelihood:
                 log_likelihood_update = -0.5 * ( np.log(2*np.pi) + np.log(S) +
-                                     v*v / S)
+                                    v*v / S)
+                #log_likelihood_update = log_likelihood_update[0,0] # to make int
                 if np.any(np.isnan(log_likelihood_update)): # some member in P_pred is None.
                     raise ValueError("Nan values in likelihood update!")
             LL = None; islower = None
         else:
-            raise ValueError("""Measurement dimension larger then 1 is currently not supported""")
-         
+            LL,islower = linalg.cho_factor(S)
+            K = linalg.cho_solve((LL,islower), H.dot(P_pred.T)).T
+             
+            if calc_log_likelihood:
+                log_likelihood_update = -0.5 * ( v.shape[0]*np.log(2*np.pi) + 
+                    2*np.sum( np.log(np.diag(LL)) ) +\
+                        np.sum((linalg.cho_solve((LL,islower),v)) * v, axis = 0) ) # diagonal of v.T*S^{-1}*v        
+        
+        
         # Old  method of computing updated covariance (for testing) ->
         #P_upd_tst = K.dot(S).dot(K.T)
         #P_upd_tst = 0.5*(P_upd_tst + P_upd_tst.T)
@@ -1816,7 +1912,7 @@ class DescreteStateSpace(object):
                             p_m ,filter_covars[k,:,:], 
                             m_pred, P_pred, p_m_prev_step ,P[k+1,:,:], p_dynamic_callables)
                       
-            M[k,:] = np.squeeze(m_upd)
+            M[k,:] = m_upd#np.squeeze(m_upd)
             P[k,:,:] = P_upd
             #G[k,:,:] = G_upd.T # store transposed G.
         # Return values
@@ -2545,13 +2641,10 @@ class ContDescrStateSpace(DescreteStateSpace):
             raise ValueError("Only one dimensional X data is supported.")
         
         Y.shape, old_Y_shape  = cls._reshape_input_data(Y.shape) # represent as column
+        
         state_dim = F.shape[0]
         measurement_dim = Y.shape[1]
-        
-        if len(Y.shape) == 2: 
-            time_series_no = 1 # regular case
-        elif len(Y.shape) == 3:
-            time_series_no = Y.shape[2] # multiple time series mode
+        time_series_no = Y.shape[2] # multiple time series mode
             
         if  ((len(p_H.shape) == 3) and (len(p_H.shape[2]) != 1)) or\
             ((len(p_R.shape) == 3) and (len(p_R.shape[2]) != 1)):
@@ -2592,8 +2685,6 @@ class ContDescrStateSpace(DescreteStateSpace):
         if P_init is None:
             P_init = P_inf.copy()
             
-            
-            
         if p_kalman_filter_type not in ('regular', 'svd'):
             raise ValueError("Kalman filer type neither 'regular nor 'svd'.")
             
@@ -2608,8 +2699,8 @@ class ContDescrStateSpace(DescreteStateSpace):
         
         if calc_grad_log_likelihood:
             
-            dF = cls._check_grad_state_matrices( grad_calc_params.get('dF'), state_dim, grad_params_no, which = 'dA') 
-            dQc = cls._check_grad_state_matrices( grad_calc_params.get('dQc'), state_dim, grad_params_no, which = 'dQ')
+            dF = cls._check_grad_state_matrices(grad_calc_params.get('dF'), state_dim, grad_params_no, which = 'dA') 
+            dQc = cls._check_grad_state_matrices(grad_calc_params.get('dQc'), state_dim, grad_params_no, which = 'dQ')
             dP_inf = cls._check_grad_state_matrices(grad_calc_params.get('dP_inf'), state_dim, grad_params_no, which = 'dA')
             
             dH = cls._check_grad_measurement_matrices(grad_calc_params.get('dH'), state_dim, grad_params_no, measurement_dim, which = 'dH')
@@ -2670,10 +2761,11 @@ class ContDescrStateSpace(DescreteStateSpace):
         
     @classmethod
     def _cont_discr_kalman_filter_raw(cls,state_dim, p_dynamic_callables, p_measurement_callables, X, Y, 
-                                      m_init=None, P_init=None, 
+                                      m_init, P_init, 
                                       p_kalman_filter_type='regular',
                                       calc_log_likelihood=False, 
-                      calc_grad_log_likelihood=False, grad_params_no=None, dm_init=None, dP_init=None):
+                      calc_grad_log_likelihood=False, grad_params_no=None, 
+                      dm_init=None, dP_init=None):
         """
         General filtering algorithm for inference in the continuos-discrete 
         state-space model:
@@ -2772,7 +2864,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         P_init = 0.5*( P_init + P_init.T) # symmetrize initial covariance. In some ustable cases this is uiseful
         P[0,:,:] = P_init # Initialize initial covariance matrix
         
-        #import pdb; pdb.set_trace()
+        #import pdb;pdb.set_trace()
         if p_kalman_filter_type == 'svd':
             (U,S,Vh) = sp.linalg.svd( P_init,full_matrices=False, compute_uv=True, 
                       overwrite_a=False,check_finite=True)
@@ -2798,43 +2890,51 @@ class ContDescrStateSpace(DescreteStateSpace):
                 m_pred, P_pred, dm_pred, dP_pred = \
                 cls._kalman_prediction_step_SVD(k, prev_mean ,P_upd, p_dynamic_callables,
                     calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                    p_dm = dm_upd, p_dP = dP_upd )
+                    p_dm = dm_upd, p_dP = dP_upd)
             else:
                 m_pred, P_pred, dm_pred, dP_pred = \
-                cls._kalman_prediction_step(k, M[k,:] ,P[k,:,:], p_dynamic_callables, 
+                cls._kalman_prediction_step(k, prev_mean ,P[k,:,:], p_dynamic_callables, 
                     calc_grad_log_likelihood=calc_grad_log_likelihood, 
                     p_dm = dm_upd, p_dP = dP_upd )
             
             #import pdb; pdb.set_trace()
             k_measurment = Y[k,:,:]
                 
-            if np.any(np.isnan(k_measurment)):
-                raise ValueError("Nan measurements are currently not supported")
+            if (np.any(np.isnan(k_measurment)) == False):
                 
-            if p_kalman_filter_type == 'svd':            
-                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-                cls._kalman_update_step_SVD(k,  m_pred , P_pred, p_measurement_callables, 
-                        k_measurment, calc_log_likelihood=calc_log_likelihood, 
-                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred )
-                        
-                        
-#                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-#                cls._kalman_update_step(k,  m_pred , P_pred[0], f_h, f_H, p_R.f_R, k_measurment, 
-#                        calc_log_likelihood=calc_log_likelihood, 
-#                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
-#                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = (dH, dR))
-#                        
-#                (U,S,Vh) = sp.linalg.svd( P_upd,full_matrices=False, compute_uv=True, 
-#                      overwrite_a=False,check_finite=True)
-#                P_upd = (P_upd, S,U)
+                if p_kalman_filter_type == 'svd':            
+                    m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+                    cls._kalman_update_step_SVD(k,  m_pred , P_pred, p_measurement_callables, 
+                            k_measurment, calc_log_likelihood=calc_log_likelihood, 
+                            calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                            p_dm = dm_pred, p_dP = dP_pred )
+                            
+                            
+    #                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+    #                cls._kalman_update_step(k,  m_pred , P_pred[0], f_h, f_H, p_R.f_R, k_measurment, 
+    #                        calc_log_likelihood=calc_log_likelihood, 
+    #                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
+    #                        p_dm = dm_pred, p_dP = dP_pred, grad_calc_params_2 = (dH, dR))
+    #                        
+    #                (U,S,Vh) = sp.linalg.svd( P_upd,full_matrices=False, compute_uv=True, 
+    #                      overwrite_a=False,check_finite=True)
+    #                P_upd = (P_upd, S,U)
+                else:
+                    m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+                    cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
+                            calc_log_likelihood=calc_log_likelihood, 
+                            calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                            p_dm = dm_pred, p_dP = dP_pred )                
             else:
-                m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-                cls._kalman_update_step(k,  m_pred , P_pred, p_measurement_callables, k_measurment, 
-                        calc_log_likelihood=calc_log_likelihood, 
-                        calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                        p_dm = dm_pred, p_dP = dP_pred )                
-            
+                if k_measurment.shape != (1,1):
+                    raise ValueError("Nan measurements are currently not supported for \
+                                     multidimensional output and multiple tiem series.")
+                else:
+                    m_upd = m_pred; P_upd = P_pred; dm_upd = dm_pred; dP_upd = dP_pred
+                    log_likelihood_update = 0.0;
+                    d_log_likelihood_update = 0.0;
+                
+                
             if calc_log_likelihood:
                 log_likelihood += log_likelihood_update
             
@@ -2882,7 +2982,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             A, Q, dA, dQ fro  discrete model from the continuos model.
         
          X, F, L, Qc: matrices
-             If AQcomp thiese matrices are used to create this object from scratch.
+             If AQcomp is None, these matrices are used to create this object from scratch.
         
         Output:
         -------------
@@ -2973,7 +3073,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         number_unique_indices = len(unique_indices)
         
         #import pdb; pdb.set_trace()
-        if cython_code_available:
+        if use_cython:
             class AQcompute_batch(state_space_cython.AQcompute_batch_Cython):
                 def __init__(self, F,L,Qc,dt,compute_derivatives=False, grad_params_no=None, P_inf=None, dP_inf=None, dF = None, dQc=None):
                     As, Qs, reconstruct_indices, dAs, dQs = ContDescrStateSpace.lti_sde_to_descrete(F,

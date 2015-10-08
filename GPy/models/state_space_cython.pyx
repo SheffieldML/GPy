@@ -7,6 +7,10 @@ cimport numpy as np
 import scipy as sp
 cimport cython
 
+#from libc.math cimport isnan # for nan checking in kalman filter cycle
+cdef extern from "numpy/npy_math.h":
+    bint npy_isnan(double x)
+
 DTYPE = np.float64
 DTYPE_int = np.int64
 
@@ -913,6 +917,8 @@ def _cont_discr_kalman_filter_raw_Cython(int state_dim, Dynamic_Callables_Cython
     cdef np.ndarray[DTYPE_t, ndim=3] dm_pred, dP_pred
     cdef np.ndarray[DTYPE_t, ndim=2] log_likelihood_update, d_log_likelihood_update
     cdef int k
+    
+    #print "Hi I am cython"
     for k in range(0,steps_no):
         # In this loop index for new estimations is (k+1), old - (k)
         # This happened because initial values are stored at 0-th index.                 
@@ -925,16 +931,27 @@ def _cont_discr_kalman_filter_raw_Cython(int state_dim, Dynamic_Callables_Cython
             calc_grad_log_likelihood, dm_upd, dP_upd)
         
         k_measurment = Y[k,:,:]
-            
+        if (np.any(np.isnan(k_measurment)) == False):
 #        if np.any(np.isnan(k_measurment)):
 #            raise ValueError("Nan measurements are currently not supported")
              
-        m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
-        _kalman_update_step_SVD_Cython(k,  m_pred , P_pred, p_measurement_callables, 
-                k_measurment, calc_log_likelihood=calc_log_likelihood, 
-                calc_grad_log_likelihood=calc_grad_log_likelihood, 
-                p_dm = dm_pred, p_dP = dP_pred)
-        
+            m_upd, P_upd, log_likelihood_update, dm_upd, dP_upd, d_log_likelihood_update = \
+            _kalman_update_step_SVD_Cython(k,  m_pred , P_pred, p_measurement_callables, 
+                    k_measurment, calc_log_likelihood=calc_log_likelihood, 
+                    calc_grad_log_likelihood=calc_grad_log_likelihood, 
+                    p_dm = dm_pred, p_dP = dP_pred)
+        else:
+            if not np.all(np.isnan(k_measurment)):
+                    raise ValueError("""Nan measurements are currently not supported if
+                                     they are intermixed with not NaN measurements""")
+            else:
+                m_upd = m_pred; P_upd = P_pred; dm_upd = dm_pred; dP_upd = dP_pred
+                if calc_log_likelihood:
+                    log_likelihood_update = np.zeros((1,time_series_no))
+                if calc_grad_log_likelihood:
+                    d_log_likelihood_update = np.zeros((grad_params_no,time_series_no))
+                    
+            
         if calc_log_likelihood:
             log_likelihood += log_likelihood_update
         

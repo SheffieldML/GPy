@@ -29,6 +29,7 @@
 #===============================================================================
 
 from .. import Tango
+from plotly.graph_objs import Line
 
 '''
 This file is for defaults for the gpy plot, specific to the plotting library.
@@ -42,21 +43,22 @@ it gives back an empty default, when defaults are not defined.
 '''
 
 # Data plots:
-data_1d = dict(marker_kwargs=dict(linewidth=.7, ), marker='x', color='black')
-data_2d = dict(marker='o', cmap='Hot', marker_kwargs=dict(opacity=.5))
-# inducing_1d = dict(lw=0, s=500, facecolors=Tango.colorsHex['darkRed'])
-# inducing_2d = dict(s=14, edgecolors='k', linewidth=.4, facecolors='white', alpha=.5)
-# inducing_3d = dict(lw=.3, s=500, facecolors='white', edgecolors='k')
+data_1d = dict(marker_kwargs=dict(), marker='x', color='black')
+data_2d = dict(marker='o', cmap='Hot', marker_kwargs=dict(opacity=1., size='10', line=Line(width=.5, color='black')))
+inducing_1d = dict(color=Tango.colorsHex['darkRed'])
+inducing_2d = dict(marker_kwargs=dict(size='8', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
+inducing_3d = dict(marker_kwargs=dict(size='8', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
 # xerrorbar = dict(color='k', fmt='none', elinewidth=.5, alpha=.5)
 yerrorbar = dict(color=Tango.colorsHex['darkRed'], error_kwargs=dict(thickness=.5), opacity=.5)
 # 
 # # GP plots:
-# meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
-# meanplot_2d = dict(cmap='hot', linewidth=.5)
-# meanplot_3d = dict(linewidth=0, antialiased=True, cstride=1, rstride=1, cmap='hot', alpha=.3)
-# samples_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=.3)
-# samples_3d = dict(cmap='hot', alpha=.1, antialiased=True, cstride=1, rstride=1, linewidth=0)
-# confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'], linewidth=.5, color=Tango.colorsHex['lightBlue'],alpha=.2)
+meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], line_kwargs=dict(width=2))
+meanplot_2d = dict(colorscale='Hot')
+meanplot_3d = dict(colorscale='Hot', opacity=.8)
+samples_1d = dict(color=Tango.colorsHex['mediumBlue'], line_kwargs=dict(width=.3))
+samples_3d = dict(cmap='Hot', opacity=.5)
+confidence_interval = dict(mode='lines', line_kwargs=dict(color=Tango.colorsHex['darkBlue'], width=.4), 
+                           color=Tango.colorsHex['lightBlue'], opacity=.3)
 # density = dict(alpha=.5, color=Tango.colorsHex['lightBlue'])
 # 
 # # GPLVM plots:
@@ -67,8 +69,8 @@ yerrorbar = dict(color=Tango.colorsHex['darkRed'], error_kwargs=dict(thickness=.
 # ard = dict(edgecolor='k', linewidth=1.2)
 # 
 # # Input plots:
-# latent = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
-# gradient = dict(aspect='auto', cmap='RdBu', interpolation='nearest', alpha=.7)
-# magnification = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
-# latent_scatter = dict(s=40, linewidth=.2, edgecolor='k', alpha=.9)
+latent = dict(colorscale='Greys', reversescale=True)
+gradient = dict(colorscale='RdBu', opacity=.7)
+magnification = dict(colorscale='Greys')
+latent_scatter = dict(marker_kwargs=dict(size='15', opacity=.7))
 # annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)

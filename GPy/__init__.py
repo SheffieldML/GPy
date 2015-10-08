@@ -17,6 +17,8 @@ from numpy.testing import Tester
 from . import kern
 from . import plotting
 
+from .plotting import plotting_library
+
 # Direct imports for convenience:
 from .core import Model
 from .core.parameterization import Param, Parameterized, ObsAr

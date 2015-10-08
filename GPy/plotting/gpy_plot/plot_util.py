@@ -282,12 +282,12 @@ def get_x_y_var(model):
     :returns: (X, X_variance, Y) 
     """
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
-        X = model.X.mean
-        X_variance = model.X.variance
+        X = model.X.mean.values
+        X_variance = model.X.variance.values
     else:
-        X = model.X
+        X = model.X.values
         X_variance = None
-    Y = model.Y
+    Y = model.Y.values
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 

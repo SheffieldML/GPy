@@ -40,7 +40,7 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
               apply_link=False, visible_dims=None,
               which_data_ycols='all',
               levels=20, projection='2d',
-              label=None,
+              label='gp mean',
               predict_kw=None,
               **kwargs):
     """
@@ -70,8 +70,7 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
                                           predict_kw)
     plots = _plot_mean(self, canvas, helper_data, helper_prediction, 
                        levels, projection, label, **kwargs)
-    pl.add_to_canvas(canvas, plots)
-    return pl.show_canvas(canvas)
+    return pl.add_to_canvas(canvas, plots)
 
 def _plot_mean(self, canvas, helper_data, helper_prediction, 
               levels=20, projection='2d', label=None,
@@ -87,7 +86,7 @@ def _plot_mean(self, canvas, helper_data, helper_prediction,
         else:
             if projection == '2d':
                 update_not_existing_kwargs(kwargs, pl.defaults.meanplot_2d)  # @UndefinedVariable
-                plots = dict(gpmean=[pl.contour(canvas, x, y, 
+                plots = dict(gpmean=[pl.contour(canvas, x[:,0], y[0,:], 
                                                mu.reshape(resolution, resolution), 
                                                levels=levels, label=label, **kwargs)])
             elif projection == '3d':
@@ -105,7 +104,7 @@ def _plot_mean(self, canvas, helper_data, helper_prediction,
 def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
               apply_link=False, visible_dims=None,
-              which_data_ycols='all', label=None,
+              which_data_ycols='all', label='gp confidence',
               predict_kw=None, 
               **kwargs):
     """
@@ -157,7 +156,7 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=True,
               apply_link=False, visible_dims=None,
               which_data_ycols='all',
-              samples=3, projection='2d', label=None,
+              samples=3, projection='2d', label='gp_samples',
               predict_kw=None,
               **kwargs):
     """
@@ -214,7 +213,7 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
               resolution=None, plot_raw=False,
               apply_link=False, visible_dims=None, 
               which_data_ycols='all',
-              levels=35, label=None, 
+              levels=35, label='gp density', 
               predict_kw=None, 
               **kwargs):
     """
@@ -270,7 +269,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
               visible_dims=None, 
               levels=20, samples=0, samples_likelihood=0, lower=2.5, upper=97.5, 
               plot_data=True, plot_inducing=True, plot_density=False,
-              predict_kw=None, projection='2d', **kwargs):  
+              predict_kw=None, projection='2d', legend=False, **kwargs):  
     """
     Convinience function for plotting the fit of a GP.
     
@@ -311,18 +310,18 @@ def plot(self, plot_limits=None, fixed_inputs=None,
         plot_data = False
     plots = {}
     if plot_data:
-        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection))
-        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection))
+        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data"))
+        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data Error"))
     plots.update(_plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing, plot_density, projection))
     if plot_raw and (samples_likelihood > 0):
         helper_prediction = helper_predict_with_model(self, helper_data[5], False, 
                                       apply_link, None, 
                                       get_which_data_ycols(self, which_data_ycols), 
                                       predict_kw, samples_likelihood)
-        plots.update(_plot_samples(canvas, helper_data, helper_prediction, projection))
+        plots.update(_plot_samples(canvas, helper_data, helper_prediction, projection, "Lik Samples"))
     if hasattr(self, 'Z') and plot_inducing:
-        plots.update(_plot_inducing(self, canvas, visible_dims, projection, None))
-    return pl.add_to_canvas(canvas, plots)
+        plots.update(_plot_inducing(self, canvas, visible_dims, projection, 'Inducing'))
+    return pl.add_to_canvas(canvas, plots, legend=legend)
 
 
 def plot_f(self, plot_limits=None, fixed_inputs=None,
@@ -333,7 +332,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
               levels=20, samples=0, lower=2.5, upper=97.5, 
               plot_density=False,
               plot_data=True, plot_inducing=True,
-              projection='2d', 
+              projection='2d', legend=False,
               predict_kw=None, 
               **kwargs):  
     """
@@ -366,35 +365,27 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
     :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    canvas, _ = pl.new_canvas(projection=projection, **kwargs)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], True, 
-                                          apply_link, np.linspace(2.5, 97.5, levels*2) if plot_density else (lower,upper), 
-                                          get_which_data_ycols(self, which_data_ycols), 
-                                          predict_kw, samples)
-    if not apply_link:
-        # It does not make sense to plot the data (which lives not in the latent function space) into latent function space. 
-        plot_data = False
-    plots = {}
-    if plot_data:
-        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection))
-        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection))
-    plots.update(_plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing, plot_density, projection))
-    if hasattr(self, 'Z') and plot_inducing:
-        plots.update(_plot_inducing(self, canvas, visible_dims, projection, None))
-    return pl.add_to_canvas(canvas, plots)
+    plot(self, plot_limits, fixed_inputs, resolution, True, 
+         apply_link, which_data_ycols, which_data_rows, 
+         visible_dims, levels, samples, 0,
+         lower, upper, plot_data, plot_inducing, 
+         plot_density, predict_kw, projection, legend)
 
 
 
 def _plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing=True, plot_density=False, projection='2d'):    
-        plots.update(_plot_mean(self, canvas, helper_data, helper_prediction, levels, projection, None))
+        plots.update(_plot_mean(self, canvas, helper_data, helper_prediction, levels, projection, 'Mean'))
         
-        if projection=='2d':
-            if not plot_density:
-                plots.update(_plot_confidence(self, canvas, helper_data, helper_prediction, None))
-            else:
-                plots.update(_plot_density(self, canvas, helper_data, helper_prediction, None))
+        try:
+            if projection=='2d':
+                if not plot_density:
+                    plots.update(_plot_confidence(self, canvas, helper_data, helper_prediction, "Confidence"))
+                else:
+                    plots.update(_plot_density(self, canvas, helper_data, helper_prediction, "Density"))
+        except RuntimeError:
+            #plotting in 2d
+            pass
         
         if helper_prediction[2] is not None:
-            plots.update(_plot_samples(self, canvas, helper_data, helper_prediction, projection, None))        
+            plots.update(_plot_samples(self, canvas, helper_data, helper_prediction, projection, "Samples"))        
         return plots

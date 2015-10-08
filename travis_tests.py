@@ -32,11 +32,11 @@
 #!/usr/bin/env python
 
 import matplotlib 
-matplotlib.use('agg')
 matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+matplotlib.use('agg')
 matplotlib.rcParams[u'figure.figsize'] = (4,3)
 matplotlib.rcParams[u'text.usetex'] = False
 
 import nose 
-nose.main('GPy', defaultTest='GPy/testing/plotting_tests.py')  
+nose.main('GPy', defaultTest='GPy/testing')  
 

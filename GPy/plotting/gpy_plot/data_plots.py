@@ -123,7 +123,7 @@ def plot_data_error(self, which_data_rows='all',
 
 def _plot_data_error(self, canvas, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        projection='2d', **error_kwargs):
+        projection='2d', label=None, **error_kwargs):
     ycols = get_which_data_ycols(self, which_data_ycols)
     rows = get_which_data_rows(self, which_data_rows)
 
@@ -139,17 +139,17 @@ def _plot_data_error(self, canvas, which_data_rows='all',
             for d in ycols:
                     update_not_existing_kwargs(error_kwargs, pl.defaults.xerrorbar)
                     plots['xerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims].flatten(), Y[rows, d].flatten(),
-                                2 * np.sqrt(X_variance[rows, free_dims].flatten()),
+                                2 * np.sqrt(X_variance[rows, free_dims].flatten()), label=label, 
                                 **error_kwargs))
         #2D plotting
         elif len(free_dims) == 2:
             update_not_existing_kwargs(error_kwargs, pl.defaults.xerrorbar)  # @UndefinedVariable
             for d in ycols:
                 plots['xerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims[0]].flatten(), Y[rows, d].flatten(),
-                                2 * np.sqrt(X_variance[rows, free_dims[0]].flatten()),
+                                2 * np.sqrt(X_variance[rows, free_dims[0]].flatten()), label=label, 
                                 **error_kwargs))
                 plots['yerrorplot'].append(pl.xerrorbar(canvas, X[rows, free_dims[1]].flatten(), Y[rows, d].flatten(),
-                                2 * np.sqrt(X_variance[rows, free_dims[1]].flatten()),
+                                2 * np.sqrt(X_variance[rows, free_dims[1]].flatten()), label=label, 
                                 **error_kwargs))
         elif len(free_dims) == 0:
             pass #Nothing to plot!

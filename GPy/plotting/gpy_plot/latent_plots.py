@@ -35,16 +35,20 @@ from .plot_util import get_x_y_var,\
     find_best_layout_for_subplots
 
 def _wait_for_updates(view, updates):
-    try:
-        if updates:
-            clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
-            if clear.lower() in 'yes' or clear == '':
+    if view is not None:
+        try:
+            if updates:
+                clear = raw_input('yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear')
+                if clear.lower() in 'yes' or clear == '':
+                    view.deactivate()
+            else:
                 view.deactivate()
-        else:
-            view.deactivate()
-    except AttributeError:
-        # No updateable view:
-        pass
+        except AttributeError:
+            # No updateable view:
+            pass
+        except TypeError:
+            # No updateable view:
+            pass
             
 
 def _plot_latent_scatter(canvas, X, visible_dims, labels, marker, num_samples, projection='2d', **kwargs):

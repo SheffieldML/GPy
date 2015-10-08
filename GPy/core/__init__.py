@@ -9,4 +9,5 @@ from .parameterization.observable_array import ObsAr
 from .gp import GP
 from .svgp import SVGP
 from .sparse_gp import SparseGP
+from .gp_ssm import GpSSM
 from .mapping import *

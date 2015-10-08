@@ -132,6 +132,10 @@ class opt_lbfgsb(Optimizer):
             opt_dict['pgtol'] = self.gtol
         if self.bfgs_factor is not None:
             opt_dict['factr'] = self.bfgs_factor
+        
+        # add any additional arguments to the opt funciton
+        if args is not None:
+            opt_dict['args'] = args
 
         opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
                                             maxfun=self.max_iters, **opt_dict)

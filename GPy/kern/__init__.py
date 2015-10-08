@@ -21,4 +21,5 @@ from ._src.splitKern import DEtime as DiffGenomeKern
 from ._src.spline import Spline
 from ._src.eq_ode2 import EQ_ODE2
 from ._src.basis_funcs import LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel
+from _src.ssmKerns import Matern32_SSM
 

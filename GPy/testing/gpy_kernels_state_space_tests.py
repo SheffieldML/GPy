@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import GPy
 import GPy.models.state_space_model as SS_model
-from state_space_main_tests import generate_x_points, generate_sine_data, \
+from .state_space_main_tests import generate_x_points, generate_sine_data, \
     generate_linear_data, generate_brownian_data, generate_linear_plus_sin
 
 
@@ -263,7 +263,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
 
     def test_forecast(self,):
         """
-        Test time series forecaasting.
+        Test time series forecasting.
         """
         
         # Generate data ->

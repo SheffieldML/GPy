@@ -304,7 +304,14 @@ class Stationary(Kern):
     def input_sensitivity(self, summarize=True):
         return self.variance*np.ones(self.input_dim)/self.lengthscale**2
 
-
+    def getOneDimensionalKernel(self, dimensions):
+        """
+        Specially intended for the grid regression case
+        For a given covariance kernel, this method returns the corresponding kernel for
+        a single dimension. The resulting values can then be used in the algorithm for
+        reconstructing the full covariance matrix.
+        """
+        raise NotImplementedError, "implement one dimensional variation of kernel"
 
 
 class Exponential(Stationary):

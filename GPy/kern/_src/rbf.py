@@ -48,6 +48,13 @@ class RBF(Stationary):
         assert self.input_dim == 1 #TODO: higher dim spectra?
         return self.variance*np.sqrt(2*np.pi)*self.lengthscale*np.exp(-self.lengthscale*2*omega**2/2)
 
+    def getOneDimensionalKernel(self, dim):
+        """
+        Specially intended for Grid regression.
+        """
+        oneDkernel = GridRBF(input_dim=1, variance=self.variance.copy(), originalDimensions=dim)
+        return oneDkernel
+
     #---------------------------------------#
     #             PSI statistics            #
     #---------------------------------------#

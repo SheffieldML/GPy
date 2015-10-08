@@ -10,4 +10,5 @@ from .gp import GP
 from .svgp import SVGP
 from .sparse_gp import SparseGP
 from .gp_ssm import GpSSM
+from .gp_grid import GpGrid
 from .mapping import *

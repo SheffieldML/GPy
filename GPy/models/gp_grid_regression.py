@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-# Kurt Cutajar - University of Glasgow
+# Kurt Cutajar
 
 from ..core import GpGrid
 from .. import likelihoods
@@ -28,8 +28,8 @@ class GPRegressionGrid(GpGrid):
 
     def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None):
 
-        if kernel is None:
-            kernel = kern.RBF(1)
+        # no other kernels implemented so far
+        kernel = kern.RBF(1)
 
         likelihood = likelihoods.Gaussian()
         super(GPRegressionGrid, self).__init__(X, Y, kernel, likelihood, name='GP Grid regression', Y_metadata=Y_metadata, normalizer=normalizer)

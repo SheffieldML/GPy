@@ -140,7 +140,8 @@ class opt_lbfgsb(Optimizer):
         opt_result = optimize.fmin_l_bfgs_b(f_fp, self.x_init, iprint=iprint,
                                             maxfun=self.max_iters, **opt_dict)
         self.x_opt = opt_result[0]
-        self.f_opt = f_fp(self.x_opt)[0]
+        if (args is None): # cannot be executed if additional arguments are supplied
+            self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[2]['funcalls']
         self.status = rcstrings[opt_result[2]['warnflag']]
 

@@ -1,21 +1,21 @@
 #===============================================================================
 # Copyright (c) 2012-2015, GPy authors (see AUTHORS.txt).
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of GPy nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -34,11 +34,8 @@ import itertools
 
 def in_ipynb():
     try:
-        cfg = get_ipython().config 
-        if cfg['IPKernelApp']['parent_appname'] == 'ipython-notebook':
-            return True
-        else:
-            return False
+        get_ipython()
+        return True
     except NameError:
         return False
 
@@ -54,11 +51,11 @@ def find_best_layout_for_subplots(num_subplots):
 
 def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, which_data_ycols, predict_kw, samples=0):
     """
-    Make the right decisions for prediction with a model 
+    Make the right decisions for prediction with a model
     based on the standard arguments of plotting.
-    
+
     This is quite complex and will take a while to understand,
-    so do not change anything in here lightly!!! 
+    so do not change anything in here lightly!!!
     """
     # Put some standards into the predict_kw so that prediction is done automatically:
     if predict_kw is None:
@@ -77,7 +74,7 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
         predict_kw['Y_metadata']['output_index'] = Xgrid[:,-1:].astype(np.int)
 
     mu, _ = self.predict(Xgrid, **predict_kw)
-    
+
     if percentiles is not None:
         percentiles = self.predict_quantiles(Xgrid, quantiles=percentiles, **predict_kw)
     else: percentiles = []
@@ -87,11 +84,11 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
         fsamples = fsamples[which_data_ycols] if fsamples.ndim == 3 else fsamples
     else:
         fsamples = None
-    
+
     # Filter out the ycolums which we want to plot:
     retmu = mu[:, which_data_ycols]
     percs = [p[:, which_data_ycols] for p in percentiles]
-    
+
     if plot_raw and apply_link:
         for i in range(len(which_data_ycols)):
             retmu[:, [i]] = self.likelihood.gp_link.transf(mu[:, [i]])
@@ -108,8 +105,8 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
 def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution):
     """
     Figure out the data, free_dims and create an Xgrid for
-    the prediction. 
-    
+    the prediction.
+
     This is only implemented for two dimensions for now!
     """
     X, Xvar, Y = get_x_y_var(self)
@@ -119,7 +116,7 @@ def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resoluti
         fixed_inputs = []
     fixed_dims = get_fixed_dims(self, fixed_inputs)
     free_dims = get_free_dims(self, visible_dims, fixed_dims)
-    
+
     if len(free_dims) == 1:
         #define the frame on which to plot
         resolution = resolution or 200
@@ -139,7 +136,7 @@ def helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resoluti
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
     else:
-        raise TypeError("calculated free_dims {} from visible_dims {} and fixed_dims {} is neither 1D nor 2D".format(free_dims, visible_dims, fixed_dims)) 
+        raise TypeError("calculated free_dims {} from visible_dims {} and fixed_dims {} is neither 1D nor 2D".format(free_dims, visible_dims, fixed_dims))
     return X, Xvar, Y, fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
 
 def scatter_label_generator(labels, X, visible_dims, marker=None):
@@ -148,10 +145,10 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
         if not lab in ulabels:
             ulabels.append(lab)
     if marker is not None:
-        marker = itertools.cycle(list(marker))    
+        marker = itertools.cycle(list(marker))
     else:
         m = None
-    
+
     try:
         input_1, input_2, input_3 = visible_dims
     except:
@@ -175,12 +172,12 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
             this_label = 'class {!s}'.format(ul)
         else:
             this_label = ul
-        
+
         if marker is not None:
             m = next(marker)
 
         index = np.nonzero(labels == ul)[0]
-        
+
         if input_2 is None:
             x = X[index, input_1]
             y = np.zeros(index.size)
@@ -191,14 +188,14 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
             z = None
         else:
             x = X[index, input_1]
-            y = X[index, input_2]            
+            y = X[index, input_2]
             z = X[index, input_3]
         yield x, y, z, this_label, index, m
 
 def subsample_X(X, labels, num_samples=1000):
     """
-    Stratified subsampling if labels are given. 
-    This means due to rounding errors you might get a little differences between the 
+    Stratified subsampling if labels are given.
+    This means due to rounding errors you might get a little differences between the
     num_samples and the returned subsampled X.
     """
     if X.shape[0] > num_samples:
@@ -258,13 +255,13 @@ def subsample_X(X, labels, num_samples=1000):
         #     plt.show()
         #=======================================================================
     return X, labels
-    
+
 
 def update_not_existing_kwargs(to_update, update_from):
     """
-    This function updates the keyword aguments from update_from in 
+    This function updates the keyword aguments from update_from in
     to_update, only if the keys are not set in to_update.
-    
+
     This is used for updated kwargs from the default dicts.
     """
     if to_update is None:
@@ -274,12 +271,12 @@ def update_not_existing_kwargs(to_update, update_from):
 
 def get_x_y_var(model):
     """
-    The the data from a model as 
-    X the inputs, 
+    The the data from a model as
+    X the inputs,
     X_variance the variance of the inputs ([default: None])
     and Y the outputs
-    
-    :returns: (X, X_variance, Y) 
+
+    :returns: (X, X_variance, Y)
     """
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean.values
@@ -294,10 +291,10 @@ def get_x_y_var(model):
 def get_free_dims(model, visible_dims, fixed_dims):
     """
     work out what the inputs are for plotting (1D or 2D)
-    
+
     The visible dimensions are the dimensions, which are visible.
-    the fixed_dims are the fixed dimensions for this. 
-    
+    the fixed_dims are the fixed dimensions for this.
+
     The free_dims are then the visible dims without the fixed dims.
     """
     if visible_dims is None:
@@ -306,7 +303,7 @@ def get_free_dims(model, visible_dims, fixed_dims):
     if fixed_dims is not None:
         dims = np.setdiff1d(dims, fixed_dims)
     return np.asanyarray([dim for dim in dims if dim is not None])
-    
+
 
 def get_fixed_dims(model, fixed_inputs):
     """
@@ -321,7 +318,7 @@ def get_which_data_ycols(model, which_data_ycols):
     if which_data_ycols == 'all' or which_data_ycols is None:
         return np.arange(model.output_dim)
     return which_data_ycols
-    
+
 def get_which_data_rows(model, which_data_rows):
     """
     Helper to get the data rows to plot.

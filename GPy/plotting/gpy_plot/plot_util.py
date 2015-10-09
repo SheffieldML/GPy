@@ -341,7 +341,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
             xmin,xmax = X.mean.min(0),X.mean.max(0)
         else:
             xmin,xmax = X.min(0),X.max(0)
-        xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
+        xmin, xmax = xmin-0.25*(xmax-xmin), xmax+0.25*(xmax-xmin)
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits
     else:
@@ -357,7 +357,7 @@ def x_frame2D(X,plot_limits=None,resolution=None):
     assert X.shape[1]==2, "x_frame2D is defined for two-dimensional inputs"
     if plot_limits is None:
         xmin, xmax = X.min(0),X.max(0)
-        xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
+        xmin, xmax = xmin-0.075*(xmax-xmin), xmax+0.075*(xmax-xmin)
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits
     elif len(plot_limits)==4:

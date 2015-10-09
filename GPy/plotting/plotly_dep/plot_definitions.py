@@ -171,9 +171,16 @@ class PlotlyPlots(AbstractPlottingLibrary):
         else:
             error_kwargs.update(dict(array=error, symmetric=True))
         if Z is not None:
-            return Scatter3d(x=X, y=Y, z=Z, mode='markers', error_x=ErrorX(color=color, **error_kwargs or {}), showlegend=label is not None, marker=Marker(size='0'), name=label, **kwargs)
-        return Scatter(x=X, y=Y, mode='markers', error_x=ErrorX(color=color, **error_kwargs or {}), showlegend=label is not None, marker=Marker(size='0'), name=label, **kwargs)
-
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers', 
+                             error_x=ErrorX(color=color, **error_kwargs or {}), 
+                             marker=Marker(size='0'), name=label, 
+                             showlegend=label is not None, **kwargs)
+        return Scatter(x=X, y=Y, mode='markers', 
+                       error_x=ErrorX(color=color, **error_kwargs or {}), 
+                       marker=Marker(size='0'), name=label, 
+                      showlegend=label is not None, 
+                       **kwargs)
+        
     def yerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, error_kwargs=None, **kwargs):
         error_kwargs = error_kwargs or {}
         if (error.shape[0] == 2) and (error.ndim == 2):
@@ -195,8 +202,8 @@ class PlotlyPlots(AbstractPlottingLibrary):
         if not 'showscale' in imshow_kwargs:
             imshow_kwargs['showscale'] = False
         return Heatmap(z=X, name=label, 
-                       x0=extent[0], dx=float(extent[1]-extent[0])/X.shape[0],
-                       y0=extent[2], dy=float(extent[3]-extent[2])/X.shape[1],
+                       x0=extent[0], dx=float(extent[1]-extent[0])/(X.shape[0]-1),
+                       y0=extent[2], dy=float(extent[3]-extent[2])/(X.shape[1]-1),
                        zmin=vmin, zmax=vmax, 
                        showlegend=label is not None, 
                        hoverinfo='z',
@@ -206,20 +213,26 @@ class PlotlyPlots(AbstractPlottingLibrary):
         # TODO stream interaction?
         super(PlotlyPlots, self).imshow_interact(ax, plot_function)
 
-    def annotation_heatmap(self, ax, X, annotation, extent=None, label=None, imshow_kwargs=None, **annotation_kwargs):
-        imshow = self.imshow(ax, X, extent, label, **imshow_kwargs)
+    def annotation_heatmap(self, ax, X, annotation, extent=None, label='Gradient', imshow_kwargs=None, **annotation_kwargs):
+        imshow_kwargs.setdefault('label', label)
+        imshow_kwargs.setdefault('showscale', True)
+        imshow = self.imshow(ax, X, extent, **imshow_kwargs)
+        X = X-X.min()
+        X /= X.max()/2.
+        X -= 1
         x = np.linspace(extent[0], extent[1], X.shape[0])
-        y = np.linspace(extent[0], extent[1], X.shape[0])
+        y = np.linspace(extent[2], extent[3], X.shape[1])
         annotations = Annotations()
         for n, row in enumerate(annotation):
             for m, val in enumerate(row):
-                #var = z[n][m]
+                var = X[n][m]
                 annotations.append(
                     Annotation(
                         text=str(val), 
                         x=x[m], y=y[n],
                         xref='x1', yref='y1',
-                        font=dict(color='white' if val > 0.5 else 'black'),
+                        font=dict(color='white' if np.abs(var) > 0.8 else 'black', size=10),
+                        opacity=.5,
                         showarrow=False))
         return imshow, annotations
 
@@ -228,7 +241,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
     
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return Contour(x=X, y=Y, z=C, 
-                       ncontours=levels, contours=Contours(start=C.min(), end=C.max(), size=(C.max()-C.min())/levels), 
+                       #ncontours=levels, contours=Contours(start=C.min(), end=C.max(), size=(C.max()-C.min())/levels), 
                        name=label, **kwargs)
 
     def surface(self, ax, X, Y, Z, color=None, label=None, **kwargs):

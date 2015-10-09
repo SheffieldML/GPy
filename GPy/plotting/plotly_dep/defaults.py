@@ -48,7 +48,7 @@ data_2d = dict(marker='o', cmap='Hot', marker_kwargs=dict(opacity=1., size='10',
 inducing_1d = dict(color=Tango.colorsHex['darkRed'])
 inducing_2d = dict(marker_kwargs=dict(size='8', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
 inducing_3d = dict(marker_kwargs=dict(size='8', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
-# xerrorbar = dict(color='k', fmt='none', elinewidth=.5, alpha=.5)
+xerrorbar = dict(color='black', error_kwargs=dict(thickness=.5), opacity=.5)
 yerrorbar = dict(color=Tango.colorsHex['darkRed'], error_kwargs=dict(thickness=.5), opacity=.5)
 # 
 # # GP plots:
@@ -69,8 +69,8 @@ confidence_interval = dict(mode='lines', line_kwargs=dict(color=Tango.colorsHex[
 # ard = dict(edgecolor='k', linewidth=1.2)
 # 
 # # Input plots:
-latent = dict(colorscale='Greys', reversescale=True)
+latent = dict(colorscale='Greys', reversescale=True, zsmooth='best')
 gradient = dict(colorscale='RdBu', opacity=.7)
-magnification = dict(colorscale='Greys')
+magnification = dict(colorscale='Greys', zsmooth='best', reversescale=True)
 latent_scatter = dict(marker_kwargs=dict(size='15', opacity=.7))
 # annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)

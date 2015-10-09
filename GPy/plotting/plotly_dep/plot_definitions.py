@@ -64,7 +64,10 @@ class PlotlyPlots(AbstractPlottingLibrary):
         figure = tools.make_subplots(rows, cols, specs=specs)
         return figure
 
-    def new_canvas(self, canvas=None, row=1, col=1, projection='2d', xlabel=None, ylabel=None, zlabel=None, title=None, xlim=None, ylim=None, zlim=None, **kwargs):
+    def new_canvas(self, canvas=None, row=1, col=1, projection='2d',
+                   xlabel=None, ylabel=None, zlabel=None,
+                   title=None, xlim=None,
+                   ylim=None, zlim=None, **kwargs):
         #if 'filename' not in kwargs:
         #    print('PlotlyWarning: filename was not given, this may clutter your plotly workspace')
         #    filename = None

@@ -1,21 +1,21 @@
 #===============================================================================
 # Copyright (c) 2015, Max Zwiessele
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of GPy.plotting.gpy_plot.kernel_plots nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,14 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 import numpy as np
-from . import pl
+from . import plotting_library as pl
 from .. import Tango
 from .plot_util import get_x_y_var,\
     update_not_existing_kwargs, \
     helper_for_plot_data, scatter_label_generator, subsample_X,\
     find_best_layout_for_subplots
 
-def plot_ARD(kernel, filtering=None, **kwargs):
+def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
     """
     If an ARD kernel is present, plot a bar representation using matplotlib
 
@@ -45,11 +45,8 @@ def plot_ARD(kernel, filtering=None, **kwargs):
                       will be used for plotting.
     :type filtering: list of names to use for ARD plot
     """
-    canvas, kwargs = pl.new_canvas(kwargs)
-
     Tango.reset()
-    
-    bars = []
+
     ard_params = np.atleast_2d(kernel.input_sensitivity(summarize=False))
     bottom = 0
     last_bottom = bottom
@@ -59,20 +56,24 @@ def plot_ARD(kernel, filtering=None, **kwargs):
     if filtering is None:
         filtering = kernel.parameter_names(recursive=False)
 
+    bars = []
+    kwargs = update_not_existing_kwargs(kwargs, pl().defaults.ard)
+    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel.input_dim-.5), **kwargs)
     for i in range(ard_params.shape[0]):
         if kernel.parameters[i].name in filtering:
             c = Tango.nextMedium()
-            bars.append(pl.barplot(canvas, x, ard_params[i,:], color=c, label=kernel.parameters[i].name, bottom=bottom))
+            bars.append(pl().barplot(canvas, x,
+                                     ard_params[i,:], color=c,
+                                     label=kernel.parameters[i].name,
+                                     bottom=bottom, **kwargs))
             last_bottom = ard_params[i,:]
             bottom += last_bottom
         else:
             print("filtering out {}".format(kernel.parameters[i].name))
 
-    plt.add_to_canvas()
-    ax.set_xlim(-.5, kernel.input_dim - .5)
-    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
+    #add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
-    return dict(barplots=bars)
+    return pl().add_to_canvas(canvas, bars, legend=legend)
 
 def plot_covariance(kernel, x=None, label=None, plot_limits=None, visible_dims=None, resolution=None, projection=None, levels=20, **mpl_kwargs):
     """
@@ -85,7 +86,7 @@ def plot_covariance(kernel, x=None, label=None, plot_limits=None, visible_dims=N
     :resolution: the resolution of the lines used in plotting
     :mpl_kwargs avalid keyword arguments to pass through to matplotlib (e.g. lw=7)
     """
-    canvas, error_kwargs = pl.new_canvas(projection=projection, **error_kwargs)
+    canvas, error_kwargs = pl().new_canvas(projection=projection, **error_kwargs)
     _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_for_plot_data(kernel, plot_limits, visible_dims, None, resolution)
 
     if len(free_dims)<=2:
@@ -96,22 +97,22 @@ def plot_covariance(kernel, x=None, label=None, plot_limits=None, visible_dims=N
                 assert x.size == 1, "The size of the fixed variable x is not 1"
                 x = x.reshape((1, 1))
             # 1D plotting:
-            update_not_existing_kwargs(kwargs, pl.defaults.meanplot_1d)  # @UndefinedVariable
-            plots = dict(covariance=[pl.plot(canvas, Xgrid[:, free_dims], mu, label=label, **kwargs)])
+            update_not_existing_kwargs(kwargs, pl().defaults.meanplot_1d)  # @UndefinedVariable
+            plots = dict(covariance=[pl().plot(canvas, Xgrid[:, free_dims], mu, label=label, **kwargs)])
         else:
             if projection == '2d':
-                update_not_existing_kwargs(kwargs, pl.defaults.meanplot_2d)  # @UndefinedVariable
-                plots = dict(covariance=[pl.contour(canvas, x, y, 
-                                               mu.reshape(resolution, resolution).T, 
+                update_not_existing_kwargs(kwargs, pl().defaults.meanplot_2d)  # @UndefinedVariable
+                plots = dict(covariance=[pl().contour(canvas, x, y,
+                                               mu.reshape(resolution, resolution).T,
                                                levels=levels, label=label, **kwargs)])
             elif projection == '3d':
-                update_not_existing_kwargs(kwargs, pl.defaults.meanplot_3d)  # @UndefinedVariable
-                plots = dict(covariance=[pl.surface(canvas, x, y, 
-                                               mu.reshape(resolution, resolution).T, 
-                                               label=label, 
+                update_not_existing_kwargs(kwargs, pl().defaults.meanplot_3d)  # @UndefinedVariable
+                plots = dict(covariance=[pl().surface(canvas, x, y,
+                                               mu.reshape(resolution, resolution).T,
+                                               label=label,
                                                **kwargs)])
-                
-        return pl.add_to_canvas(canvas, plots)
+
+        return pl().add_to_canvas(canvas, plots)
 
     if kernel.input_dim == 1:
 
@@ -158,5 +159,5 @@ def plot_covariance(kernel, x=None, label=None, plot_limits=None, visible_dims=N
         ax.set_title("k(x1,x2 ; %0.1f,%0.1f)" % (x[0, 0], x[0, 1]))
     else:
         raise NotImplementedError("Cannot plot a kernel with more than two input dimensions")
-    
+
     pass

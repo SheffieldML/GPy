@@ -34,8 +34,8 @@ import itertools
 
 def in_ipynb():
     try:
-        get_ipython()
-        return True
+        cfg = get_ipython().config
+        return 'TerminalIPythonApp' not in cfg
     except NameError:
         return False
 

@@ -118,7 +118,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=4, var_compare_decimal=4)                      
+                           mean_compare_decimal=3, var_compare_decimal=3)                      
                             
     def test_quasi_periodic_kernel(self,):
         np.random.seed(329) # seed the random number generator
@@ -186,45 +186,51 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                       mean_compare_decimal=5, var_compare_decimal=6)                                                      
 
     def test_kernel_addition(self,):
-        np.random.seed(329) # seed the random number generator
-        (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=10.0, noise_var=2.0,
-                        plot = False, points_num=50, x_interval = (0, 20), random=True)
+        #np.random.seed(329) # seed the random number generator
+        np.random.seed(333)
+        (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=5.0, noise_var=2.0,
+                        plot = False, points_num=100, x_interval = (0, 40), random=True)
+                        
+        (X1,Y1) = generate_linear_data(x_points=X, tangent=1.0, add_term=20.0, noise_var=0.0,
+                    plot = False, points_num=100, x_interval = (0, 40), random=True)
+                    
+        # Sine data <-
+        Y = Y + Y1
                         
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
         
         def get_new_kernels():
-            ss_kernel = GPy.kern.sde_Matern32(1) + GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
+            ss_kernel = GPy.kern.sde_Linear(1,X) + GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
             ss_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            ss_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)
+            ss_kernel.std_periodic.wavelengths.constrain_bounded(3, 8)
         
-            gp_kernel = GPy.kern.Matern32(1) + GPy.kern.StdPeriodic(1,active_dims=[0,])
+            gp_kernel = GPy.kern.Linear(1) + GPy.kern.StdPeriodic(1,active_dims=[0,])
             gp_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            gp_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)
+            gp_kernel.std_periodic.wavelengths.constrain_bounded(3, 8)
             
             return ss_kernel, gp_kernel
         
         # Cython is available only with svd.
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'svd',
-                           use_cython=True, check_gradients=True,
+                           use_cython=True, check_gradients=False,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=0, var_compare_decimal=-1)
+                           mean_compare_decimal=4, var_compare_decimal=4)
         
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'regular',
                            use_cython=False, check_gradients=True,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=4, var_compare_decimal=3)
+                           mean_compare_decimal=4, var_compare_decimal=4)
                            
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'svd',
-                           use_cython=False, check_gradients=True,
+                           use_cython=False, check_gradients=False,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=0, var_compare_decimal=-1)
-        
+                           mean_compare_decimal=4, var_compare_decimal=4)
         
         
     def test_kernel_multiplication(self,):

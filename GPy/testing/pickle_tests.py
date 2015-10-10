@@ -59,14 +59,17 @@ class Test(ListDictTestCase):
             f.seek(0)
             pio2 = pickle.load(f)
             self.assertListDictEquals(pio._properties, pio2._properties)
-
-        with tempfile.TemporaryFile('w+b') as f:
+        
+        f = tempfile.TemporaryFile('w+b')
+        
+        with f:
             pickle.dump(piov, f)
             f.seek(0)
-            pio2 = pickle.load(f)
-            #py3 fix
-            #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
-            self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))
+        
+        pio2 = GPy.load(f)
+        #py3 fix
+        #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
+        self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))
 
     def test_param(self):
         param = Param('test', np.arange(4*2).reshape(4,2))

@@ -282,7 +282,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
               visible_dims=None,
               levels=20, samples=0, samples_likelihood=0, lower=2.5, upper=97.5,
               plot_data=True, plot_inducing=True, plot_density=False,
-              predict_kw=None, projection='2d', legend=False, **kwargs):
+              predict_kw=None, projection='2d', legend=True, **kwargs):
     """
     Convenience function for plotting the fit of a GP.
 
@@ -350,7 +350,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
               levels=20, samples=0, lower=2.5, upper=97.5,
               plot_density=False,
               plot_data=True, plot_inducing=True,
-              projection='2d', legend=False,
+              projection='2d', legend=True,
               predict_kw=None,
               **kwargs):
     """

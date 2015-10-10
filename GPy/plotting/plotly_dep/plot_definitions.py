@@ -152,18 +152,21 @@ class PlotlyPlots(AbstractPlottingLibrary):
     def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, marker_kwargs=None, **kwargs):
         if X.shape[1] == 1:
             annotations = Annotations()
-            for n, row in enumerate(X):
+            for i, row in enumerate(X):
                 annotations.append(
                     Annotation(
                         text='',
-                        x=row[n], y=0,
+                        x=row[0], y=0,
                         yref='paper',
                         ax=0, ay=20,
                         arrowhead=2,
                         arrowsize=1,
                         arrowwidth=2,
                         arrowcolor=color,
-                        showarrow=True))
+                        showarrow=True,
+                        #showlegend=i==0,
+                        #label=label,
+                        ))
             return annotations
         elif X.shape[1] == 2:
             marker_kwargs.setdefault('symbol', 'diamond')
@@ -251,7 +254,8 @@ class PlotlyPlots(AbstractPlottingLibrary):
                         xref='x1', yref='y1',
                         font=dict(color='white' if np.abs(var) > 0.8 else 'black', size=10),
                         opacity=.5,
-                        showarrow=False))
+                        showarrow=False,
+                        hoverinfo='x'))
         return imshow, annotations
 
     def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):
@@ -271,120 +275,40 @@ class PlotlyPlots(AbstractPlottingLibrary):
         else:
             kwargs['line'].update(line_kwargs or {})
         if color.startswith('#'):
-            fcolor = 'rgba ({c[0]}, {c[1]}, {c[2]}, {alpha})'.format(c=Tango.hex2rgb(color), alpha=kwargs.get('opacity', 1.0))
+            fcolor = 'rgba({c[0]}, {c[1]}, {c[2]}, {alpha})'.format(c=Tango.hex2rgb(color), alpha=kwargs.get('opacity', 1.0))
         else: fcolor = color
-        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonextx', legendgroup='density', **kwargs)
+        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonextx', legendgroup='fill_between_{}'.format(label), **kwargs)
         #fcolor = '{}, {alpha})'.format(','.join(fcolor.split(',')[:-1]), alpha=0.0)
-        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, name=label, legendgroup='density', **kwargs)
+        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, name=label, legendgroup='fill_between_{}'.format(label), **kwargs)
         return l, u
 
     def fill_gradient(self, canvas, X, percentiles, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
-        ax = canvas
-        plots = []
-
-        if 'edgecolors' not in kwargs:
-            kwargs['edgecolors'] = 'none'
-
-        if 'facecolors' in kwargs:
-            color = kwargs.pop('facecolors')
-
-        if 'array' in kwargs:
-            array = kwargs.pop('array')
-        else:
-            array = 1.-np.abs(np.linspace(-.97, .97, len(percentiles)-1))
-
-        if 'alpha' in kwargs:
-            alpha = kwargs.pop('alpha')
-        else:
-            alpha = .8
-
-        if 'cmap' in kwargs:
-            cmap = kwargs.pop('cmap')
-        else:
-            cmap = LinearSegmentedColormap.from_list('WhToColor', (color, color), N=array.size)
-        cmap._init()
-        cmap._lut[:-3, -1] = alpha*array
-
-        kwargs['facecolors'] = [cmap(i) for i in np.linspace(0,1,cmap.N)]
-
-        # pop where from kwargs
-        where = kwargs.pop('where') if 'where' in kwargs else None
-        # pop interpolate, which we actually do not do here!
-        if 'interpolate' in kwargs: kwargs.pop('interpolate')
+        if color.startswith('#'):
+            colarray = Tango.hex2rgb(color)
+            opacity = .9
+        else: 
+            colarray = map(float(color.strip(')').split('(')[1]))
+            if len(colarray) == 4:
+                colarray, opacity = colarray[:3] ,colarray[3]
+        
+        alpha = opacity*(1.-np.abs(np.linspace(-1,1,len(percentiles)-1)))
 
         def pairwise(iterable):
             "s -> (s0,s1), (s1,s2), (s2, s3), ..."
             from itertools import tee
-            #try:
-            #    from itertools import izip as zip
-            #except ImportError:
-            #    pass
             a, b = tee(iterable)
             next(b, None)
             return zip(a, b)
 
         polycol = []
-        for y1, y2 in pairwise(percentiles):
-            import matplotlib.mlab as mlab
-            # Handle united data, such as dates
-            ax._process_unit_info(xdata=X, ydata=y1)
-            ax._process_unit_info(ydata=y2)
-            # Convert the arrays so we can work with them
-            from numpy import ma
-            x = ma.masked_invalid(ax.convert_xunits(X))
-            y1 = ma.masked_invalid(ax.convert_yunits(y1))
-            y2 = ma.masked_invalid(ax.convert_yunits(y2))
-
-            if y1.ndim == 0:
-                y1 = np.ones_like(x) * y1
-            if y2.ndim == 0:
-                y2 = np.ones_like(x) * y2
-
-            if where is None:
-                where = np.ones(len(x), np.bool)
+        for i, y1, a in zip(range(len(percentiles)), percentiles, alpha):
+            fcolor = 'rgba({}, {}, {}, {alpha})'.format(*colarray, alpha=a)
+            if i ==  len(percentiles)/2:
+                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=True, 
+                                       name=label, line=Line(width=0, smoothing=0), mode='none', fill='tonextx', 
+                                       legendgroup='density', hoverinfo='none', **kwargs))
             else:
-                where = np.asarray(where, np.bool)
-
-            if not (x.shape == y1.shape == y2.shape == where.shape):
-                raise ValueError("Argument dimensions are incompatible")
-
-            from functools import reduce
-            mask = reduce(ma.mask_or, [ma.getmask(a) for a in (x, y1, y2)])
-            if mask is not ma.nomask:
-                where &= ~mask
-
-            polys = []
-            for ind0, ind1 in mlab.contiguous_regions(where):
-                xslice = x[ind0:ind1]
-                y1slice = y1[ind0:ind1]
-                y2slice = y2[ind0:ind1]
-
-                if not len(xslice):
-                    continue
-
-                N = len(xslice)
-                p = np.zeros((2 * N + 2, 2), np.float)
-
-                # the purpose of the next two lines is for when y2 is a
-                # scalar like 0 and we want the fill to go all the way
-                # down to 0 even if none of the y1 sample points do
-                start = xslice[0], y2slice[0]
-                end = xslice[-1], y2slice[-1]
-
-                p[0] = start
-                p[N + 1] = end
-
-                p[1:N + 1, 0] = xslice
-                p[1:N + 1, 1] = y1slice
-                p[N + 2:, 0] = xslice[::-1]
-                p[N + 2:, 1] = y2slice[::-1]
-
-                polys.append(p)
-            polycol.extend(polys)
-        from matplotlib.collections import PolyCollection
-        if 'zorder' not in kwargs:
-            kwargs['zorder'] = 0
-        plots.append(PolyCollection(polycol, **kwargs))
-        ax.add_collection(plots[-1], autolim=True)
-        ax.autoscale_view()
-        return plots
+                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=False, 
+                                       name=None, line=Line(width=1, smoothing=0, color=fcolor), mode='none', fill='tonextx', 
+                                       legendgroup='density', hoverinfo='none', **kwargs))
+        return polycol

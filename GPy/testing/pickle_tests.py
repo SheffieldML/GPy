@@ -21,6 +21,7 @@ from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 from functools import reduce
 from GPy.util.caching import Cacher
+import GPy
 from pickle import PicklingError
 
 def toy_model():

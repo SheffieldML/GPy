@@ -581,7 +581,7 @@ class TestNoiseModels(object):
         try:
             assert m.checkgrad(verbose=0, step=step)
         except:
-            assert m.checkgrad(verbose=1)
+            assert m.checkgrad(verbose=1, step=step)
 
     ###########
     # EP test #

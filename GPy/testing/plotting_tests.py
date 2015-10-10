@@ -40,13 +40,9 @@ if config.get('plotting', 'library') != 'matplotlib':
 
 
 try:
-    import matplotlib
     from matplotlib import cbook, pyplot as plt
     from matplotlib.testing.compare import compare_images
     from matplotlib.testing.noseclasses import ImageComparisonFailure
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
-    matplotlib.rcParams[u'text.usetex'] = False
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
@@ -99,6 +95,10 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=11):
 
 def test_kernel():
     np.random.seed(1239847)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     k = GPy.kern.RBF(5, ARD=True) + GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2)
     k.randomize()
     k.plot_ARD(legend=True)
@@ -109,11 +109,15 @@ def test_kernel():
 
 def test_plot():
     np.random.seed(111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*[0.06])
-    m.optimize()
+    #m.optimize()
     m.plot_data()
     m.plot_mean()
     m.plot_confidence()
@@ -129,11 +133,15 @@ def test_plot():
 
 def test_twod():
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*[0.01, 0.2])
-    m.optimize()
+    #m.optimize()
     m.plot_data()
     m.plot_mean()
     m.plot_inducing()
@@ -148,6 +156,10 @@ def test_twod():
 
 def test_threed():
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
     Y = f+np.random.normal(0, .1, f.shape)
@@ -169,11 +181,15 @@ def test_threed():
 
 def test_sparse():
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*0.1)
-    m.optimize()
+    #m.optimize()
     #m.plot_inducing()
     m.plot_data()
     for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['data_error']], extensions=extensions):
@@ -181,11 +197,15 @@ def test_sparse():
 
 def test_classification():
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.GPClassification(X, Y>Y.mean())
-    m.optimize()
+    #m.optimize()
     _, ax = plt.subplots()
     m.plot(plot_raw=False, apply_link=False, ax=ax)
     m.plot_errorbars_trainset(plot_raw=False, apply_link=False, ax=ax)
@@ -201,13 +221,19 @@ def test_classification():
 
 def test_sparse_classification():
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
     m = GPy.models.SparseGPClassification(X, Y>Y.mean())
-    m.optimize()
+    #m.optimize()
     m.plot(plot_raw=False, apply_link=False, samples_likelihood=3)
+    np.random.seed(111)
     m.plot(plot_raw=True, apply_link=False, samples=3)
+    np.random.seed(111)
     m.plot(plot_raw=True, apply_link=True, samples=3)
     for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )
@@ -217,17 +243,23 @@ def test_gplvm():
     from ..kern import RBF
     from ..models import GPLVM
     np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
     Q = 3
     _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
     Y = Ylist[0]
     k = RBF(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
     m = GPLVM(Y, Q, init="PCA", kernel=k)
     m.likelihood.variance = .1
     #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
+    np.random.seed(111)
     m.plot_latent()
+    np.random.seed(111)
     m.plot_scatter(projection='3d', labels=labels)
+    np.random.seed(111)
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
@@ -237,7 +269,11 @@ def test_bayesian_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import BayesianGPLVM
-    np.random.seed(11111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
+    np.random.seed(111)
     Q = 3
     _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
     Y = Ylist[0]
@@ -247,10 +283,15 @@ def test_bayesian_gplvm():
     m.likelihood.variance = .1
     #m.optimize(messages=0)
     labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
+    np.random.seed(111)
     m.plot_inducing(projection='2d')
+    np.random.seed(111)
     m.plot_inducing(projection='3d')
+    np.random.seed(111)
     m.plot_scatter(projection='3d')
+    np.random.seed(111)
     m.plot_magnification(labels=labels)
+    np.random.seed(111)
     m.plot_steepest_gradient_map(resolution=7)
     for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )

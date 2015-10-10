@@ -112,7 +112,7 @@ def test_plot():
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
-    m = GPy.models.GPRegression(X, Y)
+    m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*[0.06])
     m.optimize()
     m.plot_data()
     m.plot_mean()
@@ -120,7 +120,11 @@ def test_plot():
     m.plot_density()
     m.plot_errorbars_trainset()
     m.plot_samples()
-    for do_test in _image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 'density', 'error', 'samples']], extensions=extensions):
+    m.plot_data_error()
+    for do_test in _image_comparison(baseline_images=['gp_{}'.format(sub) for sub in ["data", "mean", 'conf', 
+                                                                                      'density', 
+                                                                                      'out_error', 
+                                                                                      'samples', 'in_error']], extensions=extensions):
         yield (do_test, )
 
 def test_twod():
@@ -128,11 +132,18 @@ def test_twod():
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
     Y = f+np.random.normal(0, .1, f.shape)
-    m = GPy.models.GPRegression(X, Y)
+    m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*[0.01, 0.2])
     m.optimize()
     m.plot_data()
     m.plot_mean()
-    for do_test in _image_comparison(baseline_images=['gp_2d_{}'.format(sub) for sub in ["data", "mean"]], extensions=extensions):
+    m.plot_inducing()
+    #m.plot_errorbars_trainset()
+    m.plot_data_error()
+    for do_test in _image_comparison(baseline_images=['gp_2d_{}'.format(sub) for sub in ["data", "mean", 
+                                                                                         'inducing', 
+                                                                                         #'out_error', 
+                                                                                         'in_error',
+                                                                                         ]], extensions=extensions):
         yield (do_test, )
 
 def test_threed():
@@ -140,7 +151,7 @@ def test_threed():
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
     Y = f+np.random.normal(0, .1, f.shape)
-    m = GPy.models.GPRegression(X, Y)
+    m = GPy.models.SparseGPRegression(X, Y)
     m.likelihood.variance = .1
     #m.optimize()
     m.plot_samples(projection='3d', samples=1)
@@ -148,7 +159,10 @@ def test_threed():
     plt.close('all')
     m.plot_data(projection='3d')
     m.plot_mean(projection='3d')
-    for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean",
+    m.plot_inducing(projection='3d')
+    #m.plot_errorbars_trainset(projection='3d')
+    for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean", 'inducing', 
+                                                                                         #'error',
                                                                                           #"samples", "samples_lik"
                                                                                           ]], extensions=extensions):
         yield (do_test, )
@@ -158,10 +172,11 @@ def test_sparse():
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)
-    m = GPy.models.SparseGPRegression(X, Y)
+    m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*0.1)
     m.optimize()
-    m.plot_inducing()
-    for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['inducing']], extensions=extensions):
+    #m.plot_inducing()
+    m.plot_data()
+    for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['data_error']], extensions=extensions):
         yield (do_test, )
 
 def test_classification():
@@ -173,9 +188,13 @@ def test_classification():
     m.optimize()
     _, ax = plt.subplots()
     m.plot(plot_raw=False, apply_link=False, ax=ax)
+    m.plot_errorbars_trainset(plot_raw=False, apply_link=False, ax=ax)
     _, ax = plt.subplots()
     m.plot(plot_raw=True, apply_link=False, ax=ax)
-    m.plot(plot_raw=True, apply_link=True)
+    m.plot_errorbars_trainset(plot_raw=True, apply_link=False, ax=ax)
+    _, ax = plt.subplots()
+    m.plot(plot_raw=True, apply_link=True, ax=ax)
+    m.plot_errorbars_trainset(plot_raw=True, apply_link=True, ax=ax)
     for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )
 

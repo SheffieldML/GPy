@@ -127,18 +127,18 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                bottom=bottom, label=label, color=color,  
                **kwargs)
         
-    def xerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def xerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
-        if Z is not None:
-            return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
+        #if Z is not None:
+        #    return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
     
-    def yerrorbar(self, ax, X, Y, error, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def yerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
-        if Z is not None:
-            return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
+        #if Z is not None:
+        #    return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
     
     def imshow(self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs):

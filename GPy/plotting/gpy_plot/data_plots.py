@@ -134,24 +134,23 @@ def _plot_data_error(self, canvas, which_data_rows='all',
     plots = {}
 
     if X_variance is not None:
-        plots['xerrorplot'] = []
+        plots['input_error'] = []
         #one dimensional plotting
         if len(free_dims) == 1:
             for d in ycols:
                     update_not_existing_kwargs(error_kwargs, pl().defaults.xerrorbar)
-                    plots['xerrorplot'].append(pl().xerrorbar(canvas, X[rows, free_dims].flatten(), Y[rows, d].flatten(),
+                    plots['input_error'].append(pl().xerrorbar(canvas, X[rows, free_dims].flatten(), Y[rows, d].flatten(),
                                 2 * np.sqrt(X_variance[rows, free_dims].flatten()), label=label,
                                 **error_kwargs))
         #2D plotting
         elif len(free_dims) == 2:
             update_not_existing_kwargs(error_kwargs, pl().defaults.xerrorbar)  # @UndefinedVariable
-            for d in ycols:
-                plots['xerrorplot'].append(pl().xerrorbar(canvas, X[rows, free_dims[0]].flatten(), Y[rows, d].flatten(),
-                                2 * np.sqrt(X_variance[rows, free_dims[0]].flatten()), label=label,
-                                **error_kwargs))
-                plots['yerrorplot'].append(pl().xerrorbar(canvas, X[rows, free_dims[1]].flatten(), Y[rows, d].flatten(),
-                                2 * np.sqrt(X_variance[rows, free_dims[1]].flatten()), label=label,
-                                **error_kwargs))
+            plots['input_error'].append(pl().xerrorbar(canvas, X[rows, free_dims[0]].flatten(), X[rows, free_dims[1]].flatten(),
+                            2 * np.sqrt(X_variance[rows, free_dims[0]].flatten()), label=label,
+                            **error_kwargs))
+            plots['input_error'].append(pl().yerrorbar(canvas, X[rows, free_dims[0]].flatten(), X[rows, free_dims[1]].flatten(),
+                            2 * np.sqrt(X_variance[rows, free_dims[1]].flatten()), label=label,
+                            **error_kwargs))
         elif len(free_dims) == 0:
             pass #Nothing to plot!
         else:
@@ -244,7 +243,7 @@ def _plot_errorbars_trainset(self, canvas,
 
     plots = []
 
-    if len(free_dims)<=2:
+    if len(free_dims)<=2 and projection=='2d':
         update_not_existing_kwargs(plot_kwargs, pl().defaults.yerrorbar)
         if predict_kw is None:
                 predict_kw = {}
@@ -259,21 +258,20 @@ def _plot_errorbars_trainset(self, canvas,
                                           np.vstack([mu[rows, d] - percs[0][rows, d], percs[1][rows, d] - mu[rows,d]]),
                                           label=label,
                                           **plot_kwargs))
-        elif len(free_dims) == 2:
-            for d in ycols:
-                plots.append(pl().yerrorbar(canvas, X[rows,free_dims[0]], X[rows,free_dims[1]],
-                              np.vstack([mu[rows, d] - percs[0][rows, d], percs[1][rows, d] - mu[rows,d]]),
-                              color=Y[rows,d],
-                              label=label,
-                              **plot_kwargs))
-                plots.append(pl().xerrorbar(canvas, X[rows,free_dims[0]], X[rows,free_dims[1]],
-                              np.vstack([mu[rows, d] - percs[0][rows, d], percs[1][rows, d] - mu[rows,d]]),
-                              color=Y[rows,d],
-                              label=label,
-                              **plot_kwargs))
-            pass #Nothing to plot!
+#         elif len(free_dims) == 2:
+#             for d in ycols:
+#                 plots.append(pl().yerrorbar(canvas, X[rows,free_dims[0]], X[rows,free_dims[1]],
+#                               np.vstack([mu[rows, d] - percs[0][rows, d], percs[1][rows, d] - mu[rows,d]]),
+#                               #color=Y[rows,d],
+#                               label=label,
+#                               **plot_kwargs))
+#                 plots.append(pl().xerrorbar(canvas, X[rows,free_dims[0]], X[rows,free_dims[1]],
+#                               np.vstack([mu[rows, d] - percs[0][rows, d], percs[1][rows, d] - mu[rows,d]]),
+#                               #color=Y[rows,d],
+#                               label=label,
+#                               **plot_kwargs))
     else:
-        raise NotImplementedError("Cannot plot in more then one dimension.")
+        raise NotImplementedError("Cannot plot in more then one dimensions, or 3d")
     return dict(yerrorbars=plots)
 
 

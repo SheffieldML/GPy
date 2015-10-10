@@ -277,4 +277,4 @@ class AbstractPlottingLibrary(object):
                         
         the kwargs are plotting library specific kwargs!
         """
-        raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
+        print("fill_gradient not implemented in this backend.")

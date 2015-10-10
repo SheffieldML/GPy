@@ -35,7 +35,7 @@ from plotly import tools
 from plotly import plotly as py
 from plotly.graph_objs import Scatter, Scatter3d, Line,\
     Marker, ErrorX, ErrorY, Bar, Heatmap, Trace,\
-    Annotations, Annotation, Contour, Contours, Font, Surface
+    Annotations, Annotation, Contour, Font, Surface
 from plotly.exceptions import PlotlyDictKeyError
 
 SYMBOL_MAP = {
@@ -78,6 +78,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
             figure.layout.font = Font(family="Raleway, sans-serif")
         else:
             return canvas, kwargs
+        if projection == '3d':
+            figure.layout.legend.x=.5
+            figure.layout.legend.bgcolor='#DCDCDC'
         return (figure, row, col), kwargs
 
     def add_to_canvas(self, canvas, traces, legend=False, **kwargs):
@@ -129,9 +132,15 @@ class PlotlyPlots(AbstractPlottingLibrary):
         except:
             #not matplotlib marker
             pass
+        marker_kwargs.setdefault('symbol', marker)
         if Z is not None:
-            return Scatter3d(x=X, y=Y, z=Z, mode='markers', showlegend=label is not None, marker=Marker(color=color, symbol=marker, colorscale=cmap, **marker_kwargs or {}), name=label, **kwargs)
-        return Scatter(x=X, y=Y, mode='markers', showlegend=label is not None, marker=Marker(color=color, symbol=marker, colorscale=cmap, **marker_kwargs or {}), name=label, **kwargs)
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers', 
+                             showlegend=label is not None, 
+                             marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}), 
+                             name=label, **kwargs)
+        return Scatter(x=X, y=Y, mode='markers', showlegend=label is not None, 
+                       marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}), 
+                       name=label, **kwargs)
 
     def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):
         if 'mode' not in kwargs:
@@ -140,14 +149,14 @@ class PlotlyPlots(AbstractPlottingLibrary):
             return Scatter3d(x=X, y=Y, z=Z, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
         return Scatter(x=X, y=Y, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
 
-    def plot_axis_lines(self, ax, X, Z=None, color=Tango.colorsHex['mediumBlue'], label=None, marker_kwargs=None, **kwargs):
+    def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, marker_kwargs=None, **kwargs):
         if X.shape[1] == 1:
             annotations = Annotations()
             for n, row in enumerate(X):
                 annotations.append(
                     Annotation(
                         text='',
-                        x=row[0], y=0,
+                        x=row[n], y=0,
                         yref='paper',
                         ax=0, ay=20,
                         arrowhead=2,
@@ -155,10 +164,17 @@ class PlotlyPlots(AbstractPlottingLibrary):
                         arrowwidth=2,
                         arrowcolor=color,
                         showarrow=True))
-        return annotations
-        #if Z is not None:
-        #    return Scatter3d(x=X[:,0], y=X[:,1], z=0, zref='paper', showlegend=label is not None, mode='markers', marker=Marker(color=color, symbol='diamond-tall', **marker_kwargs or {}), name=label, **kwargs)
-        #return Scatter(x=X, y=0, mode='markers', showlegend=label is not None, marker=Marker(yref='paper', color=color, symbol='diamond-tall', **marker_kwargs or {}), name=label, **kwargs)
+            return annotations
+        elif X.shape[1] == 2:
+            marker_kwargs.setdefault('symbol', 'diamond')
+            opacity = kwargs.pop('opacity', .8)
+            return Scatter3d(x=X[:, 0], y=X[:, 1], z=np.zeros(X.shape[0]), 
+                             mode='markers',
+                             projection=dict(z=dict(show=True, opacity=opacity)), 
+                             marker=Marker(color=color, **marker_kwargs or {}), 
+                             opacity=0,
+                             name=label,
+                             showlegend=label is not None, **kwargs)
 
     def barplot(self, canvas, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         figure, _, _ = canvas
@@ -247,7 +263,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
                        name=label, **kwargs)
 
     def surface(self, ax, X, Y, Z, color=None, label=None, **kwargs):
-        return Surface(x=X, y=Y, z=Z, name=label, **kwargs)
+        return Surface(x=X, y=Y, z=Z, name=label, showlegend=label is not None, **kwargs)
 
     def fill_between(self, ax, X, lower, upper, color=Tango.colorsHex['mediumBlue'], label=None, line_kwargs=None, **kwargs):
         if not 'line' in kwargs:
@@ -257,9 +273,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
         if color.startswith('#'):
             fcolor = 'rgba ({c[0]}, {c[1]}, {c[2]}, {alpha})'.format(c=Tango.hex2rgb(color), alpha=kwargs.get('opacity', 1.0))
         else: fcolor = color
-        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonexty', **kwargs)
-        fcolor = '{}, {alpha})'.format(','.join(fcolor.split(',')[:-1]), alpha=0.0)
-        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, fill='tonexty', name=label, **kwargs)
+        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonextx', legendgroup='density', **kwargs)
+        #fcolor = '{}, {alpha})'.format(','.join(fcolor.split(',')[:-1]), alpha=0.0)
+        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, name=label, legendgroup='density', **kwargs)
         return l, u
 
     def fill_gradient(self, canvas, X, percentiles, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):

@@ -46,7 +46,10 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
     """
     Plot the mean of the GP.
 
+    You can deactivate the legend for this one plot by supplying None to label. 
+
     Give the Y_metadata in the predict_kw if you need it.
+
 
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
@@ -112,7 +115,10 @@ def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=
     E.g. the 95% confidence interval is $2.5, 97.5$.
     Note: Only implemented for one dimension!
 
+    You can deactivate the legend for this one plot by supplying None to label. 
+
     Give the Y_metadata in the predict_kw if you need it.
+
 
     :param float lower: the lower percentile to plot
     :param float upper: the upper percentile to plot
@@ -134,7 +140,7 @@ def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=
                                                  (lower, upper),
                                                  ycols, predict_kw)
     plots = _plot_confidence(self, canvas, helper_data, helper_prediction, label, **kwargs)
-    return pl().add_to_canvas(canvas, plots)
+    return pl().add_to_canvas(canvas, plots, legend=label is not None)
 
 def _plot_confidence(self, canvas, helper_data, helper_prediction, label, **kwargs):
     _, _, _, _, free_dims, Xgrid, _, _, _, _, _ = helper_data
@@ -162,7 +168,10 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
     """
     Plot the mean of the GP.
 
+    You can deactivate the legend for this one plot by supplying None to label. 
+
     Give the Y_metadata in the predict_kw if you need it.
+
 
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
@@ -221,7 +230,11 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     E.g. the 95% confidence interval is $2.5, 97.5$.
     Note: Only implemented for one dimension!
 
+    You can deactivate the legend for this one plot by supplying None to label. 
+
     Give the Y_metadata in the predict_kw if you need it.
+
+
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
@@ -271,9 +284,12 @@ def plot(self, plot_limits=None, fixed_inputs=None,
               plot_data=True, plot_inducing=True, plot_density=False,
               predict_kw=None, projection='2d', legend=False, **kwargs):
     """
-    Convinience function for plotting the fit of a GP.
+    Convenience function for plotting the fit of a GP.
+
+    You can deactivate the legend for this one plot by supplying None to label. 
 
     Give the Y_metadata in the predict_kw if you need it.
+
 
     If you want fine graned control use the specific plotting functions supplied in the model.
 
@@ -298,6 +314,8 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     :param bool plot_inducing: plot inducing inputs?
     :param bool plot_density: plot density instead of the confidence interval?
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
+    :param {2d|3d} projection: plot in 2d or 3d?
+    :param bool legend: convenience, whether to put a legend on the plot or not.
     """
     canvas, _ = pl().new_canvas(projection=projection, **kwargs)
     helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
@@ -341,7 +359,10 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
 
     If you want fine graned control use the specific plotting functions supplied in the model.
 
+    You can deactivate the legend for this one plot by supplying None to label. 
+
     Give the Y_metadata in the predict_kw if you need it.
+
 
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array

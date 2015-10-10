@@ -159,7 +159,7 @@ def _plot_data_error(self, canvas, which_data_rows='all',
 
     return plots
 
-def plot_inducing(self, visible_dims=None, projection='2d', label=None, **plot_kwargs):
+def plot_inducing(self, visible_dims=None, projection='2d', label='inducing', **plot_kwargs):
     """
     Plot the inducing inputs of a sparse gp model
 
@@ -168,7 +168,7 @@ def plot_inducing(self, visible_dims=None, projection='2d', label=None, **plot_k
     """
     canvas, kwargs = pl().new_canvas(projection=projection, **plot_kwargs)
     plots = _plot_inducing(self, canvas, visible_dims, projection, label, **kwargs)
-    return pl().add_to_canvas(canvas, plots)
+    return pl().add_to_canvas(canvas, plots, legend=label is not None)
 
 def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs):
     if visible_dims is None:
@@ -182,15 +182,15 @@ def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs)
     #one dimensional plotting
     if len(free_dims) == 1:
         update_not_existing_kwargs(plot_kwargs, pl().defaults.inducing_1d)  # @UndefinedVariable
-        plots['inducing'] = pl().plot_axis_lines(canvas, Z[:, free_dims], **plot_kwargs)
+        plots['inducing'] = pl().plot_axis_lines(canvas, Z[:, free_dims], label=label, **plot_kwargs)
     #2D plotting
     elif len(free_dims) == 2 and projection == '3d':
         update_not_existing_kwargs(plot_kwargs, pl().defaults.inducing_3d)  # @UndefinedVariable
-        plots['inducing'] = pl().plot_axis_lines(canvas, Z[:, free_dims], **plot_kwargs)
+        plots['inducing'] = pl().plot_axis_lines(canvas, Z[:, free_dims], label=label, **plot_kwargs)
     elif len(free_dims) == 2:
         update_not_existing_kwargs(plot_kwargs, pl().defaults.inducing_2d)  # @UndefinedVariable
         plots['inducing'] = pl().scatter(canvas, Z[:, free_dims[0]], Z[:, free_dims[1]],
-                                       **plot_kwargs)
+                                       label=label, **plot_kwargs)
     elif len(free_dims) == 0:
         pass #Nothing to plot!
     else:

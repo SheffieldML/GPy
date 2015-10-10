@@ -108,7 +108,7 @@ def test_kernel():
         yield (do_test, )
 
 def test_plot():
-    np.random.seed(11111)
+    np.random.seed(111)
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
     Y = f+np.random.normal(0, .1, f.shape)

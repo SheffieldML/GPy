@@ -562,35 +562,23 @@ class TestNoiseModels(object):
         np.random.seed(11111)
         #Normalize
         Y = Y/Y.max()
-        white_var = 1e-1
+
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
 
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
-        #m['.*white'].constrain_fixed(white_var)
 
         #Set constraints
         for constrain_param, constraint in constraints:
             constraint(constrain_param, m)
-
-        #print(m)
-        #m.randomize()
-        m.randomize()
 
         #Set params
         for param_num in range(len(param_names)):
             name = param_names[param_num]
             m[name] = param_vals[param_num]
 
-        #m.optimize(max_iters=8)
-        #print(m)
-        #if not m.checkgrad(step=step):
-            #m.checkgrad(verbose=1, step=step)
-            #NOTE this test appears to be stochastic for some likelihoods (student t?)
-            # appears to all be working in test mode right now...
-        #if isinstance(model, GPy.likelihoods.StudentT):
         try:
-            assert m.checkgrad(verbose=0, step=step)
+            assert m.checkgrad(verbose=0)
         except:
             assert m.checkgrad(verbose=1)
 

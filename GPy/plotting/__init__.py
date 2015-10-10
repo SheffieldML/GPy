@@ -23,9 +23,8 @@ def change_plotting_library(lib):
         #===========================================================================
     except (ImportError, NameError):
         config.set('plotting', 'library', 'none')
-        raise
         import warnings
-        #warnings.warn(ImportWarning("{} not available, install newest version of {} for plotting".format(lib, lib)))
+        warnings.warn(ImportWarning("{} not available, install newest version of {} for plotting".format(lib, lib)))
         
 from ..util.config import config
 lib = config.get('plotting', 'library')

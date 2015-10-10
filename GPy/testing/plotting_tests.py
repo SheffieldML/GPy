@@ -38,10 +38,15 @@ change_plotting_library('matplotlib')
 if config.get('plotting', 'library') != 'matplotlib':
     raise SkipTest("Matplotlib not installed, not testing plots")
 
+
 try:
+    import matplotlib
     from matplotlib import cbook, pyplot as plt
     from matplotlib.testing.compare import compare_images
     from matplotlib.testing.noseclasses import ImageComparisonFailure
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 

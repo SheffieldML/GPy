@@ -22,6 +22,7 @@ from GPy.models.gp_regression import GPRegression
 from functools import reduce
 from GPy.util.caching import Cacher
 from pickle import PicklingError
+import GPy
 
 def toy_model():
     X = np.linspace(0,1,50)[:, None]
@@ -64,8 +65,7 @@ class Test(ListDictTestCase):
         
         with f:
             pickle.dump(piov, f)
-            f.seek(0)
-        
+
         pio2 = GPy.load(f)
         #py3 fix
         #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))

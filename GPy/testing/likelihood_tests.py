@@ -559,7 +559,7 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_laplace_fit_rbf_white(self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints):
         print("\n{}".format(inspect.stack()[0][3]))
-        np.random.seed(11111)
+        np.random.seed(111)
         #Normalize
         Y = Y/Y.max()
 
@@ -567,6 +567,7 @@ class TestNoiseModels(object):
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
 
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
+        m.randomize()
 
         #Set constraints
         for constrain_param, constraint in constraints:
@@ -578,7 +579,7 @@ class TestNoiseModels(object):
             m[name] = param_vals[param_num]
 
         try:
-            assert m.checkgrad(verbose=0)
+            assert m.checkgrad(verbose=0, step=step)
         except:
             assert m.checkgrad(verbose=1)
 

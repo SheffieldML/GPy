@@ -62,12 +62,11 @@ class Test(ListDictTestCase):
             self.assertListDictEquals(pio._properties, pio2._properties)
 
         f = tempfile.TemporaryFile('w+b')
+        pickle.dump(piov, f)
+        f.seek(0)
+        pio2 = GPy.load(f)
+        f.close()
 
-        with f:
-            pickle.dump(piov, f)
-
-        with f:
-            pio2 = GPy.load(f)
         #py3 fix
         #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
         self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))

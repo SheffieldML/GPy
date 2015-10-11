@@ -5,7 +5,7 @@ A Gaussian processes framework in Python.
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
 * [Tutorial notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
-* [Online documentation](https://gpy.readthedocs.org/en/latest/)
+* [Online documentation](http://pythonhosted.org/GPy/)
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
@@ -141,7 +141,7 @@ The documentation can be compiled as follows:
     cd doc
     make html
 
-The HTML files are then stored in doc/_build/
+The HTML files are then stored in doc/build/
 
 
 ## Running unit tests:

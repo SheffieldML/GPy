@@ -66,7 +66,7 @@ class Test(ListDictTestCase):
         with f:
             pickle.dump(piov, f)
 
-        with open(f):
+        with f:
             pio2 = GPy.load(f)
         #py3 fix
         #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))

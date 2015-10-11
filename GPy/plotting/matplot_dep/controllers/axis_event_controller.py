@@ -97,22 +97,19 @@ class BufferedAxisChangedController(AxisChangedController):
         :param kwargs: additional kwargs are for pyplot.imshow(**kwargs)
         """
         super(BufferedAxisChangedController, self).__init__(ax, update_lim=update_lim)
+        self.resolution = resolution
         self.plot_function = plot_function
         xmin, xmax, ymin, ymax = plot_limits#self._x_lim # self._compute_buffered(*self._x_lim)
         # imshow acts on the limits of the plot, this is why we need to override the limits here, to make sure the right plot limits are used:
         self._x_lim = xmin, xmax
         self._y_lim = ymin, ymax
-        self.resolution = resolution
-        self._not_init = False
         self.view = self._init_view(self.ax, self.recompute_X(buffered=False), xmin, xmax, ymin, ymax, **kwargs)
-        self._not_init = True
 
     def update(self, ax):
         super(BufferedAxisChangedController, self).update(ax)
-        if self._not_init:
-            xmin, xmax = self._compute_buffered(*self._x_lim)
-            ymin, ymax = self._compute_buffered(*self._y_lim)
-            self.update_view(self.view, self.recompute_X(), xmin, xmax, ymin, ymax)
+        xmin, xmax = self._compute_buffered(*self._x_lim)
+        ymin, ymax = self._compute_buffered(*self._y_lim)
+        self.update_view(self.view, self.recompute_X(), xmin, xmax, ymin, ymax)
 
     def _init_view(self, ax, X, xmin, xmax, ymin, ymax):
         raise NotImplementedError('return view for this controller')

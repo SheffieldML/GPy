@@ -65,10 +65,8 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             else:
                 fig = self.figure()
         
-            if hasattr(fig, 'rows') and hasattr(fig, 'cols'):
-                ax = fig.add_subplot(fig.rows, fig.cols, (col,row), projection=projection)
-            else:
-                ax = fig.add_subplot(1, 1, (1, 1), projection=projection)
+            #if hasattr(fig, 'rows') and hasattr(fig, 'cols'):
+            ax = fig.add_subplot(fig.rows, fig.cols, (col,row), projection=projection)
             
         if xlim is not None: ax.set_xlim(xlim)
         if ylim is not None: ax.set_ylim(ylim)
@@ -149,13 +147,14 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         #xmin, xmax, ymin, ymax = extent = xmin-xoffset, xmax+xoffset, ymin-yoffset, ymax+yoffset
         return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs)
 
-    def imshow_interact(self, ax, plot_function, extent=None, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
+    def imshow_interact(self, ax, plot_function, extent, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
+        if imshow_kwargs is None: imshow_kwargs = {}
         if 'origin' not in imshow_kwargs:
             imshow_kwargs['origin'] = 'lower'
         return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
 
     def annotation_heatmap(self, ax, X, annotation, extent=None, label=None, imshow_kwargs=None, **annotation_kwargs):
-        imshow_kwargs = imshow_kwargs or {}
+        if imshow_kwargs is None: imshow_kwargs = {}
         if 'origin' not in imshow_kwargs:
             imshow_kwargs['origin'] = 'lower'
         if ('ha' not in annotation_kwargs) and ('horizontalalignment' not in annotation_kwargs):
@@ -175,6 +174,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         return imshow, annotations
 
     def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):
+        if imshow_kwargs is None: imshow_kwargs = {}
         if 'origin' not in imshow_kwargs:
             imshow_kwargs['origin'] = 'lower'
         return ImAnnotateController(ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs)

@@ -33,6 +33,7 @@ from nose import SkipTest
 
 from ..util.config import config
 from ..plotting import change_plotting_library
+import unittest
 
 change_plotting_library('matplotlib')
 if config.get('plotting', 'library') != 'matplotlib':
@@ -92,6 +93,49 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=11):
                     raise ImageComparisonFailure("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
             yield do_test
     plt.close('all')
+
+def test_figure():
+    np.random.seed(1239847)
+    from GPy.plotting import plotting_library as pl
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
+    
+    ax, _ = pl().new_canvas(num=1)
+    def test_func(x):
+        return x[:, 0].reshape(3,3)
+    pl().imshow_interact(ax, test_func, extent=(-1,1,-1,1), resolution=3)
+    
+    ax, _ = pl().new_canvas()
+    def test_func_2(x):
+        y = x[:, 0].reshape(3,3)
+        anno = np.argmax(x, axis=1).reshape(3,3)
+        return y, anno
+    pl().annotation_heatmap_interact(ax, test_func_2, extent=(-1,1,-1,1), resolution=3)
+    pl().annotation_heatmap_interact(ax, test_func_2, extent=(-1,1,-1,1), resolution=3, imshow_kwargs=dict(interpolation='nearest'))
+    
+    ax, _ = pl().new_canvas(figsize=(4,3))
+    x = np.linspace(0,1,100)
+    y = [0,1,2]
+    array = np.array([.4,.5])
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('WhToColor', ('r', 'b'), N=array.size)
+    pl().fill_gradient(ax, x, y, facecolors=['r', 'g'], array=array, cmap=cmap)
+    try:
+        pl().show_canvas(ax, tight_layout=True)
+    except:
+        # macosx tight layout not stable
+        pl().show_canvas(ax, tight_layout=False)
+    
+    ax, _ = pl().new_canvas(num=4, figsize=(4,3), projection='3d', xlabel='x', ylabel='y', zlabel='z', title='awsome title', xlim=(-1,1), ylim=(-1,1), zlim=(-3,3))
+    z = 2-np.abs(np.linspace(-2,2,(100)))+1
+    x, y = z*np.sin(np.linspace(-2*np.pi,2*np.pi,(100))), z*np.cos(np.linspace(-np.pi,np.pi,(100)))
+    pl().plot(ax, x, y, z, linewidth=2)
+    for do_test in _image_comparison(
+            baseline_images=['coverage_{}'.format(sub) for sub in ["imshow_interact",'annotation_interact','gradient','3d_plot',]],
+            extensions=extensions):
+        yield (do_test, )
+
 
 def test_kernel():
     np.random.seed(1239847)

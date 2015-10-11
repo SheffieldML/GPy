@@ -23,9 +23,9 @@ class ImshowController(BufferedAxisChangedController):
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
     def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, vmin=None, vmax=None, **kwargs):
-        xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
-        return canvas.imshow(X, extent=(xmin-xoffset, xmax+xoffset, 
-                                        ymin-yoffset, ymax+yoffset),
+        #xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
+        return canvas.imshow(X, extent=(xmin, xmax, 
+                                        ymin, ymax),
                              vmin=vmin, vmax=vmax,
                              **kwargs)
 
@@ -36,7 +36,7 @@ class ImshowController(BufferedAxisChangedController):
                          ymin-yoffset, ymax+yoffset))
 
     def _offsets(self, xmin, xmax, ymin, ymax):
-        return (xmax - xmin) / (2 * self.resolution), (ymax - ymin) / (2 * self.resolution)
+        return float(xmax - xmin) / (2 * self.resolution), float(ymax - ymin) / (2 * self.resolution)
 
 
 class ImAnnotateController(ImshowController):

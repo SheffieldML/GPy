@@ -49,8 +49,8 @@ extensions = [
 #            return Mock()
 
 #MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-                'nose', 'nose.tools']
+#                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+#                'nose', 'nose.tools']
 
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 

@@ -39,7 +39,7 @@ script:
 
 after_success:
   - codecov
-  - conda install sphinx
+  - conda install --yes sphinx
   - cd doc
   - make html
   - cd ../

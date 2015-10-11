@@ -103,7 +103,7 @@ def test_kernel():
     k.randomize()
     k2 = GPy.kern.RBF(5, ARD=True) + GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2) + GPy.kern.White(4)
     k2[:-1] = k[:]
-    k2.plot_ARD([k2.white.name], legend=True)
+    k2.plot_ARD([_.name for _ in k.parts], legend=True)
     for do_test in _image_comparison(
             baseline_images=['kern_{}'.format(sub) for sub in ["ARD",]],
             extensions=extensions):

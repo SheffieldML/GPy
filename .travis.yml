@@ -42,6 +42,7 @@ after_success:
 
 before_deploy:
   - cd doc
+  - sphinx-apidoc -o source ../GPy
   - make html
   - cd ../
 

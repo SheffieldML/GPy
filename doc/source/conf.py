@@ -54,6 +54,8 @@ extensions = [
 
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
+import sphinx_rtd_theme
+
 autodoc_default_flags = ['members',
                          #'undoc-members',
                          #'private-members',
@@ -68,7 +70,7 @@ show_authors = True
 
 # ------ Sphinx
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]#templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:

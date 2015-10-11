@@ -55,11 +55,12 @@ def load(file_or_path):
         str = str
         unicode = unicode
         bytes = str
-        basestring = basestring    try:
-    import cPickle as pickle
-    if isinstance(file_or_path, basestring): 
-        with open(file_or_path, 'rb') as f:
-            m = pickle.load(f)
+        basestring = basestring    
+        try:
+        import cPickle as pickle
+        if isinstance(file_or_path, basestring): 
+            with open(file_or_path, 'rb') as f:
+                m = pickle.load(f)
         else:
             m = pickle.load(file_or_path)
     except:

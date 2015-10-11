@@ -56,7 +56,7 @@ def read_to_rst(fname):
         #print 'Warning in installation: For rst formatting in pypi, consider installing pypandoc for conversion'
         #with open('README.rst', 'w') as f:
         #    f.write(pypandoc.convert('README.md', 'rst'))
-        pypandoc.convert('README.md', 'rst', outfile='README.rst')
+        pypandoc.convert('README.md', 'rst', outputfile='README.rst')
     except ImportError:
         return read(fname)
 

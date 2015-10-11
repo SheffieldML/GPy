@@ -1,6 +1,13 @@
 GPy.kern package
 ================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    GPy.kern.src
+
 Module contents
 ---------------
 

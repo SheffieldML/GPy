@@ -39,6 +39,10 @@ script:
 
 after_success:
   - codecov
+  - conda install sphinx
+  - cd doc
+  - make html
+  - cd ../
 
 deploy:
   provider: pypi

@@ -5,9 +5,8 @@ os:
 - linux
 
 addons:
-  apt:
-  - libbibutils2
-  - pandoc
+  apt_packages:
+    - pandoc
 
 cache:
   directories:

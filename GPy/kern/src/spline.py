@@ -5,6 +5,7 @@ import numpy as np
 from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
+
 class Spline(Kern):
     """
     Linear spline kernel. You need to specify 2 parameters: the variance and c.

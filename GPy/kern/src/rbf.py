@@ -4,11 +4,9 @@
 
 import numpy as np
 from .stationary import Stationary
-from .psi_comp import PSICOMP_RBF
-from .psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
-from ...util.config import *
+from .psi_comp import PSICOMP_RBF, PSICOMP_RBF_GPU
 from ...core import Param
-from GPy.core.parameterization.transformations import Logexp
+from ...core.parameterization.transformations import Logexp
 
 class RBF(Stationary):
     """

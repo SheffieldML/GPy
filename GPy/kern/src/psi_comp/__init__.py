@@ -2,13 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from ....core.parameterization.parameter_core import Pickleable
-from GPy.util.caching import Cache_this
+from ....util.caching import Cache_this
 from ....core.parameterization import variational
-from . import rbf_psi_comp
-from . import ssrbf_psi_comp
-from . import sslinear_psi_comp
-from . import linear_psi_comp
-
+#from linear_psi_comp import LINEAr
 
 class PSICOMP(Pickleable):
         
@@ -22,6 +18,7 @@ class PSICOMP(Pickleable):
         pass
 
 from .gaussherm import PSICOMP_GH
+from . import rbf_psi_comp, linear_psi_comp, ssrbf_psi_comp, sslinear_psi_comp
 
 class PSICOMP_RBF(PSICOMP):
     @Cache_this(limit=10, ignore_args=(0,))
@@ -67,3 +64,5 @@ class PSICOMP_Linear(PSICOMP):
             raise ValueError("unknown distriubtion received for psi-statistics")
 
 
+from . import ssrbf_psi_gpucomp
+from rbf_psi_gpucomp import PSICOMP_RBF_GPU

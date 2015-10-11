@@ -235,7 +235,6 @@ gpu_code = """
 class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
     def __init__(self, threadnum=256, blocknum=30, GPU_direct=False):
-        from . import PSICOMP_RBF
         self.fall_back = PSICOMP_RBF()
         
         from pycuda.compiler import SourceModule

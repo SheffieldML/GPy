@@ -7,7 +7,6 @@ from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
-from ...util.config import *
 
 class TruncLinear(Kern):
     """

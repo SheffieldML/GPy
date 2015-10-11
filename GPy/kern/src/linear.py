@@ -8,7 +8,6 @@ from ...util.linalg import tdot
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 from ...util.caching import Cache_this
-from ...util.config import *
 from .psi_comp import PSICOMP_Linear
 
 class Linear(Kern):

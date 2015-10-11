@@ -1,9 +1,9 @@
 # #Copyright (c) 2012, Max Zwiessele (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
+import numpy as np
 from .kern import Kern
 from ...core.parameterization.param import Param
 from ...core.parameterization.transformations import Logexp
-import numpy as np
 from ...util.caching import Cache_this
 from ...util.linalg import tdot, mdot
 

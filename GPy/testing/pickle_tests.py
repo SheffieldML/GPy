@@ -13,9 +13,9 @@ import tempfile
 from GPy.core.parameterization.param import Param
 from GPy.core.parameterization.observable_array import ObsAr
 from GPy.core.parameterization.priors import Gaussian
-from GPy.kern._src.rbf import RBF
-from GPy.kern._src.linear import Linear
-from GPy.kern._src.static import Bias, White
+from GPy.kern.src.rbf import RBF
+from GPy.kern.src.linear import Linear
+from GPy.kern.src.static import Bias, White
 from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression

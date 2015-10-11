@@ -3,9 +3,9 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from .kernel_slice_operations import KernCallsViaSlicerMeta
+from ...core.parameterization.observable_array import ObsAr
 from ...util.caching import Cache_this
-from GPy.core.parameterization.observable_array import ObsAr
+from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
 import six
 
@@ -197,15 +197,6 @@ class Kern(Parameterized):
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
         kernel_plots.plot(self, x, fignum, ax, title, plot_limits, resolution, **mpl_kwargs)
-
-    def plot_ARD(self, *args, **kw):
-        """
-        See :class:`~GPy.plotting.matplot_dep.kernel_plots`
-        """
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ...plotting.matplot_dep import kernel_plots
-        return kernel_plots.plot_ARD(self,*args,**kw)
 
     def input_sensitivity(self, summarize=True):
         """

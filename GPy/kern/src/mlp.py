@@ -5,7 +5,6 @@ from .kern import Kern
 from ...core.parameterization import Param
 from ...core.parameterization.transformations import Logexp
 import numpy as np
-from ...util.linalg import tdot
 from ...util.caching import Cache_this
 four_over_tau = 2./np.pi
 

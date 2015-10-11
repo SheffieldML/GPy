@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from .kern import Kern, CombinationKernel
+from .kern import CombinationKernel
 import numpy as np
 import itertools
 

@@ -4,6 +4,10 @@ os:
 - osx
 - linux
 
+addons:
+  apt:
+    - pandoc
+
 cache:
   directories:
   - "$HOME/download/"

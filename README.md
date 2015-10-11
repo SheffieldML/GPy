@@ -10,10 +10,10 @@ A Gaussian processes framework in Python.
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
 #### Continuous integration
-|      | Travis-CI | Codecov | Readthedocs |
-| ---: | :--: | :---: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![mdocs](https://img.shields.io/badge/docs-master-blue.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![ddocs](https://img.shields.io/badge/docs-devel-blue.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
+|      | Travis-CI | Codecov | 
+| ---: | :--: | :---: | 
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | 
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | 
 
 ### Supported Platforms:
 
@@ -55,11 +55,11 @@ If you'd like to install from source, or want to contribute to the project (e.g.
 
 If you're having trouble installing GPy via `pip install GPy` here is a probable solution:
 
-    git clone https://github.com/mikecroucher/GPy.git
+    git clone https://github.com/SheffieldML/GPy.git
     cd GPy
     git checkout devel
-    python3 setup.py build_ext --inplace
-    nosetests3 GPy/testing
+    python setup.py build_ext --inplace
+    nosetests GPy/testing
 
 ### Direct downloads
 

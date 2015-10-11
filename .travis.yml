@@ -32,6 +32,7 @@ before_install:
 install:
   - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx;
   - pip install codecov
+  - pip install pypandoc
   - python setup.py develop
 
 script:

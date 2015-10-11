@@ -6,7 +6,8 @@ os:
 
 addons:
   apt:
-    - pandoc
+  - libbibutils2
+  - pandoc
 
 cache:
   directories:
@@ -19,7 +20,14 @@ env:
 
 before_install:
   - export CONDA_CACHED=1
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export OS=Linux; elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export OS=MacOSX; else echo "OS not supported yet"; exit 1; fi;
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
+      then export OS=Linux; 
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
+      then export OS=MacOSX;
+      brew install pandoc; 
+    else 
+      echo "OS not supported yet"; 
+      exit 1; fi;
   - if [[ $PYTHON_VERSION == "2.7" ]]; 
       then export MINICONDA=Miniconda; 
     elif [[ $PYTHON_VERSION == 3* ]]; 

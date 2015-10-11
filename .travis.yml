@@ -30,7 +30,7 @@ before_install:
   - export PATH="$MINICONDA_INSTALL/bin:$PATH";
 
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib;
+  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx;
   - pip install codecov
   - python setup.py develop
 
@@ -47,4 +47,5 @@ deploy:
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
     plot_density
-  distributions: "bdist_wheel sdist sphinx_build sphinx_upload"
+  server: https://testpypi.python.org/pypi
+  distributions: "bdist_wheel sdist"

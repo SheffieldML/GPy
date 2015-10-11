@@ -42,6 +42,7 @@ after_success:
 
 before_deploy:
   - cd doc
+  - pip install sphinx_rtd_theme
   - sphinx-apidoc -o source/ ../GPy
   - make html
   - cd ../

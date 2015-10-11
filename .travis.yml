@@ -39,8 +39,6 @@ script:
 
 after_success:
   - codecov
-
-before_deploy:
   - cd doc
   - sphinx-apidoc -o source ../GPy
   - make html

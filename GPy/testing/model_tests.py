@@ -48,7 +48,7 @@ class MiscTests(unittest.TestCase):
         Y = self.Y
         mu, std = Y.mean(0), Y.std(0)
         m = GPy.models.GPRegression(self.X, Y, kernel=k, normalizer=True)
-        m.optimize()
+        m.optimize(messages=True)
         assert(m.checkgrad())
         k = GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)

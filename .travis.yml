@@ -55,4 +55,5 @@ deploy:
     tags: true
     branch: plot_density
   server: https://testpypi.python.org/pypi
-  distributions: "bdist_wheel sdist"
+  distributions: "bdist_wheel sdist bdist_egg"
+  skip_cleanup: true

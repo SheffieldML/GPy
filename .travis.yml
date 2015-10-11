@@ -48,3 +48,4 @@ deploy:
   on:
     plot_density
   distributions: "bdist_wheel sdist"
+  server: https://testpypi.python.org/pypi

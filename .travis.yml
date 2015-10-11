@@ -40,7 +40,7 @@ script:
 after_success:
   - codecov
   - cd doc
-  - sphinx-apidoc -o source ../GPy
+  - "sphinx-apidoc -o source ../GPy"
   - make html
   - cd ../
 

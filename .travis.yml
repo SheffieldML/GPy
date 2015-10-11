@@ -8,10 +8,10 @@ addons:
   apt_packages:
     - pandoc
 
-cache:
-  directories:
-  - "$HOME/download/"
-  - "$HOME/install/"
+#cache:
+#  directories:
+#  - "$HOME/download/"
+#  - "$HOME/install/"
 
 env:
   - PYTHON_VERSION=2.7

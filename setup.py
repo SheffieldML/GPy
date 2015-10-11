@@ -18,7 +18,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 # 
-# * Neither the name of paramax nor the names of its
+# * Neither the name of GPy nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 # 
@@ -42,7 +42,13 @@ import numpy as np
 
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    try:
+        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+            return unicode(f.read(), 'utf-8')
+    except NameError:
+        #python 3
+        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+            return f.read()
 
 def read_to_rst(fname):
     try:
@@ -50,7 +56,7 @@ def read_to_rst(fname):
         #print 'Warning in installation: For rst formatting in pypi, consider installing pypandoc for conversion'
         with open('README.rst', 'w') as f:
             f.write(pypandoc.convert('README.md', 'rst'))
-    except:
+    except ImportError:
         return read(fname)
 
 version_dummy = {}
@@ -99,23 +105,33 @@ setup(name = 'GPy',
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
       ext_modules = ext_mods,
-      packages = ["GPy.models",
+      packages = ["GPy",
+                  "GPy.core",
+                  "GPy.core.parameterization", 
+                  "GPy.kern",
+                  "GPy.kern._src",
+                  "GPy.kern._src.psi_comp", 
+                  "GPy.models",
+                  "GPy.inference",
                   "GPy.inference.optimization",
                   "GPy.inference.mcmc",
-                  "GPy.inference",
                   "GPy.inference.latent_function_inference",
-                  "GPy.likelihoods", "GPy.mappings",
-                  "GPy.examples", "GPy.core.parameterization",
-                  "GPy.core", "GPy.testing",
-                  "GPy", "GPy.util", "GPy.kern",
-                  "GPy.kern._src.psi_comp", "GPy.kern._src",
-                  "GPy.plotting.matplot_dep.latent_space_visualizations.controllers",
-                  "GPy.plotting.matplot_dep.latent_space_visualizations",
-                  "GPy.plotting.matplot_dep", "GPy.plotting"],
+                  "GPy.likelihoods", 
+                  "GPy.mappings",
+                  "GPy.examples",
+                  "GPy.testing",
+                  "GPy.util", 
+                  "GPy.plotting",
+                  "GPy.plotting.gpy_plot",
+                  "GPy.plotting.matplot_dep", 
+                  "GPy.plotting.matplot_dep.controllers",
+                  "GPy.plotting.plotly_dep", 
+                  ],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
                               'util/data_resources.json',
                               'util/football_teams.json',
+                              'plotting/plotting_tests/baseline/*.png'
                               ]},
       include_package_data = True,
       py_modules = ['GPy.__init__'],
@@ -129,5 +145,34 @@ setup(name = 'GPy',
                    'Operating System :: Microsoft :: Windows',
                    'Operating System :: POSIX :: Linux',
                    'Programming Language :: Python :: 2.7',
-                   'Topic :: Scientific/Engineering :: Artificial Intelligence']
+                   'Programming Language :: Python :: 3.3',
+                   'Programming Language :: Python :: 3.4',
+                   'Programming Language :: Python :: 3.5',
+                   ]
       )
+
+
+# Check config files and settings:
+local_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'GPy', 'installation.cfg'))
+home = os.getenv('HOME') or os.getenv('USERPROFILE')
+user_file = os.path.join(home,'.config', 'GPy', 'user.cfg')
+
+print("")
+if not os.path.exists(user_file):
+    # Does an old config exist?
+    old_user_file = os.path.join(home,'.gpy_user.cfg')
+    if os.path.exists(old_user_file):
+        # Move it to new location:
+        print("GPy: Found old config file, moving to new location {}".format(user_file))
+        os.rename(old_user_file, user_file)                
+    else:
+        # No config file exists, save informative stub to user config folder:
+        print("GPy: Saving user configuration file to {}".format(user_file))
+        if not os.path.exists(os.path.dirname(user_file)):
+            os.makedirs(os.path.dirname(user_file))
+        with open(user_file, 'w') as f:
+            with open(local_file, 'r') as l:
+                tmp = l.read()
+                f.write(tmp)
+else:
+    print("GPy: User configuration file at location {}".format(user_file))

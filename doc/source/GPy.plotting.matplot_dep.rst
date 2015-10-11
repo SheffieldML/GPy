@@ -6,31 +6,15 @@ Subpackages
 
 .. toctree::
 
-    GPy.plotting.matplot_dep.latent_space_visualizations
+    GPy.plotting.matplot_dep.controllers
 
 Submodules
 ----------
 
-GPy.plotting.matplot_dep.Tango module
--------------------------------------
+GPy.plotting.matplot_dep.defaults module
+----------------------------------------
 
-.. automodule:: GPy.plotting.matplot_dep.Tango
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.plotting.matplot_dep.base_plots module
-------------------------------------------
-
-.. automodule:: GPy.plotting.matplot_dep.base_plots
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.plotting.matplot_dep.dim_reduction_plots module
----------------------------------------------------
-
-.. automodule:: GPy.plotting.matplot_dep.dim_reduction_plots
+.. automodule:: GPy.plotting.matplot_dep.defaults
     :members:
     :undoc-members:
     :show-inheritance:
@@ -39,14 +23,6 @@ GPy.plotting.matplot_dep.img_plots module
 -----------------------------------------
 
 .. automodule:: GPy.plotting.matplot_dep.img_plots
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.plotting.matplot_dep.inference_plots module
------------------------------------------------
-
-.. automodule:: GPy.plotting.matplot_dep.inference_plots
     :members:
     :undoc-members:
     :show-inheritance:
@@ -75,18 +51,10 @@ GPy.plotting.matplot_dep.maps module
     :undoc-members:
     :show-inheritance:
 
-GPy.plotting.matplot_dep.models_plots module
---------------------------------------------
+GPy.plotting.matplot_dep.plot_definitions module
+------------------------------------------------
 
-.. automodule:: GPy.plotting.matplot_dep.models_plots
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-GPy.plotting.matplot_dep.netpbmfile module
-------------------------------------------
-
-.. automodule:: GPy.plotting.matplot_dep.netpbmfile
+.. automodule:: GPy.plotting.matplot_dep.plot_definitions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -111,6 +79,14 @@ GPy.plotting.matplot_dep.svig_plots module
 ------------------------------------------
 
 .. automodule:: GPy.plotting.matplot_dep.svig_plots
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.plotting.matplot_dep.util module
+------------------------------------
+
+.. automodule:: GPy.plotting.matplot_dep.util
     :members:
     :undoc-members:
     :show-inheritance:

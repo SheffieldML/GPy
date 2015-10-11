@@ -1,6 +1,5 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
@@ -34,15 +33,15 @@ class Kern(Parameterized):
             If this is not an integer (!) we will work on the whole input matrix X,
             and not check whether dimensions match or not (!).
 
-        active_dims:
+        _all_dims_active:
 
             is the active_dimensions of inputs X we will work on.
-            All kernels will get sliced Xes as inputs, if active_dims is not None
-            Only positive integers are allowed in active_dims!
-            if active_dims is None, slicing is switched off and all X will be passed through as given.
+            All kernels will get sliced Xes as inputs, if _all_dims_active is not None
+            Only positive integers are allowed in _all_dims_active!
+            if _all_dims_active is None, slicing is switched off and all X will be passed through as given.
 
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
+        :param array-like|None _all_dims_active: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """
@@ -52,19 +51,20 @@ class Kern(Parameterized):
         if active_dims is None:
             active_dims = np.arange(input_dim)
 
-        self.active_dims = np.atleast_1d(active_dims).astype(int)
+        self.active_dims = active_dims
+        self._all_dims_active = np.atleast_1d(active_dims).astype(int)
 
-        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, active_dims={}".format(self.input_dim, self.active_dims.size, self.active_dims)
+        assert self._all_dims_active.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, _all_dims_active={}".format(self.input_dim, self._all_dims_active.size, self._all_dims_active)
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
         from .psi_comp import PSICOMP_GH
-        self.psicomp = PSICOMP_GH()
+        self.psicomp = PSICOMP_GH()        
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
-        return X[:, self.active_dims]
+        return X[:, self._all_dims_active]
 
     def K(self, X, X2):
         """
@@ -213,6 +213,37 @@ class Kern(Parameterized):
         """
         return np.zeros(self.input_dim)
 
+    def get_most_significant_input_dimensions(self, which_indices=None):
+        """
+        Determine which dimensions should be plotted
+        
+        Returns the top three most signification input dimensions
+        
+        if less then three dimensions, the non existing dimensions are
+        labeled as None, so for a 1 dimensional input this returns
+        (0, None, None).
+        
+        :param which_indices: force the indices to be the given indices. 
+        :type which_indices: int or tuple(int,int) or tuple(int,int,int) 
+        """
+        if which_indices is None:
+            which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
+        try:
+            input_1, input_2, input_3 = which_indices
+        except ValueError:
+            # which indices is tuple or int
+            try:
+                input_3 = None
+                input_1, input_2 = which_indices
+            except TypeError:
+                # which_indices is an int
+                input_1, input_2 = which_indices, None
+            except ValueError:
+                # which_indices was a list or array like with only one int
+                input_1, input_2 = which_indices[0], None            
+        return input_1, input_2, input_3
+
+
     def __add__(self, other):
         """ Overloading of the '+' operator. for more control, see self.add """
         return self.add(other)
@@ -244,9 +275,9 @@ class Kern(Parameterized):
         """
         Shortcut for tensor `prod`.
         """
-        assert np.all(self.active_dims == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
-        assert np.all(other.active_dims == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
-        other.active_dims += self.input_dim
+        assert np.all(self._all_dims_active == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        assert np.all(other._all_dims_active == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        other._all_dims_active += self.input_dim
         return self.prod(other)
 
     def prod(self, other, name='mul'):
@@ -268,10 +299,10 @@ class Kern(Parameterized):
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+        assert X.shape[1] == self.input_dim, "{} did not specify _all_dims_active and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
 
     def _check_active_dims(self, X):
-        assert X.shape[1] >= len(self.active_dims), "At least {} dimensional X needed, X.shape={!s}".format(len(self.active_dims), X.shape)
+        assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
 
 
 class CombinationKernel(Kern):
@@ -303,15 +334,15 @@ class CombinationKernel(Kern):
         return self.parameters
 
     def get_input_dim_active_dims(self, kernels, extra_dims = None):
-        #active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        #active_dims = np.array(np.concatenate((active_dims, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = reduce(max, (k.active_dims.max() for k in kernels)) + 1
+        self.active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        #_all_dims_active = np.array(np.concatenate((_all_dims_active, extra_dims if extra_dims is not None else [])), dtype=int)
+        input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
 
         if extra_dims is not None:
             input_dim += extra_dims.size
 
-        active_dims = np.arange(input_dim)
-        return input_dim, active_dims
+        _all_dims_active = np.arange(input_dim)
+        return input_dim, _all_dims_active
 
     def input_sensitivity(self, summarize=True):
         """

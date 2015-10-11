@@ -121,7 +121,7 @@ class Add(CombinationKernel):
         #ffrom fixed import Fixed
 
         for p1, p2 in itertools.combinations(self.parts, 2):
-            # i1, i2 = p1.active_dims, p2.active_dims
+            # i1, i2 = p1._all_dims_active, p2._all_dims_active
             # white doesn;t combine with anything
             if isinstance(p1, White) or isinstance(p2, White):
                 pass
@@ -135,7 +135,7 @@ class Add(CombinationKernel):
                 tmp = p1.psi1(Z, variational_posterior).sum(axis=0)
                 psi2 += p2.variance * (tmp[:,None]+tmp[None,:]) #(tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
-                assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
+                assert np.intersect1d(p1._all_dims_active, p2._all_dims_active).size == 0, "only non overlapping kernel dimensions allowed so far"
                 tmp1 = p1.psi1(Z, variational_posterior)
                 tmp2 = p2.psi1(Z, variational_posterior)
                 psi2 += np.einsum('nm,no->mo',tmp1,tmp2)+np.einsum('nm,no->mo',tmp2,tmp1)
@@ -157,7 +157,7 @@ class Add(CombinationKernel):
         #ffrom fixed import Fixed
 
         for p1, p2 in itertools.combinations(self.parts, 2):
-            # i1, i2 = p1.active_dims, p2.active_dims
+            # i1, i2 = p1._all_dims_active, p2._all_dims_active
             # white doesn;t combine with anything
             if isinstance(p1, White) or isinstance(p2, White):
                 pass
@@ -171,7 +171,7 @@ class Add(CombinationKernel):
                 tmp = p1.psi1(Z, variational_posterior)
                 psi2 += p2.variance * (tmp[:, :, None] + tmp[:, None, :])
             elif isinstance(p2, (RBF, Linear)) and isinstance(p1, (RBF, Linear)):
-                assert np.intersect1d(p1.active_dims, p2.active_dims).size == 0, "only non overlapping kernel dimensions allowed so far"
+                assert np.intersect1d(p1._all_dims_active, p2._all_dims_active).size == 0, "only non overlapping kernel dimensions allowed so far"
                 tmp1 = p1.psi1(Z, variational_posterior)
                 tmp2 = p2.psi1(Z, variational_posterior)
                 psi2 += np.einsum('nm,no->nmo',tmp1,tmp2)+np.einsum('nm,no->nmo',tmp2,tmp1)
@@ -193,7 +193,7 @@ class Add(CombinationKernel):
                     continue
                 elif isinstance(p2, Bias):
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
-                else:# np.setdiff1d(p1.active_dims, ar2, assume_unique): # TODO: Careful, not correct for overlapping active_dims
+                else:# np.setdiff1d(p1._all_dims_active, ar2, assume_unique): # TODO: Careful, not correct for overlapping _all_dims_active
                     eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
@@ -244,17 +244,17 @@ class Add(CombinationKernel):
             self.link_parameters(*other_params)
         else:
             self.link_parameter(other)
-        self.input_dim, self.active_dims = self.get_input_dim_active_dims(self.parts)
+        self.input_dim, self._all_dims_active = self.get_input_dim_active_dims(self.parts)
         return self
 
     def input_sensitivity(self, summarize=True):
         if summarize:
             i_s = np.zeros((self.input_dim))
             for k in self.parts:
-                i_s[k.active_dims] += k.input_sensitivity(summarize)
+                i_s[k._all_dims_active] += k.input_sensitivity(summarize)
             return i_s
         else:
             i_s = np.zeros((len(self.parts), self.input_dim))
             from operator import setitem
-            [setitem(i_s, (i, k.active_dims), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
+            [setitem(i_s, (i, k._all_dims_active), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
             return i_s

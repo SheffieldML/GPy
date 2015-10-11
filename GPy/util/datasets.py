@@ -94,10 +94,13 @@ def prompt_user(prompt):
 
 def data_available(dataset_name=None):
     """Check if the data set is available on the local machine already."""
-    from itertools import izip_longest
+    try:
+        from itertools import izip_longest
+    except ImportError:
+        from itertools import zip_longest as izip_longest
     dr = data_resources[dataset_name]
     zip_urls = (dr['files'], )
-    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    if 'save_names' in dr: zip_urls += (dr['save_names'], )
     else: zip_urls += ([],)
 
     for file_list, save_list in izip_longest(*zip_urls, fillvalue=[]):

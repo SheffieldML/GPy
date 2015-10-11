@@ -36,24 +36,41 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 
-import sys
-try:
-    from unittest.mock import MagicMock
-except:
-    from mock import Mock as MagicMock
+#----- Autodoc
+#import sys
+#try:
+#    from unittest.mock import MagicMock
+#except:
+#    from mock import Mock as MagicMock
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return Mock()
+#class Mock(MagicMock):
+#    @classmethod
+#    def __getattr__(cls, name):
+#            return Mock()
 
-MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-                'nose', 'nose.tools']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+#MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
+#                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+#                'nose', 'nose.tools']
 
+#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
+import sphinx_rtd_theme
+
+autodoc_default_flags = ['members',
+                         #'undoc-members',
+                         #'private-members',
+                         #'special-members',
+                         #'inherited-members',
+                         'show-inheritance']
+autodoc_member_order = 'groupwise'
+add_function_parentheses = False
+add_module_names = False
+modindex_common_prefix = ['GPy.']
+show_authors = True
+
+# ------ Sphinx
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]#templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -119,7 +136,7 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -135,12 +152,12 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+#html_theme_options = dict(sidebarwidth='20}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -180,20 +197,22 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
-
+#html_sidebars = {
+#   '**': ['globaltoc.html', 'localtoc.html', 'sourcelink.html', 'searchbox.html'],
+#   'using/windows': ['windowssidebar.html', 'searchbox.html'],
+#}
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_domain_indices = True
+#html_domain_indices = False
 
 # If false, no index is generated.
-#html_use_index = True
+#html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
-#html_split_index = False
+html_split_index = True
 
 # If true, links to the reST sources are added to the pages.
 #html_show_sourcelink = True

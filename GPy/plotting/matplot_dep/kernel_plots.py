@@ -3,12 +3,9 @@
 
 import numpy as np
 from matplotlib import pyplot as pb
-from . import Tango
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import offset_copy
 from .base_plots import ax_default
-
-
 
 def add_bar_labels(fig, ax, bars, bottom=0):
     transOffset = offset_copy(ax.transData, fig=fig,
@@ -40,63 +37,6 @@ def plot_bars(fig, ax, x, ard_params, color, name, bottom=0):
                   color=color, edgecolor='k', linewidth=1.2,
                   label=name.replace("_"," "))
 
-def plot_ARD(kernel, fignum=None, ax=None, title='', legend=False, filtering=None):
-    """
-    If an ARD kernel is present, plot a bar representation using matplotlib
-
-    :param fignum: figure number of the plot
-    :param ax: matplotlib axis to plot on
-    :param title:
-        title of the plot,
-        pass '' to not print a title
-        pass None for a generic title
-    :param filtering: list of names, which to use for plotting ARD parameters.
-                      Only kernels which match names in the list of names in filtering
-                      will be used for plotting.
-    :type filtering: list of names to use for ARD plot
-    """
-    fig, ax = ax_default(fignum,ax)
-
-    if title is None:
-        ax.set_title('ARD parameters, %s kernel' % kernel.name)
-    else:
-        ax.set_title(title)
-
-    Tango.reset()
-    bars = []
-
-    ard_params = np.atleast_2d(kernel.input_sensitivity(summarize=False))
-    bottom = 0
-    last_bottom = bottom
-
-    x = np.arange(kernel.input_dim)
-
-    if filtering is None:
-        filtering = kernel.parameter_names(recursive=False)
-
-    for i in range(ard_params.shape[0]):
-        if kernel.parameters[i].name in filtering:
-            c = Tango.nextMedium()
-            bars.append(plot_bars(fig, ax, x, ard_params[i,:], c, kernel.parameters[i].name, bottom=bottom))
-            last_bottom = ard_params[i,:]
-            bottom += last_bottom
-        else:
-            print("filtering out {}".format(kernel.parameters[i].name))
-
-    ax.set_xlim(-.5, kernel.input_dim - .5)
-    add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
-
-    if legend:
-        if title is '':
-            mode = 'expand'
-            if len(bars) > 1:
-                mode = 'expand'
-            ax.legend(bbox_to_anchor=(0., 1.02, 1., 1.02), loc=3,
-                      ncol=len(bars), mode=mode, borderaxespad=0.)
-            fig.tight_layout(rect=(0, 0, 1, .9))
-        else:
-            ax.legend()
-    return ax
 
 
 
@@ -111,7 +51,7 @@ def plot(kernel,x=None, fignum=None, ax=None, title=None, plot_limits=None, reso
     :resolution: the resolution of the lines used in plotting
     :mpl_kwargs avalid keyword arguments to pass through to matplotlib (e.g. lw=7)
     """
-    fig, ax = ax_default(fignum,ax)
+    _, ax = ax_default(fignum,ax)
 
     if title is None:
         ax.set_title('%s kernel' % kernel.name)

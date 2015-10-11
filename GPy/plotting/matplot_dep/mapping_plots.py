@@ -3,7 +3,7 @@
 
 import numpy as np
 try:
-    from . import Tango
+from GPy.plotting import Tango
     from matplotlib import pyplot as pb
 except:
     pass

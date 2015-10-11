@@ -12,8 +12,6 @@ except ImportError:
     config = configparser.ConfigParser()
     
 
-    
-
 # This is the default configuration file that always needs to be present.
 default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'defaults.cfg'))
 
@@ -23,10 +21,11 @@ local_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'in
 
 # This specifies configurations specific to the user (it is found in the user home directory)
 home = os.getenv('HOME') or os.getenv('USERPROFILE')
-user_file = os.path.join(home,'.gpy_user.cfg')
+user_file = os.path.join(home,'.config','gpy', 'user.cfg')
 
 # Read in the given files.
 config.readfp(open(default_file))
 config.read([local_file, user_file])
+
 if not config:
     raise ValueError("No configuration file found at either " + user_file + " or " + local_file + " or " + default_file + ".")

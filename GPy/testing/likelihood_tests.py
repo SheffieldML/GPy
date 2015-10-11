@@ -559,36 +559,29 @@ class TestNoiseModels(object):
     @with_setup(setUp, tearDown)
     def t_laplace_fit_rbf_white(self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints):
         print("\n{}".format(inspect.stack()[0][3]))
+        np.random.seed(111)
         #Normalize
         Y = Y/Y.max()
-        white_var = 1e-5
+
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
 
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
-        m['.*white'].constrain_fixed(white_var)
+        m.randomize()
 
         #Set constraints
         for constrain_param, constraint in constraints:
             constraint(constrain_param, m)
-
-        print(m)
-        m.randomize()
-        m.randomize()
 
         #Set params
         for param_num in range(len(param_names)):
             name = param_names[param_num]
             m[name] = param_vals[param_num]
 
-        #m.optimize(max_iters=8)
-        print(m)
-        #if not m.checkgrad(step=step):
-            #m.checkgrad(verbose=1, step=step)
-            #NOTE this test appears to be stochastic for some likelihoods (student t?)
-            # appears to all be working in test mode right now...
-        #if isinstance(model, GPy.likelihoods.StudentT):
-        assert m.checkgrad(verbose=1, step=step)
+        try:
+            assert m.checkgrad(verbose=0, step=step)
+        except:
+            assert m.checkgrad(verbose=1, step=step)
 
     ###########
     # EP test #

@@ -1,30 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
-import matplotlib as mpl
-from matplotlib import pyplot as pb
-import sys
-#sys.path.append('/home/james/mlprojects/sitran_cluster/')
-#from switch_pylab_backend import *
-
-
-#this stuff isn;t really Tango related: maybe it could be moved out? TODO
-def removeRightTicks(ax=None):
-    ax = ax or pb.gca()
-    for i, line in enumerate(ax.get_yticklines()):
-        if i%2 == 1:   # odd indices
-            line.set_visible(False)
-def removeUpperTicks(ax=None):
-    ax = ax or pb.gca()
-    for i, line in enumerate(ax.get_xticklines()):
-        if i%2 == 1:   # odd indices
-            line.set_visible(False)
-def fewerXticks(ax=None,divideby=2):
-    ax = ax or pb.gca()
-    ax.set_xticks(ax.get_xticks()[::divideby])
-
-
 colorsHex = {\
 "Aluminium6":"#2e3436",\
 "Aluminium5":"#555753",\
@@ -83,32 +59,6 @@ def reset():
     while not lightList[0]==colorsHex['lightBlue']:
         lightList.append(lightList.pop(0))
 
-def setLightFigures():
-    mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['axes.facecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium6']
-    mpl.rcParams['figure.edgecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['figure.facecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['grid.color']=colorsHex['Aluminium6']
-    mpl.rcParams['savefig.edgecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['savefig.facecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['text.color']=colorsHex['Aluminium6']
-    mpl.rcParams['xtick.color']=colorsHex['Aluminium6']
-    mpl.rcParams['ytick.color']=colorsHex['Aluminium6']
-
-def setDarkFigures():
-    mpl.rcParams['axes.edgecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['axes.facecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['axes.labelcolor']=colorsHex['Aluminium2']
-    mpl.rcParams['figure.edgecolor']=colorsHex['Aluminium2']
-    mpl.rcParams['figure.facecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['grid.color']=colorsHex['Aluminium2']
-    mpl.rcParams['savefig.edgecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['savefig.facecolor']=colorsHex['Aluminium6']
-    mpl.rcParams['text.color']=colorsHex['Aluminium2']
-    mpl.rcParams['xtick.color']=colorsHex['Aluminium2']
-    mpl.rcParams['ytick.color']=colorsHex['Aluminium2']
-
 def hex2rgb(hexcolor):
     hexcolor = [hexcolor[1+2*i:1+2*(i+1)] for i in range(3)]
     r,g,b = [int(n,16) for n in hexcolor]
@@ -155,12 +105,3 @@ cdict_Alu = {'red' :((0./5,colorsRGB['Aluminium1'][0]/256.,colorsRGB['Aluminium1
                      (3./5,colorsRGB['Aluminium4'][2]/256.,colorsRGB['Aluminium4'][2]/256.),
                      (4./5,colorsRGB['Aluminium5'][2]/256.,colorsRGB['Aluminium5'][2]/256.),
                      (5./5,colorsRGB['Aluminium6'][2]/256.,colorsRGB['Aluminium6'][2]/256.))}
-# cmap_Alu = mpl.colors.LinearSegmentedColormap('TangoAluminium',cdict_Alu,256)
-# cmap_BGR = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_BGR,256)
-# cmap_RB = mpl.colors.LinearSegmentedColormap('TangoRedBlue',cdict_RB,256)
-if __name__=='__main__':
-    from matplotlib import pyplot as pb
-    pb.figure()
-    pb.pcolor(pb.rand(10,10),cmap=cmap_RB)
-    pb.colorbar()
-    pb.show()

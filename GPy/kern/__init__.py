@@ -1,3 +1,11 @@
+"""
+Kernel module the kernels to sit in.
+
+.. automodule:: GPy.kern.src
+   :members:
+   :private-members:
+"""
+from . import _src as src
 from ._src.kern import Kern
 from ._src.rbf import RBF
 from ._src.linear import Linear, LinearFull
@@ -21,4 +29,3 @@ from ._src.splitKern import DEtime as DiffGenomeKern
 from ._src.spline import Spline
 from ._src.eq_ode2 import EQ_ODE2
 from ._src.basis_funcs import LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel
-

@@ -39,7 +39,10 @@ script:
 
 after_success:
   - codecov
+
+before_deploy:
   - cd doc
+  - sphinx-apidoc -o source/ ../GPy
   - make html
   - cd ../
 
@@ -49,6 +52,7 @@ deploy:
   password: 
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
-    plot_density
+    tags: true
+    branch: plot_density
   server: https://testpypi.python.org/pypi
   distributions: "bdist_wheel sdist"

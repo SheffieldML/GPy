@@ -185,7 +185,8 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)
+    X = get_x_y_var(self)[0]
+    _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (labels is not None):
@@ -248,7 +249,8 @@ def plot_latent(self, labels=None, which_indices=None,
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)
+    X = get_x_y_var(self)[0]
+    _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (labels is not None):
@@ -313,7 +315,8 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     :param scatter_kwargs: the kwargs for the scatter plots
     """
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
-    X, _, _, _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, plot_limits, which_indices, None, resolution)
+    X = get_x_y_var(self)[0]
+    _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     if (data_labels is not None):

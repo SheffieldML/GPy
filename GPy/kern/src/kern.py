@@ -341,7 +341,20 @@ class CombinationKernel(Kern):
         otherwise put everything into an array with shape (#kernels, input_dim)
         in the order of appearance of the kernels in the parameterized object.
         """
-        raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
+        if not summarize:
+            num_params = [0]
+            parts = []
+            def sum_params(x):
+                if (not isinstance(x, CombinationKernel)) and isinstance(x, Kern):
+                    num_params[0] += 1
+                    parts.append(x)
+            self.traverse(sum_params)
+            i_s = np.zeros((num_params[0], self.input_dim))
+            from operator import setitem
+            [setitem(i_s, (i, k._all_dims_active), k.input_sensitivity(summarize)) for i, k in enumerate(parts)]
+            return i_s
+        else:
+            raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
 
     def _check_active_dims(self, X):
         return

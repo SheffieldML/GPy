@@ -143,13 +143,16 @@ def test_kernel():
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
-    k = GPy.kern.RBF(5, ARD=True) + GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2)
+    k = GPy.kern.RBF(5, ARD=True) * GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2)
     k.randomize()
-    k2 = GPy.kern.RBF(5, ARD=True) + GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2) + GPy.kern.White(4)
+    k2 = GPy.kern.RBF(5, ARD=True) * GPy.kern.Linear(3, active_dims=[0,2,4], ARD=True) + GPy.kern.Bias(2) + GPy.kern.White(4)
     k2[:-1] = k[:]
-    k2.plot_ARD([_.name for _ in k.parts], legend=True)
+    k2.plot_ARD(['rbf', 'linear', 'bias'], legend=True)
+    k2.plot_covariance(visible_dims=[0, 3], plot_limits=(-1,3))
+    k2.plot_covariance(visible_dims=[2], plot_limits=(-1, 3))
+    k2.plot_covariance(visible_dims=[2, 4], plot_limits=((-1, 0), (5, 3)), projection='3d')
     for do_test in _image_comparison(
-            baseline_images=['kern_{}'.format(sub) for sub in ["ARD",]],
+            baseline_images=['kern_{}'.format(sub) for sub in ["ARD", 'cov_2d', 'cov_1d', 'cov_3d']],
             extensions=extensions):
         yield (do_test, )
 

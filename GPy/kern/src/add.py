@@ -254,7 +254,4 @@ class Add(CombinationKernel):
                 i_s[k._all_dims_active] += k.input_sensitivity(summarize)
             return i_s
         else:
-            i_s = np.zeros((len(self.parts), self.input_dim))
-            from operator import setitem
-            [setitem(i_s, (i, k._all_dims_active), k.input_sensitivity(summarize)) for i, k in enumerate(self.parts)]
-            return i_s
+            return super(Add, self).input_sensitivity(summarize)

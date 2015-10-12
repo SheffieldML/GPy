@@ -30,10 +30,8 @@
 import numpy as np
 from . import plotting_library as pl
 from .. import Tango
-from .plot_util import get_x_y_var,\
-    update_not_existing_kwargs, \
-    helper_for_plot_data, scatter_label_generator, subsample_X,\
-    find_best_layout_for_subplots
+from .plot_util import update_not_existing_kwargs, helper_for_plot_data
+from ...kern.src.kern import Kern, CombinationKernel
 
 def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
     """
@@ -53,110 +51,90 @@ def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
 
     x = np.arange(kernel.input_dim)
 
+    parts = []
+    def visit(x):
+        if (not isinstance(x, CombinationKernel)) and isinstance(x, Kern):
+            parts.append(x)
+    kernel.traverse(visit)
+
     if filtering is None:
-        filtering = kernel.parameter_names(recursive=False)
+        filtering = [k.name for k in parts]
 
     bars = []
     kwargs = update_not_existing_kwargs(kwargs, pl().defaults.ard)
-    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel.input_dim-.5), **kwargs)
+    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel.input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
     for i in range(ard_params.shape[0]):
-        if kernel.parameters[i].name in filtering:
+        if parts[i].name in filtering:
             c = Tango.nextMedium()
             bars.append(pl().barplot(canvas, x,
                                      ard_params[i,:], color=c,
-                                     label=kernel.parameters[i].name,
+                                     label=parts[i].name,
                                      bottom=bottom, **kwargs))
             last_bottom = ard_params[i,:]
             bottom += last_bottom
         else:
-            print("filtering out {}".format(kernel.parameters[i].name))
+            print("filtering out {}".format(parts[i].name))
 
     #add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
     return pl().add_to_canvas(canvas, bars, legend=legend)
 
-def plot_covariance(kernel, x=None, label=None, plot_limits=None, visible_dims=None, resolution=None, projection=None, levels=20, **mpl_kwargs):
+def plot_covariance(kernel, x=None, label=None,
+             plot_limits=None, visible_dims=None, resolution=None,
+             projection='2d', levels=20, **kwargs):
     """
-    plot a kernel.
-    :param x: the value to use for the other kernel argument (kernels are a function of two variables!)
-    :param fignum: figure number of the plot
-    :param ax: matplotlib axis to plot on
-    :param title: the matplotlib title
+    Plot a kernel covariance w.r.t. another x.
+
+    :param array-like x: the value to use for the other kernel argument (kernels are a function of two variables!)
     :param plot_limits: the range over which to plot the kernel
-    :resolution: the resolution of the lines used in plotting
-    :mpl_kwargs avalid keyword arguments to pass through to matplotlib (e.g. lw=7)
+    :type plot_limits: Either (xmin, xmax) for 1D or (xmin, xmax, ymin, ymax) / ((xmin, xmax), (ymin, ymax)) for 2D
+    :param array-like visible_dims: input dimensions (!) to use for x. Make sure to select 2 or less dimensions to plot.
+    :resolution: the resolution of the lines used in plotting. for 2D this defines the grid for kernel evaluation.
+    :param {2d|3d} projection: What projection shall we use to plot the kernel?
+    :param int levels: for 2D projection, how many levels for the contour plot to use?
+    :param kwargs:  valid kwargs for your specific plotting library
     """
-    canvas, error_kwargs = pl().new_canvas(projection=projection, **error_kwargs)
-    _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_for_plot_data(kernel, plot_limits, visible_dims, None, resolution)
+    X = np.ones((2, kernel.input_dim)) * [[-3], [3]]
+    _, free_dims, Xgrid, xx, yy, _, _, resolution = helper_for_plot_data(kernel, X, plot_limits, visible_dims, None, resolution)
+    
+    from numbers import Number
+    if x is None:
+        from ...kern.src.stationary import Stationary
+        x = np.ones((1, kernel.input_dim)) * (not isinstance(kernel, Stationary))
+    elif isinstance(x, Number):
+        x = np.ones((1, kernel.input_dim))*x
+    K = kernel.K(Xgrid, x)
+    
+    if projection == '3d':
+        xlabel = 'X[:,0]'
+        ylabel = 'X[:,1]'
+        zlabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
+    else:
+        xlabel = 'X'
+        ylabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
+        zlabel = None
+
+    canvas, kwargs = pl().new_canvas(projection=projection, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, **kwargs)
 
     if len(free_dims)<=2:
         if len(free_dims)==1:
-            if x is None: x = np.zeros((1, 1))
-            else:
-                x = np.asarray(x)
-                assert x.size == 1, "The size of the fixed variable x is not 1"
-                x = x.reshape((1, 1))
             # 1D plotting:
             update_not_existing_kwargs(kwargs, pl().defaults.meanplot_1d)  # @UndefinedVariable
-            plots = dict(covariance=[pl().plot(canvas, Xgrid[:, free_dims], mu, label=label, **kwargs)])
+            plots = dict(covariance=[pl().plot(canvas, Xgrid[:, free_dims], K, label=label, **kwargs)])
         else:
             if projection == '2d':
                 update_not_existing_kwargs(kwargs, pl().defaults.meanplot_2d)  # @UndefinedVariable
-                plots = dict(covariance=[pl().contour(canvas, x, y,
-                                               mu.reshape(resolution, resolution).T,
+                plots = dict(covariance=[pl().contour(canvas, xx[:, 0], yy[0, :],
+                                               K.reshape(resolution, resolution),
                                                levels=levels, label=label, **kwargs)])
             elif projection == '3d':
                 update_not_existing_kwargs(kwargs, pl().defaults.meanplot_3d)  # @UndefinedVariable
-                plots = dict(covariance=[pl().surface(canvas, x, y,
-                                               mu.reshape(resolution, resolution).T,
+                plots = dict(covariance=[pl().surface(canvas, xx, yy,
+                                               K.reshape(resolution, resolution),
                                                label=label,
                                                **kwargs)])
-
         return pl().add_to_canvas(canvas, plots)
 
-    if kernel.input_dim == 1:
-
-        if plot_limits == None:
-            xmin, xmax = (x - 5).flatten(), (x + 5).flatten()
-        elif len(plot_limits) == 2:
-            xmin, xmax = plot_limits
-        else:
-            raise ValueError("Bad limits for plotting")
-
-        Xnew = np.linspace(xmin, xmax, resolution or 201)[:, None]
-        Kx = kernel.K(Xnew, x)
-        ax.plot(Xnew, Kx, **mpl_kwargs)
-        ax.set_xlim(xmin, xmax)
-        ax.set_xlabel("x")
-        ax.set_ylabel("k(x,%0.1f)" % x)
-
-    elif kernel.input_dim == 2:
-        if x is None:
-            x = np.zeros((1, 2))
-        else:
-            x = np.asarray(x)
-            assert x.size == 2, "The size of the fixed variable x is not 2"
-            x = x.reshape((1, 2))
-
-        if plot_limits is None:
-            xmin, xmax = (x - 5).flatten(), (x + 5).flatten()
-        elif len(plot_limits) == 2:
-            xmin, xmax = plot_limits
-        else:
-            raise ValueError("Bad limits for plotting")
-
-
-        resolution = resolution or 51
-        xx, yy = np.mgrid[xmin[0]:xmax[0]:1j * resolution, xmin[1]:xmax[1]:1j * resolution]
-        Xnew = np.vstack((xx.flatten(), yy.flatten())).T
-        Kx = kernel.K(Xnew, x)
-        Kx = Kx.reshape(resolution, resolution).T
-        ax.contour(xx, yy, Kx, vmin=Kx.min(), vmax=Kx.max(), cmap=pb.cm.jet, **mpl_kwargs) # @UndefinedVariable
-        ax.set_xlim(xmin[0], xmax[0])
-        ax.set_ylim(xmin[1], xmax[1])
-        ax.set_xlabel("x1")
-        ax.set_ylabel("x2")
-        ax.set_title("k(x1,x2 ; %0.1f,%0.1f)" % (x[0, 0], x[0, 1]))
     else:
         raise NotImplementedError("Cannot plot a kernel with more than two input dimensions")
 

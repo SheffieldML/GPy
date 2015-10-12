@@ -32,7 +32,7 @@ import numpy as np
 
 from . import plotting_library as pl
 from .plot_util import helper_for_plot_data, update_not_existing_kwargs, \
-    helper_predict_with_model, get_which_data_ycols
+    helper_predict_with_model, get_which_data_ycols, get_x_y_var
 from .data_plots import _plot_data, _plot_inducing, _plot_data_error
 
 def plot_mean(self, plot_limits=None, fixed_inputs=None,
@@ -66,8 +66,9 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
     canvas, kwargs = pl().new_canvas(projection=projection, **kwargs)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], plot_raw,
+    X = get_x_y_var(self)[0]
+    helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw,
                                           apply_link, None,
                                           get_which_data_ycols(self, which_data_ycols),
                                           predict_kw)
@@ -79,7 +80,7 @@ def _plot_mean(self, canvas, helper_data, helper_prediction,
               levels=20, projection='2d', label=None,
               **kwargs):
 
-    _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_data
+    _, free_dims, Xgrid, x, y, _, _, resolution = helper_data
     if len(free_dims)<=2:
         mu, _, _ = helper_prediction
         if len(free_dims)==1:
@@ -135,15 +136,16 @@ def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=
     """
     canvas, kwargs = pl().new_canvas(**kwargs)
     ycols = get_which_data_ycols(self, which_data_ycols)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], plot_raw, apply_link,
+    X = get_x_y_var(self)[0]
+    helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw, apply_link,
                                                  (lower, upper),
                                                  ycols, predict_kw)
     plots = _plot_confidence(self, canvas, helper_data, helper_prediction, label, **kwargs)
     return pl().add_to_canvas(canvas, plots, legend=label is not None)
 
 def _plot_confidence(self, canvas, helper_data, helper_prediction, label, **kwargs):
-    _, _, _, _, free_dims, Xgrid, _, _, _, _, _ = helper_data
+    _, free_dims, Xgrid, _, _, _, _, _ = helper_data
     update_not_existing_kwargs(kwargs, pl().defaults.confidence_interval)  # @UndefinedVariable
     if len(free_dims)<=1:
         if len(free_dims)==1:
@@ -188,8 +190,9 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
     """
     canvas, kwargs = pl().new_canvas(projection=projection, **kwargs)
     ycols = get_which_data_ycols(self, which_data_ycols)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], plot_raw, apply_link,
+    X = get_x_y_var(self)[0]
+    helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw, apply_link,
                                                  None,
                                                  ycols, predict_kw, samples)
     plots = _plot_samples(self, canvas, helper_data, helper_prediction,
@@ -198,7 +201,7 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
 
 def _plot_samples(self, canvas, helper_data, helper_prediction, projection,
               label, **kwargs):
-    _, _, _, _, free_dims, Xgrid, x, y, _, _, resolution = helper_data
+    _, free_dims, Xgrid, x, y, _, _, resolution = helper_data
     samples = helper_prediction[2]
 
     if len(free_dims)<=2:
@@ -247,8 +250,9 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     :param dict predict_kw: the keyword arguments for the prediction. If you want to plot a specific kernel give dict(kern=<specific kernel>) in here
     """
     canvas, kwargs = pl().new_canvas(**kwargs)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], plot_raw,
+    X = get_x_y_var(self)[0]
+    helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw,
                                           apply_link, np.linspace(2.5, 97.5, levels*2),
                                           get_which_data_ycols(self, which_data_ycols),
                                           predict_kw)
@@ -256,7 +260,7 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     return pl().add_to_canvas(canvas, plots)
 
 def _plot_density(self, canvas, helper_data, helper_prediction, label, **kwargs):
-    _, _, _, _, free_dims, Xgrid, _, _, _, _, _ = helper_data
+    _, free_dims, Xgrid, _, _, _, _, _ = helper_data
     mu, percs, _ = helper_prediction
 
     update_not_existing_kwargs(kwargs, pl().defaults.density)  # @UndefinedVariable
@@ -316,8 +320,9 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     :param bool legend: convenience, whether to put a legend on the plot or not.
     """
     canvas, _ = pl().new_canvas(projection=projection, **kwargs)
-    helper_data = helper_for_plot_data(self, plot_limits, visible_dims, fixed_inputs, resolution)
-    helper_prediction = helper_predict_with_model(self, helper_data[5], plot_raw,
+    X = get_x_y_var(self)[0]
+    helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw,
                                           apply_link, np.linspace(2.5, 97.5, levels*2) if plot_density else (lower,upper),
                                           get_which_data_ycols(self, which_data_ycols),
                                           predict_kw, samples)
@@ -330,7 +335,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
         plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data Error"))
     plots.update(_plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing, plot_density, projection))
     if plot_raw and (samples_likelihood > 0):
-        helper_prediction = helper_predict_with_model(self, helper_data[5], False,
+        helper_prediction = helper_predict_with_model(self, helper_data[2], False,
                                       apply_link, None,
                                       get_which_data_ycols(self, which_data_ycols),
                                       predict_kw, samples_likelihood)

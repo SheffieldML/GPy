@@ -85,8 +85,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GPy'
-copyright = u'2015, GPy Authors'
-author = u'GPy Authors'
+#author = u'`Humans <https://github.com/SheffieldML/GPy/graphs/contributors>`_'
+author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors' 
+copyright = u'2015, '+author
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -97,4 +97,11 @@ class Prod(CombinationKernel):
                 target += p.gradients_X_diag(k/p.Kdiag(X),X)
         return target
 
-
+    def input_sensitivity(self, summarize=True):
+        if summarize:
+            i_s = np.zeros((self.input_dim))
+            for k in self.parts:
+                i_s[k._all_dims_active] *= k.input_sensitivity(summarize)
+            return i_s
+        else:
+            return super(Prod, self).input_sensitivity(summarize)

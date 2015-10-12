@@ -11,10 +11,10 @@ The Gaussian processes framework in Python.
 
 ## Continuous integration
 
-|      | Travis-CI | Codecov | 
-| ---: | :--: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io master](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | 
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | 
+|      | Travis-CI | Codecov | RTFD |
+| ---: | :--: | :---: | :---: |
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io master](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![Documentation Status](https://readthedocs.org/projects/gpy/badge/?version=master)](http://gpy.readthedocs.org/en/master/?badge=master) | 
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![Documentation Status](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/?badge=devel) | 
 
 ## Supported Platforms:
 

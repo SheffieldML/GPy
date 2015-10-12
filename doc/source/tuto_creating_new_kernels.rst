@@ -9,8 +9,8 @@ Structure of a kernel in GPy
 
 In GPy a kernel object is made of a list of kernpart objects, which correspond to symetric positive definite functions. More precisely, the kernel should be understood as the sum of the kernparts. In order to implement a new covariance, the following steps must be followed
 
-    1. implement the new covariance as a :py:class:`GPy.kern._src.kern.Kern` object
-    2. update the :py:mod:`GPy.kern._src` file
+    1. implement the new covariance as a :py:class:`GPy.kern.src.kern.Kern` object
+    2. update the :py:mod:`GPy.kern.src` file
 
 Theses three steps are detailed below.
 
@@ -32,8 +32,8 @@ The header is similar to all kernels: ::
 
     class RationalQuadratic(Kern):
 
-:py:func:`GPy.kern._src.kern.Kern.__init__` ``(self, input_dim, param1, param2, *args)``
-~~~~~~~~~~~~~~~~~~~
+:py:func:`GPy.kern.src.kern.Kern.__init__` ``(self, input_dim, param1, param2, *args)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
 The implementation of this function in mandatory.
 
@@ -67,7 +67,7 @@ code. Updates from the optimization routine will be done
 automatically.
 
 :py:func:`~GPy.core.parameterization.parameter_core.Parameterizable.parameters_changed` ``(self)``
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The implementation of this function is optional.
 
@@ -84,8 +84,8 @@ the kernel::
 	pass
 
 
-:py:func:`~GPy.kern._src.kern.Kern.K` ``(self,X,X2)``
-~~~~~~~~~~~~~~~~~~~
+:py:func:`~GPy.kern.src.kern.Kern.K` ``(self,X,X2)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The implementation of this function in mandatory.
 
@@ -98,8 +98,8 @@ the inputs X, X2 (np.arrays with arbitrary number of line (say
         dist2 = np.square((X-X2.T)/self.lengthscale)
         return self.variance*(1 + dist2/2.)**(-self.power)
 
-:py:func:`~GPy.kern._src.kern.Kern.Kdiag` ``(self,X)``
-~~~~~~~~~~~~~~~~~~~
+:py:func:`~GPy.kern.src.kern.Kern.Kdiag` ``(self,X)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The implementation of this function is mandatory.
 
@@ -110,7 +110,7 @@ np.array of length :math:`n \times 1`. ::
     def Kdiag(self,X):
         return self.variance*np.ones(X.shape[0])
 
-:py:func:`~GPy.kern._src.kern.Kern.update_gradients_full` ``(self, dL_dK, X, X2=None)``
+:py:func:`~GPy.kern.src.kern.Kern.update_gradients_full` ``(self, dL_dK, X, X2=None)``
 ~~~~~~~~~~~~~~~~~~~
 
 This function is required for the optimization of the parameters.
@@ -147,7 +147,7 @@ to :math:`\theta`. ::
         self.power.gradient = np.sum(dp*dL_dK)
 
 
-:py:func:`~GPy.kern._src.kern.Kern.update_gradients_diag` ``(self,dL_dKdiag,X,target)``
+:py:func:`~GPy.kern.src.kern.Kern.update_gradients_diag` ``(self,dL_dKdiag,X,target)``
 ~~~~~~~~~~~~~~~~~~~
     
 This function is required for BGPLVM, sparse models and uncertain inputs.
@@ -165,7 +165,7 @@ is set to each ``param``. ::
         self.variance.gradient = np.sum(dL_dKdiag)
         # here self.lengthscale and self.power have no influence on Kdiag so target[1:] are unchanged
 
-:py:func:`~GPy.kern._src.kern.Kern.gradients_X` ``(self,dL_dK, X, X2)``
+:py:func:`~GPy.kern.src.kern.Kern.gradients_X` ``(self,dL_dK, X, X2)``
 ~~~~~~~~~~~~~~~~~~~
 
 This function is required for GPLVM, BGPLVM, sparse models and uncertain inputs.
@@ -182,7 +182,7 @@ function which is a :math:`n \times q` np.array. ::
         dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
         return np.sum(dL_dK*dX,1)[:,None]
 
-:py:func:`~GPy.kern._src.kern.Kern.gradients_X_diag` ``(self,dL_dKdiag,X)``
+:py:func:`~GPy.kern.src.kern.Kern.gradients_X_diag` ``(self,dL_dKdiag,X)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
 This function is required for BGPLVM, sparse models and uncertain
@@ -206,8 +206,8 @@ as the second order derivatives:
 
 .. math:: \frac{\partial^2 K}{\partial X\partial X2}
 
-- :py:func:`GPy.kern._src.kern.gradients_XX` ``(self,dL_dK, X, X2)``
-- :py:func:`GPy.kern._src.kern.gradients_XX_diag` ``(self,dL_dKdiag, X)``
+- :py:func:`GPy.kern.src.kern.gradients_XX` ``(self,dL_dK, X, X2)``
+- :py:func:`GPy.kern.src.kern.gradients_XX_diag` ``(self,dL_dKdiag, X)``
 	
 **Psi statistics**
 ~~~~~~~~~~~~~

@@ -39,20 +39,16 @@ import os
 import sys
 from setuptools import setup, Extension
 import numpy as np
-
+import codecs
 
 def read(fname):
-    import codecs
     with codecs.open(fname, 'r', 'utf-8') as f:
         return f.read()
         
-def read_to_rst(fname):
+def read_readme(fname):
     try:
         import pypandoc
-        #print 'Warning in installation: For rst formatting in pypi, consider installing pypandoc for conversion'
-        #with open('README.rst', 'w') as f:
-        #    f.write(pypandoc.convert('README.md', 'rst'))
-        pypandoc.convert('README.md', 'rst', outputfile='README.rst')
+        return pypandoc.convert(read(fname), 'rst')
     except ImportError:
         return read(fname)
 

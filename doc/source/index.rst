@@ -15,8 +15,9 @@ The code can be found on our `Github project page <https://github.com/SheffieldM
 
 For developers:
 
-- `Writing new kernels <tuto_creating_new_kernels.html>`_
 - `Writing new models <tuto_creating_new_models.html>`_
+- `Writing new kernels <tuto_creating_new_kernels.html>`_
+- `Write a new plotting routine using gpy_plot <tuto_plotting.html>`_
 - `Parameterization handles <tuto_parameterized.html>`_
 
 Contents:

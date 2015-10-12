@@ -67,7 +67,7 @@ autodoc_default_flags = ['members',
 autodoc_member_order = 'groupwise'
 add_function_parentheses = False
 add_module_names = False
-modindex_common_prefix = ['GPy']
+#modindex_common_prefix = ['GPy']
 show_authors = True
 
 # ------ Sphinx

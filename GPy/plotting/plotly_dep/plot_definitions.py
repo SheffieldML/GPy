@@ -58,13 +58,13 @@ class PlotlyPlots(AbstractPlottingLibrary):
         self._defaults = defaults.__dict__
         self.current_states = dict()
 
-    def figure(self, rows=1, cols=1, specs=None, is_3d=False):
+    def figure(self, rows=1, cols=1, specs=None, is_3d=False, **kwargs):
         if specs is None:
             specs = [[{'is_3d': is_3d}]*cols]*rows
-        figure = tools.make_subplots(rows, cols, specs=specs)
+        figure = tools.make_subplots(rows, cols, specs=specs, **kwargs)
         return figure
 
-    def new_canvas(self, canvas=None, row=1, col=1, projection='2d',
+    def new_canvas(self, figure=None, row=1, col=1, projection='2d',
                    xlabel=None, ylabel=None, zlabel=None,
                    title=None, xlim=None,
                    ylim=None, zlim=None, **kwargs):
@@ -73,11 +73,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
         #    filename = None
         #else:
         #    filename = kwargs.pop('filename')
-        if canvas is None:
+        if figure is None:
             figure = self.figure(is_3d=projection=='3d')
             figure.layout.font = Font(family="Raleway, sans-serif")
-        else:
-            return canvas, kwargs
         if projection == '3d':
             figure.layout.legend.x=.5
             figure.layout.legend.bgcolor='#DCDCDC'
@@ -277,9 +275,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
         if color.startswith('#'):
             fcolor = 'rgba({c[0]}, {c[1]}, {c[2]}, {alpha})'.format(c=Tango.hex2rgb(color), alpha=kwargs.get('opacity', 1.0))
         else: fcolor = color
-        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonextx', legendgroup='fill_between_{}'.format(label), **kwargs)
+        u = Scatter(x=X, y=upper, fillcolor=fcolor, showlegend=label is not None, name=label, fill='tonextx', legendgroup='{}_fill_({},{})'.format(label, ax[1], ax[2]), **kwargs)
         #fcolor = '{}, {alpha})'.format(','.join(fcolor.split(',')[:-1]), alpha=0.0)
-        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, name=label, legendgroup='fill_between_{}'.format(label), **kwargs)
+        l = Scatter(x=X, y=lower, fillcolor=fcolor, showlegend=False, name=label, legendgroup='{}_fill_({},{})'.format(label, ax[1], ax[2]), **kwargs)
         return l, u
 
     def fill_gradient(self, canvas, X, percentiles, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):

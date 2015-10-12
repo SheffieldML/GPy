@@ -35,7 +35,7 @@ import itertools
 def in_ipynb():
     try:
         cfg = get_ipython().config
-        return 'TerminalIPythonApp' not in cfg
+        return 'IPKernelApp' in cfg
     except NameError:
         return False
 

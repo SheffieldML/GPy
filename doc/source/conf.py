@@ -30,8 +30,8 @@ import shlex
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    #'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
+    'sphinx.ext.autodoc',
+    #'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
 ]
@@ -48,9 +48,11 @@ extensions = [
 #    def __getattr__(cls, name):
 #            return Mock()
 #
-#MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-#                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-#                'nose', 'nose.tools']
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
+                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+                'nose', 'nose.tools']
+
+autodoc_mock_imports = MOCK_MODULES
 #
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 #

@@ -19,7 +19,10 @@ import shlex
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+#for p in os.walk('../../GPy'):
+#    sys.path.append(p[0])
+sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../GPy/'))
 
 # -- General configuration ------------------------------------------------
 
@@ -48,8 +51,11 @@ extensions = [
 #    def __getattr__(cls, name):
 #            return Mock()
 #
-MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 
+                'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats',
+                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 
+                'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 
+                'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
                 'nose', 'nose.tools']
 
 autodoc_mock_imports = MOCK_MODULES

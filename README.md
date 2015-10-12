@@ -37,7 +37,7 @@ Python 2.7, 3.3 and higher
       year = {2012--2015}
     }
 
-### Pronounciation: dʒí páj
+### Pronounciation: 
 
 We like to pronounce it 'g-pie'.
 

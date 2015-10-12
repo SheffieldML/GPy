@@ -93,7 +93,7 @@ ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
 
 setup(name = 'GPy',
       version = __version__,
-      author = read_to_rst('AUTHORS.TXT'),
+      author = read_to_rst('AUTHORS.txt'),
       author_email = "gpy.authors@gmail.com",
       description = ("The Gaussian Process Toolbox"),
       license = "BSD 3-clause",

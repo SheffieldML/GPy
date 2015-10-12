@@ -48,7 +48,9 @@ def read(fname):
 def read_to_rst(fname):
     try:
         import pypandoc
-        return pypandoc.convert(read(fname), 'rst')
+        rstname = "{}.{}".format(os.path.splitext(fname)[0], 'rst')
+        pypandoc.convert(read(fname), 'rst', rstname)
+        return read(rstname)
     except ImportError:
         return read(fname)
 
@@ -91,7 +93,7 @@ ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
 
 setup(name = 'GPy',
       version = __version__,
-      author = read('AUTHORS.txt'),
+      author = read_to_rst('AUTHORS.TXT'),
       author_email = "gpy.authors@gmail.com",
       description = ("The Gaussian Process Toolbox"),
       license = "BSD 3-clause",

@@ -1,1 +1,1 @@
-See contributors.
+[Humans](https://github.com/SheffieldML/GPy/graphs/contributors)

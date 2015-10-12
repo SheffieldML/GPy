@@ -1,6 +1,6 @@
 # GPy
 
-A Gaussian processes framework in Python.
+The Gaussian processes framework in Python.
 
 * [GPy homepage](http://sheffieldml.github.io/GPy/)
 * [Tutorial notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
@@ -46,8 +46,8 @@ With anaconda you can install GPy by the following:
     conda update scipy
     pip install gpy
 
-We've also had luck with [enthought](http://www.enthought.com). Install scipy later or the same as 
-0.16 and then pip install GPy:
+We've also had luck with [enthought](http://www.enthought.com). Install scipy 0.16 (or later)
+ and then pip install GPy:
 
     pip install gpy
 

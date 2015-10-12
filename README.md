@@ -9,21 +9,26 @@ The Gaussian processes framework in Python.
 * [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
-#### Continuous integration
+## Continuous integration
+
 |      | Travis-CI | Codecov | 
-| ---: | :--: | :---: | 
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | 
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | 
+| ---: | :--: | :---: |
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io master](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | 
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | 
 
-### Supported Platforms:
+## Supported Platforms:
 
-[<img src="https://www.python.org/static/community_logos/python-logo-generic.svg" height="40">](https://www.python.org/) [<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Windows_logo_-_2012.svg" height="40">](http://www.microsoft.com/en-gb/windows) [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height="40">](http://www.apple.com/osx/) [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height="40">](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
+[<img src="https://www.python.org/static/community_logos/python-logo-generic.svg" style="height: 40px;">](https://www.python.org/)
+[<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Windows_logo_-_2012.svg" style="height: 40px;">](http://www.microsoft.com/en-gb/windows)
+[<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" style="height: 40px;">](http://www.apple.com/osx/) 
+[<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" style="height: 40px;">](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
+
 ----
 
 Python 2.7, 3.3 and higher
 
 
-### Citation
+## Citation
 
     @Misc{gpy2014,
       author =   {{The GPy authors}},
@@ -36,7 +41,7 @@ Python 2.7, 3.3 and higher
 
 We like to pronounce it 'g-pie'.
 
-### Getting started: installing with pip 
+## Getting started: installing with pip 
 
 We are now requiring the newest version (0.16) of 
 [scipy](http://www.scipy.org/) and thus, we strongly recommend using 
@@ -87,7 +92,7 @@ or using setuptools
 
     python setup.py test
     
-### Ubuntu hackers
+## Ubuntu hackers
 
 > Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
 > be used for GPy. We hope this gets fixed soon.
@@ -102,20 +107,20 @@ clone this git repository and add it to your path:
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
 
 
-### Compiling documentation:
+## Compiling documentation:
 
 The documentation is stored in doc/ and is compiled with the Sphinx Python documentation generator, and is written in the reStructuredText format.
 
 The Sphinx documentation is available here: http://sphinx-doc.org/latest/contents.html
 
-##### Installing dependencies:
+**Installing dependencies:**
 
 To compile the documentation, first ensure that Sphinx is installed. On Debian-based systems, this can be achieved as follows:
 
     sudo apt-get install python-pip
     sudo pip install sphinx
 
-##### Compiling documentation:
+**Compiling documentation:**
 
 The documentation can be compiled as follows:
 
@@ -126,7 +131,6 @@ The documentation can be compiled as follows:
 The HTML files are then stored in doc/build/html
 
 ## Funding Acknowledgements
-
 
 Current support for the GPy software is coming through the following projects. 
 
@@ -139,7 +143,8 @@ Current support for the GPy software is coming through the following projects.
 *  [EU FP7-ICT Project Ref 612139](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/wysiwyd/) "WYSIWYD: What You Say is What You Did"
 
 Previous support for the GPy software came from the following projects:
-* [BBSRC Project No BB/K011197/1](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/recombinant/) "Linking recombinant gene sequence to protein product manufacturability using CHO cell genomic resources"
-* [EU FP7-KBBE Project Ref 289434](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/biopredyn/) "From Data to Models: New Bioinformatics Methods and Tools for Data-Driven Predictive Dynamic Modelling in Biotechnological Applications"
-* [BBSRC Project No BB/H018123/2](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/iterative/) "An iterative pipeline of computational modelling and experimental design for uncovering gene regulatory networks in vertebrates"
-* [Erasysbio](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/synergy/) "SYNERGY: Systems approach to gene regulation biology through nuclear receptors"
+
+- [BBSRC Project No BB/K011197/1](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/recombinant/) "Linking recombinant gene sequence to protein product manufacturability using CHO cell genomic resources"
+- [EU FP7-KBBE Project Ref 289434](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/biopredyn/) "From Data to Models: New Bioinformatics Methods and Tools for Data-Driven Predictive Dynamic Modelling in Biotechnological Applications"
+- [BBSRC Project No BB/H018123/2](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/iterative/) "An iterative pipeline of computational modelling and experimental design for uncovering gene regulatory networks in vertebrates"
+- [Erasysbio](http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/projects/synergy/) "SYNERGY: Systems approach to gene regulation biology through nuclear receptors"

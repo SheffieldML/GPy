@@ -56,6 +56,7 @@ MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.l
                 'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 
                 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 
                 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+                'numpy',
                 'nose', 'nose.tools']
 
 autodoc_mock_imports = MOCK_MODULES

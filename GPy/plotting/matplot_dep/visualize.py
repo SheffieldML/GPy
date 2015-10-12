@@ -1,11 +1,10 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import GPy
 import numpy as np
-import matplotlib as mpl
 import time
 from ...core.parameterization.variational import VariationalPosterior
 try:
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    from mpl_toolkits.mplot3d import Axes3D
     import visual
     visual_available = True
 

@@ -43,7 +43,7 @@ import numpy as np
 
 def read(fname):
     import codecs
-    with codecs.open('README.md', 'r', 'utf-8') as f:
+    with codecs.open(fname, 'r', 'utf-8') as f:
         return f.read()
         
 def read_to_rst(fname):

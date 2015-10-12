@@ -271,7 +271,7 @@ htmlhelp_basename = 'GPydoc'
 
 # Latex figure (float) alignment
 #'figure_align': 'htbp',
-}
+#}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

@@ -42,14 +42,10 @@ import numpy as np
 
 
 def read(fname):
-    try:
-        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
-            return unicode(f.read(), 'utf-8')
-    except NameError:
-        #python 3
-        with open(os.path.join(os.path.dirname(__file__), fname)) as f:
-            return f.read()
-
+    import codecs
+    with codecs.open('README.md', 'r', 'utf-8') as f:
+        print(f.read())
+        
 def read_to_rst(fname):
     try:
         import pypandoc

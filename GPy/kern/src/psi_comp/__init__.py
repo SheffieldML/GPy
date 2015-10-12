@@ -65,4 +65,4 @@ class PSICOMP_Linear(PSICOMP):
 
 
 from . import ssrbf_psi_gpucomp
-from rbf_psi_gpucomp import PSICOMP_RBF_GPU
+from .rbf_psi_gpucomp import PSICOMP_RBF_GPU

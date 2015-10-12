@@ -10,10 +10,10 @@ A Gaussian processes framework in Python.
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
 #### Continuous integration
-|      | Travis-CI | Codecov | Readthedocs |
-| ---: | :--: | :---: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![mdocs](https://img.shields.io/badge/docs-master-blue.svg?style=flat)](http://gpy.readthedocs.org/en/master/) |
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![ddocs](https://img.shields.io/badge/docs-devel-blue.svg?style=flat)](http://gpy.readthedocs.org/en/devel/) |
+|      | Travis-CI | Codecov | 
+| ---: | :--: | :---: | 
+| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | 
+| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | 
 
 ### Supported Platforms:
 
@@ -45,28 +45,48 @@ With anaconda you can install GPy by the following:
 
     conda update scipy
     pip install gpy
-    
-We've also had luck with [enthought](http://www.enthought.com), 
-although enthought currently (as of 8th Sep. 2015) does not support scipy 0.16.
 
-If you'd like to install from source, or want to contribute to the project (e.g. by sending pull requests via github), read on.
+We've also had luck with [enthought](http://www.enthought.com). Install scipy later or the same as 
+0.16 and then pip install GPy:
+
+    pip install gpy
+
+If you'd like to install from source, or want to contribute to the project (i.e. by sending pull requests via github), read on.
 
 ### Troubleshooting installation problems
 
 If you're having trouble installing GPy via `pip install GPy` here is a probable solution:
 
-    git clone https://github.com/mikecroucher/GPy.git
+    git clone https://github.com/SheffieldML/GPy.git
     cd GPy
     git checkout devel
-    python3 setup.py build_ext --inplace
-    nosetests3 GPy/testing
+    python setup.py build_ext --inplace
+    nosetests GPy/testing
 
 ### Direct downloads
 
-[![PyPI version](https://badge.fury.io/py/GPy.svg)](https://pypi.python.org/pypi/GPy) [![source](https://img.shields.io/badge/download-source-green.svg)](https://github.com/SheffieldML/GPy/releases/latest)
-[![Windows](https://img.shields.io/badge/download-windows-orange.svg)](https://github.com/SheffieldML/GPy/releases/latest)
-[![MacOSX](https://img.shields.io/badge/download-macosx-blue.svg)](https://github.com/SheffieldML/GPy/releases/latest)
+[![PyPI version](https://badge.fury.io/py/GPy.svg)](https://pypi.python.org/pypi/GPy) [![source](https://img.shields.io/badge/download-source-green.svg)](https://pypi.python.org/pypi/GPy)
+[![Windows](https://img.shields.io/badge/download-windows-orange.svg)](https://pypi.python.org/pypi/GPy)
+[![MacOSX](https://img.shields.io/badge/download-macosx-blue.svg)](https://pypi.python.org/pypi/GPy)
 
+## Running unit tests:
+
+Ensure nose is installed via pip:
+
+    pip install nose
+
+Run nosetests from the root directory of the repository:
+
+    nosetests -v GPy/testing
+
+or from within IPython
+
+    import GPy; GPy.tests()
+
+or using setuptools
+
+    python setup.py test
+    
 ### Ubuntu hackers
 
 > Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
@@ -82,84 +102,28 @@ clone this git repository and add it to your path:
     echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
 
 
- 
-### OSX
-
-
-We were working hard to make pre-built distributions ready. 
-You can now install GPy via pip on MacOSX using 
-[anaconda python distribution](http://continuum.io/downloads):
-
-    conda update scipy
-    pip install gpy
-
-If this does not work, then you need to build GPy yourself, 
-using the [development toolkits](https://developer.apple.com/xcode/). 
-Download/clone GPy and run the build process:
-
-    conda update scipy
-    git clone git@github.com:SheffieldML/GPy.git ~/GPy
-    cd ~/GPy
-    python setup.py install
-
-If you do not wish to build the C extensions (10 times speedup),
-you can run the pure python installations, by just adding GPy
-to your python path.
-
-   echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.profile
-
-
-
 ### Compiling documentation:
-
 
 The documentation is stored in doc/ and is compiled with the Sphinx Python documentation generator, and is written in the reStructuredText format.
 
 The Sphinx documentation is available here: http://sphinx-doc.org/latest/contents.html
 
-
 ##### Installing dependencies:
-
 
 To compile the documentation, first ensure that Sphinx is installed. On Debian-based systems, this can be achieved as follows:
 
     sudo apt-get install python-pip
     sudo pip install sphinx
 
-A LaTeX distribution is also required to compile the equations. Note that the extra packages are necessary to install the unicode packages. To compile the equations to PNG format for use in HTML pages, the package *dvipng* must be installed. IPython is also required. On Debian-based systems, this can be achieved as follows:
-
-    sudo apt-get install texlive texlive-latex-extra texlive-base texlive-recommended
-    sudo apt-get install dvipng
-    sudo apt-get install ipython
-
-
-#### Compiling documentation:
-
+##### Compiling documentation:
 
 The documentation can be compiled as follows:
 
     cd doc
+    sphinx-apidoc -o source/ ../GPy/
     make html
 
-The HTML files are then stored in doc/build/
-
-
-## Running unit tests:
-
-
-Ensure nose is installed via pip:
-
-    pip install nose
-
-Run nosetests from the root directory of the repository:
-
-    nosetests -v GPy/testing
-
-or from within IPython
-
-    import GPy; GPy.tests()
-
-
+The HTML files are then stored in doc/build/html
 
 ## Funding Acknowledgements
 

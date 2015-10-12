@@ -45,7 +45,7 @@ def read(fname):
     with codecs.open(fname, 'r', 'utf-8') as f:
         return f.read()
         
-def read_readme(fname):
+def read_to_rst(fname):
     try:
         import pypandoc
         return pypandoc.convert(read(fname), 'rst')

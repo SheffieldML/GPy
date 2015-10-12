@@ -23,8 +23,6 @@ The Gaussian processes framework in Python.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/) 
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
-----
-
 Python 2.7, 3.3 and higher
 
 

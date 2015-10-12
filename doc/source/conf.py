@@ -19,7 +19,10 @@ import shlex
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+#for p in os.walk('../../GPy'):
+#    sys.path.append(p[0])
+sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../GPy/'))
 
 # -- General configuration ------------------------------------------------
 
@@ -31,29 +34,51 @@ import shlex
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
+    #'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
 ]
 
-import sys
-try:
-    from unittest.mock import MagicMock
-except:
-    from mock import Mock as MagicMock
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return Mock()
-
-MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+#----- Autodoc
+#import sys
+#try:
+#    from unittest.mock import MagicMock
+#except:
+#    from mock import Mock as MagicMock
+#
+#class Mock(MagicMock):
+#    @classmethod
+#    def __getattr__(cls, name):
+#            return Mock()
+#
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 
+                'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats',
+                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 
+                'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 
+                'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
                 'nose', 'nose.tools']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
+autodoc_mock_imports = MOCK_MODULES
+#
+#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+#
+import sphinx_rtd_theme
+
+autodoc_default_flags = ['members',
+                         #'undoc-members',
+                         #'private-members',
+                         #'special-members',
+                         #'inherited-members',
+                         'show-inheritance']
+autodoc_member_order = 'groupwise'
+add_function_parentheses = False
+add_module_names = False
+#modindex_common_prefix = ['GPy']
+show_authors = True
+
+# ------ Sphinx
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]#templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -68,8 +93,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GPy'
-copyright = u'2015, GPy Authors'
-author = u'GPy Authors'
+#author = u'`Humans <https://github.com/SheffieldML/GPy/graphs/contributors>`_'
+author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors' 
+copyright = u'2015, '+author
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -119,7 +145,7 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -135,12 +161,12 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+#html_theme_options = dict(sidebarwidth='20}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -164,7 +190,7 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -180,20 +206,22 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
-
+#html_sidebars = {
+#   '**': ['globaltoc.html', 'localtoc.html', 'sourcelink.html', 'searchbox.html'],
+#   'using/windows': ['windowssidebar.html', 'searchbox.html'],
+#}
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_domain_indices = True
+#html_domain_indices = False
 
 # If false, no index is generated.
-#html_use_index = True
+#html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
-#html_split_index = False
+html_split_index = True
 
 # If true, links to the reST sources are added to the pages.
 #html_show_sourcelink = True
@@ -231,7 +259,7 @@ htmlhelp_basename = 'GPydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+#latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
 #'papersize': 'letterpaper',
 
@@ -243,15 +271,15 @@ latex_elements = {
 
 # Latex figure (float) alignment
 #'figure_align': 'htbp',
-}
+#}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  (master_doc, 'GPy.tex', u'GPy Documentation',
-   u'GPy Authors', 'manual'),
-]
+#latex_documents = [
+#  (master_doc, 'GPy.tex', u'GPy Documentation',
+#   u'GPy Authors', 'manual'),
+#]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -278,10 +306,10 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'gpy', u'GPy Documentation',
-     [author], 1)
-]
+#man_pages = [
+#    (master_doc, 'gpy', u'GPy Documentation',
+#     [author], 1)
+#]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
@@ -292,11 +320,11 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-  (master_doc, 'GPy', u'GPy Documentation',
-   author, 'GPy', 'One line description of project.',
-   'Miscellaneous'),
-]
+#texinfo_documents = [
+#  (master_doc, 'GPy', u'GPy Documentation',
+#   author, 'GPy', 'One line description of project.',
+#   'Miscellaneous'),
+#]
 
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []

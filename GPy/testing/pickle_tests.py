@@ -13,14 +13,15 @@ import tempfile
 from GPy.core.parameterization.param import Param
 from GPy.core.parameterization.observable_array import ObsAr
 from GPy.core.parameterization.priors import Gaussian
-from GPy.kern._src.rbf import RBF
-from GPy.kern._src.linear import Linear
-from GPy.kern._src.static import Bias, White
+from GPy.kern.src.rbf import RBF
+from GPy.kern.src.linear import Linear
+from GPy.kern.src.static import Bias, White
 from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 from functools import reduce
 from GPy.util.caching import Cacher
+import GPy
 from pickle import PicklingError
 
 def toy_model():
@@ -60,13 +61,15 @@ class Test(ListDictTestCase):
             pio2 = pickle.load(f)
             self.assertListDictEquals(pio._properties, pio2._properties)
 
-        with tempfile.TemporaryFile('w+b') as f:
-            pickle.dump(piov, f)
-            f.seek(0)
-            pio2 = pickle.load(f)
-            #py3 fix
-            #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
-            self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))
+        f = tempfile.TemporaryFile('w+b')
+        pickle.dump(piov, f)
+        f.seek(0)
+        pio2 = GPy.load(f)
+        f.close()
+
+        #py3 fix
+        #self.assertListDictEquals(dict(piov.items()), dict(pio2.iteritems()))
+        self.assertListDictEquals(dict(piov.items()), dict(pio2.items()))
 
     def test_param(self):
         param = Param('test', np.arange(4*2).reshape(4,2))

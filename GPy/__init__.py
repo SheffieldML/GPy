@@ -49,7 +49,7 @@ def load(file_or_path):
             m = pickle.load(file_or_path)
     except:
         import pickle
-        if isinstance(file_or_path, basestring): 
+        if isinstance(file_or_path, str): 
             with open(file_or_path, 'rb') as f:
                 m = pickle.load(f)
         else:

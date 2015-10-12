@@ -242,7 +242,7 @@ class GP(Model):
 
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None):
         """
         Predict the function(s) at the new point(s) Xnew.
 
@@ -269,10 +269,12 @@ class GP(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+        if likelihood is None:
+            likelihood = self.likelihood
+        mean, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
         return mean, var
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -288,9 +290,11 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
+        if likelihood is None:
+            likelihood = self.likelihood
+        return likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
-    def predictive_gradients(self, Xnew):
+    def predictive_gradients(self, Xnew, kern=None):
         """
         Compute the derivatives of the predicted latent function with respect to X*
 
@@ -307,16 +311,19 @@ class GP(Model):
         :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q) ]
 
         """
-        dmu_dX = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+        if kern is None:
+            kern = self.kern
+        mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+
         for i in range(self.output_dim):
-            dmu_dX[:,:,i] = self.kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self.X)
+            mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
 
         # gradients wrt the diagonal part k_{xx}
-        dv_dX = self.kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
+        dv_dX = kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
         #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
-        alpha = -2.*np.dot(self.kern.K(Xnew, self.X),self.posterior.woodbury_inv)
-        dv_dX += self.kern.gradients_X(alpha, Xnew, self.X)
-        return dmu_dX, dv_dX
+        alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
+        dv_dX += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        return mean_jac, dv_dX
 
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=True):
@@ -433,7 +440,7 @@ class GP(Model):
                 mag[n] = np.sqrt(np.linalg.det(G[n, :, :]))
         return mag
 
-    def posterior_samples_f(self,X,size=10, full_cov=True):
+    def posterior_samples_f(self,X, size=10, full_cov=True, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -444,20 +451,32 @@ class GP(Model):
         :param full_cov: whether to return the full covariance matrix, or just the diagonal.
         :type full_cov: bool.
         :returns: fsim: set of simulations
-        :rtype: np.ndarray (N x samples)
+        :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
         """
-        m, v = self._raw_predict(X,  full_cov=full_cov)
+        m, v = self._raw_predict(X,  full_cov=full_cov, **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        v = v.reshape(m.size,-1) if len(v.shape)==3 else v
-        if not full_cov:
-            fsim = np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
-        else:
-            fsim = np.random.multivariate_normal(m.flatten(), v, size).T
+        
+        def sim_one_dim(m, v):
+            if not full_cov:
+                return np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
+            else:
+                return np.random.multivariate_normal(m.flatten(), v, size).T
 
+        if self.output_dim == 1:
+            return sim_one_dim(m, v)
+        else:
+            fsim = np.empty((self.output_dim, self.num_data, size))
+            for d in range(self.output_dim):
+                if full_cov and v.ndim == 3:
+                    fsim[d] = sim_one_dim(m[:, d], v[:, :, d])
+                elif (not full_cov) and v.ndim == 2:
+                    fsim[d] = sim_one_dim(m[:, d], v[:, d])
+                else:
+                    fsim[d] = sim_one_dim(m[:, d], v)
         return fsim
 
-    def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None):
+    def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None, likelihood=None, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -469,232 +488,27 @@ class GP(Model):
         :type full_cov: bool.
         :param noise_model: for mixed noise likelihood, the noise model to use in the samples.
         :type noise_model: integer.
-        :returns: Ysim: set of simulations, a Numpy array (N x samples).
+        :returns: Ysim: set of simulations,
+        :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
         """
-        fsim = self.posterior_samples_f(X, size, full_cov=full_cov)
-        Ysim = self.likelihood.samples(fsim, Y_metadata=Y_metadata)
-        return Ysim
-
-    def plot_f(self, plot_limits=None, which_data_rows='all',
-        which_data_ycols='all', fixed_inputs=[],
-        levels=20, samples=0, fignum=None, ax=None, resolution=None,
-        plot_raw=True,
-        linecol=None,fillcol=None, Y_metadata=None, data_symbol='kx',
-        apply_link=False):
-        """
-        Plot the GP's view of the world, where the data is normalized and before applying a likelihood.
-        This is a call to plot with plot_raw=True.
-        Data will not be plotted in this, as the GP's view of the world
-        may live in another space, or units then the data.
-
-        Can plot only part of the data and part of the posterior functions
-        using which_data_rowsm which_data_ycols.
-
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :type plot_limits: np.array
-        :param which_data_rows: which of the training data to plot (default all)
-        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
-        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
-        :type which_data_ycols: 'all' or a list of integers
-        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
-        :type fixed_inputs: a list of tuples
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-        :type resolution: int
-        :param levels: number of levels to plot in a contour plot.
-        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
-        :type levels: int
-        :param samples: the number of a posteriori samples to plot
-        :type samples: int
-        :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
-        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
-        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
-        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param Y_metadata: additional data associated with Y which may be needed
-        :type Y_metadata: dict
-        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
-        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
-        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*
-        :type apply_link: boolean
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import models_plots
-        kw = {}
-        if linecol is not None:
-            kw['linecol'] = linecol
-        if fillcol is not None:
-            kw['fillcol'] = fillcol
-        return models_plots.plot_fit(self, plot_limits, which_data_rows,
-                                     which_data_ycols, fixed_inputs,
-                                     levels, samples, fignum, ax, resolution,
-                                     plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, apply_link=apply_link, **kw)
-
-    def plot(self, plot_limits=None, which_data_rows='all',
-        which_data_ycols='all', fixed_inputs=[],
-        levels=20, samples=0, fignum=None, ax=None, resolution=None,
-        plot_raw=False, linecol=None,fillcol=None, Y_metadata=None,
-        data_symbol='kx', predict_kw=None, plot_training_data=True, samples_y=0, apply_link=False):
-        """
-        Plot the posterior of the GP.
-          - In one dimension, the function is plotted with a shaded region identifying two standard deviations.
-          - In two dimsensions, a contour-plot shows the mean predicted function
-          - In higher dimensions, use fixed_inputs to plot the GP  with some of the inputs fixed.
-
-        Can plot only part of the data and part of the posterior functions
-        using which_data_rowsm which_data_ycols.
-
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :type plot_limits: np.array
-        :param which_data_rows: which of the training data to plot (default all)
-        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
-        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
-        :type which_data_ycols: 'all' or a list of integers
-        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
-        :type fixed_inputs: a list of tuples
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-        :type resolution: int
-        :param levels: number of levels to plot in a contour plot.
-        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
-        :type levels: int
-        :param samples: the number of a posteriori samples to plot, p(f*|y)
-        :type samples: int
-        :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
-        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
-        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
-        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param Y_metadata: additional data associated with Y which may be needed
-        :type Y_metadata: dict
-        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
-        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
-        :param plot_training_data: whether or not to plot the training points
-        :type plot_training_data: boolean
-        :param samples_y: the number of a posteriori samples to plot, p(y*|y)
-        :type samples_y: int
-        :param apply_link: if there is a link function of the likelihood, plot the link(f*) rather than f*, when plotting posterior samples f
-        :type apply_link: boolean
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import models_plots
-        kw = {}
-        if linecol is not None:
-            kw['linecol'] = linecol
-        if fillcol is not None:
-            kw['fillcol'] = fillcol
-        return models_plots.plot_fit(self, plot_limits, which_data_rows,
-                                     which_data_ycols, fixed_inputs,
-                                     levels, samples, fignum, ax, resolution,
-                                     plot_raw=plot_raw, Y_metadata=Y_metadata,
-                                     data_symbol=data_symbol, predict_kw=predict_kw,
-                                     plot_training_data=plot_training_data, samples_y=samples_y, apply_link=apply_link, **kw)
-
-
-    def plot_data(self, which_data_rows='all',
-        which_data_ycols='all', visible_dims=None,
-        fignum=None, ax=None, data_symbol='kx'):
-        """
-        Plot the training data
-          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
-
-        Can plot only part of the data
-        using which_data_rows and which_data_ycols.
-
-        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
-        :type plot_limits: np.array
-        :param which_data_rows: which of the training data to plot (default all)
-        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
-        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
-        :type which_data_ycols: 'all' or a list of integers
-        :param visible_dims: an array specifying the input dimensions to plot (maximum two)
-        :type visible_dims: a numpy array
-        :param resolution: the number of intervals to sample the GP on. Defaults to 200 in 1D and 50 (a 50x50 grid) in 2D
-        :type resolution: int
-        :param levels: number of levels to plot in a contour plot.
-        :param levels: for 2D plotting, the number of contour levels to use is ax is None, create a new figure
-        :type levels: int
-        :param samples: the number of a posteriori samples to plot, p(f*|y)
-        :type samples: int
-        :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
-        :param linecol: color of line to plot [Tango.colorsHex['darkBlue']]
-        :type linecol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param fillcol: color of fill [Tango.colorsHex['lightBlue']]
-        :type fillcol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) as is standard in matplotlib
-        :param data_symbol: symbol as used matplotlib, by default this is a black cross ('kx')
-        :type data_symbol: color either as Tango.colorsHex object or character ('r' is red, 'g' is green) alongside marker type, as is standard in matplotlib.
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import models_plots
-        kw = {}
-        return models_plots.plot_data(self, which_data_rows,
-                                     which_data_ycols, visible_dims,
-                                     fignum, ax, data_symbol, **kw)
-
-
-    def plot_errorbars_trainset(self, which_data_rows='all',
-            which_data_ycols='all', fixed_inputs=[], fignum=None, ax=None,
-            linecol=None, data_symbol='kx', predict_kw=None, plot_training_data=True,lw=None):
-
-        """
-        Plot the posterior error bars corresponding to the training data
-          - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
-
-        Can plot only part of the data
-        using which_data_rows and which_data_ycols.
-
-        :param which_data_rows: which of the training data to plot (default all)
-        :type which_data_rows: 'all' or a slice object to slice model.X, model.Y
-        :param which_data_ycols: when the data has several columns (independant outputs), only plot these
-        :type which_data_rows: 'all' or a list of integers
-        :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input index i should be set to value v.
-        :type fixed_inputs: a list of tuples
-        :param fignum: figure to plot on.
-        :type fignum: figure number
-        :param ax: axes to plot on.
-        :type ax: axes handle
-        :param plot_training_data: whether or not to plot the training points
-        :type plot_training_data: boolean
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import models_plots
-        kw = {}
-        if lw is not None:
-            kw['lw'] = lw
-        return models_plots.plot_errorbars_trainset(self, which_data_rows, which_data_ycols, fixed_inputs,
-                                    fignum, ax, linecol, data_symbol,
-                                    predict_kw, plot_training_data, **kw)
-
-
-    def plot_magnification(self, labels=None, which_indices=None,
-                resolution=50, ax=None, marker='o', s=40,
-                fignum=None, legend=True,
-                plot_limits=None,
-                aspect='auto', updates=False, plot_inducing=True, kern=None, **kwargs):
-
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
-
-        return dim_reduction_plots.plot_magnification(self, labels, which_indices,
-                resolution, ax, marker, s,
-                fignum, plot_inducing, legend,
-                plot_limits, aspect, updates, **kwargs)
-
+        fsim = self.posterior_samples_f(X, size, full_cov=full_cov, **predict_kwargs)
+        if likelihood is None:
+            likelihood = self.likelihood
+        if fsim.ndim == 3:
+            for d in range(fsim.shape[0]):
+                fsim[d] = likelihood.samples(fsim[d], Y_metadata=Y_metadata)
+        else:
+            fsim = likelihood.samples(fsim, Y_metadata=Y_metadata)
+        return fsim
 
     def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this model
         """
         return self.kern.input_sensitivity(summarize=summarize)
+
+    def get_most_significant_input_dimensions(self, which_indices=None):
+        return self.kern.get_most_significant_input_dimensions(which_indices)
 
     def optimize(self, optimizer=None, start=None, **kwargs):
         """

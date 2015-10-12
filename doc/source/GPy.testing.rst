@@ -164,6 +164,14 @@ GPy.testing.pickle_tests module
     :undoc-members:
     :show-inheritance:
 
+GPy.testing.plotting_tests module
+---------------------------------
+
+.. automodule:: GPy.testing.plotting_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.testing.prior_tests module
 ------------------------------
 

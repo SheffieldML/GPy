@@ -89,3 +89,57 @@ meanplot_1d, which we are for the 1d plot::
 
 The full definition of the plotting then looks like this::
 
+    if len(free_dims)<=2:
+        if len(free_dims)==1:
+            # 1D plotting:
+            update_not_existing_kwargs(kwargs, pl().defaults.meanplot_1d)  # @UndefinedVariable
+            plots = dict(covariance=[pl().plot(canvas, Xgrid[:, free_dims], K, label=label, **kwargs)])
+        else:
+            if projection == '2d':
+                update_not_existing_kwargs(kwargs, pl().defaults.meanplot_2d)  # @UndefinedVariable
+                plots = dict(covariance=[pl().contour(canvas, xx[:, 0], yy[0, :],
+                                               K.reshape(resolution, resolution),
+                                               levels=levels, label=label, **kwargs)])
+            elif projection == '3d':
+                update_not_existing_kwargs(kwargs, pl().defaults.meanplot_3d)  # @UndefinedVariable
+                plots = dict(covariance=[pl().surface(canvas, xx, yy,
+                                               K.reshape(resolution, resolution),
+                                               label=label,
+                                               **kwargs)])
+        return pl().add_to_canvas(canvas, plots)
+
+    else:
+        raise NotImplementedError("Cannot plot a kernel with more than two input dimensions")
+
+Where we return whatever is returned by :py:func:`GPy.plotting.abstract_plotting_library.AbstractPlottingLibrary.add_to_canvas`,
+so that the plotting library can choose what to do with the plot later, when we want to show it. In order
+to show a plot, we can just call :py:func:`GPy.plotting.show` with the output of the plot above.
+
+Now we want to add the plot to the :py:class:`GPy.kern.src.kern.Kern`. In order to do that, we inject the plotting function into the
+class in the :py:mod:`GPy.plotting.__init__`, which will make sure that the on the fly change of the backend
+works smoothly. Thus, in :py:mod:`GPy.plotting.__init__` we add the line::
+
+    from ..kern import Kern
+    Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
+
+And that's it. The plot can be shown in plotly by calling::
+
+    GPy.plotting.change_plotting_library('plotly')
+
+    k = GPy.kern.RBF(1) + GPy.kern.Matern32(1)
+    k.randomize()
+    fig = k.plot()
+    GPy.plotting.show(fig, <plot_library specific **kwargs>)
+
+    k = GPy.kern.RBF(2) + GPy.kern.Matern32(2)
+    k.randomize()
+    fig = k.plot()
+    GPy.plotting.show(fig, <plot_library specific **kwargs>)
+
+    k = GPy.kern.RBF(1) + GPy.kern.Matern32(2)
+    k.randomize()
+    fig = k.plot(projection='3d')
+    GPy.plotting.show(fig, <plot_library specific **kwargs>)
+
+This explains the next thing. Changing the backend works *on-the-fly*. To show the above example in matplotlib, we just
+exchange the first line by ``GPy.plotting.change_plotting_library('matplotlib')``.

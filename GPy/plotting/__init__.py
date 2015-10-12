@@ -84,6 +84,11 @@ if config.get('plotting', 'library') is not 'none':
 
     from ..kern import Kern
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
+    def deprecate_plot(self, *args, **kwargs):
+        import warnings
+        warnings.warn(DeprecationWarning('Kern.plot is being deprecated and will not be available in the 1.0 release. Use Kern.plot_covariance instead'))
+        return self.plot_covariance(*args, **kwargs)
+    Kern.plot = deprecate_plot
     Kern.plot_ARD = gpy_plot.kernel_plots.plot_ARD
 
     from ..inference.optimization import Optimizer

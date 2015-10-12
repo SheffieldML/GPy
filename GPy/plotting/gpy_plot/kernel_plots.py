@@ -137,5 +137,3 @@ def plot_covariance(kernel, x=None, label=None,
 
     else:
         raise NotImplementedError("Cannot plot a kernel with more than two input dimensions")
-
-    pass

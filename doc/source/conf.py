@@ -37,22 +37,22 @@ extensions = [
 ]
 
 #----- Autodoc
-#import sys
-#try:
-#    from unittest.mock import MagicMock
-#except:
-#    from mock import Mock as MagicMock
+import sys
+try:
+    from unittest.mock import MagicMock
+except:
+    from mock import Mock as MagicMock
 
-#class Mock(MagicMock):
-#    @classmethod
-#    def __getattr__(cls, name):
-#            return Mock()
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
 
-#MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
-#                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-#                'nose', 'nose.tools']
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats', 'GPy.util.choleskies_cython',
+                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
+                'nose', 'nose.tools']
 
-#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 import sphinx_rtd_theme
 
@@ -182,7 +182,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

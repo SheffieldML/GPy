@@ -49,7 +49,7 @@ def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
     bottom = 0
     last_bottom = bottom
 
-    x = np.arange(kernel.input_dim)
+    x = np.arange(kernel._effective_input_dim)
 
     parts = []
     def visit(x):
@@ -62,7 +62,7 @@ def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
 
     bars = []
     kwargs = update_not_existing_kwargs(kwargs, pl().defaults.ard)
-    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel.input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
+    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
     for i in range(ard_params.shape[0]):
         if parts[i].name in filtering:
             c = Tango.nextMedium()
@@ -94,15 +94,15 @@ def plot_covariance(kernel, x=None, label=None,
     :param int levels: for 2D projection, how many levels for the contour plot to use?
     :param kwargs:  valid kwargs for your specific plotting library
     """
-    X = np.ones((2, kernel.input_dim)) * [[-3], [3]]
+    X = np.ones((2, kernel._effective_input_dim)) * [[-3], [3]]
     _, free_dims, Xgrid, xx, yy, _, _, resolution = helper_for_plot_data(kernel, X, plot_limits, visible_dims, None, resolution)
     
     from numbers import Number
     if x is None:
         from ...kern.src.stationary import Stationary
-        x = np.ones((1, kernel.input_dim)) * (not isinstance(kernel, Stationary))
+        x = np.ones((1, kernel._effective_input_dim)) * (not isinstance(kernel, Stationary))
     elif isinstance(x, Number):
-        x = np.ones((1, kernel.input_dim))*x
+        x = np.ones((1, kernel._effective_input_dim))*x
     K = kernel.K(Xgrid, x)
     
     if projection == '3d':

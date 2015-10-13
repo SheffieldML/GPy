@@ -83,6 +83,9 @@ class GP(Model):
         assert isinstance(likelihood, likelihoods.Likelihood)
         self.likelihood = likelihood
 
+        if self.kern._effective_input_dim != self.X.shape[1]:
+            warnings.warn("Your kernel has a different input dimension {} then the given X dimension {}. Be very sure this is what you want and you have not forgotten to set the right input dimenion in your kernel".format(self.kern._effective_input_dim, self.X.shape[1]))
+
         #handle the mean function
         self.mean_function = mean_function
         if mean_function is not None:

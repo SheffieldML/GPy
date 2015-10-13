@@ -62,6 +62,10 @@ class Kern(Parameterized):
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()        
 
+    @property
+    def _effective_input_dim(self):
+        return self._all_dims_active.size
+
     @Cache_this(limit=20)
     def _slice_X(self, X):
         return X[:, self._all_dims_active]

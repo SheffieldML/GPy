@@ -23,7 +23,7 @@ class Model(Parameterized):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
         self.optimization_runs = []
         self.sampling_runs = []
-        self.preferred_optimizer = 'bfgs'
+        self.preferred_optimizer = 'lbfgsb'
         from .parameterization.ties_and_remappings import Tie
         self.tie = Tie()
         self.link_parameter(self.tie, -1)
@@ -104,7 +104,7 @@ class Model(Parameterized):
                     raise e
 
         if len(self.optimization_runs):
-            i = np.argmin([o.f_opt for o in self.optimization_runs])
+            i = np.nanargmin([o.f_opt for o in self.optimization_runs])
             self.optimizer_array = self.optimization_runs[i].x_opt
         else:
             self.optimizer_array = initial_parameters

@@ -23,6 +23,7 @@ from functools import reduce
 from GPy.util.caching import Cacher
 import GPy
 from pickle import PicklingError
+import GPy
 
 def toy_model():
     X = np.linspace(0,1,50)[:, None]

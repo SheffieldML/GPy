@@ -36,5 +36,3 @@ class GPHeteroscedasticRegression(GP):
 
         super(GPHeteroscedasticRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata=Y_metadata)
 
-    def plot(self,*args):
-        return NotImplementedError

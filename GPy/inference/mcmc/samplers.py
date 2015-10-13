@@ -14,7 +14,7 @@ except ImportError:
     import pickle
 
 
-class Metropolis_Hastings:
+class Metropolis_Hastings(object):
     def __init__(self,model,cov=None):
         """Metropolis Hastings, with tunings according to Gelman et al. """
         self.model = model

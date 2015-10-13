@@ -172,7 +172,7 @@ class LogGaussian(Gaussian):
         return -((np.log(x) - self.mu) / self.sigma2 + 1.) / x
 
     def rvs(self, n):
-        return np.exp(np.random.randn(n) * self.sigma + self.mu)
+        return np.exp(np.random.randn(int(n)) * self.sigma + self.mu)
 
 
 class MultivariateGaussian(Prior):

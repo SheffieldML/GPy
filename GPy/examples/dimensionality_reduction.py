@@ -343,6 +343,29 @@ def bgplvm_simulation(optimize=True, verbose=1,
         m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
     return m
 
+def gplvm_simulation(optimize=True, verbose=1,
+                      plot=True, plot_sim=False,
+                      max_iters=2e4,
+                      ):
+    from GPy import kern
+    from GPy.models import GPLVM
+
+    D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+    _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
+    Y = Ylist[0]
+    k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    m = GPLVM(Y, Q, init="PCA", kernel=k)
+    m.likelihood.variance = .1
+
+    if optimize:
+        print("Optimizing model:")
+        m.optimize('bfgs', messages=verbose, max_iters=max_iters,
+                   gtol=.05)
+    if plot:
+        m.X.plot("BGPLVM Latent Space 1D")
+        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+    return m
 def ssgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
                       max_iters=2e4, useGPU=False
@@ -405,10 +428,8 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
 
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim)
-    
 
-    # Ylist = [Ylist[0]]
-    k = kern.Linear(Q, ARD=True)
+    k = kern.Linear(Q) + kern.White(Q, variance=1e-4)
     m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
 
     m['.*noise'] = [Y.var() / 40. for Y in Ylist]
@@ -428,8 +449,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
-    # Ylist = [Ylist[0]]
-    k = kern.Linear(Q, ARD=True)
+    k = kern.Linear(Q) + kern.White(Q, variance=1e-4)
     inanlist = []
 
     for Y in Ylist:

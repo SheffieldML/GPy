@@ -34,18 +34,24 @@ except:
     def tests(verbose=10):
         Tester(testing).test(verbose=verbose)
 
-def load(file_path):
+def load(file_or_path):
     """
     Load a previously pickled model, using `m.pickle('path/to/file.pickle)'
 
     :param file_name: path/to/file.pickle
     """
-    import cPickle as pickle
     try:
-        with open(file_path, 'rb') as f:
-            m = pickle.load(f)
+        import cPickle as pickle
+        if isinstance(file_or_path, basestring): 
+            with open(file_or_path, 'rb') as f:
+                m = pickle.load(f)
+        else:
+            m = pickle.load(file_or_path)
     except:
-        import pickle as pickle
-        with open(file_path, 'rb') as f:
-            m = pickle.load(f)
+        import pickle
+        if isinstance(file_or_path, str): 
+            with open(file_or_path, 'rb') as f:
+                m = pickle.load(f)
+        else:
+            m = pickle.load(file_or_path)
     return m

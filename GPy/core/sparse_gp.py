@@ -40,12 +40,13 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, inference_method=None,
+    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, X_variance=None, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False):
+
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1 if not self.missing_data else Y.shape[1])
+                inference_method = var_dtc.VarDTC(limit=1)
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")
@@ -73,11 +74,12 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs',Z)
         self.link_parameter(self.Z, index=0)
         if trigger_update: self.update_model(True)
-        if trigger_update: self._trigger_params_changed()
 
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
+        self._update_gradients()
 
+    def _update_gradients(self):
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
 
         if isinstance(self.X, VariationalPosterior):
@@ -111,6 +113,7 @@ class SparseGP(GP):
             #gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+        self._Zgrad = self.Z.gradient.copy()
 
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
@@ -157,32 +160,40 @@ class SparseGP(GP):
         else:
             psi0_star = kern.psi0(self._predictive_variable, Xnew)
             psi1_star = kern.psi1(self._predictive_variable, Xnew)
-            #psi2_star = kern.psi2(self.Z, Xnew) # Only possible if we get NxMxM psi2 out of the code.
+            psi2_star = kern.psi2n(self._predictive_variable, Xnew) 
             la = self.posterior.woodbury_vector
             mu = np.dot(psi1_star, la) # TODO: dimensions?
+            N,M,D = psi0_star.shape[0],psi1_star.shape[1], la.shape[1]
 
             if full_cov:
                 raise NotImplementedError("Full covariance for Sparse GP predicted with uncertain inputs not implemented yet.")
-                var = np.empty((Xnew.shape[0], la.shape[1], la.shape[1]))
+                var = np.zeros((Xnew.shape[0], la.shape[1], la.shape[1]))
                 di = np.diag_indices(la.shape[1])
             else:
-                var = np.empty((Xnew.shape[0], la.shape[1]))
-
-            for i in range(Xnew.shape[0]):
-                _mu, _var = Xnew.mean.values[[i]], Xnew.variance.values[[i]]
-                psi2_star = kern.psi2(self._predictive_variable, NormalPosterior(_mu, _var))
-                tmp = (psi2_star[:, :] - psi1_star[[i]].T.dot(psi1_star[[i]]))
-
-                var_ = mdot(la.T, tmp, la)
-                p0 = psi0_star[i]
-                t = np.atleast_3d(self.posterior.woodbury_inv)
-                t2 = np.trace(t.T.dot(psi2_star), axis1=1, axis2=2)
-
-                if full_cov:
-                    var_[di] += p0
-                    var_[di] += -t2
-                    var[i] = var_
+                tmp = psi2_star - psi1_star[:,:,None]*psi1_star[:,None,:]
+                var = (tmp.reshape(-1,M).dot(la).reshape(N,M,D)*la[None,:,:]).sum(1) + psi0_star[:,None] 
+                if self.posterior.woodbury_inv.ndim==2:
+                    var += -psi2_star.reshape(N,-1).dot(self.posterior.woodbury_inv.flat)[:,None]
                 else:
-                    var[i] = np.diag(var_)+p0-t2
+                    var += -psi2_star.reshape(N,-1).dot(self.posterior.woodbury_inv.reshape(-1,D))
+            assert np.all(var>=-1e-5), "The predicted variance goes negative!: "+str(var)
+            var = np.clip(var,1e-15,np.inf)
+
+#             for i in range(Xnew.shape[0]):
+#                 _mu, _var = Xnew.mean.values[[i]], Xnew.variance.values[[i]]
+#                 psi2_star = kern.psi2(self._predictive_variable, NormalPosterior(_mu, _var))
+#                 tmp = (psi2_star[:, :] - psi1_star[[i]].T.dot(psi1_star[[i]]))
+# 
+#                 var_ = mdot(la.T, tmp, la)
+#                 p0 = psi0_star[i]
+#                 t = np.atleast_3d(self.posterior.woodbury_inv)
+#                 t2 = np.trace(t.T.dot(psi2_star), axis1=1, axis2=2)
+# 
+#                 if full_cov:
+#                     var_[di] += p0
+#                     var_[di] += -t2
+#                     var[i] = var_
+#                 else:
+#                     var[i] = np.diag(var_)+p0-t2
 
         return mu, var

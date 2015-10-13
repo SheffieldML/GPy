@@ -346,6 +346,10 @@ class KernelTestsMiscellaneous(unittest.TestCase):
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=[self.linear, self.rbf]), self.linear.K(self.X)+self.rbf.K(self.X)))
         self.assertTrue(np.allclose(self.sumkern.K(self.X, which_parts=self.sumkern.parts[0]), self.rbf.K(self.X)))
 
+    def test_active_dims(self):
+        np.testing.assert_array_equal(self.sumkern.active_dims, [0,1,2,3,7,9])
+        np.testing.assert_array_equal(self.sumkern._all_dims_active, range(10))
+
 class KernelTestsNonContinuous(unittest.TestCase):
     def setUp(self):
         N0 = 3
@@ -469,9 +473,10 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         self.w3n = self.w3n+np.swapaxes(self.w3n, 1,2)
 
     def test_kernels(self):
-        from GPy.kern import RBF,Linear,MLP
+        from GPy.kern import RBF,Linear,MLP,Bias,White
         Q = self.Z.shape[1]
-        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True)]
+        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True),MLP(Q,ARD=True), RBF(Q,ARD=True)+Linear(Q,ARD=True)+Bias(Q)+White(Q)
+                   ,RBF(Q,ARD=True)+Bias(Q)+White(Q),  Linear(Q,ARD=True)+Bias(Q)+White(Q)]
 
         for k in kernels:
             k.randomize()
@@ -502,6 +507,7 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, kernel.param_array.copy())
+        m.checkgrad(verbose=1)
         self.assertTrue(m.checkgrad())
 
     def _test_Z(self, kernel, psi2n=False):

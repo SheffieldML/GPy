@@ -12,7 +12,7 @@ except ImportError:
     rasm_available = False
 from .scg import SCG
 
-class Optimizer():
+class Optimizer(object):
     """
     Superclass for all the optimizers.
 
@@ -55,16 +55,6 @@ class Optimizer():
 
     def opt(self, f_fp=None, f=None, fp=None):
         raise NotImplementedError("this needs to be implemented to use the optimizer class")
-
-    def plot(self):
-        """
-        See GPy.plotting.matplot_dep.inference_plots
-        """
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ...plotting.matplot_dep import inference_plots
-        inference_plots.plot_optimizer(self)
-
 
     def __str__(self):
         diagnostics = "Optimizer: \t\t\t\t %s\n" % self.opt_name
@@ -143,6 +133,33 @@ class opt_lbfgsb(Optimizer):
         #a more helpful error message is available in opt_result in the Error case
         if opt_result[2]['warnflag']==2:
             self.status = 'Error' + str(opt_result[2]['task'])
+            
+class opt_bfgs(Optimizer):
+    def __init__(self, *args, **kwargs):
+        Optimizer.__init__(self, *args, **kwargs)
+        self.opt_name = "BFGS (Scipy implementation)"
+
+    def opt(self, f_fp=None, f=None, fp=None):
+        """
+        Run the optimizer
+
+        """
+        rcstrings = ['','Maximum number of iterations exceeded', 'Gradient and/or function calls not changing']
+
+        opt_dict = {}
+        if self.xtol is not None:
+            print("WARNING: bfgs doesn't have an xtol arg, so I'm going to ignore it")
+        if self.ftol is not None:
+            print("WARNING: bfgs doesn't have an ftol arg, so I'm going to ignore it")
+        if self.gtol is not None:
+            opt_dict['pgtol'] = self.gtol
+
+        opt_result = optimize.fmin_bfgs(f, self.x_init, fp, disp=self.messages,
+                                            maxiter=self.max_iters, full_output=True, **opt_dict)
+        self.x_opt = opt_result[0]
+        self.f_opt = f_fp(self.x_opt)[0]
+        self.funct_eval = opt_result[4]
+        self.status = rcstrings[opt_result[6]]
 
 class opt_simplex(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -255,6 +272,7 @@ def get_optimizer(f_min):
     optimizers = {'fmin_tnc': opt_tnc,
           'simplex': opt_simplex,
           'lbfgsb': opt_lbfgsb,
+          'org-bfgs': opt_bfgs,
           'scg': opt_SCG,
           'adadelta':Opt_Adadelta}
 

@@ -32,8 +32,8 @@ class Laplace(LatentFunctionInference):
 
         """
 
-        self._mode_finding_tolerance = 1e-7
-        self._mode_finding_max_iter = 60
+        self._mode_finding_tolerance = 1e-4
+        self._mode_finding_max_iter = 30
         self.bad_fhat = False
         #Store whether it is the first run of the inference so that we can choose whether we need
         #to calculate things or reuse old variables
@@ -209,9 +209,12 @@ class Laplace(LatentFunctionInference):
             Ki_f_new = Ki_f + step*dKi_f
             f_new = np.dot(K, Ki_f_new)
             #print "new {} vs old {}".format(obj(Ki_f_new, f_new), obj(Ki_f, f))
-            if obj(Ki_f_new, f_new) < obj(Ki_f, f):
+            old_obj = obj(Ki_f, f)
+            new_obj = obj(Ki_f_new, f_new)
+            if new_obj < old_obj:
                 raise ValueError("Shouldn't happen, brent optimization failing")
-            difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
+            difference = np.abs(new_obj - old_obj)
+            # difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
             Ki_f = Ki_f_new
             f = f_new
             iteration += 1
@@ -316,6 +319,9 @@ class Laplace(LatentFunctionInference):
         if not log_concave:
             #print "Under 1e-10: {}".format(np.sum(W < 1e-6))
             W = np.clip(W, 1e-6, 1e+30)
+            # For student-T we can clip this more intelligently. If the
+            # objective has hardly changed, we can increase the clipping limit
+            # by ((v+1)/v)/sigma2
             # NOTE: when setting a parameter inside parameters_changed it will allways come to closed update circles!!!
             #W.__setitem__(W < 1e-6, 1e-6, update=False)  # FIXME-HACK: This is a hack since GPy can't handle negative variances which can occur
                                 # If the likelihood is non-log-concave. We wan't to say that there is a negative variance
@@ -339,7 +345,7 @@ class Laplace(LatentFunctionInference):
 
         #compute vital matrices
         C = np.dot(LiW12, K)
-        Ki_W_i  = K - C.T.dot(C)
+        Ki_W_i = K - C.T.dot(C)
 
         I_KW_i = np.eye(K.shape[0]) - np.dot(K, K_Wi_i)
         logdet_I_KW = 2*np.sum(np.log(np.diag(L)))

@@ -2,25 +2,14 @@
 The module of tools for parallelization (MPI)
 """
 import numpy as np
-try:
-    from mpi4py import MPI
-    def get_id_within_node(comm=MPI.COMM_WORLD):
-        rank = comm.rank
-        nodename =  MPI.Get_processor_name()
-        nodelist = comm.allgather(nodename)
-        return len([i for i in nodelist[:rank] if i==nodename])
 
-    numpy_to_MPI_typemap = {
-        np.dtype(np.float64) : MPI.DOUBLE,
-        np.dtype(np.float32) : MPI.FLOAT,
-        np.dtype(np.int)     : MPI.INT,
-        np.dtype(np.int8)    : MPI.CHAR,
-        np.dtype(np.uint8)   : MPI.UNSIGNED_CHAR,
-        np.dtype(np.int32)   : MPI.INT,
-        np.dtype(np.uint32)  : MPI.UNSIGNED_INT,
-    }
-except:
-    pass
+def get_id_within_node(comm=None):
+    from mpi4py import MPI
+    if comm is None: comm = MPI.COMM_WORLD
+    rank = comm.rank
+    nodename =  MPI.Get_processor_name()
+    nodelist = comm.allgather(nodename)
+    return len([i for i in nodelist[:rank] if i==nodename])
 
 def divide_data(datanum, rank, size):
     assert rank<size and datanum>0

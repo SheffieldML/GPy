@@ -25,8 +25,8 @@ def _flat_to_triang_pure(flat_mat):
         count = 0
         for m in range(M):
             for mm in range(m+1):
-              ret[d,m, mm] = flat_mat[count, d];
-              count = count+1
+                ret[d,m, mm] = flat_mat[count, d];
+                count = count+1
     return ret
 
 def _flat_to_triang_cython(flat_mat):

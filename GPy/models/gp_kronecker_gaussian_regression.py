@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core.model import Model
+from GPy.core.probabilistic_model import Model
 from ..core.parameterization import ObsAr
 from .. import likelihoods
 

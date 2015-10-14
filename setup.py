@@ -68,8 +68,8 @@ if ismac():
     compile_flags = [ '-O3', ]
     link_args = []
 else:
-    compile_flags = [ '-fopenmp', '-O3', ]
-    link_args = ['-lgomp']
+    compile_flags = [ '-fopenmp', '-O3']
+    link_args = ['-lgomp' ]
 
 ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
                       sources=['GPy/kern/src/stationary_cython.c',
@@ -133,7 +133,18 @@ setup(name = 'GPy',
       test_suite = 'GPy.testing',
       long_description=read_to_rst('README.md'),
       install_requires=['numpy>=1.7', 'scipy>=0.16', 'six'],
-      extras_require = {'docs':['matplotlib >=1.3','Sphinx','IPython'],'optional':['mpi4py']},
+      extras_require = {'docs':['sphinx'],
+                        'optional':['mpi4py',
+                                    'ipython>=4.0.0',
+                                    ],
+                        'plotting':['matplotlib >= 1.3',
+                                    'plotly >= 1.8.6'],
+                        'notebook':['jupyter_client >= 4.0.6',
+                                    'ipywidgets >= 4.0.3',
+                                    'ipykernel >= 4.1.0',
+                                    'notebook >= 4.0.5',
+                                    ],
+                        },
       classifiers=['License :: OSI Approved :: BSD License',
                    'Natural Language :: English',
                    'Operating System :: MacOS :: MacOS X',

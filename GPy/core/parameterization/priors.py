@@ -4,7 +4,7 @@
 
 import numpy as np
 from scipy.special import gammaln, digamma
-from ..util.linalg import pdinv
+from ...util.linalg import pdinv
 from paramz.domains import _REAL, _POSITIVE
 import warnings
 import weakref

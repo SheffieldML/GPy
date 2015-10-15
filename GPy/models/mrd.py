@@ -5,7 +5,7 @@ import numpy as np
 import itertools, logging
 
 from ..kern import Kern
-from ..core.variational import NormalPrior
+from GPy.core.parameterization.variational import NormalPrior
 from ..core.parameterization import Param
 from paramz import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTC

@@ -4,7 +4,7 @@
 from .posterior import Posterior
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 from ...util import diag
-from ...core.variational import VariationalPosterior
+from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)

@@ -5,8 +5,8 @@ Created on 6 Nov 2013
 '''
 
 import numpy as np
-from .parameterization.parameterized import Parameterized
-from .parameterization.param import Param
+from .parameterized import Parameterized
+from .param import Param
 from paramz.transformations import Logexp, Logistic,__fixed__
 
 class VariationalPrior(Parameterized):

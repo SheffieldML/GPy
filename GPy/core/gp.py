@@ -3,19 +3,19 @@
 
 import numpy as np
 from .. import kern
-from .probabilistic_model import ProbabilisticModel
+from GPy.core.model import Model
 from paramz import ObsAr
 from .mapping import Mapping
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from .variational import VariationalPosterior
+from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
 import warnings
 from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
-class GP(ProbabilisticModel):
+class GP(Model):
     """
     General purpose Gaussian process model
 
@@ -541,7 +541,7 @@ class GP(ProbabilisticModel):
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
-        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.probabilistic_model.Model`)
+        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)

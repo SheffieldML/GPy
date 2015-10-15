@@ -7,7 +7,7 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import kern
 from ..core.parameterization import Param
 from ..likelihoods import Gaussian
-from ..core.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
+from GPy.core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..kern.src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 

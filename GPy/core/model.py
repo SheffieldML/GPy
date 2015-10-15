@@ -1,12 +1,12 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .parameterization.priorizable import Priorizable
-from paramz import Model
+from paramz import Model as ParamzModel
 
-class ProbabilisticModel(Model, Priorizable):
+class Model(ParamzModel, Priorizable):
 
     def __init__(self, name):
-        super(ProbabilisticModel, self).__init__(name)  # Parameterized.__init__(self)
+        super(Model, self).__init__(name)  # Parameterized.__init__(self)
 
     def log_likelihood(self):
         raise NotImplementedError("this needs to be implemented to use the model class")

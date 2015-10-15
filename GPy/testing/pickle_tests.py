@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 import tempfile
 from GPy.examples.dimensionality_reduction import mrd_simulation
-from GPy.core.variational import NormalPosterior
+from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 from functools import reduce
 

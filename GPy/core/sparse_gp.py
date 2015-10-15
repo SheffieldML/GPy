@@ -6,7 +6,7 @@ from .gp import GP
 from .parameterization.param import Param
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from .variational import VariationalPosterior
+from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
 logger = logging.getLogger("sparse gp")

@@ -2,11 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core import ProbabilisticModel
+from ..core import Model
 from paramz import ObsAr
 from .. import likelihoods
 
-class GPKroneckerGaussianRegression(ProbabilisticModel):
+class GPKroneckerGaussianRegression(Model):
     """
     Kronecker GP regression
 
@@ -29,7 +29,7 @@ class GPKroneckerGaussianRegression(ProbabilisticModel):
 
     """
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
-        ProbabilisticModel.__init__(self, name=name)
+        Model.__init__(self, name=name)
         # accept the construction arguments
         self.X1 = ObsAr(X1)
         self.X2 = ObsAr(X2)

@@ -3,7 +3,7 @@
 
 from paramz.core.pickleable import Pickleable
 from paramz.caching import Cache_this
-from ....core import variational
+from GPy.core.parameterization import variational
 #from linear_psi_comp import LINEAr
 
 class PSICOMP(Pickleable):

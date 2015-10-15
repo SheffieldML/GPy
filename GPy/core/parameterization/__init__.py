@@ -3,3 +3,4 @@
 
 from .param import Param
 from .parameterized import Parameterized
+from paramz import transformations

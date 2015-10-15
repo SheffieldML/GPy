@@ -2,8 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...core import ProbabilisticModel
-from ...core import variational
+from ...core import Model
+from GPy.core.parameterization import variational
 from ...util.linalg import tdot
 
 def infer_newX(model, Y_new, optimize=True, init='L2'):
@@ -26,7 +26,7 @@ def infer_newX(model, Y_new, optimize=True, init='L2'):
 
     return infr_m.X, infr_m
 
-class InferenceX(ProbabilisticModel):
+class InferenceX(Model):
     """
     The model class for inference of new X with given new Y. (replacing the "do_test_latent" in Bayesian GPLVM)
     It is a tiny inference model created from the original GP model. The kernel, likelihood (only Gaussian is supported at the moment) 

@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import GPy
 
-class MappingGradChecker(GPy.core.ProbabilisticModel):
+class MappingGradChecker(GPy.core.Model):
     """
     This class has everything we need to check the gradient of a mapping. It
     implement a simple likelihood which is a weighted sum of the outputs of the

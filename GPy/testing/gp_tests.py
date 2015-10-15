@@ -5,7 +5,7 @@ Created on 4 Sep 2015
 '''
 import unittest
 import numpy as np, GPy
-from ..core.variational import NormalPosterior
+from GPy.core.parameterization.variational import NormalPosterior
 
 class Test(unittest.TestCase):
 

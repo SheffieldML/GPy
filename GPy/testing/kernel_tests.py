@@ -16,7 +16,7 @@ except ImportError:
     config.set('cython', 'working', 'False')
 
 
-class Kern_check_model(GPy.core.ProbabilisticModel):
+class Kern_check_model(GPy.core.Model):
     """
     This is a dummy model class used as a base class for checking that the
     gradients of a given kernel are implemented correctly. It enables
@@ -456,7 +456,7 @@ class KernelTestsProductWithZeroValues(unittest.TestCase):
 class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
 
     def setUp(self):
-        from GPy.core.variational import NormalPosterior
+        from GPy.core.parameterization.variational import NormalPosterior
         N,M,Q = 100,20,3
 
         X = np.random.randn(N,Q)

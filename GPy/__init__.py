@@ -15,7 +15,8 @@ from . import kern
 from . import plotting
 
 # Direct imports for convenience:
-from .core import ProbabilisticModel, priors
+from .core import Model
+from GPy.core.parameterization import priors
 from paramz import Param, Parameterized, ObsAr, transformations as constraints
 
 from .__version__ import __version__

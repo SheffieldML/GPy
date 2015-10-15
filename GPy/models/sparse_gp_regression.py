@@ -7,7 +7,7 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import VarDTC
-from ..core.variational import NormalPosterior
+from GPy.core.parameterization.variational import NormalPosterior
 
 class SparseGPRegression(SparseGP_MPI):
     """

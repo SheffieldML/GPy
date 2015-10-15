@@ -5,7 +5,7 @@ import numpy
 np = numpy
 
 from ..core.parameterization import Param
-from ..core.probabilistic_model import ProbabilisticModel
+from GPy.core.model import Model
 from ..util.block_matrices import get_blocks, get_block_shapes, unblock, get_blocks_3d, get_block_shapes_3d
 
 def get_shape(x):
@@ -21,7 +21,7 @@ def at_least_one_element(x):
 def flatten_if_needed(x):
     return numpy.atleast_1d(x).flatten()
 
-class GradientChecker(ProbabilisticModel):
+class GradientChecker(Model):
 
     def __init__(self, f, df, x0, names=None, *args, **kwargs):
         """

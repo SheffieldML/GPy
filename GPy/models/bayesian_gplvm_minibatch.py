@@ -5,7 +5,7 @@ import numpy as np
 import logging
 from .. import kern
 from ..likelihoods import Gaussian
-from ..core.variational import NormalPosterior, NormalPrior
+from GPy.core.parameterization.variational import NormalPosterior, NormalPrior
 from .sparse_gp_minibatch import SparseGPMiniBatch
 from ..core.parameterization.param import Param
 

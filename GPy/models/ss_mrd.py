@@ -3,15 +3,15 @@ The Maniforld Relevance Determination model with the spike-and-slab prior
 """
 
 import numpy as np
-from ..core import ProbabilisticModel
+from ..core import Model
 from .ss_gplvm import SSGPLVM
-from ..core.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
+from GPy.core.parameterization.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
 from ..util.misc import param_to_array
 from ..kern import RBF
 from ..core import Param
 from numpy.linalg.linalg import LinAlgError
 
-class SSMRD(ProbabilisticModel):
+class SSMRD(Model):
     
     def __init__(self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx = 'PCA_concat', initz = 'permute', 
                  num_inducing=10, Zs=None, kernels=None, inference_methods=None, likelihoods=None, group_spike=True,
@@ -117,13 +117,13 @@ class SSMRD(ProbabilisticModel):
                 Gammas.append(gamma)
         return X, X_variance, Gammas, fracs
 
-    @ProbabilisticModel.optimizer_array.setter
+    @Model.optimizer_array.setter
     def optimizer_array(self, p):
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
             self.mpi_comm.Bcast(p, root=0)        
-        ProbabilisticModel.optimizer_array.fset(self,p)
+        Model.optimizer_array.fset(self,p)
         
     def optimize(self, optimizer=None, start=None, **kwargs):
         self._IN_OPTIMIZATION_ = True

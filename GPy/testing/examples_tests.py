@@ -25,7 +25,7 @@ def model_checkgrads(model):
     return model.checkgrad(step=1e-4)
 
 def model_instance(model):
-    return isinstance(model, GPy.core.probabilistic_model.Model)
+    return isinstance(model, GPy.core.model.Model)
 
 def flatten_nested(lst):
     result = []

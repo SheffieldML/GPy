@@ -1,22 +1,9 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
+from .parameterization.priorizable import Priorizable
+from paramz import Model
 
-
-from .. import likelihoods
-from ..inference import optimization
-from ..util.misc import opt_wrapper
-from .parameterization import Parameterized
-import multiprocessing as mp
-import numpy as np
-from numpy.linalg.linalg import LinAlgError
-import itertools
-import sys
-from .verbose_optimization import VerboseOptimization
-# import numdifftools as ndt
-from functools import reduce
-from paramz.model import Model
-
-class ProbabilisticModel(Model):
+class ProbabilisticModel(Model, Priorizable):
 
     def __init__(self, name):
         super(ProbabilisticModel, self).__init__(name)  # Parameterized.__init__(self)
@@ -25,8 +12,7 @@ class ProbabilisticModel(Model):
         raise NotImplementedError("this needs to be implemented to use the model class")
 
     def _log_likelihood_gradients(self):
-        return self.gradient.copy()
-
+        return self.gradient#.copy()
 
     def objective_function(self):
         """

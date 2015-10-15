@@ -2,10 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ...core import Model
-from ...core.parameterization import variational
+from ...core import ProbabilisticModel
+from ...core import variational
 from ...util.linalg import tdot
-from GPy.core.parameterization.variational import VariationalPosterior
 
 def infer_newX(model, Y_new, optimize=True, init='L2'):
     """
@@ -27,7 +26,7 @@ def infer_newX(model, Y_new, optimize=True, init='L2'):
 
     return infr_m.X, infr_m
 
-class InferenceX(Model):
+class InferenceX(ProbabilisticModel):
     """
     The model class for inference of new X with given new Y. (replacing the "do_test_latent" in Bayesian GPLVM)
     It is a tiny inference model created from the original GP model. The kernel, likelihood (only Gaussian is supported at the moment) 
@@ -62,14 +61,12 @@ class InferenceX(Model):
 #                 self.kern.GPU(True)
         from copy import deepcopy
         self.posterior = deepcopy(model.posterior)
-        from ...core.parameterization.variational import VariationalPosterior
-        if isinstance(model.X, VariationalPosterior):
+        if isinstance(model.X, variational.VariationalPosterior):
             self.uncertain_input = True
             from ...models.ss_gplvm import IBPPrior
             from ...models.ss_mrd import IBPPrior_SSMRD
             if isinstance(model.variational_prior, IBPPrior) or isinstance(model.variational_prior, IBPPrior_SSMRD):
-                from ...core.parameterization.variational import SpikeAndSlabPrior
-                self.variational_prior = SpikeAndSlabPrior(pi=0.5, learnPi=False, group_spike=False)
+                self.variational_prior = variational.SpikeAndSlabPrior(pi=0.5, learnPi=False, group_spike=False)
             else:
                 self.variational_prior = model.variational_prior.copy()
         else:
@@ -105,17 +102,16 @@ class InferenceX(Model):
         idx = dist.argmin(axis=1)
 
         from ...models import SSGPLVM
-        from ...util.misc import param_to_array
         if isinstance(model, SSGPLVM):
-            X = variational.SpikeAndSlabPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]), param_to_array(model.X.gamma[idx]))
+            X = variational.SpikeAndSlabPosterior((model.X.mean[idx].values), (model.X.variance[idx].values), (model.X.gamma[idx].values))
             if model.group_spike:
                 X.gamma.fix()
         else:
             if self.uncertain_input and self.sparse_gp:
-                X = variational.NormalPosterior(param_to_array(model.X.mean[idx]), param_to_array(model.X.variance[idx]))
+                X = variational.NormalPosterior((model.X.mean[idx].values), (model.X.variance[idx].values))
             else:
                 from ...core import Param
-                X = Param('latent mean',param_to_array(model.X[idx]).copy())
+                X = Param('latent mean',(model.X[idx].values).copy())
 
         return X
 
@@ -160,8 +156,7 @@ class InferenceX(Model):
             self.X.gradient = X_grad
 
         if self.uncertain_input:
-            from ...core.parameterization.variational import SpikeAndSlabPrior
-            if isinstance(self.variational_prior, SpikeAndSlabPrior):
+            if isinstance(self.variational_prior, variational.SpikeAndSlabPrior):
                 # Update Log-likelihood
                 KL_div = self.variational_prior.KL_divergence(self.X)
                 # update for the KL divergence

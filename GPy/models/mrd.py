@@ -5,18 +5,14 @@ import numpy as np
 import itertools, logging
 
 from ..kern import Kern
-from ..core.parameterization.variational import NormalPosterior, NormalPrior
-from ..core.parameterization import Param, Parameterized
-from ..core.parameterization.observable_array import ObsAr
+from ..core.variational import NormalPrior
+from ..core.parameterization import Param
+from paramz import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTC
 from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
-from ..core.sparse_gp import SparseGP, GP
-from GPy.core.parameterization.variational import VariationalPosterior
 from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
-from GPy.models.bayesian_gplvm import BayesianGPLVM
-from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
 
 class MRD(BayesianGPLVMMiniBatch):
     """

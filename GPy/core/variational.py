@@ -5,11 +5,9 @@ Created on 6 Nov 2013
 '''
 
 import numpy as np
-from .parameterized import Parameterized
-from .param import Param
-from .transformations import Logexp, Logistic,__fixed__
-from GPy.util.misc import param_to_array
-from GPy.util.caching import Cache_this
+from .parameterization.parameterized import Parameterized
+from .parameterization.param import Param
+from paramz.transformations import Logexp, Logistic,__fixed__
 
 class VariationalPrior(Parameterized):
     def __init__(self, name='latent space', **kw):

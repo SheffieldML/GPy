@@ -5,7 +5,7 @@
 The test cases for various inference algorithms
 """
 
-import unittest, itertools
+import unittest
 import numpy as np
 import GPy
 #np.seterr(invalid='raise')

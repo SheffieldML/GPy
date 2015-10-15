@@ -2,14 +2,12 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+import logging
 from .. import kern
 from ..likelihoods import Gaussian
-from ..core.parameterization.variational import NormalPosterior, NormalPrior
-from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
-import logging
-from GPy.models.sparse_gp_minibatch import SparseGPMiniBatch
-from GPy.core.parameterization.param import Param
-from GPy.core.parameterization.observable_array import ObsAr
+from ..core.variational import NormalPosterior, NormalPrior
+from .sparse_gp_minibatch import SparseGPMiniBatch
+from ..core.parameterization.param import Param
 
 class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     """

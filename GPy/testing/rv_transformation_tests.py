@@ -10,12 +10,12 @@ import scipy.stats as st
 import GPy
 
 
-class TestModel(GPy.core.Model):
+class TestModel(GPy.core.ProbabilisticModel):
     """
     A simple GPy model with one parameter.
     """
     def __init__(self, theta=1.):
-        GPy.core.Model.__init__(self, 'test_model')
+        GPy.core.ProbabilisticModel.__init__(self, 'test_model')
         theta = GPy.core.Param('theta', theta)
         self.link_parameter(theta)
 

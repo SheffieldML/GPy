@@ -7,7 +7,7 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import kern
 from ..core.parameterization import Param
 from ..likelihoods import Gaussian
-from ..core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
+from ..core.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..kern.src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 
@@ -19,7 +19,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        from ..core.parameterization.transformations import Logexp
+        from paramz.transformations import Logexp
         super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
         self.sharedX = sharedX
         if sharedX:
@@ -60,7 +60,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
 class IBPPrior(VariationalPrior):
     def __init__(self, input_dim, alpha =2., name='IBPPrior', **kw):
         super(IBPPrior, self).__init__(name=name, **kw)
-        from ..core.parameterization.transformations import Logexp, __fixed__  
+        from paramz.transformations import Logexp, __fixed__  
         self.input_dim = input_dim
         self.variance = 1.
         self.alpha = Param('alpha', alpha, __fixed__)

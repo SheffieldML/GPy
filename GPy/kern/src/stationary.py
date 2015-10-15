@@ -2,15 +2,15 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-from .kern import Kern
-from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
-from ...util.linalg import tdot
-from ... import util
 import numpy as np
 from scipy import integrate
+from .kern import Kern
+from ...core.parameterization import Param
+from ...util.linalg import tdot
+from ... import util
 from ...util.config import config # for assesing whether to use cython
-from ...util.caching import Cache_this
+from paramz.caching import Cache_this
+from paramz.transformations import Logexp
 
 try:
     from . import stationary_cython

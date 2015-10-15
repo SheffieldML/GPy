@@ -2,21 +2,20 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import sys
 from .. import kern
-from GPy.core.probabilistic_model import Model
-from .parameterization import ObsAr
+from .probabilistic_model import ProbabilisticModel
+from paramz import ObsAr
 from .mapping import Mapping
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from .parameterization.variational import VariationalPosterior
+from .variational import VariationalPosterior
 
 import logging
 import warnings
 from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
-class GP(Model):
+class GP(ProbabilisticModel):
     """
     General purpose Gaussian process model
 

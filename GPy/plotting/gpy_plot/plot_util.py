@@ -334,7 +334,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     """
     assert X.shape[1] ==1, "x_frame1D is defined for one-dimensional inputs"
     if plot_limits is None:
-        from ...core.parameterization.variational import VariationalPosterior
+        from ...core.variational import VariationalPosterior
         if isinstance(X, VariationalPosterior):
             xmin,xmax = X.mean.min(0),X.mean.max(0)
         else:

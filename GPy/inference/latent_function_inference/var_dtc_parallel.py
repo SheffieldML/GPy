@@ -4,7 +4,7 @@
 from .posterior import Posterior
 from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri,pdinv
 from ...util import diag
-from ...core.parameterization.variational import VariationalPosterior
+from ...core.variational import VariationalPosterior
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)

@@ -4,7 +4,6 @@
 import numpy as np
 from ..core import SparseGP
 from ..inference.latent_function_inference import VarDTC
-from .. import likelihoods
 from .. import kern
 from .. import util
 

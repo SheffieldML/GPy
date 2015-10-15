@@ -4,7 +4,7 @@
 from .posterior import Posterior
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 from ...util import diag
-from ...core.parameterization.variational import VariationalPosterior
+from ...core.variational import VariationalPosterior
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
@@ -23,8 +23,7 @@ class VarDTC(LatentFunctionInference):
     """
     const_jitter = 1e-8
     def __init__(self, limit=1):
-        #self._YYTfactor_cache = caching.cache()
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
@@ -45,7 +44,7 @@ class VarDTC(LatentFunctionInference):
     def __setstate__(self, state):
         # has to be overridden, as Cacher objects cannot be pickled.
         self.limit = state
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)
 

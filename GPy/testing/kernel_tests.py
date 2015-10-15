@@ -4,7 +4,6 @@
 import unittest
 import numpy as np
 import GPy
-import sys
 from GPy.core.parameterization.param import Param
 from ..util.config import config
 
@@ -17,14 +16,14 @@ except ImportError:
     config.set('cython', 'working', 'False')
 
 
-class Kern_check_model(GPy.core.Model):
+class Kern_check_model(GPy.core.ProbabilisticModel):
     """
     This is a dummy model class used as a base class for checking that the
     gradients of a given kernel are implemented correctly. It enables
     checkgrad() to be called independently on a kernel.
     """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        GPy.core.Model.__init__(self, 'kernel_test_model')
+        super(Kern_check_model, self).__init__('kernel_test_model')
         if kernel==None:
             kernel = GPy.kern.RBF(1)
         kernel.randomize(loc=1, scale=0.1)
@@ -457,7 +456,7 @@ class KernelTestsProductWithZeroValues(unittest.TestCase):
 class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
 
     def setUp(self):
-        from GPy.core.parameterization.variational import NormalPosterior
+        from GPy.core.variational import NormalPosterior
         N,M,Q = 100,20,3
 
         X = np.random.randn(N,Q)

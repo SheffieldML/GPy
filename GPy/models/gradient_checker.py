@@ -1,11 +1,11 @@
 # ## Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from GPy.core.probabilistic_model import Model
-import itertools
 import numpy
-from ..core.parameterization import Param
 np = numpy
+
+from ..core.parameterization import Param
+from ..core.probabilistic_model import ProbabilisticModel
 from ..util.block_matrices import get_blocks, get_block_shapes, unblock, get_blocks_3d, get_block_shapes_3d
 
 def get_shape(x):
@@ -21,7 +21,7 @@ def at_least_one_element(x):
 def flatten_if_needed(x):
     return numpy.atleast_1d(x).flatten()
 
-class GradientChecker(Model):
+class GradientChecker(ProbabilisticModel):
 
     def __init__(self, f, df, x0, names=None, *args, **kwargs):
         """
@@ -62,7 +62,7 @@ class GradientChecker(Model):
                 grad.randomize()
                 grad.checkgrad(verbose=1)
         """
-        Model.__init__(self, 'GradientChecker')
+        super(GradientChecker, self).__init__(name='GradientChecker')
         if isinstance(x0, (list, tuple)) and names is None:
             self.shapes = [get_shape(xi) for xi in x0]
             self.names = ['X{i}'.format(i=i) for i in range(len(x0))]

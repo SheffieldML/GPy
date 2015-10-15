@@ -3,15 +3,15 @@ The Maniforld Relevance Determination model with the spike-and-slab prior
 """
 
 import numpy as np
-from ..core import Model
+from ..core import ProbabilisticModel
 from .ss_gplvm import SSGPLVM
-from ..core.parameterization.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
+from ..core.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
 from ..util.misc import param_to_array
 from ..kern import RBF
 from ..core import Param
 from numpy.linalg.linalg import LinAlgError
 
-class SSMRD(Model):
+class SSMRD(ProbabilisticModel):
     
     def __init__(self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx = 'PCA_concat', initz = 'permute', 
                  num_inducing=10, Zs=None, kernels=None, inference_methods=None, likelihoods=None, group_spike=True,
@@ -117,13 +117,13 @@ class SSMRD(Model):
                 Gammas.append(gamma)
         return X, X_variance, Gammas, fracs
 
-    @Model.optimizer_array.setter
+    @ProbabilisticModel.optimizer_array.setter
     def optimizer_array(self, p):
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
             self.mpi_comm.Bcast(p, root=0)        
-        Model.optimizer_array.fset(self,p)
+        ProbabilisticModel.optimizer_array.fset(self,p)
         
     def optimize(self, optimizer=None, start=None, **kwargs):
         self._IN_OPTIMIZATION_ = True
@@ -214,7 +214,7 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
 class IBPPrior_SSMRD(VariationalPrior):
     def __init__(self, nModels, input_dim, alpha =2., tau=None, name='IBPPrior', **kw):
         super(IBPPrior_SSMRD, self).__init__(name=name, **kw)
-        from ..core.parameterization.transformations import Logexp, __fixed__  
+        from paramz.transformations import Logexp, __fixed__  
         self.nModels = nModels
         self._b_prob_all = 0.5
         self.input_dim = input_dim

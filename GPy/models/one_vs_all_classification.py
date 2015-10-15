@@ -1,7 +1,6 @@
 # Copyright (c) 2013, the GPy Authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from ..core import GP
 from . import SparseGPClassification
 from .. import likelihoods
 from .. import kern

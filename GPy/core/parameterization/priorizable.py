@@ -3,6 +3,7 @@
 import numpy as np
 from paramz.transformations import Transformation, __fixed__
 from paramz.core.parameter_core import Parameterizable
+from functools import reduce
 
 class Priorizable(Parameterizable):
     def __init__(self, name, default_prior=None, *a, **kw):

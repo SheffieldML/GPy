@@ -19,10 +19,10 @@ from scipy import linalg
 from scipy import stats
 from ..core import Model
 from .. import kern
-from GPy.plotting.matplot_dep.models_plots import gpplot
-from GPy.plotting.matplot_dep.base_plots import x_frame1D
-from GPy.plotting.matplot_dep import Tango
-import pylab as pb
+#from GPy.plotting.matplot_dep.models_plots import gpplot
+#from GPy.plotting.matplot_dep.base_plots import x_frame1D
+#from GPy.plotting.matplot_dep import Tango
+#import pylab as pb
 from GPy.core.parameterization.param import Param
 
 import GPy

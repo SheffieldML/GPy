@@ -309,7 +309,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
             
     def test_discrete_ss_first(self,plot=False):
         """
-        Tests discrete State-Space model with different data dimensions.
+        Tests discrete State-Space model - first test.
         """
         np.random.seed(235) # seed the random number generator
     

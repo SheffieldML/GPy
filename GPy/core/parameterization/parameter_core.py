@@ -105,6 +105,20 @@ class Pickleable(object):
     #===========================================================================
     def pickle(self, f, protocol=-1):
         """
+        Pickle a model to file to reload from disk.
+
+        .. warning::
+
+           Pickling is a local method, to pickle a model to disk and reload
+           it on the same machine in this instance.
+           Using pickling as saving states of models could be not supported
+           across versions and need more work to reload a model after a version
+           change. If you want to save a model consistently, save the script to
+           create the model and the `param_array` (e.g. using numpy.save) of
+           the model you want to save. Then load the model using the script and
+           push the parameters from the saved `param_array` into the newly
+           created model.
+
         :param f: either filename or open file object to write to.
                   if it is an open buffer, you have to make sure to close
                   it properly.

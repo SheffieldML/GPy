@@ -30,10 +30,6 @@ class Model(Parameterized):
         self.obj_grads = None
         self.add_observer(self.tie, self.tie._parameters_changed_notification, priority=-500)
 
-    def __setstate__(self, state):
-        self.obj_grads = None
-        super(Model, self).__setstate__(state)
-
     def log_likelihood(self):
         raise NotImplementedError("this needs to be implemented to use the model class")
     def _log_likelihood_gradients(self):

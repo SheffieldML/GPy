@@ -27,7 +27,7 @@ class Optimizer(object):
     :rtype: optimizer object.
 
     """
-    def __init__(self, x_init=None, messages=False, model=None, max_f_eval=1e4, max_iters=1e3,
+    def __init__(self, x_init, messages=False, model=None, max_f_eval=1e4, max_iters=1e3,
                  ftol=None, gtol=None, xtol=None, bfgs_factor=None):
         self.opt_name = None
         self.x_init = x_init
@@ -133,7 +133,7 @@ class opt_lbfgsb(Optimizer):
         #a more helpful error message is available in opt_result in the Error case
         if opt_result[2]['warnflag']==2:
             self.status = 'Error' + str(opt_result[2]['task'])
-
+            
 class opt_bfgs(Optimizer):
     def __init__(self, *args, **kwargs):
         Optimizer.__init__(self, *args, **kwargs)
@@ -245,7 +245,7 @@ class opt_SCG(Optimizer):
         self.f_opt = self.trace[-1]
         self.funct_eval = opt_result[2]
         self.status = opt_result[3]
-
+        
 class Opt_Adadelta(Optimizer):
     def __init__(self, step_rate=0.1, decay=0.9, momentum=0, *args, **kwargs):
         Optimizer.__init__(self, *args, **kwargs)
@@ -256,11 +256,11 @@ class Opt_Adadelta(Optimizer):
 
     def opt(self, f_fp=None, f=None, fp=None):
         assert not fp is None
-
+        
         import climin
-
+                    
         opt = climin.adadelta.Adadelta(self.x_init, fp, step_rate=self.step_rate, decay=self.decay, momentum=self.momentum)
-
+        
         for info in opt:
             if info['n_iter']>=self.max_iters:
                 self.x_opt =  opt.wrt

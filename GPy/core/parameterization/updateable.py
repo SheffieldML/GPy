@@ -34,15 +34,6 @@ class Updateable(Observable):
         p.traverse(turn_updates)
         self.trigger_update()
 
-    @property
-    def _update_on(self):
-        if not hasattr(self, '__update_on'):
-            self.__update_on = True
-        return self.__update_on
-    @_update_on.setter
-    def _update_on(self, update):
-        self.__update_on = update
-
     def toggle_update(self):
         print("deprecated: toggle_update was renamed to update_toggle for easier access")
         self.update_toggle()

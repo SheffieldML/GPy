@@ -121,10 +121,6 @@ class GP(Model):
         #         W_{pp} := \texttt{Woodbury inv}
         #         p := _predictive_variable
 
-    def __setstate__(self, state):
-        self.mean_function = None
-        super(GP, self).__setstate__(state)
-
     @property
     def _predictive_variable(self):
         return self.X
@@ -463,7 +459,7 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=full_cov, **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-
+        
         def sim_one_dim(m, v):
             if not full_cov:
                 return np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T

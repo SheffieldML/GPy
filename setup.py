@@ -7,21 +7,21 @@
 # Copyright (c) 2015, Max Zwiessele
 #
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of GPy nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -44,7 +44,7 @@ import codecs
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
         return f.read()
-        
+
 def read_to_rst(fname):
     try:
         import pypandoc
@@ -102,32 +102,35 @@ setup(name = 'GPy',
       ext_modules = ext_mods,
       packages = ["GPy",
                   "GPy.core",
-                  "GPy.core.parameterization", 
+                  "GPy.core.parameterization",
                   "GPy.kern",
                   "GPy.kern.src",
-                  "GPy.kern.src.psi_comp", 
+                  "GPy.kern.src.psi_comp",
                   "GPy.models",
                   "GPy.inference",
                   "GPy.inference.optimization",
                   "GPy.inference.mcmc",
                   "GPy.inference.latent_function_inference",
-                  "GPy.likelihoods", 
+                  "GPy.likelihoods",
                   "GPy.mappings",
                   "GPy.examples",
                   "GPy.testing",
-                  "GPy.util", 
+                  "GPy.util",
                   "GPy.plotting",
                   "GPy.plotting.gpy_plot",
-                  "GPy.plotting.matplot_dep", 
+                  "GPy.plotting.matplot_dep",
                   "GPy.plotting.matplot_dep.controllers",
-                  "GPy.plotting.plotly_dep", 
+                  "GPy.plotting.plotly_dep",
                   ],
       package_dir={'GPy': 'GPy'},
       package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
                               'util/data_resources.json',
                               'util/football_teams.json',
-                              'plotting/plotting_tests/baseline/*.png'
+                              'testing/plotting_tests/baseline/*.png'
                               ]},
+      data_files=[('GPy/testing/plotting_tests/baseline', 'testing/plotting_tests/baseline/*.png'),
+                  ('GPy/testing/', 'GPy/testing/pickle_test.pickle'),
+                   ],
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
@@ -159,7 +162,7 @@ if not os.path.exists(user_file):
     if os.path.exists(old_user_file):
         # Move it to new location:
         print("GPy: Found old config file, moving to new location {}".format(user_file))
-        os.rename(old_user_file, user_file)                
+        os.rename(old_user_file, user_file)
     else:
         # No config file exists, save informative stub to user config folder:
         print("GPy: Saving user configuration file to {}".format(user_file))

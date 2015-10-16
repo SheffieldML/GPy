@@ -48,5 +48,5 @@ class Parameterized(Parameterized, Priorizable):
 
         If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
-    """
+    """     
     pass

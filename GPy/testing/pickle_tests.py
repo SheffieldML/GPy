@@ -42,6 +42,12 @@ class ListDictTestCase(unittest.TestCase):
             np.testing.assert_array_equal(a1, a2)
 
 class Test(ListDictTestCase):
+    def test_load_pickle(self):
+        import os
+        m = GPy.load(os.path.join(os.path.abspath(os.path.split(__file__)[0]), 'pickle_test.pickle'))
+        self.assertTrue(m.checkgrad())
+        self.assertEqual(m.log_likelihood(), -4.7351019830022087)
+
     def test_parameter_index_operations(self):
         pio = ParameterIndexOperations(dict(test1=np.array([4,3,1,6,4]), test2=np.r_[2:130]))
         piov = ParameterIndexOperationsView(pio, 20, 250)

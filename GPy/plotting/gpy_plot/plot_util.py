@@ -275,7 +275,7 @@ def get_x_y_var(model):
     and Y the outputs
 
     If (X, X_variance, Y) is given, this just returns.
-    
+
     :returns: (X, X_variance, Y)
     """
     # model given
@@ -285,7 +285,10 @@ def get_x_y_var(model):
     else:
         X = model.X.values
         X_variance = None
-    Y = model.Y.values
+    try:
+        Y = model.Y.values
+    except AttributeError:
+        Y = model.Y
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 

@@ -113,6 +113,7 @@ class TestNoiseModels(object):
         self.Y = (np.sin(self.X[:, 0]*2*np.pi) + noise)[:, None]
         self.f = np.random.rand(self.N, 1)
         self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=np.int)[:, None]
+        self.binary_Y[self.binary_Y == 0.0] = -1.0
         self.positive_Y = np.exp(self.Y.copy())
         tmp = np.round(self.X[:, 0]*3-3)[:, None] + np.random.randint(0,3, self.X.shape[0])[:, None]
         self.integer_Y = np.where(tmp > 0, tmp, 0)
@@ -561,12 +562,14 @@ class TestNoiseModels(object):
         print("\n{}".format(inspect.stack()[0][3]))
         np.random.seed(111)
         #Normalize
-        Y = Y/Y.max()
-
+        # Y = Y/Y.max()
+        white_var = 1e-5
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
 
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
+        m['.*white'].constrain_fixed(white_var)
+
         m.randomize()
 
         #Set constraints
@@ -591,7 +594,7 @@ class TestNoiseModels(object):
         print("\n{}".format(inspect.stack()[0][3]))
         #Normalize
         Y = Y/Y.max()
-        white_var = 1e-6
+        white_var = 1e-5
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         ep_inf = GPy.inference.latent_function_inference.EP()
 

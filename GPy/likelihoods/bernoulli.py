@@ -140,7 +140,7 @@ class Bernoulli(Likelihood):
             Each y_i must be in {0, 1}
         """
         #objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
-        return np.where(y, inv_link_f, 1.-inv_link_f)
+        return np.where(y==1, inv_link_f, 1.-inv_link_f)
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
@@ -179,7 +179,7 @@ class Bernoulli(Likelihood):
         #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
         #grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
         ff = np.clip(inv_link_f, 1e-9, 1-1e-9)
-        denom = np.where(y, ff, -(1-ff))
+        denom = np.where(y==1, ff, -(1-ff))
         return 1./denom
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
@@ -205,7 +205,7 @@ class Bernoulli(Likelihood):
         """
         #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
         #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
-        arg = np.where(y, inv_link_f, 1.-inv_link_f)
+        arg = np.where(y==1, inv_link_f, 1.-inv_link_f)
         ret =  -1./np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
             stop
@@ -230,7 +230,7 @@ class Bernoulli(Likelihood):
         #d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
         state = np.seterr(divide='ignore')
         # TODO check y \in {0, 1} or {-1, 1}
-        d3logpdf_dlink3 = np.where(y, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
+        d3logpdf_dlink3 = np.where(y==1, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
         np.seterr(**state)
         return d3logpdf_dlink3
 
@@ -242,8 +242,6 @@ class Bernoulli(Likelihood):
         """
         p = self.predictive_mean(mu, var)
         return [np.asarray(p>(q/100.), dtype=np.int32) for q in quantiles]
-
-
 
     def samples(self, gp, Y_metadata=None):
         """

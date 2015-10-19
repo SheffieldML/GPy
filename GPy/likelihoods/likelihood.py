@@ -49,8 +49,8 @@ class Likelihood(Parameterized):
         """
         return Y.shape[1]
 
-    def _gradients(self,partial):
-        return np.zeros(0)
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        return np.zeros(self.size)
 
     def update_gradients(self, partial):
         if self.size > 0:
@@ -176,8 +176,10 @@ class Likelihood(Parameterized):
         log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
 
+    def quad_limits(self):
+        return -np.inf, np.inf
 
-    def _moments_match_ep(self,obs,tau,v):
+    def moments_match_ep(self,obs,tau,v):
         """
         Calculation of moments using quadrature
 
@@ -188,20 +190,27 @@ class Likelihood(Parameterized):
         #Compute first integral for zeroth moment.
         #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
         mu = v/tau
+        sigma2 = 1./tau
+        #Lets do these for now based on the same idea as Gaussian quadrature
+        # i.e. multiply anything by close to zero, and its zero.
+        f_min = mu - 8*np.sqrt(sigma2)
+        f_max = mu + 8*np.sqrt(sigma2)
+
+        # f_min, f_max = self.quad_limits()
         def int_1(f):
             return self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
-        z_scaled, accuracy = quad(int_1, -np.inf, np.inf)
+        z_scaled, accuracy = quad(int_1, f_min, f_max)
 
         #Compute second integral for first moment
         def int_2(f):
             return f*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
-        mean, accuracy = quad(int_2, -np.inf, np.inf)
+        mean, accuracy = quad(int_2, f_min, f_max)
         mean /= z_scaled
 
         #Compute integral for variance
         def int_3(f):
             return (f**2)*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
-        Ef2, accuracy = quad(int_3, -np.inf, np.inf)
+        Ef2, accuracy = quad(int_3, f_min, f_max)
         Ef2 /= z_scaled
         variance = Ef2 - mean**2
 

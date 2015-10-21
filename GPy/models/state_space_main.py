@@ -3281,7 +3281,7 @@ def matrix_exponent(M):
         try:
             Mexp = linalg.expm(M)
             method = 1
-        except (FloatingPointError, ValueError) as e:
+        except (Exception,) as e:
             Mexp = linalg.expm3(M)
             method = 2
         finally:

@@ -181,6 +181,8 @@ class Add(CombinationKernel):
         return psi2
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
+        
         if not self._exact_psicomp: return Kern.update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         for p1 in self.parts:
@@ -192,12 +194,13 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += tmp * p2.variance 
                 else:# np.setdiff1d(p1._all_dims_active, ar2, assume_unique): # TODO: Careful, not correct for overlapping _all_dims_active
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
     def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
         if not self._exact_psicomp: return Kern.gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         target = np.zeros(Z.shape)
@@ -210,13 +213,15 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += tmp * p2.variance 
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior)
             target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
+        
         if not self._exact_psicomp: return Kern.gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
@@ -229,9 +234,9 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.variance * 2.
+                    eff_dL_dpsi1 += tmp * p2.variance 
                 else:
-                    eff_dL_dpsi1 += dL_dpsi2.sum(1) * p2.psi1(Z, variational_posterior) * 2.
+                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
             grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads

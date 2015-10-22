@@ -43,7 +43,7 @@ class Bernoulli(Likelihood):
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 
-    def moments_match_ep(self, Y_i, tau_i, v_i):
+    def moments_match_ep(self, Y_i, tau_i, v_i, Y_metadata_i=None):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -62,6 +62,7 @@ class Bernoulli(Likelihood):
             Z_hat = std_norm_cdf(z)
             Z_hat = np.where(Z_hat==0, 1e-15, Z_hat)
             phi = std_norm_pdf(z)
+
             mu_hat = v_i/tau_i + sign*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
             sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
 

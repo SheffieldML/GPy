@@ -67,7 +67,7 @@ class Gaussian(Likelihood):
         """
         return Y
 
-    def moments_match_ep(self, data_i, tau_i, v_i):
+    def moments_match_ep(self, data_i, tau_i, v_i, Y_metadata_i=None):
         """
         Moments match of the marginal approximation in EP algorithm
 

@@ -32,9 +32,9 @@ class Kern_check_model(GPy.core.Model):
             X = np.random.randn(20, kernel.input_dim)
         if dL_dK is None:
             if X2 is None:
-                dL_dK = np.ones((X.shape[0], X.shape[0]))
+                dL_dK = np.random.rand(X.shape[0], X.shape[0])
             else:
-                dL_dK = np.ones((X.shape[0], X2.shape[0]))
+                dL_dK = np.random.rand(X.shape[0], X2.shape[0])
 
         self.kernel = kernel
         self.X = X
@@ -311,7 +311,7 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_RBF(self):
-        k = GPy.kern.RBF(self.D)
+        k = GPy.kern.RBF(self.D, ARD=True)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 

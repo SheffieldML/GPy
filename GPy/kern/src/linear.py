@@ -73,14 +73,15 @@ class Linear(Kern):
         return np.sum(self.variances * np.square(X), -1)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         if self.ARD:
             if X2 is None:
                 #self.variances.gradient = np.array([np.sum(dL_dK * tdot(X[:, i:i + 1])) for i in range(self.input_dim)])
-                self.variances.gradient = np.einsum('ij,iq,jq->q', dL_dK, X, X)
+                self.variances.gradient = (dL_dK.dot(X)*X).sum(0) #np.einsum('ij,iq,jq->q', dL_dK, X, X)
             else:
                 #product = X[:, None, :] * X2[None, :, :]
                 #self.variances.gradient = (dL_dK[:, :, None] * product).sum(0).sum(0)
-                self.variances.gradient = np.einsum('ij,iq,jq->q', dL_dK, X, X2)
+                self.variances.gradient = (dL_dK.dot(X2)*X).sum(0)  #np.einsum('ij,iq,jq->q', dL_dK, X, X2)
         else:
             self.variances.gradient = np.sum(self._dot_product(X, X2) * dL_dK)
 
@@ -93,13 +94,15 @@ class Linear(Kern):
 
 
     def gradients_X(self, dL_dK, X, X2=None):
+        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         if X2 is None:
-            return np.einsum('jq,q,ij->iq', X, 2*self.variances, dL_dK)
+            return dL_dK.dot(X)*(2*self.variances) #np.einsum('jq,q,ij->iq', X, 2*self.variances, dL_dK)
         else:
             #return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
-            return np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
+            return dL_dK.dot(X2)*self.variances #np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
 
     def gradients_XX(self, dL_dK, X, X2=None):
+        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         if X2 is None:
             return 2*np.ones(X.shape)*self.variances
         else:
@@ -162,6 +165,7 @@ class LinearFull(Kern):
         return np.einsum('ij,jk,lk->il', X, P, X if X2 is None else X2)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         self.kappa.gradient = np.einsum('ij,ik,kj->j', X, dL_dK, X if X2 is None else X2)
         self.W.gradient = np.einsum('ij,kl,ik,lm->jm', X, X if X2 is None else X2, dL_dK, self.W)
         self.W.gradient += np.einsum('ij,kl,ik,jm->lm', X, X if X2 is None else X2, dL_dK, self.W)
@@ -175,6 +179,7 @@ class LinearFull(Kern):
         self.W.gradient = 2.*np.einsum('ij,ik,jl,i->kl', X, X, self.W, dL_dKdiag)
 
     def gradients_X(self, dL_dK, X, X2=None):
+        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
         if X2 is None:
             return 2.*np.einsum('ij,jk,kl->il', dL_dK, X, P)

@@ -64,7 +64,7 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, Z_tilde=None):
         assert mean_function is None, "inference with a mean function not implemented"
 
         num_data, output_dim = Y.shape
@@ -151,6 +151,12 @@ class VarDTC(LatentFunctionInference):
         # log marginal likelihood
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, precision, het_noise,
             psi0, A, LB, trYYT, data_fit, Y)
+
+        if Z_tilde is not None:
+            # This is a correction term for the log marginal likelihood
+            # In EP this is log Z_tilde, which is the difference between the
+            # Gaussian marginal and Z_EP
+            log_marginal += Z_tilde
 
         #noise derivatives
         dL_dR = _compute_dL_dR(likelihood,

@@ -51,7 +51,7 @@ class EP(EPBase, ExactGaussianInference):
             #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation
 
-        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, precision=1./tau_tilde, K=K, Z=np.log(Z_tilde).sum())
+        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, precision=1./tau_tilde, K=K, Z_tilde=np.log(Z_tilde).sum())
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
@@ -62,6 +62,10 @@ class EP(EPBase, ExactGaussianInference):
         mu = np.zeros(num_data)
         Sigma = K.copy()
         diag.add(Sigma, 1e-7)
+
+        # Makes computing the sign quicker if we work with numpy arrays rather
+        # than ObsArrays
+        Y = Y.values.copy()
 
         #Initial values - Marginal moments
         Z_hat = np.empty(num_data,dtype=np.float64)
@@ -91,15 +95,25 @@ class EP(EPBase, ExactGaussianInference):
                 #Cavity distribution parameters
                 tau_cav[i] = 1./Sigma[i,i] - self.eta*tau_tilde[i]
                 v_cav[i] = mu[i]/Sigma[i,i] - self.eta*v_tilde[i]
+                if Y_metadata is not None:
+                    # Pick out the relavent metadata for Yi
+                    Y_metadata_i = {}
+                    for key in Y_metadata.keys():
+                        Y_metadata_i[key] = Y_metadata[key][i, :]
+                else:
+                    Y_metadata_i = None
                 #Marginal moments
-                Z_hat[i], mu_hat[i], sigma2_hat[i] = likelihood.moments_match_ep(Y[i], tau_cav[i], v_cav[i])#, Y_metadata=None)#=(None if Y_metadata is None else Y_metadata[i]))
+                Z_hat[i], mu_hat[i], sigma2_hat[i] = likelihood.moments_match_ep(Y[i], tau_cav[i], v_cav[i], Y_metadata_i=Y_metadata_i)
                 #Site parameters update
                 delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./Sigma[i,i])
                 delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - mu[i]/Sigma[i,i])
                 tau_tilde[i] += delta_tau
                 v_tilde[i] += delta_v
                 #Posterior distribution parameters update
-                DSYR(Sigma, Sigma[:,i].copy(), -delta_tau/(1.+ delta_tau*Sigma[i,i]))
+                # DSYR(Sigma, Sigma[:,i].copy(), -delta_tau/(1.+ delta_tau*Sigma[i,i]))
+                # mu = np.dot(Sigma, v_tilde)
+                ci = delta_tau/(1.+ delta_tau*Sigma[i,i])
+                DSYR(Sigma, Sigma[:,i].copy(), -ci)
                 mu = np.dot(Sigma, v_tilde)
 
             #(re) compute Sigma and mu using full Cholesky decompy
@@ -150,7 +164,7 @@ class EPDTC(EPBase, VarDTC):
                                             Y_metadata=Y_metadata,
                                             precision=tau_tilde,
                                             Lm=Lm, dL_dKmm=dL_dKmm,
-                                            psi0=psi0, psi1=psi1, psi2=psi2, Z=Z_tilde)
+                                            psi0=psi0, psi1=psi1, psi2=psi2, Z_tilde=np.log(Z_tilde).sum())
 
     def expectation_propagation(self, Kmm, Kmn, Y, likelihood, Y_metadata):
         num_data, output_dim = Y.shape

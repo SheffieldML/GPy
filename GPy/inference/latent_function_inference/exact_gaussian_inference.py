@@ -22,7 +22,7 @@ class ExactGaussianInference(LatentFunctionInference):
     def __init__(self):
         pass#self._YYTfactor_cache = caching.cache()
 
-    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, K=None, precision=None, Z=None):
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, K=None, precision=None, Z_tilde=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
@@ -49,11 +49,11 @@ class ExactGaussianInference(LatentFunctionInference):
 
         log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
 
-        if Z is not None:
+        if Z_tilde is not None:
             # This is a correction term for the log marginal likelihood
             # In EP this is log Z_tilde, which is the difference between the
             # Gaussian marginal and Z_EP
-            log_marginal += Z
+            log_marginal += Z_tilde
 
         dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 

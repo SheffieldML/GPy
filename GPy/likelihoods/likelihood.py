@@ -176,10 +176,7 @@ class Likelihood(Parameterized):
         log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
 
-    def quad_limits(self):
-        return -np.inf, np.inf
-
-    def moments_match_ep(self,obs,tau,v):
+    def moments_match_ep(self,obs,tau,v,Y_metadata_i=None):
         """
         Calculation of moments using quadrature
 
@@ -193,23 +190,22 @@ class Likelihood(Parameterized):
         sigma2 = 1./tau
         #Lets do these for now based on the same idea as Gaussian quadrature
         # i.e. multiply anything by close to zero, and its zero.
-        f_min = mu - 8*np.sqrt(sigma2)
-        f_max = mu + 8*np.sqrt(sigma2)
+        f_min = mu - 20*np.sqrt(sigma2)
+        f_max = mu + 20*np.sqrt(sigma2)
 
-        # f_min, f_max = self.quad_limits()
         def int_1(f):
-            return self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+            return self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
         z_scaled, accuracy = quad(int_1, f_min, f_max)
 
         #Compute second integral for first moment
         def int_2(f):
-            return f*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+            return f*self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
         mean, accuracy = quad(int_2, f_min, f_max)
         mean /= z_scaled
 
         #Compute integral for variance
         def int_3(f):
-            return (f**2)*self.pdf(f, obs)*np.exp(-0.5*tau*np.square(mu-f))
+            return (f**2)*self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
         Ef2, accuracy = quad(int_3, f_min, f_max)
         Ef2 /= z_scaled
         variance = Ef2 - mean**2

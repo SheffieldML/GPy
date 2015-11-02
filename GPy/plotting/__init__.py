@@ -13,6 +13,7 @@ def change_plotting_library(lib):
         if lib == 'matplotlib':
             import matplotlib
             from .matplot_dep.plot_definitions import MatplotlibPlots
+            from .matplot_dep import visualize, mapping_plots, priors_plots, ssgplvm, svig_plots, variational_plots, img_plots
             current_lib[0] = MatplotlibPlots()
         if lib == 'plotly':
             import plotly
@@ -22,10 +23,11 @@ def change_plotting_library(lib):
             current_lib[0] = None
         #===========================================================================
     except (ImportError, NameError):
+        raise
         config.set('plotting', 'library', 'none')
         import warnings
         warnings.warn(ImportWarning("{} not available, install newest version of {} for plotting".format(lib, lib)))
-        
+
 from ..util.config import config
 lib = config.get('plotting', 'library')
 change_plotting_library(lib)

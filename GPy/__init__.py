@@ -55,9 +55,7 @@ def load(file_or_path):
             import pickle
             if isinstance(file_or_path, str):
                 with open(file_or_path, 'rb') as f:
-                    u = pickle._Unpickler(f)
-                    u.encoding = 'latin1'
-                    m = u.load()
+                    m = pickle.load(f)
             else:
                 m = pickle.load(file_or_path)
     except ImportError:

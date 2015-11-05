@@ -3,7 +3,7 @@
 
 from GPy.core.model import Model
 from .parameterization import Param, Parameterized
-import parameterization
+from . import parameterization
 
 from .gp import GP
 from .svgp import SVGP

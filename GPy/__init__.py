@@ -63,11 +63,13 @@ def load(file_or_path):
         import pickle  # @Reimport
         if isinstance(file_or_path, str):
             with open(file_or_path, 'rb') as f:
-                u = pickle._Unpickler(f)  # @UndefinedVariable
-                u.encoding = 'latin1'
-                m = u.load()
+                #u = pickle._Unpickler(f)  # @UndefinedVariable
+                #u.encoding = 'latin1'
+                #m = u.load()
+                m = pickle.load(f, encoding='latin1')#
         else:
-            u = pickle._Unpickler(file_or_path)  # @UndefinedVariable
-            u.encoding = 'latin1'
-            m = u.load()
+            #u = pickle._Unpickler(file_or_path)  # @UndefinedVariable
+            #u.encoding = 'latin1'
+            #m = u.load(protocol=2)
+            m = pickle.load(f, encoding='latin1')#
     return m

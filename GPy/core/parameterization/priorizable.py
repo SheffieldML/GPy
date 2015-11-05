@@ -14,6 +14,11 @@ class Priorizable(Parameterizable):
         if self._default_prior_ is not None:
             self.set_prior(self._default_prior_)
 
+    def __setstate__(self, state):
+        super(Priorizable, self).__setstate__(state)
+        self._index_operations['priors'] = self.priors
+
+
     #===========================================================================
     # Prior Operations
     #===========================================================================

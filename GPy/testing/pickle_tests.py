@@ -12,6 +12,7 @@ from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 from functools import reduce
+from nose import SkipTest
 
 def toy_model():
     X = np.linspace(0,1,50)[:, None]
@@ -30,6 +31,7 @@ class ListDictTestCase(unittest.TestCase):
             np.testing.assert_array_equal(a1, a2)
 
 class Test(ListDictTestCase):
+    @SkipTest
     def test_load_pickle(self):
         import os, GPy
         m = GPy.load(os.path.join(os.path.abspath(os.path.split(__file__)[0]), 'pickle_test.pickle'))

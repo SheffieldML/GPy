@@ -48,8 +48,8 @@ def load(file_or_path):
     """
     # This is the pickling pain when changing _src -> src
     import inspect
-    sys.modules['GPy.kern._src'] = kern.src
-    for name, module in inspect.getmembers(kern.src):
+    sys.modules['GPy.kern._src'] = kern.src  # @UndefinedVariable
+    for name, module in inspect.getmembers(kern.src):  # @UndefinedVariable
         if not name.startswith('_'):
             sys.modules['GPy.kern._src.{}'.format(name)] = module
     try:
@@ -60,7 +60,7 @@ def load(file_or_path):
         else:
             m = pickle.load(file_or_path)
     except: # python3
-        import pickle 
+        import pickle  # @Reimport
         if isinstance(file_or_path, str):
             with open(file_or_path, 'rb') as f:
                 u = pickle._Unpickler(f)  # @UndefinedVariable

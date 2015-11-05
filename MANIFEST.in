@@ -1,7 +1,18 @@
-recursive-include doc *.cfg
+# Documentation:
+include doc/source/conf.py
+include doc/source/index.rst
+include doc/source/tuto*.py
+
+# Data and config
 include *.json
+include GPy/defaults.cfg
+include GPy/installation.cfg
+
+# Cython
 recursive-include GPy *.c
 recursive-include GPy *.so
 recursive-include GPy *.pyx
+
+# Testing
 include GPy/testing/plotting_tests/baseline/*.png
 include GPy/testing/pickle_test.pickle

@@ -24,7 +24,7 @@ for bc in backwards_compatibility:
 # Direct imports for convenience:
 from .core import Model
 from .core.parameterization import priors
-from paramz import Param, Parameterized, ObsAr, transformations as constraints
+from .core.parameterization import Param, Parameterized, ObsAr, transformations as constraints
 
 from .__version__ import __version__
 

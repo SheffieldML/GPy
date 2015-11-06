@@ -30,10 +30,6 @@
 #===============================================================================
 
 #!/usr/bin/env python
-
-import matplotlib
-matplotlib.use('agg')
-
 import nose
 nose.main('GPy', defaultTest='GPy/testing/')
 

@@ -28,15 +28,15 @@ class VerboseOptimization(object):
             self.update()
 
             try:
-                from IPython.display import display
-                from IPython.html.widgets import IntProgress, HTML, Box, VBox, HBox, FlexBox
+                from notebook.display import display
+                from ipywidgets.widgets import IntProgress, HTML, Box, VBox, FlexBox
                 self.text = HTML(width='100%')
                 self.progress = IntProgress(min=0, max=maxiters)
                 #self.progresstext = Text(width='100%', disabled=True, value='0/{}'.format(maxiters))
                 self.model_show = HTML()
                 self.ipython_notebook = ipython_notebook
             except:
-                # Not in Ipython notebook
+                # Not in Jupyter notebook
                 self.ipython_notebook = False
 
             if self.ipython_notebook:

@@ -2,6 +2,7 @@
 include doc/source/conf.py
 include doc/source/index.rst
 include doc/source/tuto*.py
+include README.md
 
 # Data and config
 include *.json

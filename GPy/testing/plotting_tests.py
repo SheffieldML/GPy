@@ -54,7 +54,7 @@ def _image_directories():
     Compute the baseline and result image directories for testing *func*.
     Create the result directory if it doesn't exist.
     """
-    basedir = os.path.splitext(os.path.relpath(os.path.abspath(__file__)))[0]
+    basedir = os.path.dirname(os.path.relpath(os.path.abspath(__file__)))
     #module_name = __init__.__module__
     #mods = module_name.split('.')
     #basedir = os.path.join(*mods)

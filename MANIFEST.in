@@ -3,6 +3,7 @@ include doc/source/conf.py
 include doc/source/index.rst
 include doc/source/tuto*.rst
 include README.md
+include README.rst
 
 # Data and config
 #include *.json
@@ -15,5 +16,5 @@ recursive-include GPy *.so
 recursive-include GPy *.pyx
 
 # Testing
-include GPy/testing/plotting_tests/baseline/*.png
-include GPy/testing/pickle_test.pickle
+include GPy/testing/plotting_tests/baseline/.*.png
+#include GPy/testing/pickle_test.pickle

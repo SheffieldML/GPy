@@ -49,7 +49,10 @@ def read_to_rst(fname):
     try:
         import pypandoc
         rstname = "{}.{}".format(os.path.splitext(fname)[0], 'rst')
-        return pypandoc.convert(read(fname), 'rst', format='md')
+        rststr = pypandoc.convert(read(fname), 'rst', format='md')
+        with open(rstname, 'w') as f:
+            f.write(rststr)
+        return rststr
         #return read(rstname)
     except ImportError:
         return read(fname)

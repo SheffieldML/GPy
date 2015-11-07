@@ -69,6 +69,6 @@ deploy:
   on:
     tags: false
     branch: paramz
-    server: https://testpypi.python.org/pypi
+  server: https://testpypi.python.org/pypi
   distributions: "bdist_wheel sdist"
   skip_cleanup: true

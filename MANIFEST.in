@@ -1,11 +1,11 @@
 # Documentation:
 include doc/source/conf.py
 include doc/source/index.rst
-include doc/source/tuto*.py
+include doc/source/tuto*.rst
 include README.md
 
 # Data and config
-include *.json
+#include *.json
 include GPy/defaults.cfg
 include GPy/installation.cfg
 

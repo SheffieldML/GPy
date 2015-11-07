@@ -27,13 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
+import matplotlib
+matplotlib.use('agg')
+
 import numpy as np
 import GPy, os
 from nose import SkipTest
 
 from ..util.config import config
 from ..plotting import change_plotting_library
-import unittest
 
 change_plotting_library('matplotlib')
 if config.get('plotting', 'library') != 'matplotlib':
@@ -73,7 +75,7 @@ def _sequenceEqual(a, b):
 def _notFound(path):
     raise IOError('File {} not in baseline')
 
-def _image_comparison(baseline_images, extensions=['pdf','svg','ong'], tol=11):
+def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
     baseline_dir, result_dir = _image_directories()
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:

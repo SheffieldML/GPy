@@ -57,8 +57,6 @@ def read_to_rst(fname):
     except ImportError:
         return read(fname)
 
-read_to_rst('README.md')
-
 version_dummy = {}
 exec(read('GPy/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
@@ -139,7 +137,7 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      #long_description=read_to_rst('README.md'),
+      long_description=read_to_rst('README.md'),
       install_requires=['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz'],
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',

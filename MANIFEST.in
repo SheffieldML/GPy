@@ -6,7 +6,7 @@ include README.md
 include README.rst
 
 # Data and config
-#include *.json
+recursive-include GPy *.json
 include GPy/defaults.cfg
 include GPy/installation.cfg
 

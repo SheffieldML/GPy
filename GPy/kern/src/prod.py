@@ -3,7 +3,7 @@
 
 import numpy as np
 from .kern import CombinationKernel
-from ...util.caching import Cache_this
+from paramz.caching import Cache_this
 import itertools
 from functools import reduce
 

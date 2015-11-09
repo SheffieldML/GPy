@@ -6,7 +6,7 @@ import numpy as np
 from .stationary import Stationary
 from .psi_comp import PSICOMP_RBF, PSICOMP_RBF_GPU
 from ...core import Param
-from ...core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 
 class RBF(Stationary):
     """

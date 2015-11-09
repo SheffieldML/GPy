@@ -3,8 +3,8 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from ...core.parameterization.observable_array import ObsAr
-from ...util.caching import Cache_this
+from paramz.core.observable_array import ObsAr
+from paramz.caching import Cache_this
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
 import six
@@ -30,18 +30,16 @@ class Kern(Parameterized):
             tight dimensionality of inputs.
             You most likely want this to be the integer telling the number of
             input dimensions of the kernel.
-            If this is not an integer (!) we will work on the whole input matrix X,
-            and not check whether dimensions match or not (!).
 
-        _all_dims_active:
+        active_dims:
 
             is the active_dimensions of inputs X we will work on.
             All kernels will get sliced Xes as inputs, if _all_dims_active is not None
-            Only positive integers are allowed in _all_dims_active!
-            if _all_dims_active is None, slicing is switched off and all X will be passed through as given.
+            Only positive integers are allowed in active_dims!
+            if active_dims is None, slicing is switched off and all X will be passed through as given.
 
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|None _all_dims_active: list of indices on which dimensions this kernel works on, or none if no slicing
+        :param array-like|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """

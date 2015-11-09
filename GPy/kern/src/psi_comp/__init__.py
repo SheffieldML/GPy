@@ -1,9 +1,9 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from ....core.parameterization.parameter_core import Pickleable
-from ....util.caching import Cache_this
-from ....core.parameterization import variational
+from paramz.core.pickleable import Pickleable
+from paramz.caching import Cache_this
+from GPy.core.parameterization import variational
 #from linear_psi_comp import LINEAr
 
 class PSICOMP(Pickleable):

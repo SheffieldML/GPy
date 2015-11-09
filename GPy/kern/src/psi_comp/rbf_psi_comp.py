@@ -3,7 +3,7 @@ The module for psi-statistics for RBF kernel
 """
 
 import numpy as np
-from GPy.util.caching import Cacher
+from paramz.caching import Cacher
 
 def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
     # here are the "statistics" for psi0, psi1 and psi2

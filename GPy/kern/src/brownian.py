@@ -3,7 +3,7 @@
 
 from .kern import Kern
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 import numpy as np
 
 class Brownian(Kern):

@@ -49,10 +49,15 @@ def read_to_rst(fname):
     try:
         import pypandoc
         rstname = "{}.{}".format(os.path.splitext(fname)[0], 'rst')
-        return pypandoc.convert(read(fname), 'rst', format='md')
+        pypandoc.convert(read(fname), 'rst', format='md', outputfile=rstname)
+        with open(rstname, 'r') as f:
+            rststr = f.read()
+        return rststr
         #return read(rstname)
     except ImportError:
         return read(fname)
+
+read_to_rst('README.md')
 
 version_dummy = {}
 exec(read('GPy/__version__.py'), version_dummy)
@@ -68,8 +73,8 @@ if ismac():
     compile_flags = [ '-O3', ]
     link_args = []
 else:
-    compile_flags = [ '-fopenmp', '-O3', ]
-    link_args = ['-lgomp']
+    compile_flags = [ '-fopenmp', '-O3']
+    link_args = ['-lgomp' ]
 
 ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
                       sources=['GPy/kern/src/stationary_cython.c',
@@ -123,20 +128,31 @@ setup(name = 'GPy',
                   "GPy.plotting.plotly_dep",
                   ],
       package_dir={'GPy': 'GPy'},
-      package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
-                              'util/data_resources.json',
-                              'util/football_teams.json',
-                              'testing/plotting_tests/baseline/*.png'
-                              ]},
-      data_files=[('GPy/testing/plotting_tests/baseline', 'testing/plotting_tests/baseline/*.png'),
-                  ('GPy/testing/', 'GPy/testing/pickle_test.pickle'),
-                   ],
+      #package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
+      #                        'util/data_resources.json',
+      #                        'util/football_teams.json',
+      #                        'testing/plotting_tests/baseline/*.png'
+      #                        ]},
+      #data_files=[('GPy/testing/plotting_tests/baseline', 'testing/plotting_tests/baseline/*.png'),
+      #            ('GPy/testing/', 'GPy/testing/pickle_test.pickle'),
+      #             ],
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      long_description=read_to_rst('README.md'),
-      install_requires=['numpy>=1.7', 'scipy>=0.16', 'six'],
-      extras_require = {'docs':['matplotlib >=1.3','Sphinx','IPython'],'optional':['mpi4py']},
+      long_description='https://github.com/SheffieldML/GPy',
+      install_requires=['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz'],
+      extras_require = {'docs':['sphinx'],
+                        'optional':['mpi4py',
+                                    'ipython>=4.0.0',
+                                    ],
+                        'plotting':['matplotlib >= 1.3',
+                                    'plotly >= 1.8.6'],
+                        'notebook':['jupyter_client >= 4.0.6',
+                                    'ipywidgets >= 4.0.3',
+                                    'ipykernel >= 4.1.0',
+                                    'notebook >= 4.0.5',
+                                    ],
+                        },
       classifiers=['License :: OSI Approved :: BSD License',
                    'Natural Language :: English',
                    'Operating System :: MacOS :: MacOS X',

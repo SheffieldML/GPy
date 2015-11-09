@@ -2,8 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from ..core.model import Model
-from ..core.parameterization import ObsAr
+from ..core import Model
+from paramz import ObsAr
 from .. import likelihoods
 
 class GPKroneckerGaussianRegression(Model):

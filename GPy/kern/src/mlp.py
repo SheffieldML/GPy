@@ -3,9 +3,9 @@
 
 from .kern import Kern
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 import numpy as np
-from ...util.caching import Cache_this
+from paramz.caching import Cache_this
 four_over_tau = 2./np.pi
 
 class MLP(Kern):

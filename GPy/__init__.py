@@ -4,8 +4,6 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from . import core
-from .core.parameterization import transformations, priors
-constraints = transformations
 from . import models
 from . import mappings
 from . import inference
@@ -13,16 +11,24 @@ from . import util
 from . import examples
 from . import likelihoods
 from . import testing
-from numpy.testing import Tester
 from . import kern
 from . import plotting
 
+# backwards compatibility
+import sys
+backwards_compatibility = ['lists_and_dicts', 'observable_array', 'ties_and_remappings', 'index_operations']
+for bc in backwards_compatibility:
+    sys.modules['GPy.core.parameterization.{!s}'.format(bc)] = getattr(core.parameterization, bc)
+
+
 # Direct imports for convenience:
 from .core import Model
-from .core.parameterization import Param, Parameterized, ObsAr
+from .core.parameterization import priors
+from .core.parameterization import Param, Parameterized, ObsAr, transformations as constraints
 
 from .__version__ import __version__
 
+from numpy.testing import Tester
 #@nottest
 try:
     #Get rid of nose dependency by only ignoring if you have nose installed

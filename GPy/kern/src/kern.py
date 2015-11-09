@@ -58,7 +58,11 @@ class Kern(Parameterized):
         self.useGPU = self._support_GPU and useGPU
 
         from .psi_comp import PSICOMP_GH
-        self.psicomp = PSICOMP_GH()        
+        self.psicomp = PSICOMP_GH()
+
+    def __setstate__(self, state):
+        self._all_dims_active = range(0, max(state['active_dims'])+1)
+        super(Kern, self).__setstate__(state)
 
     @property
     def _effective_input_dim(self):
@@ -209,15 +213,15 @@ class Kern(Parameterized):
     def get_most_significant_input_dimensions(self, which_indices=None):
         """
         Determine which dimensions should be plotted
-        
+
         Returns the top three most signification input dimensions
-        
+
         if less then three dimensions, the non existing dimensions are
         labeled as None, so for a 1 dimensional input this returns
         (0, None, None).
-        
-        :param which_indices: force the indices to be the given indices. 
-        :type which_indices: int or tuple(int,int) or tuple(int,int,int) 
+
+        :param which_indices: force the indices to be the given indices.
+        :type which_indices: int or tuple(int,int) or tuple(int,int,int)
         """
         if which_indices is None:
             which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
@@ -233,7 +237,7 @@ class Kern(Parameterized):
                 input_1, input_2 = which_indices, None
             except ValueError:
                 # which_indices was a list or array like with only one int
-                input_1, input_2 = which_indices[0], None            
+                input_1, input_2 = which_indices[0], None
         return input_1, input_2, input_3
 
 

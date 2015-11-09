@@ -52,24 +52,5 @@ def load(file_or_path):
     for name, module in inspect.getmembers(kern.src):  # @UndefinedVariable
         if not name.startswith('_'):
             sys.modules['GPy.kern._src.{}'.format(name)] = module
-    try:
-        import cPickle as pickle
-        if isinstance(file_or_path, basestring):
-            with open(file_or_path, 'rb') as f:
-                m = pickle.load(f)
-        else:
-            m = pickle.load(file_or_path)
-    except: # python3
-        import pickle  # @Reimport
-        if isinstance(file_or_path, str):
-            with open(file_or_path, 'rb') as f:
-                #u = pickle._Unpickler(f)  # @UndefinedVariable
-                #u.encoding = 'latin1'
-                #m = u.load()
-                m = pickle.load(f, encoding='latin1')#
-        else:
-            #u = pickle._Unpickler(file_or_path)  # @UndefinedVariable
-            #u.encoding = 'latin1'
-            #m = u.load(protocol=2)
-            m = pickle.load(f, encoding='latin1')#
-    return m
+    import paramz
+    return paramz.load(file_or_path)

@@ -20,7 +20,6 @@ backwards_compatibility = ['lists_and_dicts', 'observable_array', 'ties_and_rema
 for bc in backwards_compatibility:
     sys.modules['GPy.core.parameterization.{!s}'.format(bc)] = getattr(core.parameterization, bc)
 
-
 # Direct imports for convenience:
 from .core import Model
 from .core.parameterization import priors
@@ -53,16 +52,6 @@ def load(file_or_path):
     for name, module in inspect.getmembers(kern.src):
         if not name.startswith('_'):
             sys.modules['GPy.kern._src.{}'.format(name)] = module
-    try:
-        import pickle
-        strcl = basestring
-    except ImportError: #python3
-        import pickle
-        strcl = str
-
-    if isinstance(file_or_path, strcl):
-        with open(file_or_path, 'rb') as f:
-            m = pickle.load(f)
-    else:
-        m = pickle.load(file_or_path)
-    return m
+    sys.modules['GPy.inference.optimization'] = inference.optimization
+    import paramz
+    return paramz.load(file_or_path)

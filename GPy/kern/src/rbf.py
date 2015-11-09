@@ -47,12 +47,13 @@ class RBF(Stationary):
         return dc
 
     def __setstate__(self, state):
+        self.use_invLengthscale = False
         return super(RBF, self).__setstate__(state)
 
     def spectrum(self, omega):
         assert self.input_dim == 1 #TODO: higher dim spectra?
         return self.variance*np.sqrt(2*np.pi)*self.lengthscale*np.exp(-self.lengthscale*2*omega**2/2)
-    
+
     def parameters_changed(self):
         if self.use_invLengthscale: self.lengthscale[:] = 1./np.sqrt(self.inv_l+1e-200)
         super(RBF,self).parameters_changed()
@@ -85,7 +86,7 @@ class RBF(Stationary):
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[3:]
-    
+
     def update_gradients_diag(self, dL_dKdiag, X):
         super(RBF,self).update_gradients_diag(dL_dKdiag, X)
         if self.use_invLengthscale: self.inv_l.gradient =self.lengthscale.gradient*(self.lengthscale**3/-2.)

@@ -41,29 +41,22 @@ def load(file_or_path):
     :param file_name: path/to/file.pickle
     """
     # This is the pickling pain when changing _src -> src
+    import sys
+    import inspect
+    sys.modules['GPy.kern._src'] = kern.src
+    for name, module in inspect.getmembers(kern.src):
+        if not name.startswith('_'):
+            sys.modules['GPy.kern._src.{}'.format(name)] = module
     try:
-        try:
-            import cPickle as pickle
-            if isinstance(file_or_path, basestring):
-                with open(file_or_path, 'rb') as f:
-                    u = pickle._Unpickler(f)
-                    u.encoding = 'latin1'
-                    m = u.load()
-            else:
-                 m = pickle.load(file_or_path)
-        except:
-            import pickle
-            if isinstance(file_or_path, str):
-                with open(file_or_path, 'rb') as f:
-                    m = pickle.load(f)
-            else:
-                m = pickle.load(file_or_path)
-    except ImportError:
-        import sys
-        import inspect
-        sys.modules['GPy.kern._src'] = kern.src
-        for name, module in inspect.getmembers(kern.src):
-            if not name.startswith('_'):
-                sys.modules['GPy.kern._src.{}'.format(name)] = module
-        m = load(file_or_path)
+        import pickle
+        strcl = basestring
+    except ImportError: #python3
+        import pickle
+        strcl = str
+
+    if isinstance(file_or_path, strcl):
+        with open(file_or_path, 'rb') as f:
+            m = pickle.load(f)
+    else:
+        m = pickle.load(file_or_path)
     return m

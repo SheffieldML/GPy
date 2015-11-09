@@ -7,7 +7,7 @@ from . import link_functions
 from .likelihood import Likelihood
 from .gaussian import Gaussian
 from ..core.parameterization import Param
-from ..core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 from ..core.parameterization import Parameterized
 import itertools
 

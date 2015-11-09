@@ -11,7 +11,6 @@ from . import mocap
 from . import decorators
 from . import classification
 from . import subarray_and_sorting
-from . import caching
 from . import diag
 from . import initialization
 from . import multioutput

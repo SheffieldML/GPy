@@ -4,7 +4,6 @@
 import unittest
 import numpy as np
 import GPy
-import sys
 from GPy.core.parameterization.param import Param
 from ..util.config import config
 
@@ -24,7 +23,7 @@ class Kern_check_model(GPy.core.Model):
     checkgrad() to be called independently on a kernel.
     """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        GPy.core.Model.__init__(self, 'kernel_test_model')
+        super(Kern_check_model, self).__init__('kernel_test_model')
         if kernel==None:
             kernel = GPy.kern.RBF(1)
         kernel.randomize(loc=1, scale=0.1)

@@ -5,7 +5,7 @@
 from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):

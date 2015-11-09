@@ -38,7 +38,7 @@ class SVGP(SparseGP):
         #create the SVI inference method
         inf_method = svgp_inf()
 
-        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
+        super(SVGP, self).__init__(X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
                  name=name, Y_metadata=Y_metadata, normalizer=False)
 
         #assume the number of latent functions is one per col of Y unless specified

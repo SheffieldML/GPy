@@ -4,7 +4,7 @@ The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM
 """
 
 import numpy as np
-from ....util.caching import Cache_this
+from paramz.caching import Cache_this
 from . import PSICOMP_RBF
 
 

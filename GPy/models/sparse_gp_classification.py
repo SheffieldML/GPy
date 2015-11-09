@@ -62,7 +62,7 @@ class SparseGPClassificationUncertainInput(SparseGP):
     .. Note:: Multiple independent outputs are allowed using columns of Y
     """
     def __init__(self, X, X_variance, Y, kernel=None, Z=None, num_inducing=10, Y_metadata=None, normalizer=None):
-        from ..core.parameterization.variational import NormalPosterior
+        from GPy.core.parameterization.variational import NormalPosterior
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 

@@ -2,14 +2,13 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import sys
 from .. import kern
-from .model import Model
-from .parameterization import ObsAr
+from GPy.core.model import Model
+from paramz import ObsAr
 from .mapping import Mapping
 from .. import likelihoods
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from .parameterization.variational import VariationalPosterior
+from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
 import warnings

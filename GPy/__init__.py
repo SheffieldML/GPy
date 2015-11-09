@@ -4,8 +4,6 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from . import core
-from .core.parameterization import transformations, priors
-constraints = transformations
 from . import models
 from . import mappings
 from . import inference
@@ -13,16 +11,24 @@ from . import util
 from . import examples
 from . import likelihoods
 from . import testing
-from numpy.testing import Tester
 from . import kern
 from . import plotting
 
+# backwards compatibility
+import sys
+backwards_compatibility = ['lists_and_dicts', 'observable_array', 'ties_and_remappings', 'index_operations']
+for bc in backwards_compatibility:
+    sys.modules['GPy.core.parameterization.{!s}'.format(bc)] = getattr(core.parameterization, bc)
+
+
 # Direct imports for convenience:
 from .core import Model
-from .core.parameterization import Param, Parameterized, ObsAr
+from .core.parameterization import priors
+from .core.parameterization import Param, Parameterized, ObsAr, transformations as constraints
 
 from .__version__ import __version__
 
+from numpy.testing import Tester
 #@nottest
 try:
     #Get rid of nose dependency by only ignoring if you have nose installed
@@ -41,29 +47,29 @@ def load(file_or_path):
     :param file_name: path/to/file.pickle
     """
     # This is the pickling pain when changing _src -> src
+    import inspect
+    sys.modules['GPy.kern._src'] = kern.src  # @UndefinedVariable
+    for name, module in inspect.getmembers(kern.src):  # @UndefinedVariable
+        if not name.startswith('_'):
+            sys.modules['GPy.kern._src.{}'.format(name)] = module
     try:
-        try:
-            import cPickle as pickle
-            if isinstance(file_or_path, basestring):
-                with open(file_or_path, 'rb') as f:
-                    u = pickle._Unpickler(f)
-                    u.encoding = 'latin1'
-                    m = u.load()
-            else:
-                 m = pickle.load(file_or_path)
-        except:
-            import pickle
-            if isinstance(file_or_path, str):
-                with open(file_or_path, 'rb') as f:
-                    m = pickle.load(f)
-            else:
-                m = pickle.load(file_or_path)
-    except ImportError:
-        import sys
-        import inspect
-        sys.modules['GPy.kern._src'] = kern.src
-        for name, module in inspect.getmembers(kern.src):
-            if not name.startswith('_'):
-                sys.modules['GPy.kern._src.{}'.format(name)] = module
-        m = load(file_or_path)
+        import cPickle as pickle
+        if isinstance(file_or_path, basestring):
+            with open(file_or_path, 'rb') as f:
+                m = pickle.load(f)
+        else:
+            m = pickle.load(file_or_path)
+    except: # python3
+        import pickle  # @Reimport
+        if isinstance(file_or_path, str):
+            with open(file_or_path, 'rb') as f:
+                #u = pickle._Unpickler(f)  # @UndefinedVariable
+                #u.encoding = 'latin1'
+                #m = u.load()
+                m = pickle.load(f, encoding='latin1')#
+        else:
+            #u = pickle._Unpickler(file_or_path)  # @UndefinedVariable
+            #u.encoding = 'latin1'
+            #m = u.load(protocol=2)
+            m = pickle.load(f, encoding='latin1')#
     return m

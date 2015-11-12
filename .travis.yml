@@ -61,7 +61,7 @@ before_deploy:
   - make html
   - cd ../
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
-      then export DIST='sdist';
+      then export DIST='register sdist';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
       then export DIST='bdist_wheel';
     fi;

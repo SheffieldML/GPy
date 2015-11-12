@@ -60,6 +60,10 @@ before_deploy:
   - sphinx-apidoc -o source/ ../GPy
   - make html
   - cd ../
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
+      then export DIST='sdist';
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
+      then export DIST='bdist_wheel';
 
 deploy:
   provider: pypi
@@ -70,5 +74,5 @@ deploy:
     tags: false
     branch: devel
   server: https://testpypi.python.org/pypi
-  distributions: "sdist", 'bdist_wheel'
+  distributions: $DIST
   skip_cleanup: true

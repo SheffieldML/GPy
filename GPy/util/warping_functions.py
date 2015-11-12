@@ -3,7 +3,7 @@
 
 import numpy as np
 from ..core.parameterization import Parameterized, Param
-from ..core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 
 
 class WarpingFunction(Parameterized):

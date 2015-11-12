@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from ...core.parameterization.variational import VariationalPosterior
+
 try:
     import matplotlib.pyplot as plt
     import matplotlib as mpl

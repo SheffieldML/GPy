@@ -1,10 +1,7 @@
 # Copyright (c) 2015 the GPy Austhors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
-from .. import kern
 from .bayesian_gplvm import BayesianGPLVM
-from ..core.parameterization.variational import NormalPosterior, NormalPrior
 
 class DPBayesianGPLVM(BayesianGPLVM):
     """

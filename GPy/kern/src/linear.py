@@ -6,8 +6,8 @@ import numpy as np
 from .kern import Kern
 from ...util.linalg import tdot
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
-from ...util.caching import Cache_this
+from paramz.transformations import Logexp
+from paramz.caching import Cache_this
 from .psi_comp import PSICOMP_Linear
 
 class Linear(Kern):

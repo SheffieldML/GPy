@@ -7,9 +7,9 @@ This module provides a meta class for the kernels. The meta class is for
 slicing the inputs (X, X2) for the kernels, before K (or any other method involving X)
 gets calls. The `_all_dims_active` of a kernel decide which dimensions the kernel works on.
 '''
-from ...core.parameterization.parameterized import ParametersChangedMeta
 import numpy as np
 from functools import wraps
+from paramz.parameterized import ParametersChangedMeta
 
 def put_clean(dct, name, func):
     if name in dct:

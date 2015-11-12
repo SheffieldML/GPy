@@ -16,7 +16,7 @@ from scipy import stats, special
 from . import link_functions
 from .likelihood import Likelihood
 from ..core.parameterization import Param
-from ..core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 from scipy import stats
 
 class Gaussian(Likelihood):

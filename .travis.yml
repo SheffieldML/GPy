@@ -70,5 +70,5 @@ deploy:
     tags: false
     branch: devel
   server: https://testpypi.python.org/pypi
-  distributions: "bdist_wheel sdist"
+  distributions: "sdist", 'bdist_wheel'
   skip_cleanup: true

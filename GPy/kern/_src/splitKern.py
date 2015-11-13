@@ -7,72 +7,118 @@ from .kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
 
-class DEtime(Kern):
+class DiffGenomeKern(Kern):
 
-    def __init__(self, kernel, idx_p, Xp, index_dim=-1, name='DiffGenomeKern'):
-        self.idx_p = idx_p
+    def __init__(self, kernel, Xp, index_dim=-1, name='DiffGenomeKern'):
+        #idx_p = np.where(X[:,0]>self.Xp)[0].min()
+        
+        self.Xp = Xp
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
         super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
-        self.add_parameter(self.kern)
+        self.link_parameter(self.kern)
     
     def K(self, X, X2=None):
-        assert X2==None
+        
+        #assert X2==None
+        if X2 is None:
+            X2 = X
+        if len(np.where(X[:,0]>self.Xp)[0]) == 0:
+            idx_p = X.shape[0]/2-1
+        else:
+            idx_p = np.where(X[:,0]>self.Xp)[0].min()-1
+          
+        if len(np.where(X2[:,0]>self.Xp)[0])==0 :
+            idx_p2 = X2.shape[0]/2-1
+        else:           
+            idx_p2 = np.where(X2[:,0]>self.Xp)[0].min()-1
+       
+
         K = self.kern.K(X,X2)
         
-        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+        if idx_p<=0 or idx_p>X.shape[0]/2 or idx_p2<0 or idx_p2>X2.shape[0]/2:
             return K
         
         slices = index_to_slices(X[:,self.index_dim])
-        idx_start = slices[1][0].start
-        idx_end = idx_start+self.idx_p
-        K_c = K[idx_start:idx_end,idx_start:idx_end].copy()
-        K[idx_start:idx_end,:] = K[:self.idx_p,:]
-        K[:,idx_start:idx_end] = K[:,:self.idx_p]
-        K[idx_start:idx_end,idx_start:idx_end] = K_c
+        slices2 = index_to_slices(X2[:,self.index_dim])
+
+        idx_start = slices[1][0].start                                                                                                                                 
+        idx_end = idx_start+idx_p
+        idx_start2 = slices2[1][0].start
+        idx_end2 = idx_start2 +idx_p2
+        
+        K_c = K[idx_start:idx_end,idx_start2:idx_end2].copy()
+        K[idx_start:idx_end,:] = K[:idx_p,:]
+        K[:,idx_start2:idx_end2] = K[:,:idx_p2]
+        K[idx_start:idx_end,idx_start2:idx_end2] = K_c
         
         return K
     
     def Kdiag(self,X):
         Kdiag = self.kern.Kdiag(X)
+        if len(np.where(X[:,0]>self.Xp)[0])==0 :
+            idx_p = X.shape[0]/2-1
+        else:           
+            idx_p = np.where(X[:,0]>self.Xp)[0].min()-1
 
-        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+        
+        if idx_p<=0 or idx_p>X.shape[0]/2:
             return Kdiag
 
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
-        idx_end = idx_start+self.idx_p
-        Kdiag[idx_start:idx_end] = Kdiag[:self.idx_p]
+        idx_end = idx_start+idx_p
+        Kdiag[idx_start:idx_end] = Kdiag[:idx_p]
         
         return Kdiag
     
     def update_gradients_full(self,dL_dK,X,X2=None):
-        assert X2==None
-        if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
+        #assert X2==None
+        if X2 is None:
+            X2 = X
+
+        if len(np.where(X[:,0]>self.Xp)[0])==0 :
+            idx_p = X.shape[0]/2-1
+        else:           
+            idx_p = np.where(X[:,0]>self.Xp)[0].min()-1
+        
+        if len(np.where(X2[:,0]>self.Xp)[0])==0:
+            idx_p2 = X.shape[0]/2-1
+        else:
+            idx_p2 = np.where(X2[:,0]>self.Xp)[0].min()-1
+
+            
+        #assert X2==None
+        if idx_p<=0 or idx_p>X.shape[0]/2 or idx_p2<=0 or idx_p2>X2.shape[0]/2:
             self.kern.update_gradients_full(dL_dK, X)
             return
         
         slices = index_to_slices(X[:,self.index_dim])
-        idx_start = slices[1][0].start
-        idx_end = idx_start+self.idx_p
+        slices2 = index_to_slices(X2[:,self.index_dim])
         
-        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,:], X[:self.idx_p],X)
+        idx_start = slices[1][0].start
+        idx_end = idx_start+idx_p
+
+        idx_start2 = slices2[1][0].start
+        idx_end2 = idx_start2 +idx_p2
+        
+        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,:], X[:idx_p],X2)
         grad_p1 = self.kern.gradient.copy()
-        self.kern.update_gradients_full(dL_dK[:,idx_start:idx_end], X, X[:self.idx_p])
+        self.kern.update_gradients_full(dL_dK[:,idx_start2:idx_end2], X, X2[:idx_p2])
         grad_p2 = self.kern.gradient.copy()
-        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start:idx_end], X[:self.idx_p],X[idx_start:idx_end])
+        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start2:idx_end2], X[:idx_p],X2[idx_start2:idx_end2])
         grad_p3 = self.kern.gradient.copy()
-        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start:idx_end], X[idx_start:idx_end], X[:self.idx_p])
+        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start2:idx_end2], X[idx_start:idx_end], X2[:idx_p2])
         grad_p4 = self.kern.gradient.copy()
 
-        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,:], X[idx_start:idx_end],X)
+        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,:], X[idx_start:idx_end],X2)
         grad_n1 = self.kern.gradient.copy()
-        self.kern.update_gradients_full(dL_dK[:,idx_start:idx_end], X, X[idx_start:idx_end])
+        self.kern.update_gradients_full(dL_dK[:,idx_start2:idx_end2], X, X2[idx_start2:idx_end2])
         grad_n2 = self.kern.gradient.copy()
-        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start:idx_end], X[idx_start:idx_end], X[idx_start:idx_end])
+        self.kern.update_gradients_full(dL_dK[idx_start:idx_end,idx_start2:idx_end2], X[idx_start:idx_end], X[idx_start2:idx_end2])
         grad_n3 = self.kern.gradient.copy()
 
-        self.kern.update_gradients_full(dL_dK, X)
+        self.kern.update_gradients_full(dL_dK, X, X2)
         self.kern.gradient += grad_p1+grad_p2-grad_p3-grad_p4-grad_n1-grad_n2+2*grad_n3
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -104,7 +150,7 @@ class SplitKern(CombinationKernel):
             assert len(slices2)<=2, 'The Split kernel only support two different indices'
             target = np.zeros((X.shape[0], X2.shape[0]))
             # diagonal blocks
-            [[target.__setitem__((s,s2), self.kern.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[i], slices2[i])] for i in range(min(len(slices),len(slices2)))]
+            [[target.__setitem__((s,s2), self.kern.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[i], slices2[i])] for i in xrange(min(len(slices),len(slices2)))]
             if len(slices)>1:
                 [target.__setitem__((s,s2), self.kern_cross.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[1], slices2[0])]
             if len(slices2)>1:
@@ -135,7 +181,7 @@ class SplitKern(CombinationKernel):
         else:
             assert dL_dK.shape==(X.shape[0],X2.shape[0])
             slices2 = index_to_slices(X2[:,self.index_dim])
-            [[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s,s2 in itertools.product(slices[i], slices2[i])] for i in range(min(len(slices),len(slices2)))]
+            [[collate_grads(dL_dK[s,s2],X[s],X2[s2]) for s,s2 in itertools.product(slices[i], slices2[i])] for i in xrange(min(len(slices),len(slices2)))]
             if len(slices)>1:
                 [collate_grads(dL_dK[s,s2], X[s], X2[s2], True) for s,s2 in itertools.product(slices[1], slices2[0])]
             if len(slices2)>1:

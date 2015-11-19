@@ -7,15 +7,15 @@ from .kern import Kern,CombinationKernel
 from .independent_outputs import index_to_slices
 import itertools
 
-class DiffGenomeKern(Kern):
+class DEtime(Kern):
 
-    def __init__(self, kernel, Xp, index_dim=-1, name='DiffGenomeKern'):
+    def __init__(self, kernel, Xp, index_dim=-1, name='DEtime'):
         #idx_p = np.where(X[:,0]>self.Xp)[0].min()
         
         self.Xp = Xp
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
-        super(DiffGenomeKern, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
+        super(DEtime, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
         self.link_parameter(self.kern)
     
     def K(self, X, X2=None):

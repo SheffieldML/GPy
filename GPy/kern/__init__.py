@@ -16,7 +16,7 @@ from ._src.ODE_t import ODE_t
 from ._src.poly import Poly
 from ._src.eq_ode2 import EQ_ODE2
 from ._src.trunclinear import TruncLinear,TruncLinear_inf
-from ._src.splitKern import SplitKern,DiffGenomeKern
+from ._src.splitKern import SplitKern,DEtime
 from ._src.spline import Spline
 from ._src.eq_ode2 import EQ_ODE2
 from ._src.basis_funcs import LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel

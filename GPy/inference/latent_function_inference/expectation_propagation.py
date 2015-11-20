@@ -114,8 +114,6 @@ class EP(EPBase, ExactGaussianInference):
                 tau_tilde[i] += delta_tau
                 v_tilde[i] += delta_v
                 #Posterior distribution parameters update
-                # DSYR(Sigma, Sigma[:,i].copy(), -delta_tau/(1.+ delta_tau*Sigma[i,i]))
-                # mu = np.dot(Sigma, v_tilde)
                 ci = delta_tau/(1.+ delta_tau*Sigma[i,i])
                 DSYR(Sigma, Sigma[:,i].copy(), -ci)
                 mu = np.dot(Sigma, v_tilde)

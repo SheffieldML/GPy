@@ -20,6 +20,9 @@ class EPBase(object):
         :type eta: float64
         :param delta: damping EP updates factor.
         :type delta: float64
+        :param always_reset: setting to always reset the approximation at the beginning of every inference call.
+        :type always_reest: boolean
+
         """
         super(EPBase, self).__init__()
         self.always_reset = always_reset

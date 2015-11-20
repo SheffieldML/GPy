@@ -64,6 +64,7 @@ before_deploy:
       then export DIST='sdist';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
       then export DIST='bdist_wheel';
+    fi;
 
 deploy:
   provider: pypi

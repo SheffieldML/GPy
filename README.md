@@ -9,6 +9,20 @@ The Gaussian processes framework in Python.
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
 
+## Updated Structure
+
+We have pulled the core parameterization out of GPy. It is a package called [paramz](https://github.com/sods/paramz) and is the pure gradient based model optimization.
+
+If you installed GPy with pip, just upgrade the package using:
+
+    $ pip install --upgrade GPy
+
+If you have the developmental version of GPy (using the develop or -e option) just install the dependencies by running
+
+    $ python setup.py develop
+
+again, in the GPy installation folder.
+
 ## Continuous integration
 
 |      | Travis-CI | Codecov | RTFD |
@@ -24,7 +38,6 @@ The Gaussian processes framework in Python.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
 Python 2.7, 3.3 and higher
-
 
 ## Citation
 

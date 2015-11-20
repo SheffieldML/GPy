@@ -9,7 +9,7 @@ from ...util import diag
 log_2_pi = np.log(2*np.pi)
 
 class EPBase(object):
-    def __init__(self, epsilon=1e-6, eta=1., delta=1.):
+    def __init__(self, epsilon=1e-6, eta=1., delta=1., always_reset=False):
         """
         The expectation-propagation algorithm.
         For nomenclature see Rasmussen & Williams 2006.
@@ -22,6 +22,7 @@ class EPBase(object):
         :type delta: float64
         """
         super(EPBase, self).__init__()
+        self.always_reset = always_reset
         self.epsilon, self.eta, self.delta = epsilon, eta, delta
         self.reset()
 
@@ -38,6 +39,9 @@ class EPBase(object):
 
 class EP(EPBase, ExactGaussianInference):
     def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, precision=None, K=None):
+        if self.always_reset:
+            self.reset()
+
         num_data, output_dim = Y.shape
         assert output_dim == 1, "ep in 1D only (for now!)"
 

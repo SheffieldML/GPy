@@ -13,7 +13,6 @@ include GPy/installation.cfg
 # Cython
 recursive-include GPy *.c
 recursive-include GPy *.h
-recursive-include GPy *.so
 recursive-include GPy *.pyx
 
 # Testing

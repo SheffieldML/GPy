@@ -26,7 +26,7 @@ class GridPosterior(object):
             and (Qs is not None) and (V_kron is not None)):
             pass # we have sufficient to compute the posterior
         else:
-            raise ValueError, "insufficient information for predictions"
+            raise ValueError("insufficient information for predictions")
 
         self._alpha_kron = alpha_kron
         self._qTs = QTs

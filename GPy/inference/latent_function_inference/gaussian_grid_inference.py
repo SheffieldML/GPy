@@ -18,7 +18,6 @@
 
 from grid_posterior import GridPosterior
 import numpy as np
-import math as mt
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
 
@@ -74,7 +73,7 @@ class GaussianGridInference(LatentFunctionInference):
             Qs[d] = Q
             QTs[d] = Q.T
 
-        noise = likelihood.variance
+        noise = likelihood.variance + 1e-8
 
         alpha_kron = self.kron_mvprod(QTs, Y)
         V_kron = V_kron.reshape(-1, 1)

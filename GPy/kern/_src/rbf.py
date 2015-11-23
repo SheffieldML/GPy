@@ -7,6 +7,8 @@ from .stationary import Stationary
 from .psi_comp import PSICOMP_RBF
 from .psi_comp.rbf_psi_gpucomp import PSICOMP_RBF_GPU
 from ...util.config import *
+from .gridKerns import GridRBF
+
 
 class RBF(Stationary):
     """

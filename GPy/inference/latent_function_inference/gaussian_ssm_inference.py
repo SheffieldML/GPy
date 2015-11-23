@@ -63,7 +63,7 @@ class GaussianSSMInference(LatentFunctionInference):
         H[0][0] = 1
         v_0 = kern.Phi_of_r(-1)
         mu_0 = np.zeros((order, 1))
-        noise_var = likelihood.variance
+        noise_var = likelihood.variance + 1e-8
 
         # carry out forward filtering
         for t in range(K):

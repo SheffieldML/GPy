@@ -23,25 +23,25 @@ class SsmKerns(Kern):
         self.variance = Param('variance', variance, Logexp())
 
     def K_of_r(self, r):
-        raise NotImplementedError, "implement the covariance function as a fn of r to use this class"
+        raise NotImplementedError("implement the covariance function as a fn of r to use this class")
 
     def dK_dr(self, r):
-        raise NotImplementedError, "implement derivative of the covariance function wrt r to use this class"
+        raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
     def Q_of_r(self, r):
-        raise NotImplementedError, "implement covariance function of SDE wrt r to use this class"
+        raise NotImplementedError("implement covariance function of SDE wrt r to use this class")
 
     def Phi_of_r(self, r):
-        raise NotImplementedError, "implement transition function of SDE wrt r to use this class"
+        raise NotImplementedError("implement transition function of SDE wrt r to use this class")
 
     def noise(self):
-    	raise NotImplementedError, "implement noise function of SDE to use this class"
+    	raise NotImplementedError("implement noise function of SDE to use this class")
 
    	def dPhidLam(self, r):
-		raise NotImplementedError, "implement derivative of the transition function wrt to lambda to use this class"
+		raise NotImplementedError("implement derivative of the transition function wrt to lambda to use this class")
 
     def dQ(self, r):
-    	raise NotImplementedError, "implement detivatives of Q wrt to lambda and variance to use this class"
+    	raise NotImplementedError("implement detivatives of Q wrt to lambda and variance to use this class")
 
 
 class Matern32_SSM(SsmKerns):
@@ -99,7 +99,12 @@ class Matern32_SSM(SsmKerns):
         Compute transition function (Phi)
         """
         if r < 0:
-            return np.array([[self.variance, 0], [0, np.power(self.lam,2)*self.variance]])
+            phi = np.zeros((2,2))
+            phi[0][0] = self.variance
+            phi[0][1] = 0
+            phi[1][0] = 0
+            phi[1][1] = np.power(self.lam,2)*self.variance
+            return phi
         else:
             mult = np.exp(-self.lam*r)
             phi = np.zeros((2, 2))

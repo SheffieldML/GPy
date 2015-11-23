@@ -185,6 +185,16 @@ class Stationary(Kern):
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
+    def update_gradients_direct(self, dL_dVar, dL_dLen):
+        """
+        Specially intended for the Grid regression case.
+        Given the computed log likelihood derivates, update the corresponding
+        kernel and likelihood gradients.
+        Useful for when gradients have been computed a priori.
+        """
+        self.variance.gradient = dL_dVar
+        self.lengthscale.gradient = dL_dLen
+
 
     def _inv_dist(self, X, X2=None):
         """
@@ -311,7 +321,7 @@ class Stationary(Kern):
         a single dimension. The resulting values can then be used in the algorithm for
         reconstructing the full covariance matrix.
         """
-        raise NotImplementedError, "implement one dimensional variation of kernel"
+        raise NotImplementedError("implement one dimensional variation of kernel")
 
 
 class Exponential(Stationary):

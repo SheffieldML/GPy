@@ -28,8 +28,8 @@ class GPRegressionSSM(GpSSM):
 
     def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None):
 
-        # no other kernels implemented so far
-        kernel = kern.Matern32_SSM(1)
+        if kernel is None:
+            kernel = kern.Matern32_SSM(1)   # no other kernels implemented so far
 
         likelihood = likelihoods.Gaussian()
         super(GPRegressionSSM, self).__init__(X, Y, kernel, likelihood, name='GP SSM regression', Y_metadata=Y_metadata, normalizer=normalizer)

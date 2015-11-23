@@ -53,7 +53,7 @@ class Optimizer():
         end = dt.datetime.now()
         self.time = str(end - start)
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         raise NotImplementedError("this needs to be implemented to use the optimizer class")
 
     def plot(self):
@@ -79,7 +79,7 @@ class opt_tnc(Optimizer):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "TNC (Scipy implementation)"
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         """
         Run the TNC optimizer
 
@@ -109,7 +109,7 @@ class opt_lbfgsb(Optimizer):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "L-BFGS-B (Scipy implementation)"
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         """
         Run the optimizer
 
@@ -154,7 +154,7 @@ class opt_simplex(Optimizer):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "Nelder-Mead simplex routine (via Scipy)"
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         """
         The simplex optimizer does not require gradients.
         """
@@ -184,7 +184,7 @@ class opt_rasm(Optimizer):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "Rasmussen's Conjugate Gradient"
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         """
         Run Rasmussen's Conjugate Gradient optimizer
         """
@@ -218,7 +218,7 @@ class opt_SCG(Optimizer):
 
         self.opt_name = "Scaled Conjugate Gradients"
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         assert not f is None
         assert not fp is None
 
@@ -242,7 +242,7 @@ class Opt_Adadelta(Optimizer):
         self.decay = decay
         self.momentum = momentum
 
-    def opt(self, f_fp=None, f=None, fp=None):
+    def opt(self, f_fp=None, f=None, fp=None, args=None):
         assert not fp is None
         
         import climin

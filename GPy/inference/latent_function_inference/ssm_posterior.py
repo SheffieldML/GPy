@@ -28,7 +28,7 @@ class SsmPosterior(object):
             (expectations is not None)):
             pass # we have sufficient to compute the posterior
         else:
-            raise ValueError, "insufficient information to compute predictions"
+            raise ValueError("insufficient information to compute predictions")
 
         self._mu_f = mu_f
         self._V_f = V_f

@@ -23,6 +23,10 @@ If you have the developmental version of GPy (using the develop or -e option) ju
 
 again, in the GPy installation folder.
 
+A warning: This usually works, but sometimes `distutils/setuptools` opens a
+whole can of worms here, specially when compiled extensions are involved.
+If that is the case, it is best to clean the repo and reinstall.
+
 ## Continuous integration
 
 |      | Travis-CI | Codecov | RTFD |

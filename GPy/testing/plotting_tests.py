@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 import matplotlib
+from unittest.case import TestCase
 matplotlib.use('agg')
 
 import numpy as np
@@ -35,12 +36,20 @@ import GPy, os
 from nose import SkipTest
 
 from ..util.config import config
-from ..plotting import change_plotting_library
+from ..plotting import change_plotting_library, plotting_library
+
+class ConfigTest(TestCase):
+    def tearDown(self):
+        change_plotting_library('matplotlib')
+        
+    def test_change_plotting(self):
+        self.assertRaises(ValueError, change_plotting_library, 'not+in9names')
+        change_plotting_library('none')
+        self.assertRaises(RuntimeError, plotting_library)
 
 change_plotting_library('matplotlib')
 if config.get('plotting', 'library') != 'matplotlib':
     raise SkipTest("Matplotlib not installed, not testing plots")
-
 
 try:
     from matplotlib import cbook, pyplot as plt

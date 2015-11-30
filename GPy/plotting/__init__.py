@@ -1,7 +1,10 @@
 # Copyright (c) 2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
+from ConfigParser import NoOptionError
 
 current_lib = [None]
+
+supported_libraries = ['matplotlib', 'plotly', 'none']
 
 def change_plotting_library(lib):
     try:
@@ -10,6 +13,8 @@ def change_plotting_library(lib):
         # save it under the name plotting_library!
         # This is hooking the library in
         # for the usage in GPy:
+        if lib not in supported_libraries:
+            print("Warning: Plotting library {} not recognized, make sure the plotting library is one of the following: \n {}".format(lib, ", ".join(supported_libraries)))
         if lib == 'matplotlib':
             import matplotlib
             from .matplot_dep.plot_definitions import MatplotlibPlots
@@ -29,10 +34,16 @@ def change_plotting_library(lib):
         warnings.warn(ImportWarning("{} not available, install newest version of {} for plotting".format(lib, lib)))
 
 from ..util.config import config
-lib = config.get('plotting', 'library')
-change_plotting_library(lib)
+try:
+    lib = config.get('plotting', 'library')
+    change_plotting_library(lib)
+except NoOptionError:
+    print("No plotting library was specified. Please make sure you specify your plotting library in your configuration file.\n\n[plotting]\nlibrary = <library>\n\nCurrently supported libraries: {}".format(", ".join(supported_libraries)))
+
 
 def plotting_library():
+    if current_lib[0] is None:
+        raise RuntimeError("No plotting library was loaded. Please make sure you specify your plotting library in your configuration file.\n\n[plotting]\nlibrary = <library>\n\nCurrently supported libraries: {}".format(", ".join(supported_libraries)))
     return current_lib[0]
 
 def show(figure, **kwargs):

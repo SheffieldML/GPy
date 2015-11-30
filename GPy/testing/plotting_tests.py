@@ -311,26 +311,35 @@ def test_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import GPLVM
-    np.random.seed(11111)
-    import matplotlib
+    np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     Q = 3
-    _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
-    Y = Ylist[0]
-    k = RBF(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    # Define dataset 
+    N = 10
+    k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
+    k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
+    k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
+    X = np.random.normal(0, 1, (N, 5))
+    A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
+    B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
+    C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
+    
+    Y = np.vstack((A,B,C))
+    labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
+    
+    k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = GPLVM(Y, Q, init="PCA", kernel=k)
-    m.likelihood.variance = .1
+    m.likelihood.variance = .001
     #m.optimize(messages=0)
-    labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     np.random.seed(111)
-    m.plot_latent()
+    m.plot_latent(labels=labels)
     np.random.seed(111)
     m.plot_scatter(projection='3d', labels=labels)
     np.random.seed(111)
     m.plot_magnification(labels=labels)
-    m.plot_steepest_gradient_map(resolution=7)
+    m.plot_steepest_gradient_map(resolution=7, data_labels=labels)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
 
@@ -338,31 +347,41 @@ def test_bayesian_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import BayesianGPLVM
-    import matplotlib
+    np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
-    np.random.seed(111)
     Q = 3
-    _, _, Ylist = _simulate_matern(5, 1, 1, 100, num_inducing=5, plot_sim=False)
-    Y = Ylist[0]
-    k = RBF(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+    # Define dataset 
+    N = 10
+    k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
+    k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
+    k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
+    X = np.random.normal(0, 1, (N, 5))
+    A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
+    B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
+    C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
+    
+    Y = np.vstack((A,B,C))
+    labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
+    
+    k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", kernel=k)
-    m.likelihood.variance = .1
+    m.likelihood.variance = .001
     #m.optimize(messages=0)
-    labels = np.random.multinomial(1, np.random.dirichlet([.3333333, .3333333, .3333333]), size=(m.Y.shape[0])).nonzero()[1]
     np.random.seed(111)
     m.plot_inducing(projection='2d')
     np.random.seed(111)
     m.plot_inducing(projection='3d')
     np.random.seed(111)
-    m.plot_scatter(projection='3d')
+    m.plot_latent(projection='2d', labels=labels)
+    np.random.seed(111)
+    m.plot_scatter(projection='3d', labels=labels)
     np.random.seed(111)
     m.plot_magnification(labels=labels)
     np.random.seed(111)
-    m.plot_steepest_gradient_map(resolution=7)
-    for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent_3d", "magnification", 'gradient']], extensions=extensions):
+    m.plot_steepest_gradient_map(resolution=7, data_labels=labels)
+    for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
 
 if __name__ == '__main__':

@@ -31,8 +31,7 @@ def change_plotting_library(lib):
         import warnings
         warnings.warn(ImportWarning("You spevified {} in your configuration, but is not available. Install newest version of {} for plotting".format(lib, lib)))
 
-from ConfigParser import NoOptionError
-from ..util.config import config
+from ..util.config import config, NoOptionError
 try:
     lib = config.get('plotting', 'library')
     change_plotting_library(lib)

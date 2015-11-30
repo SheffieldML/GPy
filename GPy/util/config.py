@@ -6,10 +6,12 @@ try:
     #Attempt Python 2 ConfigParser setup
     import ConfigParser
     config = ConfigParser.ConfigParser()
+    from ConfigParser import NoOptionError
 except ImportError:
     #Attempt Python 3 ConfigParser setup
     import configparser
     config = configparser.ConfigParser()
+    from configparser import NoOptionError
     
 
 # This is the default configuration file that always needs to be present.

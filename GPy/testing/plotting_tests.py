@@ -311,7 +311,7 @@ def test_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import GPLVM
-    np.random.seed(1234)
+    np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
@@ -340,7 +340,7 @@ def test_gplvm():
     m.plot_scatter(projection='3d', labels=labels)
     np.random.seed(111)
     m.plot_magnification(labels=labels)
-    m.plot_steepest_gradient_map(resolution=7, data_labels=labels)
+    m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
     for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
 
@@ -382,7 +382,7 @@ def test_bayesian_gplvm():
     np.random.seed(111)
     m.plot_magnification(labels=labels)
     np.random.seed(111)
-    m.plot_steepest_gradient_map(resolution=7, data_labels=labels)
+    m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
     for do_test in _image_comparison(baseline_images=['bayesian_gplvm_{}'.format(sub) for sub in ["inducing", "inducing_3d", "latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
         yield (do_test, )
 

@@ -341,7 +341,9 @@ def test_gplvm():
     np.random.seed(111)
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
-    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['gplvm_{}'.format(sub) for sub in ["latent", "latent_3d", "magnification", 'gradient']], 
+                                     extensions=extensions,
+                                     tol=12):
         yield (do_test, )
 
 def test_bayesian_gplvm():

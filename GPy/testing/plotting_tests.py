@@ -311,7 +311,7 @@ def test_gplvm():
     from ..examples.dimensionality_reduction import _simulate_matern
     from ..kern import RBF
     from ..models import GPLVM
-    np.random.seed(12345)
+    np.random.seed(1234)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
@@ -331,6 +331,7 @@ def test_gplvm():
     
     k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = GPLVM(Y, Q, init="PCA", kernel=k)
+    m.kern.lengthscale[:] = [1./.3, 1./.1, 1./.7]
     m.likelihood.variance = .001
     #m.optimize(messages=0)
     np.random.seed(111)
@@ -367,6 +368,7 @@ def test_bayesian_gplvm():
     
     k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     m = BayesianGPLVM(Y, Q, init="PCA", kernel=k)
+    m.kern.lengthscale[:] = [1./.3, 1./.1, 1./.7]
     m.likelihood.variance = .001
     #m.optimize(messages=0)
     np.random.seed(111)

@@ -196,7 +196,11 @@ class TanhWarpingFunction_d(WarpingFunction):
 
         z = z.copy()
         if y is None:
-            y = np.ones_like(z)
+            # The idea here is to initialize y with +1 where
+            # z is positive and -1 where it is negative.
+            # For negative z, Newton-Raphson diverges 
+            # if we initialize y with a positive value (and vice-versa).
+            y = ((z > 0) * 1.) - (z <= 0)
 
         it = 0
         update = np.inf

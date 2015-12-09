@@ -3,8 +3,8 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from ...core.parameterization.observable_array import ObsAr
-from ...util.caching import Cache_this
+from paramz.core.observable_array import ObsAr
+from paramz.caching import Cache_this
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
 import six
@@ -30,18 +30,16 @@ class Kern(Parameterized):
             tight dimensionality of inputs.
             You most likely want this to be the integer telling the number of
             input dimensions of the kernel.
-            If this is not an integer (!) we will work on the whole input matrix X,
-            and not check whether dimensions match or not (!).
 
-        _all_dims_active:
+        active_dims:
 
             is the active_dimensions of inputs X we will work on.
             All kernels will get sliced Xes as inputs, if _all_dims_active is not None
-            Only positive integers are allowed in _all_dims_active!
-            if _all_dims_active is None, slicing is switched off and all X will be passed through as given.
+            Only positive integers are allowed in active_dims!
+            if active_dims is None, slicing is switched off and all X will be passed through as given.
 
         :param int input_dim: the number of input dimensions to the function
-        :param array-like|None _all_dims_active: list of indices on which dimensions this kernel works on, or none if no slicing
+        :param array-like|None active_dims: list of indices on which dimensions this kernel works on, or none if no slicing
 
         Do not instantiate.
         """
@@ -60,7 +58,11 @@ class Kern(Parameterized):
         self.useGPU = self._support_GPU and useGPU
 
         from .psi_comp import PSICOMP_GH
-        self.psicomp = PSICOMP_GH()        
+        self.psicomp = PSICOMP_GH()
+
+    def __setstate__(self, state):
+        self._all_dims_active = range(0, max(state['active_dims'])+1)
+        super(Kern, self).__setstate__(state)
 
     @property
     def _effective_input_dim(self):
@@ -211,15 +213,15 @@ class Kern(Parameterized):
     def get_most_significant_input_dimensions(self, which_indices=None):
         """
         Determine which dimensions should be plotted
-        
+
         Returns the top three most signification input dimensions
-        
+
         if less then three dimensions, the non existing dimensions are
         labeled as None, so for a 1 dimensional input this returns
         (0, None, None).
-        
-        :param which_indices: force the indices to be the given indices. 
-        :type which_indices: int or tuple(int,int) or tuple(int,int,int) 
+
+        :param which_indices: force the indices to be the given indices.
+        :type which_indices: int or tuple(int,int) or tuple(int,int,int)
         """
         if which_indices is None:
             which_indices = np.argsort(self.input_sensitivity())[::-1][:3]
@@ -235,7 +237,7 @@ class Kern(Parameterized):
                 input_1, input_2 = which_indices, None
             except ValueError:
                 # which_indices was a list or array like with only one int
-                input_1, input_2 = which_indices[0], None            
+                input_1, input_2 = which_indices[0], None
         return input_1, input_2, input_3
 
 

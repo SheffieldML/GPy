@@ -28,7 +28,7 @@ class Poisson(Likelihood):
         """
         the expected value of y given a value of f
         """
-        return self.gp_link.transf(gp)
+        return self.gp_link.transf(f)
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -46,7 +46,8 @@ class Poisson(Likelihood):
         :rtype: float
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        return np.prod(stats.poisson.pmf(y,link_f))
+        return np.exp(self.logpdf_link(link_f, y, Y_metadata))
+        # return np.prod(stats.poisson.pmf(y,link_f))
 
     def logpdf_link(self, link_f, y, Y_metadata=None):
         """

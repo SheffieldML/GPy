@@ -123,13 +123,16 @@ def plot_latent_inducing(self,
     :param kwargs: the kwargs for the scatter plots
     """
     input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
+    if input_3 is None: zlabel=None
+    else: zlabel = 'latent dimension %i' % input_3
+        
 
     if 'color' not in kwargs:
         kwargs['color'] = 'white'
     canvas, kwargs = pl().new_canvas(projection=projection,
                               xlabel='latent dimension %i' % input_1,
                               ylabel='latent dimension %i' % input_2,
-                              zlabel='latent dimension %i' % input_3, **kwargs)
+                              zlabel=zlabel, **kwargs)
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
     scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
@@ -195,7 +198,7 @@ def plot_magnification(self, labels=None, which_indices=None,
         labels = np.ones(self.num_data)
         legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
-    view = _plot_magnification(self, canvas, which_indices[:2], Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
+    view = _plot_magnification(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
     retval = pl().add_to_canvas(canvas, dict(scatter=scatters, imshow=view),
                            legend=legend,
                            )

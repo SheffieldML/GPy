@@ -16,7 +16,7 @@ from scipy import stats, special
 from . import link_functions
 from .likelihood import Likelihood
 from ..core.parameterization import Param
-from ..core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 from scipy import stats
 
 class Gaussian(Likelihood):
@@ -67,7 +67,7 @@ class Gaussian(Likelihood):
         """
         return Y
 
-    def _moments_match_ep(self, data_i, tau_i, v_i):
+    def moments_match_ep(self, data_i, tau_i, v_i, Y_metadata_i=None):
         """
         Moments match of the marginal approximation in EP algorithm
 

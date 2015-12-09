@@ -4,7 +4,7 @@
 from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
-from ...core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 from ...util.config import config # for assesing whether to use cython
 try:
     from . import coregionalize_cython

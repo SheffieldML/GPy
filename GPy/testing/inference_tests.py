@@ -5,7 +5,7 @@
 The test cases for various inference algorithms
 """
 
-import unittest, itertools
+import unittest
 import numpy as np
 import GPy
 #np.seterr(invalid='raise')
@@ -28,7 +28,10 @@ class InferenceXTestCase(unittest.TestCase):
     def test_inferenceX_BGPLVM_RBF(self):
         Ys = self.genData()
         m = GPy.models.BayesianGPLVM(Ys,3,kernel=GPy.kern.RBF(3,ARD=True))
-        m.optimize()
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            m.optimize()
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X.mean, mi.X.mean, decimal=2)
         np.testing.assert_array_almost_equal(m.X.variance, mi.X.variance, decimal=2)

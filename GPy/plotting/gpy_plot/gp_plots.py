@@ -393,7 +393,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
          apply_link, which_data_ycols, which_data_rows,
          visible_dims, levels, samples, 0,
          lower, upper, plot_data, plot_inducing,
-         plot_density, predict_kw, projection, legend)
+         plot_density, predict_kw, projection, legend, **kwargs)
 
 
 

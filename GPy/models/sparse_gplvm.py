@@ -2,9 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
-import numpy as np
 import sys
-from GPy.models.sparse_gp_regression import SparseGPRegression
+from .sparse_gp_regression import SparseGPRegression
 
 class SparseGPLVM(SparseGPRegression):
     """

@@ -275,7 +275,7 @@ def toy_rbf_1d_50(optimize=True, plot=True):
 def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
     optimizer='scg'
-    x_len = 30
+    x_len = 100
     X = np.linspace(0, 10, x_len)[:, None]
     f_true = np.random.multivariate_normal(np.zeros(x_len), GPy.kern.RBF(1).K(X))
     Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:,None]

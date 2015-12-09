@@ -2,19 +2,37 @@
 
 The Gaussian processes framework in Python.
 
-* [GPy homepage](http://sheffieldml.github.io/GPy/)
-* [Tutorial notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
-* [User mailing list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
-* [Developer documentation](http://gpy.readthedocs.org/en/devel/)
-* [Unit tests (Travis-CI)](https://travis-ci.org/SheffieldML/GPy)
+* GPy [homepage](http://sheffieldml.github.io/GPy/)
+* Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
+* User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
+* Developer [documentation](http://gpy.readthedocs.org/en/devel/)
+* Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
+
+## Updated Structure
+
+We have pulled the core parameterization out of GPy. It is a package called [paramz](https://github.com/sods/paramz) and is the pure gradient based model optimization.
+
+If you installed GPy with pip, just upgrade the package using:
+
+    $ pip install --upgrade GPy
+
+If you have the developmental version of GPy (using the develop or -e option) just install the dependencies by running
+
+    $ python setup.py develop
+
+again, in the GPy installation folder.
+
+A warning: This usually works, but sometimes `distutils/setuptools` opens a
+whole can of worms here, specially when compiled extensions are involved.
+If that is the case, it is best to clean the repo and reinstall.
 
 ## Continuous integration
 
 |      | Travis-CI | Codecov | RTFD |
 | ---: | :--: | :---: | :---: |
-| **master:** | [![master](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io master](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![Documentation Status](https://readthedocs.org/projects/gpy/badge/?version=master)](http://gpy.readthedocs.org/en/master/) | 
-| **devel:**  | [![devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![codecov.io devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![Documentation Status](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) | 
+| **master:** | [![masterstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![covmaster](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![docmaster](https://readthedocs.org/projects/gpy/badge/?version=master)](http://gpy.readthedocs.org/en/master/) | 
+| **devel:**  | [![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![docdevel](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) | 
 
 ## Supported Platforms:
 
@@ -24,7 +42,6 @@ The Gaussian processes framework in Python.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
 Python 2.7, 3.3 and higher
-
 
 ## Citation
 

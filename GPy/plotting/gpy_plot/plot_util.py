@@ -131,6 +131,8 @@ def helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resol
         Xnew, x, y, xmin, xmax = x_frame2D(X[:,free_dims], plot_limits, resolution)
         Xgrid = np.zeros((Xnew.shape[0], self.input_dim))
         Xgrid[:,free_dims] = Xnew
+        #xmin = Xgrid.min(0)[free_dims]
+        #xmax = Xgrid.max(0)[free_dims]
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
     else:
@@ -305,7 +307,7 @@ def get_free_dims(model, visible_dims, fixed_dims):
         visible_dims = np.arange(model.input_dim)
     dims = np.asanyarray(visible_dims)
     if fixed_dims is not None:
-        dims = np.setdiff1d(dims, fixed_dims)
+        dims = [dim for dim in dims if dim not in fixed_dims]
     return np.asanyarray([dim for dim in dims if dim is not None])
 
 
@@ -337,7 +339,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     """
     assert X.shape[1] ==1, "x_frame1D is defined for one-dimensional inputs"
     if plot_limits is None:
-        from ...core.parameterization.variational import VariationalPosterior
+        from GPy.core.parameterization.variational import VariationalPosterior
         if isinstance(X, VariationalPosterior):
             xmin,xmax = X.mean.min(0),X.mean.max(0)
         else:
@@ -357,7 +359,7 @@ def x_frame2D(X,plot_limits=None,resolution=None):
     """
     assert X.shape[1]==2, "x_frame2D is defined for two-dimensional inputs"
     if plot_limits is None:
-        xmin, xmax = X.min(0),X.max(0)
+        xmin, xmax = X.min(0), X.max(0)
         xmin, xmax = xmin-0.075*(xmax-xmin), xmax+0.075*(xmax-xmin)
     elif len(plot_limits) == 2:
         xmin, xmax = plot_limits

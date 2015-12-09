@@ -4,7 +4,7 @@
 from .posterior import Posterior
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
 from ...util import diag
-from ...core.parameterization.variational import VariationalPosterior
+from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
@@ -23,8 +23,7 @@ class VarDTC(LatentFunctionInference):
     """
     const_jitter = 1e-8
     def __init__(self, limit=1):
-        #self._YYTfactor_cache = caching.cache()
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
@@ -45,7 +44,7 @@ class VarDTC(LatentFunctionInference):
     def __setstate__(self, state):
         # has to be overridden, as Cacher objects cannot be pickled.
         self.limit = state
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)
 
@@ -64,7 +63,7 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, Z_tilde=None):
         assert mean_function is None, "inference with a mean function not implemented"
 
         num_data, output_dim = Y.shape
@@ -151,6 +150,12 @@ class VarDTC(LatentFunctionInference):
         # log marginal likelihood
         log_marginal = _compute_log_marginal_likelihood(likelihood, num_data, output_dim, precision, het_noise,
             psi0, A, LB, trYYT, data_fit, Y)
+
+        if Z_tilde is not None:
+            # This is a correction term for the log marginal likelihood
+            # In EP this is log Z_tilde, which is the difference between the
+            # Gaussian marginal and Z_EP
+            log_marginal += Z_tilde
 
         #noise derivatives
         dL_dR = _compute_dL_dR(likelihood,

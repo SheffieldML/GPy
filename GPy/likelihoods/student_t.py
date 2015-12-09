@@ -9,7 +9,7 @@ from scipy import stats, integrate
 from scipy.special import gammaln, gamma
 from .likelihood import Likelihood
 from ..core.parameterization import Param
-from ..core.parameterization.transformations import Logexp
+from paramz.transformations import Logexp
 from scipy.special import psi as digamma
 
 class StudentT(Likelihood):

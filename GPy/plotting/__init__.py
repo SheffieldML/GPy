@@ -1,7 +1,9 @@
 # Copyright (c) 2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
 current_lib = [None]
+
+supported_libraries = ['matplotlib', 'plotly', 'none']
+error_suggestion = "Please make sure you specify your plotting library in your configuration file (<User>/.config/GPy/user.cfg).\n\n[plotting]\nlibrary = <library>\n\nCurrently supported libraries: {}".format(", ".join(supported_libraries))
 
 def change_plotting_library(lib):
     try:
@@ -10,6 +12,8 @@ def change_plotting_library(lib):
         # save it under the name plotting_library!
         # This is hooking the library in
         # for the usage in GPy:
+        if lib not in supported_libraries:
+            raise ValueError("Warning: Plotting library {} not recognized, currently supported libraries are: \n {}".format(lib, ", ".join(supported_libraries)))
         if lib == 'matplotlib':
             import matplotlib
             from .matplot_dep.plot_definitions import MatplotlibPlots
@@ -23,16 +27,20 @@ def change_plotting_library(lib):
             current_lib[0] = None
         #===========================================================================
     except (ImportError, NameError):
-        raise
         config.set('plotting', 'library', 'none')
         import warnings
-        warnings.warn(ImportWarning("{} not available, install newest version of {} for plotting".format(lib, lib)))
+        warnings.warn(ImportWarning("You spevified {} in your configuration, but is not available. Install newest version of {} for plotting".format(lib, lib)))
 
-from ..util.config import config
-lib = config.get('plotting', 'library')
-change_plotting_library(lib)
+from ..util.config import config, NoOptionError
+try:
+    lib = config.get('plotting', 'library')
+    change_plotting_library(lib)
+except NoOptionError:
+    print("No plotting library was specified in config file. \n{}".format(error_suggestion))
 
 def plotting_library():
+    if current_lib[0] is None:
+        raise RuntimeError("No plotting library was loaded. \n{}".format(error_suggestion))
     return current_lib[0]
 
 def show(figure, **kwargs):

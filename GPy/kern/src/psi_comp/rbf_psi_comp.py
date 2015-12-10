@@ -106,6 +106,8 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     denom = 1./(2*S+lengthscale2)
     denom2 = np.square(denom)
 
+    if len(dL_dpsi2.shape)==2: dL_dpsi2 = (dL_dpsi2+dL_dpsi2.T)/2
+    else: dL_dpsi2  = (dL_dpsi2+ np.swapaxes(dL_dpsi2, 1,2))/2
     _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) # NxMxM
     Lpsi2 = dL_dpsi2*_psi2 # dL_dpsi2 is MxM, using broadcast to multiply N out
     Lpsi2sum = Lpsi2.reshape(N,M*M).sum(1) #N

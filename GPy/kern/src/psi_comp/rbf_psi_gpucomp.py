@@ -360,7 +360,10 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         if self.GPU_direct:
             return psi0, psi1_gpu, psi2_gpu
         else:
-            return psi0, psi1_gpu.get(), psi2_gpu.get()
+            if return_psi2_n:
+                return psi0, psi1_gpu.get(), psi2n_gpu.get()
+            else:
+                return psi0, psi1_gpu.get(), psi2_gpu.get()
         
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         try:
@@ -370,6 +373,10 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def _psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        # resolve the requirement of dL_dpsi2 to be symmetric
+        if len(dL_dpsi2.shape)==2: dL_dpsi2 = (dL_dpsi2+dL_dpsi2.T)/2
+        else: dL_dpsi2  = (dL_dpsi2+ np.swapaxes(dL_dpsi2, 1,2))/2
+    
         variance, lengthscale = kern.variance, kern.lengthscale
         from ....util.linalg_gpu import sum_axis
         ARD = (len(lengthscale)!=1)

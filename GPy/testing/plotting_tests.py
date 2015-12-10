@@ -35,8 +35,8 @@ import numpy as np
 import GPy, os
 from nose import SkipTest
 
-from ..util.config import config
-from ..plotting import change_plotting_library, plotting_library
+from GPy.util.config import config
+from GPy.plotting import change_plotting_library, plotting_library
 
 class ConfigTest(TestCase):
     def tearDown(self):
@@ -69,8 +69,8 @@ def _image_directories():
     #module_name = __init__.__module__
     #mods = module_name.split('.')
     #basedir = os.path.join(*mods)
-    result_dir = os.path.join(basedir, 'testresult')
-    baseline_dir = os.path.join(basedir, 'baseline')
+    result_dir = os.path.join(basedir, 'testresult','.')
+    baseline_dir = os.path.join(basedir, 'baseline','.')
     if not os.path.exists(result_dir):
         cbook.mkdirs(result_dir)
     return baseline_dir, result_dir

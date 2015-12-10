@@ -28,7 +28,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         self.limit = limit
 
         # Cache functions
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
@@ -46,7 +46,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         self.mpi_comm = None
         self.midRes = {}
         self.batch_pos = 0
-        from ...util.caching import Cacher
+        from paramz.caching import Cacher
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)
 

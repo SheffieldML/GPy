@@ -16,7 +16,7 @@ from . import PSICOMP
 
 class PSICOMP_GH(PSICOMP):
     
-    def __init__(self, degree=5, cache_K=True):
+    def __init__(self, degree=11, cache_K=True):
         self.degree = degree
         self.cache_K = cache_K
         self.locs, self.weights = np.polynomial.hermite.hermgauss(degree)

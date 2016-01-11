@@ -50,6 +50,19 @@ def _wait_for_updates(view, updates):
             # No updateable view:
             pass
 
+def _new_canvas(self, projection, kwargs, which_indices):
+    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
+
+    if input_3 is None:
+        zlabel = None
+    else:
+        zlabel = 'latent dimension %i' % input_3
+    if 'color' not in kwargs:
+        kwargs['color'] = 'white'
+    canvas, kwargs = pl().new_canvas(projection=projection, xlabel='latent dimension %i' % input_1,
+        ylabel='latent dimension %i' % input_2,
+        zlabel=zlabel, **kwargs)
+    return canvas, projection, kwargs, sig_dims
 
 def _plot_latent_scatter(canvas, X, visible_dims, labels, marker, num_samples, projection='2d', **kwargs):
     from .. import Tango
@@ -85,12 +98,8 @@ def plot_latent_scatter(self, labels=None,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param kwargs: the kwargs for the scatter plots
     """
-    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
+    canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    canvas, kwargs = pl().new_canvas(projection=projection,
-                              xlabel='latent dimension %i' % input_1,
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel='latent dimension %i' % input_3, **kwargs)
     X, _, _ = get_x_y_var(self)
     if labels is None:
         labels = np.ones(self.num_data)
@@ -99,8 +108,6 @@ def plot_latent_scatter(self, labels=None,
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
     return pl().add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
-
-
 
 
 def plot_latent_inducing(self,
@@ -122,17 +129,8 @@ def plot_latent_inducing(self,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param kwargs: the kwargs for the scatter plots
     """
-    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
-    if input_3 is None: zlabel=None
-    else: zlabel = 'latent dimension %i' % input_3
-        
+    canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    if 'color' not in kwargs:
-        kwargs['color'] = 'white'
-    canvas, kwargs = pl().new_canvas(projection=projection,
-                              xlabel='latent dimension %i' % input_1,
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel=zlabel, **kwargs)
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
     scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)

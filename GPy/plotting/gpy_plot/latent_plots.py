@@ -57,8 +57,6 @@ def _new_canvas(self, projection, kwargs, which_indices):
         zlabel = None
     else:
         zlabel = 'latent dimension %i' % input_3
-    if 'color' not in kwargs:
-        kwargs['color'] = 'white'
     canvas, kwargs = pl().new_canvas(projection=projection, xlabel='latent dimension %i' % input_1,
         ylabel='latent dimension %i' % input_2,
         zlabel=zlabel, **kwargs)

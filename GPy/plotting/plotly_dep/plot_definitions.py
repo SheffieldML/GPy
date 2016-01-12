@@ -130,14 +130,15 @@ class PlotlyPlots(AbstractPlottingLibrary):
         except:
             #not matplotlib marker
             pass
+        marker_kwargs = marker_kwargs or {}
         marker_kwargs.setdefault('symbol', marker)
         if Z is not None:
-            return Scatter3d(x=X, y=Y, z=Z, mode='markers', 
-                             showlegend=label is not None, 
-                             marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}), 
+            return Scatter3d(x=X, y=Y, z=Z, mode='markers',
+                             showlegend=label is not None,
+                             marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
                              name=label, **kwargs)
-        return Scatter(x=X, y=Y, mode='markers', showlegend=label is not None, 
-                       marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}), 
+        return Scatter(x=X, y=Y, mode='markers', showlegend=label is not None,
+                       marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}),
                        name=label, **kwargs)
 
     def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):
@@ -169,10 +170,10 @@ class PlotlyPlots(AbstractPlottingLibrary):
         elif X.shape[1] == 2:
             marker_kwargs.setdefault('symbol', 'diamond')
             opacity = kwargs.pop('opacity', .8)
-            return Scatter3d(x=X[:, 0], y=X[:, 1], z=np.zeros(X.shape[0]), 
+            return Scatter3d(x=X[:, 0], y=X[:, 1], z=np.zeros(X.shape[0]),
                              mode='markers',
-                             projection=dict(z=dict(show=True, opacity=opacity)), 
-                             marker=Marker(color=color, **marker_kwargs or {}), 
+                             projection=dict(z=dict(show=True, opacity=opacity)),
+                             marker=Marker(color=color, **marker_kwargs or {}),
                              opacity=0,
                              name=label,
                              showlegend=label is not None, **kwargs)
@@ -284,11 +285,11 @@ class PlotlyPlots(AbstractPlottingLibrary):
         if color.startswith('#'):
             colarray = Tango.hex2rgb(color)
             opacity = .9
-        else: 
+        else:
             colarray = map(float(color.strip(')').split('(')[1]))
             if len(colarray) == 4:
                 colarray, opacity = colarray[:3] ,colarray[3]
-        
+
         alpha = opacity*(1.-np.abs(np.linspace(-1,1,len(percentiles)-1)))
 
         def pairwise(iterable):
@@ -302,11 +303,11 @@ class PlotlyPlots(AbstractPlottingLibrary):
         for i, y1, a in zip(range(len(percentiles)), percentiles, alpha):
             fcolor = 'rgba({}, {}, {}, {alpha})'.format(*colarray, alpha=a)
             if i ==  len(percentiles)/2:
-                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=True, 
-                                       name=label, line=Line(width=0, smoothing=0), mode='none', fill='tonextx', 
+                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=True,
+                                       name=label, line=Line(width=0, smoothing=0), mode='none', fill='tonextx',
                                        legendgroup='density', hoverinfo='none', **kwargs))
             else:
-                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=False, 
-                                       name=None, line=Line(width=1, smoothing=0, color=fcolor), mode='none', fill='tonextx', 
+                polycol.append(Scatter(x=X, y=y1, fillcolor=fcolor, showlegend=False,
+                                       name=None, line=Line(width=1, smoothing=0, color=fcolor), mode='none', fill='tonextx',
                                        legendgroup='density', hoverinfo='none', **kwargs))
         return polycol

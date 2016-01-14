@@ -160,7 +160,7 @@ class WarpedGP(GP):
         mu_star, var_star = self._raw_predict(x_test)
         fy = self.warping_function.f(y_test)
         ll_lpd = self.likelihood.log_predictive_density(fy, mu_star, var_star, Y_metadata=Y_metadata)
-        return ll_lpd * self.warping_function.fgrad_y(y_test)
+        return ll_lpd - np.log(self.warping_function.fgrad_y(y_test))
 
 
 if __name__ == '__main__':

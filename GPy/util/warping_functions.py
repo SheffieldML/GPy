@@ -152,7 +152,7 @@ class TanhWarpingFunction(WarpingFunction):
 
 class TanhWarpingFunction_d(WarpingFunction):
 
-    def __init__(self, n_terms=3):
+    def __init__(self, n_terms=3, initial_y=None):
         """n_terms specifies the number of tanh terms to be used"""
         self.n_terms = n_terms
         self.num_parameters = 3 * self.n_terms + 1
@@ -165,6 +165,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         self.d = Param('%s' % ('d'), 1.0, Logexp())
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
+        self.initial_y = initial_y
 
     def f(self, y):
         """
@@ -187,7 +188,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             z += a*np.tanh(b*(y+c))
         return z
 
-    def f_inv(self, z, max_iterations=1000, y=None):
+    def f_inv(self, z, max_iterations=100, y=None):
         """
         calculate the numerical inverse of f
 
@@ -195,12 +196,15 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
 
         z = z.copy()
+        
         if y is None:
             # The idea here is to initialize y with +1 where
             # z is positive and -1 where it is negative.
             # For negative z, Newton-Raphson diverges 
             # if we initialize y with a positive value (and vice-versa).
             y = ((z > 0) * 1.) - (z <= 0)
+            if self.initial_y is not None:
+                y *= self.initial_y
 
         it = 0
         update = np.inf
@@ -213,6 +217,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             it += 1
         if it == max_iterations:
             print("WARNING!!! Maximum number of iterations reached in f_inv ")
+            print("Sum of updates: %.4f" % np.sum(update))
         return y
 
     def fgrad_y(self, y, return_precalc=False):

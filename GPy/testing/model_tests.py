@@ -307,7 +307,7 @@ class MiscTests(unittest.TestCase):
  
         np.testing.assert_almost_equal(preds, warp_preds)
 
-    @unittest.skip('Comment this to plot the modified sine function')
+    #@unittest.skip('Comment this to plot the modified sine function')
     def test_warped_gp_sine(self):
         """
         A test replicating the sine regression problem from
@@ -321,7 +321,6 @@ class MiscTests(unittest.TestCase):
         warp_k = GPy.kern.RBF(1)
         warp_f = GPy.util.warping_functions.TanhWarpingFunction_d(n_terms=2)
         warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
-        warp_m['.*noise.variance.*'].constrain_fixed(0.1)
 
         m = GPy.models.GPRegression(X[:, None], Y[:, None])
         m.optimize_restarts(parallel=False, robust=True, num_restarts=5)
@@ -330,6 +329,7 @@ class MiscTests(unittest.TestCase):
         print(warp_m['.*warp.*'])
         warp_m.predict_in_warped_space = False
         warp_m.plot()
+        import ipdb; ipdb.set_trace()
         warp_m.predict_in_warped_space = True
         warp_m.plot()
         m.plot()

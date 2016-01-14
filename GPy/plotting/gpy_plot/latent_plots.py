@@ -50,6 +50,17 @@ def _wait_for_updates(view, updates):
             # No updateable view:
             pass
 
+def _new_canvas(self, projection, kwargs, which_indices):
+    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
+
+    if input_3 is None:
+        zlabel = None
+    else:
+        zlabel = 'latent dimension %i' % input_3
+    canvas, kwargs = pl().new_canvas(projection=projection, xlabel='latent dimension %i' % input_1,
+        ylabel='latent dimension %i' % input_2,
+        zlabel=zlabel, **kwargs)
+    return canvas, projection, kwargs, sig_dims
 
 def _plot_latent_scatter(canvas, X, visible_dims, labels, marker, num_samples, projection='2d', **kwargs):
     from .. import Tango
@@ -85,12 +96,8 @@ def plot_latent_scatter(self, labels=None,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param kwargs: the kwargs for the scatter plots
     """
-    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
+    canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    canvas, kwargs = pl().new_canvas(projection=projection,
-                              xlabel='latent dimension %i' % input_1,
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel='latent dimension %i' % input_3, **kwargs)
     X, _, _ = get_x_y_var(self)
     if labels is None:
         labels = np.ones(self.num_data)
@@ -99,8 +106,6 @@ def plot_latent_scatter(self, labels=None,
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     scatters = _plot_latent_scatter(canvas, X, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
     return pl().add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
-
-
 
 
 def plot_latent_inducing(self,
@@ -122,17 +127,8 @@ def plot_latent_inducing(self,
     :param str marker: markers to use - cycle if more labels then markers are given
     :param kwargs: the kwargs for the scatter plots
     """
-    input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
-    if input_3 is None: zlabel=None
-    else: zlabel = 'latent dimension %i' % input_3
-        
+    canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    if 'color' not in kwargs:
-        kwargs['color'] = 'white'
-    canvas, kwargs = pl().new_canvas(projection=projection,
-                              xlabel='latent dimension %i' % input_1,
-                              ylabel='latent dimension %i' % input_2,
-                              zlabel=zlabel, **kwargs)
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
     scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
@@ -231,7 +227,7 @@ def plot_latent(self, labels=None, which_indices=None,
                 plot_limits=None,
                 updates=False,
                 kern=None, marker='<>^vsd',
-                num_samples=1000,
+                num_samples=1000, projection='2d',
                 scatter_kwargs=None, **imshow_kwargs):
     """
     Plot the latent space of the GP on the inputs. This is the
@@ -251,6 +247,8 @@ def plot_latent(self, labels=None, which_indices=None,
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
     :param scatter_kwargs: the kwargs for the scatter plots
     """
+    if projection != '2d':
+        raise ValueError('Cannot plot latent in other then 2 dimensions, consider plot_scatter')
     input_1, input_2 = which_indices = self.get_most_significant_input_dimensions(which_indices)[:2]
     X = get_x_y_var(self)[0]
     _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)

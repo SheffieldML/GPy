@@ -104,7 +104,7 @@ class SLVMPosterior(SpikeAndSlabPosterior):
         """
         from paramz.transformations import Logexp
         super(SLVMPosterior, self).__init__(means, variances, binary_prob, group_spike=False, name=name)
-        self.tau = Param("tau_", np.ones((self.gamma.shape[1],2)), Logexp())
+        self.tau = Param("tau_", np.ones((self.gamma.shape[1],2))*2, Logexp())
         self.link_parameter(self.tau)
 
     def set_gradients(self, grad):
@@ -152,7 +152,7 @@ class SLVMPrior(VariationalPrior):
         
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        part1 = (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
+        part1 = ((np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
         
         from scipy.special import betaln,digamma            
         part2 = (gamma*np.log(gamma)).sum() + ((1.-gamma)*np.log(1.-gamma)).sum() + betaln(self.alpha,self.beta)*self.input_dim \
@@ -164,11 +164,11 @@ class SLVMPrior(VariationalPrior):
     def update_gradients_KL(self, variational_posterior):
         mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
 
-        variational_posterior.mean.gradient -= gamma*mu/self.variance
-        variational_posterior.variance.gradient -= (1./self.variance - 1./S) * gamma /2.
+        variational_posterior.mean.gradient -= mu/self.variance
+        variational_posterior.variance.gradient -= (1./self.variance - 1./S)  /2.
         from scipy.special import digamma,polygamma
         dgamma = np.log(gamma/(1.-gamma))+ (digamma(tau[:,1])-digamma(tau[:,0]))*self.Z
-        variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        variational_posterior.binary_prob.gradient -= dgamma
         common = (self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*polygamma(1,tau.sum(axis=1))
         variational_posterior.tau.gradient[:,0] = -((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*polygamma(1,tau[:,0])+common)
         variational_posterior.tau.gradient[:,1] = -((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*polygamma(1,tau[:,1])+common)

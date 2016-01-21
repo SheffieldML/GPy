@@ -50,6 +50,5 @@ class InferenceXTestCase(unittest.TestCase):
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X, mi.X, decimal=2)
 
-
 if __name__ == "__main__":
     unittest.main()

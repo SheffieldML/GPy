@@ -126,7 +126,12 @@ class SparseGP(GP):
         The implementation of that will follow. However, for each dimension the
         covariance changes, so if full_cov is False (standard), we return the variance
         for each dimension [NxD].
-        """
+        """        
+        if hasattr(self.posterior, '_raw_predict'):
+            mu, var = self.posterior._raw_predict(kern=self.kern if kern is None else kern, Xnew=Xnew, pred_var=self._predictive_variable, full_cov=full_cov)
+            if self.mean_function is not None:
+                mu += self.mean_function.f(Xnew)
+            return mu, var
 
         if kern is None: kern = self.kern
 

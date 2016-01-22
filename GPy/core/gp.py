@@ -365,13 +365,14 @@ class GP(Model):
             mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
 
         dK_dXnew_full = np.empty((self._predictive_variable.shape[0], Xnew.shape[0], Xnew.shape[1]))
+        one = np.ones((1,1))
         for i in range(self._predictive_variable.shape[0]):
-            dK_dXnew_full[i] = kern.gradients_X([[1.]], Xnew, self._predictive_variable[[i]])
+            dK_dXnew_full[i] = kern.gradients_X(one, Xnew, self._predictive_variable[[i]])
 
         if full_cov:
-            dK2_dXdX = kern.gradients_XX([[1.]], Xnew)
+            dK2_dXdX = kern.gradients_XX(one, Xnew)
         else:
-            dK2_dXdX = kern.gradients_XX_diag([[1.]], Xnew)
+            dK2_dXdX = kern.gradients_XX_diag(one, Xnew)
 
         def compute_cov_inner(wi):
             if full_cov:
@@ -458,7 +459,7 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=full_cov, **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        
+
         def sim_one_dim(m, v):
             if not full_cov:
                 return np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T

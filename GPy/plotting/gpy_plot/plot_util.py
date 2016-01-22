@@ -285,7 +285,10 @@ def get_x_y_var(model):
         X = model.X.mean.values
         X_variance = model.X.variance.values
     else:
-        X = model.X.values
+        try:
+            X = model.X.values
+        except AttributeError:
+            X = model.X
         X_variance = None
     try:
         Y = model.Y.values

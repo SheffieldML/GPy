@@ -61,12 +61,12 @@ class Kern(Parameterized):
         self.psicomp = PSICOMP_GH()
 
     def __setstate__(self, state):
-        self._all_dims_active = range(0, max(state['active_dims'])+1)
+        self._all_dims_active = np.arange(0, max(state['active_dims'])+1)
         super(Kern, self).__setstate__(state)
 
     @property
     def _effective_input_dim(self):
-        return self._all_dims_active.size
+        return np.size(self._all_dims_active)
 
     @Cache_this(limit=20)
     def _slice_X(self, X):

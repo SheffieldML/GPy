@@ -199,7 +199,7 @@ def subsample_X(X, labels, num_samples=1000):
     num_samples and the returned subsampled X.
     """
     if X.shape[0] > num_samples:
-        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
+        print("Warning: subsampling X, as it has more samples then {}. X.shape={!s}".format(int(num_samples), X.shape))
         if labels is not None:
             subsample = []
             for _, _, _, _, index, _ in scatter_label_generator(labels, X, (0, None, None)):

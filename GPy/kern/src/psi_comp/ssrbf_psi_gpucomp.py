@@ -287,8 +287,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
         
         from pycuda.compiler import SourceModule
-        from ....util.gpu_init import initGPU
-        initGPU()
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None

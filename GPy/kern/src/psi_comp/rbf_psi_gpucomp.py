@@ -5,7 +5,6 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from paramz.caching import Cache_this
 from . import PSICOMP_RBF
-from ....util import gpu_init
 
 gpu_code = """
     // define THREADNUM
@@ -238,8 +237,6 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.fall_back = PSICOMP_RBF()
         
         from pycuda.compiler import SourceModule
-        from ....util.gpu_init import initGPU
-        initGPU()
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None

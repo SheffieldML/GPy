@@ -237,6 +237,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.fall_back = PSICOMP_RBF()
         
         from pycuda.compiler import SourceModule
+        import GPy.util.gpu_init
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None

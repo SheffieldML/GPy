@@ -341,8 +341,8 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     if hasattr(self, 'Z') and plot_inducing:
         plots.update(_plot_inducing(self, canvas, visible_dims, projection, 'Inducing'))
     if plot_data:
-        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data"))
-        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data Error"))
+        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data"))
+        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data Error"))
     plots.update(_plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing, plot_density, projection))
     if plot_raw and (samples_likelihood > 0):
         helper_prediction = helper_predict_with_model(self, helper_data[2], False,

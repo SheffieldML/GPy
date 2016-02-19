@@ -181,7 +181,7 @@ class GP(Model):
     def parameters_changed(self):
         """
         Method that is called upon any changes to :class:`~GPy.core.parameterization.param.Param` variables within the model.
-        In particular in the GP class this method reperforms inference, recalculating the posterior and log marginal likelihood and gradients of the model
+        In particular in the GP class this method re-performs inference, recalculating the posterior and log marginal likelihood and gradients of the model
 
         .. warning::
             This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call

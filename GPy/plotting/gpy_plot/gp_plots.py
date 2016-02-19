@@ -319,9 +319,17 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     :param {2d|3d} projection: plot in 2d or 3d?
     :param bool legend: convenience, whether to put a legend on the plot or not.
     """
-    canvas, _ = pl().new_canvas(projection=projection, **kwargs)
     X = get_x_y_var(self)[0]
     helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    xmin, xmax = helper_data[5:7]
+    free_dims = helper_data[1]
+
+    if not 'xlim' in kwargs:
+        kwargs['xlim'] = (xmin[0], xmax[0])
+    if not 'ylim' in kwargs and len(free_dims) == 2:
+        kwargs['ylim'] = (xmin[1], xmax[1])
+
+    canvas, _ = pl().new_canvas(projection=projection, **kwargs)
     helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw,
                                           apply_link, np.linspace(2.5, 97.5, levels*2) if plot_density else (lower,upper),
                                           get_which_data_ycols(self, which_data_ycols),
@@ -389,7 +397,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
     :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    plot(self, plot_limits, fixed_inputs, resolution, True,
+    return plot(self, plot_limits, fixed_inputs, resolution, True,
          apply_link, which_data_ycols, which_data_rows,
          visible_dims, levels, samples, 0,
          lower, upper, plot_data, plot_inducing,

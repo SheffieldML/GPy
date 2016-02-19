@@ -349,7 +349,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
             xmin,xmax = X.min(0),X.max(0)
         xmin, xmax = xmin-0.25*(xmax-xmin), xmax+0.25*(xmax-xmin)
     elif len(plot_limits) == 2:
-        xmin, xmax = plot_limits
+        xmin, xmax = map(np.atleast_1d, plot_limits)
     else:
         raise ValueError("Bad limits for plotting")
 

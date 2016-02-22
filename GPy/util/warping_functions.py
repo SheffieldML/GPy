@@ -278,6 +278,52 @@ class TanhWarpingFunction_d(WarpingFunction):
         names.append('warp_tanh_d')
         return names
 
+    def update_grads(self, Y_untransformed, Kiy):
+        grad_y = self.fgrad_y(Y_untransformed)
+        grad_y_psi, grad_psi = self.fgrad_y_psi(Y_untransformed,
+                                                return_covar_chain=True)
+        djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
+        dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
+
+        warping_grads = -dquad_dpsi + djac_dpsi
+
+        self.psi.gradient[:] = warping_grads[:, :-1]
+        self.d.gradient[:] = warping_grads[0, -1]
+
+
+class LogFunction(WarpingFunction):
+    """
+    Easy wrapper for applying a fixed warping function to
+    positive-only values.
+    """
+    def __init__(self):
+        self.num_parameters = 0
+        #self.psi = Param('psi', np.zeros((1,3)))
+        #self.d = Param('%s' % ('d'), 0.0, Logexp())
+        super(LogFunction, self).__init__(name='log')
+        #self.link_parameter(self.psi)
+        #self.link_parameter(self.d)
+
+
+    def f(self, y):
+        return np.log(y)
+
+    def fgrad_y(self, y):
+        return 1. / y
+
+    def update_grads(self, Y_untransformed, Kiy):
+        pass
+
+    def fgrad_y_psi(self, y, return_covar_chain=False):
+        gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
+        gradients = 0
+        if return_covar_chain:
+            return gradients, gradients
+        return gradients
+
+    def f_inv(self, z, y=None):
+        return np.exp(z)
+
 
 class IdentityFunction(WarpingFunction):
     """
@@ -285,12 +331,12 @@ class IdentityFunction(WarpingFunction):
     and should not be used in practice.
     """
     def __init__(self):
-        self.num_parameters = 4
-        self.psi = Param('psi', np.zeros((1,3)))
-        self.d = Param('%s' % ('d'), 1.0, Logexp())
+        self.num_parameters = 0
+        #self.psi = Param('psi', np.zeros((1,3)))
+        #self.d = Param('%s' % ('d'), 0.0, Logexp())
         super(IdentityFunction, self).__init__(name='identity')
-        self.link_parameter(self.psi)
-        self.link_parameter(self.d)
+        #self.link_parameter(self.psi)
+        #self.link_parameter(self.d)
 
         
     def f(self, y):
@@ -299,8 +345,12 @@ class IdentityFunction(WarpingFunction):
     def fgrad_y(self, y):
         return np.ones(y.shape)
 
+    def update_grads(self, Y_untransformed, Kiy):
+        pass
+
     def fgrad_y_psi(self, y, return_covar_chain=False):
         gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
+        gradients = 0
         if return_covar_chain:
             return gradients, gradients
         return gradients

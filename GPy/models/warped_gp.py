@@ -44,17 +44,19 @@ class WarpedGP(GP):
         super(WarpedGP, self).parameters_changed()
 
         Kiy = self.posterior.woodbury_vector.flatten()
+    
+        self.warping_function.update_grads(self.Y_untransformed, Kiy)
 
-        grad_y = self.warping_function.fgrad_y(self.Y_untransformed)
-        grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Y_untransformed,
-                                                                 return_covar_chain=True)
-        djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
-        dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
+        #grad_y = self.warping_function.fgrad_y(self.Y_untransformed)
+        #grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Y_untransformed,
+        #                                                         return_covar_chain=True)
+        #djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
+        #dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
 
-        warping_grads = -dquad_dpsi + djac_dpsi
+        #warping_grads = -dquad_dpsi + djac_dpsi
 
-        self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
-        self.warping_function.d.gradient[:] = warping_grads[0, -1]
+        #self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
+        #self.warping_function.d.gradient[:] = warping_grads[0, -1]
 
     def transform_data(self):
         Y = self.warping_function.f(self.Y_untransformed.copy()).copy()
@@ -160,7 +162,7 @@ class WarpedGP(GP):
         mu_star, var_star = self._raw_predict(x_test)
         fy = self.warping_function.f(y_test)
         ll_lpd = self.likelihood.log_predictive_density(fy, mu_star, var_star, Y_metadata=Y_metadata)
-        return ll_lpd - np.log(self.warping_function.fgrad_y(y_test))
+        return ll_lpd + np.log(self.warping_function.fgrad_y(y_test))
 
 
 if __name__ == '__main__':

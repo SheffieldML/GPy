@@ -199,7 +199,7 @@ def subsample_X(X, labels, num_samples=1000):
     num_samples and the returned subsampled X.
     """
     if X.shape[0] > num_samples:
-        print("Warning: subsampling X, as it has more samples then 1000. X.shape={!s}".format(X.shape))
+        print("Warning: subsampling X, as it has more samples then {}. X.shape={!s}".format(int(num_samples), X.shape))
         if labels is not None:
             subsample = []
             for _, _, _, _, index, _ in scatter_label_generator(labels, X, (0, None, None)):
@@ -285,7 +285,10 @@ def get_x_y_var(model):
         X = model.X.mean.values
         X_variance = model.X.variance.values
     else:
-        X = model.X.values
+        try:
+            X = model.X.values
+        except AttributeError:
+            X = model.X
         X_variance = None
     try:
         Y = model.Y.values
@@ -346,7 +349,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
             xmin,xmax = X.min(0),X.max(0)
         xmin, xmax = xmin-0.25*(xmax-xmin), xmax+0.25*(xmax-xmin)
     elif len(plot_limits) == 2:
-        xmin, xmax = plot_limits
+        xmin, xmax = map(np.atleast_1d, plot_limits)
     else:
         raise ValueError("Bad limits for plotting")
 

@@ -46,7 +46,7 @@ def plot_mean(self, plot_limits=None, fixed_inputs=None,
     """
     Plot the mean of the GP.
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -116,7 +116,7 @@ def plot_confidence(self, lower=2.5, upper=97.5, plot_limits=None, fixed_inputs=
     E.g. the 95% confidence interval is $2.5, 97.5$.
     Note: Only implemented for one dimension!
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -170,7 +170,7 @@ def plot_samples(self, plot_limits=None, fixed_inputs=None,
     """
     Plot the mean of the GP.
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -231,7 +231,7 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
     E.g. the 95% confidence interval is $2.5, 97.5$.
     Note: Only implemented for one dimension!
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -288,7 +288,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     """
     Convenience function for plotting the fit of a GP.
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -319,9 +319,17 @@ def plot(self, plot_limits=None, fixed_inputs=None,
     :param {2d|3d} projection: plot in 2d or 3d?
     :param bool legend: convenience, whether to put a legend on the plot or not.
     """
-    canvas, _ = pl().new_canvas(projection=projection, **kwargs)
     X = get_x_y_var(self)[0]
     helper_data = helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution)
+    xmin, xmax = helper_data[5:7]
+    free_dims = helper_data[1]
+
+    if not 'xlim' in kwargs:
+        kwargs['xlim'] = (xmin[0], xmax[0])
+    if not 'ylim' in kwargs and len(free_dims) == 2:
+        kwargs['ylim'] = (xmin[1], xmax[1])
+
+    canvas, _ = pl().new_canvas(projection=projection, **kwargs)
     helper_prediction = helper_predict_with_model(self, helper_data[2], plot_raw,
                                           apply_link, np.linspace(2.5, 97.5, levels*2) if plot_density else (lower,upper),
                                           get_which_data_ycols(self, which_data_ycols),
@@ -330,9 +338,11 @@ def plot(self, plot_limits=None, fixed_inputs=None,
         # It does not make sense to plot the data (which lives not in the latent function space) into latent function space.
         plot_data = False
     plots = {}
+    if hasattr(self, 'Z') and plot_inducing:
+        plots.update(_plot_inducing(self, canvas, visible_dims, projection, 'Inducing'))
     if plot_data:
-        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data"))
-        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, "Data Error"))
+        plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data"))
+        plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data Error"))
     plots.update(_plot(self, canvas, plots, helper_data, helper_prediction, levels, plot_inducing, plot_density, projection))
     if plot_raw and (samples_likelihood > 0):
         helper_prediction = helper_predict_with_model(self, helper_data[2], False,
@@ -340,8 +350,6 @@ def plot(self, plot_limits=None, fixed_inputs=None,
                                       get_which_data_ycols(self, which_data_ycols),
                                       predict_kw, samples_likelihood)
         plots.update(_plot_samples(canvas, helper_data, helper_prediction, projection, "Lik Samples"))
-    if hasattr(self, 'Z') and plot_inducing:
-        plots.update(_plot_inducing(self, canvas, visible_dims, projection, 'Inducing'))
     return pl().add_to_canvas(canvas, plots, legend=legend)
 
 
@@ -362,7 +370,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
 
     If you want fine graned control use the specific plotting functions supplied in the model.
 
-    You can deactivate the legend for this one plot by supplying None to label. 
+    You can deactivate the legend for this one plot by supplying None to label.
 
     Give the Y_metadata in the predict_kw if you need it.
 
@@ -389,7 +397,7 @@ def plot_f(self, plot_limits=None, fixed_inputs=None,
     :param dict error_kwargs: kwargs for the error plot for the plotting library you are using
     :param kwargs plot_kwargs: kwargs for the data plot for the plotting library you are using
     """
-    plot(self, plot_limits, fixed_inputs, resolution, True,
+    return plot(self, plot_limits, fixed_inputs, resolution, True,
          apply_link, which_data_ycols, which_data_rows,
          visible_dims, levels, samples, 0,
          lower, upper, plot_data, plot_inducing,

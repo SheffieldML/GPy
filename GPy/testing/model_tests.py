@@ -316,10 +316,12 @@ class MiscTests(unittest.TestCase):
         X = (2 * np.pi) * np.random.random(151) - np.pi
         Y = np.sin(X) + np.random.normal(0,0.2,151)
         Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
+        Y = np.abs(Y)
         
         import matplotlib.pyplot as plt
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
+        #warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
+        warp_f = GPy.util.warping_functions.LogisticFunction(n_terms=2)
         warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
 
         m = GPy.models.GPRegression(X[:, None], Y[:, None])

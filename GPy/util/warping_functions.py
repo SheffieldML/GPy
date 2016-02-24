@@ -338,7 +338,7 @@ class LogisticFunction(WarpingFunction):
             return grad, logistic_term, logistic_grad
         return grad
 
-    def fgrad_y_psi(self, y, psi):
+    def fgrad_y_psi(self, y, return_covar_chain=False):
         """
         gradient of f w.r.t to y and psi
 
@@ -351,7 +351,7 @@ class LogisticFunction(WarpingFunction):
         for i in xrange(self.n_terms):
             a, b, c  = mpsi[i]
             gradients[:, :, i, 0] = b * l_grad[i].T
-            b2l_term = b - (2 * l_term[i])
+            b2l_term = b - (2 * l_term[i].T)
             al_grad = a * l_grad[i].T
             #gradients[:, :, i, 1] = a * (d[i] - 2.0 * s[i] * r[i] * (1.0/np.cosh(s[i])) ** 2).T
             gradients[:, :, i, 1] = (1 + ((y + c) * b2l_term)) * al_grad

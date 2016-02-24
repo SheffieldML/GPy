@@ -49,7 +49,7 @@ class WarpingFunction(Parameterized):
         plt.show()
 
 
-class TanhWarpingFunction(WarpingFunction):
+class TanhFunction(WarpingFunction):
 
     def __init__(self, n_terms=3, initial_y=None):
         """
@@ -59,7 +59,7 @@ class TanhWarpingFunction(WarpingFunction):
         self.num_parameters = 3 * self.n_terms + 1
         self.psi = np.ones((self.n_terms, 3))
 
-        super(TanhWarpingFunction, self).__init__(name='warp_tanh')
+        super(TanhFunction, self).__init__(name='warp_tanh')
         self.psi = Param('psi', self.psi)
         self.psi[:, :2].constrain_positive()
 

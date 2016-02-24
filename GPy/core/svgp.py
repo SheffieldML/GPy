@@ -89,7 +89,7 @@ class SVGP(SparseGP):
         """
         Return a new batch of X and Y by taking a chunk of data from the complete X and Y
         """
-        i = self.slicer.next()
+        i = next(self.slicer)
         return self.X_all[i], self.Y_all[i]
 
     def stochastic_grad(self, parameters):

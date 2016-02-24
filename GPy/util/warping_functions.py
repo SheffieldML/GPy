@@ -174,20 +174,14 @@ class TanhWarpingFunction_d(WarpingFunction):
         Transform y with f using parameter vector psi
         psi = [[a,b,c]]
 
-        :math:`f = \\sum_{terms} a * tanh(b*(y+c))`
+        :math:`f = (y * d) + \\sum_{terms} a * tanh(b *(y + c))`
         """
-        #1. check that number of params is consistent
-        # assert psi.shape[0] == self.n_terms, 'inconsistent parameter dimensions'
-        # assert psi.shape[1] == 4, 'inconsistent parameter dimensions'
-
         d = self.d
         mpsi = self.psi
-
-        #3. transform data
-        z = d*y.copy()
+        z = d * y.copy()
         for i in range(len(mpsi)):
-            a,b,c = mpsi[i]
-            z += a*np.tanh(b*(y+c))
+            a, b, c = mpsi[i]
+            z += a * np.tanh(b * (y + c))
         return z
 
     def f_inv(self, z, max_iterations=100, y=None):
@@ -214,7 +208,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         while it == 0 or (np.abs(update).sum() > 1e-10 and it < max_iterations):
             fy = self.f(y)
             fgrady = self.fgrad_y(y)
-            update = (fy - z)/fgrady
+            update = (fy - z) / fgrady
             y -= update
             it += 1
         if it == max_iterations:
@@ -226,17 +220,18 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
         gradient of f w.r.t to y ([N x 1])
 
-        :returns: Nx1 vector of derivatives, unless return_precalc is true, then it also returns the precomputed stuff
+        :returns: Nx1 vector of derivatives, unless return_precalc is true, 
+        then it also returns the precomputed stuff
         """
         d = self.d
         mpsi = self.psi
 
         # vectorized version
-        S = (mpsi[:,1]*(y[:,:,None] + mpsi[:,2])).T
+        S = (mpsi[:,1] * (y[:,:,None] + mpsi[:,2])).T
         R = np.tanh(S)
-        D = 1-R**2
+        D = 1 - (R ** 2)
 
-        GRAD = (d + (mpsi[:,0:1][:,:,None]*mpsi[:,1:2][:,:,None]*D).sum(axis=0)).T
+        GRAD = (d + (mpsi[:,0:1][:,:,None] * mpsi[:,1:2][:,:,None] * D).sum(axis=0)).T
 
         if return_precalc:
             return GRAD, S, R, D
@@ -255,28 +250,27 @@ class TanhWarpingFunction_d(WarpingFunction):
         gradients = np.zeros((y.shape[0], y.shape[1], len(mpsi), 4))
         for i in range(len(mpsi)):
             a,b,c  = mpsi[i]
-            gradients[:,:,i,0] = (b*(1.0/np.cosh(s[i]))**2).T
-            gradients[:,:,i,1] = a*(d[i] - 2.0*s[i]*r[i]*(1.0/np.cosh(s[i]))**2).T
-            gradients[:,:,i,2] = (-2.0*a*(b**2)*r[i]*((1.0/np.cosh(s[i]))**2)).T
-        gradients[:,:,0,3] = 1.0
+            gradients[:, :, i, 0] = (b * (1.0/np.cosh(s[i])) ** 2).T
+            gradients[:, :, i, 1] = a * (d[i] - 2.0 * s[i] * r[i] * (1.0/np.cosh(s[i])) ** 2).T
+            gradients[:, :, i, 2] = (-2.0 * a * (b ** 2) * r[i] * ((1.0 / np.cosh(s[i])) ** 2)).T
+        gradients[:, :, 0, 3] = 1.0
 
         if return_covar_chain:
             covar_grad_chain = np.zeros((y.shape[0], y.shape[1], len(mpsi), 4))
-
             for i in range(len(mpsi)):
                 a,b,c = mpsi[i]
                 covar_grad_chain[:, :, i, 0] = (r[i]).T
-                covar_grad_chain[:, :, i, 1] = (a*(y + c) * ((1.0/np.cosh(s[i]))**2).T)
-                covar_grad_chain[:, :, i, 2] = a*b*((1.0/np.cosh(s[i]))**2).T
+                covar_grad_chain[:, :, i, 1] = (a * (y + c) * ((1.0 / np.cosh(s[i])) ** 2).T)
+                covar_grad_chain[:, :, i, 2] = a * b * ((1.0 / np.cosh(s[i])) ** 2).T
             covar_grad_chain[:, :, 0, 3] = y
-
             return gradients, covar_grad_chain
 
         return gradients
 
     def _get_param_names(self):
         variables = ['a', 'b', 'c', 'd']
-        names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] for q in range(self.n_terms)],[])
+        names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] 
+                     for q in range(self.n_terms)],[])
         names.append('warp_tanh_d')
         return names
 

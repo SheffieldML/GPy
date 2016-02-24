@@ -153,7 +153,9 @@ class TanhWarpingFunction(WarpingFunction):
 class TanhWarpingFunction_d(WarpingFunction):
 
     def __init__(self, n_terms=3, initial_y=None):
-        """n_terms specifies the number of tanh terms to be used"""
+        """
+        n_terms specifies the number of tanh terms to be used
+        """
         self.n_terms = n_terms
         self.num_parameters = 3 * self.n_terms + 1
         self.psi = np.ones((self.n_terms, 3))
@@ -298,12 +300,7 @@ class LogFunction(WarpingFunction):
     """
     def __init__(self):
         self.num_parameters = 0
-        #self.psi = Param('psi', np.zeros((1,3)))
-        #self.d = Param('%s' % ('d'), 0.0, Logexp())
         super(LogFunction, self).__init__(name='log')
-        #self.link_parameter(self.psi)
-        #self.link_parameter(self.d)
-
 
     def f(self, y):
         return np.log(y)
@@ -315,11 +312,9 @@ class LogFunction(WarpingFunction):
         pass
 
     def fgrad_y_psi(self, y, return_covar_chain=False):
-        gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
-        gradients = 0
         if return_covar_chain:
-            return gradients, gradients
-        return gradients
+            return 0, 0
+        return 0
 
     def f_inv(self, z, y=None):
         return np.exp(z)
@@ -332,12 +327,7 @@ class IdentityFunction(WarpingFunction):
     """
     def __init__(self):
         self.num_parameters = 0
-        #self.psi = Param('psi', np.zeros((1,3)))
-        #self.d = Param('%s' % ('d'), 0.0, Logexp())
         super(IdentityFunction, self).__init__(name='identity')
-        #self.link_parameter(self.psi)
-        #self.link_parameter(self.d)
-
         
     def f(self, y):
         return y
@@ -349,11 +339,9 @@ class IdentityFunction(WarpingFunction):
         pass
 
     def fgrad_y_psi(self, y, return_covar_chain=False):
-        gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
-        gradients = 0
         if return_covar_chain:
-            return gradients, gradients
-        return gradients
+            return 0, 0
+        return 0
         
     def f_inv(self, z, y=None):
         return z

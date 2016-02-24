@@ -50,7 +50,12 @@ class WarpingFunction(Parameterized):
 
 
 class TanhFunction(WarpingFunction):
-
+    """
+    This is the function proposed in Snelson et al.:
+    A sum of tanh functions with linear trends outside
+    the range. Notice the term 'd', which scales the
+    linear trend.
+    """
     def __init__(self, n_terms=3, initial_y=None):
         """
         n_terms specifies the number of tanh terms to be used
@@ -58,11 +63,9 @@ class TanhFunction(WarpingFunction):
         self.n_terms = n_terms
         self.num_parameters = 3 * self.n_terms + 1
         self.psi = np.ones((self.n_terms, 3))
-
         super(TanhFunction, self).__init__(name='warp_tanh')
         self.psi = Param('psi', self.psi)
         self.psi[:, :2].constrain_positive()
-
         self.d = Param('%s' % ('d'), 1.0, Logexp())
         self.link_parameter(self.psi)
         self.link_parameter(self.d)

@@ -319,7 +319,7 @@ class MiscTests(unittest.TestCase):
         
         import matplotlib.pyplot as plt
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.TanhWarpingFunction_d(n_terms=2)
+        warp_f = GPy.util.warping_functions.TanhWarpingFunction(n_terms=2)
         warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
 
         m = GPy.models.GPRegression(X[:, None], Y[:, None])

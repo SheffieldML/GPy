@@ -5,7 +5,7 @@ import numpy as np
 from ..util.warping_functions import *
 from ..core import GP
 from .. import likelihoods
-from GPy.util.warping_functions import TanhWarpingFunction_d
+from GPy.util.warping_functions import TanhWarpingFunction
 from GPy import kern
 
 class WarpedGP(GP):
@@ -15,7 +15,7 @@ class WarpedGP(GP):
             kernel = kern.RBF(X.shape[1])
 
         if warping_function == None:
-            self.warping_function = TanhWarpingFunction_d(warping_terms)
+            self.warping_function = TanhWarpingFunction(warping_terms)
             self.warping_params = (np.random.randn(self.warping_function.n_terms * 3 + 1) * 1)
         else:
             self.warping_function = warping_function

@@ -9,17 +9,18 @@ from GPy.util.warping_functions import TanhWarpingFunction
 from GPy import kern
 
 class WarpedGP(GP):
+    """
+    This defines a GP Regression model that applies a 
+    warping function to the output.
+    """
     def __init__(self, X, Y, kernel=None, warping_function=None, warping_terms=3):
-
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
-
         if warping_function == None:
             self.warping_function = TanhWarpingFunction(warping_terms)
             self.warping_params = (np.random.randn(self.warping_function.n_terms * 3 + 1) * 1)
         else:
             self.warping_function = warping_function
-
         self.scale_data = False
         if self.scale_data:
             Y = self._scale_data(Y)
@@ -27,7 +28,6 @@ class WarpedGP(GP):
         self.Y_untransformed = Y.copy()
         self.predict_in_warped_space = True
         likelihood = likelihoods.Gaussian()
-
         GP.__init__(self, X, self.transform_data(), likelihood=likelihood, kernel=kernel)
         self.link_parameter(self.warping_function)
 
@@ -40,29 +40,22 @@ class WarpedGP(GP):
         return (Y + 0.5) * (self._Ymax - self._Ymin) + self._Ymin
 
     def parameters_changed(self):
+        """
+        Notice that we update the warping function gradients here.
+        """
         self.Y[:] = self.transform_data()
         super(WarpedGP, self).parameters_changed()
-
         Kiy = self.posterior.woodbury_vector.flatten()
-    
         self.warping_function.update_grads(self.Y_untransformed, Kiy)
-
-        #grad_y = self.warping_function.fgrad_y(self.Y_untransformed)
-        #grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Y_untransformed,
-        #                                                         return_covar_chain=True)
-        #djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
-        #dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
-
-        #warping_grads = -dquad_dpsi + djac_dpsi
-
-        #self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
-        #self.warping_function.d.gradient[:] = warping_grads[0, -1]
 
     def transform_data(self):
         Y = self.warping_function.f(self.Y_untransformed.copy()).copy()
         return Y
 
     def log_likelihood(self):
+        """
+        Notice we add the jacobian of the warping function here.
+        """
         ll = GP.log_likelihood(self)
         jacobian = self.warping_function.fgrad_y(self.Y_untransformed)
         return ll + np.log(jacobian).sum()
@@ -148,7 +141,8 @@ class WarpedGP(GP):
 
     def log_predictive_density(self, x_test, y_test, Y_metadata=None):
         """
-        Calculation of the log predictive density
+        Calculation of the log predictive density. Notice we add
+        the jacobian of the warping function here.
 
         .. math:
             p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})

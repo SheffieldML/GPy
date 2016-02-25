@@ -21,18 +21,18 @@ env:
 
 before_install:
   - export CONDA_CACHED=1
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
-      then export OS=Linux; 
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+      then export OS=Linux;
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
       then export OS=MacOSX;
-      brew install pandoc; 
-    else 
-      echo "OS not supported yet"; 
+      brew install pandoc;
+    else
+      echo "OS not supported yet";
       exit 1; fi;
-  - if [[ $PYTHON_VERSION == "2.7" ]]; 
-      then export MINICONDA=Miniconda; 
-    elif [[ $PYTHON_VERSION == 3* ]]; 
-      then export MINICONDA=Miniconda3; 
+  - if [[ $PYTHON_VERSION == "2.7" ]];
+      then export MINICONDA=Miniconda;
+    elif [[ $PYTHON_VERSION == 3* ]];
+      then export MINICONDA=Miniconda3;
     else echo "Could not find python version";exit 1; fi;
   - if [ ! -d $HOME/download/ ]; then mkdir $HOME/download/; fi;
   - if [ ! -d $HOME/install/ ]; then mkdir $HOME/install/; fi;
@@ -43,7 +43,13 @@ before_install:
   - export PATH="$MINICONDA_INSTALL/bin:$PATH";
 
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx;
+  - n=0
+    until [ $n -ge 5 ]
+    do # Retry 5 times, as weird 404 errors seem to popup...
+      conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx && break
+      n=$[$n+1]
+      sleep 15
+    done
   - pip install codecov
   - pip install pypandoc
   - python setup.py develop
@@ -60,16 +66,16 @@ before_deploy:
   - sphinx-apidoc -o source/ ../GPy
   - make html
   - cd ../
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
       then export DIST='sdist';
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
       then export DIST='bdist_wheel';
     fi;
 
 deploy:
   provider: pypi
   user: maxz
-  password: 
+  password:
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
     tags: false

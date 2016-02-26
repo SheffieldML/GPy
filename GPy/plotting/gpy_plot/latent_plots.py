@@ -188,7 +188,7 @@ def plot_magnification(self, labels=None, which_indices=None,
     _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
-    if (labels is not None):
+    if (labels is not None) and legend:
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     else:
         labels = np.ones(self.num_data)
@@ -254,7 +254,7 @@ def plot_latent(self, labels=None, which_indices=None,
     _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
-    if (labels is not None):
+    if (labels is not None) and legend:
         legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
     else:
         labels = np.ones(self.num_data)

@@ -190,7 +190,7 @@ def plot_magnification(self, labels=None, which_indices=None,
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
     plots = {}
-    if legend:
+    if legend and plot_scatter:
         if (labels is not None):
             legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
         else:

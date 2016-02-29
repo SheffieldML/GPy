@@ -152,7 +152,7 @@ class TanhWarpingFunction(WarpingFunction):
 
 class TanhWarpingFunction_d(WarpingFunction):
 
-    def __init__(self, n_terms=3):
+    def __init__(self, n_terms=3, initial_y=None):
         """n_terms specifies the number of tanh terms to be used"""
         self.n_terms = n_terms
         self.num_parameters = 3 * self.n_terms + 1
@@ -165,6 +165,7 @@ class TanhWarpingFunction_d(WarpingFunction):
         self.d = Param('%s' % ('d'), 1.0, Logexp())
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
+        self.initial_y = initial_y
 
     def f(self, y):
         """
@@ -187,7 +188,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             z += a*np.tanh(b*(y+c))
         return z
 
-    def f_inv(self, z, max_iterations=1000, y=None):
+    def f_inv(self, z, max_iterations=100, y=None):
         """
         calculate the numerical inverse of f
 
@@ -195,8 +196,15 @@ class TanhWarpingFunction_d(WarpingFunction):
         """
 
         z = z.copy()
+        
         if y is None:
-            y = np.ones_like(z)
+            # The idea here is to initialize y with +1 where
+            # z is positive and -1 where it is negative.
+            # For negative z, Newton-Raphson diverges 
+            # if we initialize y with a positive value (and vice-versa).
+            y = ((z > 0) * 1.) - (z <= 0)
+            if self.initial_y is not None:
+                y *= self.initial_y
 
         it = 0
         update = np.inf
@@ -209,6 +217,7 @@ class TanhWarpingFunction_d(WarpingFunction):
             it += 1
         if it == max_iterations:
             print("WARNING!!! Maximum number of iterations reached in f_inv ")
+            print("Sum of updates: %.4f" % np.sum(update))
         return y
 
     def fgrad_y(self, y, return_precalc=False):
@@ -269,6 +278,52 @@ class TanhWarpingFunction_d(WarpingFunction):
         names.append('warp_tanh_d')
         return names
 
+    def update_grads(self, Y_untransformed, Kiy):
+        grad_y = self.fgrad_y(Y_untransformed)
+        grad_y_psi, grad_psi = self.fgrad_y_psi(Y_untransformed,
+                                                return_covar_chain=True)
+        djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
+        dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
+
+        warping_grads = -dquad_dpsi + djac_dpsi
+
+        self.psi.gradient[:] = warping_grads[:, :-1]
+        self.d.gradient[:] = warping_grads[0, -1]
+
+
+class LogFunction(WarpingFunction):
+    """
+    Easy wrapper for applying a fixed warping function to
+    positive-only values.
+    """
+    def __init__(self):
+        self.num_parameters = 0
+        #self.psi = Param('psi', np.zeros((1,3)))
+        #self.d = Param('%s' % ('d'), 0.0, Logexp())
+        super(LogFunction, self).__init__(name='log')
+        #self.link_parameter(self.psi)
+        #self.link_parameter(self.d)
+
+
+    def f(self, y):
+        return np.log(y)
+
+    def fgrad_y(self, y):
+        return 1. / y
+
+    def update_grads(self, Y_untransformed, Kiy):
+        pass
+
+    def fgrad_y_psi(self, y, return_covar_chain=False):
+        gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
+        gradients = 0
+        if return_covar_chain:
+            return gradients, gradients
+        return gradients
+
+    def f_inv(self, z, y=None):
+        return np.exp(z)
+
 
 class IdentityFunction(WarpingFunction):
     """
@@ -276,12 +331,12 @@ class IdentityFunction(WarpingFunction):
     and should not be used in practice.
     """
     def __init__(self):
-        self.num_parameters = 4
-        self.psi = Param('psi', np.zeros((1,3)))
-        self.d = Param('%s' % ('d'), 1.0, Logexp())
+        self.num_parameters = 0
+        #self.psi = Param('psi', np.zeros((1,3)))
+        #self.d = Param('%s' % ('d'), 0.0, Logexp())
         super(IdentityFunction, self).__init__(name='identity')
-        self.link_parameter(self.psi)
-        self.link_parameter(self.d)
+        #self.link_parameter(self.psi)
+        #self.link_parameter(self.d)
 
         
     def f(self, y):
@@ -290,8 +345,12 @@ class IdentityFunction(WarpingFunction):
     def fgrad_y(self, y):
         return np.ones(y.shape)
 
+    def update_grads(self, Y_untransformed, Kiy):
+        pass
+
     def fgrad_y_psi(self, y, return_covar_chain=False):
         gradients = np.zeros((y.shape[0], y.shape[1], len(self.psi), 4))
+        gradients = 0
         if return_covar_chain:
             return gradients, gradients
         return gradients

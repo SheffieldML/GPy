@@ -7,7 +7,6 @@ import numpy as np
 from paramz.caching import Cache_this
 from . import PSICOMP_RBF
 
-
 gpu_code = """
     // define THREADNUM
 
@@ -287,8 +286,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
         
         from pycuda.compiler import SourceModule
-        from ....util.gpu_init import initGPU
-        initGPU()
+        import GPy.util.gpu_init
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None

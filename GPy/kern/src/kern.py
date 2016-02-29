@@ -110,7 +110,7 @@ class Kern(Parameterized):
         .. math::
             \psi_2^{m,m'} = \sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
         """
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
     def psi2n(self, Z, variational_posterior):
         """
         .. math::
@@ -118,7 +118,25 @@ class Kern(Parameterized):
 
         Thus, we do not sum out n, compared to psi2
         """
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_n=True)[2]
+    def psicov(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_2^{m,m'} - \psi_1^T \psi_1 =\sum_{i=0}^{n} E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})] - E_{q(X)}[ k(Z_m, X_n)] E_{q(X)}[k(X_n, Z_{m'})]
+
+        Thus, we do not sum out n, compared to psi2
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=True)[2]
+    def psicovn(self, Z, variational_posterior):
+        """
+        .. math::
+            \psi_2^{n,m,m'} - \psi_1^T \psi_1 = E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})] - E_{q(X)}[ k(Z_m, X_n)] E_{q(X)}[k(X_n, Z_{m'})]
+
+        Thus, we do not sum out n, compared to psi2
+        """
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=True, return_n=True)[2]
+
+
     def gradients_X(self, dL_dK, X, X2):
         """
         .. math::
@@ -154,7 +172,7 @@ class Kern(Parameterized):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         """
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
@@ -174,35 +192,19 @@ class Kern(Parameterized):
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                psi0=None, psi1=None, psi2=None):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
-
-    def plot(self, x=None, fignum=None, ax=None, title=None, plot_limits=None, resolution=None, **mpl_kwargs):
-        """
-        plot this kernel.
-        :param x: the value to use for the other kernel argument (kernels are a function of two variables!)
-        :param fignum: figure number of the plot
-        :param ax: matplotlib axis to plot on
-        :param title: the matplotlib title
-        :param plot_limits: the range over which to plot the kernel
-        :resolution: the resolution of the lines used in plotting
-        :mpl_kwargs avalid keyword arguments to pass through to matplotlib (e.g. lw=7)
-        """
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ...plotting.matplot_dep import kernel_plots
-        kernel_plots.plot(self, x, fignum, ax, title, plot_limits, resolution, **mpl_kwargs)
 
     def input_sensitivity(self, summarize=True):
         """

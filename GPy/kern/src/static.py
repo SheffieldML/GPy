@@ -31,10 +31,10 @@ class Static(Kern):
     def gradients_XX_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(Z.shape)
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
     def psi0(self, Z, variational_posterior):
@@ -78,7 +78,7 @@ class White(Static):
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         self.variance.gradient = dL_dpsi0.sum()
 
 class Bias(Static):
@@ -107,7 +107,7 @@ class Bias(Static):
         ret[:] = self.variance*self.variance
         return ret
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         if dL_dpsi2.ndim == 2:
             self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
                                     + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0])
@@ -143,6 +143,6 @@ class Fixed(Static):
     def psi2n(self, Z, variational_posterior):
         return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         self.variance.gradient = dL_dpsi0.sum()
 

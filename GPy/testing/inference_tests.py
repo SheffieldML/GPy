@@ -50,7 +50,6 @@ class InferenceXTestCase(unittest.TestCase):
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X, mi.X, decimal=2)
 
-
 class HMCSamplerTest(unittest.TestCase):
 
     def test_sampling(self):

@@ -212,6 +212,12 @@ class GP(Model):
                         = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
             \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
         """
+        if hasattr(self.posterior, '_raw_predict'):
+            mu, var = self.posterior._raw_predict(kern=self.kern if kern is None else kern, Xnew=Xnew, pred_var=self._predictive_variable, full_cov=full_cov)
+            if self.mean_function is not None:
+                mu += self.mean_function.f(Xnew)
+            return mu, var
+            
         if kern is None:
             kern = self.kern
 

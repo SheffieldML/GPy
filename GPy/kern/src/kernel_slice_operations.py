@@ -32,6 +32,8 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'psi1', _slice_psi)
         put_clean(dct, 'psi2', _slice_psi)
         put_clean(dct, 'psi2n', _slice_psi)
+        put_clean(dct, 'psicov', _slice_psi)
+        put_clean(dct, 'psicovn', _slice_psi)
         put_clean(dct, 'update_gradients_expectations', _slice_update_gradients_expectations)
         put_clean(dct, 'gradients_Z_expectations', _slice_gradients_Z_expectations)
         put_clean(dct, 'gradients_qX_expectations', _slice_gradients_qX_expectations)
@@ -143,27 +145,25 @@ def _slice_psi(f):
 
 def _slice_update_gradients_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         with _Slice_wrap(self, Z, variational_posterior) as s:
-            ret = f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2)
+            ret = f(self, dL_dpsi0, dL_dpsi1,dL_dpsi2, s.X, s.X2, dpsicov=dpsicov)
         return ret
     return wrap
 
 def _slice_gradients_Z_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-             psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
+    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         with _Slice_wrap(self, Z, variational_posterior) as s:
-            ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2))
+            ret = s.handle_return_array(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X, s.X2, dpsicov=dpsicov))
         return ret
     return wrap
 
 def _slice_gradients_qX_expectations(f):
     @wraps(f)
-    def wrap(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-             psi0=None, psi1=None, psi2=None, Lpsi0=None, Lpsi1=None, Lpsi2=None):
+    def wrap(self, dL_dpsi0, dL_dpsi1,  dL_dpsi2, Z, variational_posterior, dpsicov=False):
         with _Slice_wrap(self, variational_posterior, Z) as s:
-            ret = list(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X2, s.X))
+            ret = list(f(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, s.X2, s.X, dpsicov=dpsicov))
             r2 = ret[:2]
             ret[0] = s.handle_return_array(r2[0])
             ret[1] = s.handle_return_array(r2[1])

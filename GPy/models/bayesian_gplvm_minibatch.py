@@ -90,8 +90,8 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                             variational_posterior=self.X,
                                             Z=self.Z, dL_dpsi0=full_values['dL_dpsi0'],
                                             dL_dpsi1=full_values['dL_dpsi1'],
-                                            dL_dpsi2=full_values['dL_dpsi2'],
-                                            psi0=self.psi0, psi1=self.psi1, psi2=self.psi2)
+                                            dL_dpsi2=full_values['dL_dpsi2']
+                                            )
 
             self.X.mean.gradient = meangrad_tmp
             self.X.variance.gradient = vargrad_tmp

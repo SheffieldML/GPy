@@ -22,6 +22,44 @@ class MiscTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
         m.predict(m.X)
 
+    def test_raw_predict_numerical_stability(self):
+        """
+        Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
+        Thanks simbartonels@github for reporting the bug and providing the following example.
+        """
+        
+        # set seed for reproducability
+        np.random.seed(3)
+        # Definition of the Branin test function
+        def branin(X):
+            y = (X[:,1]-5.1/(4*np.pi**2)*X[:,0]**2+5*X[:,0]/np.pi-6)**2
+            y += 10*(1-1/(8*np.pi))*np.cos(X[:,0])+10
+            return(y)
+        # Training set defined as a 5*5 grid:
+        xg1 = np.linspace(-5,10,5)
+        xg2 = np.linspace(0,15,5)
+        X = np.zeros((xg1.size * xg2.size,2))
+        for i,x1 in enumerate(xg1):
+            for j,x2 in enumerate(xg2):
+                X[i+xg1.size*j,:] = [x1,x2]
+        Y = branin(X)[:,None]
+        # Fit a GP
+        # Create an exponentiated quadratic plus bias covariance function
+        k = GPy.kern.RBF(input_dim=2, ARD = True)
+        # Build a GP model
+        m = GPy.models.GPRegression(X,Y,k)
+        # fix the noise variance
+        m.likelihood.variance.fix(1e-5)
+        # Randomize the model and optimize
+        m.randomize()
+        m.optimize()
+        # Compute the mean of model prediction on 1e5 Monte Carlo samples
+        Xp = np.random.uniform(size=(1e5,2))
+        Xp[:,0] = Xp[:,0]*15-5
+        Xp[:,1] = Xp[:,1]*15
+        _, var = m.predict(Xp)
+        self.assertTrue(np.all(var>=0.))
+
     def test_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)

@@ -307,42 +307,37 @@ class MiscTests(unittest.TestCase):
  
         np.testing.assert_almost_equal(preds, warp_preds)
 
-    @unittest.skip('Comment this to plot the modified sine function')
+    #@unittest.skip('Comment this to plot the modified sine function')
     def test_warped_gp_sine(self):
         """
         A test replicating the sine regression problem from
         Snelson's paper.
         """
         X = (2 * np.pi) * np.random.random(151) - np.pi
-        Y = np.sin(X) + np.random.normal(0,0.1,151)
-        Y = np.exp(Y) - 5
-        #Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y]) + 0
+        Y = np.sin(X) + np.random.normal(0,0.2,151)
+        Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
         
-        #np.seterr(over='raise')
         import matplotlib.pyplot as plt
         warp_k = GPy.kern.RBF(1)
         warp_f = GPy.util.warping_functions.TanhWarpingFunction_d(n_terms=2)
         warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
-        #warp_m['.*variance.*'].constrain_fixed(0.25)
-        #warp_m['.*lengthscale.*'].constrain_fixed(1)
-        #warp_m['warp_tanh.d'].constrain_fixed(1)
-        #warp_m.randomize()
-        #warp_m['.*warp_tanh.psi*'][:,0:2].constrain_bounded(0,100)
-        #warp_m['.*warp_tanh.psi*'][:,0:1].constrain_fixed(1)
-        
-        #print(warp_m.checkgrad())
-        #warp_m.plot()
-        #plt.show()
 
-        warp_m.optimize_restarts(parallel=True, robust=True)
-        #print(warp_m.checkgrad())
+        m = GPy.models.GPRegression(X[:, None], Y[:, None])
+        m.optimize_restarts(parallel=False, robust=True, num_restarts=5)
+        warp_m.optimize_restarts(parallel=False, robust=True, num_restarts=5)
         print(warp_m)
         print(warp_m['.*warp.*'])
         warp_m.predict_in_warped_space = False
         warp_m.plot()
+        import ipdb; ipdb.set_trace()
         warp_m.predict_in_warped_space = True
         warp_m.plot()
+        m.plot()
         warp_f.plot(X.min()-10, X.max()+10)
+
+
+
+
         plt.show()
 
         

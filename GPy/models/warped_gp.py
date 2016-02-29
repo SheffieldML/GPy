@@ -44,17 +44,19 @@ class WarpedGP(GP):
         super(WarpedGP, self).parameters_changed()
 
         Kiy = self.posterior.woodbury_vector.flatten()
+    
+        self.warping_function.update_grads(self.Y_untransformed, Kiy)
 
-        grad_y = self.warping_function.fgrad_y(self.Y_untransformed)
-        grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Y_untransformed,
-                                                                 return_covar_chain=True)
-        djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
-        dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
+        #grad_y = self.warping_function.fgrad_y(self.Y_untransformed)
+        #grad_y_psi, grad_psi = self.warping_function.fgrad_y_psi(self.Y_untransformed,
+        #                                                         return_covar_chain=True)
+        #djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
+        #dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
 
-        warping_grads = -dquad_dpsi + djac_dpsi
+        #warping_grads = -dquad_dpsi + djac_dpsi
 
-        self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
-        self.warping_function.d.gradient[:] = warping_grads[0, -1]
+        #self.warping_function.psi.gradient[:] = warping_grads[:, :-1]
+        #self.warping_function.d.gradient[:] = warping_grads[0, -1]
 
     def transform_data(self):
         Y = self.warping_function.f(self.Y_untransformed.copy()).copy()
@@ -96,11 +98,14 @@ class WarpedGP(GP):
         return arg1 - (arg2 ** 2)
 
     def predict(self, Xnew, which_parts='all', pred_init=None, full_cov=False, Y_metadata=None,
-                median=False, deg_gauss_hermite=100):
-        # normalize X values
-        # Xnew = (Xnew.copy() - self._Xoffset) / self._Xscale
+                median=False, deg_gauss_hermite=100, likelihood=None):
+        """
+        Prediction results depend on:
+        - The value of the self.predict_in_warped_space flag
+        - The median flag passed as argument
+        The likelihood keyword is never used, it is just to follow the plotting API.
+        """
         mu, var = GP._raw_predict(self, Xnew)
-
         # now push through likelihood
         mean, var = self.likelihood.predictive_values(mu, var)
 
@@ -116,13 +121,11 @@ class WarpedGP(GP):
         else:
             wmean = mean
             wvar = var
-
         if self.scale_data:
             pred = self._unscale_data(pred)
-
         return wmean, wvar
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, likelihood=None, median=False):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -137,15 +140,29 @@ class WarpedGP(GP):
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
-        #return [a, b]
         if not self.predict_in_warped_space:
             return [a, b]
-        #print a.shape
         new_a = self.warping_function.f_inv(a)
         new_b = self.warping_function.f_inv(b)
-
         return [new_a, new_b]
-        #return self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+
+    def log_predictive_density(self, x_test, y_test, Y_metadata=None):
+        """
+        Calculation of the log predictive density
+
+        .. math:
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+
+        :param x_test: test locations (x_{*})
+        :type x_test: (Nx1) array
+        :param y_test: test observations (y_{*})
+        :type y_test: (Nx1) array
+        :param Y_metadata: metadata associated with the test points
+        """
+        mu_star, var_star = self._raw_predict(x_test)
+        fy = self.warping_function.f(y_test)
+        ll_lpd = self.likelihood.log_predictive_density(fy, mu_star, var_star, Y_metadata=Y_metadata)
+        return ll_lpd + np.log(self.warping_function.fgrad_y(y_test))
 
 
 if __name__ == '__main__':

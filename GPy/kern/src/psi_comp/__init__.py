@@ -8,7 +8,7 @@ from GPy.core.parameterization import variational
 
 class PSICOMP(Pickleable):
         
-    def psicomputations(self, kern, Z, qX, return_psi2_n=False):
+    def psicomputations(self, kern, Z, qX, return_psicov=False, return_n=False):
         raise NotImplementedError("Abstract method!")
     
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, qX):
@@ -22,10 +22,10 @@ from . import rbf_psi_comp, linear_psi_comp, ssrbf_psi_comp, sslinear_psi_comp
 
 class PSICOMP_RBF(PSICOMP):
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
+    def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
         variance, lengthscale = kern.variance, kern.lengthscale
         if isinstance(variational_posterior, variational.NormalPosterior):
-            return rbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=return_psi2_n)
+            return rbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior, return_psicov=return_psicov, return_n=return_n)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return ssrbf_psi_comp.psicomputations(variance, lengthscale, Z, variational_posterior)
         else:
@@ -44,10 +44,10 @@ class PSICOMP_RBF(PSICOMP):
 class PSICOMP_Linear(PSICOMP):
 
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
+    def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
         variances = kern.variances
         if isinstance(variational_posterior, variational.NormalPosterior):
-            return linear_psi_comp.psicomputations(variances, Z, variational_posterior, return_psi2_n=return_psi2_n)
+            return linear_psi_comp.psicomputations(variances, Z, variational_posterior, return_psicov=return_psicov, return_n=return_n)
         elif isinstance(variational_posterior, variational.SpikeAndSlabPosterior):
             return sslinear_psi_comp.psicomputations(variances, Z, variational_posterior)
         else:

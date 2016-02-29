@@ -492,6 +492,16 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
             self._test_kernel_param(k, psi2n=True)
             self._test_Z(k, psi2n=True)
             self._test_qX(k, psi2n=True)
+            
+    def test_psicov(self):
+        
+        from GPy.kern import RBF
+        Q = self.Z.shape[1]
+        kern = RBF(Q,ARD=True)
+        psicov = kern.psicov(self.Z, self.qX)
+        psi2 = kern.psi2(self.Z, self.qX)
+        psi1 = kern.psi1(self.Z, self.qX)
+        self.assertTrue(np.allclose(psicov, psi2-psi1.T.dot(psi1)))
 
     def _test_kernel_param(self, kernel, psi2n=False):
 

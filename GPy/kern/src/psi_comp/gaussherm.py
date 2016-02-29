@@ -39,7 +39,8 @@ class PSICOMP_GH(PSICOMP):
         return self.Xs
     
     @Cache_this(limit=10, ignore_args=(0,))
-    def psicomputations(self, kern, Z, qX, return_psi2_n=False):
+    def psicomputations(self, kern, Z, qX, return_psicov=False, return_n=False):
+        if return_psicov: raise NotImplementedError()
         mu, S = qX.mean.values, qX.variance.values
         N,M,Q = mu.shape[0],Z.shape[0],mu.shape[1]
         if self.cache_K: Xs = self.comp_K(Z, qX)
@@ -47,7 +48,7 @@ class PSICOMP_GH(PSICOMP):
         
         psi0 = np.zeros((N,))
         psi1 = np.zeros((N,M))
-        psi2 = np.zeros((N,M,M)) if return_psi2_n else np.zeros((M,M))
+        psi2 = np.zeros((N,M,M)) if return_n else np.zeros((M,M))
         for i in range(self.degree):
             if self.cache_K:
                 X = Xs[i]
@@ -56,7 +57,7 @@ class PSICOMP_GH(PSICOMP):
             psi0 += self.weights[i]* kern.Kdiag(X)
             Kfu = kern.K(X,Z)
             psi1 += self.weights[i]* Kfu
-            if return_psi2_n:
+            if return_n:
                 psi2 += self.weights[i]* Kfu[:,None,:]*Kfu[:,:,None]
             else:
                 psi2 += self.weights[i]* tdot(Kfu.T)

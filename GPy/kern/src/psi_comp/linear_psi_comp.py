@@ -8,7 +8,7 @@ The package for the Psi statistics computation of the linear kernel for Bayesian
 import numpy as np
 from ....util.linalg import tdot
 
-def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
+def psicomputations(variance, Z, variational_posterior, return_psicov=False, return_n=False):
     """
     Compute psi-statistics for ss-linear kernel
     """
@@ -23,7 +23,7 @@ def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
     psi0 = (variance*(np.square(mu)+S)).sum(axis=1)
     Zv = variance * Z
     psi1 = np.dot(mu,Zv.T)
-    if return_psi2_n:
+    if return_n:
         psi2 = psi1[:,:,None] * psi1[:,None,:] + np.dot(S[:,None,:] * Zv[None,:,:], Zv.T)
     else:
         psi2 = np.dot(S.sum(axis=0) * Zv, Zv.T) + tdot(psi1.T)

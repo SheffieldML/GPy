@@ -5,7 +5,7 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from paramz.caching import Cacher
 
-def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psicov=False, return_n=False):
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
@@ -15,9 +15,14 @@ def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2
     psi0 = np.empty(mu.shape[0])
     psi0[:] = variance
     psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
-    if not return_psi2_n: psi2 = psi2.sum(axis=0)
-    return psi0, psi1, psi2
+    if return_psicov:
+        psicov = __psicovcomputation(variance, lengthscale, Z, mu, S)
+        if not return_n: psicov = psicov.sum(axis=0)
+        return psi0, psi1, psicov
+    else:
+        psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
+        if not return_n: psi2 = psi2.sum(axis=0)
+        return psi0, psi1, psi2
 
 def __psi1computations(variance, lengthscale, Z, mu, S):
     # here are the "statistics" for psi1
@@ -27,8 +32,11 @@ def __psi1computations(variance, lengthscale, Z, mu, S):
     lengthscale2 = np.square(lengthscale)
 
     # psi1
-    _psi1_logdenom = np.log(S/lengthscale2+1.).sum(axis=-1) # N
-    _psi1_log = (_psi1_logdenom[:,None]+np.einsum('nmq,nq->nm',np.square(mu[:,None,:]-Z[None,:,:]),1./(S+lengthscale2)))/(-2.)
+    denom = 1./(S+lengthscale2)
+    _psi1_logdenom = np.log(S/lengthscale2+1.).sum(1)/-2. # N
+    mu_denom = mu*denom
+    _psi1_term2 = (mu_denom*mu).sum(1)[:,None]/-2. + mu_denom.dot(Z.T) - denom.dot(np.square(Z).T)/2.
+    _psi1_log = _psi1_logdenom[:,None] + _psi1_term2    
     _psi1 = variance*np.exp(_psi1_log)
 
     return _psi1
@@ -38,16 +46,64 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     # Produced intermediate results:
     # _psi2                MxM
 
-    N,M,Q = mu.shape[0], Z.shape[0], mu.shape[1]
+    N, M, Q = mu.shape[0], Z.shape[0], mu.shape[1]
     lengthscale2 = np.square(lengthscale)
 
-    _psi2_logdenom = np.log(2.*S/lengthscale2+1.).sum(axis=-1)/(-2.) # N
-    _psi2_exp1 = (np.square(Z[:,None,:]-Z[None,:,:])/lengthscale2).sum(axis=-1)/(-4.) #MxM
-    Z_hat = (Z[:,None,:]+Z[None,:,:])/2. #MxMxQ
-    denom = 1./(2.*S+lengthscale2)
-    _psi2_exp2 = -(np.square(mu)*denom).sum(axis=-1)[:,None,None]+(2*(mu*denom).dot(Z_hat.reshape(M*M,Q).T) - denom.dot(np.square(Z_hat).reshape(M*M,Q).T)).reshape(N,M,M)
-    _psi2 = variance*variance*np.exp(_psi2_logdenom[:,None,None]+_psi2_exp1[None,:,:]+_psi2_exp2)
+    Z2 = np.square(Z)
+    denom = 1./(2*S+lengthscale2)
+    mu_denom = mu*denom
+    _psi2_logdenom = np.log(2.*S/lengthscale2+1.).sum(1)/-2. # N
+    
+    _psi2_Z2 = (Z2/lengthscale2).sum(1)/-4.
+    _psi2_ZZ = (Z/lengthscale2).dot(Z.T)/2.
+    
+    _psi2_mu2 = - (mu_denom*mu).sum(1) # N
+    _psi2_muZ = mu_denom.dot(Z.T) # NxM
+    _psi2_SZ2 = denom.dot(Z2.T)/-4. # NxM
+    tmp = _psi2_muZ + _psi2_SZ2
+    _psi2_SZZ = denom.dot((Z[:,None,:]*Z[None,:,:]).reshape(M*M,Q).T).reshape(N,M,M)/-2.
+    
+    _psi2_log = _psi2_SZZ+ tmp[:,:,None]+tmp[:,None,:]+(_psi2_logdenom+_psi2_mu2)[:,None,None] \
+                        + (_psi2_ZZ+_psi2_Z2[:,None] + _psi2_Z2[None,:])[None,:,:]
+    _psi2 = variance*variance*np.exp(_psi2_log)    
     return _psi2
+
+def __psicovcomputation(variance, lengthscale, Z, mu, S):
+
+    N, M, Q = mu.shape[0], Z.shape[0], mu.shape[1]
+    lengthscale2 = np.square(lengthscale)
+    
+    denom1 = 1./(S+lengthscale2)
+    _psi1_logdenom = np.log(S/lengthscale2+1.).sum(1)/-2. # N
+    mu_denom1 = mu*denom1
+    _psi1_term2 = (mu_denom1*mu).sum(1)[:,None]/-2. + mu_denom1.dot(Z.T) - denom1.dot(np.square(Z).T)/2.
+    _psi1_log = _psi1_logdenom[:,None] + _psi1_term2
+    _psi1_2_log = _psi1_log[:,:,None]+_psi1_log[:,None,:]
+
+    Z2 = np.square(Z)
+    denom2 = 1./(2*S+lengthscale2)
+    mu_denom2 = mu*denom2
+    _psi2_logdenom = np.log(2.*S/lengthscale2+1.).sum(1)/-2. # N
+    
+    _psi2_Z2 = (Z2/lengthscale2).sum(1)/-4.
+    _psi2_ZZ = (Z/lengthscale2).dot(Z.T)/2.
+    
+    _psi2_mu2 = - (mu_denom2*mu).sum(1) # N
+    _psi2_muZ = mu_denom2.dot(Z.T) # NxM
+    _psi2_SZ2 = denom2.dot(Z2.T)/-4. # NxM
+    tmp = _psi2_muZ + _psi2_SZ2
+    _psi2_SZZ = denom2.dot((Z[:,None,:]*Z[None,:,:]).reshape(M*M,Q).T).reshape(N,M,M)/-2.
+    
+    _psi2_log = _psi2_SZZ+ tmp[:,:,None]+tmp[:,None,:]+(_psi2_logdenom+_psi2_mu2)[:,None,None] \
+                        + (_psi2_ZZ+_psi2_Z2[:,None] + _psi2_Z2[None,:])[None,:,:]
+    
+    _psicov_log_max = np.maximum(_psi2_log, _psi1_2_log)
+    _psicov_log_diff = _psi2_log+ _psi1_2_log -  2*_psicov_log_max
+    
+    _psicov = variance*variance*np.exp(_psicov_log_max)*np.expm1(_psicov_log_diff)
+    _psicov[_psi2_log>_psi1_2_log] *= -1
+    
+    return _psicov
 
 def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
     ARD = (len(lengthscale)!=1)

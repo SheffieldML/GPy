@@ -28,8 +28,8 @@ class DTC(LatentFunctionInference):
         num_data, output_dim = Y.shape
 
         #make sure the noise is not hetero
-        beta = 1./likelihood.gaussian_variance(Y_metadata)
-        if beta.size > 1:
+        precision = 1./likelihood.gaussian_variance(Y_metadata)
+        if precision.size > 1:
             raise NotImplementedError("no hetero noise with this implementation of DTC")
 
         Kmm = kern.K(Z)
@@ -42,7 +42,7 @@ class DTC(LatentFunctionInference):
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         # Compute A
-        LiUTbeta = np.dot(Li, U.T)*np.sqrt(beta)
+        LiUTbeta = np.dot(Li, U.T)*np.sqrt(precision)
         A = tdot(LiUTbeta) + np.eye(num_inducing)
 
         # factor A
@@ -50,7 +50,7 @@ class DTC(LatentFunctionInference):
 
         # back substutue to get b, P, v
         tmp, _ = dtrtrs(L, Uy, lower=1)
-        b, _ = dtrtrs(LA, tmp*beta, lower=1)
+        b, _ = dtrtrs(LA, tmp*precision, lower=1)
         tmp, _ = dtrtrs(LA, b, lower=1, trans=1)
         v, _ = dtrtrs(L, tmp, lower=1, trans=1)
         tmp, _ = dtrtrs(LA, Li, lower=1, trans=0)
@@ -59,8 +59,8 @@ class DTC(LatentFunctionInference):
         #compute log marginal
         log_marginal = -0.5*num_data*output_dim*np.log(2*np.pi) + \
                        -np.sum(np.log(np.diag(LA)))*output_dim + \
-                       0.5*num_data*output_dim*np.log(beta) + \
-                       -0.5*beta*np.sum(np.square(Y)) + \
+                       0.5*num_data*output_dim*np.log(precision) + \
+                       -0.5*precision*np.sum(np.square(Y)) + \
                        0.5*np.sum(np.square(b))
 
         # Compute dL_dKmm
@@ -70,11 +70,11 @@ class DTC(LatentFunctionInference):
         # Compute dL_dU
         vY = np.dot(v.reshape(-1,1),Y.T)
         dL_dU = vY - np.dot(vvT_P, U.T)
-        dL_dU *= beta
+        dL_dU *= precision
 
         #compute dL_dR
         Uv = np.dot(U, v)
-        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./beta + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1))*beta**2
+        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./precision + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1))*precision**2
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
 
@@ -97,8 +97,8 @@ class vDTC(object):
         num_data, output_dim = Y.shape
 
         #make sure the noise is not hetero
-        beta = 1./likelihood.gaussian_variance(Y_metadata)
-        if beta.size > 1:
+        precision = 1./likelihood.gaussian_variance(Y_metadata)
+        if precision.size > 1:
             raise NotImplementedError("no hetero noise with this implementation of DTC")
 
         Kmm = kern.K(Z)
@@ -111,9 +111,9 @@ class vDTC(object):
         Kmmi, L, Li, _ = pdinv(Kmm)
 
         # Compute A
-        LiUTbeta = np.dot(Li, U.T)*np.sqrt(beta)
+        LiUTbeta = np.dot(Li, U.T)*np.sqrt(precision)
         A_ = tdot(LiUTbeta)
-        trace_term = -0.5*(np.sum(Knn)*beta - np.trace(A_))
+        trace_term = -0.5*(np.sum(Knn)*precision - np.trace(A_))
         A = A_ + np.eye(num_inducing)
 
         # factor A
@@ -121,7 +121,7 @@ class vDTC(object):
 
         # back substutue to get b, P, v
         tmp, _ = dtrtrs(L, Uy, lower=1)
-        b, _ = dtrtrs(LA, tmp*beta, lower=1)
+        b, _ = dtrtrs(LA, tmp*precision, lower=1)
         tmp, _ = dtrtrs(LA, b, lower=1, trans=1)
         v, _ = dtrtrs(L, tmp, lower=1, trans=1)
         tmp, _ = dtrtrs(LA, Li, lower=1, trans=0)
@@ -131,8 +131,8 @@ class vDTC(object):
         #compute log marginal
         log_marginal = -0.5*num_data*output_dim*np.log(2*np.pi) + \
                        -np.sum(np.log(np.diag(LA)))*output_dim + \
-                       0.5*num_data*output_dim*np.log(beta) + \
-                       -0.5*beta*np.sum(np.square(Y)) + \
+                       0.5*num_data*output_dim*np.log(precision) + \
+                       -0.5*precision*np.sum(np.square(Y)) + \
                        0.5*np.sum(np.square(b)) + \
                        trace_term
 
@@ -145,15 +145,15 @@ class vDTC(object):
         vY = np.dot(v.reshape(-1,1),Y.T)
         #dL_dU = vY - np.dot(vvT_P, U.T)
         dL_dU = vY - np.dot(vvT_P - Kmmi, U.T)
-        dL_dU *= beta
+        dL_dU *= precision
 
         #compute dL_dR
         Uv = np.dot(U, v)
-        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./beta + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1) )*beta**2
-        dL_dR -=beta*trace_term/num_data
+        dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - 1./precision + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) + np.sum(np.square(Uv), 1) )*precision**2
+        dL_dR -=precision*trace_term/num_data
 
         dL_dthetaL = likelihood.exact_inference_gradients(dL_dR)
-        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn) + -0.5*beta, 'dL_dKnm':dL_dU.T, 'dL_dthetaL':dL_dthetaL}
+        grad_dict = {'dL_dKmm': dL_dK, 'dL_dKdiag':np.zeros_like(Knn) + -0.5*precision, 'dL_dKnm':dL_dU.T, 'dL_dthetaL':dL_dthetaL}
 
         #construct a posterior object
         post = Posterior(woodbury_inv=Kmmi-P, woodbury_vector=v, K=Kmm, mean=None, cov=None, K_chol=L)

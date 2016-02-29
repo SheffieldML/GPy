@@ -48,7 +48,7 @@ class MiscTests(unittest.TestCase):
         Y = self.Y
         mu, std = Y.mean(0), Y.std(0)
         m = GPy.models.GPRegression(self.X, Y, kernel=k, normalizer=True)
-        m.optimize()
+        m.optimize(messages=True)
         assert(m.checkgrad())
         k = GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
@@ -289,6 +289,64 @@ class MiscTests(unittest.TestCase):
         m.optimize()
         print(m)
 
+    def test_warped_gp_identity(self):
+        """
+        A WarpedGP with the identity warping function should be
+        equal to a standard GP.
+        """
+        k = GPy.kern.RBF(1)
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
+        m.optimize()
+        preds = m.predict(self.X)
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.IdentityFunction()
+        warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
+        warp_m.optimize()
+        warp_preds = warp_m.predict(self.X)
+ 
+        np.testing.assert_almost_equal(preds, warp_preds)
+
+    @unittest.skip('Comment this to plot the modified sine function')
+    def test_warped_gp_sine(self):
+        """
+        A test replicating the sine regression problem from
+        Snelson's paper.
+        """
+        X = (2 * np.pi) * np.random.random(151) - np.pi
+        Y = np.sin(X) + np.random.normal(0,0.1,151)
+        Y = np.exp(Y) - 5
+        #Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y]) + 0
+        
+        #np.seterr(over='raise')
+        import matplotlib.pyplot as plt
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.TanhWarpingFunction_d(n_terms=2)
+        warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
+        #warp_m['.*variance.*'].constrain_fixed(0.25)
+        #warp_m['.*lengthscale.*'].constrain_fixed(1)
+        #warp_m['warp_tanh.d'].constrain_fixed(1)
+        #warp_m.randomize()
+        #warp_m['.*warp_tanh.psi*'][:,0:2].constrain_bounded(0,100)
+        #warp_m['.*warp_tanh.psi*'][:,0:1].constrain_fixed(1)
+        
+        #print(warp_m.checkgrad())
+        #warp_m.plot()
+        #plt.show()
+
+        warp_m.optimize_restarts(parallel=True, robust=True)
+        #print(warp_m.checkgrad())
+        print(warp_m)
+        print(warp_m['.*warp.*'])
+        warp_m.predict_in_warped_space = False
+        warp_m.plot()
+        warp_m.predict_in_warped_space = True
+        warp_m.plot()
+        warp_f.plot(X.min()-10, X.max()+10)
+        plt.show()
+
+        
+
 class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################
@@ -447,16 +505,14 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2)
 
-    def test_SparseGPRegression_rbf_linear_white_kern_2D_uncertain_inputs(self):
+    def test_SparseGPRegression_rbf_white_kern_2D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 2d data with uncertain inputs'''
-        rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
-        raise unittest.SkipTest("This is not implemented yet!")
+        rbflin = GPy.kern.RBF(2) + GPy.kern.White(2)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=2, uncertain_inputs=1)
 
-    def test_SparseGPRegression_rbf_linear_white_kern_1D_uncertain_inputs(self):
+    def test_SparseGPRegression_rbf_white_kern_1D_uncertain_inputs(self):
         ''' Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs'''
-        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1)
-        raise unittest.SkipTest("This is not implemented yet!")
+        rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
@@ -505,6 +561,17 @@ class GradientTests(np.testing.TestCase):
         kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, Z=Z)
         self.assertTrue(m.checkgrad())
+
+    def test_sparse_EP_DTC_probit_uncertain_inputs(self):
+        N = 20
+        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
+        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Z = np.linspace(0, 15, 4)[:, None]
+        X_var = np.random.uniform(0.1, 0.2, X.shape)
+        kernel = GPy.kern.RBF(1)
+        m = GPy.models.SparseGPClassificationUncertainInput(X, X_var, Y, kernel=kernel, Z=Z)
+        self.assertTrue(m.checkgrad())
+
 
     def test_multioutput_regression_1D(self):
         X1 = np.random.rand(50, 1) * 8

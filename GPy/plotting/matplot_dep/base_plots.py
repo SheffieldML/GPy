@@ -1,17 +1,11 @@
 # #Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
-
-try:
-    #import Tango
-    from matplotlib import pyplot as pb
-except:
-    pass
+from matplotlib import pyplot as plt
 import numpy as np
 
 def ax_default(fignum, ax):
     if ax is None:
-        fig = pb.figure(fignum)
+        fig = plt.figure(fignum)
         ax = fig.add_subplot(111)
     else:
         fig = ax.figure
@@ -41,11 +35,95 @@ def gpplot(x, mu, lower, upper, edgecol='#3300FF', fillcol='#33CCFF', ax=None, f
     plots.append(axes.fill(np.hstack((x,x[::-1])),np.hstack((upper,lower[::-1])),color=fillcol,**kwargs))
 
     #this is the edge:
-    plots.append(meanplot(x, upper,color=edgecol,linewidth=0.2,ax=axes))
-    plots.append(meanplot(x, lower,color=edgecol,linewidth=0.2,ax=axes))
+    plots.append(meanplot(x, upper,color=edgecol, linewidth=0.2, ax=axes))
+    plots.append(meanplot(x, lower,color=edgecol, linewidth=0.2, ax=axes))
 
     return plots
 
+def gradient_fill(x, percentiles, ax=None, fignum=None, **kwargs):
+    _, ax = ax_default(fignum, ax)
+
+    plots = []
+
+    #here's the box
+    if 'linewidth' not in kwargs:
+        kwargs['linewidth'] = 0.5
+    if not 'alpha' in kwargs.keys():
+        kwargs['alpha'] = 1./(len(percentiles))
+    
+    # pop where from kwargs
+    where = kwargs.pop('where') if 'where' in kwargs else None
+    # pop interpolate, which we actually do not do here!
+    if 'interpolate' in kwargs: kwargs.pop('interpolate')
+    
+    def pairwise(inlist):
+        l = len(inlist)
+        for i in range(int(np.ceil(l/2.))):
+            yield inlist[:][i], inlist[:][(l-1)-i]
+    
+    polycol = []
+    for y1, y2 in pairwise(percentiles):
+        import matplotlib.mlab as mlab
+        # Handle united data, such as dates
+        ax._process_unit_info(xdata=x, ydata=y1)
+        ax._process_unit_info(ydata=y2)
+    
+        # Convert the arrays so we can work with them
+        from numpy import ma
+        x = ma.masked_invalid(ax.convert_xunits(x))
+        y1 = ma.masked_invalid(ax.convert_yunits(y1))
+        y2 = ma.masked_invalid(ax.convert_yunits(y2))
+    
+        if y1.ndim == 0:
+            y1 = np.ones_like(x) * y1
+        if y2.ndim == 0:
+            y2 = np.ones_like(x) * y2
+    
+        if where is None:
+            where = np.ones(len(x), np.bool)
+        else:
+            where = np.asarray(where, np.bool)
+    
+        if not (x.shape == y1.shape == y2.shape == where.shape):
+            raise ValueError("Argument dimensions are incompatible")
+    
+        mask = reduce(ma.mask_or, [ma.getmask(a) for a in (x, y1, y2)])
+        if mask is not ma.nomask:
+            where &= ~mask
+        
+        polys = []
+        for ind0, ind1 in mlab.contiguous_regions(where):
+            xslice = x[ind0:ind1]
+            y1slice = y1[ind0:ind1]
+            y2slice = y2[ind0:ind1]
+    
+            if not len(xslice):
+                continue
+    
+            N = len(xslice)
+            X = np.zeros((2 * N + 2, 2), np.float)
+    
+            # the purpose of the next two lines is for when y2 is a
+            # scalar like 0 and we want the fill to go all the way
+            # down to 0 even if none of the y1 sample points do
+            start = xslice[0], y2slice[0]
+            end = xslice[-1], y2slice[-1]
+    
+            X[0] = start
+            X[N + 1] = end
+    
+            X[1:N + 1, 0] = xslice
+            X[1:N + 1, 1] = y1slice
+            X[N + 2:, 0] = xslice[::-1]
+            X[N + 2:, 1] = y2slice[::-1]
+    
+            polys.append(X)
+        polycol.extend(polys)
+    from matplotlib.collections import PolyCollection
+    plots.append(PolyCollection(polycol, **kwargs))
+    ax.add_collection(plots[-1], autolim=True)
+    ax.autoscale_view()
+    return plots
 
 def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
     _, axes = ax_default(fignum, ax)
@@ -74,19 +152,19 @@ def gperrors(x, mu, lower, upper, edgecol=None, ax=None, fignum=None, **kwargs):
 
 
 def removeRightTicks(ax=None):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     for i, line in enumerate(ax.get_yticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
 
 def removeUpperTicks(ax=None):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     for i, line in enumerate(ax.get_xticklines()):
         if i%2 == 1:   # odd indices
             line.set_visible(False)
 
 def fewerXticks(ax=None,divideby=2):
-    ax = ax or pb.gca()
+    ax = ax or plt.gca()
     ax.set_xticks(ax.get_xticks()[::divideby])
 
 def align_subplots(N,M,xlim=None, ylim=None):
@@ -95,33 +173,33 @@ def align_subplots(N,M,xlim=None, ylim=None):
     if xlim is None:
         xlim = [np.inf,-np.inf]
         for i in range(N*M):
-            pb.subplot(N,M,i+1)
-            xlim[0] = min(xlim[0],pb.xlim()[0])
-            xlim[1] = max(xlim[1],pb.xlim()[1])
+            plt.subplot(N,M,i+1)
+            xlim[0] = min(xlim[0],plt.xlim()[0])
+            xlim[1] = max(xlim[1],plt.xlim()[1])
     if ylim is None:
         ylim = [np.inf,-np.inf]
         for i in range(N*M):
-            pb.subplot(N,M,i+1)
-            ylim[0] = min(ylim[0],pb.ylim()[0])
-            ylim[1] = max(ylim[1],pb.ylim()[1])
+            plt.subplot(N,M,i+1)
+            ylim[0] = min(ylim[0],plt.ylim()[0])
+            ylim[1] = max(ylim[1],plt.ylim()[1])
 
     for i in range(N*M):
-        pb.subplot(N,M,i+1)
-        pb.xlim(xlim)
-        pb.ylim(ylim)
+        plt.subplot(N,M,i+1)
+        plt.xlim(xlim)
+        plt.ylim(ylim)
         if (i)%M:
-            pb.yticks([])
+            plt.yticks([])
         else:
             removeRightTicks()
         if i<(M*(N-1)):
-            pb.xticks([])
+            plt.xticks([])
         else:
             removeUpperTicks()
 
 def align_subplot_array(axes,xlim=None, ylim=None):
     """
     Make all of the axes in the array hae the same limits, turn off unnecessary ticks
-    use pb.subplots() to get an array of axes
+    use plt.subplots() to get an array of axes
     """
     #find sensible xlim,ylim
     if xlim is None:
@@ -154,7 +232,11 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     """
     assert X.shape[1] ==1, "x_frame1D is defined for one-dimensional inputs"
     if plot_limits is None:
-        xmin,xmax = X.min(0),X.max(0)
+        from ...core.parameterization.variational import VariationalPosterior
+        if isinstance(X, VariationalPosterior):
+            xmin,xmax = X.mean.min(0),X.mean.max(0)
+        else:
+            xmin,xmax = X.min(0),X.max(0)
         xmin, xmax = xmin-0.2*(xmax-xmin), xmax+0.2*(xmax-xmin)
     elif len(plot_limits)==2:
         xmin, xmax = plot_limits

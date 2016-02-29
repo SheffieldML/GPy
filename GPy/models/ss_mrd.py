@@ -5,7 +5,7 @@ The Maniforld Relevance Determination model with the spike-and-slab prior
 import numpy as np
 from ..core import Model
 from .ss_gplvm import SSGPLVM
-from ..core.parameterization.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
+from GPy.core.parameterization.variational import SpikeAndSlabPrior,NormalPosterior,VariationalPrior
 from ..util.misc import param_to_array
 from ..kern import RBF
 from ..core import Param
@@ -214,7 +214,7 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
 class IBPPrior_SSMRD(VariationalPrior):
     def __init__(self, nModels, input_dim, alpha =2., tau=None, name='IBPPrior', **kw):
         super(IBPPrior_SSMRD, self).__init__(name=name, **kw)
-        from ..core.parameterization.transformations import Logexp, __fixed__  
+        from paramz.transformations import Logexp, __fixed__  
         self.nModels = nModels
         self._b_prob_all = 0.5
         self.input_dim = input_dim

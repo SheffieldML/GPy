@@ -4,18 +4,15 @@
 from __future__ import print_function
 import numpy as np
 from ..core.parameterization.param import Param
+from GPy.core.parameterization.variational import VariationalPosterior
 from ..core.sparse_gp import SparseGP
 from ..core.gp import GP
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
-from ..core.parameterization.variational import VariationalPosterior
 
 import logging
-from GPy.inference.latent_function_inference.posterior import Posterior
-from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    SparseGPMissing
-#no stochastics.py file added! from GPy.inference.optimization.stochastics import SparseGPStochastics,\
-    #SparseGPMissing
+from ..inference.latent_function_inference.posterior import Posterior
+from ..inference.optimization.stochastics import SparseGPStochastics, SparseGPMissing
 logger = logging.getLogger("sparse gp")
 
 class SparseGPMiniBatch(SparseGP):
@@ -99,13 +96,8 @@ class SparseGPMiniBatch(SparseGP):
         like them into this dictionary for inner use of the indices inside the
         algorithm.
         """
-        if psi2 is None:
-            psi2_sum_n = None
-        else:
-            psi2_sum_n = psi2.sum(axis=0)
-        posterior, log_marginal_likelihood, grad_dict = self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
-                                                                                        dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2_sum_n, **kwargs)
-        return posterior, log_marginal_likelihood, grad_dict
+        return self.inference_method.inference(kern, X, Z, likelihood, Y, Y_metadata, Lm=Lm,
+                                               dL_dKmm=dL_dKmm, psi0=psi0, psi1=psi1, psi2=psi2, **kwargs)
 
     def _inner_take_over_or_update(self, full_values=None, current_values=None, value_indices=None):
         """
@@ -326,3 +318,4 @@ class SparseGPMiniBatch(SparseGP):
         else:
             self.posterior, self._log_marginal_likelihood, self.grad_dict = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)
             self._outer_values_update(self.grad_dict)
+        self._Zgrad = self.Z.gradient.copy()

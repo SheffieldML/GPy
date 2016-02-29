@@ -1,11 +1,11 @@
 # ## Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from ..core.model import Model
-import itertools
 import numpy
-from ..core.parameterization import Param
 np = numpy
+
+from ..core.parameterization import Param
+from GPy.core.model import Model
 from ..util.block_matrices import get_blocks, get_block_shapes, unblock, get_blocks_3d, get_block_shapes_3d
 
 def get_shape(x):
@@ -62,7 +62,7 @@ class GradientChecker(Model):
                 grad.randomize()
                 grad.checkgrad(verbose=1)
         """
-        Model.__init__(self, 'GradientChecker')
+        super(GradientChecker, self).__init__(name='GradientChecker')
         if isinstance(x0, (list, tuple)) and names is None:
             self.shapes = [get_shape(xi) for xi in x0]
             self.names = ['X{i}'.format(i=i) for i in range(len(x0))]
@@ -361,7 +361,7 @@ class SkewChecker(HessianChecker):
 
             #Check every block individually (for ease)
             check_passed = [False]*numeric_hess.shape[2]
-            for block_ind in xrange(numeric_hess.shape[2]):
+            for block_ind in range(numeric_hess.shape[2]):
                 #Unless super_plot is set, just plot the first one
                 p = True if (plot and block_ind == numeric_hess.shape[2]-1) or super_plot else False
                 if verbose:

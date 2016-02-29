@@ -38,7 +38,7 @@ class SVGP(SparseGP):
         #create the SVI inference method
         inf_method = svgp_inf()
 
-        SparseGP.__init__(self, X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
+        super(SVGP, self).__init__(X_batch, Y_batch, Z, kernel, likelihood, mean_function=mean_function, inference_method=inf_method,
                  name=name, Y_metadata=Y_metadata, normalizer=False)
 
         #assume the number of latent functions is one per col of Y unless specified
@@ -89,7 +89,7 @@ class SVGP(SparseGP):
         """
         Return a new batch of X and Y by taking a chunk of data from the complete X and Y
         """
-        i = self.slicer.next()
+        i = next(self.slicer)
         return self.X_all[i], self.Y_all[i]
 
     def stochastic_grad(self, parameters):

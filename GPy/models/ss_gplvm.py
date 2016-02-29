@@ -7,9 +7,9 @@ from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import kern
 from ..core.parameterization import Param
 from ..likelihoods import Gaussian
-from ..core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
+from GPy.core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSlabPosterior,VariationalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
-from ..kern._src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
+from ..kern.src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 
 class IBPPosterior(SpikeAndSlabPosterior):
     '''
@@ -19,7 +19,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        from ..core.parameterization.transformations import Logexp
+        from paramz.transformations import Logexp
         super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
         self.sharedX = sharedX
         if sharedX:
@@ -60,7 +60,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
 class IBPPrior(VariationalPrior):
     def __init__(self, input_dim, alpha =2., name='IBPPrior', **kw):
         super(IBPPrior, self).__init__(name=name, **kw)
-        from ..core.parameterization.transformations import Logexp, __fixed__  
+        from paramz.transformations import Logexp, __fixed__  
         self.input_dim = input_dim
         self.variance = 1.
         self.alpha = Param('alpha', alpha, __fixed__)
@@ -191,11 +191,37 @@ class SSGPLVM(SparseGP_MPI):
             return self.kern.input_sensitivity()
         else:
             return self.variational_prior.pi
+        
+    def sample_W(self, nSamples, raw_samples=False):
+        """
+        Sample the loading matrix if the kernel is linear.
+        """
+        assert isinstance(self.kern, kern.Linear)
+        from ..util.linalg import pdinv
+        N, D = self.Y.shape
+        Q = self.X.shape[1]
+        noise_var = self.likelihood.variance.values
+        
+        # Draw samples for X
+        Xs = np.random.randn(*((nSamples,)+self.X.shape))*np.sqrt(self.X.variance.values)+self.X.mean.values
+        b = np.random.rand(*((nSamples,)+self.X.shape))
+        Xs[b>self.X.gamma.values] = 0
+        
+        invcov = (Xs[:,:,:,None]*Xs[:,:,None,:]).sum(1)/noise_var+np.eye(Q)
+        cov = np.array([pdinv(invcov[s_idx])[0] for s_idx in xrange(invcov.shape[0])])
+        Ws = np.empty((nSamples, Q, D))
+        tmp = (np.transpose(Xs, (0,2,1)).reshape(nSamples*Q,N).dot(self.Y)).reshape(nSamples,Q,D)
+        mean = (cov[:,:,:,None]*tmp[:,None,:,:]).sum(2)/noise_var
+        zeros = np.zeros((Q,))
+        for s_idx in xrange(Xs.shape[0]):
+            Ws[s_idx] = (np.random.multivariate_normal(mean=zeros,cov=cov[s_idx],size=(D,))).T+mean[s_idx]
+        
+        if raw_samples:
+            return Ws
+        else:
+            return Ws.mean(0), Ws.std(0)
 
-    def plot_latent(self, plot_inducing=True, *args, **kwargs):
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
+        
+        
 
-        return dim_reduction_plots.plot_latent(self, plot_inducing=plot_inducing, *args, **kwargs)
-
+        

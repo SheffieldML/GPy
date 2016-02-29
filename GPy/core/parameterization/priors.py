@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
-from .domains import _REAL, _POSITIVE
+from paramz.domains import _REAL, _POSITIVE
 import warnings
 import weakref
 
@@ -172,7 +172,7 @@ class LogGaussian(Gaussian):
         return -((np.log(x) - self.mu) / self.sigma2 + 1.) / x
 
     def rvs(self, n):
-        return np.exp(np.random.randn(n) * self.sigma + self.mu)
+        return np.exp(np.random.randn(int(n)) * self.sigma + self.mu)
 
 
 class MultivariateGaussian(Prior):
@@ -725,8 +725,9 @@ class DGPLVM(Prior):
 
 # ******************************************
 
-from .. import Parameterized
-from .. import Param
+from . import Parameterized
+from . import Param
+
 class DGPLVM_Lamda(Prior, Parameterized):
     """
     Implementation of the Discriminative Gaussian Process Latent Variable model paper, by Raquel.

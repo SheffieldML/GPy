@@ -20,10 +20,10 @@ class GPClassification(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None,Y_metadata=None):
+    def __init__(self, X, Y, kernel=None,Y_metadata=None, mean_function=None):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
         likelihood = likelihoods.Bernoulli()
 
-        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=EP(), name='gp_classification')
+        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=EP(), mean_function=mean_function, name='gp_classification')

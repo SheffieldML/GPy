@@ -3,8 +3,6 @@
 
 import numpy as np
 from ..core import GP
-from ..core.parameterization import ObsAr
-from .. import kern
 from ..core.parameterization.param import Param
 from ..inference.latent_function_inference import VarGauss
 

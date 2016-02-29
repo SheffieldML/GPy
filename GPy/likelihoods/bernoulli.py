@@ -43,7 +43,7 @@ class Bernoulli(Likelihood):
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 
-    def moments_match_ep(self, Y_i, tau_i, v_i):
+    def moments_match_ep(self, Y_i, tau_i, v_i, Y_metadata_i=None):
         """
         Moments match of the marginal approximation in EP algorithm
 
@@ -60,13 +60,15 @@ class Bernoulli(Likelihood):
         if isinstance(self.gp_link, link_functions.Probit):
             z = sign*v_i/np.sqrt(tau_i**2 + tau_i)
             Z_hat = std_norm_cdf(z)
+            Z_hat = np.where(Z_hat==0, 1e-15, Z_hat)
             phi = std_norm_pdf(z)
+
             mu_hat = v_i/tau_i + sign*phi/(Z_hat*np.sqrt(tau_i**2 + tau_i))
             sigma2_hat = 1./tau_i - (phi/((tau_i**2+tau_i)*Z_hat))*(z+phi/Z_hat)
 
         elif isinstance(self.gp_link, link_functions.Heaviside):
             a = sign*v_i/np.sqrt(tau_i)
-            Z_hat = std_norm_cdf(a)
+            Z_hat = np.max(1e-13, std_norm_cdf(z))
             N = std_norm_pdf(a)
             mu_hat = v_i/tau_i + sign*N/Z_hat/np.sqrt(tau_i)
             sigma2_hat = (1. - a*N/Z_hat - np.square(N/Z_hat))/tau_i
@@ -139,7 +141,7 @@ class Bernoulli(Likelihood):
             Each y_i must be in {0, 1}
         """
         #objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
-        return np.where(y, inv_link_f, 1.-inv_link_f)
+        return np.where(y==1, inv_link_f, 1.-inv_link_f)
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
@@ -178,7 +180,7 @@ class Bernoulli(Likelihood):
         #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
         #grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
         ff = np.clip(inv_link_f, 1e-9, 1-1e-9)
-        denom = np.where(y, ff, -(1-ff))
+        denom = np.where(y==1, ff, -(1-ff))
         return 1./denom
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
@@ -204,7 +206,7 @@ class Bernoulli(Likelihood):
         """
         #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
         #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
-        arg = np.where(y, inv_link_f, 1.-inv_link_f)
+        arg = np.where(y==1, inv_link_f, 1.-inv_link_f)
         ret =  -1./np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
             stop
@@ -229,7 +231,7 @@ class Bernoulli(Likelihood):
         #d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
         state = np.seterr(divide='ignore')
         # TODO check y \in {0, 1} or {-1, 1}
-        d3logpdf_dlink3 = np.where(y, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
+        d3logpdf_dlink3 = np.where(y==1, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
         np.seterr(**state)
         return d3logpdf_dlink3
 
@@ -241,8 +243,6 @@ class Bernoulli(Likelihood):
         """
         p = self.predictive_mean(mu, var)
         return [np.asarray(p>(q/100.), dtype=np.int32) for q in quantiles]
-
-
 
     def samples(self, gp, Y_metadata=None):
         """
@@ -257,4 +257,4 @@ class Bernoulli(Likelihood):
         return Ysim.reshape(orig_shape)
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
-        pass
+        return np.zeros(self.size)

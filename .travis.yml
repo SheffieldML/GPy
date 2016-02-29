@@ -1,27 +1,85 @@
-language: python
-python:
-  - "2.7"
+sudo: false
 
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+os:
+- osx
+- linux
+
+addons:
+  apt_packages:
+    - pandoc
+
+#cache:
+#  directories:
+#  - "$HOME/download/"
+#  - "$HOME/install/"
+
+env:
+  - PYTHON_VERSION=2.7
+  - PYTHON_VERSION=3.3
+  - PYTHON_VERSION=3.4
+  - PYTHON_VERSION=3.5
+
 before_install:
-  #Install a mini version of anaconda such that we can easily install our dependencies
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
-  # Workaround for a permissions issue with Travis virtual machine images
-  # that breaks Python's multiprocessing:
-  # https://github.com/travis-ci/travis-cookbooks/issues/155
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
+  - export CONDA_CACHED=1
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+      then export OS=Linux;
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
+      then export OS=MacOSX;
+      brew install pandoc;
+    else
+      echo "OS not supported yet";
+      exit 1; fi;
+  - if [[ $PYTHON_VERSION == "2.7" ]];
+      then export MINICONDA=Miniconda;
+    elif [[ $PYTHON_VERSION == 3* ]];
+      then export MINICONDA=Miniconda3;
+    else echo "Could not find python version";exit 1; fi;
+  - if [ ! -d $HOME/download/ ]; then mkdir $HOME/download/; fi;
+  - if [ ! -d $HOME/install/ ]; then mkdir $HOME/install/; fi;
+  - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION
+  - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE.sh
+  - export MINICONDA_INSTALL=$HOME/install/$MINICONDA_FILE
+  - if [ ! -f $MINCONDA_CACHE_FILE ]; then export CONDA_CACHED=0; wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $MINCONDA_CACHE_FILE; bash $MINCONDA_CACHE_FILE -b -p $MINICONDA_INSTALL; fi;
+  - export PATH="$MINICONDA_INSTALL/bin:$PATH";
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy=1.9 scipy=0.16 matplotlib nose sphinx pip nose
-  #- pip install . 
-  - python setup.py build_ext --inplace
-  #--use-mirrors
-  #
-# command to run tests, e.g. python setup.py test
-script: 
-  - nosetests GPy/testing
+  - n=0
+    until [ $n -ge 5 ]
+    do # Retry 5 times, as weird 404 errors seem to popup...
+      conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx && break
+      n=$[$n+1]
+      sleep 15
+    done
+  - pip install codecov
+  - pip install pypandoc
+  - python setup.py develop
+
+script:
+  - coverage run travis_tests.py
+
+after_success:
+  - codecov
+
+before_deploy:
+  - cd doc
+  - pip install sphinx_rtd_theme
+  - sphinx-apidoc -o source/ ../GPy
+  - make html
+  - cd ../
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+      then export DIST='sdist';
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
+      then export DIST='bdist_wheel';
+    fi;
+
+deploy:
+  provider: pypi
+  user: maxz
+  password:
+    secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
+  on:
+    tags: false
+    branch: devel
+  server: https://testpypi.python.org/pypi
+  distributions: $DIST
+  skip_cleanup: true

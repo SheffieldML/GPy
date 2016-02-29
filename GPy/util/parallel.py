@@ -2,25 +2,14 @@
 The module of tools for parallelization (MPI)
 """
 import numpy as np
-try:
-    from mpi4py import MPI
-    def get_id_within_node(comm=MPI.COMM_WORLD):
-        rank = comm.rank
-        nodename =  MPI.Get_processor_name()
-        nodelist = comm.allgather(nodename)
-        return len([i for i in nodelist[:rank] if i==nodename])
 
-    numpy_to_MPI_typemap = {
-        np.dtype(np.float64) : MPI.DOUBLE,
-        np.dtype(np.float32) : MPI.FLOAT,
-        np.dtype(np.int)     : MPI.INT,
-        np.dtype(np.int8)    : MPI.CHAR,
-        np.dtype(np.uint8)   : MPI.UNSIGNED_CHAR,
-        np.dtype(np.int32)   : MPI.INT,
-        np.dtype(np.uint32)  : MPI.UNSIGNED_INT,
-    }
-except:
-    pass
+def get_id_within_node(comm=None):
+    from mpi4py import MPI
+    if comm is None: comm = MPI.COMM_WORLD
+    rank = comm.rank
+    nodename =  MPI.Get_processor_name()
+    nodelist = comm.allgather(nodename)
+    return len([i for i in nodelist[:rank] if i==nodename])
 
 def divide_data(datanum, rank, size):
     assert rank<size and datanum>0
@@ -40,14 +29,14 @@ def divide_data(datanum, rank, size):
         offset = size*rank+residue
     return offset, offset+size, datanum_list
 
-def optimize_parallel(model, optimizer=None, messages=True, max_iters=1000, outpath='.', interval=100, name=None):
+def optimize_parallel(model, optimizer=None, messages=True, max_iters=1000, outpath='.', interval=100, name=None, **kwargs):
     from math import ceil
     from datetime import datetime
     import os
     if name is None: name = model.name
     stop = 0
     for iter in range(int(ceil(float(max_iters)/interval))):
-        model.optimize(optimizer=optimizer, messages= True if messages and model.mpi_comm.rank==model.mpi_root else False, max_iters=interval)
+        model.optimize(optimizer=optimizer, messages= True if messages and model.mpi_comm.rank==model.mpi_root else False, max_iters=interval, **kwargs)
         if model.mpi_comm.rank==model.mpi_root:
             timenow = datetime.now()
             timestr = timenow.strftime('%Y:%m:%d_%H:%M:%S')

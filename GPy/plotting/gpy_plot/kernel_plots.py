@@ -33,7 +33,7 @@ from .. import Tango
 from .plot_util import update_not_existing_kwargs, helper_for_plot_data
 from ...kern.src.kern import Kern, CombinationKernel
 
-def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
+def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
     """
     If an ARD kernel is present, plot a bar representation using matplotlib
 
@@ -62,7 +62,11 @@ def plot_ARD(kernel, filtering=None, legend=False, **kwargs):
 
     bars = []
     kwargs = update_not_existing_kwargs(kwargs, pl().defaults.ard)
-    canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
+
+
+    if canvas is None:
+        canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
+
     for i in range(ard_params.shape[0]):
         if parts[i].name in filtering:
             c = Tango.nextMedium()
@@ -96,7 +100,7 @@ def plot_covariance(kernel, x=None, label=None,
     """
     X = np.ones((2, kernel._effective_input_dim)) * [[-3], [3]]
     _, free_dims, Xgrid, xx, yy, _, _, resolution = helper_for_plot_data(kernel, X, plot_limits, visible_dims, None, resolution)
-    
+
     from numbers import Number
     if x is None:
         from ...kern.src.stationary import Stationary
@@ -104,7 +108,7 @@ def plot_covariance(kernel, x=None, label=None,
     elif isinstance(x, Number):
         x = np.ones((1, kernel._effective_input_dim))*x
     K = kernel.K(Xgrid, x)
-    
+
     if projection == '3d':
         xlabel = 'X[:,0]'
         ylabel = 'X[:,1]'

@@ -236,7 +236,7 @@ class MRD(BayesianGPLVMMiniBatch):
     #                                     sharex=sharex, sharey=sharey)
     #         return fig
 
-    def plot_scales(self, titles=None, fig_kwargs=dict(figsize=None, tight_layout=True), **kwargs):
+    def plot_scales(self, titles=None, fig_kwargs={}, **kwargs):
         """
         Plot input sensitivity for all datasets, to see which input dimensions are
         significant for which dataset.

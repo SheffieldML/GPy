@@ -29,14 +29,14 @@ def divide_data(datanum, rank, size):
         offset = size*rank+residue
     return offset, offset+size, datanum_list
 
-def optimize_parallel(model, optimizer=None, messages=True, max_iters=1000, outpath='.', interval=100, name=None):
+def optimize_parallel(model, optimizer=None, messages=True, max_iters=1000, outpath='.', interval=100, name=None, **kwargs):
     from math import ceil
     from datetime import datetime
     import os
     if name is None: name = model.name
     stop = 0
     for iter in range(int(ceil(float(max_iters)/interval))):
-        model.optimize(optimizer=optimizer, messages= True if messages and model.mpi_comm.rank==model.mpi_root else False, max_iters=interval)
+        model.optimize(optimizer=optimizer, messages= True if messages and model.mpi_comm.rank==model.mpi_root else False, max_iters=interval, **kwargs)
         if model.mpi_comm.rank==model.mpi_root:
             timenow = datetime.now()
             timestr = timenow.strftime('%Y:%m:%d_%H:%M:%S')

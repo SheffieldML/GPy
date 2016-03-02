@@ -24,6 +24,32 @@ import shlex
 sys.path.insert(0, os.path.abspath('../../'))
 sys.path.insert(0, os.path.abspath('../../GPy/'))
 
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+#on_rtd = True
+if on_rtd:
+    # sys.path.append(os.path.abspath('../GPy'))
+
+    import subprocess
+
+    proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    proc = subprocess.Popen("ls ../../", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
+    proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print "program output:", out
+    #proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)
+    #(out, err) = proc.communicate()
+    #print "program output:", out
+    #proc = subprocess.Popen("whereis matplotlib", stdout=subprocess.PIPE, shell=True)
+    #(out, err) = proc.communicate()
+    #print "program output:", out
+
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -51,10 +77,10 @@ extensions = [
 #    def __getattr__(cls, name):
 #            return Mock()
 #
-MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg', 
+MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.linesearch', 'scipy.linalg',
                 'scipy', 'scipy.special', 'scipy.integrate', 'scipy.io', 'scipy.stats',
-                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify', 
-                'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache', 
+                'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify',
+                'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
                 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
                 'nose', 'nose.tools']
 
@@ -94,7 +120,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'GPy'
 #author = u'`Humans <https://github.com/SheffieldML/GPy/graphs/contributors>`_'
-author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors' 
+author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors'
 copyright = u'2015, '+author
 
 # The version info for the project you're documenting, acts as replacement for

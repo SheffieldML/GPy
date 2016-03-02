@@ -190,8 +190,8 @@ class VarDTC(LatentFunctionInference):
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)
             woodbury_vector, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
-        Bi, _ = dpotri(LB, lower=1)
-        symmetrify(Bi)
+        #Bi, _ = dpotri(LB, lower=1)
+        #symmetrify(Bi)
         Bi = -dpotri(LB, lower=1)[0]
         diag.add(Bi, 1)
 

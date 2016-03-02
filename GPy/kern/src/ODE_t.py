@@ -17,7 +17,7 @@ class ODE_t(Kern):
                 self.a= Param('a', a, Logexp())
                 self.c = Param('c', c, Logexp())
                 self.ubias = Param('ubias', ubias, Logexp())
-                self.add_parameters(self.a, self.c, self.variance_Yt, self.lengthscale_Yt,self.ubias)
+                self.link_parameters(self.a, self.c, self.variance_Yt, self.lengthscale_Yt,self.ubias)
 
         def K(self, X, X2=None):
                 """Compute the covariance matrix between X and X2."""        

@@ -304,6 +304,11 @@ class acclaim_skeleton(skeleton):
         channels = self.read_channels(fid)
         fid.close()
         return channels
+    
+    def save_channels(self, file_name, channels):
+        with open(file_name,'w') as fid:
+            self.writ_channels(fid, channels)
+            fid.close()
 
     def load_skel(self, file_name):
 
@@ -469,6 +474,18 @@ class acclaim_skeleton(skeleton):
         self.smooth_angle_channels(channels)
         return channels
 
+    def writ_channels(self, fid, channels):
+        fid.write('#!OML:ASF \n')
+        fid.write(':FULLY-SPECIFIED\n')
+        fid.write(':DEGREES\n')
+        num_frames = channels.shape[0]
+        for i_frame in range(num_frames):
+            fid.write(str(i_frame+1)+'\n')
+            offset = 0
+            for vertex in self.vertices:
+                fid.write(vertex.name+' '+ ' '.join([str(v) for v in channels[i_frame,offset:offset+len(vertex.meta['channels'])]])+'\n')
+                offset += len(vertex.meta['channels'])
+        
 
     def read_documentation(self, fid):
         """Read documentation from an acclaim skeleton file stream."""

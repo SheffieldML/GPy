@@ -18,7 +18,7 @@ class ODE_UYC(Kern):
         self.lengthscale_U = Param('lengthscale_U', lengthscale_U, Logexp())
         self.ubias = Param('ubias', ubias, Logexp())
 
-        self.add_parameters(self.variance_Y, self.variance_U, self.lengthscale_Y, self.lengthscale_U, self.ubias)
+        self.link_parameters(self.variance_Y, self.variance_U, self.lengthscale_Y, self.lengthscale_U, self.ubias)
 
     def K(self, X, X2=None):
         # model :   a * dy/dt + b * y = U

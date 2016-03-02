@@ -300,12 +300,12 @@ class MiscTests(unittest.TestCase):
         preds = m.predict(self.X)
 
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.IdentityFunction()
+        warp_f = GPy.util.warping_functions.IdentityFunction(closed_inverse=False)
         warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
         warp_m.optimize()
         warp_preds = warp_m.predict(self.X)
  
-        np.testing.assert_almost_equal(preds, warp_preds)
+        np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
 
     def test_warped_gp_log(self):
         """
@@ -316,21 +316,16 @@ class MiscTests(unittest.TestCase):
         Y = np.abs(self.Y)
         logY = np.log(Y)
         m = GPy.models.GPRegression(self.X, logY, kernel=k)
-        #m.optimize()
-        m['Gaussian_noise.variance'] = 1e-4
+        m.optimize()
         preds = m.predict(self.X)[0]
 
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.LogFunction()
+        warp_f = GPy.util.warping_functions.LogFunction(closed_inverse=False)
         warp_m = GPy.models.WarpedGP(self.X, Y, kernel=warp_k, warping_function=warp_f)
         warp_m.optimize()
-        warp_m['.*'] = 1.0
-        warp_m['Gaussian_noise.variance'] = 1e-4
         warp_preds = warp_m.predict(self.X, median=True)[0]
-        #print np.exp(preds)
-        #print warp_preds
  
-        np.testing.assert_almost_equal(np.exp(preds), warp_preds)
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds, decimal=4)
 
     @unittest.skip('Comment this to plot the modified sine function')
     def test_warped_gp_sine(self):
@@ -354,17 +349,11 @@ class MiscTests(unittest.TestCase):
         print(warp_m['.*warp.*'])
         warp_m.predict_in_warped_space = False
         warp_m.plot()
-        import ipdb; ipdb.set_trace()
         warp_m.predict_in_warped_space = True
         warp_m.plot()
         m.plot()
         warp_f.plot(X.min()-10, X.max()+10)
-
-
-
-
         plt.show()
-
         
 
 class GradientTests(np.testing.TestCase):

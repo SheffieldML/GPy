@@ -14,6 +14,7 @@ class WarpingFunction(Parameterized):
 
     def __init__(self, name):
         super(WarpingFunction, self).__init__(name=name)
+        self.rate = 0.1
 
     def f(self, y, psi):
         """function transformation
@@ -29,9 +30,30 @@ class WarpingFunction(Parameterized):
         """gradient of f w.r.t to y"""
         raise NotImplementedError
 
-    def f_inv(self, z, psi):
-        """inverse function transformation"""
-        raise NotImplementedError
+    def f_inv(self, z, max_iterations=100, y=None):
+        """
+        Calculate the numerical inverse of f. This should be
+        overwritten for specific warping functions where the
+        inverse can be found in closed form.
+
+        :param max_iterations: maximum number of N.R. iterations
+        """
+
+        z = z.copy()
+        y = np.ones_like(z)
+
+        it = 0
+        update = np.inf
+        while np.abs(update).sum() > 1e-10 and it < max_iterations:
+            fy = self.f(y)
+            fgrady = self.fgrad_y(y)
+            update = (fy - z) / fgrady
+            y -= self.rate * update
+            it += 1
+        if it == max_iterations:
+            print("WARNING!!! Maximum number of iterations reached in f_inv ")
+            print("Sum of roots: %.4f" % np.sum(fy - z))
+        return y
 
     def _get_param_names(self):
         raise NotImplementedError
@@ -70,7 +92,6 @@ class TanhFunction(WarpingFunction):
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
         self.initial_y = initial_y
-        self.rate = 0.1
 
     def f(self, y):
         """
@@ -86,29 +107,6 @@ class TanhFunction(WarpingFunction):
             a, b, c = mpsi[i]
             z += a * np.tanh(b * (y + c))
         return z
-
-    def f_inv(self, z, max_iterations=100, y=None):
-        """
-        calculate the numerical inverse of f
-
-        :param max_iterations: maximum number of N.R. iterations
-        """
-
-        z = z.copy()
-        y = np.ones_like(z)
-
-        it = 0
-        update = np.inf
-        while np.abs(update).sum() > 1e-10 and it < max_iterations:
-            fy = self.f(y)
-            fgrady = self.fgrad_y(y)
-            update = (fy - z) / fgrady
-            y -= self.rate * update
-            it += 1
-        if it == max_iterations:
-            print("WARNING!!! Maximum number of iterations reached in f_inv ")
-            print("Sum of roots: %.4f" % np.sum(fy - z))
-        return y
 
     def fgrad_y(self, y, return_precalc=False):
         """
@@ -183,12 +181,16 @@ class TanhFunction(WarpingFunction):
 
 class LogFunction(WarpingFunction):
     """
-    Easy wrapper for applying a fixed warping function to
+    Easy wrapper for applying a fixed log warping function to
     positive-only values.
+    The closed_inverse flag should only be set to False for
+    debugging and testing purposes.
     """
-    def __init__(self):
+    def __init__(self, closed_inverse=True):
         self.num_parameters = 0
         super(LogFunction, self).__init__(name='log')
+        if closed_inverse:
+            self.f_inv = self._f_inv
 
     def f(self, y):
         return np.log(y)
@@ -204,7 +206,7 @@ class LogFunction(WarpingFunction):
             return 0, 0
         return 0
 
-    def f_inv(self, z, y=None):
+    def _f_inv(self, z, y=None):
         return np.exp(z)
 
 
@@ -212,10 +214,14 @@ class IdentityFunction(WarpingFunction):
     """
     Identity warping function. This is for testing and sanity check purposes
     and should not be used in practice.
+    The closed_inverse flag should only be set to False for
+    debugging and testing purposes.
     """
-    def __init__(self):
+    def __init__(self, closed_inverse=True):
         self.num_parameters = 0
         super(IdentityFunction, self).__init__(name='identity')
+        if closed_inverse:
+            self.f_inv = self._f_inv
         
     def f(self, y):
         return y
@@ -231,6 +237,6 @@ class IdentityFunction(WarpingFunction):
             return 0, 0
         return 0
         
-    def f_inv(self, z, y=None):
+    def _f_inv(self, z, y=None):
         return z
 

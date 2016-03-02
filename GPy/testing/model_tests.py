@@ -307,6 +307,31 @@ class MiscTests(unittest.TestCase):
  
         np.testing.assert_almost_equal(preds, warp_preds)
 
+    def test_warped_gp_log(self):
+        """
+        A WarpedGP with the log warping function should be
+        equal to a standard GP with log labels.
+        """
+        k = GPy.kern.RBF(1)
+        Y = np.abs(self.Y)
+        logY = np.log(Y)
+        m = GPy.models.GPRegression(self.X, logY, kernel=k)
+        #m.optimize()
+        m['Gaussian_noise.variance'] = 1e-4
+        preds = m.predict(self.X)[0]
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.LogFunction()
+        warp_m = GPy.models.WarpedGP(self.X, Y, kernel=warp_k, warping_function=warp_f)
+        warp_m.optimize()
+        warp_m['.*'] = 1.0
+        warp_m['Gaussian_noise.variance'] = 1e-4
+        warp_preds = warp_m.predict(self.X, median=True)[0]
+        #print np.exp(preds)
+        #print warp_preds
+ 
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds)
+
     #@unittest.skip('Comment this to plot the modified sine function')
     def test_warped_gp_sine(self):
         """
@@ -316,12 +341,13 @@ class MiscTests(unittest.TestCase):
         X = (2 * np.pi) * np.random.random(151) - np.pi
         Y = np.sin(X) + np.random.normal(0,0.2,151)
         Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
-        Y = np.abs(Y)
+        #Y = np.abs(Y)
         
         import matplotlib.pyplot as plt
         warp_k = GPy.kern.RBF(1)
-        #warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
-        warp_f = GPy.util.warping_functions.LogisticFunction(n_terms=2)
+        warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
+        #warp_f = GPy.util.warping_functions.LogisticFunction(n_terms=2)
+        #warp_f = GPy.util.warping_functions.LogitFunction(n_terms=1)
         warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
 
         m = GPy.models.GPRegression(X[:, None], Y[:, None])

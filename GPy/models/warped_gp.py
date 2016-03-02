@@ -68,22 +68,22 @@ class WarpedGP(GP):
         arg2 = np.ones(shape=gh_samples.shape).dot(mean.T)
         return self.warping_function.f_inv(arg1 + arg2, y=pred_init)
 
-    def _get_warped_mean(self, mean, std, pred_init=None, deg_gauss_hermite=100):
+    def _get_warped_mean(self, mean, std, pred_init=None, deg_gauss_hermite=20):
         """
         Calculate the warped mean by using Gauss-Hermite quadrature.
         """
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
-        gh_samples = gh_samples[:,None]
-        gh_weights = gh_weights[None,:]
+        gh_samples = gh_samples[:, None]
+        gh_weights = gh_weights[None, :]
         return gh_weights.dot(self._get_warped_term(mean, std, gh_samples)) / np.sqrt(np.pi)
 
-    def _get_warped_variance(self, mean, std, pred_init=None, deg_gauss_hermite=100):
+    def _get_warped_variance(self, mean, std, pred_init=None, deg_gauss_hermite=20):
         """
         Calculate the warped variance by using Gauss-Hermite quadrature.
         """
         gh_samples, gh_weights = np.polynomial.hermite.hermgauss(deg_gauss_hermite)
-        gh_samples = gh_samples[:,None]
-        gh_weights = gh_weights[None,:]
+        gh_samples = gh_samples[:, None]
+        gh_weights = gh_weights[None, :]
         arg1 = gh_weights.dot(self._get_warped_term(mean, std, gh_samples, 
                                                     pred_init=pred_init) ** 2) / np.sqrt(np.pi)
         arg2 = self._get_warped_mean(mean, std, pred_init=pred_init,
@@ -91,7 +91,7 @@ class WarpedGP(GP):
         return arg1 - (arg2 ** 2)
 
     def predict(self, Xnew, which_parts='all', pred_init=None, full_cov=False, Y_metadata=None,
-                median=False, deg_gauss_hermite=100, likelihood=None):
+                median=False, deg_gauss_hermite=20, likelihood=None):
         """
         Prediction results depend on:
         - The value of the self.predict_in_warped_space flag

@@ -70,7 +70,10 @@ class Kern(Parameterized):
 
     @Cache_this(limit=20)
     def _slice_X(self, X):
-        return X[:, self._all_dims_active]
+        try:
+            return X[:, self._all_dims_active].astype('float')
+        except:
+            return X[:, self._all_dims_active]
 
     def K(self, X, X2):
         """

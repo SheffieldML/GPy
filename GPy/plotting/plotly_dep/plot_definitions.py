@@ -254,7 +254,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
                         font=dict(color='white' if np.abs(var) > 0.8 else 'black', size=10),
                         opacity=.5,
                         showarrow=False,
-                        hoverinfo='x'))
+                        ))
         return imshow, annotations
 
     def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):

@@ -78,7 +78,7 @@ def jitchol(A, maxtries=5):
     try: raise
     except:
         logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
-            '  in '+traceback.format_list(traceback.extract_stack(limit=2)[-2:-1])[0][2:]]))
+            '  in '+traceback.format_list(traceback.extract_stack(limit=3)[-2:-1])[0][2:]]))
     return L
 
 # def dtrtri(L, lower=1):

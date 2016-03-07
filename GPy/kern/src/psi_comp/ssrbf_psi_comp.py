@@ -88,7 +88,7 @@ try:
         return psi0,psi1,psi2,psi2n
 
     from GPy.util.caching import Cacher
-    psicomputations = Cacher(_psicomputations, limit=1)
+    psicomputations = Cacher(_psicomputations, limit=3)
 
     def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
         ARD = (len(lengthscale)!=1)

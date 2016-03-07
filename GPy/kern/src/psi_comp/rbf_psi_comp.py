@@ -132,5 +132,5 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
 
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
-_psi1computations = Cacher(__psi1computations, limit=5)
-_psi2computations = Cacher(__psi2computations, limit=5)
+_psi1computations = Cacher(__psi1computations, limit=3)
+_psi2computations = Cacher(__psi2computations, limit=3)

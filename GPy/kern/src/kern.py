@@ -68,7 +68,7 @@ class Kern(Parameterized):
     def _effective_input_dim(self):
         return np.size(self._all_dims_active)
 
-    @Cache_this(limit=20)
+    @Cache_this(limit=3)
     def _slice_X(self, X):
         try:
             return X[:, self._all_dims_active].astype('float')

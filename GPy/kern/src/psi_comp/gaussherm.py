@@ -27,7 +27,7 @@ class PSICOMP_GH(PSICOMP):
     def _setup_observers(self):
         pass
     
-    @Cache_this(limit=10, ignore_args=(0,))
+    @Cache_this(limit=3, ignore_args=(0,))
     def comp_K(self, Z, qX):
         if self.Xs is None or self.Xs.shape != qX.mean.shape:
             from paramz import ObsAr
@@ -38,7 +38,7 @@ class PSICOMP_GH(PSICOMP):
             self.Xs[i] = self.locs[i]*S_sq+mu
         return self.Xs
     
-    @Cache_this(limit=10, ignore_args=(0,))
+    @Cache_this(limit=3, ignore_args=(0,))
     def psicomputations(self, kern, Z, qX, return_psi2_n=False):
         mu, S = qX.mean.values, qX.variance.values
         N,M,Q = mu.shape[0],Z.shape[0],mu.shape[1]
@@ -62,7 +62,7 @@ class PSICOMP_GH(PSICOMP):
                 psi2 += self.weights[i]* tdot(Kfu.T)
         return psi0, psi1, psi2
     
-    @Cache_this(limit=10, ignore_args=(0, 2,3,4))
+    @Cache_this(limit=3, ignore_args=(0, 2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, qX):
         mu, S = qX.mean.values, qX.variance.values
         if self.cache_K: Xs = self.comp_K(Z, qX)

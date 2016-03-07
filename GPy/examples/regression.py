@@ -550,3 +550,29 @@ def parametric_mean_function(max_iters=100, optimize=True, plot=True):
     return m
 
 
+def warped_gp_cubic_sine(max_iters=100):
+    """
+    A test replicating the sine regression problem from
+    Snelson's paper.
+    """
+    X = (2 * np.pi) * np.random.random(151) - np.pi
+    Y = np.sin(X) + np.random.normal(0,0.2,151)
+    Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
+        
+    warp_k = GPy.kern.RBF(1)
+    warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
+    warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
+
+    m = GPy.models.GPRegression(X[:, None], Y[:, None])
+    m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
+    warp_m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
+    print(warp_m)
+    print(warp_m['.*warp.*'])
+    warp_m.predict_in_warped_space = False
+    warp_m.plot(title="Warped GP - Latent space")
+    warp_m.predict_in_warped_space = True
+    warp_m.plot(title="Warped GP - Warped space")
+    m.plot(title="Standard GP")
+    #warp_f.plot(X.min()-10, X.max()+10)
+    warp_m.plot_warping()
+    pb.show()

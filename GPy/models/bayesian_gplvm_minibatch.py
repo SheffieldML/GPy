@@ -106,7 +106,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         super(BayesianGPLVMMiniBatch,self).parameters_changed()
 
         kl_fctr = self.kl_factr
-        if kl_fctr > 0:
+        if kl_fctr > 0 and self.has_uncertain_inputs():
             Xgrad = self.X.gradient.copy()
             self.X.gradient[:] = 0
             self.variational_prior.update_gradients_KL(self.X)

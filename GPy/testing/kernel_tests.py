@@ -329,6 +329,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_WhiteHeteroscedastic(self):
+        k = GPy.kern.WhiteHeteroscedastic(self.D, self.X.shape[0])
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_standard_periodic(self):
         k = GPy.kern.StdPeriodic(self.D, self.D-1)
         k.randomize()

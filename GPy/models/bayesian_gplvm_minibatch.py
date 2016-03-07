@@ -61,7 +61,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         if inference_method is None:
             from ..inference.latent_function_inference.var_dtc import VarDTC
             self.logger.debug("creating inference_method var_dtc")
-            inference_method = VarDTC(limit=1 if not missing_data else Y.shape[1])
+            inference_method = VarDTC(limit=3 if not missing_data else Y.shape[1])
 
         super(BayesianGPLVMMiniBatch,self).__init__(X, Y, Z, kernel, likelihood=likelihood,
                                            name=name, inference_method=inference_method,

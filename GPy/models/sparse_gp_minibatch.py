@@ -45,7 +45,7 @@ class SparseGPMiniBatch(SparseGP):
         # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1 if not missing_data else Y.shape[1])
+                inference_method = var_dtc.VarDTC(limit=3 if not missing_data else Y.shape[1])
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")

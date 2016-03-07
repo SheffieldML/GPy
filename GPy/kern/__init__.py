@@ -10,7 +10,7 @@ from .src.add import Add
 from .src.prod import Prod
 from .src.rbf import RBF
 from .src.linear import Linear, LinearFull
-from .src.static import Bias, White, Fixed
+from .src.static import Bias, White, Fixed, WhiteHeteroscedastic
 from .src.brownian import Brownian
 from .src.stationary import Exponential, OU, Matern32, Matern52, ExpQuad, RatQuad, Cosine
 from .src.mlp import MLP

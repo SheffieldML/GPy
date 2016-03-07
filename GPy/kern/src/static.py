@@ -104,7 +104,7 @@ class WhiteHeteroscedastic(Static):
         return 0.
 
     def K(self, X, X2=None):
-        if X2 is None:
+        if X2 is None and X.shape[0]==self.variance.shape[0]:
             return np.eye(X.shape[0])*self.variance
         else:
             return np.zeros((X.shape[0], X2.shape[0]))

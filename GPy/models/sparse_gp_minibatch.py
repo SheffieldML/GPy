@@ -41,6 +41,7 @@ class SparseGPMiniBatch(SparseGP):
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
                  name='sparse gp', Y_metadata=None, normalizer=False,
                  missing_data=False, stochastic=False, batchsize=1):
+        self._update_stochastics = False
 
         # pick a sensible inference method
         if inference_method is None:
@@ -73,7 +74,14 @@ class SparseGPMiniBatch(SparseGP):
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
         self.posterior = None
-
+        
+    def optimize(self, optimizer=None, start=None, **kwargs):
+        try:
+            self._update_stochastics = True
+            SparseGP.optimize(self, optimizer=optimizer, start=start, **kwargs)
+        finally:
+            self._update_stochastics = False
+            
     def has_uncertain_inputs(self):
         return isinstance(self.X, VariationalPosterior)
 
@@ -314,6 +322,8 @@ class SparseGPMiniBatch(SparseGP):
         if self.missing_data:
             self._outer_loop_for_missing_data()
         elif self.stochastics:
+            if self._update_stochastics:
+                self.stochastics.do_stochastics()
             self._outer_loop_without_missing_data()
         else:
             self.posterior, self._log_marginal_likelihood, self.grad_dict = self._inner_parameters_changed(self.kern, self.X, self.Z, self.likelihood, self.Y_normalized, self.Y_metadata)

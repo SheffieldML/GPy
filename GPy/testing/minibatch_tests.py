@@ -132,22 +132,22 @@ class SparseGPMinibatchTest(unittest.TestCase):
         Q = Z.shape[1]
         m = GPy.models.sparse_gp_minibatch.SparseGPMiniBatch(self.X, self.Y, Z, GPy.kern.RBF(Q)+GPy.kern.Matern32(Q)+GPy.kern.Bias(Q), GPy.likelihoods.Gaussian(), missing_data=True, stochastic=False)
         assert(m.checkgrad())
-        m.optimize(max_iters=10)
+        m.optimize('adadelta', max_iters=10)
         assert(m.checkgrad())
 
         m = GPy.models.sparse_gp_minibatch.SparseGPMiniBatch(self.X, self.Y, Z, GPy.kern.RBF(Q)+GPy.kern.Matern32(Q)+GPy.kern.Bias(Q), GPy.likelihoods.Gaussian(), missing_data=True, stochastic=True)
         assert(m.checkgrad())
-        m.optimize(max_iters=10)
+        m.optimize('rprop', max_iters=10)
         assert(m.checkgrad())
         
         m = GPy.models.sparse_gp_minibatch.SparseGPMiniBatch(self.X, self.Y, Z, GPy.kern.RBF(Q)+GPy.kern.Matern32(Q)+GPy.kern.Bias(Q), GPy.likelihoods.Gaussian(), missing_data=False, stochastic=False)
         assert(m.checkgrad())
-        m.optimize(max_iters=10)
+        m.optimize('rprop', max_iters=10)
         assert(m.checkgrad())
         
         m = GPy.models.sparse_gp_minibatch.SparseGPMiniBatch(self.X, self.Y, Z, GPy.kern.RBF(Q)+GPy.kern.Matern32(Q)+GPy.kern.Bias(Q), GPy.likelihoods.Gaussian(), missing_data=False, stochastic=True)
         assert(m.checkgrad())
-        m.optimize(max_iters=10)
+        m.optimize('adadelta', max_iters=10)
         assert(m.checkgrad())
 
     def test_predict_missing_data(self):

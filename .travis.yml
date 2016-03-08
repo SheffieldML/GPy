@@ -30,6 +30,7 @@ install:
 - source install_retry.sh
 - pip install codecov
 - pip install pypandoc
+- pip install git+git://github.com/BRML/climin.git
 - python setup.py develop
 
 script:

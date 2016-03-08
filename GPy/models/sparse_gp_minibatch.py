@@ -234,16 +234,16 @@ class SparseGPMiniBatch(SparseGP):
             woodbury_inv = self.posterior._woodbury_inv
             woodbury_vector = self.posterior._woodbury_vector
 
-        if not self.stochastics:
-            m_f = lambda i: "Inference with missing_data: {: >7.2%}".format(float(i+1)/self.output_dim)
-            message = m_f(-1)
-            print(message, end=' ')
+        #if not self.stochastics:
+        #    m_f = lambda i: "Inference with missing_data: {: >7.2%}".format(float(i+1)/self.output_dim)
+        #    message = m_f(-1)
+        #    print(message, end=' ')
 
         for d, ninan in self.stochastics.d:
-            if not self.stochastics:
-                print(' '*(len(message)) + '\r', end=' ')
-                message = m_f(d)
-                print(message, end=' ')
+            #if not self.stochastics:
+            #    print(' '*(len(message)) + '\r', end=' ')
+            #    message = m_f(d)
+            #    print(message, end=' ')
 
             psi0ni = self.psi0[ninan]
             psi1ni = self.psi1[ninan]
@@ -270,8 +270,8 @@ class SparseGPMiniBatch(SparseGP):
             woodbury_vector[:, d] = posterior.woodbury_vector
             self._log_marginal_likelihood += log_marginal_likelihood
 
-        if not self.stochastics:
-            print('')
+        #if not self.stochastics:
+        #    print('')
 
         if self.posterior is None:
             self.posterior = Posterior(woodbury_inv=woodbury_inv, woodbury_vector=woodbury_vector,

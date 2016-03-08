@@ -63,9 +63,10 @@ class StateSpace(Model):
         
         # Default kernel
         if kernel is None:
-            self.kern = kern.Matern32(1)
+            raise ValueError("State-Space Model: the kernel must be provided.")
         else:
             self.kern = kernel
+            
         self.link_parameter(self.kern)
         self.link_parameter(self.likelihood)
         self.posterior = None

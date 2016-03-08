@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2015, Alex Grigorevskiy
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
 Testing state space related functions.
 """

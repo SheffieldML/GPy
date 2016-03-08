@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2015, Alex Grigorevskiy
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
-Created on Thu Feb 19 12:32:32 2015
-
-
+Main functionality for state-space inference.
 """
 
 import collections # for cheking whether a variable is iterable
@@ -771,7 +771,7 @@ class DescreteStateSpace(object):
         # m - vector for calculating matrices. Required for EKF. Not used here.
             
         c_p_A = p_A.copy() # create a copy because this object is passed to the smoother
-        c_p_Q = p_A.copy() # create a copy because this object is passed to the smoother
+        c_p_Q = p_Q.copy() # create a copy because this object is passed to the smoother
         c_index = index.copy() # create a copy because this object is passed to the smoother
         
         if calc_grad_log_likelihood:

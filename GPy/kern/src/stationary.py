@@ -99,6 +99,9 @@ class Stationary(Kern):
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dr_via_X(self, X, X2):
+        """
+        compute the derivative of K wrt X going through X
+        """
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 

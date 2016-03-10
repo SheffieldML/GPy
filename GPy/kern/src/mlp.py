@@ -45,7 +45,7 @@ class MLP(Kern):
         self.link_parameters(self.variance, self.weight_variance, self.bias_variance)
 
 
-    @Cache_this(limit=20, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         if X2 is None:
             X_denom = np.sqrt(self._comp_prod(X)+1.)
@@ -57,7 +57,7 @@ class MLP(Kern):
         XTX = self._comp_prod(X,X2)/X_denom[:,None]/X2_denom[None,:]
         return self.variance*four_over_tau*np.arcsin(XTX)
 
-    @Cache_this(limit=20, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def Kdiag(self, X):
         """Compute the diagonal of the covariance matrix for X."""
         X_prod = self._comp_prod(X)
@@ -88,14 +88,14 @@ class MLP(Kern):
         """Gradient of diagonal of covariance with respect to X"""
         return self._comp_grads_diag(dL_dKdiag, X)[3]
 
-    @Cache_this(limit=50, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def _comp_prod(self, X, X2=None):
         if X2 is None:
             return (np.square(X)*self.weight_variance).sum(axis=1)+self.bias_variance
         else:
             return (X*self.weight_variance).dot(X2.T)+self.bias_variance
     
-    @Cache_this(limit=20, ignore_args=(1,))
+    @Cache_this(limit=3, ignore_args=(1,))
     def _comp_grads(self, dL_dK, X, X2=None):
         var,w,b = self.variance, self.weight_variance, self.bias_variance
         K = self.K(X, X2)
@@ -130,7 +130,7 @@ class MLP(Kern):
             dX2 = common.T.dot(X)*w-((common*XTX).sum(axis=0)/(X2_prod+1.))[:,None]*X2*w
         return dvar, dw, db, dX, dX2
     
-    @Cache_this(limit=20, ignore_args=(1,))
+    @Cache_this(limit=3, ignore_args=(1,))
     def _comp_grads_diag(self, dL_dKdiag, X):
         var,w,b = self.variance, self.weight_variance, self.bias_variance
         K = self.Kdiag(X)

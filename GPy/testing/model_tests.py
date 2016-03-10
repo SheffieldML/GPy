@@ -553,14 +553,25 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
+
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
-        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
+        self.assertTrue(m.checkgrad())
+
+    def test_SparseGPLVM_rbf_bias_white_kern_2D(self):
+        """ Testing GPLVM with rbf + bias kernel """
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
+        K = k.K(X)
+        Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
+        m = GPy.models.SparseGPLVM(Y, input_dim, kernel=k)
         self.assertTrue(m.checkgrad())
 
     def test_BCGPLVM_rbf_bias_white_kern_2D(self):

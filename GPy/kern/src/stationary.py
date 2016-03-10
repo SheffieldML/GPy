@@ -81,11 +81,11 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
-    @Cache_this(limit=20, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def dK2_drdr(self, r):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -99,6 +99,9 @@ class Stationary(Kern):
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dr_via_X(self, X, X2):
+        """
+        compute the derivative of K wrt X going through X
+        """
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 

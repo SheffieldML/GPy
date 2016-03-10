@@ -401,9 +401,9 @@ class GP(Model):
             var_jac = compute_cov_inner(self.posterior.woodbury_inv)
         return mean_jac, var_jac
 
-    def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+    def predict_wishart_embedding(self, Xnew, kern=None, mean=True, covariance=True):
         """
-        Predict the wishard embedding G of the GP. This is the density of the
+        Predict the wishart embedding G of the GP. This is the density of the
         input of the GP defined by the probabilistic function mapping f.
         G = J_mean.T*J_mean + output_dim*J_cov.
 
@@ -430,6 +430,10 @@ class GP(Model):
         if covariance:
             G += Sigma
         return G
+
+    def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+        warnings.warn("Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!", DeprecationWarning)
+        return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
 
     def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True):
         """

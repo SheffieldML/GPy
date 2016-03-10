@@ -22,7 +22,7 @@ def checkFullRank(m, tol=1e-10, name=None, force_check=False):
         name = 'Matrix with ID['+str(id(m))+']'
     assert len(m.shape)==2 and m.shape[0]==m.shape[1], 'The input of checkFullRank has to be a square matrix!'
 
-    if not force_check and m.shape[0]>=10000:
+    if not force_check and m.shape[0]>=10000: # pragma: no cover
         print('The size of '+name+'is too big to check (>=10000)!')
         return True
 

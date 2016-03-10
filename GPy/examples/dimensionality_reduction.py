@@ -459,7 +459,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim)
 
-    k = kern.Linear(Q) + kern.White(Q, variance=1e-4)
+    k = kern.Linear(Q, ARD=True) + kern.White(Q, variance=1e-4)
     m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz='permute', **kw)
 
     m['.*noise'] = [Y.var() / 40. for Y in Ylist]
@@ -479,7 +479,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
     D1, D2, D3, N, num_inducing, Q = 60, 20, 36, 60, 6, 5
     _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim)
 
-    k = kern.Linear(Q) + kern.White(Q, variance=1e-4)
+    k = kern.Linear(Q, ARD=True) + kern.White(Q, variance=1e-4)
     inanlist = []
 
     for Y in Ylist:

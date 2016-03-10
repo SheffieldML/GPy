@@ -20,33 +20,19 @@ env:
   - PYTHON_VERSION=3.5
 
 before_install:
-  - export CONDA_CACHED=1
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
-      then export OS=Linux; 
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
-      then export OS=MacOSX;
-      brew install pandoc; 
-    else 
-      echo "OS not supported yet"; 
-      exit 1; fi;
-  - if [[ $PYTHON_VERSION == "2.7" ]]; 
-      then export MINICONDA=Miniconda; 
-    elif [[ $PYTHON_VERSION == 3* ]]; 
-      then export MINICONDA=Miniconda3; 
-    else echo "Could not find python version";exit 1; fi;
-  - if [ ! -d $HOME/download/ ]; then mkdir $HOME/download/; fi;
-  - if [ ! -d $HOME/install/ ]; then mkdir $HOME/install/; fi;
-  - export MINICONDA_FILE=$MINICONDA-latest-$OS-x86_64-$PYTHON_VERSION
-  - export MINCONDA_CACHE_FILE=$HOME/download/$MINICONDA_FILE.sh
-  - export MINICONDA_INSTALL=$HOME/install/$MINICONDA_FILE
-  - if [ ! -f $MINCONDA_CACHE_FILE ]; then export CONDA_CACHED=0; wget http://repo.continuum.io/miniconda/$MINICONDA-latest-$OS-x86_64.sh -O $MINCONDA_CACHE_FILE; bash $MINCONDA_CACHE_FILE -b -p $MINICONDA_INSTALL; fi;
-  - export PATH="$MINICONDA_INSTALL/bin:$PATH";
+- wget https://github.com/mzwiessele/travis_scripts/raw/master/download_miniconda.sh
+- wget https://github.com/mzwiessele/travis_scripts/raw/master/install_retry.sh
+- source download_miniconda.sh
+- echo $PATH
 
 install:
-  - conda install --yes python=$PYTHON_VERSION numpy=1.9 scipy=0.16 nose pip six matplotlib sphinx;
-  - pip install codecov
-  - pip install pypandoc
-  - python setup.py develop
+- echo $PATH
+- source install_retry.sh
+- pip install codecov
+- pip install pypandoc
+- pip install git+git://github.com/BRML/climin.git
+- pip install autograd
+- python setup.py develop
 
 script:
   - coverage run travis_tests.py
@@ -60,16 +46,16 @@ before_deploy:
   - sphinx-apidoc -o source/ ../GPy
   - make html
   - cd ../
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
       then export DIST='sdist';
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; 
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
       then export DIST='bdist_wheel';
     fi;
 
 deploy:
   provider: pypi
   user: maxz
-  password: 
+  password:
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
     tags: false

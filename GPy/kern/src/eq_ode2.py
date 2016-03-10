@@ -64,7 +64,7 @@ class EQ_ODE2(Kern):
         self.W = Param('W', W)
         self.link_parameters(self.lengthscale, self.C, self.B, self.W)
 
-    @Cache_this(limit=2)
+    @Cache_this(limit=3)
     def K(self, X, X2=None):
         #This way is not working, indexes are lost after using k._slice_X
         #index = np.asarray(X, dtype=np.int)

@@ -48,11 +48,12 @@ class Kern(Parameterized):
 
         if active_dims is None:
             active_dims = np.arange(input_dim)
-
-        self.active_dims = active_dims
-        self._all_dims_active = np.atleast_1d(active_dims).astype(int)
-
-        assert self._all_dims_active.size == self.input_dim, "input_dim={} does not match len(active_dim)={}, _all_dims_active={}".format(self.input_dim, self._all_dims_active.size, self._all_dims_active)
+        
+        self.active_dims = np.asarray(active_dims, np.int_)
+        
+        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
+        
+        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(self.input_dim, self._all_dims_active.size)
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
@@ -68,9 +69,12 @@ class Kern(Parameterized):
     def _effective_input_dim(self):
         return np.size(self._all_dims_active)
 
-    @Cache_this(limit=20)
+    @Cache_this(limit=3)
     def _slice_X(self, X):
-        return X[:, self._all_dims_active]
+        try:
+            return X[:, self._all_dims_active].astype('float')
+        except:
+            return X[:, self._all_dims_active]
 
     def K(self, X, X2):
         """
@@ -319,10 +323,20 @@ class CombinationKernel(Kern):
         :param array-like extra_dims: if needed extra dimensions for the combination kernel to work on
         """
         assert all([isinstance(k, Kern) for k in kernels])
-        extra_dims = np.array(extra_dims, dtype=int)
-        input_dim, active_dims = self.get_input_dim_active_dims(kernels, extra_dims)
+        extra_dims = np.asarray(extra_dims, dtype=int)
+        
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
+        
+        input_dim = active_dims.size
+        if extra_dims is not None:
+            input_dim += extra_dims.size
+
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
+
+        effective_input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
+        self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
+        
         self.extra_dims = extra_dims
         self.link_parameters(*kernels)
 
@@ -330,16 +344,8 @@ class CombinationKernel(Kern):
     def parts(self):
         return self.parameters
 
-    def get_input_dim_active_dims(self, kernels, extra_dims = None):
-        self.active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        #_all_dims_active = np.array(np.concatenate((_all_dims_active, extra_dims if extra_dims is not None else [])), dtype=int)
-        input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
-
-        if extra_dims is not None:
-            input_dim += extra_dims.size
-
-        _all_dims_active = np.arange(input_dim)
-        return input_dim, _all_dims_active
+    def _set_all_dims_ative(self):
+        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)        
 
     def input_sensitivity(self, summarize=True):
         """

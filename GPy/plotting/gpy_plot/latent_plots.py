@@ -147,6 +147,7 @@ def _plot_magnification(self, canvas, which_indices, Xgrid,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, which_indices] = x
+
         mf = self.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
         return mf.reshape(resolution, resolution).T
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl().defaults.magnification)
@@ -163,7 +164,8 @@ def plot_magnification(self, labels=None, which_indices=None,
                 updates=False,
                 mean=True, covariance=True,
                 kern=None, num_samples=1000,
-                scatter_kwargs=None, **imshow_kwargs):
+                scatter_kwargs=None, plot_scatter=True,
+                **imshow_kwargs):
     """
     Plot the magnification factor of the GP on the inputs. This is the
     density of the GP as a gray scale.
@@ -188,17 +190,20 @@ def plot_magnification(self, labels=None, which_indices=None,
     _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
-    if (labels is not None):
-        legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
-    else:
-        labels = np.ones(self.num_data)
-        legend = False
-    scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
-    view = _plot_magnification(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
-    retval = pl().add_to_canvas(canvas, dict(scatter=scatters, imshow=view),
+    plots = {}
+    if legend and plot_scatter:
+        if (labels is not None):
+            legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
+        else:
+            labels = np.ones(self.num_data)
+            legend = False
+    if plot_scatter:
+        plots['scatters'] = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
+    plots['view'] = _plot_magnification(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, mean, covariance, kern, **imshow_kwargs)
+    retval = pl().add_to_canvas(canvas, plots,
                            legend=legend,
                            )
-    _wait_for_updates(view, updates)
+    _wait_for_updates(plots['view'], updates)
     return retval
 
 
@@ -211,7 +216,12 @@ def _plot_latent(self, canvas, which_indices, Xgrid,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, which_indices] = x
-        mf = np.log(self.predict(Xtest_full, kern=kern)[1])
+        mf = self.predict(Xtest_full, kern=kern)[1]
+        if mf.shape[1]==self.output_dim:
+            mf = mf.sum(-1)
+        else:
+            mf *= self.output_dim
+        mf = np.log(mf)
         return mf.reshape(resolution, resolution).T
 
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl().defaults.latent)
@@ -254,11 +264,12 @@ def plot_latent(self, labels=None, which_indices=None,
     _, _, Xgrid, _, _, xmin, xmax, resolution = helper_for_plot_data(self, X, plot_limits, which_indices, None, resolution)
     canvas, imshow_kwargs = pl().new_canvas(xlim=(xmin[0], xmax[0]), ylim=(xmin[1], xmax[1]),
                            xlabel='latent dimension %i' % input_1, ylabel='latent dimension %i' % input_2, **imshow_kwargs)
-    if (labels is not None):
-        legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
-    else:
-        labels = np.ones(self.num_data)
-        legend = False
+    if legend:
+        if (labels is not None):
+            legend = find_best_layout_for_subplots(len(np.unique(labels)))[1]
+        else:
+            labels = np.ones(self.num_data)
+            legend = False
     scatters = _plot_latent_scatter(canvas, X, which_indices, labels, marker, num_samples, projection='2d', **scatter_kwargs or {})
     view = _plot_latent(self, canvas, which_indices, Xgrid, xmin, xmax, resolution, updates, kern, **imshow_kwargs)
     retval = pl().add_to_canvas(canvas, dict(scatter=scatters, imshow=view), legend=legend)

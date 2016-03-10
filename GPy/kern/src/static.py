@@ -81,6 +81,52 @@ class White(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
 
+class WhiteHeteroscedastic(Static):
+    def __init__(self, input_dim, num_data, variance=1., active_dims=None, name='white_hetero'):
+        """
+        A heteroscedastic White kernel (nugget/noise).
+        It defines one variance (nugget) per input sample. 
+        
+        Prediction excludes any noise learnt by this Kernel, so be careful using this kernel.
+        
+        You can plot the errors learnt by this kernel by something similar as:
+        plt.errorbar(m.X, m.Y, yerr=2*np.sqrt(m.kern.white.variance))
+        """
+        super(Static, self).__init__(input_dim, active_dims, name)
+        self.variance = Param('variance', np.ones(num_data) * variance, Logexp())
+        self.link_parameters(self.variance)
+
+    def Kdiag(self, X):
+        if X.shape[0] == self.variance.shape[0]:
+            # If the input has the same number of samples as 
+            # the number of variances, we return the variances
+            return self.variance
+        return 0.
+
+    def K(self, X, X2=None):
+        if X2 is None and X.shape[0] == self.variance.shape[0]:
+            return np.eye(X.shape[0]) * self.variance
+        else:
+            return 0.
+
+    def psi2(self, Z, variational_posterior):
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
+
+    def psi2n(self, Z, variational_posterior):
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None:
+            self.variance.gradient = np.diagonal(dL_dK)
+        else:
+            self.variance.gradient = 0.
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        self.variance.gradient = dL_dKdiag
+
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        self.variance.gradient = dL_dpsi0
+
 class Bias(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):
         super(Bias, self).__init__(input_dim, variance, active_dims, name)

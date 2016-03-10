@@ -21,7 +21,7 @@ class VarDTC_minibatch(LatentFunctionInference):
 
     """
     const_jitter = 1e-8
-    def __init__(self, batchsize=None, limit=1, mpi_comm=None):
+    def __init__(self, batchsize=None, limit=3, mpi_comm=None):
 
         self.batchsize = batchsize
         self.mpi_comm = mpi_comm

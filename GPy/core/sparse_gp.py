@@ -44,7 +44,7 @@ class SparseGP(GP):
         #pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
-                inference_method = var_dtc.VarDTC(limit=1)
+                inference_method = var_dtc.VarDTC(limit=3)
             else:
                 #inference_method = ??
                 raise NotImplementedError("what to do what to do?")

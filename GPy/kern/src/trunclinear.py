@@ -54,12 +54,12 @@ class TruncLinear(Kern):
         self.add_parameter(self.variances)
         self.add_parameter(self.delta)
 
-    @Cache_this(limit=2)
+    @Cache_this(limit=3)
     def K(self, X, X2=None):
         XX = self.variances*self._product(X, X2)
         return XX.sum(axis=-1)
 
-    @Cache_this(limit=2)
+    @Cache_this(limit=3)
     def _product(self, X, X2=None):
         if X2 is None:
             X2 = X
@@ -149,12 +149,12 @@ class TruncLinear_inf(Kern):
         self.add_parameter(self.variances)
 
 
-#     @Cache_this(limit=2)
+#     @Cache_this(limit=3)
     def K(self, X, X2=None):
         tmp = self._product(X, X2)
         return (self.variances*tmp).sum(axis=-1)
 
-#     @Cache_this(limit=2)
+#     @Cache_this(limit=3)
     def _product(self, X, X2=None):
         if X2 is None:
             X2 = X

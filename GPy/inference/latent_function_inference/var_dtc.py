@@ -22,7 +22,7 @@ class VarDTC(LatentFunctionInference):
 
     """
     const_jitter = 1e-8
-    def __init__(self, limit=1):
+    def __init__(self, limit=3):
         from paramz.caching import Cacher
         self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)

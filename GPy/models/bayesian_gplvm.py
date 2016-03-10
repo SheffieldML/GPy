@@ -61,7 +61,7 @@ class BayesianGPLVM(SparseGP_MPI):
             else:
                 from ..inference.latent_function_inference.var_dtc import VarDTC
                 self.logger.debug("creating inference_method var_dtc")
-                inference_method = VarDTC(limit=1 if not missing_data else Y.shape[1])
+                inference_method = VarDTC(limit=3 if not missing_data else Y.shape[1])
         if isinstance(inference_method,VarDTC_minibatch):
             inference_method.mpi_comm = mpi_comm
 

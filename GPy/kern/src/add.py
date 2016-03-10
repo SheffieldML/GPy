@@ -19,8 +19,8 @@ class Add(CombinationKernel):
             if isinstance(kern, Add):
                 del subkerns[i]
                 for part in kern.parts[::-1]:
-                    kern.unlink_parameter(part)
-                    subkerns.insert(i, part)
+                    #kern.unlink_parameter(part)
+                    subkerns.insert(i, part.copy())
         super(Add, self).__init__(subkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
 
@@ -241,16 +241,20 @@ class Add(CombinationKernel):
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
 
-    def add(self, other):
-        if isinstance(other, Add):
-            other_params = other.parameters[:]
-            for p in other_params:
-                other.unlink_parameter(p)
-            self.link_parameters(*other_params)
-        else:
-            self.link_parameter(other)
-        self.input_dim, self._all_dims_active = self.get_input_dim_active_dims(self.parts)
-        return self
+    #def add(self, other):
+    #    parts = self.parts
+    #    if 0:#isinstance(other, Add):
+    #        #other_params = other.parameters[:]
+    #        for p in other.parts[:]:
+    #            other.unlink_parameter(p)
+    #        parts.extend(other.parts)
+    #        #self.link_parameters(*other_params)
+    #        
+    #    else:
+    #        #self.link_parameter(other)
+    #        parts.append(other)
+    #    #self.input_dim, self._all_dims_active = self.get_input_dim_active_dims(parts)
+    #    return Add([p for p in parts], self.name)
 
     def input_sensitivity(self, summarize=True):
         if summarize:

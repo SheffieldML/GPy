@@ -15,4 +15,4 @@ from . import diag
 from . import initialization
 from . import multioutput
 from . import parallel
-
+from . import functions

@@ -316,32 +316,40 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'regular',
-                           use_cython=False, optimize_max_iters=20, check_gradients=True,
+                           use_cython=False, optimize_max_iters=30, check_gradients=True,
                            predict_X=X_test, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=0, var_compare_decimal=0)
+                           mean_compare_decimal=0, var_compare_decimal=-1)
         
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'svd',
                            use_cython=False, optimize_max_iters=30, check_gradients=False,
                            predict_X=X_test, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=0, var_compare_decimal=-1)
+                           mean_compare_decimal=-1, var_compare_decimal=-1)
                            
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'svd',
                            use_cython=True, optimize_max_iters=30, check_gradients=False,
                            predict_X=X_test, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=0, var_compare_decimal=-1) 
+                           mean_compare_decimal=-1, var_compare_decimal=-1) 
         
 if __name__ == "__main__":
     print("Running state-space inference tests...")
     unittest.main()
     
     #tt = StateSpaceKernelsTests('test_forecast')
-    #tt.test_forecast()
-    #tt.test_kernel_addition()
-    #tt.test_kernel_multiplication()
+    #import pdb; pdb.set_trace()
+    #tt.test_Matern32_kernel()
+    #tt.test_Matern52_kernel()
+    #tt.test_RBF_kernel()
     #tt.test_periodic_kernel()
     #tt.test_quasi_periodic_kernel()
+    #tt.test_linear_kernel()
+    #tt.test_brownian_kernel()
+    #tt.test_exponential_kernel()
+    #tt.test_kernel_addition()
+    #tt.test_kernel_multiplication()
+    #tt.test_forecast()
+    

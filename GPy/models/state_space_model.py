@@ -34,14 +34,26 @@ from . import state_space_setup as ss_setup
 class StateSpace(Model):
     def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', use_cython = False, name='StateSpace'):
         super(StateSpace, self).__init__(name=name)
+        
+        if len(X.shape) == 1:
+            X = np.atleast_2d(X).T
         self.num_data, input_dim = X.shape
-        assert input_dim==1, "State space methods for time only"
-        if len(Y.shape) ==2: # TODO make this nice
+        
+        if len(Y.shape) == 1:
+            Y = np.atleast_2d(Y).T
+                
+        assert input_dim==1, "State space methods are only for 1D data"
+        
+        if len(Y.shape)==2:
             num_data_Y, self.output_dim = Y.shape
-        elif len(Y.shape) ==3:
+            ts_number = None
+        elif len(Y.shape)==3:
             num_data_Y, self.output_dim, ts_number = Y.shape
+        
+        self.ts_number = ts_number
+        
         assert num_data_Y == self.num_data, "X and Y data don't match"
-        assert self.output_dim == 1, "State space methods for single outputs only"
+        assert self.output_dim == 1, "State space methods are for single outputs only"
 
         self.kalman_filter_type = kalman_filter_type
         #self.kalman_filter_type = 'svd' # temp test
@@ -80,7 +92,8 @@ class StateSpace(Model):
         """
         Parameters have now changed
         """
-        np.set_printoptions(16)
+    
+        #np.set_printoptions(16)
         #print(self.param_array)
         #import pdb; pdb.set_trace()
         
@@ -120,20 +133,22 @@ class StateSpace(Model):
         
         kalman_filter_type = self.kalman_filter_type
              
-#        if ss_use_cython:
-#            reload(ssm)
-#        from . import state_space_main as ssm
-        
+        # The following code is required because sometimes the shapes of self.Y
+        # becomes 3D even though is must be 2D. The reason is undescovered.
+        Y = self.Y
+        if self.ts_number is None:
+            Y.shape = (self.num_data,1)
+        else:
+            Y.shape = (self.num_data,1,self.ts_number)
+            
         (filter_means, filter_covs, log_likelihood, 
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
-                                      float(self.Gaussian_noise.variance),P_inf,self.X,self.Y,m_init=None,
+                                      float(self.Gaussian_noise.variance),P_inf,self.X,Y,m_init=None,
                                       P_init=P0, p_kalman_filter_type = kalman_filter_type, calc_log_likelihood=True, 
                                       calc_grad_log_likelihood=True, 
                                       grad_params_no=grad_params_no, 
                                       grad_calc_params=grad_calc_params)
-        
-        #import pdb; pdb.set_trace()
-        
+            
         if np.any( np.isfinite(log_likelihood) == False):
             #import pdb; pdb.set_trace()
             print("State-Space: NaN valkues in the log_likelihood")

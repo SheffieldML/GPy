@@ -7,7 +7,7 @@ from GPy.core.model import Model
 from paramz import ObsAr
 from .mapping import Mapping
 from .. import likelihoods
-from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
+from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation, expectation_propagation_dtc
 from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
@@ -158,6 +158,12 @@ class GP(Model):
                     self.link_parameter(self.X)
             else:
                 self.X = ObsAr(X)
+
+        # EP approximation
+	if isinstance(self.inference_method,expectation_propagation.EP) or isinstance(self.inference_method,expectation_propagation.EPDTC):
+	    print("Resetting the EP approximation.")
+	    self.inference_method.reset()
+
         self.update_model(True)
 
     def set_X(self,X):

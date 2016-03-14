@@ -4,6 +4,7 @@
 import numpy as np
 from ..core.parameterization import Parameterized, Param
 from paramz.transformations import Logexp
+import sys
 
 
 class WarpingFunction(Parameterized):
@@ -45,7 +46,11 @@ class WarpingFunction(Parameterized):
         it = 0
         update = np.inf
         while np.abs(update).sum() > 1e-10 and it < max_iterations:
-            fy = self.f(y)
+            try:
+                fy = self.f(y)
+            except ValueError:
+                sys.stderr.write("One of y's is negative! Stopping inverse calculation.\n")
+                break
             fgrady = self.fgrad_y(y)
             update = (fy - z) / fgrady
             y -= self.rate * update
@@ -204,6 +209,9 @@ class LogTanhFunction(WarpingFunction):
 
         :math:`f = (y * d) + \\sum_{terms} a * tanh(b *(y + c))`
         """
+        if (y <= 0.0).any():
+            sys.stderr.write("Negative y found!, raising exception.\n")
+            raise ValueError
         d = self.d
         mpsi = self.psi
         z = d * np.log(y)

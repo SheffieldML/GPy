@@ -5,6 +5,7 @@ import numpy as np
 from ..util.warping_functions import *
 from ..core import GP
 from .. import likelihoods
+from paramz import ObsAr
 from GPy.util.warping_functions import TanhFunction
 from GPy import kern
 
@@ -30,6 +31,10 @@ class WarpedGP(GP):
         likelihood = likelihoods.Gaussian()
         GP.__init__(self, X, self.transform_data(), likelihood=likelihood, kernel=kernel)
         self.link_parameter(self.warping_function)
+
+    def set_XY(self, X=None, Y=None):
+        self.Y_untransformed = Y.copy()
+        GP.set_XY(self, X, self.transform_data())
 
     def _scale_data(self, Y):
         self._Ymax = Y.max()

@@ -110,12 +110,12 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
         
         ss_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-        ss_kernel.lengthscales.constrain_bounded(0.25, 1000)
-        ss_kernel.wavelengths.constrain_bounded(0.15, 100)
+        ss_kernel.lengthscale.constrain_bounded(0.25, 1000)
+        ss_kernel.period.constrain_bounded(0.15, 100)
     
         gp_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
-        gp_kernel.lengthscales.constrain_bounded(0.25, 1000)
-        gp_kernel.wavelengths.constrain_bounded(0.15, 100)        
+        gp_kernel.lengthscale.constrain_bounded(0.25, 1000)
+        gp_kernel.period.constrain_bounded(0.15, 100)        
         
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                            predict_X=X, 
@@ -129,12 +129,12 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
         
         ss_kernel = GPy.kern.sde_Matern32(1)*GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-        ss_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-        ss_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)
+        ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
     
         gp_kernel = GPy.kern.Matern32(1)*GPy.kern.StdPeriodic(1,active_dims=[0,])
-        gp_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-        gp_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)        
+        gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)        
         
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                             predict_X=X, 
@@ -203,12 +203,12 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         
         def get_new_kernels():
             ss_kernel = GPy.kern.sde_Linear(1,X) + GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-            ss_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            ss_kernel.std_periodic.wavelengths.constrain_bounded(3, 8)
+            ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            ss_kernel.std_periodic.period.constrain_bounded(3, 8)
         
             gp_kernel = GPy.kern.Linear(1) + GPy.kern.StdPeriodic(1,active_dims=[0,])
-            gp_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            gp_kernel.std_periodic.wavelengths.constrain_bounded(3, 8)
+            gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            gp_kernel.std_periodic.period.constrain_bounded(3, 8)
             
             return ss_kernel, gp_kernel
         
@@ -300,15 +300,15 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         def get_new_kernels():
             periodic_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
             gp_kernel = GPy.kern.Linear(1, active_dims=[0,]) + GPy.kern.Bias(1, active_dims=[0,]) + periodic_kernel
-            gp_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            gp_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)
+            gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)
         
             periodic_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
             ss_kernel = GPy.kern.sde_Linear(1,X,active_dims=[0,]) + \
                 GPy.kern.sde_Bias(1, active_dims=[0,]) + periodic_kernel
     
-            ss_kernel.std_periodic.lengthscales.constrain_bounded(0.25, 1000)
-            ss_kernel.std_periodic.wavelengths.constrain_bounded(0.15, 100)
+            ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
             
             return ss_kernel, gp_kernel
         

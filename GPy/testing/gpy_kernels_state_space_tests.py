@@ -31,10 +31,8 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         if check_gradients:
             self.assertTrue(m1.checkgrad())
         
-        #import pdb; pdb.set_trace()
-        
         if optimize:
-            m1.optimize(optimizer='bfgs',max_iters=optimize_max_iters)
+            m1.optimize(optimizer='lbfgsb',max_iters=optimize_max_iters)
             
         if compare_with_GP and (predict_X is None):
             predict_X = X
@@ -45,7 +43,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         
         if compare_with_GP:
             m2  = GPy.models.GPRegression(X,Y, gp_kernel)
-            m2.optimize(optimizer='bfgs', max_iters=optimize_max_iters)
+            m2.optimize(optimizer='lbfgsb', max_iters=optimize_max_iters)
             #print(m2)
             
             x_pred_reg_2 = m2.predict(predict_X)

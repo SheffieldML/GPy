@@ -33,8 +33,8 @@ class sde_StdPeriodic(StdPeriodic):
         """
     
         self.variance.gradient = gradients[0]
-        self.wavelengths.gradient = gradients[1]
-        self.lengthscales.gradient = gradients[2]
+        self.period.gradient = gradients[1]
+        self.lengthscale.gradient = gradients[2]
         
     def sde(self): 
         """ 
@@ -52,15 +52,15 @@ class sde_StdPeriodic(StdPeriodic):
         
         # Params to use: (in that order)
         #self.variance
-        #self.wavelengths
-        #self.lengthscales
+        #self.period
+        #self.lengthscale
         N = 7 # approximation order        
         
         
-        w0 = 2*np.pi/self.wavelengths # frequency
-        lengthscales = 2*self.lengthscales         
+        w0 = 2*np.pi/self.period # frequency
+        lengthscale = 2*self.lengthscale         
         
-        [q2,dq2l] = seriescoeff(N,lengthscales,self.variance)        
+        [q2,dq2l] = seriescoeff(N,lengthscale,self.variance)        
         # lengthscale is multiplied by 2 because of slightly different
         # formula for periodic covariance function.
         # For the same reason:
@@ -90,8 +90,8 @@ class sde_StdPeriodic(StdPeriodic):
         dQc[:,:,0] = np.zeros(Qc.shape)
         dP_inf[:,:,0] = P_inf / self.variance
 
-        # Derivatives self.wavelengths
-        dF[:,:,1] = np.kron(np.diag(range(0,N+1)),np.array( ((0,  w0), (-w0, 0)) ) / self.wavelengths );
+        # Derivatives self.period
+        dF[:,:,1] = np.kron(np.diag(range(0,N+1)),np.array( ((0,  w0), (-w0, 0)) ) / self.period );
         dQc[:,:,1] = np.zeros(Qc.shape)
         dP_inf[:,:,1] = np.zeros(P_inf.shape)      
         

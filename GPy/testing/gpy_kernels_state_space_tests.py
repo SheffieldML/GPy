@@ -110,12 +110,12 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
         
         ss_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-        ss_kernel.lengthscale.constrain_bounded(0.25, 1000)
-        ss_kernel.period.constrain_bounded(0.15, 100)
+        ss_kernel.lengthscale.constrain_bounded(0.27, 1000)
+        ss_kernel.period.constrain_bounded(0.17, 100)
     
         gp_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
-        gp_kernel.lengthscale.constrain_bounded(0.25, 1000)
-        gp_kernel.period.constrain_bounded(0.15, 100)        
+        gp_kernel.lengthscale.constrain_bounded(0.27, 1000)
+        gp_kernel.period.constrain_bounded(0.17, 100)        
         
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                            predict_X=X, 

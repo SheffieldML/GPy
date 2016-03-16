@@ -218,21 +218,21 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                            use_cython=True, optimize_max_iters=10, check_gradients=False,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=6, var_compare_decimal=5)
+                           mean_compare_decimal=5, var_compare_decimal=5)
         
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'regular',
                            use_cython=False, optimize_max_iters=10, check_gradients=True,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=6, var_compare_decimal=5)
+                           mean_compare_decimal=5, var_compare_decimal=5)
                            
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'svd',
                            use_cython=False, optimize_max_iters=10, check_gradients=False,
                            predict_X=X, 
                            gp_kernel=gp_kernel, 
-                           mean_compare_decimal=6, var_compare_decimal=5)
+                           mean_compare_decimal=5, var_compare_decimal=5)
         
         
     def test_kernel_multiplication(self,):
@@ -253,14 +253,14 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                            use_cython=True, optimize_max_iters=10, check_gradients=True,
                             predict_X=X, 
                             gp_kernel=gp_kernel, 
-                            mean_compare_decimal=-1, var_compare_decimal=0)  
+                            mean_compare_decimal=-1, var_compare_decimal=-1)  
         
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'regular',
                            use_cython=False, optimize_max_iters=10, check_gradients=True,
                             predict_X=X, 
                             gp_kernel=gp_kernel, 
-                            mean_compare_decimal=-1, var_compare_decimal=0)
+                            mean_compare_decimal=-1, var_compare_decimal=-1)
                             
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'svd',
@@ -337,7 +337,7 @@ if __name__ == "__main__":
     print("Running state-space inference tests...")
     unittest.main()
     
-    #tt = StateSpaceKernelsTests('test_forecast')
+    #tt = StateSpaceKernelsTests('test_periodic_kernel')
     #import pdb; pdb.set_trace()
     #tt.test_Matern32_kernel()
     #tt.test_Matern52_kernel()

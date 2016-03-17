@@ -3,6 +3,7 @@
 
 import numpy as np
 from ...util.linalg import pdinv, dpotrs, dpotri, symmetrify, jitchol, dtrtrs, tdot
+from GPy.core.parameterization.variational import VariationalPosterior
 
 class Posterior(object):
     """
@@ -187,6 +188,56 @@ class Posterior(object):
         if self._K_chol is None:
             self._K_chol = jitchol(self._K)
         return self._K_chol
+
+    def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
+        woodbury_vector = self.woodbury_vector
+        woodbury_inv = self.woodbury_inv
+        
+        if not isinstance(Xnew, VariationalPosterior):
+            Kx = kern.K(pred_var, Xnew)
+            mu = np.dot(Kx.T, woodbury_vector)
+            if len(mu.shape)==1:
+                mu = mu.reshape(-1,1)
+            if full_cov:
+                Kxx = kern.K(Xnew)
+                if woodbury_inv.ndim == 2:
+                    var = Kxx - np.dot(Kx.T, np.dot(woodbury_inv, Kx))
+                elif woodbury_inv.ndim == 3: # Missing data
+                    var = np.empty((Kxx.shape[0],Kxx.shape[1],woodbury_inv.shape[2]))
+                    from ...util.linalg import mdot
+                    for i in range(var.shape[2]):
+                        var[:, :, i] = (Kxx - mdot(Kx.T, woodbury_inv[:, :, i], Kx))
+                var = var
+            else:
+                Kxx = kern.Kdiag(Xnew)
+                if woodbury_inv.ndim == 2:
+                    var = (Kxx - np.sum(np.dot(woodbury_inv.T, Kx) * Kx, 0))[:,None]
+                elif woodbury_inv.ndim == 3: # Missing data
+                    var = np.empty((Kxx.shape[0],woodbury_inv.shape[2]))
+                    for i in range(var.shape[1]):
+                        var[:, i] = (Kxx - (np.sum(np.dot(woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
+                var = var
+        else:
+            psi0_star = kern.psi0(pred_var, Xnew)
+            psi1_star = kern.psi1(pred_var, Xnew)
+            psi2_star = kern.psi2n(pred_var, Xnew) 
+            la = woodbury_vector
+            mu = np.dot(psi1_star, la) # TODO: dimensions?
+            N,M,D = psi0_star.shape[0],psi1_star.shape[1], la.shape[1]
+
+            if full_cov:
+                raise NotImplementedError("Full covariance for Sparse GP predicted with uncertain inputs not implemented yet.")
+                var = np.zeros((Xnew.shape[0], la.shape[1], la.shape[1]))
+                di = np.diag_indices(la.shape[1])
+            else:
+                tmp = psi2_star - psi1_star[:,:,None]*psi1_star[:,None,:]
+                var = (tmp.reshape(-1,M).dot(la).reshape(N,M,D)*la[None,:,:]).sum(1) + psi0_star[:,None] 
+                if woodbury_inv.ndim==2:
+                    var += -psi2_star.reshape(N,-1).dot(woodbury_inv.flat)[:,None]
+                else:
+                    var += -psi2_star.reshape(N,-1).dot(woodbury_inv.reshape(-1,D))
+        var = np.clip(var,1e-15,np.inf)
+        return mu, var
     
 class PosteriorExact(Posterior):
      

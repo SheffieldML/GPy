@@ -157,6 +157,7 @@ class MiscTests(unittest.TestCase):
         # Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
         Kinv = m.posterior.woodbury_inv
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
+        K_hat = np.clip(K_hat, 1e-15, np.inf)
 
         mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))

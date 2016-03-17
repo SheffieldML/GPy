@@ -94,6 +94,86 @@ class IBPPrior(VariationalPrior):
         variational_posterior.tau.gradient[:,0] = -((tau[:,0]-gamma-ad)*polygamma(1,tau[:,0])+common)
         variational_posterior.tau.gradient[:,1] = -((tau[:,1]+gamma-2)*polygamma(1,tau[:,1])+common)
 
+class SLVMPosterior(SpikeAndSlabPosterior):
+    '''
+    The SpikeAndSlab distribution for variational approximations.
+    '''
+    def __init__(self, means, variances, binary_prob, tau=None,  name='latent space'):
+        """
+        binary_prob : the probability of the distribution on the slab part.
+        """
+        from paramz.transformations import Logexp
+        super(SLVMPosterior, self).__init__(means, variances, binary_prob, group_spike=False, name=name)
+        self.tau = Param("tau_", np.ones((self.gamma.shape[1],2)), Logexp())
+        self.link_parameter(self.tau)
+
+    def set_gradients(self, grad):
+        self.mean.gradient, self.variance.gradient, self.gamma.gradient, self.tau.gradient = grad
+
+    def __getitem__(self, s):
+        if isinstance(s, (int, slice, tuple, list, np.ndarray)):
+            import copy
+            n = self.__new__(self.__class__, self.name)
+            dc = self.__dict__.copy()
+            dc['mean'] = self.mean[s]
+            dc['variance'] = self.variance[s]
+            dc['binary_prob'] = self.binary_prob[s]
+            dc['tau'] = self.tau
+            dc['parameters'] = copy.copy(self.parameters)
+            n.__dict__.update(dc)
+            n.parameters[dc['mean']._parent_index_] = dc['mean']
+            n.parameters[dc['variance']._parent_index_] = dc['variance']
+            n.parameters[dc['binary_prob']._parent_index_] = dc['binary_prob']
+            n.parameters[dc['tau']._parent_index_] = dc['tau']
+            n._gradient_array_ = None
+            oversize = self.size - self.mean.size - self.variance.size - self.gamma.size - self.tau.size
+            n.size = n.mean.size + n.variance.size + n.gamma.size+ n.tau.size + oversize
+            n.ndim = n.mean.ndim
+            n.shape = n.mean.shape
+            n.num_data = n.mean.shape[0]
+            n.input_dim = n.mean.shape[1] if n.ndim != 1 else 1
+            return n
+        else:
+            return super(IBPPosterior, self).__getitem__(s)
+
+class SLVMPrior(VariationalPrior):
+    def __init__(self, input_dim, alpha =1., beta=1., Z=None, name='SLVMPrior', **kw):
+        super(SLVMPrior, self).__init__(name=name, **kw)
+        self.input_dim = input_dim
+        self.variance = 1.
+        self.alpha = alpha
+        self.beta = beta
+        self.Z = Z
+        if Z is not None:
+            assert np.all(np.unique(Z)==np.array([0,1]))
+
+    def KL_divergence(self, variational_posterior):
+        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
+        
+        var_mean = np.square(mu)/self.variance
+        var_S = (S/self.variance - np.log(S))
+        part1 = (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
+        
+        from scipy.special import betaln,digamma            
+        part2 = (gamma*np.log(gamma)).sum() + ((1.-gamma)*np.log(1.-gamma)).sum() + betaln(self.alpha,self.beta)*self.input_dim \
+                -betaln(tau[:,0], tau[:,1]).sum() + ((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*digamma(tau[:,0])).sum() + \
+                ((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*digamma(tau[:,1])).sum() + ((self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*digamma(tau.sum(axis=1))).sum()        
+
+        return part1+part2
+
+    def update_gradients_KL(self, variational_posterior):
+        mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
+
+        variational_posterior.mean.gradient -= gamma*mu/self.variance
+        variational_posterior.variance.gradient -= (1./self.variance - 1./S) * gamma /2.
+        from scipy.special import digamma,polygamma
+        dgamma = np.log(gamma/(1.-gamma))+ (digamma(tau[:,1])-digamma(tau[:,0]))*self.Z
+        variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
+        common = (self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*polygamma(1,tau.sum(axis=1))
+        variational_posterior.tau.gradient[:,0] = -((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*polygamma(1,tau[:,0])+common)
+        variational_posterior.tau.gradient[:,1] = -((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*polygamma(1,tau[:,1])+common)
+
+
 class SSGPLVM(SparseGP_MPI):
     """
     Spike-and-Slab Gaussian Process Latent Variable Model
@@ -107,7 +187,7 @@ class SSGPLVM(SparseGP_MPI):
 
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
-                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False, alpha=2., tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, sharedX=False, variational_prior=None,**kwargs):
+                 Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False,SLVM=False, alpha=2., beta=2., connM=None, tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, sharedX=False, variational_prior=None,**kwargs):
 
         self.group_spike = group_spike
         self.init = init
@@ -152,6 +232,9 @@ class SSGPLVM(SparseGP_MPI):
         if IBP:
             self.variational_prior = IBPPrior(input_dim=input_dim, alpha=alpha) if variational_prior is None else variational_prior
             X = IBPPosterior(X, X_variance, gamma, tau=tau,sharedX=sharedX)
+        elif SLVM:
+            self.variational_prior = SLVMPrior(input_dim=input_dim, alpha=alpha, beta=beta, Z=connM) if variational_prior is None else variational_prior
+            X = SLVMPosterior(X, X_variance, gamma, tau=tau)
         else:
             self.variational_prior = SpikeAndSlabPrior(pi=pi,learnPi=learnPi, group_spike=group_spike)  if variational_prior is None else variational_prior
             X = SpikeAndSlabPosterior(X, X_variance, gamma, group_spike=group_spike,sharedX=sharedX)

@@ -22,6 +22,44 @@ class MiscTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
         m.predict(m.X)
 
+    def test_raw_predict_numerical_stability(self):
+        """
+        Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
+        Thanks simbartonels@github for reporting the bug and providing the following example.
+        """
+        
+        # set seed for reproducability
+        np.random.seed(3)
+        # Definition of the Branin test function
+        def branin(X):
+            y = (X[:,1]-5.1/(4*np.pi**2)*X[:,0]**2+5*X[:,0]/np.pi-6)**2
+            y += 10*(1-1/(8*np.pi))*np.cos(X[:,0])+10
+            return(y)
+        # Training set defined as a 5*5 grid:
+        xg1 = np.linspace(-5,10,5)
+        xg2 = np.linspace(0,15,5)
+        X = np.zeros((xg1.size * xg2.size,2))
+        for i,x1 in enumerate(xg1):
+            for j,x2 in enumerate(xg2):
+                X[i+xg1.size*j,:] = [x1,x2]
+        Y = branin(X)[:,None]
+        # Fit a GP
+        # Create an exponentiated quadratic plus bias covariance function
+        k = GPy.kern.RBF(input_dim=2, ARD = True)
+        # Build a GP model
+        m = GPy.models.GPRegression(X,Y,k)
+        # fix the noise variance
+        m.likelihood.variance.fix(1e-5)
+        # Randomize the model and optimize
+        m.randomize()
+        m.optimize()
+        # Compute the mean of model prediction on 1e5 Monte Carlo samples
+        Xp = np.random.uniform(size=(1e5,2))
+        Xp[:,0] = Xp[:,0]*15-5
+        Xp[:,1] = Xp[:,1]*15
+        _, var = m.predict(Xp)
+        self.assertTrue(np.all(var>=0.))
+
     def test_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
@@ -119,6 +157,7 @@ class MiscTests(unittest.TestCase):
         # Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
         Kinv = m.posterior.woodbury_inv
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
+        K_hat = np.clip(K_hat, 1e-15, np.inf)
 
         mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
@@ -677,7 +716,19 @@ class GradientTests(np.testing.TestCase):
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
         self.assertTrue(m.checkgrad())
-
+        
+    def test_ssgplvm(self):
+        from GPy import kern
+        from GPy.models import SSGPLVM
+        from GPy.examples.dimensionality_reduction import _simulate_matern
+    
+        D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+        _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
+        Y = Ylist[0]
+        k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+        # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+        m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

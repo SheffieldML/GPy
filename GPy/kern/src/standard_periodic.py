@@ -163,3 +163,25 @@ class StdPeriodic(Kern):
 #    def gradients_X_diag(self, dL_dKdiag, X):
 #
 #        raise NotImplemented("Periodic kernel: dKdiag_dX not implemented")
+
+    def gradients_X(self, dL_dK, X, X2=None):
+        """derivative of the covariance matrix with respect to X."""
+        if X2 is None:
+            X2 = X
+
+        base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.wavelengths
+
+        sin_base = np.sin( base )
+        exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscales ), axis = -1 ) )
+
+        dx = -self.variance * (np.pi / (self.wavelengths*np.square(self.lengthscales))) * sin_base*np.cos(base)
+
+        if self.ARD1:  # different wavelengths
+            return (dx * exp_dist[:,:,None] * dL_dK[:, :, None]).sum(0).sum(0)
+        else:  # same wavelengths
+            return np.sum(dx.sum(-1) * exp_dist * dL_dK)
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        """derivative of the covariance matrix with respect to X - diagonal."""
+        pass  # diagonal element is zero
+

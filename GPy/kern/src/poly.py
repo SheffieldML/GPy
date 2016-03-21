@@ -57,3 +57,30 @@ class Poly(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         raise NotImplementedError
+
+# I haven't tested the following functions out nor am I sure about them.
+# Will come back to this at a later stage
+
+#    def update_gradients_diag(self, dL_dKdiag, X):
+#        dot_prod = (x**2).sum()
+#         A = (self.scale * dot_prod) + self.bias
+#         B = A ** self.order
+#         dK_dA = self.variance * self.order * A ** (self.order-1.)
+#         dL_dA = dL_dKdiag * (dK_dA)
+#         self.scale.gradient = (dL_dA * dot_prod).sum()
+#         self.bias.gradient = dL_dA.sum()
+#         self.variance.gradient = np.sum(dL_dKdiag * B)
+#
+#     def gradients_X(self, dL_dK, X, X2=None):
+#         dot_prod, A, _ = self._AB(X, X2)
+#         dK_dA = self.variance * self.order * A ** (self.order-1.)
+#         if X2 is None:
+#             return dL_dK * (dK_dA*self.scale*2*X)
+#         else:
+#             return dL_dK * (dK_dA*self.scale*X)
+#
+#     def gradients_X_diag(self, dL_dKdiag, X):
+#         dot_prod = (x**2).sum()
+#         A = (self.scale * dot_prod) + self.bias
+#         dK_dA = self.variance * self.order * A ** (self.order-1.)
+#         return dL_dKdiag * (dK_dA*self.scale*2*X)

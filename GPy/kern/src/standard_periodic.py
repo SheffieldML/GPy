@@ -172,9 +172,9 @@ class StdPeriodic(Kern):
         base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
 
         sin_base = np.sin( base )
-        exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscales ), axis = -1 ) )
+        exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscale ), axis = -1 ) )
 
-        dx = -self.variance * (np.pi / (self.period*np.square(self.lengthscales))) * sin_base*np.cos(base)
+        dx = -self.variance * (np.pi / (self.period*np.square(self.lengthscale))) * sin_base*np.cos(base)
 
         if self.ARD1:  # different period
             return (dx * exp_dist[:,:,None] * dL_dK[:, :, None]).sum(0).sum(0)

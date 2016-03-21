@@ -169,16 +169,16 @@ class StdPeriodic(Kern):
         if X2 is None:
             X2 = X
 
-        base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.wavelengths
+        base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
 
         sin_base = np.sin( base )
         exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscales ), axis = -1 ) )
 
-        dx = -self.variance * (np.pi / (self.wavelengths*np.square(self.lengthscales))) * sin_base*np.cos(base)
+        dx = -self.variance * (np.pi / (self.period*np.square(self.lengthscales))) * sin_base*np.cos(base)
 
-        if self.ARD1:  # different wavelengths
+        if self.ARD1:  # different period
             return (dx * exp_dist[:,:,None] * dL_dK[:, :, None]).sum(0).sum(0)
-        else:  # same wavelengths
+        else:  # same period
             return np.sum(dx.sum(-1) * exp_dist * dL_dK)
 
     def gradients_X_diag(self, dL_dKdiag, X):

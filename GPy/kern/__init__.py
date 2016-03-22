@@ -29,7 +29,6 @@ from .src.splitKern import SplitKern,DEtime
 from .src.splitKern import DEtime as DiffGenomeKern
 from .src.spline import Spline
 from .src.basis_funcs import LogisticBasisFuncKernel, LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel
-
 from .src.sde_matern import sde_Matern32
 from .src.sde_matern import sde_Matern52
 from .src.sde_linear import sde_Linear
@@ -37,3 +36,5 @@ from .src.sde_standard_periodic import sde_StdPeriodic
 from .src.sde_static import sde_White, sde_Bias
 from .src.sde_stationary import sde_RBF,sde_Exponential,sde_RatQuad
 from .src.sde_brownian import sde_Brownian
+from .src.ssmKerns import Matern32_SSM
+from .src.gridKerns import GridRBF

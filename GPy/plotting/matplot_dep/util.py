@@ -1,5 +1,5 @@
 #===============================================================================
-# Copyright (c) 2015, Max Zwiessele
+# Copyright (c) 2016, Max Zwiessele, Alan saul
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -131,6 +131,7 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine='median', as_list=True, X_
     :param as_list: if true, will return a list of tuples with (dimension, fixed_val) otherwise it will create the corresponding X matrix
     :type as_list: boolean
     """
+    from ...inference.latent_function_inference.posterior import VariationalPosterior
     f_inputs = []
     if hasattr(model, 'has_uncertain_inputs') and model.has_uncertain_inputs():
         X = model.X.mean.values.copy()

@@ -166,3 +166,5 @@ class StdPeriodic(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
     
+    def input_sensitivity(self, summarize=True):
+        return self.variance*np.ones(self.input_dim)/self.lengthscale**2

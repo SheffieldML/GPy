@@ -155,11 +155,14 @@ class StdPeriodic(Kern):
         self.period.gradient = 0
         self.lengthscale.gradient = 0
 
-#    def gradients_X(self, dL_dK, X, X2=None):
-#        """derivative of the covariance matrix with respect to X."""
-#
-#        raise NotImplemented("Periodic kernel: dK_dX not implemented")
-#
-#    def gradients_X_diag(self, dL_dKdiag, X):
-#
-#        raise NotImplemented("Periodic kernel: dKdiag_dX not implemented")
+    def gradients_X(self, dL_dK, X, X2=None):
+        K = self.K(X, X2)
+        if X2 is None:
+            dL_dK = dL_dK+dL_dK.T
+            X2 = X
+        dX = -np.pi*((dL_dK*K)[:,:,None]*np.sin(2*np.pi/self.period*(X[:,None,:] - X2[None,:,:]))/(2.*np.square(self.lengthscale)*self.period)).sum(1)
+        return dX
+    
+    def gradients_X_diag(self, dL_dKdiag, X):
+        return np.zeros(X.shape)
+    

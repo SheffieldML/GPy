@@ -32,13 +32,19 @@
 #===============================================================================
 # SKIPPING PLOTTING BECAUSE IT BEHAVES DIFFERENTLY ON DIFFERENT
 # SYSTEMS, AND WILL MISBEHAVE
-from nose import SkipTest
+#from nose import SkipTest
 #raise SkipTest("Skipping Matplotlib testing")
 #===============================================================================
 
-import matplotlib
+try:
+    import matplotlib
+    matplotlib.use('agg')
+except ImportError:
+    # matplotlib not installed
+    from nose import SkipTest
+    raise SkipTest("Skipping Matplotlib testing")
+
 from unittest.case import TestCase
-matplotlib.use('pdf')
 
 import numpy as np
 import GPy, os
@@ -66,7 +72,7 @@ try:
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['pdf']
+extensions = ['svg']
 
 def _image_directories():
     """
@@ -101,9 +107,9 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
             #fig.set_frameon(False)
             fig.canvas.draw()
             fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)),
-                        #transparent=True,
-                        #edgecolor='none',
-                        #facecolor='none',
+                        transparent=True,
+                        edgecolor='none',
+                        facecolor='none',
                         bbox='tight')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:

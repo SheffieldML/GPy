@@ -81,11 +81,11 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
-    @Cache_this(limit=20, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def dK2_drdr(self, r):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -99,6 +99,9 @@ class Stationary(Kern):
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dr_via_X(self, X, X2):
+        """
+        compute the derivative of K wrt X going through X
+        """
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
@@ -486,18 +489,21 @@ class RatQuad(Stationary):
         self.link_parameters(self.power)
 
     def K_of_r(self, r):
-        r2 = np.power(r, 2.)
-        return self.variance*np.power(1. + r2/2., -self.power)
+        r2 = np.square(r)
+#         return self.variance*np.power(1. + r2/2., -self.power)
+        return self.variance*np.exp(-self.power*np.log1p(r2/2.))
 
     def dK_dr(self, r):
-        r2 = np.power(r, 2.)
-        return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
+        r2 = np.square(r)
+#         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
+        return-self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
-        r2 = np.power(r, 2.)
-        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        r2 = np.square(r)
+#        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        dK_dpow = -self.variance * np.exp(self.power*(np.log(2.)-np.log1p(r2+1)))*np.log1p(r2/2.)
         grad = np.sum(dL_dK*dK_dpow)
         self.power.gradient = grad
 

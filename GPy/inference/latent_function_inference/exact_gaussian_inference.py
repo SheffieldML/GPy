@@ -1,13 +1,12 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from .posterior import Posterior
+from .posterior import PosteriorExact as Posterior
 from ...util.linalg import pdinv, dpotrs, tdot
 from ...util import diag
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)
-
 
 class ExactGaussianInference(LatentFunctionInference):
     """

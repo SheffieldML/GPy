@@ -100,7 +100,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
             fig.axes[0].set_axis_off()
             fig.set_frameon(False)
             fig.canvas.draw()
-            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)), transparent=True, edgecolor='none', facecolor='none')
+            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)), transparent=True, edgecolor='none', facecolor='none', bbox='tight')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)
@@ -116,7 +116,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
 def test_figure():
     np.random.seed(1239847)
     from GPy.plotting import plotting_library as pl
-    import matplotlib
+    #import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
@@ -160,7 +160,7 @@ def test_figure():
 
 def test_kernel():
     np.random.seed(1239847)
-    import matplotlib
+    #import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False

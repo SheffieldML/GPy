@@ -50,7 +50,6 @@ class InferenceXTestCase(unittest.TestCase):
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X, mi.X, decimal=2)
 
-
 class HMCSamplerTest(unittest.TestCase):
 
     def test_sampling(self):
@@ -65,6 +64,21 @@ class HMCSamplerTest(unittest.TestCase):
 
         hmc = GPy.inference.mcmc.HMC(m,stepsize=1e-2)
         s = hmc.sample(num_samples=3)
+        
+class MCMCSamplerTest(unittest.TestCase):
+
+    def test_sampling(self):
+        np.random.seed(1)
+        x = np.linspace(0.,2*np.pi,100)[:,None]
+        y = -np.cos(x)+np.random.randn(*x.shape)*0.3+1
+
+        m = GPy.models.GPRegression(x,y)
+        m.kern.lengthscale.set_prior(GPy.priors.Gamma.from_EV(1.,10.))
+        m.kern.variance.set_prior(GPy.priors.Gamma.from_EV(1.,10.))
+        m.likelihood.variance.set_prior(GPy.priors.Gamma.from_EV(1.,10.))
+
+        mcmc = GPy.inference.mcmc.Metropolis_Hastings(m)
+        mcmc.sample(Ntotal=100, Nburn=10)
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,7 +7,6 @@ import numpy as np
 from paramz.caching import Cache_this
 from . import PSICOMP_RBF
 
-
 gpu_code = """
     // define THREADNUM
 
@@ -287,8 +286,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
         
         from pycuda.compiler import SourceModule
-        from ....util.gpu_init import initGPU
-        initGPU()
+        import GPy.util.gpu_init
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None
@@ -375,7 +373,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
-    @Cache_this(limit=1, ignore_args=(0,))
+    @Cache_this(limit=3, ignore_args=(0,))
     def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
         """
         Z - MxQ
@@ -409,7 +407,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         else:
             return psi0, psi1_gpu.get(), psi2_gpu.get()
 
-    @Cache_this(limit=1, ignore_args=(0,2,3,4))
+    @Cache_this(limit=3, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         variance, lengthscale = kern.variance, kern.lengthscale
         from ....util.linalg_gpu import sum_axis

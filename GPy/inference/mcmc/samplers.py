@@ -37,16 +37,14 @@ class Metropolis_Hastings(object):
 
     def sample(self, Ntotal=10000, Nburn=1000, Nthin=10, tune=True, tune_throughout=False, tune_interval=400):
         current = self.model.optimizer_array
-        fcurrent = self.model.log_likelihood() + self.model.log_prior() + \
-                   self.model._log_det_jacobian()
+        fcurrent = self.model.log_likelihood() + self.model.log_prior() 
         accepted = np.zeros(Ntotal,dtype=np.bool)
         for it in range(Ntotal):
-            print("sample %d of %d\r"%(it,Ntotal),end="\t")
+            print("sample %d of %d\r"%(it+1,Ntotal),end="")
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov*self.scale*self.scale)
             self.model.optimizer_array = prop
-            fprop = self.model.log_likelihood() + self.model.log_prior() + \
-                    self.model._log_det_jacobian()
+            fprop = self.model.log_likelihood() + self.model.log_prior() 
 
             if fprop>fcurrent:#sample accepted, going 'uphill'
                 accepted[it] = True

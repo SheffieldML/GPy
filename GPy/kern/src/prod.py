@@ -39,7 +39,7 @@ class Prod(CombinationKernel):
                     kernels.insert(i, part)
         super(Prod, self).__init__(kernels, name)
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):
         if which_parts is None:
             which_parts = self.parts
@@ -48,7 +48,7 @@ class Prod(CombinationKernel):
             which_parts = [which_parts]
         return reduce(np.multiply, (p.K(X, X2) for p in which_parts))
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def Kdiag(self, X, which_parts=None):
         if which_parts is None:
             which_parts = self.parts

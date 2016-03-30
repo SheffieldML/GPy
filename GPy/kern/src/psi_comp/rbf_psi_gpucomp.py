@@ -5,7 +5,6 @@ The module for psi-statistics for RBF kernel
 import numpy as np
 from paramz.caching import Cache_this
 from . import PSICOMP_RBF
-from ....util import gpu_init
 
 gpu_code = """
     // define THREADNUM
@@ -238,8 +237,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.fall_back = PSICOMP_RBF()
         
         from pycuda.compiler import SourceModule
-        from ....util.gpu_init import initGPU
-        initGPU()
+        import GPy.util.gpu_init
         
         self.GPU_direct = GPU_direct
         self.gpuCache = None
@@ -326,7 +324,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         except:
             return self.fall_back.psicomputations(kern, Z, variational_posterior, return_psi2_n)
 
-    @Cache_this(limit=10, ignore_args=(0,))
+    @Cache_this(limit=3, ignore_args=(0,))
     def _psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
         """
         Z - MxQ
@@ -371,7 +369,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         except:
             return self.fall_back.psiDerivativecomputations(kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
-    @Cache_this(limit=10, ignore_args=(0,2,3,4))
+    @Cache_this(limit=3, ignore_args=(0,2,3,4))
     def _psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         # resolve the requirement of dL_dpsi2 to be symmetric
         if len(dL_dpsi2.shape)==2: dL_dpsi2 = (dL_dpsi2+dL_dpsi2.T)/2

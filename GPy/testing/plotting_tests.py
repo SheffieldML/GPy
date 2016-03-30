@@ -72,7 +72,7 @@ try:
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['svg']
+extensions = ['png']
 
 def _image_directories():
     """

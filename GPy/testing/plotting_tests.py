@@ -33,7 +33,7 @@
 # SKIPPING PLOTTING BECAUSE IT BEHAVES DIFFERENTLY ON DIFFERENT
 # SYSTEMS, AND WILL MISBEHAVE
 from nose import SkipTest
-raise SkipTest("Skipping Matplotlib testing")
+#raise SkipTest("Skipping Matplotlib testing")
 #===============================================================================
 
 import matplotlib
@@ -97,10 +97,14 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             fig = plt.figure(num)
-            fig.axes[0].set_axis_off()
-            fig.set_frameon(False)
+            #fig.axes[0].set_axis_off()
+            #fig.set_frameon(False)
             fig.canvas.draw()
-            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)), transparent=True, edgecolor='none', facecolor='none', bbox='tight')
+            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)),
+                        #transparent=True,
+                        #edgecolor='none',
+                        #facecolor='none',
+                        bbox='tight')
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)

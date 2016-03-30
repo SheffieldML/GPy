@@ -38,7 +38,7 @@ from nose import SkipTest
 
 import matplotlib
 from unittest.case import TestCase
-matplotlib.use('agg')
+matplotlib.use('pdf')
 
 import numpy as np
 import GPy, os
@@ -66,7 +66,7 @@ try:
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['png']
+extensions = ['pdf']
 
 def _image_directories():
     """

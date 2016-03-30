@@ -122,7 +122,7 @@ def test_figure():
     from GPy.plotting import plotting_library as pl
     #import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     import warnings
     with warnings.catch_warnings():
@@ -166,7 +166,7 @@ def test_kernel():
     np.random.seed(1239847)
     #import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     import warnings
     with warnings.catch_warnings():
@@ -189,7 +189,7 @@ def test_plot():
     np.random.seed(111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     import warnings
     with warnings.catch_warnings():
@@ -216,7 +216,7 @@ def test_twod():
     np.random.seed(11111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
@@ -239,7 +239,7 @@ def test_threed():
     np.random.seed(11111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 2))
     f = .2 * np.sin(1.3*X[:,[0]]) + 1.3*np.cos(2*X[:,[1]])
@@ -264,7 +264,7 @@ def test_sparse():
     np.random.seed(11111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -280,7 +280,7 @@ def test_classification():
     np.random.seed(11111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -304,7 +304,7 @@ def test_sparse_classification():
     np.random.seed(11111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     X = np.random.uniform(-2, 2, (40, 1))
     f = .2 * np.sin(1.3*X) + 1.3*np.cos(2*X)
@@ -325,7 +325,7 @@ def test_gplvm():
     from ..models import GPLVM
     np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     Q = 3
     # Define dataset
@@ -364,7 +364,7 @@ def test_bayesian_gplvm():
     from ..models import BayesianGPLVM
     np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
     Q = 3
     # Define dataset
@@ -402,4 +402,4 @@ def test_bayesian_gplvm():
 
 if __name__ == '__main__':
     import nose
-    nose.main()
+    nose.main(defaultTest='./plotting_tests.py')

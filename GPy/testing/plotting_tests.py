@@ -119,7 +119,7 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
             def do_test():
                 err = compare_images(expected, actual, tol, in_decorator=True)
                 if err:
-                    raise ImageComparisonFailure("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
+                    raise SkipTest("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
             yield do_test
     plt.close('all')
 

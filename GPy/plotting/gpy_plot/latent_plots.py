@@ -131,7 +131,9 @@ def plot_latent_inducing(self,
 
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
-    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
+    kwargs['marker'] = marker
+    update_not_existing_kwargs(kwargs, pl().defaults.inducing_2d)  # @UndefinedVariable
+    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, num_samples=num_samples, projection=projection, **kwargs)
     return pl().add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
 
 

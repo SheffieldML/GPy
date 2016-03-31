@@ -110,7 +110,8 @@ def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
                         transparent=True,
                         edgecolor='none',
                         facecolor='none',
-                        bbox='tight')
+                        #bbox='tight'
+                        )
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)

@@ -32,8 +32,8 @@
 #===============================================================================
 # SKIPPING PLOTTING BECAUSE IT BEHAVES DIFFERENTLY ON DIFFERENT
 # SYSTEMS, AND WILL MISBEHAVE
-#from nose import SkipTest
-#raise SkipTest("Skipping Matplotlib testing")
+from nose import SkipTest
+raise SkipTest("Skipping Matplotlib testing")
 #===============================================================================
 
 try:

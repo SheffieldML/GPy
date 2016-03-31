@@ -394,7 +394,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X2[:(N0*2), -1] = 0
         self.X2[(N0*2):, -1] = 1
 
-    @unittest.expectedFailure
+    #@unittest.expectedFailure
     def test_IndependentOutputs(self):
         k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
@@ -403,7 +403,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-    @unittest.expectedFailure
+    #@unittest.expectedFailure
     def test_Hierarchical(self):
         k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')

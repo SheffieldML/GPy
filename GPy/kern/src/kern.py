@@ -48,11 +48,11 @@ class Kern(Parameterized):
 
         if active_dims is None:
             active_dims = np.arange(input_dim)
-        
+
         self.active_dims = np.asarray(active_dims, np.int_)
-        
+
         self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
-        
+
         assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(self.input_dim, self._all_dims_active.size)
 
         self._sliced_X = 0
@@ -300,7 +300,7 @@ class Kern(Parameterized):
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "{} did not specify _all_dims_active and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
 
     def _check_active_dims(self, X):
         assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
@@ -324,19 +324,17 @@ class CombinationKernel(Kern):
         """
         assert all([isinstance(k, Kern) for k in kernels])
         extra_dims = np.asarray(extra_dims, dtype=int)
-        
-        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        
+
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), extra_dims)
+
         input_dim = active_dims.size
-        if extra_dims is not None:
-            input_dim += extra_dims.size
 
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
 
         effective_input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
         self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
-        
+
         self.extra_dims = extra_dims
         self.link_parameters(*kernels)
 
@@ -345,7 +343,7 @@ class CombinationKernel(Kern):
         return self.parameters
 
     def _set_all_dims_ative(self):
-        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)        
+        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
 
     def input_sensitivity(self, summarize=True):
         """

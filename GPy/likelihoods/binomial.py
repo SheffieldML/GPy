@@ -27,9 +27,6 @@ class Binomial(Likelihood):
 
         super(Binomial, self).__init__(gp_link, 'Binomial')
 
-    def conditional_mean(self, gp, Y_metadata):
-        return self.gp_link(gp)*Y_metadata['trials']
-
     def pdf_link(self, inv_link_f, y, Y_metadata):
         """
         Likelihood function given inverse link of f.
@@ -109,7 +106,7 @@ class Binomial(Likelihood):
         N = Y_metadata['trials']
         return -y/np.square(inv_link_f) - (N-y)/np.square(1-inv_link_f)
 
-    def samples(self, gp, Y_metadata=None):
+    def samples(self, gp, Y_metadata=None, **kw):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
@@ -123,3 +120,32 @@ class Binomial(Likelihood):
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
         pass
+    def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Probit):
+
+            if gh_points is None:
+                gh_x, gh_w = self._gh_points()
+            else:
+                gh_x, gh_w = gh_points
+
+
+            gh_w = gh_w / np.sqrt(np.pi)
+            shape = m.shape
+            C = np.atleast_1d(Y_metadata['trials'])
+            m,v,Y, C = m.flatten(), v.flatten(), Y.flatten()[:,None], C.flatten()[:,None]
+            X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+            p = std_norm_cdf(X)
+            p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
+            N = std_norm_pdf(X)
+            #TODO: missing nchoosek coefficient! use gammaln?
+            F = (Y*np.log(p) + (C-Y)*np.log(1.-p)).dot(gh_w)
+            NoverP = N/p
+            NoverP_ = N/(1.-p)
+            dF_dm = (Y*NoverP - (C-Y)*NoverP_).dot(gh_w)
+            dF_dv = -0.5* ( Y*(NoverP**2 + NoverP*X) + (C-Y)*(NoverP_**2 - NoverP_*X) ).dot(gh_w)
+            return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
+        else:
+            raise NotImplementedError
+
+
+

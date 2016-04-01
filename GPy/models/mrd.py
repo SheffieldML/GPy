@@ -127,8 +127,6 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.unlink_parameter(self.likelihood)
         self.unlink_parameter(self.kern)
-        del self.kern
-        del self.likelihood
 
         self.num_data = Ylist[0].shape[0]
         if isinstance(batchsize, int):
@@ -156,7 +154,11 @@ class MRD(BayesianGPLVMMiniBatch):
             self.link_parameter(spgp, i+2)
             self.bgplvms.append(spgp)
 
-        self.posterior = None
+        b = self.bgplvms[0]
+        self.posterior = b.posterior
+        self.kern = b.kern
+        self.likelihood = b.likelihood
+
         self.logger.info("init done")
 
     def parameters_changed(self):

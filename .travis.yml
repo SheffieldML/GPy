@@ -58,8 +58,7 @@ deploy:
   password:
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
-    tags: false
-    branch: devel
-  server: https://testpypi.python.org/pypi
+    tags: true
+    branch: release
   distributions: $DIST
   skip_cleanup: true

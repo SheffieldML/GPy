@@ -57,7 +57,7 @@ def read_to_rst(fname):
     except ImportError:
         return read(fname)
 
-desc = read_to_rst('README.md')
+#desc = read_to_rst('README.md')
 
 version_dummy = {}
 exec(read('GPy/__version__.py'), version_dummy)

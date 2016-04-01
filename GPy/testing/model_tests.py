@@ -27,7 +27,7 @@ class MiscTests(unittest.TestCase):
         Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
         Thanks simbartonels@github for reporting the bug and providing the following example.
         """
-
+        
         # set seed for reproducability
         np.random.seed(3)
         # Definition of the Branin test function
@@ -69,13 +69,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
         mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
-        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
+        mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m.predict_noiseless(self.X_new)
+        mu, var = m._raw_predict(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -166,7 +166,7 @@ class MiscTests(unittest.TestCase):
         # S = \int (f(x) - m)^2q(x|mu,S) dx = \int f(x)^2 q(x) dx - mu**2 = 4(mu^2 + S) - (2.mu)^2 = 4S
         Y_mu_true = 2*X_pred_mu
         Y_var_true = 4*X_pred_var
-        Y_mu_pred, Y_var_pred = m.predict_noiseless(X_pred)
+        Y_mu_pred, Y_var_pred = m._raw_predict(X_pred)
         np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-4)
         np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-4)
 
@@ -181,13 +181,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
         K_hat = np.clip(K_hat, 1e-15, np.inf)
 
-        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
+        mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m.predict_noiseless(self.X_new)
+        mu, var = m._raw_predict(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -365,7 +365,7 @@ class MiscTests(unittest.TestCase):
         warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
         warp_m.optimize()
         warp_preds = warp_m.predict(self.X)
-
+ 
         np.testing.assert_almost_equal(preds, warp_preds)
 
     @unittest.skip('Comment this to plot the modified sine function')
@@ -378,7 +378,7 @@ class MiscTests(unittest.TestCase):
         Y = np.sin(X) + np.random.normal(0,0.1,151)
         Y = np.exp(Y) - 5
         #Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y]) + 0
-
+        
         #np.seterr(over='raise')
         import matplotlib.pyplot as plt
         warp_k = GPy.kern.RBF(1)
@@ -390,7 +390,7 @@ class MiscTests(unittest.TestCase):
         #warp_m.randomize()
         #warp_m['.*warp_tanh.psi*'][:,0:2].constrain_bounded(0,100)
         #warp_m['.*warp_tanh.psi*'][:,0:1].constrain_fixed(1)
-
+        
         #print(warp_m.checkgrad())
         #warp_m.plot()
         #plt.show()
@@ -406,7 +406,7 @@ class MiscTests(unittest.TestCase):
         warp_f.plot(X.min()-10, X.max()+10)
         plt.show()
 
-
+        
 
 class GradientTests(np.testing.TestCase):
     def setUp(self):
@@ -738,12 +738,12 @@ class GradientTests(np.testing.TestCase):
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
         self.assertTrue(m.checkgrad())
-
+        
     def test_ssgplvm(self):
         from GPy import kern
         from GPy.models import SSGPLVM
         from GPy.examples.dimensionality_reduction import _simulate_matern
-
+    
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
         _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
         Y = Ylist[0]

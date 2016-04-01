@@ -320,6 +320,18 @@ class Exponential(Stationary):
     def dK_dr(self, r):
         return -0.5*self.K_of_r(r)
 
+#    def sde(self): 
+#        """ 
+#        Return the state space representation of the covariance. 
+#        """ 
+#        F  = np.array([[-1/self.lengthscale]]) 
+#        L  = np.array([[1]]) 
+#        Qc = np.array([[2*self.variance/self.lengthscale]]) 
+#        H = np.array([[1]]) 
+#        Pinf = np.array([[self.variance]]) 
+#        # TODO: return the derivatives as well 
+#        
+#        return (F, L, Qc, H, Pinf)  
 
 
 
@@ -388,6 +400,41 @@ class Matern32(Stationary):
         F1lower = np.array([f(lower) for f in F1])[:, None]
         return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
 
+    def sde(self): 
+        """ 
+        Return the state space representation of the covariance. 
+        """ 
+        variance = float(self.variance.values)
+        lengthscale = float(self.lengthscale.values)
+        foo  = np.sqrt(3.)/lengthscale 
+        F    = np.array([[0, 1], [-foo**2, -2*foo]]) 
+        L    = np.array([[0], [1]]) 
+        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]]) 
+        H    = np.array([[1, 0]]) 
+        Pinf = np.array([[variance, 0],  
+        [0,              3.*variance/(lengthscale**2)]]) 
+        # Allocate space for the derivatives 
+        dF    = np.empty([F.shape[0],F.shape[1],2])
+        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2]) 
+        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2]) 
+        # The partial derivatives 
+        dFvariance       = np.zeros([2,2]) 
+        dFlengthscale    = np.array([[0,0], 
+        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]]) 
+        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3]) 
+        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance]) 
+        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]]) 
+        dPinflengthscale = np.array([[0,0], 
+        [0,-6*variance/lengthscale**3]]) 
+        # Combine the derivatives 
+        dF[:,:,0]    = dFvariance 
+        dF[:,:,1]    = dFlengthscale 
+        dQc[:,:,0]   = dQcvariance 
+        dQc[:,:,1]   = dQclengthscale 
+        dPinf[:,:,0] = dPinfvariance 
+        dPinf[:,:,1] = dPinflengthscale 
+
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)  
 
 class Matern52(Stationary):
     """

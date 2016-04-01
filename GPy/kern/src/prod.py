@@ -105,3 +105,114 @@ class Prod(CombinationKernel):
             return i_s
         else:
             return super(Prod, self).input_sensitivity(summarize)
+
+    def sde_update_gradient_full(self, gradients):
+        """
+        Update gradient in the order in which parameters are represented in the
+        kernel
+        """
+        part_start_param_index = 0
+        for p in self.parts:
+            if not p.is_fixed:
+                part_param_num = len(p.param_array) # number of parameters in the part
+                p.sde_update_gradient_full(gradients[part_start_param_index:(part_start_param_index+part_param_num)])
+                part_start_param_index += part_param_num
+                
+    def sde(self):
+        """
+        """
+        F      = np.array((0,), ndmin=2)
+        L      = np.array((1,), ndmin=2)
+        Qc     = np.array((1,), ndmin=2)
+        H      = np.array((1,), ndmin=2)
+        Pinf   = np.array((1,), ndmin=2)
+        P0   = np.array((1,), ndmin=2)
+        dF     = None
+        dQc    = None
+        dPinf  = None
+        dP0  = None
+        
+         # Assign models
+        for p in self.parts:
+            (Ft,Lt,Qct,Ht,P_inft, P0t, dFt,dQct,dP_inft,dP0t) = p.sde()
+            
+            # check derivative dimensions ->
+            number_of_parameters = len(p.param_array)            
+            assert dFt.shape[2] == number_of_parameters, "Dynamic matrix derivative shape is wrong"
+            assert dQct.shape[2] == number_of_parameters, "Diffusion matrix derivative shape is wrong"
+            assert dP_inft.shape[2] == number_of_parameters, "Infinite covariance matrix derivative shape is wrong"
+            # check derivative dimensions <-
+            
+            # exception for periodic kernel
+            if (p.name == 'std_periodic'):
+                Qct = P_inft  
+                dQct = dP_inft                 
+            
+            dF    = dkron(F,dF,Ft,dFt,'sum')
+            dQc   = dkron(Qc,dQc,Qct,dQct,'prod')
+            dPinf = dkron(Pinf,dPinf,P_inft,dP_inft,'prod')
+            dP0 = dkron(P0,dP0,P0t,dP0t,'prod')
+            
+            F    = np.kron(F,np.eye(Ft.shape[0])) + np.kron(np.eye(F.shape[0]),Ft)
+            L    = np.kron(L,Lt)
+            Qc   = np.kron(Qc,Qct)
+            Pinf = np.kron(Pinf,P_inft)
+            P0 = np.kron(P0,P_inft)
+            H    = np.kron(H,Ht)
+            
+        return (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)
+
+def dkron(A,dA,B,dB, operation='prod'):
+    """
+    Function computes the derivative of Kronecker product A*B 
+    (or Kronecker sum A+B).
+    
+    Input:
+    -----------------------
+    
+    A: 2D matrix
+        Some matrix 
+    dA: 3D (or 2D matrix)
+        Derivarives of A
+    B: 2D matrix
+        Some matrix 
+    dB: 3D (or 2D matrix)
+        Derivarives of B    
+    
+    operation: str 'prod' or 'sum'
+        Which operation is considered. If the operation is 'sum' it is assumed
+        that A and are square matrices.s
+    
+    Output:
+        dC: 3D matrix
+        Derivative of Kronecker product A*B (or Kronecker sum A+B)
+    """
+    
+    if dA is None:
+        dA_param_num = 0
+        dA = np.zeros((A.shape[0], A.shape[1],1))
+    else:
+        dA_param_num = dA.shape[2]
+    
+    if dB is None:
+        dB_param_num = 0
+        dB = np.zeros((B.shape[0], B.shape[1],1))    
+    else:
+        dB_param_num = dB.shape[2]
+
+    # Space allocation for derivative matrix
+    dC = np.zeros((A.shape[0]*B.shape[0], A.shape[1]*B.shape[1], dA_param_num +  dB_param_num))    
+    
+    for k in range(dA_param_num):
+        if operation == 'prod':
+            dC[:,:,k] = np.kron(dA[:,:,k],B);
+        else:
+            dC[:,:,k] = np.kron(dA[:,:,k],np.eye( B.shape[0] ))
+            
+    for k in range(dB_param_num):
+        if operation == 'prod':
+            dC[:,:,dA_param_num+k] = np.kron(A,dB[:,:,k])
+        else:
+            dC[:,:,dA_param_num+k] = np.kron(np.eye( A.shape[0] ),dB[:,:,k])
+            
+    return dC

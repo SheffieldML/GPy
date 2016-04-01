@@ -66,13 +66,16 @@ class Binomial(Likelihood):
         :rtype: float
         """
         N = Y_metadata['trials']
+        assert N.shape == y.shape
         nchoosey = special.gammaln(N+1) - special.gammaln(y+1) - special.gammaln(N-y+1)
-
         return nchoosey + y*np.log(inv_link_f) + (N-y)*np.log(1.-inv_link_f)
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
         Gradient of the pdf at y, given inverse link of f w.r.t inverse link of f.
+
+        .. math::
+            \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{y_{i}}{\\lambda(f)} - \\frac{(N-y_{i})}{(1-\\lambda(f))}
 
         :param inv_link_f: latent variables inverse link of f.
         :type inv_link_f: Nx1 array
@@ -83,7 +86,8 @@ class Binomial(Likelihood):
         :rtype: Nx1 array
         """
         N = Y_metadata['trials']
-        return y/inv_link_f - (N-y)/(1-inv_link_f)
+        assert N.shape == y.shape
+        return y/inv_link_f - (N-y)/(1.-inv_link_f)
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
@@ -92,7 +96,7 @@ class Binomial(Likelihood):
 
 
         .. math::
-            \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{-y_{i}}{\\lambda(f)^{2}} - \\frac{(1-y_{i})}{(1-\\lambda(f))^{2}}
+            \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{-y_{i}}{\\lambda(f)^{2}} - \\frac{(N-y_{i})}{(1-\\lambda(f))^{2}}
 
         :param inv_link_f: latent variables inverse link of f.
         :type inv_link_f: Nx1 array
@@ -107,7 +111,32 @@ class Binomial(Likelihood):
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
         N = Y_metadata['trials']
-        return -y/np.square(inv_link_f) - (N-y)/np.square(1-inv_link_f)
+        assert N.shape == y.shape
+        return -y/np.square(inv_link_f) - (N-y)/np.square(1.-inv_link_f)
+
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
+        """
+        Third order derivative log-likelihood function at y given inverse link of f w.r.t inverse link of f
+
+        .. math::
+            \\frac{d^{2}\\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)^{2}} = \\frac{2y_{i}}{\\lambda(f)^{3}} - \\frac{2(N-y_{i})}{(1-\\lambda(f))^{3}}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: Nx1 array
+        :param y: data
+        :type y: Nx1 array
+        :param Y_metadata: Y_metadata not used in binomial
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points inverse link of f.
+        :rtype: Nx1 array
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
+            (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
+        """
+        N = Y_metadata['trials']
+        assert N.shape == y.shape
+        inv_link_f2 = np.square(inv_link_f)
+        return 2*y/inv_link_f**3 - 2*(N-y)/(1.-inv_link_f)**3
 
     def samples(self, gp, Y_metadata=None):
         """

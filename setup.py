@@ -94,6 +94,10 @@ ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
             Extension(name='GPy.kern.src.coregionalize_cython',
                       sources=['GPy/kern/src/coregionalize_cython.c'],
                       include_dirs=[np.get_include(),'.'],
+                      extra_compile_args=compile_flags),
+            Extension(name='GPy.models.state_space_cython',
+                      sources=['GPy/models/state_space_cython.c'],
+                      include_dirs=[np.get_include(),'.'],
                       extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',

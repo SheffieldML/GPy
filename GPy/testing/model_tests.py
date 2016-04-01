@@ -148,6 +148,28 @@ class MiscTests(unittest.TestCase):
         assert(gc.checkgrad())
         assert(gc2.checkgrad())
 
+    def test_predict_uncertain_inputs(self):
+        """ Projection of Gaussian through a linear function is still gaussian, and moments are analytical to compute, so we can check this case for predictions easily """
+        X = np.linspace(-5,5, 10)[:, None]
+        Y = 2*X + np.random.randn(*X.shape)*1e-3
+        m = GPy.models.BayesianGPLVM(Y, 1, X=X, kernel=GPy.kern.Linear(1), num_inducing=1)
+        m.Gaussian_noise[:] = 1e-4
+        m.X.mean[:] = X[:]
+        m.X.variance[:] = 1e-5
+        m.X.fix()
+        m.optimize()
+        X_pred_mu = np.random.randn(5, 1)
+        X_pred_var = np.random.rand(5, 1) + 1e-5
+        from GPy.core.parameterization.variational import NormalPosterior
+        X_pred = NormalPosterior(X_pred_mu, X_pred_var)
+        # mu = \int f(x)q(x|mu,S) dx = \int 2x.q(x|mu,S) dx = 2.mu
+        # S = \int (f(x) - m)^2q(x|mu,S) dx = \int f(x)^2 q(x) dx - mu**2 = 4(mu^2 + S) - (2.mu)^2 = 4S
+        Y_mu_true = 2*X_pred_mu
+        Y_var_true = 4*X_pred_var
+        Y_mu_pred, Y_var_pred = m._raw_predict(X_pred)
+        np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-4)
+        np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-4)
+
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)

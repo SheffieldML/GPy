@@ -1,5 +1,5 @@
 #===============================================================================
-# Copyright (c) 2016, Max Zwiessele
+# Copyright (c) 2016, Max Zwiessele, Alan Saul
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -47,3 +47,52 @@ class TestDebug(unittest.TestCase):
         
         array = np.random.normal(0, 1, (25,25))
         self.assertTrue(checkFullRank(tdot(array)))
+    
+    def test_fixed_inputs_median(self):
+        """ test fixed_inputs convenience function """
+        from GPy.plotting.matplot_dep.util import fixed_inputs
+        import GPy
+        X = np.random.randn(10, 3)
+        Y = np.sin(X) + np.random.randn(10, 3)*1e-3
+        m = GPy.models.GPRegression(X, Y)
+        fixed = fixed_inputs(m, [1], fix_routine='median', as_list=True, X_all=False)
+        self.assertTrue((0, np.median(X[:,0])) in fixed)
+        self.assertTrue((2, np.median(X[:,2])) in fixed)
+        self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
+
+    def test_fixed_inputs_mean(self):
+        from GPy.plotting.matplot_dep.util import fixed_inputs
+        import GPy
+        X = np.random.randn(10, 3)
+        Y = np.sin(X) + np.random.randn(10, 3)*1e-3
+        m = GPy.models.GPRegression(X, Y)
+        fixed = fixed_inputs(m, [1], fix_routine='mean', as_list=True, X_all=False)
+        self.assertTrue((0, np.mean(X[:,0])) in fixed)
+        self.assertTrue((2, np.mean(X[:,2])) in fixed)
+        self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
+
+    def test_fixed_inputs_zero(self):
+        from GPy.plotting.matplot_dep.util import fixed_inputs
+        import GPy
+        X = np.random.randn(10, 3)
+        Y = np.sin(X) + np.random.randn(10, 3)*1e-3
+        m = GPy.models.GPRegression(X, Y)
+        fixed = fixed_inputs(m, [1], fix_routine='zero', as_list=True, X_all=False)
+        self.assertTrue((0, 0.0) in fixed)
+        self.assertTrue((2, 0.0) in fixed)
+        self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
+
+    def test_fixed_inputs_uncertain(self):
+        from GPy.plotting.matplot_dep.util import fixed_inputs
+        import GPy
+        from GPy.core.parameterization.variational import NormalPosterior
+        X_mu = np.random.randn(10, 3)
+        X_var = np.random.randn(10, 3)
+        X = NormalPosterior(X_mu, X_var)
+        Y = np.sin(X_mu) + np.random.randn(10, 3)*1e-3
+        m = GPy.models.BayesianGPLVM(Y, X=X_mu, X_variance=X_var, input_dim=3)
+        fixed = fixed_inputs(m, [1], fix_routine='median', as_list=True, X_all=False)
+        self.assertTrue((0, np.median(X.mean.values[:,0])) in fixed)
+        self.assertTrue((2, np.median(X.mean.values[:,2])) in fixed)
+        self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
+

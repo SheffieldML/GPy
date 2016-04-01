@@ -402,7 +402,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         np.testing.assert_array_equal(kern.active_dims, [-1,0,1,2])
         np.testing.assert_array_equal(kern._all_dims_active, [0,1,2,-1])
 
-    @skip('Gradients for independend outputs with different X do not work correctly')
+    #@skip('Gradients for independend outputs with different X do not work correctly')
     def testIndependendGradients(self):
         k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
@@ -418,7 +418,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         np.testing.assert_array_equal(kern.active_dims, [-1,0,2])
         np.testing.assert_array_equal(kern._all_dims_active, [0,1,2,-1])
 
-    @skip('Gradients for independend outputs with different X do not work correctly')
+    #@skip('Gradients for independend outputs with different X do not work correctly')
     def test_Hierarchical_gradients(self):
         k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
@@ -430,6 +430,10 @@ class KernelTestsNonContinuous(unittest.TestCase):
         X = self.X[self.X[:,-1]!=2]
         X2 = self.X2[self.X2[:,-1]!=2]
         self.assertTrue(check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1))
+
+    def test_Coregionalize(self):
+        kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
+        self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
 @unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
 class Coregionalize_cython_test(unittest.TestCase):

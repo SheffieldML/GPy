@@ -305,7 +305,6 @@ class Kern(Parameterized):
     def _check_active_dims(self, X):
         assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
 
-
 class CombinationKernel(Kern):
     """
     Abstract super class for combination kernels.

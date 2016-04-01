@@ -31,7 +31,6 @@ If that is the case, it is best to clean the repo and reinstall.
 
 |      | Travis-CI | Codecov | RTFD |
 | ---: | :--: | :---: | :---: |
-| **master:** | [![masterstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=master)](https://travis-ci.org/SheffieldML/GPy) | [![covmaster](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=master)](http://codecov.io/github/SheffieldML/GPy?branch=master) | [![docmaster](https://readthedocs.org/projects/gpy/badge/?version=master)](http://gpy.readthedocs.org/en/master/) | 
 | **devel:**  | [![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) | [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) | [![docdevel](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) | 
 
 ## Supported Platforms:

@@ -66,7 +66,8 @@ class IndependentOutputs(CombinationKernel):
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
-            [[target.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
+            #[[target.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
+            [[target.__setitem__((s,ss), kern.K(X[s,:]) if s==ss else kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             target = np.zeros((X.shape[0], X2.shape[0]))

@@ -217,9 +217,13 @@ class GP(Model):
             mu += self.mean_function.f(Xnew)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None, include_likelihood=True):
         """
-        Predict the function(s) at the new point(s) Xnew.
+        Predict the function(s) at the new point(s) Xnew. This includes the likelihood
+        variance added to the predicted underlying function (usually referred to as f).
+
+        In order to predict without adding in the likelihood give
+        `include_likelihood=False`, or refer to self.predict_noiseless().
 
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray (Nnew x self.input_dim)
@@ -229,6 +233,8 @@ class GP(Model):
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
+        :param bool include_likelihood: Whether or not to add likelihood noise to the predicted underlying latent function f.
+
         :returns: (mean, var):
             mean: posterior mean, a Numpy array, Nnew x self.input_dim
             var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
@@ -243,11 +249,40 @@ class GP(Model):
         if self.normalizer is not None:
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
-        # now push through likelihood
-        if likelihood is None:
-            likelihood = self.likelihood
-        mean, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
-        return mean, var
+        if include_likelihood:
+            # now push through likelihood
+            if likelihood is None:
+                likelihood = self.likelihood
+            mu, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+        return mu, var
+
+    def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
+        """
+        Convenience function to predict the underlying function of the GP (often
+        referred to as f) without adding the likelihood variance on the
+        prediction function.
+
+        This is most likely what you want to use for your predictions.
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
+        :param full_cov: whether to return the full covariance matrix, or just
+                         the diagonal
+        :type full_cov: bool
+        :param Y_metadata: metadata about the predicting point to pass to the likelihood
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
+
+        :returns: (mean, var):
+            mean: posterior mean, a Numpy array, Nnew x self.input_dim
+            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+
+           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
+           This is to allow for different normalizations of the output dimensions.
+
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        """
+        return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         """

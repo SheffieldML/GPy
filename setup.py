@@ -182,6 +182,8 @@ if not os.path.exists(user_file):
     if os.path.exists(old_user_file):
         # Move it to new location:
         print("GPy: Found old config file, moving to new location {}".format(user_file))
+        if not os.path.exists(os.path.dirname(user_file)):
+            os.makedirs(os.path.dirname(user_file))
         os.rename(old_user_file, user_file)
     else:
         # No config file exists, save informative stub to user config folder:

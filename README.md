@@ -7,7 +7,9 @@ The Gaussian processes framework in Python.
 * User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * Developer [documentation](http://gpy.readthedocs.org/en/devel/)
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
-* [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause) 
+* [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
+
+[![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![docdevel](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
 
 ## Updated Structure
 
@@ -27,15 +29,11 @@ A warning: This usually works, but sometimes `distutils/setuptools` opens a
 whole can of worms here, specially when compiled extensions are involved.
 If that is the case, it is best to clean the repo and reinstall.
 
-## Continuous integration
-
-[![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![docdevel](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
-
 ## Supported Platforms:
 
 [<img src="https://www.python.org/static/community_logos/python-logo-generic.svg" height=40px>](https://www.python.org/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Windows_logo_-_2012.svg" height=40px>](http://www.microsoft.com/en-gb/windows)
-[<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/) 
+[<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
 Python 2.7, 3.3 and higher
@@ -49,14 +47,14 @@ Python 2.7, 3.3 and higher
       year = {2012--2015}
     }
 
-### Pronounciation: 
+### Pronounciation:
 
 We like to pronounce it 'g-pie'.
 
-## Getting started: installing with pip 
+## Getting started: installing with pip
 
-We are now requiring the newest version (0.16) of 
-[scipy](http://www.scipy.org/) and thus, we strongly recommend using 
+We are now requiring the newest version (0.16) of
+[scipy](http://www.scipy.org/) and thus, we strongly recommend using
 the  [anaconda python distribution](http://continuum.io/downloads).
 With anaconda you can install GPy by the following:
 
@@ -103,7 +101,7 @@ or from within IPython
 or using setuptools
 
     python setup.py test
-    
+
 ## Ubuntu hackers
 
 > Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
@@ -144,7 +142,7 @@ The HTML files are then stored in doc/build/html
 
 ## Funding Acknowledgements
 
-Current support for the GPy software is coming through the following projects. 
+Current support for the GPy software is coming through the following projects.
 
 * [EU FP7-HEALTH Project Ref 305626](http://radiant-project.eu) "RADIANT: Rapid Development and Distribution of Statistical Tools for High-Throughput Sequencing Data"
 

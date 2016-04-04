@@ -52,6 +52,17 @@ def inject_plotting():
         GP.plot_f = gpy_plot.gp_plots.plot_f
         GP.plot_magnification = gpy_plot.latent_plots.plot_magnification
 
+        from ..models import StateSpace
+        StateSpace.plot_data = gpy_plot.data_plots.plot_data
+        StateSpace.plot_data_error = gpy_plot.data_plots.plot_data_error
+        StateSpace.plot_errorbars_trainset = gpy_plot.data_plots.plot_errorbars_trainset
+        StateSpace.plot_mean = gpy_plot.gp_plots.plot_mean
+        StateSpace.plot_confidence = gpy_plot.gp_plots.plot_confidence
+        StateSpace.plot_density = gpy_plot.gp_plots.plot_density
+        StateSpace.plot_samples = gpy_plot.gp_plots.plot_samples
+        StateSpace.plot = gpy_plot.gp_plots.plot
+        StateSpace.plot_f = gpy_plot.gp_plots.plot_f
+
         from ..core import SparseGP
         SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
 

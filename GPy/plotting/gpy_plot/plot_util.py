@@ -190,6 +190,7 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
             x = X[index, input_1]
             y = X[index, input_2]
             z = X[index, input_3]
+
         yield x, y, z, this_label, index, m
 
 def subsample_X(X, labels, num_samples=1000):

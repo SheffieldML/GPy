@@ -437,15 +437,22 @@ class GP(Model):
         warnings.warn("Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!", DeprecationWarning)
         return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
 
-    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True):
+    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True, dimensions=None):
         """
         Predict the magnification factor as
 
         sqrt(det(G))
 
-        for each point N in Xnew
+        for each point N in Xnew.
+
+        :param bool mean: whether to include the mean of the wishart embedding.
+        :param bool covariance: whether to include the covariance of the wishart embedding.
+        :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
         """
         G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
+        if dimensions is None:
+            dimensions = self.get_most_significant_input_dimensions()[:2]
+        G = G[:, dimensions][:,:,dimensions]
         from ..util.linalg import jitchol
         mag = np.empty(Xnew.shape[0])
         for n in range(Xnew.shape[0]):

@@ -730,6 +730,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
+        np.random.seed(10)
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -737,6 +738,7 @@ class GradientTests(np.testing.TestCase):
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
     def test_ssgplvm(self):
@@ -744,12 +746,14 @@ class GradientTests(np.testing.TestCase):
         from GPy.models import SSGPLVM
         from GPy.examples.dimensionality_reduction import _simulate_matern
 
+        np.random.seed(10)
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
         _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
         Y = Ylist[0]
         k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
         # k = kern.RBF(Q, ARD=True, lengthscale=10.)
         m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

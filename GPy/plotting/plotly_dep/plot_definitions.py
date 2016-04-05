@@ -131,14 +131,15 @@ class PlotlyPlots(AbstractPlottingLibrary):
             #not matplotlib marker
             pass
         marker_kwargs = marker_kwargs or {}
-        marker_kwargs.setdefault('symbol', marker)
+        if 'symbol' not in marker_kwargs:
+            marker_kwargs['symbol'] = marker
         if Z is not None:
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              showlegend=label is not None,
                              marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
                              name=label, **kwargs)
         return Scatter(x=X, y=Y, mode='markers', showlegend=label is not None,
-                       marker=Marker(color=color, colorscale=cmap, **marker_kwargs or {}),
+                       marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
                        name=label, **kwargs)
 
     def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):

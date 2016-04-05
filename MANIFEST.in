@@ -17,5 +17,5 @@ recursive-include GPy *.h
 recursive-include GPy *.pyx
 
 # Testing
-include GPy/testing/baseline/*.png
+#include GPy/testing/baseline/*.png
 #include GPy/testing/pickle_test.pickle

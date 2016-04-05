@@ -89,6 +89,9 @@ def _image_directories():
         cbook.mkdirs(result_dir)
     return baseline_dir, result_dir
 
+baseline_dir, result_dir = _image_directories()
+if not os.path.exists(baseline_dir):
+    raise SkipTest("Not installed from source, baseline not available. Install from source to test plotting")
 
 def _sequenceEqual(a, b):
     assert len(a) == len(b), "Sequences not same length"
@@ -99,7 +102,6 @@ def _notFound(path):
     raise IOError('File {} not in baseline')
 
 def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
-    baseline_dir, result_dir = _image_directories()
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             fig = plt.figure(num)

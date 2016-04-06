@@ -129,14 +129,14 @@ class sde_Exponential(Exponential):
         """
 
         self.variance.gradient = gradients[0]
-        self.lengthscale.gradient = gradients[1]
+        self.lengthscale.gradient = gradients[1] * 2.0
 
     def sde(self):
         """
         Return the state space representation of the covariance.
         """
         variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale)
+        lengthscale = float(self.lengthscale*2.0)
 
         F  = np.array(((-1.0/lengthscale,),))
         L  = np.array(((1.0,),))

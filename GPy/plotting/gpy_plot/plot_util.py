@@ -31,7 +31,7 @@
 import numpy as np
 from scipy import sparse
 import itertools
-from GPy.models import WarpedGP
+from ...models import WarpedGP
 
 def in_ipynb():
     try:

@@ -28,7 +28,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                                 kalman_filter_type=kalman_filter_type,
                                 use_cython=use_cython)
 
-        m1.likelihood[:] = Y.var()/10.
+        m1.likelihood[:] = Y.var()/100.
 
         if check_gradients:
             self.assertTrue(m1.checkgrad())
@@ -95,9 +95,9 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                         plot = False, points_num=50, x_interval = (0, 20), random=True)
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
 
-        ss_kernel = GPy.kern.sde_RBF(1, Y.var(), X.ptp()/2., active_dims=[0,])
-        gp_kernel = GPy.kern.RBF(1, Y.var(), X.ptp()/2., active_dims=[0,])
-
+        ss_kernel = GPy.kern.sde_RBF(1, 110., 1.5, active_dims=[0,])
+        gp_kernel = GPy.kern.RBF(1, 110., 1.5, active_dims=[0,])
+        
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                            predict_X=X,
                            gp_kernel=gp_kernel,
@@ -202,17 +202,18 @@ class StateSpaceKernelsTests(np.testing.TestCase):
 
         # Sine data <-
         Y = Y + Y1
+        Y -= Y.mean()
 
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
 
         def get_new_kernels():
-            ss_kernel = GPy.kern.sde_Linear(1,X) + GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-            ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
-            ss_kernel.std_periodic.period.constrain_bounded(3, 8)
+            ss_kernel = GPy.kern.sde_Linear(1,X,variances=1) + GPy.kern.sde_StdPeriodic(1,period=5.0, variance=300, lengthscale=3., active_dims=[0,])
+            #ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            #ss_kernel.std_periodic.period.constrain_bounded(3, 8)
 
-            gp_kernel = GPy.kern.Linear(1) + GPy.kern.StdPeriodic(1,active_dims=[0,])
-            gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
-            gp_kernel.std_periodic.period.constrain_bounded(3, 8)
+            gp_kernel = GPy.kern.Linear(1,variances=1) + GPy.kern.StdPeriodic(1,period=5.0, variance=300, lengthscale=3., active_dims=[0,])
+            #gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+            #gp_kernel.std_periodic.period.constrain_bounded(3, 8)
 
             return ss_kernel, gp_kernel
 

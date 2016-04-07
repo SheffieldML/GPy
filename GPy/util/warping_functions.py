@@ -46,11 +46,7 @@ class WarpingFunction(Parameterized):
         it = 0
         update = np.inf
         while np.abs(update).sum() > 1e-10 and it < max_iterations:
-            try:
-                fy = self.f(y)
-            except ValueError:
-                sys.stderr.write("One of y's is negative! Stopping inverse calculation.\n")
-                break
+            fy = self.f(y)
             fgrady = self.fgrad_y(y)
             update = (fy - z) / fgrady
             y -= self.rate * update

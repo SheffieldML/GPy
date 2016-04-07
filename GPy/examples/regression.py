@@ -564,9 +564,13 @@ def warped_gp_cubic_sine(max_iters=100):
     warp_k = GPy.kern.RBF(1)
     warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
     warp_m = GPy.models.WarpedGP(X, Y, kernel=warp_k, warping_function=warp_f)
+    warp_m['.*\.d'].constrain_fixed(1.0)
     m = GPy.models.GPRegression(X, Y)
     m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
     warp_m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
+    #m.optimize(max_iters=max_iters)
+    #warp_m.optimize(max_iters=max_iters)
+
     print(warp_m)
     print(warp_m['.*warp.*'])
 

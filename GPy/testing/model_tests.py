@@ -328,6 +328,28 @@ class MiscTests(unittest.TestCase):
  
         np.testing.assert_almost_equal(np.exp(preds), warp_preds, decimal=4)
 
+    def test_warped_gp_cubic_sine(self, max_iters=100):
+        """
+        A test replicating the cubic sine regression problem from
+        Snelson's paper. This test doesn't have any assertions, it's
+        just to ensure coverage of the tanh warping function code.
+        """
+        X = (2 * np.pi) * np.random.random(151) - np.pi
+        Y = np.sin(X) + np.random.normal(0,0.2,151)
+        Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
+        X = X[:, None]
+        Y = Y[:, None]
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
+        warp_m = GPy.models.WarpedGP(X, Y, kernel=warp_k, warping_function=warp_f)
+        warp_m['.*\.d'].constrain_fixed(1.0)
+        warp_m.optimize_restarts(parallel=False, robust=False, num_restarts=5, 
+                                 max_iters=max_iters)
+        print warp_m
+        warp_m.predict(X)
+
+
 
 class GradientTests(np.testing.TestCase):
     def setUp(self):

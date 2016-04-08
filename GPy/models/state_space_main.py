@@ -3237,6 +3237,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             AB = np.dot(AB, np.vstack((np.zeros((n,n)),np.eye(n))))
 
             Q_noise_1 = linalg.solve(AB[n:,:].T,AB[:n,:].T)
+            Q_noise_2  = P_inf - A.dot(P_inf).dot(A.T)
             # The covariance matrix Q by matrix fraction decomposition <-
 
             if compute_derivatives:
@@ -3276,8 +3277,9 @@ class ContDescrStateSpace(DescreteStateSpace):
             else:
               dA = None
               dQ = None
-              Q_noise = Q_noise_1
-
+              Q_noise = Q_noise_2
+	      # Innacuracies have been observed when Q_noise_1 was used.
+	
             #Q_noise = Q_noise_1
 
             # Return

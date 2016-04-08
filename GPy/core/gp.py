@@ -532,21 +532,23 @@ class GP(Model):
     def get_most_significant_input_dimensions(self, which_indices=None):
         return self.kern.get_most_significant_input_dimensions(which_indices)
 
-    def optimize(self, optimizer=None, start=None, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
-        :param max_f_eval: maximum number of function evaluations
-        :type max_f_eval: int
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :messages: whether to display during optimisation
         :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string
+        :param bool ipython_notebook: whether to use ipython notebook widgets or not.
+        :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
         """
         self.inference_method.on_optimization_start()
         try:
-            super(GP, self).optimize(optimizer, start, **kwargs)
+            super(GP, self).optimize(optimizer, start, messages, max_iters, ipython_notebook, clear_after_finish, **kwargs)
         except KeyboardInterrupt:
             print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()

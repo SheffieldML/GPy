@@ -1,1 +1,1 @@
-[GPy Authors](https://github.com/SheffieldML/GPy/graphs/contributors)
+GPy Authors: https://github.com/SheffieldML/GPy/graphs/contributors

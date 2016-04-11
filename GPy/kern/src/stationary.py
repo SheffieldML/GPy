@@ -81,11 +81,11 @@ class Stationary(Kern):
     def dK_dr(self, r):
         raise NotImplementedError("implement derivative of the covariance function wrt r to use this class")
 
-    @Cache_this(limit=20, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def dK2_drdr(self, r):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
 
-    @Cache_this(limit=5, ignore_args=())
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -99,6 +99,9 @@ class Stationary(Kern):
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dr_via_X(self, X, X2):
+        """
+        compute the derivative of K wrt X going through X
+        """
         #a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
@@ -312,11 +315,23 @@ class Exponential(Stationary):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-0.5 * r)
+        return self.variance * np.exp(-r)
 
     def dK_dr(self, r):
-        return -0.5*self.K_of_r(r)
+        return -self.K_of_r(r)
 
+#    def sde(self): 
+#        """ 
+#        Return the state space representation of the covariance. 
+#        """ 
+#        F  = np.array([[-1/self.lengthscale]]) 
+#        L  = np.array([[1]]) 
+#        Qc = np.array([[2*self.variance/self.lengthscale]]) 
+#        H = np.array([[1]]) 
+#        Pinf = np.array([[self.variance]]) 
+#        # TODO: return the derivatives as well 
+#        
+#        return (F, L, Qc, H, Pinf)  
 
 
 
@@ -385,6 +400,41 @@ class Matern32(Stationary):
         F1lower = np.array([f(lower) for f in F1])[:, None]
         return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
 
+    def sde(self): 
+        """ 
+        Return the state space representation of the covariance. 
+        """ 
+        variance = float(self.variance.values)
+        lengthscale = float(self.lengthscale.values)
+        foo  = np.sqrt(3.)/lengthscale 
+        F    = np.array([[0, 1], [-foo**2, -2*foo]]) 
+        L    = np.array([[0], [1]]) 
+        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]]) 
+        H    = np.array([[1, 0]]) 
+        Pinf = np.array([[variance, 0],  
+        [0,              3.*variance/(lengthscale**2)]]) 
+        # Allocate space for the derivatives 
+        dF    = np.empty([F.shape[0],F.shape[1],2])
+        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2]) 
+        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2]) 
+        # The partial derivatives 
+        dFvariance       = np.zeros([2,2]) 
+        dFlengthscale    = np.array([[0,0], 
+        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]]) 
+        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3]) 
+        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance]) 
+        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]]) 
+        dPinflengthscale = np.array([[0,0], 
+        [0,-6*variance/lengthscale**3]]) 
+        # Combine the derivatives 
+        dF[:,:,0]    = dFvariance 
+        dF[:,:,1]    = dFlengthscale 
+        dQc[:,:,0]   = dQcvariance 
+        dQc[:,:,1]   = dQclengthscale 
+        dPinf[:,:,0] = dPinfvariance 
+        dPinf[:,:,1] = dPinflengthscale 
+
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)  
 
 class Matern52(Stationary):
     """
@@ -486,18 +536,21 @@ class RatQuad(Stationary):
         self.link_parameters(self.power)
 
     def K_of_r(self, r):
-        r2 = np.power(r, 2.)
-        return self.variance*np.power(1. + r2/2., -self.power)
+        r2 = np.square(r)
+#         return self.variance*np.power(1. + r2/2., -self.power)
+        return self.variance*np.exp(-self.power*np.log1p(r2/2.))
 
     def dK_dr(self, r):
-        r2 = np.power(r, 2.)
-        return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
+        r2 = np.square(r)
+#         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
+        return-self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
-        r2 = np.power(r, 2.)
-        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        r2 = np.square(r)
+#        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        dK_dpow = -self.variance * np.exp(self.power*(np.log(2.)-np.log1p(r2+1)))*np.log1p(r2/2.)
         grad = np.sum(dL_dK*dK_dpow)
         self.power.gradient = grad
 

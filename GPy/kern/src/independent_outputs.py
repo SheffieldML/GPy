@@ -56,14 +56,18 @@ class IndependentOutputs(CombinationKernel):
             self.single_kern = False
             self.kern = kernels
         super(IndependentOutputs, self).__init__(kernels=kernels, extra_dims=[index_dim], name=name)
-        self.index_dim = index_dim
+        # The combination kernel ALLWAYS puts the extra dimension last.
+        # Thus, the index dimension of this kernel is always the last dimension
+        # after slicing. This is why the index_dim is just the last column:
+        self.index_dim = -1
 
     def K(self,X ,X2=None):
         slices = index_to_slices(X[:,self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         if X2 is None:
             target = np.zeros((X.shape[0], X.shape[0]))
-            [[target.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
+            #[[target.__setitem__((s,ss), kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
+            [[target.__setitem__((s,ss), kern.K(X[s,:]) if s==ss else kern.K(X[s,:], X[ss,:])) for s,ss in itertools.product(slices_i, slices_i)] for kern, slices_i in zip(kerns, slices)]
         else:
             slices2 = index_to_slices(X2[:,self.index_dim])
             target = np.zeros((X.shape[0], X2.shape[0]))
@@ -103,13 +107,10 @@ class IndependentOutputs(CombinationKernel):
         target = np.zeros(X.shape)
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         if X2 is None:
-            # TODO: make use of index_to_slices
-            # FIXME: Broken as X is already sliced out
-            # print("Warning, gradients_X may not be working, I believe X has already been sliced out by the slicer!")
             values = np.unique(X[:,self.index_dim])
             slices = [X[:,self.index_dim]==i for i in values]
-            [target.__setitem__(s, kern.gradients_X(dL_dK[s,s],X[s],None))
-              for kern, s in zip(kerns, slices)]
+            for kern, s in zip(kerns, slices):
+                target[s] += kern.gradients_X(dL_dK[s, :][:, s],X[s], None)
             #slices = index_to_slices(X[:,self.index_dim])
             #[[np.add(target[s], kern.gradients_X(dL_dK[s,s], X[s]), out=target[s])
             #  for s in slices_i] for kern, slices_i in zip(kerns, slices)]
@@ -121,8 +122,8 @@ class IndependentOutputs(CombinationKernel):
             values = np.unique(X[:,self.index_dim])
             slices = [X[:,self.index_dim]==i for i in values]
             slices2 = [X2[:,self.index_dim]==i for i in values]
-            [target.__setitem__(s, kern.gradients_X(dL_dK[s, :][:, s2],X[s],X2[s2]))
-              for kern, s, s2 in zip(kerns, slices, slices2)]
+            for kern, s, s2 in zip(kerns, slices, slices2):
+                target[s] += kern.gradients_X(dL_dK[s, :][:, s2],X[s],X2[s2])
             # TODO: make work with index_to_slices
             #slices = index_to_slices(X[:,self.index_dim])
             #slices2 = index_to_slices(X2[:,self.index_dim])
@@ -133,7 +134,9 @@ class IndependentOutputs(CombinationKernel):
         slices = index_to_slices(X[:,self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         target = np.zeros(X.shape)
-        [[target.__setitem__(s, kern.gradients_X_diag(dL_dKdiag[s],X[s])) for s in slices_i] for kern, slices_i in zip(kerns, slices)]
+        for kern, slices_i in zip(kerns, slices):
+            for s in slices_i:
+                target[s] += kern.gradients_X_diag(dL_dKdiag[s],X[s])
         return target
 
     def update_gradients_diag(self, dL_dKdiag, X):

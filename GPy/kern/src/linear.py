@@ -51,7 +51,7 @@ class Linear(Kern):
         self.link_parameter(self.variances)
         self.psicomp = PSICOMP_Linear()
 
-    @Cache_this(limit=2)
+    @Cache_this(limit=3)
     def K(self, X, X2=None):
         if self.ARD:
             if X2 is None:
@@ -62,7 +62,7 @@ class Linear(Kern):
         else:
             return self._dot_product(X, X2) * self.variances
 
-    @Cache_this(limit=1, ignore_args=(0,))
+    @Cache_this(limit=3, ignore_args=(0,))
     def _dot_product(self, X, X2=None):
         if X2 is None:
             return tdot(X)

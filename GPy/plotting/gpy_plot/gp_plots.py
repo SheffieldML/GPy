@@ -235,8 +235,6 @@ def plot_density(self, plot_limits=None, fixed_inputs=None,
 
     Give the Y_metadata in the predict_kw if you need it.
 
-
-
     :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
     :type plot_limits: np.array
     :param fixed_inputs: a list of tuple [(i,v), (i,v)...], specifying that input dimension i should be set to value v.

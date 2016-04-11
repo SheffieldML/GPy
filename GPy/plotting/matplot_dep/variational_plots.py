@@ -15,7 +15,9 @@ def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
     if ax is None:
         fig = pb.figure(num=fignum, figsize=figsize)
     if colors is None:
-        colors = pb.gca()._get_lines.color_cycle
+        from ..Tango import mediumList
+        from itertools import cycle
+        colors = cycle(mediumList)
         pb.clf()
     else:
         colors = iter(colors)
@@ -64,7 +66,9 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_sid
         else:
             fig = pb.figure(num=fignum, figsize=(8, min(12, (2 * parameterized.mean.shape[1]))))
     if colors is None:
-        colors = pb.gca()._get_lines.color_cycle
+        from ..Tango import mediumList
+        from itertools import cycle
+        colors = cycle(mediumList)
         pb.clf()
     else:
         colors = iter(colors)

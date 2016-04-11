@@ -131,7 +131,9 @@ def plot_latent_inducing(self,
 
     Z = self.Z.values
     labels = np.array(['inducing'] * Z.shape[0])
-    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, marker, num_samples, projection=projection, **kwargs)
+    kwargs['marker'] = marker
+    update_not_existing_kwargs(kwargs, pl().defaults.inducing_2d)  # @UndefinedVariable
+    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, num_samples=num_samples, projection=projection, **kwargs)
     return pl().add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
 
 
@@ -147,6 +149,7 @@ def _plot_magnification(self, canvas, which_indices, Xgrid,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, which_indices] = x
+
         mf = self.predict_magnification(Xtest_full, kern=kern, mean=mean, covariance=covariance)
         return mf.reshape(resolution, resolution).T
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl().defaults.magnification)
@@ -215,7 +218,12 @@ def _plot_latent(self, canvas, which_indices, Xgrid,
     def plot_function(x):
         Xtest_full = np.zeros((x.shape[0], Xgrid.shape[1]))
         Xtest_full[:, which_indices] = x
-        mf = np.log(self.predict(Xtest_full, kern=kern)[1])
+        mf = self.predict(Xtest_full, kern=kern)[1]
+        if mf.shape[1]==self.output_dim:
+            mf = mf.sum(-1)
+        else:
+            mf *= self.output_dim
+        mf = np.log(mf)
         return mf.reshape(resolution, resolution).T
 
     imshow_kwargs = update_not_existing_kwargs(imshow_kwargs, pl().defaults.latent)

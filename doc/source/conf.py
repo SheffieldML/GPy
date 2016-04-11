@@ -22,7 +22,7 @@ import shlex
 #for p in os.walk('../../GPy'):
 #    sys.path.append(p[0])
 sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../GPy/'))
+#sys.path.insert(0, os.path.abspath('../../GPy/'))
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -82,7 +82,8 @@ MOCK_MODULES = ['scipy.linalg.blas', 'blas', 'scipy.optimize', 'scipy.optimize.l
                 'sympy', 'sympy.utilities.iterables', 'sympy.utilities.lambdify',
                 'sympy.utilities', 'sympy.utilities.codegen', 'sympy.core.cache',
                 'sympy.core', 'sympy.parsing', 'sympy.parsing.sympy_parser',
-                'nose', 'nose.tools']
+                'nose', 'nose.tools'
+                ]
 
 autodoc_mock_imports = MOCK_MODULES
 #

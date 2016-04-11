@@ -212,41 +212,18 @@ class GP(Model):
                         = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
             \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
         """
-        if kern is None:
-            kern = self.kern
-
-        Kx = kern.K(self._predictive_variable, Xnew)
-        mu = np.dot(Kx.T, self.posterior.woodbury_vector)
-        if len(mu.shape)==1:
-            mu = mu.reshape(-1,1)
-        if full_cov:
-            Kxx = kern.K(Xnew)
-            if self.posterior.woodbury_inv.ndim == 2:
-                var = Kxx - np.dot(Kx.T, np.dot(self.posterior.woodbury_inv, Kx))
-            elif self.posterior.woodbury_inv.ndim == 3: # Missing data
-                var = np.empty((Kxx.shape[0],Kxx.shape[1],self.posterior.woodbury_inv.shape[2]))
-                from ..util.linalg import mdot
-                for i in range(var.shape[2]):
-                    var[:, :, i] = (Kxx - mdot(Kx.T, self.posterior.woodbury_inv[:, :, i], Kx))
-            var = var
-        else:
-            Kxx = kern.Kdiag(Xnew)
-            if self.posterior.woodbury_inv.ndim == 2:
-                var = (Kxx - np.sum(np.dot(self.posterior.woodbury_inv.T, Kx) * Kx, 0))[:,None]
-            elif self.posterior.woodbury_inv.ndim == 3: # Missing data
-                var = np.empty((Kxx.shape[0],self.posterior.woodbury_inv.shape[2]))
-                for i in range(var.shape[1]):
-                    var[:, i] = (Kxx - (np.sum(np.dot(self.posterior.woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
-            var = var
-        #add in the mean function
+        mu, var = self.posterior._raw_predict(kern=self.kern if kern is None else kern, Xnew=Xnew, pred_var=self._predictive_variable, full_cov=full_cov)
         if self.mean_function is not None:
             mu += self.mean_function.f(Xnew)
-
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None, include_likelihood=True):
         """
-        Predict the function(s) at the new point(s) Xnew.
+        Predict the function(s) at the new point(s) Xnew. This includes the likelihood
+        variance added to the predicted underlying function (usually referred to as f).
+
+        In order to predict without adding in the likelihood give
+        `include_likelihood=False`, or refer to self.predict_noiseless().
 
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray (Nnew x self.input_dim)
@@ -256,6 +233,8 @@ class GP(Model):
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
+        :param bool include_likelihood: Whether or not to add likelihood noise to the predicted underlying latent function f.
+
         :returns: (mean, var):
             mean: posterior mean, a Numpy array, Nnew x self.input_dim
             var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
@@ -270,11 +249,40 @@ class GP(Model):
         if self.normalizer is not None:
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
-        # now push through likelihood
-        if likelihood is None:
-            likelihood = self.likelihood
-        mean, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
-        return mean, var
+        if include_likelihood:
+            # now push through likelihood
+            if likelihood is None:
+                likelihood = self.likelihood
+            mu, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+        return mu, var
+
+    def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
+        """
+        Convenience function to predict the underlying function of the GP (often
+        referred to as f) without adding the likelihood variance on the
+        prediction function.
+
+        This is most likely what you want to use for your predictions.
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
+        :param full_cov: whether to return the full covariance matrix, or just
+                         the diagonal
+        :type full_cov: bool
+        :param Y_metadata: metadata about the predicting point to pass to the likelihood
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
+
+        :returns: (mean, var):
+            mean: posterior mean, a Numpy array, Nnew x self.input_dim
+            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+
+           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
+           This is to allow for different normalizations of the output dimensions.
+
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        """
+        return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         """
@@ -395,9 +403,9 @@ class GP(Model):
             var_jac = compute_cov_inner(self.posterior.woodbury_inv)
         return mean_jac, var_jac
 
-    def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+    def predict_wishart_embedding(self, Xnew, kern=None, mean=True, covariance=True):
         """
-        Predict the wishard embedding G of the GP. This is the density of the
+        Predict the wishart embedding G of the GP. This is the density of the
         input of the GP defined by the probabilistic function mapping f.
         G = J_mean.T*J_mean + output_dim*J_cov.
 
@@ -425,15 +433,26 @@ class GP(Model):
             G += Sigma
         return G
 
-    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True):
+    def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+        warnings.warn("Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!", DeprecationWarning)
+        return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
+
+    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True, dimensions=None):
         """
         Predict the magnification factor as
 
         sqrt(det(G))
 
-        for each point N in Xnew
+        for each point N in Xnew.
+
+        :param bool mean: whether to include the mean of the wishart embedding.
+        :param bool covariance: whether to include the covariance of the wishart embedding.
+        :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
         """
         G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
+        if dimensions is None:
+            dimensions = self.get_most_significant_input_dimensions()[:2]
+        G = G[:, dimensions][:,:,dimensions]
         from ..util.linalg import jitchol
         mag = np.empty(Xnew.shape[0])
         for n in range(Xnew.shape[0]):
@@ -513,21 +532,23 @@ class GP(Model):
     def get_most_significant_input_dimensions(self, which_indices=None):
         return self.kern.get_most_significant_input_dimensions(which_indices)
 
-    def optimize(self, optimizer=None, start=None, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
-        :param max_f_eval: maximum number of function evaluations
-        :type max_f_eval: int
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :messages: whether to display during optimisation
         :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string
+        :param bool ipython_notebook: whether to use ipython notebook widgets or not.
+        :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
         """
         self.inference_method.on_optimization_start()
         try:
-            super(GP, self).optimize(optimizer, start, **kwargs)
+            super(GP, self).optimize(optimizer, start, messages, max_iters, ipython_notebook, clear_after_finish, **kwargs)
         except KeyboardInterrupt:
             print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()

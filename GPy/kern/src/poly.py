@@ -27,7 +27,7 @@ class Poly(Kern):
         _, _, B = self._AB(X, X2)
         return B * self.variance
 
-    @Cache_this(limit=2)
+    @Cache_this(limit=3)
     def _AB(self, X, X2=None):
         if X2 is None:
             dot_prod = np.dot(X, X.T)

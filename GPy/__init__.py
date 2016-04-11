@@ -28,16 +28,18 @@ from .core.parameterization import Param, Parameterized, ObsAr, transformations 
 from .__version__ import __version__
 
 from numpy.testing import Tester
-#@nottest
-try:
-    #Get rid of nose dependency by only ignoring if you have nose installed
-    from nose.tools import nottest
-    @nottest
-    def tests(verbose=10):
-        Tester(testing).test(verbose=verbose)
-except:
-    def tests(verbose=10):
-        Tester(testing).test(verbose=verbose)
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    try:
+        #Get rid of nose dependency by only ignoring if you have nose installed
+        from nose.tools import nottest
+        @nottest
+        def tests(verbose=10):
+            Tester(testing).test(verbose=verbose)
+    except:
+        def tests(verbose=10):
+            Tester(testing).test(verbose=verbose)
 
 def load(file_or_path):
     """

@@ -19,8 +19,8 @@ class Add(CombinationKernel):
             if isinstance(kern, Add):
                 del subkerns[i]
                 for part in kern.parts[::-1]:
-                    kern.unlink_parameter(part)
-                    subkerns.insert(i, part)
+                    #kern.unlink_parameter(part)
+                    subkerns.insert(i, part.copy())
         super(Add, self).__init__(subkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
 
@@ -37,7 +37,7 @@ class Add(CombinationKernel):
         else:
             return False
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):
         """
         Add all kernels together.
@@ -51,7 +51,7 @@ class Add(CombinationKernel):
             which_parts = [which_parts]
         return reduce(np.add, (p.K(X, X2) for p in which_parts))
 
-    @Cache_this(limit=2, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def Kdiag(self, X, which_parts=None):
         if which_parts is None:
             which_parts = self.parts
@@ -98,17 +98,17 @@ class Add(CombinationKernel):
         [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X)) for p in self.parts]
         return target
 
-    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def psi0(self, Z, variational_posterior):
         if not self._exact_psicomp: return Kern.psi0(self,Z,variational_posterior)
         return reduce(np.add, (p.psi0(Z, variational_posterior) for p in self.parts))
 
-    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def psi1(self, Z, variational_posterior):
         if not self._exact_psicomp: return Kern.psi1(self,Z,variational_posterior)
         return reduce(np.add, (p.psi1(Z, variational_posterior) for p in self.parts))
 
-    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def psi2(self, Z, variational_posterior):
         if not self._exact_psicomp: return Kern.psi2(self,Z,variational_posterior)
         psi2 = reduce(np.add, (p.psi2(Z, variational_posterior) for p in self.parts))
@@ -144,7 +144,7 @@ class Add(CombinationKernel):
                 raise NotImplementedError("psi2 cannot be computed for this kernel")
         return psi2
 
-    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
     def psi2n(self, Z, variational_posterior):
         if not self._exact_psicomp: return Kern.psi2n(self, Z, variational_posterior)
         psi2 = reduce(np.add, (p.psi2n(Z, variational_posterior) for p in self.parts))
@@ -241,16 +241,20 @@ class Add(CombinationKernel):
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
 
-    def add(self, other):
-        if isinstance(other, Add):
-            other_params = other.parameters[:]
-            for p in other_params:
-                other.unlink_parameter(p)
-            self.link_parameters(*other_params)
-        else:
-            self.link_parameter(other)
-        self.input_dim, self._all_dims_active = self.get_input_dim_active_dims(self.parts)
-        return self
+    #def add(self, other):
+    #    parts = self.parts
+    #    if 0:#isinstance(other, Add):
+    #        #other_params = other.parameters[:]
+    #        for p in other.parts[:]:
+    #            other.unlink_parameter(p)
+    #        parts.extend(other.parts)
+    #        #self.link_parameters(*other_params)
+    #        
+    #    else:
+    #        #self.link_parameter(other)
+    #        parts.append(other)
+    #    #self.input_dim, self._all_dims_active = self.get_input_dim_active_dims(parts)
+    #    return Add([p for p in parts], self.name)
 
     def input_sensitivity(self, summarize=True):
         if summarize:
@@ -259,4 +263,94 @@ class Add(CombinationKernel):
                 i_s[k._all_dims_active] += k.input_sensitivity(summarize)
             return i_s
         else:
+
             return super(Add, self).input_sensitivity(summarize)
+            
+    def sde_update_gradient_full(self, gradients):
+        """
+        Update gradient in the order in which parameters are represented in the
+        kernel
+        """
+        part_start_param_index = 0
+        for p in self.parts:
+            if not p.is_fixed:
+                part_param_num = len(p.param_array) # number of parameters in the part
+                p.sde_update_gradient_full(gradients[part_start_param_index:(part_start_param_index+part_param_num)])
+                part_start_param_index += part_param_num
+    
+    def sde(self):
+        """
+        Support adding kernels for sde representation
+        """
+        
+        import scipy.linalg as la
+
+        F     = None
+        L     = None
+        Qc    = None
+        H     = None
+        Pinf  = None
+        P0    = None
+        dF    = None
+        dQc   = None
+        dPinf = None
+        dP0   = None
+        n = 0
+        nq = 0
+        nd = 0
+
+         # Assign models
+        for p in self.parts:
+            (Ft,Lt,Qct,Ht,Pinft,P0t,dFt,dQct,dPinft,dP0t) = p.sde()
+            F = la.block_diag(F,Ft) if (F is not None) else Ft
+            L = la.block_diag(L,Lt) if (L is not None) else Lt
+            Qc = la.block_diag(Qc,Qct) if (Qc is not None) else Qct
+            H = np.hstack((H,Ht)) if (H is not None) else Ht
+             
+            Pinf = la.block_diag(Pinf,Pinft) if (Pinf is not None) else Pinft
+            P0 = la.block_diag(P0,P0t) if (P0 is not None) else P0t
+            
+            if dF is not None:
+                dF = np.pad(dF,((0,dFt.shape[0]),(0,dFt.shape[1]),(0,dFt.shape[2])),
+                        'constant', constant_values=0)
+                dF[-dFt.shape[0]:,-dFt.shape[1]:,-dFt.shape[2]:] = dFt
+            else:
+                dF = dFt
+             
+            if dQc is not None:
+                dQc = np.pad(dQc,((0,dQct.shape[0]),(0,dQct.shape[1]),(0,dQct.shape[2])),
+                        'constant', constant_values=0)
+                dQc[-dQct.shape[0]:,-dQct.shape[1]:,-dQct.shape[2]:] = dQct
+            else:
+                dQc = dQct
+             
+            if dPinf is not None:
+                dPinf = np.pad(dPinf,((0,dPinft.shape[0]),(0,dPinft.shape[1]),(0,dPinft.shape[2])),
+                        'constant', constant_values=0)
+                dPinf[-dPinft.shape[0]:,-dPinft.shape[1]:,-dPinft.shape[2]:] = dPinft
+            else:
+                dPinf = dPinft
+                
+            if dP0 is not None:
+                dP0 = np.pad(dP0,((0,dP0t.shape[0]),(0,dP0t.shape[1]),(0,dP0t.shape[2])),
+                        'constant', constant_values=0)
+                dP0[-dP0t.shape[0]:,-dP0t.shape[1]:,-dP0t.shape[2]:] = dP0t
+            else:
+                dP0 = dP0t
+                
+            n += Ft.shape[0]
+            nq += Qct.shape[0]
+            nd += dFt.shape[2]
+        
+        assert (F.shape[0] == n and F.shape[1]==n), "SDE add: Check of F Dimensions failed"
+        assert (L.shape[0] == n and L.shape[1]==nq), "SDE add: Check of L Dimensions failed"
+        assert (Qc.shape[0] == nq and Qc.shape[1]==nq), "SDE add: Check of Qc Dimensions failed"
+        assert (H.shape[0] == 1 and H.shape[1]==n), "SDE add: Check of H Dimensions failed"
+        assert (Pinf.shape[0] == n and Pinf.shape[1]==n), "SDE add: Check of Pinf Dimensions failed"
+        assert (P0.shape[0] == n and P0.shape[1]==n), "SDE add: Check of P0 Dimensions failed"        
+        assert (dF.shape[0] == n and dF.shape[1]==n and dF.shape[2]==nd), "SDE add: Check of dF Dimensions failed"
+        assert (dQc.shape[0] == nq and dQc.shape[1]==nq and dQc.shape[2]==nd), "SDE add: Check of dQc Dimensions failed"
+        assert (dPinf.shape[0] == n and dPinf.shape[1]==n and dPinf.shape[2]==nd), "SDE add: Check of dPinf Dimensions failed"
+        assert (dP0.shape[0] == n and dP0.shape[1]==n and dP0.shape[2]==nd), "SDE add: Check of dP0 Dimensions failed"
+        
+        return (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)

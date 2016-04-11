@@ -127,8 +127,6 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.unlink_parameter(self.likelihood)
         self.unlink_parameter(self.kern)
-        del self.kern
-        del self.likelihood
 
         self.num_data = Ylist[0].shape[0]
         if isinstance(batchsize, int):
@@ -156,7 +154,11 @@ class MRD(BayesianGPLVMMiniBatch):
             self.link_parameter(spgp, i+2)
             self.bgplvms.append(spgp)
 
-        self.posterior = None
+        b = self.bgplvms[0]
+        self.posterior = b.posterior
+        self.kern = b.kern
+        self.likelihood = b.likelihood
+
         self.logger.info("init done")
 
     def parameters_changed(self):
@@ -236,7 +238,7 @@ class MRD(BayesianGPLVMMiniBatch):
     #                                     sharex=sharex, sharey=sharey)
     #         return fig
 
-    def plot_scales(self, titles=None, fig_kwargs=dict(figsize=None, tight_layout=True), **kwargs):
+    def plot_scales(self, titles=None, fig_kwargs={}, **kwargs):
         """
         Plot input sensitivity for all datasets, to see which input dimensions are
         significant for which dataset.
@@ -252,12 +254,9 @@ class MRD(BayesianGPLVMMiniBatch):
 
         M = len(self.bgplvms)
         fig = pl().figure(rows=1, cols=M, **fig_kwargs)
-        plots = {}
         for c in range(M):
             canvas = self.bgplvms[c].kern.plot_ARD(title=titles[c], figure=fig, col=c+1, **kwargs)
-            plots[titles[c]] = canvas
-        pl().show_canvas(canvas)
-        return plots
+        return canvas
 
     def plot_latent(self, labels=None, which_indices=None,
                 resolution=60, legend=True,

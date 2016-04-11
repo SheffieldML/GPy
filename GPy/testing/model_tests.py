@@ -22,6 +22,44 @@ class MiscTests(unittest.TestCase):
         self.assertTrue(m.checkgrad())
         m.predict(m.X)
 
+    def test_raw_predict_numerical_stability(self):
+        """
+        Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
+        Thanks simbartonels@github for reporting the bug and providing the following example.
+        """
+
+        # set seed for reproducability
+        np.random.seed(3)
+        # Definition of the Branin test function
+        def branin(X):
+            y = (X[:,1]-5.1/(4*np.pi**2)*X[:,0]**2+5*X[:,0]/np.pi-6)**2
+            y += 10*(1-1/(8*np.pi))*np.cos(X[:,0])+10
+            return(y)
+        # Training set defined as a 5*5 grid:
+        xg1 = np.linspace(-5,10,5)
+        xg2 = np.linspace(0,15,5)
+        X = np.zeros((xg1.size * xg2.size,2))
+        for i,x1 in enumerate(xg1):
+            for j,x2 in enumerate(xg2):
+                X[i+xg1.size*j,:] = [x1,x2]
+        Y = branin(X)[:,None]
+        # Fit a GP
+        # Create an exponentiated quadratic plus bias covariance function
+        k = GPy.kern.RBF(input_dim=2, ARD = True)
+        # Build a GP model
+        m = GPy.models.GPRegression(X,Y,k)
+        # fix the noise variance
+        m.likelihood.variance.fix(1e-5)
+        # Randomize the model and optimize
+        m.randomize()
+        m.optimize()
+        # Compute the mean of model prediction on 1e5 Monte Carlo samples
+        Xp = np.random.uniform(size=(1e5,2))
+        Xp[:,0] = Xp[:,0]*15-5
+        Xp[:,1] = Xp[:,1]*15
+        _, var = m.predict(Xp)
+        self.assertTrue(np.all(var>=0.))
+
     def test_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
@@ -31,13 +69,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
         mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -110,6 +148,28 @@ class MiscTests(unittest.TestCase):
         assert(gc.checkgrad())
         assert(gc2.checkgrad())
 
+    def test_predict_uncertain_inputs(self):
+        """ Projection of Gaussian through a linear function is still gaussian, and moments are analytical to compute, so we can check this case for predictions easily """
+        X = np.linspace(-5,5, 10)[:, None]
+        Y = 2*X + np.random.randn(*X.shape)*1e-3
+        m = GPy.models.BayesianGPLVM(Y, 1, X=X, kernel=GPy.kern.Linear(1), num_inducing=1)
+        m.Gaussian_noise[:] = 1e-4
+        m.X.mean[:] = X[:]
+        m.X.variance[:] = 1e-5
+        m.X.fix()
+        m.optimize()
+        X_pred_mu = np.random.randn(5, 1)
+        X_pred_var = np.random.rand(5, 1) + 1e-5
+        from GPy.core.parameterization.variational import NormalPosterior
+        X_pred = NormalPosterior(X_pred_mu, X_pred_var)
+        # mu = \int f(x)q(x|mu,S) dx = \int 2x.q(x|mu,S) dx = 2.mu
+        # S = \int (f(x) - m)^2q(x|mu,S) dx = \int f(x)^2 q(x) dx - mu**2 = 4(mu^2 + S) - (2.mu)^2 = 4S
+        Y_mu_true = 2*X_pred_mu
+        Y_var_true = 4*X_pred_var
+        Y_mu_pred, Y_var_pred = m.predict_noiseless(X_pred)
+        np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-4)
+        np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-4)
+
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)
@@ -119,14 +179,15 @@ class MiscTests(unittest.TestCase):
         # Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
         Kinv = m.posterior.woodbury_inv
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
+        K_hat = np.clip(K_hat, 1e-15, np.inf)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -368,7 +429,6 @@ class MiscTests(unittest.TestCase):
         warp_m.predict(X)
 
 
-
 class GradientTests(np.testing.TestCase):
     def setUp(self):
         ######################################
@@ -537,14 +597,25 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
+
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
-        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
+        self.assertTrue(m.checkgrad())
+
+    def test_SparseGPLVM_rbf_bias_white_kern_2D(self):
+        """ Testing GPLVM with rbf + bias kernel """
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
+        K = k.K(X)
+        Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
+        m = GPy.models.SparseGPLVM(Y, input_dim, kernel=k)
         self.assertTrue(m.checkgrad())
 
     def test_BCGPLVM_rbf_bias_white_kern_2D(self):
@@ -680,6 +751,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
+        np.random.seed(10)
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -687,8 +759,23 @@ class GradientTests(np.testing.TestCase):
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
+    def test_ssgplvm(self):
+        from GPy import kern
+        from GPy.models import SSGPLVM
+        from GPy.examples.dimensionality_reduction import _simulate_matern
+
+        np.random.seed(10)
+        D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+        _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
+        Y = Ylist[0]
+        k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+        # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+        m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

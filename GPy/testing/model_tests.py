@@ -419,14 +419,16 @@ class MiscTests(unittest.TestCase):
         X = X[:, None]
         Y = Y[:, None]
 
-        warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
-        warp_m = GPy.models.WarpedGP(X, Y, kernel=warp_k, warping_function=warp_f)
+        warp_m = GPy.models.WarpedGP(X, Y)#, kernel=warp_k)#, warping_function=warp_f)
         warp_m['.*\.d'].constrain_fixed(1.0)
         warp_m.optimize_restarts(parallel=False, robust=False, num_restarts=5, 
                                  max_iters=max_iters)
-        print warp_m
         warp_m.predict(X)
+        warp_m.predict_quantiles(X)
+        warp_m.log_predictive_density(X, Y)
+        warp_m.predict_in_warped_space = False
+        warp_m.predict(X)
+        warp_m.predict_quantiles(X)
 
 
 class GradientTests(np.testing.TestCase):

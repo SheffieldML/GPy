@@ -10,7 +10,6 @@ The Gaussian processes framework in Python.
 - `User mailing-list <https://lists.shef.ac.uk/sympa/subscribe/gpy-users>`_
 - `Developer documentation <http://gpy.readthedocs.org/en/devel/>`_
 - `Travis-CI unit-tests <https://travis-ci.org/SheffieldML/GPy>`_
-- .. image:: https://img.shields.io/badge/licence-BSD-blue.svg 
-      :target: https://opensource.org/licenses/BSD-3-Clause
+- `License <https://opensource.org/licenses/BSD-3-Clause>`_
 
 For full description and installation instructions please refer to the github page.

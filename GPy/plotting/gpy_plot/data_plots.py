@@ -175,7 +175,7 @@ def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs)
         visible_dims = [i for i in sig_dims if i is not None]
     free_dims = get_free_dims(self, visible_dims, None)
 
-    Z = self.Z[:, free_dims]
+    Z = self.Z.values
     plots = {}
 
     #one dimensional plotting

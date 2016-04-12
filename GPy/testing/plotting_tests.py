@@ -252,7 +252,7 @@ def test_kernel():
         k2.plot_ARD(['rbf', 'linear', 'bias'], legend=True)
         k2.plot_covariance(visible_dims=[0, 3], plot_limits=(-1,3))
         k2.plot_covariance(visible_dims=[2], plot_limits=(-1, 3))
-        k2.plot_covariance(visible_dims=[2, 4], plot_limits=((-1, 0), (5, 3)), projection='3d')
+        k2.plot_covariance(visible_dims=[2, 4], plot_limits=((-1, 0), (5, 3)), projection='3d', rstride=10, cstride=10)
         k2.plot_covariance(visible_dims=[1, 4])
         for do_test in _image_comparison(
                 baseline_images=['kern_{}'.format(sub) for sub in ["ARD", 'cov_2d', 'cov_1d', 'cov_3d', 'cov_no_lim']],
@@ -325,7 +325,7 @@ def test_threed():
     m.plot_samples(projection='3d', plot_raw=False, samples=1)
     plt.close('all')
     m.plot_data(projection='3d')
-    m.plot_mean(projection='3d')
+    m.plot_mean(projection='3d', rstride=10, cstride=10)
     m.plot_inducing(projection='3d')
     #m.plot_errorbars_trainset(projection='3d')
     for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean", 'inducing',

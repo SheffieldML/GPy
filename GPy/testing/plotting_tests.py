@@ -393,7 +393,7 @@ def test_sparse_classification():
     m.plot(plot_raw=True, apply_link=False, samples=3)
     np.random.seed(111)
     m.plot(plot_raw=True, apply_link=True, samples=3)
-    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions, rtol=2):
         yield (do_test, )
 
 def test_gplvm():

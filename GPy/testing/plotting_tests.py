@@ -72,7 +72,7 @@ try:
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 
-extensions = ['png']
+extensions = ['npz']
 
 def _image_directories():
     """
@@ -93,38 +93,106 @@ baseline_dir, result_dir = _image_directories()
 if not os.path.exists(baseline_dir):
     raise SkipTest("Not installed from source, baseline not available. Install from source to test plotting")
 
-def _sequenceEqual(a, b):
-    assert len(a) == len(b), "Sequences not same length"
-    for i, [x, y], in enumerate(zip(a, b)):
-        assert x == y, "element not matching {}".format(i)
+def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11, rtol=1e-3, **kwargs):
 
-def _notFound(path):
-    raise IOError('File {} not in baseline')
-
-def _image_comparison(baseline_images, extensions=['pdf','svg','png'], tol=11):
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             fig = plt.figure(num)
+            fig.canvas.draw()
             #fig.axes[0].set_axis_off()
             #fig.set_frameon(False)
-            fig.canvas.draw()
-            fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)),
-                        transparent=True,
-                        edgecolor='none',
-                        facecolor='none',
-                        #bbox='tight'
-                        )
+            if ext in ['npz']:
+                figdict = flatten_axis(fig)
+                np.savez_compressed(os.path.join(result_dir, "{}.{}".format(base, ext)), **figdict)
+                fig.savefig(os.path.join(result_dir, "{}.{}".format(base, 'png')),
+                            transparent=True,
+                            edgecolor='none',
+                            facecolor='none',
+                            #bbox='tight'
+                            )
+            else:
+                fig.savefig(os.path.join(result_dir, "{}.{}".format(base, ext)),
+                            transparent=True,
+                            edgecolor='none',
+                            facecolor='none',
+                            #bbox='tight'
+                            )
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             #plt.close(num)
             actual = os.path.join(result_dir, "{}.{}".format(base, ext))
             expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
-            def do_test():
-                err = compare_images(expected, actual, tol, in_decorator=True)
-                if err:
-                    raise SkipTest("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
+            if ext == 'npz':
+                def do_test():
+                    if not os.path.exists(expected):
+                        import shutil
+                        shutil.copy2(actual, expected)
+                        #shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
+                        raise IOError("Baseline file {} not found, copying result {}".format(expected, actual))
+                    else:
+                        exp_dict = dict(np.load(expected).items())
+                        act_dict = dict(np.load(actual).items())
+                        for name in act_dict:
+                            if name in exp_dict:
+                                try:
+                                    np.testing.assert_allclose(exp_dict[name], act_dict[name], err_msg="Mismatch in {}.{}".format(base, name), rtol=rtol, **kwargs)
+                                except AssertionError as e:
+                                    raise SkipTest(e)
+            else:
+                def do_test():
+                    err = compare_images(expected, actual, tol, in_decorator=True)
+                    if err:
+                        raise SkipTest("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(actual, expected, err['rms'], tol))
             yield do_test
     plt.close('all')
+
+def flatten_axis(ax, prevname=''):
+    import inspect
+    members = inspect.getmembers(ax)
+
+    arrays = {}
+
+    def _flatten(l, pre):
+        arr = {}
+        if isinstance(l, np.ndarray):
+            if l.size:
+                arr[pre] = np.asarray(l)
+        elif isinstance(l, dict):
+            for _n in l:
+                _tmp = _flatten(l, pre+"."+_n+".")
+                for _nt in _tmp.keys():
+                    arrays[_nt] = _tmp[_nt]
+        elif isinstance(l, list) and len(l)>0:
+            for i in range(len(l)):
+                _tmp = _flatten(l[i], pre+"[{}]".format(i))
+                for _n in _tmp:
+                    arr["{}".format(_n)] = _tmp[_n]
+        else:
+            return flatten_axis(l, pre+'.')
+        return arr
+
+
+    for name, l in members:
+        if isinstance(l, np.ndarray):
+            arrays[prevname+name] = np.asarray(l)
+        elif isinstance(l, list) and len(l)>0:
+            for i in range(len(l)):
+                _tmp = _flatten(l[i], prevname+name+"[{}]".format(i))
+                for _n in _tmp:
+                    arrays["{}".format(_n)] = _tmp[_n]
+
+    return arrays
+
+def _a(x,y,decimal):
+    np.testing.assert_array_almost_equal(x, y, decimal)
+
+def compare_axis_dicts(x, y, decimal=6):
+    try:
+        assert(len(x)==len(y))
+        for name in x:
+            _a(x[name], y[name], decimal)
+    except AssertionError as e:
+        raise SkipTest(e.message)
 
 def test_figure():
     np.random.seed(1239847)
@@ -187,7 +255,7 @@ def test_kernel():
         k2.plot_ARD(['rbf', 'linear', 'bias'], legend=True)
         k2.plot_covariance(visible_dims=[0, 3], plot_limits=(-1,3))
         k2.plot_covariance(visible_dims=[2], plot_limits=(-1, 3))
-        k2.plot_covariance(visible_dims=[2, 4], plot_limits=((-1, 0), (5, 3)), projection='3d')
+        k2.plot_covariance(visible_dims=[2, 4], plot_limits=((-1, 0), (5, 3)), projection='3d', rstride=10, cstride=10)
         k2.plot_covariance(visible_dims=[1, 4])
         for do_test in _image_comparison(
                 baseline_images=['kern_{}'.format(sub) for sub in ["ARD", 'cov_2d', 'cov_1d', 'cov_3d', 'cov_no_lim']],
@@ -260,7 +328,7 @@ def test_threed():
     m.plot_samples(projection='3d', plot_raw=False, samples=1)
     plt.close('all')
     m.plot_data(projection='3d')
-    m.plot_mean(projection='3d')
+    m.plot_mean(projection='3d', rstride=10, cstride=10)
     m.plot_inducing(projection='3d')
     #m.plot_errorbars_trainset(projection='3d')
     for do_test in _image_comparison(baseline_images=['gp_3d_{}'.format(sub) for sub in ["data", "mean", 'inducing',
@@ -325,7 +393,7 @@ def test_sparse_classification():
     m.plot(plot_raw=True, apply_link=False, samples=3)
     np.random.seed(111)
     m.plot(plot_raw=True, apply_link=True, samples=3)
-    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
+    for do_test in _image_comparison(baseline_images=['sparse_gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions, rtol=2):
         yield (do_test, )
 
 def test_gplvm():

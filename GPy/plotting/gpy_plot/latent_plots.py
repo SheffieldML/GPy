@@ -112,28 +112,29 @@ def plot_latent_inducing(self,
                         which_indices=None,
                         legend=False,
                         plot_limits=None,
-                        marker='^',
-                        num_samples=1000,
+                        marker=None,
                         projection='2d',
                         **kwargs):
     """
     Plot a scatter plot of the inducing inputs.
 
-    :param array-like labels: a label for each data point (row) of the inputs
-    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param [int] which_indices: which input dimensions to plot against each other
     :param bool legend: whether to plot the legend on the figure
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
-    :param str marker: markers to use - cycle if more labels then markers are given
+    :param str marker: marker to use [default is custom arrow like]
     :param kwargs: the kwargs for the scatter plots
+    :param str projection: for now 2d or 3d projection (other projections can be implemented, see developer documentation)
     """
     canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    Z = self.Z.values
-    labels = np.array(['inducing'] * Z.shape[0])
-    kwargs['marker'] = marker
+    if legend: label = 'inducing'
+    else: label = None
+    if marker is not None:
+        kwargs['marker'] = marker
     update_not_existing_kwargs(kwargs, pl().defaults.inducing_2d)  # @UndefinedVariable
-    scatters = _plot_latent_scatter(canvas, Z, sig_dims, labels, num_samples=num_samples, projection=projection, **kwargs)
+    from .data_plots import _plot_inducing
+    scatters = _plot_inducing(self, canvas, sig_dims[:2], projection, label, **kwargs)
     return pl().add_to_canvas(canvas, dict(scatter=scatters), legend=legend)
 
 

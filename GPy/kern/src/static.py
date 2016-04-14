@@ -85,10 +85,10 @@ class WhiteHeteroscedastic(Static):
     def __init__(self, input_dim, num_data, variance=1., active_dims=None, name='white_hetero'):
         """
         A heteroscedastic White kernel (nugget/noise).
-        It defines one variance (nugget) per input sample. 
-        
+        It defines one variance (nugget) per input sample.
+
         Prediction excludes any noise learnt by this Kernel, so be careful using this kernel.
-        
+
         You can plot the errors learnt by this kernel by something similar as:
         plt.errorbar(m.X, m.Y, yerr=2*np.sqrt(m.kern.white.variance))
         """
@@ -98,7 +98,7 @@ class WhiteHeteroscedastic(Static):
 
     def Kdiag(self, X):
         if X.shape[0] == self.variance.shape[0]:
-            # If the input has the same number of samples as 
+            # If the input has the same number of samples as
             # the number of variances, we return the variances
             return self.variance
         return 0.
@@ -181,7 +181,7 @@ class Fixed(Static):
         self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.fixed_K)
+        self.variance.gradient = np.einsum('i,i', dL_dKdiag, np.diagonal(self.fixed_K))
 
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)

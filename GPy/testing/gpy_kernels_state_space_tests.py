@@ -97,7 +97,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
 
         ss_kernel = GPy.kern.sde_RBF(1, 110., 1.5, active_dims=[0,])
         gp_kernel = GPy.kern.RBF(1, 110., 1.5, active_dims=[0,])
-        
+
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
                            predict_X=X,
                            gp_kernel=gp_kernel,
@@ -193,7 +193,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
 
     def test_kernel_addition(self,):
         #np.random.seed(329) # seed the random number generator
-        np.random.seed(333)
+        np.random.seed(42)
         (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=5.0, noise_var=2.0,
                         plot = False, points_num=100, x_interval = (0, 40), random=True)
 

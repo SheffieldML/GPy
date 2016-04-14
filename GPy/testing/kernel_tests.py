@@ -325,6 +325,14 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_Fixed(self):
+        Xall = np.concatenate([self.X, self.X])
+        cov = np.dot(Xall, Xall.T)
+        X = np.arange(self.N).reshape(1,self.N)
+        k = GPy.kern.Fixed(1, cov)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=X, X2=None, verbose=verbose))
+
     def test_Poly(self):
         k = GPy.kern.Poly(self.D, order=5)
         k.randomize()

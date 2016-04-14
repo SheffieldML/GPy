@@ -302,7 +302,7 @@ def test_twod():
     #m.optimize()
     m.plot_data()
     m.plot_mean()
-    m.plot_inducing()
+    m.plot_inducing(legend=False, marker='s')
     #m.plot_errorbars_trainset()
     m.plot_data_error()
     for do_test in _image_comparison(baseline_images=['gp_2d_{}'.format(sub) for sub in ["data", "mean",

@@ -132,7 +132,7 @@ class Kern(Parameterized):
         raise NotImplementedError
     def gradients_X_X2(self, dL_dK, X, X2):
         return self.gradients_X(dL_dK, X, X2), self.gradients_X(dL_dK.T, X2, X)
-    def gradients_XX(self, dL_dK, X, X2, cov='False'):
+    def gradients_XX(self, dL_dK, X, X2, cov='True'):
         """
         .. math::
 

@@ -242,7 +242,6 @@ class Stationary(Kern):
         dL_drdr = self.dK2_drdr_via_X(X, X2) # * dL_dK we perofrm this product later
         tmp2 = dL_drdr * invdist2
         l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
-        print ['l2',l2]
 
         if X2 is None:
             X2 = X
@@ -262,7 +261,7 @@ class Stationary(Kern):
                     else:
                         grad[:, :, q, r] = np.multiply(dL_dK,(np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[r])/l2[q])
         else: 
-            # Diagonal covariance
+            # Diagonal covariance, old code
             grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
             #grad = np.empty(X.shape, dtype=np.float64)
             for q in range(self.input_dim):

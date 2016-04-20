@@ -24,7 +24,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
         put_clean(dct, 'gradients_X', _slice_gradients_X)
         put_clean(dct, 'gradients_X_X2', _slice_gradients_X)
-        put_clean(dct, 'gradients_XX', _slice_gradients_XX)
+#        put_clean(dct, 'gradients_XX', _slice_gradients_XX)
         put_clean(dct, 'gradients_XX_diag', _slice_gradients_X_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)
 
@@ -112,18 +112,23 @@ def _slice_gradients_X(f):
         return ret
     return wrap
 
-def _slice_gradients_XX(f):
-    @wraps(f)
-    def wrap(self, dL_dK, X, X2=None):
-        if X2 is None:
-            N, M = X.shape[0], X.shape[0]
-        else:
-            N, M = X.shape[0], X2.shape[0]
-        with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1])) as s:
-        #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
-            ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
-        return ret
-    return wrap
+# def _slice_gradients_XX(f):
+#     @wraps(f)
+#     def wrap(self, dL_dK, X, X2=None, cov=True):
+#         if X2 is None:
+#             N, M = X.shape[0], X.shape[0]
+#         else:
+#             N, M = X.shape[0], X2.shape[0]
+#         if cov==True: # full covariance
+#             with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1], X.shape[1])) as s:
+#             #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
+#                 ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
+#         else: # diagonal covariance
+#             with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1])) as s:
+#             #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
+#                 ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
+#         return ret
+#     return wrap
 
 def _slice_gradients_X_diag(f):
     @wraps(f)

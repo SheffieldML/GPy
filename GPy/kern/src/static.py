@@ -24,7 +24,7 @@ class Static(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_XX(self, dL_dK, X, X2):
+    def gradients_XX(self, dL_dK, X, X2=None, cov=True):
         if X2 is None:
             X2 = X
         return np.zeros((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)

@@ -222,14 +222,14 @@ class Stationary(Kern):
         """
         Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
 
-        cov = Full: returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors
-        cov = Diag: returns the diagonal of the covariance matrix [QxQ] of the input dimensionfor each pair 
+        cov = True: returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors
+        cov = False: returns the diagonal of the covariance matrix [QxQ] of the input dimensionfor each pair 
                     or vectors (computationally more efficient if the full covariance matrix is not needed)
         ..math:
             \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
 
         ..returns:
-            dL2_dXdX2: [NxMxQ] in the cov=Diag case, or [NxMxQxQ] in the cov=full case, 
+            dL2_dXdX2:  [NxMxQxQ] in the cov=True case, or [NxMxQ] in the cov=False case,
                         for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
                         Thus, we return the second derivative in X2.
         """
@@ -251,7 +251,7 @@ class Stationary(Kern):
                                             # (seems to have a bug: it is subtracted to the first X1 anyway)
             tmp1[invdist2==0.] -= self.variance
         
-        if cov==True: # full covariance
+        if cov: # full covariance
             grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
             for q in range(self.input_dim):
                 for r in range(self.input_dim):

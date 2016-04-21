@@ -101,7 +101,7 @@ class Linear(Kern):
             #return (((X2[None,:, :] * self.variances)) * dL_dK[:, :, None]).sum(1)
             return dL_dK.dot(X2)*self.variances #np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
 
-    def gradients_XX(self, dL_dK, X, X2=None):
+    def gradients_XX(self, dL_dK, X, X2=None, cov=True):
         if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         if X2 is None:
             return 2*np.ones(X.shape)*self.variances

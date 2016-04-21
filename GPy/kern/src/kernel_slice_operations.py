@@ -119,14 +119,14 @@ def _slice_gradients_XX(f):
             N, M = X.shape[0], X.shape[0]
         else:
             N, M = X.shape[0], X2.shape[0]
-        if cov==True: # full covariance
+        if cov: # full covariance
             with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1], X.shape[1])) as s:
             #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
-                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov=True))
+                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov))
         else: # diagonal covariance
             with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1])) as s:
             #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
-                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov=True))
+                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov))
         return ret
     return wrap
 

@@ -192,3 +192,53 @@ class Fixed(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
 
+class Precomputed(Fixed):
+    def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='precomputed'):
+        """
+        Class for precomputed kernels, indexed by columns in X
+
+        Usage example:
+
+        import numpy as np
+        from GPy.models import GPClassification
+        from GPy.kern import Precomputed
+        from sklearn.cross_validation import LeaveOneOut
+
+        n = 10
+        d = 100
+        X = np.arange(n).reshape((n,1))         # column vector of indices
+        y = 2*np.random.binomial(1,0.5,(n,1))-1
+        X0 = np.random.randn(n,d)
+        k = np.dot(X0,X0.T)
+        kern = Precomputed(1,k)                 # k is a n x n covariance matrix
+
+        cv = LeaveOneOut(n)
+        ypred = y.copy()
+        for train, test in cv:
+            m = GPClassification(X[train], y[train], kernel=kern)
+            m.optimize()
+            ypred[test] = 2*(m.predict(X[test])[0]>0.5)-1
+
+        :param input_dim: the number of input dimensions
+        :type input_dim: int
+        :param variance: the variance of the kernel
+        :type variance: float
+        """
+        super(Precomputed, self).__init__(input_dim, covariance_matrix, variance, active_dims, name)
+    def K(self, X, X2=None):
+        if X2 is None:
+            return self.variance * self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')]
+        else:
+            return self.variance * self.fixed_K[X[:,0].astype('int')][:,X2[:,0].astype('int')]
+
+    def Kdiag(self, X):
+        return self.variance * self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')].diagonal()
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None:
+            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')])
+        else:
+            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K[X[:,0].astype('int')][:,X2[:,0].astype('int')])
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')])

@@ -230,7 +230,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                            use_cython=False, optimize_max_iters=10, check_gradients=True,
                            predict_X=X,
                            gp_kernel=gp_kernel,
-                           mean_compare_decimal=5, var_compare_decimal=5)
+                           mean_compare_decimal=2, var_compare_decimal=2)
 
         ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X, Y, ss_kernel, kalman_filter_type = 'svd',

@@ -48,10 +48,10 @@ before_deploy:
   - make html
   - cd ../
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
-    then 
+    then
       export DIST='sdist';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
-    then 
+    then
       export DIST='bdist_wheel';
     fi;
 
@@ -63,6 +63,6 @@ deploy:
   on:
     tags: true
     branch: deploy
-  condition: "$TRAVIS_OS_NAME" == "osx" || ( "$TRAVIS_OS_NAME" == "linux" && "$PYTHON_VERSION" == "2.7" )
+  #condition: "$TRAVIS_OS_NAME" == "osx" || ( "$TRAVIS_OS_NAME" == "linux" && "$PYTHON_VERSION" == "2.7" )
   distributions: $DIST
   skip_cleanup: true

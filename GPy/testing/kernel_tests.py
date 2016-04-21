@@ -105,14 +105,14 @@ class Kern_check_d2K_dXdX(Kern_check_model):
     """This class allows gradient checks for the secondderivative of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
-        self.X = Param('X',X)
-        self.link_parameter(self.X)
+        #self.X = Param('X',X)
+        #self.link_parameter(self.X)
 
     def log_likelihood(self):
         return np.sum(self.kernel.gradients_X(self.dL_dK,self.X, self.X2))
 
     def parameters_changed(self):
-        self.X.gradient[:] =  self.kernel.gradients_XX(self.dL_dK, self.X, self.X2,cov=True).sum(0).sum(1)
+        self.X.gradient[:] =  self.kernel.gradients_XX(self.dL_dK, self.X, self.X2)
 
 # class Kern_check_d2Kdiag_dXdX(Kern_check_model):
 #     """This class allows gradient checks for the secondderivative of a kernel diagonal with respect to X. """
@@ -263,7 +263,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result=True
         if verbose:
-            print(("gradients_XX not implemented for " + kern.name))
+            print(("gradients_X not implemented for " + kern.name))
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -283,7 +283,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result=True
         if verbose:
-            print(("gradients_XX not implemented for " + kern.name))
+            print(("gradients_X not implemented for " + kern.name))
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -292,9 +292,6 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         assert(result)
         pass_checks = False
         return False
-
-#     if verbose:
-#         print("Checking gradients of dKdiag(X, X) wrt X.")
 
     return pass_checks
 

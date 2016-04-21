@@ -2,11 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import unittest
-import numpy as np
+from unittest.case import skip
+
 import GPy
 from GPy.core.parameterization.param import Param
+import numpy as np
+
 from ..util.config import config
-from unittest.case import skip
+
 
 verbose = 0
 
@@ -347,7 +350,7 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-        
+
     def test_Precomputed(self):
         Xall = np.concatenate([self.X, self.X2])
         cov = np.dot(Xall, Xall.T)

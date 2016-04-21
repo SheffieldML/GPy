@@ -41,10 +41,10 @@ Python 2.7, 3.4 and higher
 ## Citation
 
     @Misc{gpy2014,
-      author =   {{The GPy authors}},
+      author =   {{GPy}},
       title =    {{GPy}: A Gaussian process framework in python},
       howpublished = {\url{http://github.com/SheffieldML/GPy}},
-      year = {2012--2015}
+      year = {since 2012}
     }
 
 ### Pronounciation:

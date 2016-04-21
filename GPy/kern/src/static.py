@@ -195,15 +195,15 @@ class Fixed(Static):
 class Precomputed(Fixed):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='precomputed'):
         """
-        Class for precomputed kernels, indexed by X
-        
+        Class for precomputed kernels, indexed by columns in X
+
         Usage example:
-        
+
         import numpy as np
         from GPy.models import GPClassification
         from GPy.kern import Precomputed
         from sklearn.cross_validation import LeaveOneOut
-        
+
         n = 10
         d = 100
         X = np.arange(n).reshape((n,1))         # column vector of indices
@@ -211,14 +211,14 @@ class Precomputed(Fixed):
         X0 = np.random.randn(n,d)
         k = np.dot(X0,X0.T)
         kern = Precomputed(1,k)                 # k is a n x n covariance matrix
-        
+
         cv = LeaveOneOut(n)
         ypred = y.copy()
         for train, test in cv:
             m = GPClassification(X[train], y[train], kernel=kern)
             m.optimize()
             ypred[test] = 2*(m.predict(X[test])[0]>0.5)-1
-        
+
         :param input_dim: the number of input dimensions
         :type input_dim: int
         :param variance: the variance of the kernel

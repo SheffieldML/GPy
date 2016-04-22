@@ -378,9 +378,9 @@ class GP(Model):
             dK_dXnew_full[i] = kern.gradients_X(one, Xnew, self._predictive_variable[[i]])
 
         if full_cov:
-            dK2_dXdX = kern.gradients_XX(one, Xnew)
+            dK2_dXdX = kern.gradients_XX(one, Xnew, cov=False)
         else:
-            dK2_dXdX = kern.gradients_XX_diag(one, Xnew)
+            dK2_dXdX = kern.gradients_XX_diag(one, Xnew, cov=False)
 
         def compute_cov_inner(wi):
             if full_cov:

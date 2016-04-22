@@ -102,17 +102,21 @@ class Linear(Kern):
             return dL_dK.dot(X2)*self.variances #np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
 
     def gradients_XX(self, dL_dK, X, X2=None, cov=True):
-        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
+        #if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
         if X2 is None:
-            return 2*np.ones(X.shape)*self.variances
+            return 2*self.variances
         else:
-            return np.ones(X.shape)*self.variances
+            return self.variances
+
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
 
-    def gradients_XX_diag(self, dL_dKdiag, X):
-        return 2*np.ones(X.shape)*self.variances
+    def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
+        dims = X.shape
+        if cov:
+            dims += (X.shape[1],)
+        return 2*np.ones(dims)*self.variances
 
     def input_sensitivity(self, summarize=True):
         return np.ones(self.input_dim) * self.variances

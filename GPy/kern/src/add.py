@@ -96,12 +96,12 @@ class Add(CombinationKernel):
                 target = np.zeros((X.shape[0], X.shape[0], X.shape[1]))
             else:
                 target = np.zeros((X.shape[0], X2.shape[0], X.shape[1]))
-        [target.__iadd__(p.gradients_XX(dL_dK, X, X2)) for p in self.parts]
+        [target.__iadd__(p.gradients_XX(dL_dK, X, X2, cov=cov)) for p in self.parts]
         return target
 
-    def gradients_XX_diag(self, dL_dKdiag, X):
+    def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
         target = np.zeros(X.shape)
-        [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X)) for p in self.parts]
+        [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X, cov=cov)) for p in self.parts]
         return target
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])

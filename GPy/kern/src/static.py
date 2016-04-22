@@ -6,6 +6,7 @@ from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
+from paramz.caching import Cache_this
 
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
@@ -28,11 +29,14 @@ class Static(Kern):
         if X2 is None:
             X2 = X
         if cov:
-            return np.zeros((X.shape[0], X2.shape[0], X.shape[1],X.shape[1]), dtype=np.float64)
+            return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
         else:
             return np.zeros((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
-    def gradients_XX_diag(self, dL_dKdiag, X):
-        return np.zeros(X.shape)
+    def gradients_XX_diag(self, dL_dKdiag, X, cov=False):
+        if cov:
+            return np.zeros((X.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
+        else:
+            return np.zeros(X.shape, dtype=np.float64)
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
@@ -175,17 +179,23 @@ class Fixed(Static):
         super(Fixed, self).__init__(input_dim, variance, active_dims, name)
         self.fixed_K = covariance_matrix
     def K(self, X, X2):
-        return self.variance * self.fixed_K
+        if X2 is None:
+            return self.variance * self.fixed_K
+        else:
+            return np.zeros((X.shape[0], X2.shape[0]))
 
     def Kdiag(self, X):
         return self.variance * self.fixed_K.diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
+        if X2 is None:
+            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
+        else:
+            self.variance.gradient = 0
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = np.einsum('i,i', dL_dKdiag, np.diagonal(self.fixed_K))
-
+    
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
@@ -227,21 +237,27 @@ class Precomputed(Fixed):
         :param variance: the variance of the kernel
         :type variance: float
         """
+        assert input_dim==1, "Precomputed only implemented in one dimension. Use multiple Precomputed kernels to have more dimensions by making use of active_dims"
         super(Precomputed, self).__init__(input_dim, covariance_matrix, variance, active_dims, name)
-    def K(self, X, X2=None):
+
+    @Cache_this(limit=2)
+    def _index(self, X, X2):
         if X2 is None:
-            return self.variance * self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')]
+            i1 = i2 = X.astype('int').flat
         else:
-            return self.variance * self.fixed_K[X[:,0].astype('int')][:,X2[:,0].astype('int')]
+            i1, i2 = X.astype('int').flat, X2.astype('int').flat
+        return self.fixed_K[i1,:][:,i2]
+
+    def K(self, X, X2=None):
+        return self.variance * self._index(X, X2)
 
     def Kdiag(self, X):
-        return self.variance * self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')].diagonal()
+        return self.variance * self._index(X,None).diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        if X2 is None:
-            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')])
-        else:
-            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K[X[:,0].astype('int')][:,X2[:,0].astype('int')])
+        self.variance.gradient = np.einsum('ij,ij', dL_dK, self._index(X, X2))
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self.fixed_K[X[:,0].astype('int')][:,X[:,0].astype('int')])
+        self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self._index(X, None))
+        
+        

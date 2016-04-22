@@ -138,12 +138,12 @@ class Kern(Parameterized):
 
             \\frac{\partial^2 L}{\partial X\partial X_2} = \\frac{\partial L}{\partial K}\\frac{\partial^2 K}{\partial X\partial X_2}
         """
-        raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
+        raise NotImplementedError("This is the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
         """
         The diagonal of the second derivative w.r.t. X and X2
         """
-        raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
+        raise NotImplementedError("This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
         """
         The diagonal of the derivative w.r.t. X

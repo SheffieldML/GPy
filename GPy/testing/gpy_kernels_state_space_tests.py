@@ -208,11 +208,11 @@ class StateSpaceKernelsTests(np.testing.TestCase):
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
 
         def get_new_kernels():
-            ss_kernel = GPy.kern.sde_Linear(1, X, variances=.5) + GPy.kern.sde_StdPeriodic(1, period=5.0, variance=300, lengthscale=3.5, active_dims=[0,])
+            ss_kernel = GPy.kern.sde_Linear(1, X, variances=1) + GPy.kern.sde_StdPeriodic(1, period=5.0, variance=300, lengthscale=3, active_dims=[0,])
             #ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
             #ss_kernel.std_periodic.period.constrain_bounded(3, 8)
 
-            gp_kernel = GPy.kern.Linear(1, variances=.5) + GPy.kern.StdPeriodic(1, period=5.0, variance=300, lengthscale=3.5, active_dims=[0,])
+            gp_kernel = GPy.kern.Linear(1, variances=1) + GPy.kern.StdPeriodic(1, period=5.0, variance=300, lengthscale=3, active_dims=[0,])
             #gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
             #gp_kernel.std_periodic.period.constrain_bounded(3, 8)
 

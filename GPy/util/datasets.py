@@ -11,6 +11,7 @@ import datetime
 import json
 import re
 import sys
+from io import open
 from .config import *
 
 ipython_available=True
@@ -54,12 +55,12 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scannin
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
-    json_data=open(path, encoding='utf-8').read()
+    json_data = open(path, encoding='utf-8').read()
     data_resources = json.loads(json_data)
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'football_teams.json')
-    json_data=open(path, encoding='utf-8').read()
+    json_data = open(path, encoding='utf-8').read()
     football_dict = json.loads(json_data)
 
 

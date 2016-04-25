@@ -100,7 +100,7 @@ class Add(CombinationKernel):
         return target
 
     def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
-        target = np.zeros(X.shape)
+        target = np.zeros(X.shape+(X.shape[1],))
         [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X, cov=cov)) for p in self.parts]
         return target
 

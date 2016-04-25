@@ -273,9 +273,9 @@ class Stationary(Kern):
                 #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
         return grad
 
-    def gradients_XX_diag(self, dL_dK, X, cov=True):
+    def gradients_XX_diag(self, d2L_dK, X, cov=True):
         """
-        Given the derivative of the objective dL_dK, compute the second derivative of K wrt X:
+        Given the derivative of the objective d2L_dK, compute the second derivative of K wrt X:
 
         ..math:
           \frac{\partial^2 K}{\partial X\partial X}

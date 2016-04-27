@@ -84,6 +84,33 @@ If you're having trouble installing GPy via `pip install GPy` here is a probable
 [![Windows](https://img.shields.io/badge/download-windows-orange.svg)](https://pypi.python.org/pypi/GPy)
 [![MacOSX](https://img.shields.io/badge/download-macosx-blue.svg)](https://pypi.python.org/pypi/GPy)
 
+# Saving models in a consistent way across versions:
+
+As pickle is inconsistent across python versions and heavily dependent on class structure, it behaves inconsistent across versions. 
+Pickling as meant to serialize models within the same environment, and not to store models on disk to be used later on.
+
+To save a model it is best to save the m.param_array of it to disk (using numpy’s np.save).
+Additionally, you save the script, which creates the model. 
+In this script you can create the model using initialize=False as a keyword argument and with the data loaded as normal. 
+You then set the model parameters by setting m.param_array[:] = loaded_params as the previously saved parameters. 
+Then you initialize the model by m.initialize_parameter(), which will make the model usable. 
+Be aware that up to this point the model is in an inconsistent state and cannot be used to produce any results.
+
+```python
+# let X, Y be data loaded above
+# Model creation:
+m = GPy.models.GPRegression(X, Y)
+m.optimize()
+# 1: Saving a model:
+np.save('model_save.npy', m.param_array)
+# 2: loading a model
+# Model creation, without initialization:
+m = GPy.models(GPRegression(X,Y,initialize=False)
+m[:] = np.load('model_save.npy')
+m.initialize_parameter()
+print m
+```
+
 ## Running unit tests:
 
 Ensure nose is installed via pip:

@@ -40,6 +40,14 @@ class EPBase(object):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
+    def __setstate__(self, state):
+        super(EPBase, self).__setstate__(state[0])
+        self.epsilon, self.eta, self.delta = state[1]
+        self.reset()
+
+    def __getstate__(self):
+        return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
+
 class EP(EPBase, ExactGaussianInference):
     def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, precision=None, K=None):
         if self.always_reset:

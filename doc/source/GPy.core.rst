@@ -59,6 +59,14 @@ GPy.core.svgp module
     :undoc-members:
     :show-inheritance:
 
+GPy.core.gp_grid module
+------------------------
+
+.. automodule:: GPy.core.gp_grid
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.core.symbolic module
 ------------------------
 

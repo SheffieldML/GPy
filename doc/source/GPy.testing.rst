@@ -197,6 +197,14 @@ GPy.testing.svgp_tests module
     :show-inheritance:
 
 
+GPy.testing.grid_tests module
+-----------------------------
+
+.. automodule:: GPy.testing.grid_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Module contents
 ---------------
 

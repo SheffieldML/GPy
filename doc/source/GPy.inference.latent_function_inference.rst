@@ -60,6 +60,14 @@ GPy.inference.latent_function_inference.posterior module
     :undoc-members:
     :show-inheritance:
 
+GPy.inference.latent_function_inference.grid_posterior module
+--------------------------------------------------------
+
+.. automodule:: GPy.inference.latent_function_inference.grid_posterior
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.inference.latent_function_inference.svgp module
 ---------------------------------------------------
 
@@ -88,6 +96,14 @@ GPy.inference.latent_function_inference.var_gauss module
 --------------------------------------------------------
 
 .. automodule:: GPy.inference.latent_function_inference.var_gauss
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+GPy.inference.latent_function_inference.gaussian_grid_inference module
+--------------------------------------------------------
+
+.. automodule:: GPy.inference.latent_function_inference.gaussian_grid_inference
     :members:
     :undoc-members:
     :show-inheritance:

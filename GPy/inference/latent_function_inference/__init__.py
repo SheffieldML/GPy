@@ -69,7 +69,6 @@ from .dtc import DTC
 from .fitc import FITC
 from .var_dtc_parallel import VarDTC_minibatch
 from .var_gauss import VarGauss
-from .gaussian_ssm_inference import GaussianSSMInference
 from .gaussian_grid_inference import GaussianGridInference
 
 

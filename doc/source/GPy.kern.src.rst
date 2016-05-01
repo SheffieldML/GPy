@@ -171,6 +171,14 @@ GPy.kern.src.spline module
     :undoc-members:
     :show-inheritance:
 
+GPy.kern.src.grid_kerns module
+-----------------------------
+
+.. automodule:: GPy.kern.src.grid_kerns
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 GPy.kern.src.splitKern module
 -----------------------------
 

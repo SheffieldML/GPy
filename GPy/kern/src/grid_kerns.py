@@ -5,8 +5,8 @@
 
 import numpy as np
 from stationary import Stationary
-from ...util.config import *
-from ...util.caching import Cache_this
+from paramz.caching import Cache_this
+
 
 class GridKern(Stationary):
 

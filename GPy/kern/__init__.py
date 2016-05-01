@@ -36,5 +36,4 @@ from .src.sde_standard_periodic import sde_StdPeriodic
 from .src.sde_static import sde_White, sde_Bias
 from .src.sde_stationary import sde_RBF,sde_Exponential,sde_RatQuad
 from .src.sde_brownian import sde_Brownian
-from .src.ssmKerns import Matern32_SSM
-from .src.gridKerns import GridRBF
+from .src.grid_kerns import GridRBF

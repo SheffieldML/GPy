@@ -61,7 +61,7 @@ class GaussianGridInference(LatentFunctionInference):
         V_kron = 1 # kronecker product of eigenvalues
 
         # retrieve the one-dimensional variation of the designated kernel
-        oneDkernel = kern.getOneDimensionalKernel(D)
+        oneDkernel = kern.get_one_dimensional_kernel(D)
 
         for d in xrange(D):
             xg = list(set(X[:,d])) #extract unique values for a dimension

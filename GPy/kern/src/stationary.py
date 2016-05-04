@@ -274,7 +274,7 @@ class Stationary(Kern):
                 #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
         return grad
 
-    def gradients_XX_diag(self, d2L_dK, X, cov=True):
+    def gradients_XX_diag(self, d2L_dK, X, cov=False):
         """
         Given the derivative of the objective d2L_dK, compute the second derivative of K wrt X:
 
@@ -285,8 +285,9 @@ class Stationary(Kern):
             dL2_dXdX: [NxQ], for X [NxQ] if cov is False, [NxQxQ] if cov is True
         """
         if cov:
-            return np.zeros(X.shape+(X.shape[1],))
-        return np.zeros(X.shape)#np.ones(X.shape) * self.variance/self.lengthscale**2
+            tmp = np.ones(X.shape+(X.shape[1],))
+            return tmp * d2L_dK * self.variance/self.lengthscale**2# np.zeros(X.shape+(X.shape[1],))
+        return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)

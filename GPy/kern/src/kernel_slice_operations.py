@@ -70,11 +70,11 @@ class _Slice_wrap(object):
                 ret[:, self.k._all_dims_active] = return_val
             elif len(self.shape) == 3: # derivative for X2!=None
                 if self.diag:
-                    ret[:, :, self.k._all_dims_active][:, self.k._all_dims_active] = return_val
+                    ret.T[np.ix_(self.k._all_dims_active, self.k._all_dims_active)] = return_val.T
                 else:
                     ret[:, :, self.k._all_dims_active] = return_val
             elif len(self.shape) == 4: # second order derivative
-                ret[:, :, self.k._all_dims_active][:, :, :, self.k._all_dims_active] = return_val
+                ret.T[np.ix_(self.k._all_dims_active, self.k._all_dims_active)] = return_val.T
             return ret
         return return_val
 

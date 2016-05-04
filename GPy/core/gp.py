@@ -449,7 +449,7 @@ class GP(Model):
         :param bool covariance: whether to include the covariance of the wishart embedding.
         :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
         """
-        G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
+        G = self.predict_wishart_embedding(Xnew, kern, mean, covariance)
         if dimensions is None:
             dimensions = self.get_most_significant_input_dimensions()[:2]
         G = G[:, dimensions][:,:,dimensions]

@@ -13,7 +13,7 @@ from paramz.parameterized import ParametersChangedMeta
 
 def put_clean(dct, name, func):
     if name in dct:
-        #dct['_clean_{}'.format(name)] = dct[name]
+        dct['_clean_{}'.format(name)] = dct[name]
         dct[name] = func(dct[name])
 
 class KernCallsViaSlicerMeta(ParametersChangedMeta):

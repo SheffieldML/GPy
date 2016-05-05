@@ -237,9 +237,9 @@ class Stationary(Kern):
         # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
         invdist = self._inv_dist(X, X2)
         invdist2 = invdist**2
-        dL_dr = self.dK_dr_via_X(X, X2) # * dL_dK we perofrm this product later
+        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK # we perofrm this product later
         tmp1 = dL_dr * invdist
-        dL_drdr = self.dK2_drdr_via_X(X, X2) # * dL_dK we perofrm this product later
+        dL_drdr = self.dK2_drdr_via_X(X, X2) * dL_dK # we perofrm this product later
         tmp2 = dL_drdr * invdist2
         l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
 
@@ -250,17 +250,24 @@ class Stationary(Kern):
             #tmp1[X==X2.T] -= self.variance # Old version, to be removed
                                             # (seems to have a bug: it is subtracted to the first X1 anyway)
             tmp1[invdist2==0.] -= self.variance
+        
+        tmp3 = (tmp1*invdist2 - tmp2)
 
         if cov: # full covariance
-            grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
-            for q in range(self.input_dim):
-                tmpdist = (X[:,[q]]-X2[:,[q]].T)
-                for r in range(self.input_dim):
-                    tmpdist2 = tmpdist*(X[:,[r]]-X2[:,[r]].T) # Introduce temporary distance
-                    if r==q:
-                        grad[:, :, q, r] = np.multiply(dL_dK,(np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[r] - tmp1)/l2[q])
-                    else:
-                        grad[:, :, q, r] = np.multiply(dL_dK,(np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[r])/l2[q])
+            dist = X[:,None,:] - X2[None,:,:]
+            t2 = (tmp3[:,:,None,None]*(dist[:,:,:,None]*dist[:,:,None,:]))/l2[None,None,:,None]
+            t2.T[np.diag_indices(self.input_dim)] -= tmp1.T[None,:,:]
+            grad = t2/l2[None,None,None,:]
+            #grad_old = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+            #
+            #for q in range(self.input_dim):
+            #    tmpdist = (X[:,[q]]-X2[:,[q]].T)
+            #    for r in range(self.input_dim):
+            #        tmpdist2 = tmpdist*(X[:,[r]]-X2[:,[r]].T) # Introduce temporary distance
+            #        if r==q:
+            #            grad_old[:, :, q, r] = ((tmp3 * tmpdist2)/l2[r] - tmp1)/l2[q]
+            #        else:
+            #            grad_old[:, :, q, r] = (((tmp3 * tmpdist2)/l2[r])/l2[q])    
         else:
             # Diagonal covariance, old code
             grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
@@ -274,7 +281,7 @@ class Stationary(Kern):
                 #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
         return grad
 
-    def gradients_XX_diag(self, d2L_dK, X, cov=False):
+    def gradients_XX_diag(self, d2L_dK, X, cov=True):
         """
         Given the derivative of the objective d2L_dK, compute the second derivative of K wrt X:
 

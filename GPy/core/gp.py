@@ -419,7 +419,7 @@ class GP(Model):
         mumuT = np.einsum('iqd,ipd->iqp', mu_jac, mu_jac)
         Sigma = np.zeros(mumuT.shape)
         if var_jac.ndim == 4: # Missing data
-            Sigma[(slice(None), )+np.diag_indices(Xnew.shape[1], 2)] = var_jac.sum(-1)
+            Sigma = var_jac.sum(-1)
         else:
             Sigma = self.output_dim*var_jac
         

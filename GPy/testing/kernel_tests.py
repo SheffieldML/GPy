@@ -112,13 +112,15 @@ class Kern_check_d2K_dXdX_cov(Kern_check_model):
         self.link_parameter(self.X)
 
     def log_likelihood(self):
-        return np.sum(self.kernel.gradients_X(self.dL_dK,self.X, self.X2))
+        return self.kernel.gradients_X(self.dL_dK, self.X, self.X2).sum()
 
     def parameters_changed(self):
         #if self.kernel.name == 'rbf':
-        #    import ipdb;ipdb.set_trace()            
-        grads = self.kernel.gradients_XX(self.dL_dK, self.X, self.X2, cov=True)
-        self.X.gradient[:] =  grads.sum(-1).sum(1)
+        #    import ipdb;ipdb.set_trace()
+        if self.X2 is None: X2 = self.X
+        else: X2 = self.X2       
+        grads = self.kernel.gradients_XX(self.dL_dK.T, X2, self.X, cov=True)
+        self.X.gradient[:] = grads.sum(-1).sum(0)
 
 class Kern_check_d2Kdiag_dXdX_cov(Kern_check_model):
     """This class allows gradient checks for the second derivative of a kernel with respect to X. """

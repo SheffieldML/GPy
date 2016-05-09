@@ -37,17 +37,10 @@ class GaussianGridInference(LatentFunctionInference):
         N = 1
         D = len(A)
         G = np.zeros((D,1))
-<<<<<<< HEAD
         for d in range(0, D):
             G[d] = len(A[d])
         N = np.prod(G)
         for d in range(D-1, -1, -1):
-=======
-        for d in xrange(0, D):
-            G[d] = len(A[d])
-        N = np.prod(G)
-        for d in xrange(D-1, -1, -1):
->>>>>>> 1fc93236c46ddd1b7bd7f73ef26dc51af4cd2181
             X = np.reshape(x, (G[d], round(N/G[d])), order='F')
             Z = np.dot(A[d], X)
             Z = Z.T
@@ -116,6 +109,6 @@ class GaussianGridInference(LatentFunctionInference):
         dL_dLen = derivs[:D]
         dL_dVar = derivs[D]
         dL_dThetaL = derivs[D+1]
-        
+
         return GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron), \
                 log_likelihood, {'dL_dLen':dL_dLen, 'dL_dVar':dL_dVar, 'dL_dthetaL':dL_dThetaL}

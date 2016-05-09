@@ -69,10 +69,17 @@ class GpGrid(GP):
             x = b
             N = 1
             G = np.zeros(D)
+<<<<<<< HEAD
             for d in range(D):
                 G[d] = len(A[d])
             N = np.prod(G)
             for d in range(D-1, -1, -1):
+=======
+            for d in xrange(D):
+                G[d] = len(A[d])
+            N = np.prod(G)
+            for d in xrange(D-1, -1, -1):
+>>>>>>> 1fc93236c46ddd1b7bd7f73ef26dc51af4cd2181
                 X = np.reshape(x, (G[d], round(N/G[d])), order='F')
                 Z = np.dot(A[d], X)
                 Z = Z.T

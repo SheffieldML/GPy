@@ -16,7 +16,7 @@
 #  publisher={IEEE}
 #}
 
-from grid_posterior import GridPosterior
+from .grid_posterior import GridPosterior
 import numpy as np
 from . import LatentFunctionInference
 log_2_pi = np.log(2*np.pi)

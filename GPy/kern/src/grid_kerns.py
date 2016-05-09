@@ -4,7 +4,7 @@
 # Kurt Cutajar
 
 import numpy as np
-from stationary import Stationary
+from .stationary import Stationary
 from paramz.caching import Cache_this
 
 

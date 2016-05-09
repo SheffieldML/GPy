@@ -37,10 +37,10 @@ class GaussianGridInference(LatentFunctionInference):
         N = 1
         D = len(A)
         G = np.zeros((D,1))
-        for d in xrange(0, D):
+        for d in range(0, D):
             G[d] = len(A[d])
         N = np.prod(G)
-        for d in xrange(D-1, -1, -1):
+        for d in range(D-1, -1, -1):
             X = np.reshape(x, (G[d], round(N/G[d])), order='F')
             Z = np.dot(A[d], X)
             Z = Z.T
@@ -63,7 +63,7 @@ class GaussianGridInference(LatentFunctionInference):
         # retrieve the one-dimensional variation of the designated kernel
         oneDkernel = kern.get_one_dimensional_kernel(D)
 
-        for d in xrange(D):
+        for d in range(D):
             xg = list(set(X[:,d])) #extract unique values for a dimension
             xg = np.reshape(xg, (len(xg), 1))
             oneDkernel.lengthscale = kern.lengthscale[d]
@@ -84,11 +84,11 @@ class GaussianGridInference(LatentFunctionInference):
 
         # compute derivatives wrt parameters Thete
         derivs = np.zeros(D+2, dtype='object')
-        for t in xrange(len(derivs)):
+        for t in range(len(derivs)):
             dKd_dTheta = np.zeros(D, dtype='object')
             gamma = np.zeros(D, dtype='object')
             gam = 1
-            for d in xrange(D):
+            for d in range(D):
                 xg = list(set(X[:,d]))
                 xg = np.reshape(xg, (len(xg), 1))
                 oneDkernel.lengthscale = kern.lengthscale[d]
@@ -110,4 +110,5 @@ class GaussianGridInference(LatentFunctionInference):
         dL_dVar = derivs[D]
         dL_dThetaL = derivs[D+1]
 
-        return GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron), log_likelihood, {'dL_dLen':dL_dLen, 'dL_dVar':dL_dVar, 'dL_dthetaL':dL_dThetaL}
+        return GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron), \
+                log_likelihood, {'dL_dLen':dL_dLen, 'dL_dVar':dL_dVar, 'dL_dthetaL':dL_dThetaL}

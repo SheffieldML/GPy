@@ -73,7 +73,7 @@ class GpGrid(GP):
                 G[d] = len(A[d])
             N = np.prod(G)
             for d in range(D-1, -1, -1):
-                X = np.reshape(x, (G[d], round(N/G[d])), order='F')
+                X = np.reshape(x, (G[d], np.round(N/G[d])), order='F')
                 Z = np.dot(A[d], X)
                 Z = Z.T
                 x = np.reshape(Z, (-1, 1), order='F')

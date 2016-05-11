@@ -148,14 +148,16 @@ class GP(Model):
                 # LVM models
                 if isinstance(self.X, VariationalPosterior):
                     assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
+                    index = self.X._parent_index_
                     self.unlink_parameter(self.X)
                     self.X = X
-                    self.link_parameter(self.X)
+                    self.link_parameter(self.X, index=index)
                 else:
+                    index = self.X._parent_index_
                     self.unlink_parameter(self.X)
                     from ..core import Param
-                    self.X = Param('latent mean',X)
-                    self.link_parameter(self.X)
+                    self.X = Param('latent mean', X)
+                    self.link_parameter(self.X, index=index)
             else:
                 self.X = ObsAr(X)
         self.update_model(True)

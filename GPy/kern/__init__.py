@@ -24,6 +24,7 @@ from .src.ODE_st import ODE_st
 from .src.ODE_t import ODE_t
 from .src.poly import Poly
 from .src.eq_ode2 import EQ_ODE2
+from .src.eq_ode1 import EQ_ODE1
 from .src.trunclinear import TruncLinear,TruncLinear_inf
 from .src.splitKern import SplitKern,DEtime
 from .src.splitKern import DEtime as DiffGenomeKern

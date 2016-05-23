@@ -110,12 +110,32 @@ class EQ_ODE1(Kern):
             if not X_flag and X2_flag:
                 index2 -= self.output_dim
                 return self._Kfu(X, index, X2, index2) #Kfu
-            else:
+            elif X_flag and not X2_flag:
                 index -= self.output_dim
                 return self._Kfu(X2, index2, X, index).T #Kuf
+            elif X_flag and X2_flag:
+                index -= self.output_dim
+                index2 -= self.output_dim
+                return self._Kusu(X, index, X2, index2) #Ku_s u
+            else:
+                raise NotImplementedError #Kf_s f
 
     #Calculate the covariance function for diag(Kff(X,X))
     def Kdiag(self, X):
+        if hasattr(X, 'values'):
+            index = np.int_(np.round(X[:, 1].values))
+        else:
+            index = np.int_(np.round(X[:, 1]))
+        index = index.reshape(index.size,)
+        X_flag = index[0] >= self.output_dim
+        
+        if X_flag: #Kuudiag        
+            return np.ones(X[:,0].shape)
+        else: #Kffdiag
+            kdiag = self._Kdiag(X)
+            return np.sum(kdiag, axis=1)
+        
+    def _Kdiag(self, X):
         #This way is not working, indexes are lost after using k._slice_X
         #index = np.asarray(X, dtype=np.int)
         #index = index.reshape(index.size,)
@@ -304,6 +324,23 @@ class EQ_ODE1(Kern):
         kuu[indr, indc] = np.exp(-r2/lq2[index[indr]])
         #Completion of lower triangular part
         kuu[indc, indr] = kuu[indr, indc]
+        return kuu
+
+    def _Kusu(self, X, index, X2, index2):
+        index = index.reshape(index.size,)
+        index2 = index2.reshape(index2.size,)
+        t = X[:, 0].reshape(X.shape[0],1)
+        t2 = X2[:, 0].reshape(1,X2.shape[0])
+        lq = self.lengthscale.values.reshape(self.rank,)
+        #Covariance matrix initialization
+        kuu = np.zeros((t.size, t2.size))
+        for q in range(self.rank):
+            ind1 = index == q
+            ind2 = index2 == q
+            r = t[ind1]/lq[q] - t2[0,ind2]/lq[q]
+            r2 = r*r
+            #Calculation of  covariance function
+            kuu[np.ix_(ind1, ind2)] = np.exp(-r2)
         return kuu
 
     #Evaluation of cross-covariance function

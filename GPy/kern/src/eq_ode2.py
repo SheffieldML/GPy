@@ -44,7 +44,7 @@ class EQ_ODE2(Kern):
             lengthscale = np.asarray(lengthscale)
             assert lengthscale.size in [1, self.rank], "Bad number of lengthscales"
             if lengthscale.size != self.rank:
-                lengthscale = np.ones(self.input_dim)*lengthscale
+                lengthscale = np.ones(self.rank)*lengthscale
 
         if W is None:
             #W = 0.5*np.random.randn(self.output_dim, self.rank)/np.sqrt(self.rank)
@@ -71,7 +71,7 @@ class EQ_ODE2(Kern):
         #index = index.reshape(index.size,)
         if hasattr(X, 'values'):
             X = X.values
-        index = np.int_(X[:, 1])
+        index = np.int_(np.round(X[:, 1]))
         index = index.reshape(index.size,)
         X_flag = index[0] >= self.output_dim
         if X2 is None:
@@ -79,7 +79,7 @@ class EQ_ODE2(Kern):
                 #Calculate covariance function for the latent functions
                 index -= self.output_dim
                 return self._Kuu(X, index)
-            else:
+            else: #Kff full
                 raise NotImplementedError
         else:
             #This way is not working, indexes are lost after using k._slice_X
@@ -87,19 +87,40 @@ class EQ_ODE2(Kern):
             #index2 = index2.reshape(index2.size,)
             if hasattr(X2, 'values'):
                 X2 = X2.values
-            index2 = np.int_(X2[:, 1])
+            index2 = np.int_(np.round(X2[:, 1]))
             index2 = index2.reshape(index2.size,)
             X2_flag = index2[0] >= self.output_dim
             #Calculate cross-covariance function
             if not X_flag and X2_flag:
                 index2 -= self.output_dim
                 return self._Kfu(X, index, X2, index2) #Kfu
-            else:
+            elif X_flag and not X2_flag:
                 index -= self.output_dim
                 return self._Kfu(X2, index2, X, index).T #Kuf
+            elif X_flag and X2_flag:
+                index -= self.output_dim
+                index2 -= self.output_dim
+                return self._Kusu(X, index, X2, index2) #Ku_s u
+            else:
+                raise NotImplementedError #Kf_s f
 
     #Calculate the covariance function for diag(Kff(X,X))
     def Kdiag(self, X):
+        if hasattr(X, 'values'):
+            index = np.int_(np.round(X[:, 1].values))
+        else:
+            index = np.int_(np.round(X[:, 1]))
+        index = index.reshape(index.size,)
+        X_flag = index[0] >= self.output_dim
+        
+        if X_flag: #Kuudiag        
+            return np.ones(X[:,0].shape)
+        else: #Kffdiag
+            kdiag = self._Kdiag(X)
+            return np.sum(kdiag, axis=1)
+
+    #Calculate the covariance function for diag(Kff(X,X))
+    def _Kdiag(self, X):
         #This way is not working, indexes are lost after using k._slice_X
         #index = np.asarray(X, dtype=np.int)
         #index = index.reshape(index.size,)
@@ -132,7 +153,7 @@ class EQ_ODE2(Kern):
         #Terms that move along q
         lq = self.lengthscale.values.reshape(1, self.lengthscale.size)
         S2 = S*S
-        kdiag = np.empty((t.size, ))
+        kdiag = np.empty((t.size, lq.size))
 
         indD = np.arange(B.size)
         #(1) When wd is real
@@ -187,8 +208,8 @@ class EQ_ODE2(Kern):
             upv[t1[:, 0] == 0, :] = 0.
 
             #Covariance calculation
-            kdiag[ind3t] = np.sum(np.real(K01[ind]*upm), axis=1)
-            kdiag[ind3t] += np.sum(np.real((c0[ind]*ec)*upv), axis=1)
+            kdiag[ind3t] = np.real(K01[ind]*upm)
+            kdiag[ind3t] += np.real((c0[ind]*ec)*upv)
 
         #(2) When w_d is complex
         if np.any(wbool):
@@ -265,7 +286,7 @@ class EQ_ODE2(Kern):
             upvc[t1[:, 0] == 0, :] = 0.
 
             #Covariance calculation
-            kdiag[ind2t] = np.sum(K011[ind]*upm + K012[ind]*upmc + (c0[ind]*ec)*upv + (c0[ind]*ec2)*upvc, axis=1)
+            kdiag[ind2t] = K011[ind]*upm + K012[ind]*upmc + (c0[ind]*ec)*upv + (c0[ind]*ec2)*upvc
         return kdiag
 
     def update_gradients_full(self, dL_dK, X, X2 = None):
@@ -336,16 +357,17 @@ class EQ_ODE2(Kern):
         index = index.reshape(index.size,)
         
         glq, gS, gB, gC = self._gkdiag(X, index)
-        tmp = dL_dKdiag.reshape(index.size, 1)*glq
+        if dL_dKdiag.size == X.shape[0]:
+            dL_dKdiag = np.reshape(dL_dKdiag, (index.size, 1))
+        tmp = dL_dKdiag*glq
         self.lengthscale.gradient = tmp.sum(0)
-        #TODO: Avoid the reshape by a priori knowing the shape of dL_dKdiag
-        tmpB = dL_dKdiag*gB.reshape(dL_dKdiag.shape)
-        tmpC = dL_dKdiag*gC.reshape(dL_dKdiag.shape)
-        tmp = dL_dKdiag.reshape(index.size, 1)*gS
+        tmpB = dL_dKdiag*gB
+        tmpC = dL_dKdiag*gC
+        tmp = dL_dKdiag*gS
         for d in np.unique(index):
             ind = np.where(index == d)
-            self.B.gradient[d] = tmpB[ind].sum()
-            self.C.gradient[d] = tmpC[ind].sum()
+            self.B.gradient[d] = tmpB[ind, :].sum()
+            self.C.gradient[d] = tmpC[ind, :].sum()
             self.W.gradient[d, :] = tmp[ind].sum(0)
 
     def gradients_X(self, dL_dK, X, X2=None):
@@ -408,6 +430,23 @@ class EQ_ODE2(Kern):
         kuu[indr, indc] = np.exp(-r2/lq2[index[indr]])
         #Completation of lower triangular part
         kuu[indc, indr] = kuu[indr, indc]
+        return kuu
+
+    def _Kusu(self, X, index, X2, index2):
+        index = index.reshape(index.size,)
+        index2 = index2.reshape(index2.size,)
+        t = X[:, 0].reshape(X.shape[0],1)
+        t2 = X2[:, 0].reshape(1,X2.shape[0])
+        lq = self.lengthscale.values.reshape(self.rank,)
+        #Covariance matrix initialization
+        kuu = np.zeros((t.size, t2.size))
+        for q in range(self.rank):
+            ind1 = index == q
+            ind2 = index2 == q
+            r = t[ind1]/lq[q] - t2[0,ind2]/lq[q]
+            r2 = r*r
+            #Calculation of  covariance function
+            kuu[np.ix_(ind1, ind2)] = np.exp(-r2)
         return kuu
 
     #Evaluation of cross-covariance function
@@ -632,8 +671,8 @@ class EQ_ODE2(Kern):
         lq = self.lengthscale.values.reshape(1, self.rank)
         lq2 = lq*lq
 
-        gB = np.empty((t.size,))
-        gC = np.empty((t.size,))
+        gB = np.empty((t.size, lq.size))
+        gC = np.empty((t.size, lq.size))
         glq = np.empty((t.size, lq.size))
         gS = np.empty((t.size, lq.size))
 
@@ -723,8 +762,8 @@ class EQ_ODE2(Kern):
             Ba4_1 = (S2lq*lq)*dgam_dB/w2
             Ba4 = Ba4_1*c
 
-            gB[ind3t] = np.sum(np.real(Ba1[ind]*upm) - np.real(((Ba2_1[ind] + Ba2_2[ind]*t1)*egamt - Ba3[ind]*egamct)*upv)\
-                + np.real(Ba4[ind]*upmd) + np.real((Ba4_1[ind]*ec)*upvd), axis=1)
+            gB[ind3t] = np.real(Ba1[ind]*upm) - np.real(((Ba2_1[ind] + Ba2_2[ind]*t1)*egamt - Ba3[ind]*egamct)*upv)\
+                + np.real(Ba4[ind]*upmd) + np.real((Ba4_1[ind]*ec)*upvd)
 
             # gradient wrt C
             dw_dC = - alphad*dw_dB
@@ -738,8 +777,8 @@ class EQ_ODE2(Kern):
             Ca4_1 = (S2lq*lq)*dgam_dC/w2
             Ca4 = Ca4_1*c
 
-            gC[ind3t] = np.sum(np.real(Ca1[ind]*upm) - np.real(((Ca2_1[ind] + Ca2_2[ind]*t1)*egamt - (Ca3_1[ind] + Ca3_2[ind]*t1)*egamct)*upv)\
-                + np.real(Ca4[ind]*upmd) + np.real((Ca4_1[ind]*ec)*upvd), axis=1)
+            gC[ind3t] = np.real(Ca1[ind]*upm) - np.real(((Ca2_1[ind] + Ca2_2[ind]*t1)*egamt - (Ca3_1[ind] + Ca3_2[ind]*t1)*egamct)*upv)\
+                + np.real(Ca4[ind]*upmd) + np.real((Ca4_1[ind]*ec)*upvd)
 
             #Gradient wrt lengthscale
             #DxQ terms
@@ -868,10 +907,10 @@ class EQ_ODE2(Kern):
             Ba2_1c = c0*(dgamc_dB*(0.5/gamc2 - 0.25*lq2) + 0.5/(w2*gamc))
             Ba2_2c = c0*dgamc_dB/gamc
 
-            gB[ind2t] = np.sum(Ba1[ind]*upm - ((Ba2_1[ind] + Ba2_2[ind]*t1)*egamt - Ba3[ind]*egamct)*upv\
+            gB[ind2t] = Ba1[ind]*upm - ((Ba2_1[ind] + Ba2_2[ind]*t1)*egamt - Ba3[ind]*egamct)*upv\
                 + Ba4[ind]*upmd + (Ba4_1[ind]*ec)*upvd\
                 + Ba1c[ind]*upmc - ((Ba2_1c[ind] + Ba2_2c[ind]*t1)*egamct - Ba3c[ind]*egamt)*upvc\
-                + Ba4c[ind]*upmdc + (Ba4_1c[ind]*ec2)*upvdc, axis=1)
+                + Ba4c[ind]*upmdc + (Ba4_1c[ind]*ec2)*upvdc
 
             ##Gradient wrt C
             dw_dC = 0.5*alphad/w
@@ -895,10 +934,10 @@ class EQ_ODE2(Kern):
             Ca4_1c = S2lq2*(dgamc_dC/w2)
             Ca4c = Ca4_1c*c2
 
-            gC[ind2t] = np.sum(Ca1[ind]*upm - ((Ca2_1[ind] + Ca2_2[ind]*t1)*egamt - (Ca3_1[ind] + Ca3_2[ind]*t1)*egamct)*upv\
+            gC[ind2t] = Ca1[ind]*upm - ((Ca2_1[ind] + Ca2_2[ind]*t1)*egamt - (Ca3_1[ind] + Ca3_2[ind]*t1)*egamct)*upv\
                 + Ca4[ind]*upmd + (Ca4_1[ind]*ec)*upvd\
                 + Ca1c[ind]*upmc - ((Ca2_1c[ind] + Ca2_2c[ind]*t1)*egamct - (Ca3_1c[ind] + Ca3_2c[ind]*t1)*egamt)*upvc\
-                + Ca4c[ind]*upmdc + (Ca4_1c[ind]*ec2)*upvdc, axis=1)
+                + Ca4c[ind]*upmdc + (Ca4_1c[ind]*ec2)*upvdc
 
             #Gradient wrt lengthscale
             #DxQ terms

@@ -58,7 +58,7 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
             else:
                 b = beta
     
-            psi0 = kern.Kdiag(X_slice) #Kff^q
+            psi0 = kern._Kdiag(X_slice) #Kff^q
             psi1 = kern.K(X_slice, Z) #Kfu
 
             indX = X_slice.values
@@ -223,7 +223,7 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
             Y_slice = YYT_factor[n_start:n_end]
             X_slice = X[n_start:n_end]
 
-        psi0 = kern.Kdiag(X_slice) #Kffdiag
+        psi0 = kern._Kdiag(X_slice) #Kffdiag
         psi1 = kern.K(X_slice, Z) #Kfu
         betapsi1 = np.einsum('n,nm->nm', beta, psi1)
 

@@ -237,56 +237,30 @@ class Stationary(Kern):
         # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
         invdist = self._inv_dist(X, X2)
         invdist2 = invdist**2
-        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK # we perform this product later
+        dL_dr = self.dK_dr_via_X(X, X2) #* dL_dK # we perform this product later
         tmp1 = dL_dr * invdist
-        dL_drdr = self.dK2_drdr_via_X(X, X2) * dL_dK # we perofrm this product later
-        tmp2 = dL_drdr
+        dL_drdr = self.dK2_drdr_via_X(X, X2) #* dL_dK # we perofrm this product later
+        tmp2 = dL_drdr*invdist2
         l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
             
-        tmp1[invdist2==0.] -= self.variance
-        
-        tmp3 = (tmp1 - tmp2)*invdist2
-
-            #tmp3 = (tmp1 - tmp2)*invdist2
-            
-            #tmp3 = tmp3
-            # This is not quite right yet, I need the maths to fully understand what is going on.... 
-        #else:
+        if X2 is None:
+            X2 = X
+            tmp1 -= np.eye(X.shape[0])*self.variance
+        else:
+            tmp1[invdist2==0.] -= self.variance
 
         if cov: # full covariance
-            if X2 is None:
-                #tmp3 = tmp3+tmp3.T
-                dist = X[:,None,:] - X[None,:,:]
-                #dist = dist+dist.swapaxes(0,1)
-            else:
-                dist = X[:,None,:] - X2[None,:,:]
+            grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+            dist = X[:,None,:] - X2[None,:,:]
             dist = (dist[:,:,:,None]*dist[:,:,None,:])
-            
-            t2 = (tmp3[:,:,None,None]*dist)/l2[None,None,:,None]
-            t2.T[np.diag_indices(self.input_dim)] -= tmp1.T[None,:,:]
-            grad = t2/l2[None,None,None,:]
-
-            #grad_old = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
-            
-            #for q in range(self.input_dim):
-            #    tmpdist = (X[:,[q]]-X2[:,[q]].T)
-            #    for r in range(self.input_dim):
-            #        tmpdist2 = tmpdist*(X[:,[r]]-X2[:,[r]].T) # Introduce temporary distance
-            #        if r==q:
-            #            grad_old[:, :, q, r] = ((tmp3 * tmpdist2)/l2[r] - tmp1)/l2[q]
-            #        else:
-            #            grad_old[:, :, q, r] = (((tmp3 * tmpdist2)/l2[r])/l2[q])
-            #import ipdb;ipdb.set_trace()    
-
-            if X2 is None:
-                grad += tmp1[:,:,None,None]
-        else:
-            # Diagonal covariance, old code
+            I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
+            grad = (np.einsum('kl,klij->klij',dL_dK*(tmp1*invdist2 - tmp2), dist) /l2[None,None,:,None] - np.einsum('kl,klij->klij',dL_dK*tmp1, I))/l2[None,None,None,:]
+        else: # Diagonal covariance, old code
             grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
             #grad = np.empty(X.shape, dtype=np.float64)
             for q in range(self.input_dim):
                 tmpdist2 = (X[:,[q]]-X2[:,[q]].T) ** 2
-                grad[:, :, q] = ((np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[q] - tmp1)/l2[q])
+                grad[:, :, q] = np.multiply(dL_dK,(np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[q] - tmp1)/l2[q])
                 #grad[:, :, q] = ((tmp1*invdist2 - tmp2)*tmpdist2/l2[q] - tmp1)/l2[q]
                 #grad[:, :, q] = ((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q]
                 #np.sum(((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q], axis=1, out=grad[:,q])

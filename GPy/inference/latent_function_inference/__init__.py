@@ -41,6 +41,13 @@ class LatentFunctionInference(object):
         """
         pass
 
+    def LOO(self, kern, X, Y, likelihood, posterior, *args, **kwargs):
+        """
+        Leave one out error for the inference algorithm
+        """
+        raise NotImplementedError
+
+
 class InferenceMethodList(LatentFunctionInference, list):
 
     def on_optimization_start(self):

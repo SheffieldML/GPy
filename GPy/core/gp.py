@@ -604,3 +604,10 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
+    def LOO(self):
+        """
+        Evaluate the approximate leave one out error using the current state of the inference method
+        """
+        return self.inference_method.LOO(self.kern, self.X, self.Y, self.likelihood, self.posterior, Y_metadata=self.Y_metadata)
+
+

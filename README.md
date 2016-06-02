@@ -5,11 +5,11 @@ The Gaussian processes framework in Python.
 * GPy [homepage](http://sheffieldml.github.io/GPy/)
 * Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
-* Developer [documentation](http://gpy.readthedocs.org/en/devel/)
+* Developer [documentation](http://pythonhosted.org/GPy/)
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
 
-[![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![docdevel](https://readthedocs.org/projects/gpy/badge/?version=devel)](http://gpy.readthedocs.org/en/devel/) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
+[![develstat](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
 
 ## Updated Structure
 
@@ -36,15 +36,15 @@ If that is the case, it is best to clean the repo and reinstall.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
-Python 2.7, 3.3 and higher
+Python 2.7, 3.4 and higher
 
 ## Citation
 
     @Misc{gpy2014,
-      author =   {{The GPy authors}},
+      author =   {{GPy}},
       title =    {{GPy}: A Gaussian process framework in python},
       howpublished = {\url{http://github.com/SheffieldML/GPy}},
-      year = {2012--2015}
+      year = {since 2012}
     }
 
 ### Pronounciation:
@@ -83,6 +83,33 @@ If you're having trouble installing GPy via `pip install GPy` here is a probable
 [![PyPI version](https://badge.fury.io/py/GPy.svg)](https://pypi.python.org/pypi/GPy) [![source](https://img.shields.io/badge/download-source-green.svg)](https://pypi.python.org/pypi/GPy)
 [![Windows](https://img.shields.io/badge/download-windows-orange.svg)](https://pypi.python.org/pypi/GPy)
 [![MacOSX](https://img.shields.io/badge/download-macosx-blue.svg)](https://pypi.python.org/pypi/GPy)
+
+# Saving models in a consistent way across versions:
+
+As pickle is inconsistent across python versions and heavily dependent on class structure, it behaves inconsistent across versions. 
+Pickling as meant to serialize models within the same environment, and not to store models on disk to be used later on.
+
+To save a model it is best to save the m.param_array of it to disk (using numpy’s np.save).
+Additionally, you save the script, which creates the model. 
+In this script you can create the model using initialize=False as a keyword argument and with the data loaded as normal. 
+You then set the model parameters by setting m.param_array[:] = loaded_params as the previously saved parameters. 
+Then you initialize the model by m.initialize_parameter(), which will make the model usable. 
+Be aware that up to this point the model is in an inconsistent state and cannot be used to produce any results.
+
+```python
+# let X, Y be data loaded above
+# Model creation:
+m = GPy.models.GPRegression(X, Y)
+m.optimize()
+# 1: Saving a model:
+np.save('model_save.npy', m.param_array)
+# 2: loading a model
+# Model creation, without initialization:
+m = GPy.models(GPRegression(X,Y,initialize=False)
+m[:] = np.load('model_save.npy')
+m.initialize_parameter()
+print m
+```
 
 ## Running unit tests:
 

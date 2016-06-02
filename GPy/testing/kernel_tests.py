@@ -2,11 +2,14 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import unittest
-import numpy as np
+from unittest.case import skip
+
 import GPy
 from GPy.core.parameterization.param import Param
+import numpy as np
+
 from ..util.config import config
-from unittest.case import skip
+
 
 verbose = 0
 
@@ -325,6 +328,14 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_Fixed(self):
+        Xall = np.concatenate([self.X, self.X])
+        cov = np.dot(Xall, Xall.T)
+        X = np.arange(self.N).reshape(1,self.N)
+        k = GPy.kern.Fixed(1, cov)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=X, X2=None, verbose=verbose))
+
     def test_Poly(self):
         k = GPy.kern.Poly(self.D, order=5)
         k.randomize()
@@ -339,6 +350,15 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Precomputed(self):
+        Xall = np.concatenate([self.X, self.X2])
+        cov = np.dot(Xall, Xall.T)
+        X = np.arange(self.N).reshape(1,self.N)
+        X2 = np.arange(self.N,2*self.N+10).reshape(1,self.N+10)
+        k = GPy.kern.Precomputed(1, cov)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=X, X2=X2, verbose=verbose))
 
 class KernelTestsMiscellaneous(unittest.TestCase):
     def setUp(self):
@@ -395,14 +415,12 @@ class KernelTestsNonContinuous(unittest.TestCase):
         self.X2[:(N0*2), -1] = 0
         self.X2[(N0*2):, -1] = 1
 
-    #@unittest.expectedFailure
     def test_IndependentOutputs(self):
         k = [GPy.kern.RBF(1, active_dims=[1], name='rbf1'), GPy.kern.RBF(self.D, active_dims=range(self.D), name='rbf012'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf02')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         np.testing.assert_array_equal(kern.active_dims, [-1,0,1,2])
         np.testing.assert_array_equal(kern._all_dims_active, [0,1,2,-1])
 
-    #@skip('Gradients for independend outputs with different X do not work correctly')
     def testIndependendGradients(self):
         k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, 'ind_single')
@@ -411,14 +429,12 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-    #@unittest.expectedFailure
     def test_Hierarchical(self):
         k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')
         np.testing.assert_array_equal(kern.active_dims, [-1,0,2])
         np.testing.assert_array_equal(kern._all_dims_active, [0,1,2,-1])
 
-    #@skip('Gradients for independend outputs with different X do not work correctly')
     def test_Hierarchical_gradients(self):
         k = [GPy.kern.RBF(2, active_dims=[0,2], name='rbf1'), GPy.kern.RBF(2, active_dims=[0,2], name='rbf2')]
         kern = GPy.kern.IndependentOutputs(k, -1, name='ind_split')

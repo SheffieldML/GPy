@@ -148,14 +148,16 @@ class GP(Model):
                 # LVM models
                 if isinstance(self.X, VariationalPosterior):
                     assert isinstance(X, type(self.X)), "The given X must have the same type as the X in the model!"
+                    index = self.X._parent_index_
                     self.unlink_parameter(self.X)
                     self.X = X
-                    self.link_parameter(self.X)
+                    self.link_parameter(self.X, index=index)
                 else:
+                    index = self.X._parent_index_
                     self.unlink_parameter(self.X)
                     from ..core import Param
-                    self.X = Param('latent mean',X)
-                    self.link_parameter(self.X)
+                    self.X = Param('latent mean', X)
+                    self.link_parameter(self.X, index=index)
             else:
                 self.X = ObsAr(X)
         self.update_model(True)
@@ -437,15 +439,22 @@ class GP(Model):
         warnings.warn("Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!", DeprecationWarning)
         return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
 
-    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True):
+    def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True, dimensions=None):
         """
         Predict the magnification factor as
 
         sqrt(det(G))
 
-        for each point N in Xnew
+        for each point N in Xnew.
+
+        :param bool mean: whether to include the mean of the wishart embedding.
+        :param bool covariance: whether to include the covariance of the wishart embedding.
+        :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
         """
         G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
+        if dimensions is None:
+            dimensions = self.get_most_significant_input_dimensions()[:2]
+        G = G[:, dimensions][:,:,dimensions]
         from ..util.linalg import jitchol
         mag = np.empty(Xnew.shape[0])
         for n in range(Xnew.shape[0]):
@@ -525,21 +534,23 @@ class GP(Model):
     def get_most_significant_input_dimensions(self, which_indices=None):
         return self.kern.get_most_significant_input_dimensions(which_indices)
 
-    def optimize(self, optimizer=None, start=None, **kwargs):
+    def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
         """
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
-        :param max_f_eval: maximum number of function evaluations
-        :type max_f_eval: int
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :messages: whether to display during optimisation
         :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string
+        :param bool ipython_notebook: whether to use ipython notebook widgets or not.
+        :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
         """
         self.inference_method.on_optimization_start()
         try:
-            super(GP, self).optimize(optimizer, start, **kwargs)
+            super(GP, self).optimize(optimizer, start, messages, max_iters, ipython_notebook, clear_after_finish, **kwargs)
         except KeyboardInterrupt:
             print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()

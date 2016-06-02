@@ -45,7 +45,7 @@ it gives back an empty default, when defaults are not defined.
 # Data plots:
 data_1d = dict(lw=1.5, marker='x', color='k')
 data_2d = dict(s=35, edgecolors='none', linewidth=0., cmap=cm.get_cmap('hot'), alpha=.5)
-inducing_1d = dict(lw=0, s=500, facecolors=Tango.colorsHex['darkRed'])
+inducing_1d = dict(lw=0, s=500, color=Tango.colorsHex['darkRed'])
 inducing_2d = dict(s=17, edgecolor='k', linewidth=.4, color='white', alpha=.5, marker='^')
 inducing_3d = dict(lw=.3, s=500, color=Tango.colorsHex['darkRed'], edgecolor='k')
 xerrorbar = dict(color='k', fmt='none', elinewidth=.5, alpha=.5)

@@ -315,10 +315,10 @@ class Exponential(Stationary):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-0.5 * r)
+        return self.variance * np.exp(-r)
 
     def dK_dr(self, r):
-        return -0.5*self.K_of_r(r)
+        return -self.K_of_r(r)
 
 #    def sde(self): 
 #        """ 

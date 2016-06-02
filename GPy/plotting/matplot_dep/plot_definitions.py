@@ -106,7 +106,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.plot(X, Y, color=color, zs=Z, label=label, **kwargs)
         return ax.plot(X, Y, color=color, label=label, **kwargs)
 
-    def plot_axis_lines(self, ax, X, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def plot_axis_lines(self, ax, X, color=Tango.colorsHex['darkRed'], label=None, **kwargs):
         from matplotlib import transforms
         from matplotlib.path import Path
         if 'marker' not in kwargs:
@@ -126,14 +126,14 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                bottom=bottom, label=label, color=color,
                **kwargs)
 
-    def xerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def xerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['darkRed'], label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
         #if Z is not None:
         #    return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
 
-    def yerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
+    def yerrorbar(self, ax, X, Y, error, color=Tango.colorsHex['darkRed'], label=None, **kwargs):
         if not('linestyle' in kwargs or 'ls' in kwargs):
             kwargs['ls'] = 'none'
         #if Z is not None:

@@ -340,7 +340,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def gplvm_simulation(optimize=True, verbose=1,
@@ -364,7 +364,7 @@ def gplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 def ssgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
@@ -388,7 +388,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("SSGPLVM Latent Space 1D")
-        m.kern.plot_ARD('SSGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def bgplvm_simulation_missing_data(optimize=True, verbose=1,
@@ -418,7 +418,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def bgplvm_simulation_missing_data_stochastics(optimize=True, verbose=1,
@@ -448,7 +448,7 @@ def bgplvm_simulation_missing_data_stochastics(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 
@@ -469,7 +469,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
         m.optimize(messages=verbose, max_iters=8e3)
     if plot:
         m.X.plot("MRD Latent Space 1D")
-        m.plot_scales("MRD Scales")
+        m.plot_scales()
     return m
 
 def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
@@ -496,7 +496,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
         m.optimize('bfgs', messages=verbose, max_iters=8e3, gtol=.1)
     if plot:
         m.X.plot("MRD Latent Space 1D")
-        m.plot_scales("MRD Scales")
+        m.plot_scales()
     return m
 
 def brendan_faces(optimize=True, verbose=True, plot=True):

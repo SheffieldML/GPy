@@ -218,13 +218,13 @@ class Stationary(Kern):
         else:
             return self._gradients_X_pure(dL_dK, X, X2)
 
-    def gradients_XX(self, dL_dK, X, X2=None, cov=True):
+    def gradients_XX(self, dL_dK, X, X2=None):
         """
         Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
 
-        cov = True: returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors
-        cov = False: returns the diagonal of the covariance matrix [QxQ] of the input dimensionfor each pair
-                    or vectors (computationally more efficient if the full covariance matrix is not needed)
+        returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors, thus
+        the returned array is of shape [NxNxQxQ].
+
         ..math:
             \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
 
@@ -242,45 +242,36 @@ class Stationary(Kern):
         dL_drdr = self.dK2_drdr_via_X(X, X2) #* dL_dK # we perofrm this product later
         tmp2 = dL_drdr*invdist2
         l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
-            
+
         if X2 is None:
             X2 = X
             tmp1 -= np.eye(X.shape[0])*self.variance
         else:
             tmp1[invdist2==0.] -= self.variance
 
-        if cov: # full covariance
-            grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
-            dist = X[:,None,:] - X2[None,:,:]
-            dist = (dist[:,:,:,None]*dist[:,:,None,:])
-            I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
-            grad = (np.einsum('kl,klij->klij',dL_dK*(tmp1*invdist2 - tmp2), dist) /l2[None,None,:,None] - np.einsum('kl,klij->klij',dL_dK*tmp1, I))/l2[None,None,None,:]
-        else: # Diagonal covariance, old code
-            grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
-            #grad = np.empty(X.shape, dtype=np.float64)
-            for q in range(self.input_dim):
-                tmpdist2 = (X[:,[q]]-X2[:,[q]].T) ** 2
-                grad[:, :, q] = np.multiply(dL_dK,(np.multiply((tmp1*invdist2 - tmp2),tmpdist2)/l2[q] - tmp1)/l2[q])
-                #grad[:, :, q] = ((tmp1*invdist2 - tmp2)*tmpdist2/l2[q] - tmp1)/l2[q]
-                #grad[:, :, q] = ((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q]
-                #np.sum(((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q], axis=1, out=grad[:,q])
-                #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
+        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+        dist = X[:,None,:] - X2[None,:,:]
+        dist = (dist[:,:,:,None]*dist[:,:,None,:])
+        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
+        grad = (np.einsum('kl,klij->klij',dL_dK*(tmp1*invdist2 - tmp2), dist) /l2[None,None,:,None] - np.einsum('kl,klij->klij',dL_dK*tmp1, I))/l2[None,None,None,:]
         return grad
 
-    def gradients_XX_diag(self, d2L_dK, X, cov=True):
+    def gradients_XX_diag(self, dL_dK_diag, X):
         """
-        Given the derivative of the objective d2L_dK, compute the second derivative of K wrt X:
+        Given the derivative of the objective dL_dK, compute the second derivative of K wrt X:
 
         ..math:
           \frac{\partial^2 K}{\partial X\partial X}
 
         ..returns:
-            dL2_dXdX: [NxQ], for X [NxQ] if cov is False, [NxQxQ] if cov is True
+            dL2_dXdX: [NxQxQ]
         """
-        if cov:
-            tmp = np.ones(X.shape+(X.shape[1],))
-            return tmp * (d2L_dK * self.variance/self.lengthscale**2)[:,None,None]# np.zeros(X.shape+(X.shape[1],))
-        return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
+        dL_dK_diag = dL_dK_diag.reshape(-1, 1, 1)
+        assert dL_dK_diag.size == X.shape[0], "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+
+        l2 =  np.ones(X.shape[1])*self.lengthscale**2
+        return (dL_dK_diag * self.variance/(l2[:,None]*l2[None,:]))# np.zeros(X.shape+(X.shape[1],))
+        #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)

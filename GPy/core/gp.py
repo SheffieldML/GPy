@@ -355,7 +355,7 @@ class GP(Model):
         :param X: The points at which to get the predictive gradients.
         :type X: np.ndarray (Xnew x self.input_dim)
         :param kern: The kernel to compute the jacobian for.
-        :param boolean full_cov: whether to return the cross-covariance terms between 
+        :param boolean full_cov: whether to return the cross-covariance terms between
         the N* Jacobian vectors
 
         :returns: dmu_dX, dv_dX
@@ -377,9 +377,10 @@ class GP(Model):
         if full_cov:
             dK2_dXdX = kern.gradients_XX(one, Xnew)
         else:
-            dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
-            for i in range(Xnew.shape[0]):
-                dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])     
+            dK2_dXdX = -kern.gradients_XX(one, Xnew).sum(0)
+            #dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
+            #for i in range(Xnew.shape[0]):
+            #    dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])
 
         def compute_cov_inner(wi):
             if full_cov:
@@ -424,7 +425,7 @@ class GP(Model):
             Sigma = var_jac.sum(-1)
         else:
             Sigma = self.output_dim*var_jac
-        
+
         G = 0.
         if mean:
             G += mumuT

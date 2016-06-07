@@ -128,34 +128,25 @@ def _slice_gradients_X_diag(f):
 
 def _slice_gradients_XX(f):
     @wraps(f)
-    def wrap(self, dL_dK, X, X2=None, cov=True):
+    def wrap(self, dL_dK, X, X2=None):
         if X2 is None:
             N, M = X.shape[0], X.shape[0]
             Q1 = Q2 = X.shape[1]
         else:
             N, M = X.shape[0], X2.shape[0]
             Q1, Q2 = X.shape[1], X2.shape[1]
-        if cov: # full covariance
-            #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
-            with _Slice_wrap(self, X, X2, ret_shape=(N, M, Q1, Q2)) as s:
-                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov=cov))
-        else: # diagonal covariance
-            #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
-            with _Slice_wrap(self, X, X2, ret_shape=(N, M, Q1)) as s:
-                ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2, cov=cov))
+        #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
+        with _Slice_wrap(self, X, X2, ret_shape=(N, M, Q1, Q2)) as s:
+            ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
         return ret
     return wrap
 
 def _slice_gradients_XX_diag(f):
     @wraps(f)
-    def wrap(self, dL_dKdiag, X, cov=True):
+    def wrap(self, dL_dKdiag, X):
         N, Q = X.shape
-        if cov: # full covariance
-            with _Slice_wrap(self, X, None, diag=True, ret_shape=(N, Q, Q)) as s:
-                ret = s.handle_return_array(f(self, dL_dKdiag, s.X, cov=cov))
-        else: # diagonal covariance
-            with _Slice_wrap(self, X, None, ret_shape=(N, Q)) as s:
-                ret = s.handle_return_array(f(self, dL_dKdiag, s.X, cov=cov))
+        with _Slice_wrap(self, X, None, diag=True, ret_shape=(N, Q, Q)) as s:
+            ret = s.handle_return_array(f(self, dL_dKdiag, s.X))
         return ret
     return wrap
 

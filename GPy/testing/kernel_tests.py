@@ -104,37 +104,42 @@ class Kern_check_dKdiag_dX(Kern_check_dK_dX):
     def parameters_changed(self):
         self.X.gradient[:] =  self.kernel.gradients_X_diag(self.dL_dK.diagonal(), self.X)
 
-class Kern_check_d2K_dXdX_cov(Kern_check_model):
+class Kern_check_d2K_dXdX(Kern_check_model):
     """This class allows gradient checks for the secondderivative of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
-        self.X = Param('X',X)
+        self.X = Param('X',X.copy())
         self.link_parameter(self.X)
+        self.Xc = X.copy()
 
     def log_likelihood(self):
+        if self.X2 is None:
+            return self.kernel.gradients_X(self.dL_dK, self.X, self.Xc).sum()
         return self.kernel.gradients_X(self.dL_dK, self.X, self.X2).sum()
 
     def parameters_changed(self):
         #if self.kernel.name == 'rbf':
         #    import ipdb;ipdb.set_trace()
-        if self.X2 is None: X2 = self.X
-        else: X2 = self.X2       
-        grads = self.kernel.gradients_XX(self.dL_dK.T, X2, self.X, cov=True)
-        self.X.gradient[:] = grads.sum(-1).sum(0)
+        if self.X2 is None:
+            grads = -self.kernel.gradients_XX(self.dL_dK, self.X).sum(1).sum(1)
+        else:
+            grads = -self.kernel.gradients_XX(self.dL_dK.T, self.X2, self.X).sum(0).sum(1)
+        self.X.gradient[:] = grads
 
-class Kern_check_d2Kdiag_dXdX_cov(Kern_check_model):
+class Kern_check_d2Kdiag_dXdX(Kern_check_model):
     """This class allows gradient checks for the second derivative of a kernel with respect to X. """
-    def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+    def __init__(self, kernel=None, dL_dK=None, X=None):
+        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X)
         self.X = Param('X',X)
         self.link_parameter(self.X)
+        self.Xc = X.copy()
 
     def log_likelihood(self):
-        return np.sum(self.kernel.gradients_X_diag(self.dL_dK.diagonal(),self.X))
+        return np.sum(self.kernel.gradients_X_diag(self.dL_dK.diagonal(), self.X))
 
     def parameters_changed(self):
-        grads = self.kernel.gradients_XX_diag(self.dL_dK.diagonal(), self.X, cov=True)
-        self.X.gradient[:] =  grads.sum(-1)
+        grads = self.kernel.gradients_XX_diag(self.dL_dK.diagonal(), self.X)
+        self.X.gradient[:] = grads.sum(-1)
 
 def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verbose=False, fixed_X_dims=None):
     """
@@ -273,29 +278,9 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         return False
 
     if verbose:
-        print("Checking gradients of dK(X, X) wrt X with full cov in dimensions")
+        print("Checking gradients of dK(X, X2) wrt X2 with full cov in dimensions")
     try:
-        testmodel = Kern_check_d2K_dXdX_cov(kern, X=X, X2=None)
-        if fixed_X_dims is not None:
-            testmodel.X[:,fixed_X_dims].fix()
-        result = testmodel.checkgrad(verbose=verbose)
-    except NotImplementedError:
-        result=True
-        if verbose:
-            print(("gradients_X not implemented for " + kern.name))
-    if result and verbose:
-        print("Check passed.")
-    if not result:
-        print(("Gradient of dK(X, X) wrt X with full cov in dimensions failed for " + kern.name + " covariance function. Gradient values as follows:"))
-        testmodel.checkgrad(verbose=True)
-        assert(result)
-        pass_checks = False
-        return False
-
-    if verbose:
-        print("Checking gradients of dK(X, X2) wrt X with full cov in dimensions")
-    try:
-        testmodel = Kern_check_d2K_dXdX_cov(kern, X=X, X2=X2)
+        testmodel = Kern_check_d2K_dXdX(kern, X=X, X2=X2)
         if fixed_X_dims is not None:
             testmodel.X[:,fixed_X_dims].fix()
         result = testmodel.checkgrad(verbose=verbose)
@@ -313,9 +298,29 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         return False
 
     if verbose:
+        print("Checking gradients of dK(X, X) wrt X with full cov in dimensions")
+    try:
+        testmodel = Kern_check_d2K_dXdX(kern, X=X, X2=None)
+        if fixed_X_dims is not None:
+            testmodel.X[:,fixed_X_dims].fix()
+        result = testmodel.checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print(("gradients_X not implemented for " + kern.name))
+    if result and verbose:
+        print("Check passed.")
+    if not result:
+        print(("Gradient of dK(X, X) wrt X with full cov in dimensions failed for " + kern.name + " covariance function. Gradient values as follows:"))
+        testmodel.checkgrad(verbose=True)
+        assert(result)
+        pass_checks = False
+        return False
+
+    if verbose:
         print("Checking gradients of dKdiag(X, X) wrt X with cov in dimensions")
     try:
-        testmodel = Kern_check_d2Kdiag_dXdX_cov(kern, X=X, X2=None)
+        testmodel = Kern_check_d2Kdiag_dXdX(kern, X=X)
         if fixed_X_dims is not None:
             testmodel.X[:,fixed_X_dims].fix()
         result = testmodel.checkgrad(verbose=verbose)

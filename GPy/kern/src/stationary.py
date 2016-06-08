@@ -273,7 +273,7 @@ class Stationary(Kern):
             dL2_dXdX: [NxQxQ]
         """
         dL_dK_diag = dL_dK_diag.copy().reshape(-1, 1, 1)
-        assert dL_dK_diag.size == X.shape[0], "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+        assert (dL_dK_diag.size == X.shape[0]) or (dL_dK_diag.size == 1), "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
 
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))

@@ -377,7 +377,7 @@ class GP(Model):
         if full_cov:
             dK2_dXdX = kern.gradients_XX(one, Xnew)
         else:
-            dK2_dXdX = kern.gradients_XX(one, Xnew).sum(0)
+            dK2_dXdX = kern.gradients_XX_diag(one, Xnew)
             #dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
             #for i in range(Xnew.shape[0]):
             #    dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])

@@ -266,11 +266,11 @@ class Stationary(Kern):
         ..returns:
             dL2_dXdX: [NxQxQ]
         """
-        dL_dK_diag = dL_dK_diag.reshape(-1, 1, 1)
+        dL_dK_diag = dL_dK_diag.copy().reshape(-1, 1, 1)
         assert dL_dK_diag.size == X.shape[0], "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
 
-        l2 =  np.ones(X.shape[1])*self.lengthscale**2
-        return (dL_dK_diag * self.variance/(l2[:,None]*l2[None,:]))# np.zeros(X.shape+(X.shape[1],))
+        l4 =  np.ones(X.shape[1])*self.lengthscale**2
+        return dL_dK_diag * (np.eye(X.shape[1]) * self.variance/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):

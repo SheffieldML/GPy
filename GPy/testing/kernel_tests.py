@@ -135,10 +135,13 @@ class Kern_check_d2Kdiag_dXdX(Kern_check_model):
         self.Xc = X.copy()
 
     def log_likelihood(self):
-        return np.sum(self.kernel.gradients_X_diag(self.dL_dK.diagonal(), self.X))
+        l = 0.
+        for i in range(self.X.shape[0]):
+            l += self.kernel.gradients_X(self.dL_dK[[i],[i]], self.X[[i]], self.Xc[[i]]).sum()
+        return l
 
     def parameters_changed(self):
-        grads = self.kernel.gradients_XX_diag(self.dL_dK.diagonal(), self.X)
+        grads = -self.kernel.gradients_XX_diag(self.dL_dK.diagonal(), self.X)
         self.X.gradient[:] = grads.sum(-1)
 
 def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verbose=False, fixed_X_dims=None):

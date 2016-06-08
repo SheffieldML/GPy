@@ -25,18 +25,13 @@ class Static(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_XX(self, dL_dK, X, X2=None, cov=True):
+    def gradients_XX(self, dL_dK, X, X2=None):
         if X2 is None:
             X2 = X
-        if cov:
-            return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
-        else:
-            return np.zeros((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
+        return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
+
     def gradients_XX_diag(self, dL_dKdiag, X, cov=False):
-        if cov:
-            return np.zeros((X.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
-        else:
-            return np.zeros(X.shape, dtype=np.float64)
+        return np.zeros((X.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
@@ -195,7 +190,7 @@ class Fixed(Static):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = np.einsum('i,i', dL_dKdiag, np.diagonal(self.fixed_K))
-    
+
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
 
@@ -259,5 +254,4 @@ class Precomputed(Fixed):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self._index(X, None))
-        
-        
+

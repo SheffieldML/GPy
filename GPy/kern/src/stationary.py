@@ -86,6 +86,11 @@ class Stationary(Kern):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
 
     @Cache_this(limit=3, ignore_args=())
+    def dK2_drdr_diag(self):
+        "Second order derivative of K in r_{i,i}. The diagonal entries are always zero, so we do not give it here."
+        raise NotImplementedError("implement second derivative of covariance wrt r_diag to use this method")
+
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -253,7 +258,8 @@ class Stationary(Kern):
         dist = X[:,None,:] - X2[None,:,:]
         dist = (dist[:,:,:,None]*dist[:,:,None,:])
         I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
-        grad = (np.einsum('kl,klij->klij',dL_dK*(tmp1*invdist2 - tmp2), dist) /l2[None,None,:,None] - np.einsum('kl,klij->klij',dL_dK*tmp1, I))/l2[None,None,None,:]
+        grad = (((dL_dK*(tmp1*invdist2 - tmp2))[:,:,None,None] * dist)/l2[None,None,:,None]
+                - (dL_dK*tmp1)[:,:,None,None] * I)/l2[None,None,None,:]
         return grad
 
     def gradients_XX_diag(self, dL_dK_diag, X):
@@ -270,7 +276,7 @@ class Stationary(Kern):
         assert dL_dK_diag.size == X.shape[0], "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
 
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
-        return dL_dK_diag * (np.eye(X.shape[1]) * self.variance/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
+        return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):

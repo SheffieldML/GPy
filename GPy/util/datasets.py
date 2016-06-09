@@ -214,10 +214,10 @@ def download_data(dataset_name=None):
 
     zip_urls = (dr['urls'], dr['files'])
 
-    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    if 'save_names' in dr: zip_urls += (dr['save_names'], )
     else: zip_urls += ([],)
 
-    if dr.has_key('suffices'): zip_urls += (dr['suffices'], )
+    if 'suffices' in dr: zip_urls += (dr['suffices'], )
     else: zip_urls += ([],)
 
     for url, files, save_names, suffices in itertools.izip_longest(*zip_urls, fillvalue=[]):
@@ -361,7 +361,7 @@ def football_data(season='1314', data_set='football_data'):
         return league_dict[string]
 
     def football2num(string):
-        if football_dict.has_key(string):
+        if string in football_dict:
             return football_dict[string]
         else:
             football_dict[string] = len(football_dict)+1

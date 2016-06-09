@@ -86,6 +86,11 @@ class Stationary(Kern):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
 
     @Cache_this(limit=3, ignore_args=())
+    def dK2_drdr_diag(self):
+        "Second order derivative of K in r_{i,i}. The diagonal entries are always zero, so we do not give it here."
+        raise NotImplementedError("implement second derivative of covariance wrt r_diag to use this method")
+
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """
         Kernel function applied on inputs X and X2.
@@ -222,54 +227,57 @@ class Stationary(Kern):
         """
         Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
 
+        returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors, thus
+        the returned array is of shape [NxNxQxQ].
+
         ..math:
-          \frac{\partial^2 K}{\partial X\partial X2}
+            \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
 
         ..returns:
-            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
-            Thus, we return the second derivative in X2.
+            dL2_dXdX2:  [NxMxQxQ] in the cov=True case, or [NxMxQ] in the cov=False case,
+                        for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
+                        Thus, we return the second derivative in X2.
         """
-        # The off diagonals in Q are always zero, this should also be true for the Linear kernel...
         # According to multivariable chain rule, we can chain the second derivative through r:
         # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
         invdist = self._inv_dist(X, X2)
         invdist2 = invdist**2
-
-        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
+        dL_dr = self.dK_dr_via_X(X, X2) #* dL_dK # we perform this product later
         tmp1 = dL_dr * invdist
-
-        dL_drdr = self.dK2_drdr_via_X(X, X2) * dL_dK
-        tmp2 = dL_drdr * invdist2
-
-        l2 = np.ones(X.shape[1]) * self.lengthscale**2
+        dL_drdr = self.dK2_drdr_via_X(X, X2) #* dL_dK # we perofrm this product later
+        tmp2 = dL_drdr*invdist2
+        l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
 
         if X2 is None:
             X2 = X
             tmp1 -= np.eye(X.shape[0])*self.variance
         else:
-            tmp1[X==X2.T] -= self.variance
+            tmp1[invdist2==0.] -= self.variance
 
-        grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
-        #grad = np.empty(X.shape, dtype=np.float64)
-        for q in range(self.input_dim):
-            tmpdist2 = (X[:,[q]]-X2[:,[q]].T) ** 2
-            grad[:, :, q] = ((tmp1*invdist2 - tmp2)*tmpdist2/l2[q] - tmp1)/l2[q]
-            #grad[:, :, q] = ((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q]
-            #np.sum(((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q], axis=1, out=grad[:,q])
-            #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
+        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+        dist = X[:,None,:] - X2[None,:,:]
+        dist = (dist[:,:,:,None]*dist[:,:,None,:])
+        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
+        grad = (((dL_dK*(tmp1*invdist2 - tmp2))[:,:,None,None] * dist)/l2[None,None,:,None]
+                - (dL_dK*tmp1)[:,:,None,None] * I)/l2[None,None,None,:]
         return grad
 
-    def gradients_XX_diag(self, dL_dK, X):
+    def gradients_XX_diag(self, dL_dK_diag, X):
         """
-        Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
+        Given the derivative of the objective dL_dK, compute the second derivative of K wrt X:
 
         ..math:
-          \frac{\partial^2 K}{\partial X\partial X2}
+          \frac{\partial^2 K}{\partial X\partial X}
 
         ..returns:
-            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ]
+            dL2_dXdX: [NxQxQ]
         """
-        return np.ones(X.shape) * self.variance/self.lengthscale**2
+        dL_dK_diag = dL_dK_diag.copy().reshape(-1, 1, 1)
+        assert (dL_dK_diag.size == X.shape[0]) or (dL_dK_diag.size == 1), "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+
+        l4 =  np.ones(X.shape[1])*self.lengthscale**2
+        return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
+        #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
@@ -320,18 +328,18 @@ class Exponential(Stationary):
     def dK_dr(self, r):
         return -self.K_of_r(r)
 
-#    def sde(self): 
-#        """ 
-#        Return the state space representation of the covariance. 
-#        """ 
-#        F  = np.array([[-1/self.lengthscale]]) 
-#        L  = np.array([[1]]) 
-#        Qc = np.array([[2*self.variance/self.lengthscale]]) 
-#        H = np.array([[1]]) 
-#        Pinf = np.array([[self.variance]]) 
-#        # TODO: return the derivatives as well 
-#        
-#        return (F, L, Qc, H, Pinf)  
+#    def sde(self):
+#        """
+#        Return the state space representation of the covariance.
+#        """
+#        F  = np.array([[-1/self.lengthscale]])
+#        L  = np.array([[1]])
+#        Qc = np.array([[2*self.variance/self.lengthscale]])
+#        H = np.array([[1]])
+#        Pinf = np.array([[self.variance]])
+#        # TODO: return the derivatives as well
+#
+#        return (F, L, Qc, H, Pinf)
 
 
 
@@ -400,41 +408,41 @@ class Matern32(Stationary):
         F1lower = np.array([f(lower) for f in F1])[:, None]
         return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
 
-    def sde(self): 
-        """ 
-        Return the state space representation of the covariance. 
-        """ 
+    def sde(self):
+        """
+        Return the state space representation of the covariance.
+        """
         variance = float(self.variance.values)
         lengthscale = float(self.lengthscale.values)
-        foo  = np.sqrt(3.)/lengthscale 
-        F    = np.array([[0, 1], [-foo**2, -2*foo]]) 
-        L    = np.array([[0], [1]]) 
-        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]]) 
-        H    = np.array([[1, 0]]) 
-        Pinf = np.array([[variance, 0],  
-        [0,              3.*variance/(lengthscale**2)]]) 
-        # Allocate space for the derivatives 
+        foo  = np.sqrt(3.)/lengthscale
+        F    = np.array([[0, 1], [-foo**2, -2*foo]])
+        L    = np.array([[0], [1]])
+        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]])
+        H    = np.array([[1, 0]])
+        Pinf = np.array([[variance, 0],
+        [0,              3.*variance/(lengthscale**2)]])
+        # Allocate space for the derivatives
         dF    = np.empty([F.shape[0],F.shape[1],2])
-        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2]) 
-        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2]) 
-        # The partial derivatives 
-        dFvariance       = np.zeros([2,2]) 
-        dFlengthscale    = np.array([[0,0], 
-        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]]) 
-        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3]) 
-        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance]) 
-        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]]) 
-        dPinflengthscale = np.array([[0,0], 
-        [0,-6*variance/lengthscale**3]]) 
-        # Combine the derivatives 
-        dF[:,:,0]    = dFvariance 
-        dF[:,:,1]    = dFlengthscale 
-        dQc[:,:,0]   = dQcvariance 
-        dQc[:,:,1]   = dQclengthscale 
-        dPinf[:,:,0] = dPinfvariance 
-        dPinf[:,:,1] = dPinflengthscale 
+        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2])
+        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2])
+        # The partial derivatives
+        dFvariance       = np.zeros([2,2])
+        dFlengthscale    = np.array([[0,0],
+        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]])
+        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3])
+        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance])
+        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]])
+        dPinflengthscale = np.array([[0,0],
+        [0,-6*variance/lengthscale**3]])
+        # Combine the derivatives
+        dF[:,:,0]    = dFvariance
+        dF[:,:,1]    = dFlengthscale
+        dQc[:,:,0]   = dQcvariance
+        dQc[:,:,1]   = dQclengthscale
+        dPinf[:,:,0] = dPinfvariance
+        dPinf[:,:,1] = dPinflengthscale
 
-        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)  
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)
 
 class Matern52(Stationary):
     """

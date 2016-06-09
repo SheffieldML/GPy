@@ -39,6 +39,8 @@ class RBF(Stationary):
     def dK2_drdr(self, r):
         return (r**2-1)*self.K_of_r(r)
 
+    def dK2_drdr_diag(self):
+        return -self.variance # as the diagonal of r is always filled with zeros
     def __getstate__(self):
         dc = super(RBF, self).__getstate__()
         if self.useGPU:

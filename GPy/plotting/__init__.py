@@ -50,6 +50,8 @@ def inject_plotting():
         GP.plot_samples = gpy_plot.gp_plots.plot_samples
         GP.plot = gpy_plot.gp_plots.plot
         GP.plot_f = gpy_plot.gp_plots.plot_f
+        GP.plot_latent = gpy_plot.gp_plots.plot_f
+        GP.plot_noiseless = gpy_plot.gp_plots.plot_f
         GP.plot_magnification = gpy_plot.latent_plots.plot_magnification
 
         from ..models import StateSpace
@@ -62,7 +64,9 @@ def inject_plotting():
         StateSpace.plot_samples = gpy_plot.gp_plots.plot_samples
         StateSpace.plot = gpy_plot.gp_plots.plot
         StateSpace.plot_f = gpy_plot.gp_plots.plot_f
-
+        StateSpace.plot_latent = gpy_plot.gp_plots.plot_f
+        StateSpace.plot_noiseless = gpy_plot.gp_plots.plot_f
+        
         from ..core import SparseGP
         SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
 

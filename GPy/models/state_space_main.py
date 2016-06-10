@@ -13,7 +13,7 @@ import scipy as sp
 import scipy.linalg as linalg
 
 try:
-    import state_space_setup
+    from . import state_space_setup
     setup_available = True
 except ImportError as e:
     setup_available = False

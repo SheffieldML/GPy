@@ -50,7 +50,7 @@ def common_subarrays(X, axis=0):
     cnt = count()
     def accumulate(x, s, c):
         t = tuple(x)
-        col = c.next()
+        col = next(c)
         iadd(s[t], [col])
         return None
     if axis == 0: [accumulate(x, subarrays, cnt) for x in X]

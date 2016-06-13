@@ -1,17 +1,23 @@
 # Written by Mike Smith michaeltsmith.org.uk
 
+from __future__ import division
+import math
 import numpy as np
 from .kern import Kern
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
-import math
 
-class Integral_Limits(Kern): #todo do I need to inherit from Stationary
+
+class Integral_Limits(Kern): 
     """
-    Integral kernel, can include limits on each integral value.
+    Integral kernel. This kernel allows 1d histogram or binned data to be modelled.
+    The outputs are the counts in each bin. The inputs (on two dimensions) are the start and end points of each bin.
+    The kernel's predictions are the latent function which might have generated those binned results.
     """
 
     def __init__(self, input_dim, variances=None, lengthscale=None, ARD=False, active_dims=None, name='integral'):
+        """
+        """
         super(Integral_Limits, self).__init__(input_dim, active_dims, name)
 
         if lengthscale is None:
@@ -39,10 +45,8 @@ class Integral_Limits(Kern): #todo do I need to inherit from Stationary
                     dK_dv[i,j] = self.k_xx(x[0],x2[0],x[1],x2[1],self.lengthscale[0])  #the gradient wrt the variance is k_xx.
             self.lengthscale.gradient = np.sum(dK_dl * dL_dK)
             self.variances.gradient = np.sum(dK_dv * dL_dK)
-            #print "V%0.5f" % self.variances.gradient
-            #print "L%0.5f" % self.lengthscale.gradient
         else:     #we're finding dK_xf/Dtheta
-            print("NEED TO HANDLE TODO!")
+            raise NotImplementedError("Currently this function only handles finding the gradient of a single vector of inputs (X) not a pair of vectors (X and X2)")
 
     #useful little function to help calculate the covariances.
     def g(self,z):
@@ -71,6 +75,22 @@ class Integral_Limits(Kern): #todo do I need to inherit from Stationary
         return 0.5 * np.sqrt(math.pi) * l * (math.erf((t-tprime)/l) + math.erf((tprime-s)/l))
 
     def K(self, X, X2=None):
+        """Note: We have a latent function and an output function. We want to be able to find:
+          - the covariance between values of the output function
+          - the covariance between values of the latent function
+          - the "cross covariance" between values of the output function and the latent function
+        This method is used by GPy to either get the covariance between the outputs (K_xx) or
+        is used to get the cross covariance (between the latent function and the outputs (K_xf).
+        We take advantage of the places where this function is used:
+         - if X2 is none, then we know that the items being compared (to get the covariance for)
+         are going to be both from the OUTPUT FUNCTION.
+         - if X2 is not none, then we know that the items being compared are from two different
+         sets (the OUTPUT FUNCTION and the LATENT FUNCTION).
+        
+        If we want the covariance between values of the LATENT FUNCTION, we take advantage of
+        the fact that we only need that when we do prediction, and this only calls Kdiag (not K).
+        So the covariance between LATENT FUNCTIONS is available from Kdiag.        
+        """
         if X2 is None:
             K_xx = np.zeros([X.shape[0],X.shape[0]])
             for i,x in enumerate(X):
@@ -85,8 +105,9 @@ class Integral_Limits(Kern): #todo do I need to inherit from Stationary
             return K_xf * self.variances[0]
 
     def Kdiag(self, X):
-        """I've used the fact that we call this method for K_ff when finding the covariance as a hack so
-        I know if I should return K_ff or K_xx. In this case we're returning K_ff!!
+        """I've used the fact that we call this method during prediction (instead of K). When we
+        do prediction we want to know the covariance between LATENT FUNCTIONS (K_ff) (as that's probably
+        what the user wants).
         $K_{ff}^{post} = K_{ff} - K_{fx} K_{xx}^{-1} K_{xf}$"""
         K_ff = np.zeros(X.shape[0])
         for i,x in enumerate(X):

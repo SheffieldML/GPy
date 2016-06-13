@@ -111,8 +111,8 @@ class Symbolic_core():
                 #     rows = func['function'].shape[0]
                 #     cols = func['function'].shape[1]
                 #     self.expressions[key]['derivative'] = sym.zeros(rows, cols)
-                #     for i in xrange(rows):
-                #         for j in xrange(cols):
+                #     for i in range(rows):
+                #         for j in range(cols):
                 #             self.expressions[key]['derivative'][i, j] = extract_derivative(func['function'][i, j], derivative_arguments)
                 # else:
                     self.expressions[key]['derivative'] = extract_derivative(func['function'], derivative_arguments)
@@ -123,7 +123,7 @@ class Symbolic_core():
             val = 1.0
             # TODO: improve approach for initializing parameters.
             if parameters is not None:
-                if parameters.has_key(theta.name):
+                if theta.name in parameters:
                     val = parameters[theta.name]
             # Add parameter.
             
@@ -176,7 +176,7 @@ class Symbolic_core():
         return gradient
         
     def eval_gradients_X(self, function, partial, **kwargs):
-        if kwargs.has_key('X'):
+        if 'X' in kwargs:
             gradients_X = np.zeros_like(kwargs['X'])
         self.eval_update_cache(**kwargs)
         for i, theta in enumerate(self.variables['X']):
@@ -405,7 +405,7 @@ class Symbolic_core():
                 if var_name == var.name:
                     expr = expr.subs(var, sub)
                     break
-        for m, r in function_substitutes.iteritems():
+        for m, r in function_substitutes.items():
             expr = expr.replace(m, r)#normcdfln, lambda arg : sym.log(normcdf(arg)))
         return expr.simplify()
 
@@ -417,4 +417,4 @@ class Symbolic_core():
             else:
                 return x[0]
             
-        return sorted(var_dict.iteritems(), key=sort_key, reverse=reverse)
+        return sorted(var_dict.items(), key=sort_key, reverse=reverse)

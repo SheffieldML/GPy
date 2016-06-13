@@ -24,9 +24,6 @@ from .src.ODE_st import ODE_st
 from .src.ODE_t import ODE_t
 from .src.poly import Poly
 from .src.eq_ode2 import EQ_ODE2
-from .src.integral import Integral
-from .src.integral_limits import Integral_Limits
-from .src.multidimensional_integral_limits import Multidimensional_Integral_Limits
 from .src.eq_ode1 import EQ_ODE1
 from .src.trunclinear import TruncLinear,TruncLinear_inf
 from .src.splitKern import SplitKern,DEtime

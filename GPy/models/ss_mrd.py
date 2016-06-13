@@ -25,7 +25,7 @@ class SSMRD(Model):
         self.X = NormalPosterior(means=X, variances=X_variance)
         
         if kernels is None:
-            kernels = [RBF(input_dim, lengthscale=1./fracs, ARD=True) for i in xrange(len(Ylist))]
+            kernels = [RBF(input_dim, lengthscale=1./fracs, ARD=True) for i in range(len(Ylist))]
         if Zs is None:
             Zs = [None]* len(Ylist)
         if likelihoods is None:
@@ -34,9 +34,9 @@ class SSMRD(Model):
             inference_methods = [None]* len(Ylist)
         
         if IBP:
-            self.var_priors = [IBPPrior_SSMRD(len(Ylist),input_dim,alpha=alpha) for i in xrange(len(Ylist))]
+            self.var_priors = [IBPPrior_SSMRD(len(Ylist),input_dim,alpha=alpha) for i in range(len(Ylist))]
         else:
-            self.var_priors = [SpikeAndSlabPrior_SSMRD(nModels=len(Ylist),pi=pi,learnPi=False, group_spike=group_spike) for i in xrange(len(Ylist))]
+            self.var_priors = [SpikeAndSlabPrior_SSMRD(nModels=len(Ylist),pi=pi,learnPi=False, group_spike=group_spike) for i in range(len(Ylist))]
         self.models = [SSGPLVM(y, input_dim, X=X.copy(), X_variance=X_variance.copy(), Gamma=Gammas[i], num_inducing=num_inducing,Z=Zs[i], learnPi=False, group_spike=group_spike,
                                kernel=kernels[i],inference_method=inference_methods[i],likelihood=likelihoods[i], variational_prior=self.var_priors[i], IBP=IBP, tau=None if taus is None else taus[i],
                                name='model_'+str(i), mpi_comm=mpi_comm, sharedX=True) for i,y in enumerate(Ylist)]
@@ -73,7 +73,7 @@ class SSMRD(Model):
         # Divide latent dimensions
         idx = np.empty((input_dim,),dtype=np.int)
         residue = (input_dim)%(len(Ylist))
-        for i in xrange(len(Ylist)):
+        for i in range(len(Ylist)):
             if i < residue:
                 size = input_dim/len(Ylist)+1
                 idx[i*size:(i+1)*size] = i
@@ -86,7 +86,7 @@ class SSMRD(Model):
                 X = np.empty((Ylist[0].shape[0],input_dim))
                 fracs = np.empty((input_dim,))
                 from ..util.initialization import initialize_latent
-                for i in xrange(len(Ylist)):
+                for i in range(len(Ylist)):
                     Y = Ylist[i]
                     dim = (idx==i).sum()
                     if dim>0:

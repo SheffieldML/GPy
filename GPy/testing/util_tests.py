@@ -96,3 +96,14 @@ class TestDebug(unittest.TestCase):
         self.assertTrue((2, np.median(X.mean.values[:,2])) in fixed)
         self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
 
+    def test_subarray(self):
+        import GPy
+        X = np.zeros((3,6), dtype=bool)
+        X[[1,1,1],[0,4,5]] = 1
+        X[1:,[2,3]] = 1
+        d = GPy.util.subarray_and_sorting.common_subarrays(X,axis=1)
+        self.assertTrue(len(d) == 3)
+        X[:, d[tuple(X[:,0])]]
+        self.assertTrue(d[tuple(X[:,4])] == d[tuple(X[:,0])] == [0, 4, 5])
+        self.assertTrue(d[tuple(X[:,1])] == [1])
+

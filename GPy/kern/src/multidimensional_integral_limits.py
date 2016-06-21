@@ -1,5 +1,6 @@
 # Written by Mike Smith michaeltsmith.org.uk
 
+from __future__ import division
 import numpy as np
 from .kern import Kern
 from ...core.parameterization import Param
@@ -8,7 +9,11 @@ import math
 
 class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from Stationary
     """
-    Integral kernel, can include limits on each integral value.
+    Integral kernel, can include limits on each integral value. This kernel allows an n-dimensional
+    histogram or binned data to be modelled. The outputs are the counts in each bin. The inputs
+    are the start and end points of each bin: Pairs of inputs act as the limits on each bin. So
+    inputs 4 and 5 provide the start and end values of each bin in the 3rd dimension.
+    The kernel's predictions are the latent function which might have generated those binned results.    
     """
 
     def __init__(self, input_dim, variances=None, lengthscale=None, ARD=False, active_dims=None, name='integral'):
@@ -30,7 +35,6 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
         return l * ( self.h((t-sprime)/l) - self.h((t - tprime)/l) + self.h((tprime-s)/l) - self.h((s-sprime)/l))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        #print self.variances
         if X2 is None:  #we're finding dK_xx/dTheta
             dK_dl_term = np.zeros([X.shape[0],X.shape[0],self.lengthscale.shape[0]])
             k_term = np.zeros([X.shape[0],X.shape[0],self.lengthscale.shape[0]])
@@ -47,14 +51,12 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
                 for jl, l in enumerate(self.lengthscale):
                     if jl!=il:
                         dK_dl *= k_term[:,:,jl]
-                        #dK_dl = np.dot(dK_dl,k_term[:,:,il])
-                        #print k_term[:,:,il]
                 self.lengthscale.gradient[il] = np.sum(dK_dl * dL_dK)
             dK_dv = self.calc_K_xx_wo_variance(X) #the gradient wrt the variance is k_xx.
             self.variances.gradient = np.sum(dK_dv * dL_dK)
         else:     #we're finding dK_xf/Dtheta
-            print("NEED TO HANDLE TODO!")
-        #print self.variances[0],self.lengthscale[0],self.lengthscale[1] #np.sum(dK_dv*dL_dK)
+            raise NotImplementedError("Currently this function only handles finding the gradient of a single vector of inputs (X) not a pair of vectors (X and X2)")
+
 
 
     #useful little function to help calculate the covariances.
@@ -94,12 +96,10 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
         return K_xx
 
     def K(self, X, X2=None):
-        if X2 is None:
-            #print "X x X"
+        if X2 is None: #X vs X
             K_xx = self.calc_K_xx_wo_variance(X)
             return K_xx * self.variances[0]
-        else:
-            #print "X x X2"
+        else: #X vs X2
             K_xf = np.ones([X.shape[0],X2.shape[0]])
             for i,x in enumerate(X):
                 for j,x2 in enumerate(X2):

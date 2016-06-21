@@ -291,12 +291,12 @@ class SSGPLVM(SparseGP_MPI):
         Xs[b>self.X.gamma.values] = 0
         
         invcov = (Xs[:,:,:,None]*Xs[:,:,None,:]).sum(1)/noise_var+np.eye(Q)
-        cov = np.array([pdinv(invcov[s_idx])[0] for s_idx in xrange(invcov.shape[0])])
+        cov = np.array([pdinv(invcov[s_idx])[0] for s_idx in range(invcov.shape[0])])
         Ws = np.empty((nSamples, Q, D))
         tmp = (np.transpose(Xs, (0,2,1)).reshape(nSamples*Q,N).dot(self.Y)).reshape(nSamples,Q,D)
         mean = (cov[:,:,:,None]*tmp[:,None,:,:]).sum(2)/noise_var
         zeros = np.zeros((Q,))
-        for s_idx in xrange(Xs.shape[0]):
+        for s_idx in range(Xs.shape[0]):
             Ws[s_idx] = (np.random.multivariate_normal(mean=zeros,cov=cov[s_idx],size=(D,))).T+mean[s_idx]
         
         if raw_samples:

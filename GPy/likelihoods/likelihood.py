@@ -678,7 +678,7 @@ class Likelihood(Parameterized):
         burnin_cache = np.zeros(par_chains)
         burnin_cache[:] = starting_loc.flatten()
         burning_in = True
-        for i in xrange(burn_in+num_samples):
+        for i in range(burn_in+num_samples):
             next_ind = i-burn_in
             if burning_in:
                 old_y = burnin_cache

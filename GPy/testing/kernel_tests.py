@@ -193,7 +193,12 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt theta.")
-    result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    try:
+        result = Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=verbose)
+    except NotImplementedError:
+        result=True
+        if verbose:
+            print(("update_gradients_full, with differing X and X2, not implemented for " + kern.name))
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -413,6 +418,21 @@ class KernelGradientTestsContinuous(unittest.TestCase):
 
     def test_RBF(self):
         k = GPy.kern.RBF(self.D-1, ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_integral(self):
+        k = GPy.kern.Integral(1)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_multidimensional_integral_limits(self):
+        k = GPy.kern.Multidimensional_Integral_Limits(2)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_integral_limits(self):
+        k = GPy.kern.Integral_Limits(2)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 

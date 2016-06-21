@@ -773,7 +773,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
     def compute_cls(self, x):
         cls = {}
         # Appending each data point to its proper class
-        for j in xrange(self.datanum):
+        for j in range(self.datanum):
             class_label = self.get_class_label(self.lbl[j])
             if class_label not in cls:
                 cls[class_label] = []
@@ -792,7 +792,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
     # Adding data points as tuple to the dictionary so that we can access indices
     def compute_indices(self, x):
         data_idx = {}
-        for j in xrange(self.datanum):
+        for j in range(self.datanum):
             class_label = self.get_class_label(self.lbl[j])
             if class_label not in data_idx:
                 data_idx[class_label] = []
@@ -811,7 +811,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
             else:
                 lst_idx = []
             # Here we put indices of each class in to the list called lst_idx_all
-            for m in xrange(len(data_idx[i])):
+            for m in range(len(data_idx[i])):
                 lst_idx.append(data_idx[i][m][0])
             lst_idx_all.append(lst_idx)
         return lst_idx_all
@@ -847,7 +847,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
             # pdb.set_trace()
             # Calculating Bi
             B_i[i] = (M_i[i] - M_0).reshape(1, self.dim)
-        for k in xrange(self.datanum):
+        for k in range(self.datanum):
             for i in data_idx:
                 N_i = float(len(data_idx[i]))
                 if k in lst_idx_all[i]:

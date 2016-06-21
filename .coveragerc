@@ -2,7 +2,7 @@
 [run]
 branch = True
 source = GPy
-omit = ./GPy/testing/*.py, travis_tests.py, setup.py, ./GPy/__version__.py
+omit = ./GPy/examples/*.py, ./GPy/testing/*.py, travis_tests.py, setup.py, ./GPy/__version__.py
 
 [report]
 # Regexes for lines to exclude from consideration

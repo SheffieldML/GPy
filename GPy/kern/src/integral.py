@@ -1,5 +1,6 @@
 # Written by Mike Smith michaeltsmith.org.uk
 
+from __future__ import division
 import numpy as np
 from .kern import Kern
 from ...core.parameterization import Param
@@ -24,7 +25,7 @@ class Integral(Kern): #todo do I need to inherit from Stationary
         self.link_parameters(self.variances, self.lengthscale) #this just takes a list of parameters we need to optimise.
 
     def h(self, z):
-        return 0.5 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))
+        return 0.5 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))        
 
     def dk_dl(self, t, tprime, l): #derivative of the kernel wrt lengthscale
         return l * ( self.h(t/l) - self.h((t - tprime)/l) + self.h(tprime/l) - 1)
@@ -39,10 +40,8 @@ class Integral(Kern): #todo do I need to inherit from Stationary
                     dK_dv[i,j] = self.k_xx(x[0],x2[0],self.lengthscale[0])  #the gradient wrt the variance is k_xx.
             self.lengthscale.gradient = np.sum(dK_dl * dL_dK)
             self.variances.gradient = np.sum(dK_dv * dL_dK)
-            #print "V%0.5f" % self.variances.gradient
-            #print "L%0.5f" % self.lengthscale.gradient
         else:     #we're finding dK_xf/Dtheta
-            print("NEED TO HANDLE TODO!")
+            raise NotImplementedError("Currently this function only handles finding the gradient of a single vector of inputs (X) not a pair of vectors (X and X2)")
 
     #useful little function to help calculate the covariances.
     def g(self,z):
@@ -71,7 +70,6 @@ class Integral(Kern): #todo do I need to inherit from Stationary
             for i,x in enumerate(X):
                 for j,x2 in enumerate(X2):
                     K_xf[i,j] = self.k_xf(x[0],x2[0],self.lengthscale[0])
-            #print self.variances[0]
             return K_xf * self.variances[0]
 
     def Kdiag(self, X):

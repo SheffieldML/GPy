@@ -63,6 +63,5 @@ deploy:
   on:
     tags: true
     branch: deploy
-  #condition: "$TRAVIS_OS_NAME" == "osx" || ( "$TRAVIS_OS_NAME" == "linux" && "$PYTHON_VERSION" == "2.7" )
   distributions: $DIST
   skip_cleanup: true

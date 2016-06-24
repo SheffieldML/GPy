@@ -426,8 +426,10 @@ def test_gplvm():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')  # always print
         m = GPLVM(Y, Q, initialize=False)
-    m.param_array[:] = pars['gplvm_p']
+    m.update_model(False)
     m.initialize_parameter()
+    m[:] = pars['gplvm_p']
+    m.update_model(True)
 
     #m.optimize(messages=0)
     np.random.seed(111)
@@ -472,8 +474,10 @@ def test_bayesian_gplvm():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')  # always print
         m = BayesianGPLVM(Y, Q, initialize=False)
-    m.param_array[:] = pars['bgplvm_p']
+    m.update_model(False)
     m.initialize_parameter()
+    m[:] = pars['bgplvm_p']
+    m.update_model(True)
 
     #m.optimize(messages=0)
     np.random.seed(111)

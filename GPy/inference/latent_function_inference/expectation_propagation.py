@@ -40,6 +40,14 @@ class EPBase(object):
         # TODO: update approximation in the end as well? Maybe even with a switch?
         pass
 
+    def __setstate__(self, state):
+        super(EPBase, self).__setstate__(state[0])
+        self.epsilon, self.eta, self.delta = state[1]
+        self.reset()
+
+    def __getstate__(self):
+        return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
+
 class EP(EPBase, ExactGaussianInference):
     def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, precision=None, K=None):
         if self.always_reset:
@@ -51,7 +59,7 @@ class EP(EPBase, ExactGaussianInference):
         if K is None:
             K = kern.K(X)
 
-        if self._ep_approximation is None:
+        if getattr(self, '_ep_approximation', None) is None:
             #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         else:
@@ -159,7 +167,7 @@ class EPDTC(EPBase, VarDTC):
         else:
             Kmn = psi1.T
 
-        if self._ep_approximation is None:
+        if getattr(self, '_ep_approximation', None) is None:
             mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation = self.expectation_propagation(Kmm, Kmn, Y, likelihood, Y_metadata)
         else:
             mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation

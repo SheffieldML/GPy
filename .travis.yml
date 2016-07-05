@@ -32,6 +32,7 @@ install:
 - pip install pypandoc
 - pip install git+git://github.com/BRML/climin.git
 - pip install autograd
+- pip install nose-show-skipped
 - python setup.py develop
 
 script:
@@ -47,9 +48,11 @@ before_deploy:
   - make html
   - cd ../
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
-      then export DIST='sdist';
+    then
+      export DIST='sdist';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
-      then export DIST='bdist_wheel';
+    then
+      export DIST='bdist_wheel';
     fi;
 
 deploy:

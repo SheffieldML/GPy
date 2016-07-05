@@ -34,7 +34,7 @@ def plot(parameterized, fignum=None, ax=None, colors=None, figsize=(12, 6)):
         else:
             raise ValueError("Need one ax per latent dimension input_dim")
         bg_lines.append(a.plot(means, c='k', alpha=.3))
-        lines.extend(a.plot(x, means.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
+        lines.extend(a.plot(x, means.T[i], c=next(colors), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
         fills.append(a.fill_between(x,
                         means.T[i] - 2 * np.sqrt(variances.T[i]),
                         means.T[i] + 2 * np.sqrt(variances.T[i]),
@@ -86,7 +86,7 @@ def plot_SpikeSlab(parameterized, fignum=None, ax=None, colors=None, side_by_sid
         # mean and variance plot
         a = fig.add_subplot(*sub1)
         a.plot(means, c='k', alpha=.3)
-        plots.extend(a.plot(x, means.T[i], c=colors.next(), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
+        plots.extend(a.plot(x, means.T[i], c=next(colors), label=r"$\mathbf{{X_{{{}}}}}$".format(i)))
         a.fill_between(x,
                         means.T[i] - 2 * np.sqrt(variances.T[i]),
                         means.T[i] + 2 * np.sqrt(variances.T[i]),

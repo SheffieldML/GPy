@@ -17,7 +17,7 @@ class GPCoregionalizedRegression(GP):
     :type X_list: list of numpy arrays
     :param Y_list: list of observed values related to the different noise models
     :type Y_list: list of numpy arrays
-    :param kernel: a GPy kernel, defaults to RBF ** Coregionalized
+    :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
     :type kernel: None | GPy.kernel defaults
     :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
     :type likelihoods_list: None | a list GPy.likelihoods

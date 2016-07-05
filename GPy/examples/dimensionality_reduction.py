@@ -184,7 +184,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1, :],  # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
         plt.close(fig)
     return m
 
@@ -210,7 +210,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(m.X.mean.values[0:1, :],  # @UnusedVariable
             m, data_show, latent_axes=latent_axes, sense_axes=sense_axes, labels=m.data_labels)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
         plt.close(fig)
     return m
 
@@ -242,7 +242,7 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
-        for S, lab in itertools.izip(slist, labls):
+        for S, lab in zip(slist, labls):
             ax.plot(S, label=lab)
         ax.legend()
         for i, Y in enumerate(Ylist):
@@ -288,7 +288,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
-        for S, lab in itertools.izip(slist, labls):
+        for S, lab in zip(slist, labls):
             ax.plot(S, label=lab)
         ax.legend()
         for i, Y in enumerate(Ylist):
@@ -340,7 +340,7 @@ def bgplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def gplvm_simulation(optimize=True, verbose=1,
@@ -364,7 +364,7 @@ def gplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 def ssgplvm_simulation(optimize=True, verbose=1,
                       plot=True, plot_sim=False,
@@ -388,7 +388,7 @@ def ssgplvm_simulation(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("SSGPLVM Latent Space 1D")
-        m.kern.plot_ARD('SSGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def bgplvm_simulation_missing_data(optimize=True, verbose=1,
@@ -418,7 +418,7 @@ def bgplvm_simulation_missing_data(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 def bgplvm_simulation_missing_data_stochastics(optimize=True, verbose=1,
@@ -448,7 +448,7 @@ def bgplvm_simulation_missing_data_stochastics(optimize=True, verbose=1,
                    gtol=.05)
     if plot:
         m.X.plot("BGPLVM Latent Space 1D")
-        m.kern.plot_ARD('BGPLVM Simulation ARD Parameters')
+        m.kern.plot_ARD()
     return m
 
 
@@ -469,7 +469,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
         m.optimize(messages=verbose, max_iters=8e3)
     if plot:
         m.X.plot("MRD Latent Space 1D")
-        m.plot_scales("MRD Scales")
+        m.plot_scales()
     return m
 
 def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
@@ -496,7 +496,7 @@ def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim
         m.optimize('bfgs', messages=verbose, max_iters=8e3, gtol=.1)
     if plot:
         m.X.plot("MRD Latent Space 1D")
-        m.plot_scales("MRD Scales")
+        m.plot_scales()
     return m
 
 def brendan_faces(optimize=True, verbose=True, plot=True):
@@ -520,7 +520,7 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(20, 28), transpose=True, order='F', invert=False, scale=False)
         lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
 
     return m
 
@@ -542,7 +542,7 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.image_show(y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False)
         lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
 
     return m
 
@@ -577,7 +577,7 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[:1, :].copy(), m, data_show, latent_axes=ax)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
         lvm_visualizer.close()
         data_show.close()
     return m
@@ -598,7 +598,7 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
 
     return m
 
@@ -619,7 +619,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data['connect'])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
-        # raw_input('Press enter to finish')
+        # input('Press enter to finish')
 
     return m
 
@@ -669,7 +669,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         fig.canvas.draw()
         # Canvas.show doesn't work on OSX.
         #fig.canvas.show()
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
 
     return m
 
@@ -693,7 +693,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=ax)
-        raw_input('Press enter to finish')
+        input('Press enter to finish')
         lvm_visualizer.close()
         data_show.close()
 

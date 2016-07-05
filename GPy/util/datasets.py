@@ -11,6 +11,7 @@ import datetime
 import json
 import re
 import sys
+from io import open
 from .config import *
 
 ipython_available=True
@@ -54,12 +55,12 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scannin
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
-    json_data=open(path).read()
+    json_data = open(path, encoding='utf-8').read()
     data_resources = json.loads(json_data)
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'football_teams.json')
-    json_data=open(path).read()
+    json_data = open(path, encoding='utf-8').read()
     football_dict = json.loads(json_data)
 
 
@@ -72,7 +73,7 @@ def prompt_user(prompt):
 
     try:
         print(prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         # would like to test for exception here, but not sure if we can do that without importing IPython
     except:
         print('Stdin is not implemented.')
@@ -95,16 +96,16 @@ def prompt_user(prompt):
 def data_available(dataset_name=None):
     """Check if the data set is available on the local machine already."""
     try:
-        from itertools import izip_longest
+        from itertools import zip_longest
     except ImportError:
-        from itertools import zip_longest as izip_longest
+        from itertools import zip_longest as zip_longest
     dr = data_resources[dataset_name]
     zip_urls = (dr['files'], )
     if 'save_names' in dr: zip_urls += (dr['save_names'], )
     else: zip_urls += ([],)
 
-    for file_list, save_list in izip_longest(*zip_urls, fillvalue=[]):
-        for f, s in izip_longest(file_list, save_list, fillvalue=None):
+    for file_list, save_list in zip_longest(*zip_urls, fillvalue=[]):
+        for f, s in zip_longest(file_list, save_list, fillvalue=None):
             if s is not None: f=s # If there is a save_name given, use that one
             if not os.path.exists(os.path.join(data_path, dataset_name, f)):
                 return False
@@ -137,7 +138,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
             raise ValueError('Tried url ' + url + suffix + ' and received server error ' + str(response.code))
     with open(save_name, 'wb') as f:
         meta = response.info()
-        content_length_str = meta.getheaders("Content-Length")
+        content_length_str = meta.get("Content-Length")
         if content_length_str:
             file_size = int(content_length_str[0])
         else:
@@ -213,14 +214,14 @@ def download_data(dataset_name=None):
 
     zip_urls = (dr['urls'], dr['files'])
 
-    if dr.has_key('save_names'): zip_urls += (dr['save_names'], )
+    if 'save_names' in dr: zip_urls += (dr['save_names'], )
     else: zip_urls += ([],)
 
-    if dr.has_key('suffices'): zip_urls += (dr['suffices'], )
+    if 'suffices' in dr: zip_urls += (dr['suffices'], )
     else: zip_urls += ([],)
 
-    for url, files, save_names, suffices in itertools.izip_longest(*zip_urls, fillvalue=[]):
-        for f, save_name, suffix in itertools.izip_longest(files, save_names, suffices, fillvalue=None):
+    for url, files, save_names, suffices in itertools.zip_longest(*zip_urls, fillvalue=[]):
+        for f, save_name, suffix in itertools.zip_longest(files, save_names, suffices, fillvalue=None):
             download_url(os.path.join(url,f), dataset_name, save_name, suffix=suffix)
 
     return True
@@ -360,7 +361,7 @@ def football_data(season='1314', data_set='football_data'):
         return league_dict[string]
 
     def football2num(string):
-        if football_dict.has_key(string):
+        if string in football_dict:
             return football_dict[string]
         else:
             football_dict[string] = len(football_dict)+1
@@ -1482,5 +1483,3 @@ def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set=
     if sample_every != 1:
         info += ' Data is sub-sampled to every ' + str(sample_every) + ' frames.'
     return data_details_return({'Y': Y, 'lbls' : lbls, 'Ytest': Ytest, 'lblstest' : lblstest, 'info': info, 'skel': skel}, data_set)
-
-

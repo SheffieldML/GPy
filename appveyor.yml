@@ -16,9 +16,9 @@ install:
   - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
   - activate build-environment
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install wheel"
+  - python -m pip install wheel"
   # GPy needs paramz
-  - "%PYTHON%\\python.exe -m pip install paramz"
+  - python -m pip install paramz"
 
 build: off
 

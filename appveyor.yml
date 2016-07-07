@@ -1,25 +1,24 @@
 environment:
 
   matrix:
-
-    # For Python versions available on Appveyor, see
-    # http://www.appveyor.com/docs/installed-software#python
-    # The list here is complete (excluding Python 2.6, which
-    # isn't covered by this document) at the time of writing.
-
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python35-x64"
+    - PYTHON_VERSION: 2.7
+      MINICONDA: C:\Miniconda
 
 branches:
   only:
     - deploy
 
-install:
+install: 
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+  - activate build-environment
   # We need wheel installed to build wheels
   - "%PYTHON%\\python.exe -m pip install wheel"
-  - "%PYTHON%\\python.exe -m pip install scipy"
+  # GPy needs paramz
   - "%PYTHON%\\python.exe -m pip install paramz"
-  - "%PYTHON%\\python.exe -m pip install matplotlib"
 
 build: off
 

@@ -52,8 +52,6 @@ artifacts:
 
 
 deploy_script:
-   on:
-     branch: devel
    - echo [distutils] > %USERPROFILE%\\.pypirc
    - echo index-servers = >> %USERPROFILE%\\.pypirc
    - echo     pypi >> %USERPROFILE%\\.pypirc
@@ -66,7 +64,8 @@ deploy_script:
    - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
    - echo username:maxz >> %USERPROFILE%\\.pypirc
    - twine upload -r test -p %pip_access% dist/*
-
+   on:
+     branch: devel
  
 # -
 #   branches:

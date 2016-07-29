@@ -15,21 +15,23 @@ branches:
     - deploy
 
 install:
-    - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda info -a
-    - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
-    - activate build-environment
-    # We need wheel installed to build wheels
-    - python -m pip install wheel
-    # GPy needs paramz
-    - python -m pip install paramz
-    - python -m pip install nose-show-skipped
-    - python -m pip install coverage
-    - python -m pip install twine
-    #- "python setup.py develop"
-    #- set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
+ - echo %my_variable%
+ - echo %USERPROFILE%
+ - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+ - conda config --set always_yes yes --set changeps1 no
+ - conda update -q conda
+ - conda info -a
+ - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+ - activate build-environment
+ # We need wheel installed to build wheels
+ - python -m pip install wheel
+ # GPy needs paramz
+ - python -m pip install paramz
+ - python -m pip install nose-show-skipped
+ - python -m pip install coverage
+ - python -m pip install twine
+ #- "python setup.py develop"
+ #- set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
 
@@ -53,7 +55,6 @@ artifacts:
   - path: dist\*
 
 on_success:
- - echo %my_variable%
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc

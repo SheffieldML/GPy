@@ -8,15 +8,8 @@ environment:
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
 
-branches:
-  only:
-    - deploy
-    - devel
-  except:
-    - gh-pages
     
 install:
- - echo %branch%
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
@@ -54,28 +47,52 @@ artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
 
-deploy_script:
- - echo [distutils] > %USERPROFILE%\\.pypirc
- - echo index-servers = >> %USERPROFILE%\\.pypirc
- - echo     pypi >> %USERPROFILE%\\.pypirc
- - echo     test >> %USERPROFILE%\\.pypirc
- - echo[
- - echo [pypi] >> %USERPROFILE%\\.pypirc
- - echo username:maxz >> %USERPROFILE%\\.pypirc
- - echo[
- - echo [test] >> %USERPROFILE%\\.pypirc
- - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
- - echo username:maxz >> %USERPROFILE%\\.pypirc
- #- twine upload -r test -p %pip_access% dist/*
- - twine upload -p %pip_access% dist/*
+
+-
+  branches:
+    only:
+      - devel
+  configuration: Test
+  deploy_script:
+   - echo [distutils] > %USERPROFILE%\\.pypirc
+   - echo index-servers = >> %USERPROFILE%\\.pypirc
+   - echo     pypi >> %USERPROFILE%\\.pypirc
+   - echo     test >> %USERPROFILE%\\.pypirc
+   - echo[
+   - echo [pypi] >> %USERPROFILE%\\.pypirc
+   - echo username:maxz >> %USERPROFILE%\\.pypirc
+   - echo[
+   - echo [test] >> %USERPROFILE%\\.pypirc
+   - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
+   - echo username:maxz >> %USERPROFILE%\\.pypirc
+   - twine upload -r test -p %pip_access% dist/*
+
  
-deploy:
-  - provider: GitHub
-    release: GPy-v$(gpy_version)
-    description: 'GPy windows install'
-    artifact: dist/*.exe               # upload wininst to GitHub
-    draft: false
-    prerelease: false
-    on:
-        branch: deploy                 # release from deploy branch only
-        appveyor_repo_tag: true        # deploy on tag push only
+- 
+  branches:
+    only:
+      - deploy
+  configuration: Release
+  deploy:
+    - provider: GitHub
+      release: GPy-v$(gpy_version)
+      description: 'GPy windows install'
+      artifact: dist/*.exe               # upload wininst to GitHub
+      draft: false
+      prerelease: false
+      on:
+          branch: deploy                 # release from deploy branch only
+          appveyor_repo_tag: true        # deploy on tag push only
+  deploy_script:
+   - echo [distutils] > %USERPROFILE%\\.pypirc
+   - echo index-servers = >> %USERPROFILE%\\.pypirc
+   - echo     pypi >> %USERPROFILE%\\.pypirc
+   - echo     test >> %USERPROFILE%\\.pypirc
+   - echo[
+   - echo [pypi] >> %USERPROFILE%\\.pypirc
+   - echo username:maxz >> %USERPROFILE%\\.pypirc
+   - echo[
+   - echo [test] >> %USERPROFILE%\\.pypirc
+   - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
+   - echo username:maxz >> %USERPROFILE%\\.pypirc
+   - twine upload -p %pip_access% dist/*

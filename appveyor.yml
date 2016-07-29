@@ -55,7 +55,8 @@ artifacts:
   - path: dist\*
 
 deploy_script:
- on
+ on:
+   branch: deploy                 # release from deploy branch only
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc

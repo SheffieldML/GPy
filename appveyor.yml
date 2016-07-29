@@ -14,6 +14,8 @@ branches:
     - gh-pages
     
 install:
+ - (set /p <GPy/__version__.py) 
+ - echo %__version__% 
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
@@ -28,7 +30,6 @@ install:
  - python -m pip install coverage
  - python -m pip install twine
  - "python setup.py develop"
- - set `copy /b GPy/__version__.py`
 
 build: off
 

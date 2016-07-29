@@ -55,8 +55,6 @@ artifacts:
   - path: dist\*
 
 deploy_script:
- on:
-   branch: deploy                 # release from deploy branch only
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc
@@ -80,4 +78,4 @@ deploy:
     prerelease: false
     on:
         branch: deploy                 # release from deploy branch only
-        #appveyor_repo_tag: true        # deploy on tag push only
+        appveyor_repo_tag: true        # deploy on tag push only

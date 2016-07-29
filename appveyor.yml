@@ -57,13 +57,13 @@ on_success:
  - echo "index-servers =" >> %USERPROFILE%\\.pypirc
  - echo "    pypi" >> %USERPROFILE%\\.pypirc
  - echo "    test" >> %USERPROFILE%\\.pypirc
- - "echo [pypi] > %USERPROFILE%\\.pypirc"
- - "echo username:maxz >> %USERPROFILE%\\.pypirc"
- - "echo password:%pip_upload% >> %USERPROFILE%\\.pypirc"
+ - "echo [pypi] >> %USERPROFILE%\\.pypirc"
+ - echo "username:maxz" >> %USERPROFILE%\\.pypirc
+ - echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
  - "echo [test] >> %USERPROFILE%\\.pypirc"
  - "echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc"
- - "echo username:maxz >> %USERPROFILE%\\.pypirc"
- - "echo password:%pip_upload% >> %USERPROFILE%\\.pypirc"
+ - echo "username:maxz" >> %USERPROFILE%\\.pypirc
+ - echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
  - ls dist\
  - twine upload -r test dist\* 
  

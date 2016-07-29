@@ -1,6 +1,6 @@
 environment:
   pip_upload:
-    secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
+    secure:8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
 
   matrix:
     - PYTHON_VERSION: 2.7
@@ -15,20 +15,6 @@ branches:
     - deploy
 
 install:
-    - echo [distutils] > %USERPROFILE%\\.pypirc
-    - echo index-servers = >> %USERPROFILE%\\.pypirc
-    - echo     pypi >> %USERPROFILE%\\.pypirc
-    - echo     test >> %USERPROFILE%\\.pypirc
-    - echo[
-    - echo [pypi] >> %USERPROFILE%\\.pypirc
-    - echo username:maxz >> %USERPROFILE%\\.pypirc
-    #- echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
-    - echo[
-    - "echo [test] >> %USERPROFILE%\\.pypirc"
-    - "echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc"
-    - echo username:maxz >> %USERPROFILE%\\.pypirc
-    #- echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
-    - type %USERPROFILE%\\.pypirc
     - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
     - conda config --set always_yes yes --set changeps1 no
     - conda update -q conda
@@ -71,16 +57,17 @@ on_success:
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc
  - echo     test >> %USERPROFILE%\\.pypirc
+ - echo[
  - echo [pypi] >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
- #- echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
- - "echo [test] >> %USERPROFILE%\\.pypirc"
- - "echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc"
+ - echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
+ - echo[
+ - echo [test] >> %USERPROFILE%\\.pypirc
+ - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
- #- echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
- - type %USERPROFILE%\\.pypirc
+ - echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
  - ls dist\
- - twine upload -r test dist\* 
+ - twine upload -r test dist/*
  
 #deploy:
 #  release: GPy-v$(__version__)

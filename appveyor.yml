@@ -1,0 +1,50 @@
+environment:
+
+  matrix:
+    - PYTHON_VERSION: 2.7
+      MINICONDA: C:\Miniconda-x64
+    - PYTHON_VERSION: 3.5
+      MINICONDA: C:\Miniconda35-x64
+
+
+
+branches:
+  only:
+    - deploy
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+  - activate build-environment
+  # We need wheel installed to build wheels
+  - python -m pip install wheel"
+  # GPy needs paramz
+  - python -m pip install paramz"
+
+build: off
+
+test_script:
+  # Put your test command here.
+  # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
+  # you can remove "build.cmd" from the front of the command, as it's
+  # only needed to support those cases.
+  # Note that you must use the environment variable %PYTHON% to refer to
+  # the interpreter you're using - Appveyor does not do anything special
+  # to put the Python evrsion you want to use on PATH.
+  #- "build.cmd %PYTHON%\\python.exe setup.py test"
+
+after_test:
+  # This step builds your wheels.
+  - "python setup.py bdist_wheel"
+
+artifacts:
+  # bdist_wheel puts your built wheel in the dist directory
+  - path: dist\*
+
+#on_success:
+#  You can use this step to upload your artifacts to a public website.
+#  See Appveyor's documentation for more details. Or you can simply
+#  access your wheels from the Appveyor "artifacts" tab for your build.

@@ -53,16 +53,16 @@ artifacts:
   - path: dist\*
 
 on_success:
- - "echo [distutils] > %USERPROFILE%\\.pypirc"
- - echo "index-servers =" >> %USERPROFILE%\\.pypirc
+ - echo [distutils] > %USERPROFILE%\\.pypirc
+ - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc
  - echo     test >> %USERPROFILE%\\.pypirc
- - "echo [pypi] >> %USERPROFILE%\\.pypirc"
- - echo "username:maxz" >> %USERPROFILE%\\.pypirc
+ - echo [pypi] >> %USERPROFILE%\\.pypirc
+ - echo username:maxz >> %USERPROFILE%\\.pypirc
  #- echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
  - "echo [test] >> %USERPROFILE%\\.pypirc"
  - "echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc"
- - echo "username:maxz" >> %USERPROFILE%\\.pypirc
+ - echo username:maxz >> %USERPROFILE%\\.pypirc
  #- echo "password:%pip_upload%" >> %USERPROFILE%\\.pypirc
  - type %USERPROFILE%\\.pypirc
  - ls dist\

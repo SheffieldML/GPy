@@ -27,6 +27,7 @@ install:
   - python -m pip install paramz
   - python -m pip install nose-show-skipped
   - python -m pip install coverage
+  - "python setup.py develop"
 
 build: off
 
@@ -39,7 +40,6 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python evrsion you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
-  - "build.cmd python setup.py develop"
   - "coverage run travis_tests.py"
 
 after_test:

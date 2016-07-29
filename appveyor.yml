@@ -1,7 +1,9 @@
 environment:
   pip_access:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
+  gpy_version: 1.1.0
   matrix:
+    fast_finish: true
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
@@ -9,13 +11,13 @@ environment:
 
 branches:
   only:
+    - deploy
     - devel
   except:
     - gh-pages
     
 install:
- - (set /p <GPy/__version__.py) 
- - echo %__version__% 
+ - echo %branch%
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
@@ -30,7 +32,7 @@ install:
  - python -m pip install coverage
  - python -m pip install twine
  - "python setup.py develop"
-
+ 
 build: off
 
 test_script:
@@ -47,12 +49,14 @@ test_script:
 after_test:
   # This step builds your wheels.
   - "python setup.py bdist_wheel bdist_wininst"
-
+  - codecov
+  
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
 
 deploy_script:
+
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc
@@ -64,16 +68,16 @@ deploy_script:
  - echo [test] >> %USERPROFILE%\\.pypirc
  - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
- - ls dist\
- - twine upload -r test -p %pip_access% dist/*
+ #- twine upload -r test -p %pip_access% dist/*
+ - twine upload -p %pip_access% dist/*
  
-#deploy:
-#  release: GPy-v$(__version__)
-#  description: 'GPy windows install'
-#  provider: GitHub
-#  artifact: dist/*.exe               # upload wininst to GitHub
-#  draft: false
-#  prerelease: false
-#  on:
-#    branch: deploy                 # release from deploy branch only
-#    #appveyor_repo_tag: true        # deploy on tag push only
+deploy:
+  - provider: GitHub
+    release: GPy-v$(gpy_version)
+    description: 'GPy windows install'
+    artifact: dist/*.exe               # upload wininst to GitHub
+    draft: false
+    prerelease: false
+    on:
+        branch: deploy                 # release from deploy branch only
+        #appveyor_repo_tag: true        # deploy on tag push only

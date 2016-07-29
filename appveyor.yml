@@ -29,7 +29,7 @@ install:
   - python -m pip install coverage
   - python -m pip install twine
   - "python setup.py develop"
-  - export `cat GPy/__version__.py | tr -d '[[:space:]]'`
+  - set `cat GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
 
@@ -46,7 +46,7 @@ test_script:
 
 after_test:
   # This step builds your wheels.
-  - "python setup.py bdist_wheel bdist_wininst bdist_msi"
+  - "python setup.py bdist_wheel bdist_wininst"
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
@@ -57,7 +57,7 @@ on_success:
  - "echo username: maxz >> %USERPROFILE%\\.pypirc"
  - "echo password: %pip_upload% >> %USERPROFILE%\\.pypirc"
  - ls dist\
- - twine upload dist\*.wheel
+ - twine upload dist\*.whl
  
  
 deploy:

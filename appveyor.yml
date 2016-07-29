@@ -3,7 +3,6 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   gpy_version: 1.1.0
   matrix:
-    fast_finish: true
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
@@ -56,7 +55,7 @@ artifacts:
   - path: dist\*
 
 deploy_script:
-
+ on
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc

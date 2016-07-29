@@ -12,8 +12,10 @@ environment:
 
 branches:
   only:
-    - deploy
-
+    - devel
+  except:
+    - gh-pages
+    
 install:
  - echo %ASDF%
  - echo %USERPROFILE%
@@ -30,7 +32,7 @@ install:
  - python -m pip install nose-show-skipped
  - python -m pip install coverage
  - python -m pip install twine
- #- "python setup.py develop"
+ - "python setup.py develop"
  #- set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
@@ -44,7 +46,7 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python evrsion you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
-  #- "coverage run travis_tests.py"
+  - "coverage run travis_tests.py"
 
 after_test:
   # This step builds your wheels.
@@ -54,7 +56,7 @@ artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
 
-on_success:
+deploy_script:
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc

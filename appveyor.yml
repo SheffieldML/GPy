@@ -49,7 +49,7 @@ artifacts:
 
 deploy_script:
  - "echo [pypi] > %USERPROFILE%\\.pypirc"
- - "echo username: user >> %USERPROFILE%\\.pypirc"
+ - "echo username: maxz >> %USERPROFILE%\\.pypirc"
  - "echo password: %pip_upload% >> %USERPROFILE%\\.pypirc"
  - python setup.py bdist_wheel upload
 

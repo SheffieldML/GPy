@@ -29,7 +29,7 @@ install:
   - python -m pip install coverage
   - python -m pip install twine
   - "python setup.py develop"
-  - set `cat GPy/__version__.py | tr -d '[[:space:]]'`
+  - set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
 

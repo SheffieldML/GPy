@@ -1,14 +1,11 @@
 environment:
-  PIP_ACCESS:
+  pip_access:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
-  ASDF:
-    secure: qMBS2BuAsH+SrwUduBLs4Q==
-
 
 branches:
   only:
@@ -17,8 +14,6 @@ branches:
     - gh-pages
     
 install:
- - echo %ASDF%
- - echo %USERPROFILE%
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
@@ -33,7 +28,7 @@ install:
  - python -m pip install coverage
  - python -m pip install twine
  - "python setup.py develop"
- #- set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
+ - set `copy /b GPy/__version__.py`
 
 build: off
 
@@ -69,13 +64,13 @@ deploy_script:
  - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
  - ls dist\
- - twine upload -r test -p %pip_upload% dist/*
+ - twine upload -r test -p %pip_access% dist/*
  
-#deploy:
+deploy:
 #  release: GPy-v$(__version__)
 #  description: 'GPy windows install'
 #  provider: GitHub
-#  artifact: dist\*.exe            # upload wininst to GitHub
+#  artifact: dist/*.exe               # upload wininst to GitHub
 #  draft: false
 #  prerelease: false
 #  on:

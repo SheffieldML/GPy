@@ -64,7 +64,7 @@ deploy_script:
    - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
    - echo username:maxz >> %USERPROFILE%\\.pypirc
    - twine upload -r test -p %pip_access% dist/*
-   on:
+   - on:
      branch: devel
  
 # -

@@ -1,12 +1,12 @@
 environment:
-  pip_upload:
+  PIP_ACCESS:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
-  my_variable:
+  ASDF:
     secure: qMBS2BuAsH+SrwUduBLs4Q==
 
 
@@ -15,7 +15,7 @@ branches:
     - deploy
 
 install:
- - echo %my_variable%
+ - echo %ASDF%
  - echo %USERPROFILE%
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no

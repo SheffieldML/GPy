@@ -42,7 +42,7 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python evrsion you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
-  - "coverage run travis_tests.py"
+  #- "coverage run travis_tests.py"
 
 after_test:
   # This step builds your wheels.
@@ -63,16 +63,15 @@ on_success:
  - "echo password:%pip_upload% >> %USERPROFILE%\\.pypirc"
  - type %USERPROFILE%\\.pypirc
  - ls dist\
- - twine upload -r test dist\*.whl
+ - twine upload -r test dist\* 
  
- 
-deploy:
-  release: GPy-v$(__version__)
-  description: 'GPy windows install'
-  provider: GitHub
-  artifact: dist\*.exe            # upload wininst to GitHub
-  draft: false
-  prerelease: false
-  on:
-    branch: deploy                 # release from deploy branch only
-    #appveyor_repo_tag: true        # deploy on tag push only
+#deploy:
+#  release: GPy-v$(__version__)
+#  description: 'GPy windows install'
+#  provider: GitHub
+#  artifact: dist\*.exe            # upload wininst to GitHub
+#  draft: false
+#  prerelease: false
+#  on:
+#    branch: deploy                 # release from deploy branch only
+#    #appveyor_repo_tag: true        # deploy on tag push only

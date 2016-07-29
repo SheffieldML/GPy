@@ -28,6 +28,7 @@ install:
   - python -m pip install nose-show-skipped
   - python -m pip install coverage
   - "python setup.py develop"
+  - export `cat GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
 
@@ -44,7 +45,7 @@ test_script:
 
 after_test:
   # This step builds your wheels.
-  - "python setup.py bdist_wheel"
+  - "python setup.py bdist_wheel bdist_wininst bdist_wi"
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
@@ -55,3 +56,17 @@ on_success:
  - "echo username: maxz >> %USERPROFILE%\\.pypirc"
  - "echo password: %pip_upload% >> %USERPROFILE%\\.pypirc"
  - python setup.py bdist_wheel upload
+ 
+ 
+deploy:
+  release: GPy-v$(__version__)
+  description: 'GPy windows install'
+  provider: GitHub
+  auth_token:
+    secure: a0f98391430517c6cdeb097c50d60d33f7131480 # your encrypted token from GitHub
+  artifact: dist\/.*\.exe/            # upload all NuGet packages to release assets
+  draft: false
+  prerelease: false
+  on:
+    branch: deploy                 # release from master branch only
+    #appveyor_repo_tag: true        # deploy on tag push only

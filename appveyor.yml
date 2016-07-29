@@ -1,5 +1,5 @@
 environment:
-  pip_upload:
+  pip_access:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   matrix:
     - PYTHON_VERSION: 2.7
@@ -52,21 +52,7 @@ artifacts:
   - path: dist\*
 
 on_success:
- - echo [distutils] > %USERPROFILE%\\.pypirc
- - echo index-servers = >> %USERPROFILE%\\.pypirc
- - echo     pypi >> %USERPROFILE%\\.pypirc
- - echo     test >> %USERPROFILE%\\.pypirc
- - echo[
- - echo [pypi] >> %USERPROFILE%\\.pypirc
- - echo username:maxz >> %USERPROFILE%\\.pypirc
- - echo password:$env:pip_upload >> %USERPROFILE%\\.pypirc
- - echo[
- - echo [test] >> %USERPROFILE%\\.pypirc
- - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
- - echo username:maxz >> %USERPROFILE%\\.pypirc
- - echo password:$env:pip_upload >> %USERPROFILE%\\.pypirc
- - ls dist\
- - twine upload -r test dist/*
+ - twine upload -r https://testpypi.python.org/pypi -u maxz -p %pip_access% dist/*
  
 #deploy:
 #  release: GPy-v$(__version__)

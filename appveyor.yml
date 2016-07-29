@@ -6,7 +6,8 @@ environment:
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
-
+  my_variable:
+    secure: qMBS2BuAsH+SrwUduBLs4Q==
 
 
 branches:
@@ -52,6 +53,7 @@ artifacts:
   - path: dist\*
 
 on_success:
+ - echo %my_variable%
  - echo [distutils] > %USERPROFILE%\\.pypirc
  - echo index-servers = >> %USERPROFILE%\\.pypirc
  - echo     pypi >> %USERPROFILE%\\.pypirc

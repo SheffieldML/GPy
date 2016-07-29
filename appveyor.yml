@@ -25,6 +25,7 @@ install:
  - python -m pip install paramz
  - python -m pip install nose-show-skipped
  - python -m pip install coverage
+ - python -m pip install codecov
  - python -m pip install twine
  - "python setup.py develop"
  

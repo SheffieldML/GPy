@@ -8,7 +8,10 @@ environment:
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
 
-    
+configuration:
+  - Debug
+  - Release
+  
 install:
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
  - conda config --set always_yes yes --set changeps1 no
@@ -52,7 +55,7 @@ artifacts:
   branches:
     only:
       - devel
-  configuration: Test
+  configuration: Debug
   deploy_script:
    - echo [distutils] > %USERPROFILE%\\.pypirc
    - echo index-servers = >> %USERPROFILE%\\.pypirc
@@ -68,7 +71,7 @@ artifacts:
    - twine upload -r test -p %pip_access% dist/*
 
  
-- 
+-
   branches:
     only:
       - deploy

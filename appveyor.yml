@@ -50,13 +50,8 @@ artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
 
-deploy_script:
+on_success:
  - "echo [pypi] > %USERPROFILE%\\.pypirc"
  - "echo username: maxz >> %USERPROFILE%\\.pypirc"
  - "echo password: %pip_upload% >> %USERPROFILE%\\.pypirc"
  - python setup.py bdist_wheel upload
-
-#on_success:
-#  You can use this step to upload your artifacts to a public website.
-#  See Appveyor's documentation for more details. Or you can simply
-#  access your wheels from the Appveyor "artifacts" tab for your build.

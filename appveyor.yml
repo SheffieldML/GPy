@@ -1,7 +1,8 @@
 environment:
   pip_upload:
-    secure:8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
+    secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
 
+environment:
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
@@ -28,7 +29,7 @@ install:
     - python -m pip install nose-show-skipped
     - python -m pip install coverage
     - python -m pip install twine
-    - "python setup.py develop"
+    #- "python setup.py develop"
     #- set `copy /b GPy/__version__.py | tr -d '[[:space:]]'`
 
 build: off
@@ -60,12 +61,12 @@ on_success:
  - echo[
  - echo [pypi] >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
- - echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
+ - echo password:$env:pip_upload >> %USERPROFILE%\\.pypirc
  - echo[
  - echo [test] >> %USERPROFILE%\\.pypirc
  - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
  - echo username:maxz >> %USERPROFILE%\\.pypirc
- - echo password:%pip_upload% >> %USERPROFILE%\\.pypirc
+ - echo password:$env:pip_upload >> %USERPROFILE%\\.pypirc
  - ls dist\
  - twine upload -r test dist/*
  

@@ -66,7 +66,7 @@ deploy_script:
  - ls dist\
  - twine upload -r test -p %pip_access% dist/*
  
-deploy:
+#deploy:
 #  release: GPy-v$(__version__)
 #  description: 'GPy windows install'
 #  provider: GitHub

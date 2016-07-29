@@ -64,8 +64,6 @@ deploy:
   release: GPy-v$(__version__)
   description: 'GPy windows install'
   provider: GitHub
-  auth_token:
-    secure: a0f98391430517c6cdeb097c50d60d33f7131480 # your encrypted token from GitHub
   artifact: dist\*.exe            # upload wininst to GitHub
   draft: false
   prerelease: false

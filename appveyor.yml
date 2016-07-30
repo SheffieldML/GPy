@@ -72,13 +72,13 @@ deploy_script:
         default {echo not deploying on other branches}
     }
  
-deploy:
-  - provider: GitHub
-    release: GPy-v$(gpy_version)
-    description: 'GPy windows install'
-    artifact: dist/*.exe               # upload wininst to GitHub
-    draft: false
-    prerelease: false
-    on:
-        branch: deploy                 # release from deploy branch only
-        appveyor_repo_tag: true        # deploy on tag push only
+# deploy:
+#   - provider: GitHub
+#     release: GPy-v$(gpy_version)
+#     description: 'GPy windows install'
+#     artifact: dist/*.exe               # upload wininst to GitHub
+#     draft: false
+#     prerelease: false
+#     on:
+#         branch: deploy                 # release from deploy branch only
+#         appveyor_repo_tag: true        # deploy on tag push only

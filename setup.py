@@ -59,14 +59,7 @@ def read_to_rst(fname):
 
 desc = """
 
-- `GPy homepage <http://sheffieldml.github.io/GPy/>`_
-- `Tutorial notebooks <http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb>`_
-- `User mailing-list <https://lists.shef.ac.uk/sympa/subscribe/gpy-users>`_
-- `Developer documentation <http://gpy.readthedocs.org/en/devel/>`_
-- `Travis-CI unit-tests <https://travis-ci.org/SheffieldML/GPy>`_
-- `License <https://opensource.org/licenses/BSD-3-Clause>`_
-
-For full description and installation instructions please refer to the github page.
+Please refer to the github homepage for detailed instructions on installation and usage.
 
 """
 
@@ -116,6 +109,7 @@ setup(name = 'GPy',
       author = read_to_rst('AUTHORS.txt'),
       author_email = "gpy.authors@gmail.com",
       description = ("The Gaussian Process Toolbox"),
+      long_description = desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
@@ -154,8 +148,7 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      long_description=desc,
-      install_requires=['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.5.2'],
+      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.5.2'],
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',

@@ -53,23 +53,26 @@ artifacts:
 
 
 deploy_script:
-   - echo [distutils] > %USERPROFILE%\\.pypirc
-   - echo index-servers = >> %USERPROFILE%\\.pypirc
-   - echo     pypi >> %USERPROFILE%\\.pypirc
-   - echo     test >> %USERPROFILE%\\.pypirc
-   - echo[
-   - echo [pypi] >> %USERPROFILE%\\.pypirc
-   - echo username:maxz >> %USERPROFILE%\\.pypirc
-   - echo[
-   - echo [test] >> %USERPROFILE%\\.pypirc
-   - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
-   - echo username:maxz >> %USERPROFILE%\\.pypirc
-   - ps: >-
-   switch ($env:APPVEYOR_REPO_BRANCH) 
-    { 
-        devel {twine upload -r test -p %pip_access% dist/*}
-        deploy {twine upload -p %pip_access% dist/*}
-        default {echo not deploying on other branches}
+- echo [distutils] > %USERPROFILE%\\.pypirc
+- echo index-servers = >> %USERPROFILE%\\.pypirc
+- echo     pypi >> %USERPROFILE%\\.pypirc
+- echo     test >> %USERPROFILE%\\.pypirc
+- echo[
+- echo [pypi] >> %USERPROFILE%\\.pypirc
+- echo username:maxz >> %USERPROFILE%\\.pypirc
+- echo[
+- echo [test] >> %USERPROFILE%\\.pypirc
+- echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
+- echo username:maxz >> %USERPROFILE%\\.pypirc
+- ps: >-
+    if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
+        twine upload -r test -p %pip_access% dist/*
+    }
+    elseif ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
+        twine upload -p %pip_access% dist/*
+    }
+    else {
+        echo not deploying on other branches
     }
  
 # deploy:

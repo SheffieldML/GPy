@@ -64,7 +64,7 @@ deploy_script:
    - echo [test] >> %USERPROFILE%\\.pypirc
    - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
    - echo username:maxz >> %USERPROFILE%\\.pypirc
-   - ps: |
+   - ps: >-
    switch ($env:APPVEYOR_REPO_BRANCH) 
     { 
         devel {twine upload -r test -p %pip_access% dist/*}

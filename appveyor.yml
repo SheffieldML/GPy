@@ -60,16 +60,18 @@ deploy_script:
 - echo[
 - echo [pypi] >> %USERPROFILE%\\.pypirc
 - echo username:maxz >> %USERPROFILE%\\.pypirc
+- echo password:%pip_access% >> %USERPROFILE%\\.pypirc
 - echo[
 - echo [test] >> %USERPROFILE%\\.pypirc
 - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
 - echo username:maxz >> %USERPROFILE%\\.pypirc
+- echo password:%pip_access% >> %USERPROFILE%\\.pypirc
 - ps: >-
     if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        twine upload -r test -p %pip_access% dist/*
+        twine upload -r test dist/*
     }
     elseif ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
-        twine upload -p %pip_access% dist/*
+        twine upload dist/*
     }
     else {
         echo not deploying on other branches

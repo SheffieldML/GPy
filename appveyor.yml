@@ -64,35 +64,21 @@ deploy_script:
    - echo [test] >> %USERPROFILE%\\.pypirc
    - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
    - echo username:maxz >> %USERPROFILE%\\.pypirc
-   - twine upload -r test -p %pip_access% dist/*
-   - on:
-     branch: devel
+   - ps: |
+   switch ($env:APPVEYOR_REPO_BRANCH) 
+    { 
+        devel {twine upload -r test -p %pip_access% dist/*}
+        deploy {twine upload -p %pip_access% dist/*}
+        default {echo not deploying on other branches}
+    }
  
-# -
-#   branches:
-#     only:
-#       - deploy
-#   configuration: Release
-#   deploy:
-#     - provider: GitHub
-#       release: GPy-v$(gpy_version)
-#       description: 'GPy windows install'
-#       artifact: dist/*.exe               # upload wininst to GitHub
-#       draft: false
-#       prerelease: false
-#       on:
-#           branch: deploy                 # release from deploy branch only
-#           appveyor_repo_tag: true        # deploy on tag push only
-#   deploy_script:
-#    - echo [distutils] > %USERPROFILE%\\.pypirc
-#    - echo index-servers = >> %USERPROFILE%\\.pypirc
-#    - echo     pypi >> %USERPROFILE%\\.pypirc
-#    - echo     test >> %USERPROFILE%\\.pypirc
-#    - echo[
-#    - echo [pypi] >> %USERPROFILE%\\.pypirc
-#    - echo username:maxz >> %USERPROFILE%\\.pypirc
-#    - echo[
-#    - echo [test] >> %USERPROFILE%\\.pypirc
-#    - echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
-#    - echo username:maxz >> %USERPROFILE%\\.pypirc
-#    - twine upload -p %pip_access% dist/*
+deploy:
+  - provider: GitHub
+    release: GPy-v$(gpy_version)
+    description: 'GPy windows install'
+    artifact: dist/*.exe               # upload wininst to GitHub
+    draft: false
+    prerelease: false
+    on:
+        branch: deploy                 # release from deploy branch only
+        appveyor_repo_tag: true        # deploy on tag push only

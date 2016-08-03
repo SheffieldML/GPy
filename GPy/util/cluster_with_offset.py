@@ -122,7 +122,7 @@ def cluster(data,inputs,verbose=False):
     
         if verbose:
             it +=1
-            print "Iteration %d" % it
+            print("Iteration %d" % it)
         
         #Compute the log-likelihood of each cluster (add them together)
         for clusti in range(len(active)):

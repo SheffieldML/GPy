@@ -36,5 +36,5 @@ matplotlib.use('agg')
 import nose, warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    nose.main('GPy', defaultTest='GPy/testing/', argv=['', '--show-skipped'])
+    nose.main('GPy', defaultTest='GPy/testing/plotting_tests.py', argv=['', '--show-skipped'])
 

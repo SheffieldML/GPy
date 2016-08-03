@@ -29,6 +29,7 @@
 #===============================================================================
 
 import unittest, numpy as np
+import GPy
 
 class TestDebug(unittest.TestCase):
     def test_checkFinite(self):

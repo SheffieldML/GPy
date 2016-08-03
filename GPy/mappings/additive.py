@@ -23,9 +23,10 @@ class Additive(Mapping):
         assert(mapping1.input_dim==mapping2.input_dim)
         assert(mapping1.output_dim==mapping2.output_dim)
         input_dim, output_dim = mapping1.input_dim, mapping1.output_dim
-        Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim)
+        super(Additive, self).__init__(input_dim=input_dim, output_dim=output_dim)
         self.mapping1 = mapping1
         self.mapping2 = mapping2
+        self.link_parameters(self.mapping1, self.mapping2)
 
     def f(self, X):
         return self.mapping1.f(X) + self.mapping2.f(X)

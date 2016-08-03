@@ -74,12 +74,13 @@ except ImportError:
 
 extensions = ['npz']
 
+basedir = os.path.dirname(os.path.relpath(os.path.abspath(__file__)))
+
 def _image_directories():
     """
     Compute the baseline and result image directories for testing *func*.
     Create the result directory if it doesn't exist.
     """
-    basedir = os.path.dirname(os.path.relpath(os.path.abspath(__file__)))
     #module_name = __init__.__module__
     #mods = module_name.split('.')
     #basedir = os.path.join(*mods)
@@ -349,7 +350,9 @@ def test_sparse():
     m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*0.1)
     #m.optimize()
     #m.plot_inducing()
-    m.plot_data()
+    _, ax = plt.subplots()
+    m.plot_data(ax=ax)
+    m.plot_data_error(ax=ax)
     for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['data_error']], extensions=extensions):
         yield (do_test, )
 
@@ -397,31 +400,39 @@ def test_sparse_classification():
         yield (do_test, )
 
 def test_gplvm():
-    from ..examples.dimensionality_reduction import _simulate_matern
-    from ..kern import RBF
-    from ..models import GPLVM
+    from GPy.models import GPLVM
     np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
-    Q = 3
+    #Q = 3
     # Define dataset
-    N = 10
-    k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
-    k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
-    k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
-    X = np.random.normal(0, 1, (N, 5))
-    A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
-    B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
-    C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
+    #N = 60
+    #k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
+    #k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
+    #k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
+    #X = np.random.normal(0, 1, (N, 5))
+    #A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
+    #B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
+    #C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
+    #Y = np.vstack((A,B,C))
+    #labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
 
-    Y = np.vstack((A,B,C))
-    labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
+    #k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    pars = np.load(os.path.join(basedir, 'b-gplvm-save.npz'))
+    Y = pars['Y']
+    Q = pars['Q']
+    labels = pars['labels']
 
-    k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    m = GPLVM(Y, Q, init="PCA", kernel=k)
-    m.kern.lengthscale[:] = [1./.3, 1./.1, 1./.7]
-    m.likelihood.variance = .001
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')  # always print
+        m = GPLVM(Y, Q, initialize=False)
+    m.update_model(False)
+    m.initialize_parameter()
+    m[:] = pars['gplvm_p']
+    m.update_model(True)
+
     #m.optimize(messages=0)
     np.random.seed(111)
     m.plot_latent(labels=labels)
@@ -436,31 +447,40 @@ def test_gplvm():
         yield (do_test, )
 
 def test_bayesian_gplvm():
-    from ..examples.dimensionality_reduction import _simulate_matern
-    from ..kern import RBF
     from ..models import BayesianGPLVM
     np.random.seed(12345)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     #matplotlib.rcParams[u'figure.figsize'] = (4,3)
     matplotlib.rcParams[u'text.usetex'] = False
-    Q = 3
+    #Q = 3
     # Define dataset
-    N = 10
-    k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
-    k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
-    k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
-    X = np.random.normal(0, 1, (N, 5))
-    A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
-    B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
-    C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
+    #N = 10
+    #k1 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,10,10,0.1,0.1]), ARD=True)
+    #k2 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[10,0.1,10,0.1,10]), ARD=True)
+    #k3 = GPy.kern.RBF(5, variance=1, lengthscale=1./np.random.dirichlet(np.r_[0.1,0.1,10,10,10]), ARD=True)
+    #X = np.random.normal(0, 1, (N, 5))
+    #A = np.random.multivariate_normal(np.zeros(N), k1.K(X), Q).T
+    #B = np.random.multivariate_normal(np.zeros(N), k2.K(X), Q).T
+    #C = np.random.multivariate_normal(np.zeros(N), k3.K(X), Q).T
 
-    Y = np.vstack((A,B,C))
-    labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
+    #Y = np.vstack((A,B,C))
+    #labels = np.hstack((np.zeros(A.shape[0]), np.ones(B.shape[0]), np.ones(C.shape[0])*2))
 
-    k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
-    m = BayesianGPLVM(Y, Q, init="PCA", kernel=k)
-    m.kern.lengthscale[:] = [1./.3, 1./.1, 1./.7]
-    m.likelihood.variance = .001
+    #k = RBF(Q, ARD=True, lengthscale=2)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+    pars = np.load(os.path.join(basedir, 'b-gplvm-save.npz'))
+    Y = pars['Y']
+    Q = pars['Q']
+    labels = pars['labels']
+
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')  # always print
+        m = BayesianGPLVM(Y, Q, initialize=False)
+    m.update_model(False)
+    m.initialize_parameter()
+    m[:] = pars['bgplvm_p']
+    m.update_model(True)
+
     #m.optimize(messages=0)
     np.random.seed(111)
     m.plot_inducing(projection='2d')

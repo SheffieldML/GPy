@@ -421,8 +421,9 @@ class MiscTests(unittest.TestCase):
         Y = np.vstack([Y,Y])
 
         m = GPy.models.GPOffsetRegression(X,Y)
+        assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
         m.optimize()
-        assert np.abs(m.offset[0]-offset)<0.1, "GPOffsetRegression model failing to estimate correct offset."
+        assert np.abs(m.offset[0]-offset)<0.1, ("GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)" % (m.offset[0], offset))
 
 
 

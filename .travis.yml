@@ -28,7 +28,7 @@ before_install:
 install:
 - echo $PATH
 - source install_retry.sh
-#- pip install codecov
+- pip install codecov
 - pip install coveralls
 - pip install pypandoc
 - pip install git+git://github.com/BRML/climin.git
@@ -40,7 +40,7 @@ script:
   - coverage run travis_tests.py
 
 after_success:
-  #- codecov
+  - codecov
   - coveralls
 
 before_deploy:

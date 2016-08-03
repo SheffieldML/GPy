@@ -131,7 +131,7 @@ class PCA(object):
         kwargs.update(dict(s=s))
         plots = list()
         for i, l in enumerate(ulabels):
-            kwargs.update(dict(color=colors.next(), marker=marker[i % len(marker)]))
+            kwargs.update(dict(color=next(colors), marker=marker[i % len(marker)]))
             plots.append(ax.scatter(*X_[labels == l, :].T, label=str(l), **kwargs))
         ax.set_xlabel(r"PC$_1$")
         ax.set_ylabel(r"PC$_2$")

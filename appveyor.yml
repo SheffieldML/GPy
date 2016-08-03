@@ -49,7 +49,6 @@ after_test:
   # This step builds your wheels.
   - "python setup.py bdist_wheel bdist_wininst"
   - codecov
-  - coveralls
   
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory

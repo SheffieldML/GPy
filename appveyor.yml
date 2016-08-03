@@ -24,7 +24,8 @@ install:
  # GPy needs paramz
  - python -m pip install paramz
  - python -m pip install nose-show-skipped
- - python -m pip install coverage
+# - python -m pip install coverage
+ - pip install coveralls
  - python -m pip install codecov
  - python -m pip install twine
  - "python setup.py develop"
@@ -45,7 +46,8 @@ test_script:
 after_test:
   # This step builds your wheels.
   - "python setup.py bdist_wheel bdist_wininst"
-  - codecov
+  #- codecov
+  - coveralls
   
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory

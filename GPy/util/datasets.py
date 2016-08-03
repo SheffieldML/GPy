@@ -98,7 +98,7 @@ def data_available(dataset_name=None):
     try:
         from itertools import zip_longest
     except ImportError:
-        from itertools import zip_longest as zip_longest
+        from itertools import izip_longest as zip_longest
     dr = data_resources[dataset_name]
     zip_urls = (dr['files'], )
     if 'save_names' in dr: zip_urls += (dr['save_names'], )
@@ -1033,14 +1033,18 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
                 data = inner.RPKM.to_frame()
                 data.columns = [file_info.name[:-18]]
                 gene_info = inner.Refseq_IDs.to_frame()
-                gene_info.columns = [file_info.name[:-18]]
+                gene_info.columns = ['NCBI Reference Sequence']
             else:
                 data[file_info.name[:-18]] = inner.RPKM
-                gene_info[file_info.name[:-18]] = inner.Refseq_IDs
+                #gene_info[file_info.name[:-18]] = inner.Refseq_IDs
 
     # Strip GSM number off data index
     rep = re.compile('GSM\d+_')
-    data.columns = data.columns.to_series().apply(lambda row: row[rep.match(row).end():])
+
+    from pandas import MultiIndex
+    columns = MultiIndex.from_tuples([row.split('_', 1) for row in data.columns])
+    columns.names = ['GEO Accession', 'index']
+    data.columns = columns
     data = data.T
 
     # make sure the same index gets used

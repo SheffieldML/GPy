@@ -350,7 +350,9 @@ def test_sparse():
     m = GPy.models.SparseGPRegression(X, Y, X_variance=np.ones_like(X)*0.1)
     #m.optimize()
     #m.plot_inducing()
-    m.plot_data()
+    _, ax = plt.subplots()
+    m.plot_data(ax=ax)
+    m.plot_data_error(ax=ax)
     for do_test in _image_comparison(baseline_images=['sparse_gp_{}'.format(sub) for sub in ['data_error']], extensions=extensions):
         yield (do_test, )
 

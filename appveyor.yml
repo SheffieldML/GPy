@@ -1,7 +1,9 @@
 environment:
   pip_access:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
-  gpy_version: 1.2.0
+  COVERALLS_REPO_TOKEN:
+    secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
+  gpy_version: 1.2.1
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
@@ -25,6 +27,7 @@ install:
  - python -m pip install paramz
  - python -m pip install nose-show-skipped
  - python -m pip install coverage
+ - python -m pip install coveralls
  - python -m pip install codecov
  - python -m pip install twine
  - "python setup.py develop"

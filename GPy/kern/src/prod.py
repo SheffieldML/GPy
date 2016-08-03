@@ -99,7 +99,7 @@ class Prod(CombinationKernel):
 
     def input_sensitivity(self, summarize=True):
         if summarize:
-            i_s = np.zeros((self.input_dim))
+            i_s = np.ones((self.input_dim))
             for k in self.parts:
                 i_s[k._all_dims_active] *= k.input_sensitivity(summarize)
             return i_s

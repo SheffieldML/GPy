@@ -211,6 +211,12 @@ class Kern(Parameterized):
     def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this kernel.
+
+        This is an arbitrary measurement based on the parameters
+        of the kernel per dimension and scaling in general.
+
+        Use this as relative measurement, not for absolute comparison between
+        kernels.
         """
         return np.zeros(self.input_dim)
 

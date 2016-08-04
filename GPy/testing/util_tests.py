@@ -148,12 +148,10 @@ class TestDebug(unittest.TestCase):
                 [ 1.71881079],
                 [ 2.67162871],
                 [ 3.23761907]])]
-            
+                    
         #try doing the clustering
         active = GPy.util.cluster_with_offset.cluster(data,inputs)
-
         #check to see that the clustering has correctly clustered the time series.
-        from sets import Set
-        clusters = Set([Set(cluster) for cluster in active])
-        assert Set([1,2]) in clusters, "Offset Clustering algorithm failed"
-        assert Set([0,3]) in clusters, "Offset Clustering algoirthm failed"
+        clusters = set([frozenset(cluster) for cluster in active])
+        assert set([1,2]) in clusters, "Offset Clustering algorithm failed"
+        assert set([0,3]) in clusters, "Offset Clustering algoirthm failed"

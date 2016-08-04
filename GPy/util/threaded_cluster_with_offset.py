@@ -1,6 +1,9 @@
 # Copyright (c) 2016, Mike Smith
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+# Not recommended for use at the moment - the threading here doesn't
+# work due to the global interpreter lock.
+
 import GPy
 import numpy as np
 import time

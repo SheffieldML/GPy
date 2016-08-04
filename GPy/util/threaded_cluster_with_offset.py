@@ -3,9 +3,13 @@
 
 import GPy
 import numpy as np
+import time
 import sys #so I can print dots
+from threading import Thread
+maxthreads = 40
 
-def get_log_likelihood(inputs,data,clust):
+    
+def get_log_likelihood(inputs,data,clust,loglikesarray):
     """Get the LL of a combined set of clusters, ignoring time series offsets.
     
     Get the log likelihood of a cluster without worrying about the fact
@@ -42,10 +46,12 @@ def get_log_likelihood(inputs,data,clust):
 
     m = GPy.models.GPRegression(X,Y)
     m.optimize()
-    ll=m.log_likelihood()    
-    return ll,0
+    ll=m.log_likelihood()  
+    
+    loglikesarray[clust[0]] = ll
+    return
 
-def get_log_likelihood_offset(inputs,data,clust):
+def get_log_likelihood_offset(inputs,data,clust,loglikesarray,offsetarray):
     """Get the log likelihood of a combined set of clusters, fitting the offsets
     
     arguments:
@@ -57,10 +63,9 @@ def get_log_likelihood_offset(inputs,data,clust):
     log likelihood and the offset
     """    
         
-    #if we've only got one cluster, the model has an error, so we want to just
-    #use normal GPRegression.
-    if len(clust)==1: 
-        return get_log_likelihood(inputs,data,clust)
+    assert len(clust)>1, "Use get_log_likelihood if you only have one cluster"
+        
+      
                 
     S = data[0].shape[0] #number of time series
         
@@ -86,7 +91,10 @@ def get_log_likelihood_offset(inputs,data,clust):
     
     ll = m.log_likelihood()
     offset = m.offset.values[0]
-    return ll,offset
+    #return ll,offset
+    loglikesarray[clust[0],clust[1]] = ll
+    offsetarray[clust[0],clust[1]] = offset
+    return
 
 def cluster(data,inputs,verbose=False):
     """Clusters data
@@ -125,19 +133,38 @@ def cluster(data,inputs,verbose=False):
             it +=1
             print("Iteration %d" % it)
         
+        threads = []
         #Compute the log-likelihood of each cluster (add them together)
         for clusti in range(len(active)):
             if verbose:
                 sys.stdout.write('.')
                 sys.stdout.flush()
             if np.isnan(loglikes[clusti]):
-                loglikes[clusti], unused_offset = get_log_likelihood_offset(inputs,data,[clusti])
+                t = Thread(target=get_log_likelihood,args=(inputs,data,[clusti],loglikes))
+                threads.append(t)
+                #loglikes[clusti], unused_offset = get_log_likelihood_offset(inputs,data,[clusti])
 
             #try combining with each other cluster...
             for clustj in range(clusti): #count from 0 to clustj-1
                 temp = [clusti,clustj]
                 if np.isnan(pairloglikes[clusti,clustj]):
-                    pairloglikes[clusti,clustj],pairoffset[clusti,clustj] = get_log_likelihood_offset(inputs,data,temp)
+                    #pairloglikes[clusti,clustj],pairoffset[clusti,clustj] = get_log_likelihood_offset(inputs,data,temp)
+                    t = Thread(target=get_log_likelihood_offset,args=(inputs,data,temp,pairloglikes,pairoffset))
+                    threads.append(t)
+   
+        if len(threads)<=maxthreads:
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        else: #should use a queue, as the method here assumes all threads take about same time, etc.
+            for i,t in enumerate(threads):
+                t.start()
+                if (i>=maxthreads):
+                    threads[i-maxthreads].join()
+            for i in range(len(threads)-maxthreads,len(threads)):
+                threads[i].join()
 
         seploglikes = np.repeat(loglikes[:,None].T,len(loglikes),0)+np.repeat(loglikes[:,None],len(loglikes),1)
         loglikeimprovement = pairloglikes - seploglikes #how much likelihood improves with clustering
@@ -177,8 +204,3 @@ def cluster(data,inputs,verbose=False):
 
     #TODO Add a way to return the offsets applied to all the time series
     return active 
-
-#starttime = time.time()
-#active = cluster(data,inputs)
-#endtime = time.time()
-#print "TOTAL TIME %0.4f" % (endtime-starttime)

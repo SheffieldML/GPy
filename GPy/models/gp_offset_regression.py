@@ -75,6 +75,10 @@ class GPOffsetRegression(GP):
             #print Gs[i]
             #print w
             dr_doffsets.append(dr_doffset)
+            
+        #lastly we need to divide by the lengthscale: So far we've found d(X_i - X_j)/dOffsets
+        #we want dr/dOffsets. (X_i - X_j)/lengthscale = r
+        dr_doffsets /= self.kern.lengthscale 
         return dr_doffsets
         
     def parameters_changed(self):

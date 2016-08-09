@@ -17,4 +17,3 @@ from . import multioutput
 from . import parallel
 from . import functions
 from . import cluster_with_offset
-from . import threaded_cluster_with_offset

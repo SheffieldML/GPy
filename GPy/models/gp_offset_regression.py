@@ -49,8 +49,7 @@ class GPOffsetRegression(GP):
         
     #def dL_doffset(self, X, sel):
     #    dL_dr = self.dK_dr_via_X(X, X) * dL_dK
-        
-        
+                
         
     def dr_doffset(self,X,sel,delta):
         #given an input matrix, X and the offsets (delta)

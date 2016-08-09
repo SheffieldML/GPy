@@ -26,3 +26,5 @@ from .dpgplvm import DPBayesianGPLVM
 from .state_space_model import StateSpace
 
 from .ibp_lfm import IBPLFM
+
+from .gp_offset_regression import GPOffsetRegression

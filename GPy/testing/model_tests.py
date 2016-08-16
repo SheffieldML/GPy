@@ -427,8 +427,29 @@ class MiscTests(unittest.TestCase):
         warp_m.predict_quantiles(X)
         warp_m.log_predictive_density(X, Y)
         warp_m.predict_in_warped_space = False
-        warp_m.predict(X)
-        warp_m.predict_quantiles(X)
+        warp_m.plot()
+        warp_m.predict_in_warped_space = True
+        warp_m.plot()
+        
+    def test_offset_regression(self):
+        #Tests GPy.models.GPOffsetRegression. Using two small time series
+        #from a sine wave, we confirm the algorithm determines that the
+        #likelihood is maximised when the offset hyperparameter is approximately
+        #equal to the actual offset in X between the two time series.
+        offset = 3
+        X1 = np.arange(0,50,5.0)[:,None]
+        X2 = np.arange(0+offset,50+offset,5.0)[:,None]
+        X = np.vstack([X1,X2])
+        ind = np.vstack([np.zeros([10,1]),np.ones([10,1])])
+        X = np.hstack([X,ind])
+        Y = np.sin((X[0:10,0])/30.0)[:,None]
+        Y = np.vstack([Y,Y])
+
+        m = GPy.models.GPOffsetRegression(X,Y)
+        m.rbf.lengthscale=5.0 #make it something other than one to check our gradients properly!
+        assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
+        m.optimize()
+        assert np.abs(m.offset[0]-offset)<0.1, ("GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)" % (m.offset[0], offset))
 
 
 class GradientTests(np.testing.TestCase):

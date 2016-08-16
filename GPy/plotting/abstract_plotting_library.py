@@ -61,6 +61,8 @@ class AbstractPlottingLibrary(object):
         """
         Get a new figure with nrows and ncolumns subplots.
         Does not initialize the canvases yet.
+        
+        There is individual kwargs for the individual plotting libraries to use.
         """
         raise NotImplementedError("Implement all plot functions in AbstractPlottingLibrary in order to use your own plotting library")
     

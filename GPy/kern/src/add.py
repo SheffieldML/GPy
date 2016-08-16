@@ -13,15 +13,21 @@ class Add(CombinationKernel):
     propagates gradients through.
 
     This kernel will take over the active dims of it's subkernels passed in.
+    
+    NOTE: The subkernels will be copies of the original kernels, to prevent 
+    unexpected behavior. 
     """
     def __init__(self, subkerns, name='sum'):
-        for i, kern in enumerate(subkerns[:]):
+        _newkerns = []
+        for kern in subkerns:
             if isinstance(kern, Add):
-                del subkerns[i]
-                for part in kern.parts[::-1]:
+                for part in kern.parts:
                     #kern.unlink_parameter(part)
-                    subkerns.insert(i, part.copy())
-        super(Add, self).__init__(subkerns, name)
+                    _newkerns.append(part.copy())
+            else:
+                _newkerns.append(kern.copy())
+                    
+        super(Add, self).__init__(_newkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
 
     def _check_exact_psicomp(self):

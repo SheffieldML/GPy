@@ -31,6 +31,7 @@
 import numpy as np
 from scipy import sparse
 import itertools
+from ...models import WarpedGP
 
 def in_ipynb():
     try:
@@ -72,6 +73,9 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
         predict_kw['Y_metadata'] = {}
     if 'output_index' not in predict_kw['Y_metadata']:
         predict_kw['Y_metadata']['output_index'] = Xgrid[:,-1:].astype(np.int)
+
+    if isinstance(self, WarpedGP) and self.predict_in_warped_space:
+        predict_kw['median'] = True
 
     mu, _ = self.predict(Xgrid, **predict_kw)
 
@@ -295,6 +299,8 @@ def get_x_y_var(model):
         Y = model.Y.values
     except AttributeError:
         Y = model.Y
+    if isinstance(model, WarpedGP) and model.predict_in_warped_space:
+        Y = model.Y_untransformed
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 

@@ -14,6 +14,8 @@ from . import testing
 from . import kern
 from . import plotting
 
+from .util import normalizer
+
 # backwards compatibility
 import sys
 backwards_compatibility = ['lists_and_dicts', 'observable_array', 'ties_and_remappings', 'index_operations']

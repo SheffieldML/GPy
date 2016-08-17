@@ -15,7 +15,7 @@ class WarpedGP(GP):
     This defines a GP Regression model that applies a 
     warping function to the output.
     """
-    def __init__(self, X, Y, kernel=None, warping_function=None, warping_terms=3):
+    def __init__(self, X, Y, kernel=None, warping_function=None, warping_terms=3, normalizer=False):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
         if warping_function == None:
@@ -23,33 +23,23 @@ class WarpedGP(GP):
             self.warping_params = (np.random.randn(self.warping_function.n_terms * 3 + 1) * 1)
         else:
             self.warping_function = warping_function
-        self.scale_data = False
-        if self.scale_data:
-            Y = self._scale_data(Y)
-        #self.has_uncertain_inputs = False
-        self.Y_untransformed = Y.copy()
-        self.predict_in_warped_space = True
         likelihood = likelihoods.Gaussian()
-        GP.__init__(self, X, self.transform_data(), likelihood=likelihood, kernel=kernel)
+        super(WarpedGP, self).__init__(X, Y.copy(), likelihood=likelihood, kernel=kernel, normalizer=normalizer)
+        self.Y_normalized = self.Y_normalized.copy()
+        self.Y_untransformed = self.Y_normalized.copy()
+        self.predict_in_warped_space = True
         self.link_parameter(self.warping_function)
 
     def set_XY(self, X=None, Y=None):
-        self.Y_untransformed = Y.copy()
-        GP.set_XY(self, X, self.transform_data())
-
-    def _scale_data(self, Y):
-        self._Ymax = Y.max()
-        self._Ymin = Y.min()
-        return (Y - self._Ymin) / (self._Ymax - self._Ymin) - 0.5
-
-    def _unscale_data(self, Y):
-        return (Y + 0.5) * (self._Ymax - self._Ymin) + self._Ymin
+        super(WarpedGP, self).set_XY(X, Y)
+        self.Y_untransformed = self.Y_normalized.copy()
+        self.update_model(True)
 
     def parameters_changed(self):
         """
         Notice that we update the warping function gradients here.
         """
-        self.Y[:] = self.transform_data()
+        self.Y_normalized[:] = self.transform_data()
         super(WarpedGP, self).parameters_changed()
         Kiy = self.posterior.woodbury_vector.flatten()
         self.warping_function.update_grads(self.Y_untransformed, Kiy)
@@ -96,7 +86,7 @@ class WarpedGP(GP):
                                      deg_gauss_hermite=deg_gauss_hermite)
         return arg1 - (arg2 ** 2)
 
-    def predict(self, Xnew, which_parts='all', pred_init=None, full_cov=False, Y_metadata=None,
+    def predict(self, Xnew, kern=None, pred_init=None, Y_metadata=None,
                 median=False, deg_gauss_hermite=20, likelihood=None):
         """
         Prediction results depend on:
@@ -104,9 +94,12 @@ class WarpedGP(GP):
         - The median flag passed as argument
         The likelihood keyword is never used, it is just to follow the plotting API.
         """
-        mu, var = GP._raw_predict(self, Xnew)
+        #mu, var = GP._raw_predict(self, Xnew)
         # now push through likelihood
-        mean, var = self.likelihood.predictive_values(mu, var)
+        #mean, var = self.likelihood.predictive_values(mu, var)
+        
+        mean, var = super(WarpedGP, self).predict(Xnew, kern=kern, full_cov=False, likelihood=likelihood)
+
 
         if self.predict_in_warped_space:
             std = np.sqrt(var)
@@ -120,11 +113,9 @@ class WarpedGP(GP):
         else:
             wmean = mean
             wvar = var
-        if self.scale_data:
-            pred = self._unscale_data(pred)
         return wmean, wvar
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, likelihood=None, median=False):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, likelihood=None, kern=None):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -135,15 +126,19 @@ class WarpedGP(GP):
         :returns: list of quantiles for each X and predictive quantiles for interval combination
         :rtype: [np.ndarray (Xnew x self.input_dim), np.ndarray (Xnew x self.input_dim)]
         """
-        m, v = self._raw_predict(X,  full_cov=False)
-        if self.normalizer is not None:
-            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
-        a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
-        if not self.predict_in_warped_space:
-            return [a, b]
-        new_a = self.warping_function.f_inv(a)
-        new_b = self.warping_function.f_inv(b)
-        return [new_a, new_b]
+        qs = super(WarpedGP, self).predict_quantiles(X, quantiles, Y_metadata=Y_metadata, likelihood=likelihood, kern=kern)
+        if self.predict_in_warped_space:
+            return [self.warping_function.f_inv(q) for q in qs]
+        return qs
+        #m, v = self._raw_predict(X,  full_cov=False)
+        #if self.normalizer is not None:
+        #    m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
+        #a, b = self.likelihood.predictive_quantiles(m, v, quantiles, Y_metadata)
+        #if not self.predict_in_warped_space:
+        #    return [a, b]
+        #new_a = self.warping_function.f_inv(a)
+        #new_b = self.warping_function.f_inv(b)
+        #return [new_a, new_b]
 
     def log_predictive_density(self, x_test, y_test, Y_metadata=None):
         """

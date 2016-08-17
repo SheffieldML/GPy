@@ -135,9 +135,7 @@ class Bias(Static):
 
     def K(self, X, X2=None):
         shape = (X.shape[0], X.shape[0] if X2 is None else X2.shape[0])
-        ret = np.empty(shape, dtype=np.float64)
-        ret[:] = self.variance
-        return ret
+        return np.full(shape, self.variance, dtype=np.float64)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = dL_dK.sum()
@@ -146,9 +144,7 @@ class Bias(Static):
         self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        ret = np.empty((Z.shape[0], Z.shape[0]), dtype=np.float64)
-        ret[:] = self.variance*self.variance*variational_posterior.shape[0]
-        return ret
+        return np.full((Z.shape[0], Z.shape[0]), self.variance*self.variance*variational_posterior.shape[0], dtype=np.float64)
 
     def psi2n(self, Z, variational_posterior):
         ret = np.empty((variational_posterior.mean.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)

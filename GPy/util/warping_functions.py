@@ -31,7 +31,7 @@ class WarpingFunction(Parameterized):
         """gradient of f w.r.t to y"""
         raise NotImplementedError
 
-    def f_inv(self, z, max_iterations=100, y=None):
+    def f_inv(self, z, max_iterations=250, y=None):
         """
         Calculate the numerical inverse of f. This should be
         overwritten for specific warping functions where the
@@ -51,13 +51,10 @@ class WarpingFunction(Parameterized):
             update = (fy - z) / fgrady
             y -= self.rate * update
             it += 1
-        if it == max_iterations:
-            print("WARNING!!! Maximum number of iterations reached in f_inv ")
-            print("Sum of roots: %.4f" % np.sum(fy - z))
+        #if it == max_iterations:
+        #    print("WARNING!!! Maximum number of iterations reached in f_inv ")
+        #    print("Sum of roots: %.4f" % np.sum(fy - z))
         return y
-
-    def _get_param_names(self):
-        raise NotImplementedError
 
     def plot(self, xmin, xmax):
         y = np.arange(xmin, xmax, 0.01)
@@ -158,13 +155,6 @@ class TanhFunction(WarpingFunction):
             return gradients, covar_grad_chain
 
         return gradients
-
-    def _get_param_names(self):
-        variables = ['a', 'b', 'c', 'd']
-        names = sum([['warp_tanh_%s_t%i' % (variables[n],q) for n in range(3)] 
-                     for q in range(self.n_terms)],[])
-        names.append('warp_tanh')
-        return names
 
     def update_grads(self, Y_untransformed, Kiy):
         grad_y = self.fgrad_y(Y_untransformed)

@@ -91,18 +91,32 @@ class MiscTests(unittest.TestCase):
         k = GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
         m2[:] = m[:]
+        
         mu1, var1 = m.predict(m.X, full_cov=True)
         mu2, var2 = m2.predict(m2.X, full_cov=True)
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
+        
         mu1, var1 = m.predict(m.X, full_cov=False)
         mu2, var2 = m2.predict(m2.X, full_cov=False)
+        
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
 
         q50n = m.predict_quantiles(m.X, (50,))
         q50 = m2.predict_quantiles(m2.X, (50,))
+        
         np.testing.assert_allclose(q50n[0], (q50[0]*std)+mu)
+        
+        # Test variance component:
+        qs = np.array([2.5, 97.5])
+        # The quantiles get computed before unormalization
+        # And transformed using the mean transformation:
+        c = np.random.choice(self.X.shape[0])
+        q95 = m2.predict_quantiles(self.X[[c]], qs)
+        mu, var = m2.predict(self.X[[c]])
+        from scipy.stats import norm
+        np.testing.assert_allclose((mu+(norm.ppf(qs/100.)*np.sqrt(var))).flatten(), np.array(q95).flatten())
 
     def check_jacobian(self):
         try:

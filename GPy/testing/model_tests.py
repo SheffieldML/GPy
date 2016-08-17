@@ -91,18 +91,32 @@ class MiscTests(unittest.TestCase):
         k = GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
         m2[:] = m[:]
+        
         mu1, var1 = m.predict(m.X, full_cov=True)
         mu2, var2 = m2.predict(m2.X, full_cov=True)
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
+        
         mu1, var1 = m.predict(m.X, full_cov=False)
         mu2, var2 = m2.predict(m2.X, full_cov=False)
+        
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
 
         q50n = m.predict_quantiles(m.X, (50,))
         q50 = m2.predict_quantiles(m2.X, (50,))
+        
         np.testing.assert_allclose(q50n[0], (q50[0]*std)+mu)
+        
+        # Test variance component:
+        qs = np.array([2.5, 97.5])
+        # The quantiles get computed before unormalization
+        # And transformed using the mean transformation:
+        c = np.random.choice(self.X.shape[0])
+        q95 = m2.predict_quantiles(self.X[[c]], qs)
+        mu, var = m2.predict(self.X[[c]])
+        from scipy.stats import norm
+        np.testing.assert_allclose((mu+(norm.ppf(qs/100.)*np.sqrt(var))).flatten(), np.array(q95).flatten())
 
     def check_jacobian(self):
         try:
@@ -361,51 +375,95 @@ class MiscTests(unittest.TestCase):
         preds = m.predict(self.X)
 
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.IdentityFunction()
-        warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
+        warp_f = GPy.util.warping_functions.IdentityFunction(closed_inverse=False)
+        warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, 
+                                     warping_function=warp_f)
         warp_m.optimize()
         warp_preds = warp_m.predict(self.X)
 
-        np.testing.assert_almost_equal(preds, warp_preds)
+        warp_k_exact = GPy.kern.RBF(1)
+        warp_f_exact = GPy.util.warping_functions.IdentityFunction()
+        warp_m_exact = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k_exact, 
+                                           warping_function=warp_f_exact)
+        warp_m_exact.optimize()
+        warp_preds_exact = warp_m_exact.predict(self.X)
+ 
+        np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
+        np.testing.assert_almost_equal(preds, warp_preds_exact, decimal=4)
 
-    @unittest.skip('Comment this to plot the modified sine function')
-    def test_warped_gp_sine(self):
+    def test_warped_gp_log(self):
         """
-        A test replicating the sine regression problem from
-        Snelson's paper.
+        A WarpedGP with the log warping function should be
+        equal to a standard GP with log labels.
+        Note that we predict the median here.
+        """
+        k = GPy.kern.RBF(1)
+        Y = np.abs(self.Y)
+        logY = np.log(Y)
+        m = GPy.models.GPRegression(self.X, logY, kernel=k)
+        m.optimize()
+        preds = m.predict(self.X)[0]
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.LogFunction(closed_inverse=False)
+        warp_m = GPy.models.WarpedGP(self.X, Y, kernel=warp_k, 
+                                     warping_function=warp_f)
+        warp_m.optimize()
+        warp_preds = warp_m.predict(self.X, median=True)[0]
+
+        warp_k_exact = GPy.kern.RBF(1)
+        warp_f_exact = GPy.util.warping_functions.LogFunction()
+        warp_m_exact = GPy.models.WarpedGP(self.X, Y, kernel=warp_k_exact, 
+                                           warping_function=warp_f_exact)
+        warp_m_exact.optimize(messages=True)
+        warp_preds_exact = warp_m_exact.predict(self.X, median=True)[0]
+ 
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds, decimal=4)
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds_exact, decimal=4)
+
+    def test_warped_gp_cubic_sine(self, max_iters=100):
+        """
+        A test replicating the cubic sine regression problem from
+        Snelson's paper. This test doesn't have any assertions, it's
+        just to ensure coverage of the tanh warping function code.
         """
         X = (2 * np.pi) * np.random.random(151) - np.pi
-        Y = np.sin(X) + np.random.normal(0,0.1,151)
-        Y = np.exp(Y) - 5
-        #Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y]) + 0
+        Y = np.sin(X) + np.random.normal(0,0.2,151)
+        Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
+        X = X[:, None]
+        Y = Y[:, None]
 
-        #np.seterr(over='raise')
-        import matplotlib.pyplot as plt
-        warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.TanhWarpingFunction_d(n_terms=2)
-        warp_m = GPy.models.WarpedGP(X[:, None], Y[:, None], kernel=warp_k, warping_function=warp_f)
-        #warp_m['.*variance.*'].constrain_fixed(0.25)
-        #warp_m['.*lengthscale.*'].constrain_fixed(1)
-        #warp_m['warp_tanh.d'].constrain_fixed(1)
-        #warp_m.randomize()
-        #warp_m['.*warp_tanh.psi*'][:,0:2].constrain_bounded(0,100)
-        #warp_m['.*warp_tanh.psi*'][:,0:1].constrain_fixed(1)
-
-        #print(warp_m.checkgrad())
-        #warp_m.plot()
-        #plt.show()
-
-        warp_m.optimize_restarts(parallel=True, robust=True)
-        #print(warp_m.checkgrad())
-        print(warp_m)
-        print(warp_m['.*warp.*'])
+        warp_m = GPy.models.WarpedGP(X, Y)#, kernel=warp_k)#, warping_function=warp_f)
+        warp_m['.*\.d'].constrain_fixed(1.0)
+        warp_m.optimize_restarts(parallel=False, robust=False, num_restarts=5, 
+                                 max_iters=max_iters)
+        warp_m.predict(X)
+        warp_m.predict_quantiles(X)
+        warp_m.log_predictive_density(X, Y)
         warp_m.predict_in_warped_space = False
         warp_m.plot()
         warp_m.predict_in_warped_space = True
         warp_m.plot()
-        warp_f.plot(X.min()-10, X.max()+10)
-        plt.show()
+        
+    def test_offset_regression(self):
+        #Tests GPy.models.GPOffsetRegression. Using two small time series
+        #from a sine wave, we confirm the algorithm determines that the
+        #likelihood is maximised when the offset hyperparameter is approximately
+        #equal to the actual offset in X between the two time series.
+        offset = 3
+        X1 = np.arange(0,50,5.0)[:,None]
+        X2 = np.arange(0+offset,50+offset,5.0)[:,None]
+        X = np.vstack([X1,X2])
+        ind = np.vstack([np.zeros([10,1]),np.ones([10,1])])
+        X = np.hstack([X,ind])
+        Y = np.sin((X[0:10,0])/30.0)[:,None]
+        Y = np.vstack([Y,Y])
 
+        m = GPy.models.GPOffsetRegression(X,Y)
+        m.rbf.lengthscale=5.0 #make it something other than one to check our gradients properly!
+        assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
+        m.optimize()
+        assert np.abs(m.offset[0]-offset)<0.1, ("GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)" % (m.offset[0], offset))
 
 
 class GradientTests(np.testing.TestCase):

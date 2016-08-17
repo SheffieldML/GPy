@@ -2,17 +2,17 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from .. import kern
-from GPy.core.model import Model
-from paramz import ObsAr
+from .model import Model
+from .parameterization.variational import VariationalPosterior
 from .mapping import Mapping
 from .. import likelihoods
+from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from GPy.core.parameterization.variational import VariationalPosterior
+from ..util.normalizer import Standardize
+from paramz import ObsAr
 
 import logging
 import warnings
-from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
 class GP(Model):
@@ -28,7 +28,7 @@ class GP(Model):
     :param Norm normalizer:
         normalize the outputs Y.
         Prediction will be un-normalized using this normalizer.
-        If normalizer is None, we will normalize using MeanNorm.
+        If normalizer is None, we will normalize using Standardize.
         If normalizer is False, no normalization will be done.
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
@@ -49,7 +49,7 @@ class GP(Model):
         logger.info("initializing Y")
 
         if normalizer is True:
-            self.normalizer = MeanNorm()
+            self.normalizer = Standardize()
         elif normalizer is False:
             self.normalizer = None
         else:
@@ -64,6 +64,7 @@ class GP(Model):
             self.Y_normalized = self.Y
         else:
             self.Y = Y
+            self.Y_normalized = self.Y
 
         if Y.shape[0] != self.num_data:
             #There can be cases where we want inputs than outputs, for example if we have multiple latent
@@ -248,14 +249,16 @@ class GP(Model):
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
-        if self.normalizer is not None:
-            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         if include_likelihood:
             # now push through likelihood
             if likelihood is None:
                 likelihood = self.likelihood
             mu, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+
+        if self.normalizer is not None:
+            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
+
         return mu, var
 
     def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -300,11 +303,14 @@ class GP(Model):
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
-        if self.normalizer is not None:
-            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         if likelihood is None:
             likelihood = self.likelihood
-        return likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
+            
+        quantiles = likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
+        
+        if self.normalizer is not None:
+            quantiles = [self.normalizer.inverse_mean(q) for q in quantiles]
+        return quantiles
 
     def predictive_gradients(self, Xnew, kern=None):
         """

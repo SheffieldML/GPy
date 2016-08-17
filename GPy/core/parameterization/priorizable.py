@@ -16,7 +16,7 @@ class Priorizable(Parameterizable):
 
     def __setstate__(self, state):
         super(Priorizable, self).__setstate__(state)
-        self._index_operations['priors'] = self.priors
+        #self._index_operations['priors'] = self.priors
 
 
     #===========================================================================

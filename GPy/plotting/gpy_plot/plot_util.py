@@ -31,6 +31,7 @@
 import numpy as np
 from scipy import sparse
 import itertools
+from ...models import WarpedGP
 
 def in_ipynb():
     try:
@@ -295,6 +296,10 @@ def get_x_y_var(model):
         Y = model.Y.values
     except AttributeError:
         Y = model.Y
+
+    if isinstance(model, WarpedGP) and not model.predict_in_warped_space:
+        Y = model.Y_normalized
+    
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 

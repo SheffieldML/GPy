@@ -267,7 +267,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                                gp_kernel=gp_kernel,
                                mean_compare_decimal=2, var_compare_decimal=2)
         except AssertionError:
-            raise SkipTest("Skipping Regular kalman filter for kernel addition, as it seems to be bugged for some python versions")
+            raise SkipTest("Skipping Regular kalman filter for kernel addition, because it is not stable (normal situation) for this data.")
 
 
     def test_kernel_multiplication(self,):

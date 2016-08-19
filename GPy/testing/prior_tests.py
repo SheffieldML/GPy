@@ -6,6 +6,19 @@ import numpy as np
 import GPy
 
 class PriorTests(unittest.TestCase):
+    def test_studentT(self):
+        xmin, xmax = 1, 2.5*np.pi
+        b, C, SNR = 1, 0, 0.1
+        X = np.linspace(xmin, xmax, 500)
+        y  = b*X + C + 1*np.sin(X)
+        y += 0.05*np.random.randn(len(X))
+        X, y = X[:, None], y[:, None]
+        m = GPy.models.GPRegression(X, y)
+        studentT = GPy.priors.StudentT(1, 2, 4)
+        # setting a StudentT prior on non-negative parameters
+        # should raise an assertionerror.
+        self.assertRaises(AssertionError, m.rbf.set_prior, studentT)
+    
     def test_lognormal(self):
         xmin, xmax = 1, 2.5*np.pi
         b, C, SNR = 1, 0, 0.1
@@ -106,7 +119,6 @@ class PriorTests(unittest.TestCase):
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
         self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
-
 
 
 if __name__ == "__main__":

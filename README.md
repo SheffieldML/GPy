@@ -11,6 +11,31 @@ The Gaussian processes framework in Python.
 
 [![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy) [![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) [![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
 
+## Contributing to GPy
+
+We welcome any contributions to GPy, after all it is an open source project. We use the GitHub feature of pull requests for contributions.
+
+For an in depth description of pull requests, please visit https://help.github.com/articles/using-pull-requests/ .
+
+Steps to a successfull contribution:
+
+1. Fork GPy: https://help.github.com/articles/fork-a-repo/
+2. Make your changes to the source in your fork.
+3. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there already a framework set up to test your new model in model_tests.py. have a look at the source and you might be able to just add your model as an additional test. There is also a framework for testing the other bits and pieces, just head over to the testing folder and have alook.
+4. Create a pull request to the devel branch in GPy, see above.
+5. The tests will be running on your pull request and with the comments we will be able to discuss the changes and help you with any problems.
+6. The pull request gets accepted and your awsome new feature will be in the next release :)
+
+For any further questions/suggestions head over to the issues section in GPy. 
+
+## Support and questions to the community
+
+We have set up a meailing list for any questions you might have or problems you feel others have encountered:
+
+gpy-users@lists.shef.ac.uk
+
+Feel free to join the discussions on the issues section, too.
+
 ## Updated Structure
 
 We have pulled the core parameterization out of GPy. It is a package called [paramz](https://github.com/sods/paramz) and is the pure gradient based model optimization.

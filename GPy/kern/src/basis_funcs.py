@@ -142,15 +142,14 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
         self.centers = np.atleast_2d(centers)
         self.ARD_slope = ARD_slope
         if self.ARD_slope:
-            self.slope = Param('slope', slope * np.ones(self.centers.size), Logexp())
+            self.slope = Param('slope', slope * np.ones(self.centers.size))
         else:
-            self.slope = Param('slope', slope, Logexp())
+            self.slope = Param('slope', slope)
         super(LogisticBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
         self.link_parameter(self.slope)
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        import scipy as sp
         phi = 1/(1+np.exp(-((X-self.centers)*self.slope)))
         return np.where(np.isnan(phi), 0, phi)#((phi-self.start)/(self.stop-self.start))-.5
 

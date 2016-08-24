@@ -28,8 +28,14 @@ class GPKroneckerGaussianRegression(Model):
     }
 
     """
-    def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
+    def __init__(self, X1, X2, Y, kern1=None, kern2=None, noise_var=1., name='KGPR'):
         Model.__init__(self, name=name)
+
+        if kern1 is None:
+            kern1 = GPy.kern.RBF(X1.shape[1])
+        if kern2 is None:
+            kern2 = GPy.kern.RBF(X2.shape[1])
+
         # accept the construction arguments
         self.X1 = ObsAr(X1)
         self.X2 = ObsAr(X2)

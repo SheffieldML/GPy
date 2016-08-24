@@ -5,6 +5,7 @@ import numpy as np
 from ..core import Model
 from paramz import ObsAr
 from .. import likelihoods
+from .. import kern
 
 class GPKroneckerGaussianRegression(Model):
     """
@@ -32,9 +33,9 @@ class GPKroneckerGaussianRegression(Model):
         Model.__init__(self, name=name)
 
         if kern1 is None:
-            kern1 = GPy.kern.RBF(X1.shape[1])
+            kern1 = kern.RBF(X1.shape[1])
         if kern2 is None:
-            kern2 = GPy.kern.RBF(X2.shape[1])
+            kern2 = kern.RBF(X2.shape[1])
 
         # accept the construction arguments
         self.X1 = ObsAr(X1)

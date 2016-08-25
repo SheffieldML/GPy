@@ -13,20 +13,21 @@ class PriorTests(unittest.TestCase):
         y  = b*X + C + 1*np.sin(X)
         y += 0.05*np.random.randn(len(X))
         X, y = X[:, None], y[:, None]
-        m = GPy.models.GPRegression(X, y)
         studentT = GPy.priors.StudentT(1, 2, 4)
+        
+        m = GPy.models.SparseGPRegression(X, y)
+        m.Z.set_prior(studentT)
+
         # setting a StudentT prior on non-negative parameters
         # should raise an assertionerror.
         self.assertRaises(AssertionError, m.rbf.set_prior, studentT)
         
-        m = GPy.models.SparseGPRegression(X, y)
-
-        gaussian = GPy.priors.Gaussian(1, 1)
-        m.Z.set_prior(studentT)
-        # setting a Gaussian prior on non-negative parameters
-        # should raise an assertionerror.
-        #self.assertRaises(AssertionError, m.Z.set_prior, gaussian)
+        # The gradients need to be checked
         self.assertTrue(m.checkgrad())
+        
+        # Check the singleton pattern:
+        self.assertIs(studentT, GPy.priors.StudentT(1,2,4))
+        self.assertIsNot(studentT, GPy.priors.StudentT(2,2,4))
     
     def test_lognormal(self):
         xmin, xmax = 1, 2.5*np.pi
@@ -128,7 +129,6 @@ class PriorTests(unittest.TestCase):
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
         self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
-
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

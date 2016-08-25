@@ -18,6 +18,15 @@ class PriorTests(unittest.TestCase):
         # setting a StudentT prior on non-negative parameters
         # should raise an assertionerror.
         self.assertRaises(AssertionError, m.rbf.set_prior, studentT)
+        
+        m = GPy.models.SparseGPRegression(X, y)
+
+        gaussian = GPy.priors.Gaussian(1, 1)
+        m.Z.set_prior(studentT)
+        # setting a Gaussian prior on non-negative parameters
+        # should raise an assertionerror.
+        #self.assertRaises(AssertionError, m.Z.set_prior, gaussian)
+        self.assertTrue(m.checkgrad())
     
     def test_lognormal(self):
         xmin, xmax = 1, 2.5*np.pi
@@ -87,7 +96,7 @@ class PriorTests(unittest.TestCase):
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
         #self.assertRaises(AssertionError, m.Z.set_prior, gaussian)
-
+        self.assertTrue(m.checkgrad())
 
 
     def test_fixed_domain_check(self):

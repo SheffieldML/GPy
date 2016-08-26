@@ -1309,3 +1309,52 @@ class Exponential(Prior):
 
     def rvs(self, n):
         return np.random.exponential(scale=self.l, size=n)
+
+class StudentT(Prior):
+    """
+    Implementation of the student t probability function, coupled with random variables.
+
+    :param mu: mean
+    :param sigma: standard deviation
+    :param nu: degrees of freedom
+
+    .. Note:: Bishop 2006 notation is used throughout the code
+
+    """
+    domain = _REAL
+    _instances = []
+
+    def __new__(cls, mu=0, sigma=1, nu=4):  # Singleton:
+        if cls._instances:
+            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            for instance in cls._instances:
+                if instance().mu == mu and instance().sigma == sigma and instance().nu == nu:
+                    return instance()
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)
+        else:
+            o = newfunc(cls, mu, sigma, nu)
+        cls._instances.append(weakref.ref(o))
+        return cls._instances[-1]()
+
+    def __init__(self, mu, sigma, nu):
+        self.mu = float(mu)
+        self.sigma = float(sigma)
+        self.sigma2 = np.square(self.sigma)
+        self.nu = float(nu)
+
+    def __str__(self):
+        return "St({:.2g}, {:.2g}, {:.2g})".format(self.mu, self.sigma, self.nu)
+
+    def lnpdf(self, x):
+        from scipy.stats import t
+        return t.logpdf(x,self.nu,self.mu,self.sigma)
+
+    def lnpdf_grad(self, x):
+        return -(self.nu + 1.)*(x - self.mu)/( self.nu*self.sigma2 + np.square(x - self.mu) )
+
+    def rvs(self, n):
+        from scipy.stats import t
+        ret = t.rvs(self.nu, loc=self.mu, scale=self.sigma, size=n)
+        return ret    

@@ -102,17 +102,39 @@ class Linear(Kern):
             return dL_dK.dot(X2)*self.variances #np.einsum('jq,q,ij->iq', X2, self.variances, dL_dK)
 
     def gradients_XX(self, dL_dK, X, X2=None):
-        if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
+        """
+        Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
+
+        returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors, thus
+        the returned array is of shape [NxNxQxQ].
+
+        ..math:
+            \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
+
+        ..returns:
+            dL2_dXdX2:  [NxMxQxQ] for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
+                        Thus, we return the second derivative in X2.
+        """
         if X2 is None:
-            return 2*np.ones(X.shape)*self.variances
-        else:
-            return np.ones(X.shape)*self.variances
+            X2 = X
+        return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]))
+        #if X2 is None: dL_dK = (dL_dK+dL_dK.T)/2
+        #if X2 is None:
+        #    return np.ones(np.repeat(X.shape, 2)) * (self.variances[None,:] + self.variances[:, None])[None, None, :, :]
+        #else:
+        #    return np.ones((X.shape[0], X2.shape[0], X.shape[1], X.shape[1])) * (self.variances[None,:] + self.variances[:, None])[None, None, :, :]
+
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return 2.*self.variances*dL_dKdiag[:,None]*X
 
     def gradients_XX_diag(self, dL_dKdiag, X):
-        return 2*np.ones(X.shape)*self.variances
+        return np.zeros((X.shape[0], X.shape[1], X.shape[1]))
+
+        #dims = X.shape
+        #if cov:
+        #    dims += (X.shape[1],)
+        #return 2*np.ones(dims)*self.variances
 
     def input_sensitivity(self, summarize=True):
         return np.ones(self.input_dim) * self.variances

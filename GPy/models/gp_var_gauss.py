@@ -28,7 +28,7 @@ class GPVariationalGaussianApproximation(GP):
         self.beta = Param('beta', np.ones(num_data))
 
         inf = VarGauss(self.alpha, self.beta)
-        super(GPVariationalGaussianApproximation, self).__init__(X, Y, kernel, likelihood, name='VarGP', inference_method=inf)
+        super(GPVariationalGaussianApproximation, self).__init__(X, Y, kernel, likelihood, name='VarGP', inference_method=inf, Y_metadata=Y_metadata)
 
         self.link_parameter(self.alpha)
         self.link_parameter(self.beta)

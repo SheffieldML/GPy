@@ -31,6 +31,7 @@
 import numpy as np
 from scipy import sparse
 import itertools
+from ...models import WarpedGP
 
 def in_ipynb():
     try:
@@ -190,6 +191,7 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
             x = X[index, input_1]
             y = X[index, input_2]
             z = X[index, input_3]
+
         yield x, y, z, this_label, index, m
 
 def subsample_X(X, labels, num_samples=1000):
@@ -294,6 +296,10 @@ def get_x_y_var(model):
         Y = model.Y.values
     except AttributeError:
         Y = model.Y
+
+    if isinstance(model, WarpedGP) and not model.predict_in_warped_space:
+        Y = model.Y_normalized
+    
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 
@@ -379,5 +385,5 @@ def x_frame2D(X,plot_limits=None,resolution=None):
 
     resolution = resolution or 50
     xx, yy = np.mgrid[xmin[0]:xmax[0]:1j*resolution,xmin[1]:xmax[1]:1j*resolution]
-    Xnew = np.vstack((xx.flatten(),yy.flatten())).T
+    Xnew = np.c_[xx.flat, yy.flat]
     return Xnew, xx, yy, xmin, xmax

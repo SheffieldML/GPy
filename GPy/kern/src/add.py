@@ -13,15 +13,21 @@ class Add(CombinationKernel):
     propagates gradients through.
 
     This kernel will take over the active dims of it's subkernels passed in.
+    
+    NOTE: The subkernels will be copies of the original kernels, to prevent 
+    unexpected behavior. 
     """
     def __init__(self, subkerns, name='sum'):
-        for i, kern in enumerate(subkerns[:]):
+        _newkerns = []
+        for kern in subkerns:
             if isinstance(kern, Add):
-                del subkerns[i]
-                for part in kern.parts[::-1]:
+                for part in kern.parts:
                     #kern.unlink_parameter(part)
-                    subkerns.insert(i, part.copy())
-        super(Add, self).__init__(subkerns, name)
+                    _newkerns.append(part.copy())
+            else:
+                _newkerns.append(kern.copy())
+                    
+        super(Add, self).__init__(_newkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
 
     def _check_exact_psicomp(self):
@@ -87,14 +93,19 @@ class Add(CombinationKernel):
 
     def gradients_XX(self, dL_dK, X, X2):
         if X2 is None:
-            target = np.zeros((X.shape[0], X.shape[0], X.shape[1]))
+            target = np.zeros((X.shape[0], X.shape[0], X.shape[1], X.shape[1]))
         else:
-            target = np.zeros((X.shape[0], X2.shape[0], X.shape[1]))
+            target = np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]))
+        #else: # diagonal covariance
+        #    if X2 is None:
+        #        target = np.zeros((X.shape[0], X.shape[0], X.shape[1]))
+        #    else:
+        #        target = np.zeros((X.shape[0], X2.shape[0], X.shape[1]))
         [target.__iadd__(p.gradients_XX(dL_dK, X, X2)) for p in self.parts]
         return target
 
     def gradients_XX_diag(self, dL_dKdiag, X):
-        target = np.zeros(X.shape)
+        target = np.zeros(X.shape+(X.shape[1],))
         [target.__iadd__(p.gradients_XX_diag(dL_dKdiag, X)) for p in self.parts]
         return target
 
@@ -182,7 +193,7 @@ class Add(CombinationKernel):
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
-        
+
         if not self._exact_psicomp: return Kern.update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         for p1 in self.parts:
@@ -194,9 +205,9 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += tmp * p2.variance 
+                    eff_dL_dpsi1 += tmp * p2.variance
                 else:# np.setdiff1d(p1._all_dims_active, ar2, assume_unique): # TODO: Careful, not correct for overlapping _all_dims_active
-                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
+                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior)
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
     def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -213,7 +224,7 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += tmp * p2.variance 
+                    eff_dL_dpsi1 += tmp * p2.variance
                 else:
                     eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior)
             target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
@@ -221,7 +232,7 @@ class Add(CombinationKernel):
 
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
-        
+
         if not self._exact_psicomp: return Kern.gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
         target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
@@ -234,9 +245,9 @@ class Add(CombinationKernel):
                 if isinstance(p2, White):
                     continue
                 elif isinstance(p2, Bias):
-                    eff_dL_dpsi1 += tmp * p2.variance 
+                    eff_dL_dpsi1 += tmp * p2.variance
                 else:
-                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
+                    eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior)
             grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
@@ -249,7 +260,7 @@ class Add(CombinationKernel):
     #            other.unlink_parameter(p)
     #        parts.extend(other.parts)
     #        #self.link_parameters(*other_params)
-    #        
+    #
     #    else:
     #        #self.link_parameter(other)
     #        parts.append(other)
@@ -263,4 +274,94 @@ class Add(CombinationKernel):
                 i_s[k._all_dims_active] += k.input_sensitivity(summarize)
             return i_s
         else:
+
             return super(Add, self).input_sensitivity(summarize)
+
+    def sde_update_gradient_full(self, gradients):
+        """
+        Update gradient in the order in which parameters are represented in the
+        kernel
+        """
+        part_start_param_index = 0
+        for p in self.parts:
+            if not p.is_fixed:
+                part_param_num = len(p.param_array) # number of parameters in the part
+                p.sde_update_gradient_full(gradients[part_start_param_index:(part_start_param_index+part_param_num)])
+                part_start_param_index += part_param_num
+
+    def sde(self):
+        """
+        Support adding kernels for sde representation
+        """
+
+        import scipy.linalg as la
+
+        F     = None
+        L     = None
+        Qc    = None
+        H     = None
+        Pinf  = None
+        P0    = None
+        dF    = None
+        dQc   = None
+        dPinf = None
+        dP0   = None
+        n = 0
+        nq = 0
+        nd = 0
+
+         # Assign models
+        for p in self.parts:
+            (Ft,Lt,Qct,Ht,Pinft,P0t,dFt,dQct,dPinft,dP0t) = p.sde()
+            F = la.block_diag(F,Ft) if (F is not None) else Ft
+            L = la.block_diag(L,Lt) if (L is not None) else Lt
+            Qc = la.block_diag(Qc,Qct) if (Qc is not None) else Qct
+            H = np.hstack((H,Ht)) if (H is not None) else Ht
+
+            Pinf = la.block_diag(Pinf,Pinft) if (Pinf is not None) else Pinft
+            P0 = la.block_diag(P0,P0t) if (P0 is not None) else P0t
+
+            if dF is not None:
+                dF = np.pad(dF,((0,dFt.shape[0]),(0,dFt.shape[1]),(0,dFt.shape[2])),
+                        'constant', constant_values=0)
+                dF[-dFt.shape[0]:,-dFt.shape[1]:,-dFt.shape[2]:] = dFt
+            else:
+                dF = dFt
+
+            if dQc is not None:
+                dQc = np.pad(dQc,((0,dQct.shape[0]),(0,dQct.shape[1]),(0,dQct.shape[2])),
+                        'constant', constant_values=0)
+                dQc[-dQct.shape[0]:,-dQct.shape[1]:,-dQct.shape[2]:] = dQct
+            else:
+                dQc = dQct
+
+            if dPinf is not None:
+                dPinf = np.pad(dPinf,((0,dPinft.shape[0]),(0,dPinft.shape[1]),(0,dPinft.shape[2])),
+                        'constant', constant_values=0)
+                dPinf[-dPinft.shape[0]:,-dPinft.shape[1]:,-dPinft.shape[2]:] = dPinft
+            else:
+                dPinf = dPinft
+
+            if dP0 is not None:
+                dP0 = np.pad(dP0,((0,dP0t.shape[0]),(0,dP0t.shape[1]),(0,dP0t.shape[2])),
+                        'constant', constant_values=0)
+                dP0[-dP0t.shape[0]:,-dP0t.shape[1]:,-dP0t.shape[2]:] = dP0t
+            else:
+                dP0 = dP0t
+
+            n += Ft.shape[0]
+            nq += Qct.shape[0]
+            nd += dFt.shape[2]
+
+        assert (F.shape[0] == n and F.shape[1]==n), "SDE add: Check of F Dimensions failed"
+        assert (L.shape[0] == n and L.shape[1]==nq), "SDE add: Check of L Dimensions failed"
+        assert (Qc.shape[0] == nq and Qc.shape[1]==nq), "SDE add: Check of Qc Dimensions failed"
+        assert (H.shape[0] == 1 and H.shape[1]==n), "SDE add: Check of H Dimensions failed"
+        assert (Pinf.shape[0] == n and Pinf.shape[1]==n), "SDE add: Check of Pinf Dimensions failed"
+        assert (P0.shape[0] == n and P0.shape[1]==n), "SDE add: Check of P0 Dimensions failed"
+        assert (dF.shape[0] == n and dF.shape[1]==n and dF.shape[2]==nd), "SDE add: Check of dF Dimensions failed"
+        assert (dQc.shape[0] == nq and dQc.shape[1]==nq and dQc.shape[2]==nd), "SDE add: Check of dQc Dimensions failed"
+        assert (dPinf.shape[0] == n and dPinf.shape[1]==n and dPinf.shape[2]==nd), "SDE add: Check of dPinf Dimensions failed"
+        assert (dP0.shape[0] == n and dP0.shape[1]==n and dP0.shape[2]==nd), "SDE add: Check of dP0 Dimensions failed"
+
+        return (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)

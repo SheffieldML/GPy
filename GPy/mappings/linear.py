@@ -33,7 +33,7 @@ class Linear(Mapping):
         return np.dot(X, self.A)
 
     def update_gradients(self, dL_dF, X):
-        self.A.gradient = np.dot( X.T, dL_dF)
+        self.A.gradient = np.dot(X.T, dL_dF)
 
     def gradients_X(self, dL_dF, X):
         return np.dot(dL_dF, self.A.T)

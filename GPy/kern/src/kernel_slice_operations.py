@@ -13,19 +13,20 @@ from paramz.parameterized import ParametersChangedMeta
 
 def put_clean(dct, name, func):
     if name in dct:
-        #dct['_clean_{}'.format(name)] = dct[name]
+        dct['_clean_{}'.format(name)] = dct[name]
         dct[name] = func(dct[name])
 
 class KernCallsViaSlicerMeta(ParametersChangedMeta):
     def __new__(cls, name, bases, dct):
         put_clean(dct, 'K', _slice_K)
         put_clean(dct, 'Kdiag', _slice_Kdiag)
+        put_clean(dct, 'phi', _slice_Kdiag)
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
         put_clean(dct, 'gradients_X', _slice_gradients_X)
         put_clean(dct, 'gradients_X_X2', _slice_gradients_X)
         put_clean(dct, 'gradients_XX', _slice_gradients_XX)
-        put_clean(dct, 'gradients_XX_diag', _slice_gradients_X_diag)
+        put_clean(dct, 'gradients_XX_diag', _slice_gradients_XX_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)
 
         put_clean(dct, 'psi0', _slice_psi)
@@ -38,15 +39,16 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         return super(KernCallsViaSlicerMeta, cls).__new__(cls, name, bases, dct)
 
 class _Slice_wrap(object):
-    def __init__(self, k, X, X2=None, ret_shape=None):
+    def __init__(self, k, X, X2=None, diag=False, ret_shape=None):
         self.k = k
+        self.diag = diag
         if ret_shape is None:
             self.shape = X.shape
         else:
             self.shape = ret_shape
-        assert X.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X.shape={!s}".format(X.shape)
+        assert X.ndim == 2, "need at least column vectors as inputs to kernels for now, given X.shape={!s}".format(X.shape)
         if X2 is not None:
-            assert X2.ndim == 2, "only matrices are allowed as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
+            assert X2.ndim == 2, "need at least column vectors as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
         if (self.k._all_dims_active is not None) and (self.k._sliced_X == 0):
             self.k._check_active_dims(X)
             self.X = self.k._slice_X(X)
@@ -67,8 +69,13 @@ class _Slice_wrap(object):
             ret = np.zeros(self.shape)
             if len(self.shape) == 2:
                 ret[:, self.k._all_dims_active] = return_val
-            elif len(self.shape) == 3:
-                ret[:, :, self.k._all_dims_active] = return_val
+            elif len(self.shape) == 3: # derivative for X2!=None
+                if self.diag:
+                    ret.T[np.ix_(self.k._all_dims_active, self.k._all_dims_active)] = return_val.T
+                else:
+                    ret[:, :, self.k._all_dims_active] = return_val
+            elif len(self.shape) == 4: # second order derivative
+                ret.T[np.ix_(self.k._all_dims_active, self.k._all_dims_active)] = return_val.T
             return ret
         return return_val
 
@@ -112,23 +119,34 @@ def _slice_gradients_X(f):
         return ret
     return wrap
 
+def _slice_gradients_X_diag(f):
+    @wraps(f)
+    def wrap(self, dL_dKdiag, X):
+        with _Slice_wrap(self, X, None) as s:
+            ret = s.handle_return_array(f(self, dL_dKdiag, s.X))
+        return ret
+    return wrap
+
 def _slice_gradients_XX(f):
     @wraps(f)
     def wrap(self, dL_dK, X, X2=None):
         if X2 is None:
             N, M = X.shape[0], X.shape[0]
+            Q1 = Q2 = X.shape[1]
         else:
             N, M = X.shape[0], X2.shape[0]
-        with _Slice_wrap(self, X, X2, ret_shape=(N, M, X.shape[1])) as s:
+            Q1, Q2 = X.shape[1], X2.shape[1]
         #with _Slice_wrap(self, X, X2, ret_shape=None) as s:
+        with _Slice_wrap(self, X, X2, ret_shape=(N, M, Q1, Q2)) as s:
             ret = s.handle_return_array(f(self, dL_dK, s.X, s.X2))
         return ret
     return wrap
 
-def _slice_gradients_X_diag(f):
+def _slice_gradients_XX_diag(f):
     @wraps(f)
     def wrap(self, dL_dKdiag, X):
-        with _Slice_wrap(self, X, None) as s:
+        N, Q = X.shape
+        with _Slice_wrap(self, X, None, diag=True, ret_shape=(N, Q, Q)) as s:
             ret = s.handle_return_array(f(self, dL_dKdiag, s.X))
         return ret
     return wrap

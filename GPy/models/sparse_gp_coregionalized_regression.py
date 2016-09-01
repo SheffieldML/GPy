@@ -19,7 +19,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
     :type Y_list: list of numpy arrays
     :param Z_list: list of inducing inputs (optional)
     :type Z_list: empty list | list of numpy arrays
-    :param kernel: a GPy kernel, defaults to RBF ** Coregionalized
+    :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
     :type kernel: None | GPy.kernel defaults
     :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
     :type likelihoods_list: None | a list GPy.likelihoods

@@ -52,8 +52,8 @@ class Stationary(Kern):
     The lengthscale(s) and variance parameters are added to the structure automatically.
 
     Thanks to @strongh:
-    In Stationary, a covariance function is defined in GPy as stationary when it depends only on the l2-norm |x_1 - x_2 |. 
-    However this is the typical definition of isotropy, while stationarity is usually a bit more relaxed. 
+    In Stationary, a covariance function is defined in GPy as stationary when it depends only on the l2-norm |x_1 - x_2 |.
+    However this is the typical definition of isotropy, while stationarity is usually a bit more relaxed.
     The more common version of stationarity is that the covariance is a function of x_1 - x_2 (See e.g. R&W first paragraph of section 4.1).
     """
 

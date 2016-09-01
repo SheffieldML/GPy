@@ -20,6 +20,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
     def __new__(cls, name, bases, dct):
         put_clean(dct, 'K', _slice_K)
         put_clean(dct, 'Kdiag', _slice_Kdiag)
+        put_clean(dct, 'phi', _slice_Kdiag)
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
         put_clean(dct, 'gradients_X', _slice_gradients_X)

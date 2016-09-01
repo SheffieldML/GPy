@@ -19,18 +19,18 @@ For an in depth description of pull requests, please visit https://help.github.c
 
 Steps to a successfull contribution:
 
-1. Fork GPy: https://help.github.com/articles/fork-a-repo/
-2. Make your changes to the source in your fork.
-3. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there already a framework set up to test your new model in model_tests.py. have a look at the source and you might be able to just add your model as an additional test. There is also a framework for testing the other bits and pieces, just head over to the testing folder and have alook.
-4. Create a pull request to the devel branch in GPy, see above.
-5. The tests will be running on your pull request and with the comments we will be able to discuss the changes and help you with any problems.
-6. The pull request gets accepted and your awsome new feature will be in the next release :)
+ 1. Fork GPy: https://help.github.com/articles/fork-a-repo/
+ 2. Make your changes to the source in your fork.
+ 3. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
+ 4. Create a pull request to the devel branch in GPy, see above.
+ 5. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
+ 6. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
 
 For any further questions/suggestions head over to the issues section in GPy. 
 
 ## Support and questions to the community
 
-We have set up a meailing list for any questions you might have or problems you feel others have encountered:
+We have set up a mailing list for any questions you might have or problems you feel others have encountered:
 
 gpy-users@lists.shef.ac.uk
 

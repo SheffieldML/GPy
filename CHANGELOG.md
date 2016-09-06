@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.5.1 (2016-09-06)
+
+### Fix
+
+* What&#x27;s new update fix #425 in changelog. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.0 → 1.5.1. [mzwiessele]
+
+
 ## v1.5.0 (2016-09-06)
 
 ### New

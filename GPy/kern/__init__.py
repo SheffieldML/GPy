@@ -33,6 +33,7 @@ from .src.splitKern import SplitKern,DEtime
 from .src.splitKern import DEtime as DiffGenomeKern
 from .src.spline import Spline
 from .src.basis_funcs import LogisticBasisFuncKernel, LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel
+from .src.grid_kerns import GridRBF
 
 from .src.sde_matern import sde_Matern32
 from .src.sde_matern import sde_Matern52

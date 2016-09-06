@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.5.3 (2016-09-06)
+
+### Other
+
+* Bump version: 1.5.2 → 1.5.3. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; into kurtCutajar-devel. [mzwiessele]
+
+* [doc] cleanup. [mzwiessele]
+
+* [merge] into new devel. [Max Zwiessele]
+
+* Making consistent with python 3. [kcutajar]
+
+* Fixed incorrect import. [kcutajar]
+
+* Fixed incorrect import. [kcutajar]
+
+* Removed erreneous lines indicating merge conflicts. [kcutajar]
+
+* Fixed conflicts. [kcutajar]
+
+* Minor fix. [kcutajar]
+
+* Removed SSM functionality - updated Kronecker grid case. [kcutajar]
+
+* Added kernels for GpGrid and GpSsm regression. [kcutajar]
+
+* Added core code for GpSSM and GpGrid. [kcutajar]
+
+* Added fixes to repo + rebased. [kcutajar]
+
+* Minor fix. [kcutajar]
+
+* Removed SSM functionality - updated Kronecker grid case. [kcutajar]
+
+* Added kernels for GpGrid and GpSsm regression. [kcutajar]
+
+* Added core code for GpSSM and GpGrid. [kcutajar]
+
+
 ## v1.5.2 (2016-09-06)
 
 ### New

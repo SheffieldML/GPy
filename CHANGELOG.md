@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.5.0 (2016-09-06)
+
+### New
+
+* Using gitchangelog to keep track of changes and log new features. [mzwiessele]
+
+### Other
+
+* Bump version: 1.4.3 → 1.5.0. [mzwiessele]
+
+
 ## v1.4.3 (2016-09-06)
 
 ### Changes

@@ -17,16 +17,24 @@ We welcome any contributions to GPy, after all it is an open source project. We 
 
 For an in depth description of pull requests, please visit https://help.github.com/articles/using-pull-requests/ .
 
-Steps to a successfull contribution:
+### Steps to a successfull contribution:
 
  1. Fork GPy: https://help.github.com/articles/fork-a-repo/
  2. Make your changes to the source in your fork.
- 3. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
- 4. Create a pull request to the devel branch in GPy, see above.
- 5. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
- 6. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
+ 3. Make sure the [guidelines](#gl) are met.
+ 4. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
+ 5. Create a pull request to the devel branch in GPy, see above.
+ 6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
+ 7. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
 
 For any further questions/suggestions head over to the issues section in GPy. 
+
+### Pull Request Guidelines<a name=gl></a>
+
+ - Check your code with PEP8 or pylint. Try to stick to 80 columns wide.
+ - Separate commits per smallest concern.
+ - Each functionality/bugfix commit should contain code, tests, and doc.
+ - We are using gitchangelog to keep track of changes and log new features. So if you want your changes to show up in the changelog, make sure you follow the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
 ## Support and questions to the community
 

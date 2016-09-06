@@ -6,6 +6,10 @@
 
 * Added deployment pull request instructions for developers. [mzwiessele]
 
+### Other
+
+* Minor readme changes. [mzwiessele]
+
 
 ## v1.5.1 (2016-09-06)
 

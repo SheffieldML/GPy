@@ -11,6 +11,12 @@ The Gaussian processes framework in Python.
 
 [![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy) [![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) [![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
 
+## What's new:
+
+From now on we keep track of changes in the CHANGELOG.md. 
+If you want your changes to show up there follow the [guidelines](#gl).
+In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format. 
+
 ## Contributing to GPy
 
 We welcome any contributions to GPy, after all it is an open source project. We use the GitHub feature of pull requests for contributions.

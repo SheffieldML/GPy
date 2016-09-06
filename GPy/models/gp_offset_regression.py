@@ -86,7 +86,7 @@ class GPOffsetRegression(GP):
         self.X = self.X_fixed - offsets[self.selected]
         super(GPOffsetRegression, self).parameters_changed()
         
-        dL_dr = self.kern.dK_dr_via_X(self.X, self.X) * self.grad_dict['dL_dK']
+        dL_dr = self.kern.dK_dr_via_X(self.X, self.X) * self.grad_dict['dL_dK'] #TODO could use gradients_X, instead of r.
         
         dr_doff = self.dr_doffset(self.X,self.selected,self.offset.values)
         for i in range(len(dr_doff)):

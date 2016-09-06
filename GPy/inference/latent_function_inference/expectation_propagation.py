@@ -66,7 +66,7 @@ class EP(EPBase, ExactGaussianInference):
             #if we've already run EP, just use the existing approximation stored in self._ep_approximation
             mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation
 
-        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, precision=1./tau_tilde, K=K, Z_tilde=np.log(Z_tilde).sum())
+        return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, variance=1./tau_tilde, K=K, Z_tilde=np.log(Z_tilde).sum())
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 

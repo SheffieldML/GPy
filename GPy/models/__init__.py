@@ -22,9 +22,7 @@ from .gp_var_gauss import GPVariationalGaussianApproximation
 from .one_vs_all_classification import OneVsAllClassification
 from .one_vs_all_sparse_classification import OneVsAllSparseClassification
 from .dpgplvm import DPBayesianGPLVM
-
 from .state_space_model import StateSpace
-
 from .ibp_lfm import IBPLFM
-
 from .gp_offset_regression import GPOffsetRegression
+from .gp_grid_regression import GPRegressionGrid

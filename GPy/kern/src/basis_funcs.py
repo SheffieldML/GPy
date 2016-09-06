@@ -15,6 +15,7 @@ class BasisFuncKernel(Kern):
         This class does NOT automatically add an offset to the design matrix phi!
         """
         super(BasisFuncKernel, self).__init__(input_dim, active_dims, name)
+        assert self.input_dim==1, "Basis Function Kernel only implemented for one dimension. Use one kernel per dimension (and add them together) for more dimensions"
         self.ARD = ARD
         if self.ARD:
             phi_test = self._phi(np.random.normal(0, 1, (1, self.input_dim)))
@@ -60,6 +61,11 @@ class BasisFuncKernel(Kern):
             self.variance.gradient = np.einsum('i,i', dL_dKdiag, self.Kdiag(X)) * self.beta
 
     def concatenate_offset(self, X):
+        """
+        Convenience function to add an offset column to phi.
+        You can use this function to add an offset (bias on y axis)
+        to phi in your custom self._phi(X).
+        """
         return np.c_[np.ones((X.shape[0], 1)), X]
 
     def posterior_inf(self, X=None, posterior=None):
@@ -120,6 +126,12 @@ class LinearSlopeBasisFuncKernel(BasisFuncKernel):
         return ((phi-(self.stop+self.start)/2.))#/(.5*(self.stop-self.start)))-1.
 
 class ChangePointBasisFuncKernel(BasisFuncKernel):
+    """
+    The basis function has a changepoint. That is, it is constant, jumps at a
+    single point (given as changepoint) and is constant again. You can
+    give multiple changepoints. The changepoints are calculated using
+    np.where(self.X < self.changepoint), -1, 1)
+    """
     def __init__(self, input_dim, changepoint, variance=1., active_dims=None, ARD=False, name='changepoint'):
         self.changepoint = np.array(changepoint)
         super(ChangePointBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
@@ -129,6 +141,11 @@ class ChangePointBasisFuncKernel(BasisFuncKernel):
         return np.where((X < self.changepoint), -1, 1)
 
 class DomainKernel(LinearSlopeBasisFuncKernel):
+    """
+    Create a constant plateou of correlation between start and stop and zero
+    elsewhere. This is a constant shift of the outputs along the yaxis
+    in the range from start to stop.
+    """
     def __init__(self, input_dim, start, stop, variance=1., active_dims=None, ARD=False, name='constant_domain'):
         super(DomainKernel, self).__init__(input_dim, start, stop, variance, active_dims, ARD, name)
 
@@ -138,19 +155,25 @@ class DomainKernel(LinearSlopeBasisFuncKernel):
         return phi#((phi-self.start)/(self.stop-self.start))-.5
 
 class LogisticBasisFuncKernel(BasisFuncKernel):
+    """
+    Create a series of logistic basis functions with centers given. The
+    slope gets computed by datafit. The number of centers determines the
+    number of logistic functions.
+    """
     def __init__(self, input_dim, centers, variance=1., slope=1., active_dims=None, ARD=False, ARD_slope=True, name='logistic'):
         self.centers = np.atleast_2d(centers)
+        if ARD:
+            assert ARD_slope, "If we have one variance per center, we want also one slope per center."
         self.ARD_slope = ARD_slope
         if self.ARD_slope:
-            self.slope = Param('slope', slope * np.ones(self.centers.size), Logexp())
+            self.slope = Param('slope', slope * np.ones(self.centers.size))
         else:
-            self.slope = Param('slope', slope, Logexp())
+            self.slope = Param('slope', slope)
         super(LogisticBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
         self.link_parameter(self.slope)
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        import scipy as sp
         phi = 1/(1+np.exp(-((X-self.centers)*self.slope)))
         return np.where(np.isnan(phi), 0, phi)#((phi-self.start)/(self.stop-self.start))-.5
 
@@ -167,7 +190,7 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
             if self.ARD_slope:
                 self.slope.gradient = self.variance * 2 * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi1_dl)
             else:
-                self.slope.gradient = self.variance * 2 * (dL_dK * phi1.dot(dphi1_dl.T)).sum()
+                self.slope.gradient = np.sum(self.variance * 2 * (dL_dK * phi1.dot(dphi1_dl.T)).sum())
         else:
             phi1 = self.phi(X)
             phi2 = self.phi(X2)
@@ -179,5 +202,5 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
             if self.ARD_slope:
                 self.slope.gradient = (self.variance * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi2_dl) + np.einsum('ij,iq,jq->q', dL_dK, phi2, dphi1_dl))
             else:
-                self.slope.gradient = self.variance * (dL_dK * phi1.dot(dphi2_dl.T)).sum() + (dL_dK * phi2.dot(dphi1_dl.T)).sum()
+                self.slope.gradient = np.sum(self.variance * (dL_dK * phi1.dot(dphi2_dl.T)).sum() + (dL_dK * phi2.dot(dphi1_dl.T)).sum())
         self.slope.gradient = np.where(np.isnan(self.slope.gradient), 0, self.slope.gradient)

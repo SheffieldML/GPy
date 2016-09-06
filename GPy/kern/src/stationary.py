@@ -52,8 +52,8 @@ class Stationary(Kern):
     The lengthscale(s) and variance parameters are added to the structure automatically.
 
     Thanks to @strongh:
-    In Stationary, a covariance function is defined in GPy as stationary when it depends only on the l2-norm |x_1 - x_2 |. 
-    However this is the typical definition of isotropy, while stationarity is usually a bit more relaxed. 
+    In Stationary, a covariance function is defined in GPy as stationary when it depends only on the l2-norm |x_1 - x_2 |.
+    However this is the typical definition of isotropy, while stationarity is usually a bit more relaxed.
     The more common version of stationarity is that the covariance is a function of x_1 - x_2 (See e.g. R&W first paragraph of section 4.1).
     """
 
@@ -198,6 +198,16 @@ class Stationary(Kern):
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
 
+    def update_gradients_direct(self, dL_dVar, dL_dLen):
+        """
+        Specially intended for the Grid regression case.
+        Given the computed log likelihood derivates, update the corresponding
+        kernel and likelihood gradients.
+        Useful for when gradients have been computed a priori.
+        """
+        self.variance.gradient = dL_dVar
+        self.lengthscale.gradient = dL_dLen
+
     def _inv_dist(self, X, X2=None):
         """
         Compute the elementwise inverse of the distance matrix, expecpt on the
@@ -318,6 +328,15 @@ class Stationary(Kern):
 
     def input_sensitivity(self, summarize=True):
         return self.variance*np.ones(self.input_dim)/self.lengthscale**2
+
+    def get_one_dimensional_kernel(self, dimensions):
+        """
+        Specially intended for the grid regression case
+        For a given covariance kernel, this method returns the corresponding kernel for
+        a single dimension. The resulting values can then be used in the algorithm for
+        reconstructing the full covariance matrix.
+        """
+        raise NotImplementedError("implement one dimensional variation of kernel")
 
 
 

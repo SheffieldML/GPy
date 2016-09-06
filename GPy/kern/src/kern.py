@@ -49,7 +49,7 @@ class Kern(Parameterized):
         if active_dims is None:
             active_dims = np.arange(input_dim)
 
-        self.active_dims = np.asarray(active_dims, np.int_)
+        self.active_dims = np.atleast_1d(np.asarray(active_dims, np.int_))
 
         self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
 

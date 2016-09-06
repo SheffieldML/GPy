@@ -1,8 +1,12 @@
 # Changelog
 
-## %%version%% (unreleased)
+## v1.4.2 (2016-09-06)
 
 ### Other
+
+* Bump version: 1.4.1 → 1.4.2. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * [kern] fix #440. [mzwiessele]
 

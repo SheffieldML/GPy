@@ -239,7 +239,7 @@ A usual workflow should look like this:
 Then we are ready to make the last changes for the changelog and versioning:
 
     $ git commit -am "fix: Fixed tests for <pull-origin>"
-    $ bumpvesion patch [optional]
+    $ bumpversion patch # [optional]
     $ gitchangelog > CHANGELOG.md
     $ git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
 

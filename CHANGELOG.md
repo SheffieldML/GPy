@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## v1.4.3 (2016-09-06)
 
 ### Changes
 
 * Changelog update. [mzwiessele]
+
+### Other
+
+* Bump version: 1.4.2 → 1.4.3. [mzwiessele]
 
 
 ## v1.4.2 (2016-09-06)

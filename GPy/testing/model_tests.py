@@ -328,6 +328,41 @@ class MiscTests(unittest.TestCase):
         m.checkgrad()
         print(m)
 
+    def test_mrd(self):
+        from GPy.inference.latent_function_inference import InferenceMethodList, VarDTC
+        from GPy.likelihoods import Gaussian
+        Y1 = np.random.normal(0, 1, (40, 13))
+        Y2 = np.random.normal(0, 1, (40, 6))
+        Y3 = np.random.normal(0, 1, (40, 8))
+        Q = 5
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, 
+                           )
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+        
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='PCA_single', 
+                           initz='random',
+                           kernel=[GPy.kern.RBF(Q, ARD=1) for _ in range(3)], 
+                           inference_method=InferenceMethodList([VarDTC() for _ in range(3)]),
+                           likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='random', 
+                           initz='random',
+                           kernel=GPy.kern.RBF(Q, ARD=1), 
+                           )
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, X=np.random.normal(0,1,size=(40,Q)), 
+                           X_variance=False,
+                           kernel=GPy.kern.RBF(Q, ARD=1), 
+                           likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+
     def test_model_set_params(self):
         m = GPy.models.GPRegression(self.X, self.Y)
         lengthscale = np.random.uniform()

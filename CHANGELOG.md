@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+* Changelog update. [mzwiessele]
+
+
 ## v1.4.2 (2016-09-06)
 
 ### Other

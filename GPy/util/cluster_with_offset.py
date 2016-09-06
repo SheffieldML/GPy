@@ -3,7 +3,6 @@
 
 import GPy
 import numpy as np
-import sys #so I can print dots
 
 def add_index_column(inputs,data,clust):
 

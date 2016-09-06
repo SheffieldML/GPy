@@ -29,7 +29,8 @@ For an in depth description of pull requests, please visit https://help.github.c
 
 For any further questions/suggestions head over to the issues section in GPy. 
 
-### Pull Request Guidelines<a name=gl></a>
+<a name=gl></a>
+### Pull Request Guidelines
 
  - Check your code with PEP8 or pylint. Try to stick to 80 columns wide.
  - Separate commits per smallest concern.

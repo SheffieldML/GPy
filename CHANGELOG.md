@@ -1,12 +1,14 @@
 # Changelog
 
-## Unreleased
+## v1.5.2 (2016-09-06)
 
 ### New
 
 * Added deployment pull request instructions for developers. [mzwiessele]
 
 ### Other
+
+* Bump version: 1.5.1 → 1.5.2. [mzwiessele]
 
 * Minor readme changes. [mzwiessele]
 

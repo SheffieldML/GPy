@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+* Added deployment pull request instructions for developers. [mzwiessele]
+
+
 ## v1.5.1 (2016-09-06)
 
 ### Fix

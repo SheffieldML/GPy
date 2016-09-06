@@ -152,9 +152,27 @@ m_load[:] = np.load('model_save.npy') # Load the parameters
 m_load.update_model(True) # Call the algebra only once
 print(m_load)
 ```
+## For Admins and Developers:
 
+### Running unit tests:
 
-## Running unit tests:
+New way of running tests is using coverage:
+
+Ensure nose and coverage is installed:
+
+    pip install nose coverage
+    
+Run nosetests from root directory of repository:
+
+    coverage run travis_tests.py
+    
+Create coverage report in htmlcov/
+
+    coverage html
+    
+The coverage report is located in htmlcov/index.html
+
+##### Legacy: using nosetests
 
 Ensure nose is installed via pip:
 
@@ -172,22 +190,8 @@ or using setuptools
 
     python setup.py test
 
-## Ubuntu hackers
 
-> Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
-> be used for GPy. We hope this gets fixed soon.
-
-For the most part, the developers are using ubuntu. To install the required packages:
-
-    sudo apt-get install python-numpy python-scipy python-matplotlib
-
-clone this git repository and add it to your path:
-
-    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
-    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
-
-
-## Compiling documentation:
+### Compiling documentation:
 
 The documentation is stored in doc/ and is compiled with the Sphinx Python documentation generator, and is written in the reStructuredText format.
 
@@ -209,6 +213,42 @@ The documentation can be compiled as follows:
     make html
 
 The HTML files are then stored in doc/build/html
+
+### Commit new patch to devel
+
+If you want to merge a branch into devel make sure the following steps are met:
+
+ - Create a local branch from the pull request and merge the current devel in.
+ - Look through the changes on the pull request.
+ - Check that tests are there and are checking code where applicable.
+ - [optional] Make changes if necessary and commit and push to run tests.
+ - [optional] Repeat the above until tests pass.
+ - [optional] bump up the version of GPy using bumpversion. The configuration is done, so all you need is bumpversion [major|minor|patch]. 
+ - Update the changelog using gitchangelog: `gitchangelog > CHANGELOG.md`
+ - Commit the changes of the changelog as silent update: `git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
+ - Push the changes into devel.
+
+A usual workflow should look like this:
+
+    $ git fetch origin
+    $ git checkout -b <pull-origin>-devel origin/<pull-origin>-devel
+    $ git merge devel
+    $ coverage run travis_tests.py
+    # Make changes for tests to cover corner cases (if statements, None arguments etc.)
+    $ git commit -am "fix: Fixed tests for <pull-origin>"
+    $ bumpvesion patch [optional]
+    $ gitchangelog > CHANGELOG.md
+    $ git commit -am "chg: pkg: CHANGELOG update" CHANGELOG.md
+    $ git push origin devel
+    
+This will update the devel branch of GPy.
+
+### Deploying GPy
+
+We have set up all deployment automatic. 
+Thus, all you need to do is create a pull request from devel to deploy. 
+Wait for the tests to finish (successfully!) and merge the pull request. 
+This will update the package on pypi for all platforms fully automatically.
 
 ## Funding Acknowledgements
 

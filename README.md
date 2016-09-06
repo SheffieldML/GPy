@@ -11,22 +11,37 @@ The Gaussian processes framework in Python.
 
 [![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy) [![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) [![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
 
+## What's new:
+
+From now on we keep track of changes in the CHANGELOG.md. 
+If you want your changes to show up there follow the [guidelines](#gl).
+In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format. 
+
 ## Contributing to GPy
 
 We welcome any contributions to GPy, after all it is an open source project. We use the GitHub feature of pull requests for contributions.
 
 For an in depth description of pull requests, please visit https://help.github.com/articles/using-pull-requests/ .
 
-Steps to a successfull contribution:
+### Steps to a successfull contribution:
 
  1. Fork GPy: https://help.github.com/articles/fork-a-repo/
  2. Make your changes to the source in your fork.
- 3. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
- 4. Create a pull request to the devel branch in GPy, see above.
- 5. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
- 6. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
+ 3. Make sure the [guidelines](#gl) are met.
+ 4. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
+ 5. Create a pull request to the devel branch in GPy, see above.
+ 6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
+ 7. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
 
 For any further questions/suggestions head over to the issues section in GPy. 
+
+<a name=gl></a>
+### Pull Request Guidelines
+
+ - Check your code with PEP8 or pylint. Try to stick to 80 columns wide.
+ - Separate commits per smallest concern.
+ - Each functionality/bugfix commit should contain code, tests, and doc.
+ - We are using gitchangelog to keep track of changes and log new features. So if you want your changes to show up in the changelog, make sure you follow the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
 ## Support and questions to the community
 
@@ -137,9 +152,27 @@ m_load[:] = np.load('model_save.npy') # Load the parameters
 m_load.update_model(True) # Call the algebra only once
 print(m_load)
 ```
+## For Admins and Developers:
 
+### Running unit tests:
 
-## Running unit tests:
+New way of running tests is using coverage:
+
+Ensure nose and coverage is installed:
+
+    pip install nose coverage
+    
+Run nosetests from root directory of repository:
+
+    coverage run travis_tests.py
+    
+Create coverage report in htmlcov/
+
+    coverage html
+    
+The coverage report is located in htmlcov/index.html
+
+##### Legacy: using nosetests
 
 Ensure nose is installed via pip:
 
@@ -157,22 +190,8 @@ or using setuptools
 
     python setup.py test
 
-## Ubuntu hackers
 
-> Note: Right now the Ubuntu package index does not include scipy 0.16.0, and thus, cannot
-> be used for GPy. We hope this gets fixed soon.
-
-For the most part, the developers are using ubuntu. To install the required packages:
-
-    sudo apt-get install python-numpy python-scipy python-matplotlib
-
-clone this git repository and add it to your path:
-
-    git clone git@github.com:SheffieldML/GPy.git ~/SheffieldML
-    echo 'PYTHONPATH=$PYTHONPATH:~/SheffieldML' >> ~/.bashrc
-
-
-## Compiling documentation:
+### Compiling documentation:
 
 The documentation is stored in doc/ and is compiled with the Sphinx Python documentation generator, and is written in the reStructuredText format.
 
@@ -194,6 +213,50 @@ The documentation can be compiled as follows:
     make html
 
 The HTML files are then stored in doc/build/html
+
+### Commit new patch to devel
+
+If you want to merge a branch into devel make sure the following steps are met:
+
+ - Create a local branch from the pull request and merge the current devel in.
+ - Look through the changes on the pull request.
+ - Check that tests are there and are checking code where applicable.
+ - [optional] Make changes if necessary and commit and push to run tests.
+ - [optional] Repeat the above until tests pass.
+ - [optional] bump up the version of GPy using bumpversion. The configuration is done, so all you need is bumpversion [major|minor|patch]. 
+ - Update the changelog using gitchangelog: `gitchangelog > CHANGELOG.md`
+ - Commit the changes of the changelog as silent update: `git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
+ - Push the changes into devel.
+
+A usual workflow should look like this:
+
+    $ git fetch origin
+    $ git checkout -b <pull-origin>-devel origin/<pull-origin>-devel
+    $ git merge devel
+    $ coverage run travis_tests.py
+
+**Make changes for tests to cover corner cases (if statements, None arguments etc.)**
+Then we are ready to make the last changes for the changelog and versioning:
+
+    $ git commit -am "fix: Fixed tests for <pull-origin>"
+    $ bumpversion patch # [optional]
+    $ gitchangelog > CHANGELOG.md
+    $ git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
+
+Now we can merge the pull request into devel:
+
+    $ git checkout devel
+    $ git merge --no-ff kurtCutajar-devel
+    $ git push origin devel
+    
+This will update the devel branch of GPy.
+
+### Deploying GPy
+
+We have set up all deployment automatic. 
+Thus, all you need to do is create a pull request from devel to deploy. 
+Wait for the tests to finish (successfully!) and merge the pull request. 
+This will update the package on pypi for all platforms fully automatically.
 
 ## Funding Acknowledgements
 

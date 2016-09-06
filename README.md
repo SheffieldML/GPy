@@ -234,11 +234,19 @@ A usual workflow should look like this:
     $ git checkout -b <pull-origin>-devel origin/<pull-origin>-devel
     $ git merge devel
     $ coverage run travis_tests.py
-    # Make changes for tests to cover corner cases (if statements, None arguments etc.)
+
+**Make changes for tests to cover corner cases (if statements, None arguments etc.)**
+Then we are ready to make the last changes for the changelog and versioning:
+
     $ git commit -am "fix: Fixed tests for <pull-origin>"
     $ bumpvesion patch [optional]
     $ gitchangelog > CHANGELOG.md
-    $ git commit -am "chg: pkg: CHANGELOG update" CHANGELOG.md
+    $ git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
+
+Now we can merge the pull request into devel:
+
+    $ git checkout devel
+    $ git merge --no-ff kurtCutajar-devel
     $ git push origin devel
     
 This will update the devel branch of GPy.

@@ -1,6 +1,6 @@
 # Changelog
 
-## %%__version__%% (unreleased)
+## v1.5.4 (2016-10-03)
 
 ### New
 
@@ -52,12 +52,6 @@
 
 * [kern] fix #440. [mzwiessele]
 
-* Bump version: 1.4.0 → 1.4.1. [mzwiessele]
-
-* [setup] added bumpversion tagging again. [mzwiessele]
-
-* [mrd] init updates and added tests. [mzwiessele]
-
 * [doc] cleanup. [mzwiessele]
 
 * [merge] into new devel. [Max Zwiessele]
@@ -89,6 +83,17 @@
 * Added kernels for GpGrid and GpSsm regression. [kcutajar]
 
 * Added core code for GpSSM and GpGrid. [kcutajar]
+
+
+## v1.4.1 (2016-09-06)
+
+### Other
+
+* Bump version: 1.4.0 → 1.4.1. [mzwiessele]
+
+* [setup] added bumpversion tagging again. [mzwiessele]
+
+* [mrd] init updates and added tests. [mzwiessele]
 
 * Merge pull request #356 from SheffieldML/binomial_laplace. [Max Zwiessele]
 
@@ -492,18 +497,6 @@
 
 * Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
 
-* Merge pull request #368 from SheffieldML/devel. [Max Zwiessele]
-
-  README of pypi now directly in setup
-
-* Merge pull request #367 from SheffieldML/devel. [Max Zwiessele]
-
-  Update setup to fix problems with slicing
-
-* Merge pull request #365 from SheffieldML/devel. [Max Zwiessele]
-
-  patch 1.0.5
-
 * [py3] iterator .next fixes. [Max Zwiessele]
 
 * [imports] fix #392. [Max Zwiessele]
@@ -572,14 +565,6 @@
 
 * Add eq_ode1 kern and ibp_lfm model. [cdguarnizo]
 
-* Bump version: 1.0.8 → 1.0.9. [mzwiessele]
-
-* [setxy] was bugged. [mzwiessele]
-
-* Bump version: 1.0.7 → 1.0.8. [mzwiessele]
-
-* [examples] dim reduction plotting changes. [Max Zwiessele]
-
 * Integral kernels added, these allow &#x27;histogram&#x27; or &#x27;binned&#x27; data to be modelled. [Michael T Smith]
 
 * Fixed bug, replaced for loops with einsum. [alessandratosi]
@@ -598,10 +583,6 @@
 
 * Merge branch devel into gradientsxx. [alessandratosi]
 
-* [fix #380] reloading ep. [mzwiessele]
-
-* [fix #380] reloading ep. [mzwiessele]
-
 * Fixed bug in kernel_tests for gradients_XX. [alessandratosi]
 
 * [slicing] fixed slicing for second order derivatives. [mzwiessele]
@@ -609,6 +590,40 @@
 * [slicing] fixed slicing for second order derivatives. [mzwiessele]
 
 * Merge branch &#x27;devel&#x27; into gradientsxx. [mzwiessele]
+
+* Bug fix. [alessandratosi]
+
+* Syntax fix. [alessandratosi]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into gradientsxx. [alessandratosi]
+
+* Modified kernel tests for gradients_XX. [alessandratosi]
+
+* Added kernel tests for gradients_XX. [alessandratosi]
+
+* Update function kern.gradients_XX() to compute cross-covariance terms. [alessandratosi]
+
+
+## v1.0.9 (2016-05-11)
+
+### Other
+
+* Bump version: 1.0.8 → 1.0.9. [mzwiessele]
+
+* [setxy] was bugged. [mzwiessele]
+
+
+## v1.0.8 (2016-05-11)
+
+### Other
+
+* Bump version: 1.0.7 → 1.0.8. [mzwiessele]
+
+* [examples] dim reduction plotting changes. [Max Zwiessele]
+
+* [fix #380] reloading ep. [mzwiessele]
+
+* [fix #380] reloading ep. [mzwiessele]
 
 * Merge branch &#x27;devel&#x27; into kenokabe-devel. [mzwiessele]
 
@@ -624,12 +639,6 @@
 
 * [kernel addition] in statespace is bugged for py33 on mac, deactivating it. [mzwiessele]
 
-* Bug fix. [alessandratosi]
-
-* Syntax fix. [alessandratosi]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into gradientsxx. [alessandratosi]
-
 * [statespace] less restrictive test for regular statespace model. [Max Zwiessele]
 
 * [travis] condition. [Max Zwiessele]
@@ -639,12 +648,6 @@
 * Merge branch &#x27;devel&#x27; of git://github.com/vsaase/GPy into vsaase-devel. [Max Zwiessele]
 
 * Added precomputed kernel class. [vsaase]
-
-* Modified kernel tests for gradients_XX. [alessandratosi]
-
-* Added kernel tests for gradients_XX. [alessandratosi]
-
-* Update function kern.gradients_XX() to compute cross-covariance terms. [alessandratosi]
 
 * [readme] added landscape for code cleanines. [Max Zwiessele]
 
@@ -657,6 +660,15 @@
 * Update setup.cfg. [Max Zwiessele]
 
 * [tests] show skipped. [Max Zwiessele]
+
+
+## v1.0.7 (2016-04-12)
+
+### Other
+
+* Merge pull request #368 from SheffieldML/devel. [Max Zwiessele]
+
+  README of pypi now directly in setup
 
 * [tests] classification tests less strict (sporadic fails) [Max Zwiessele]
 
@@ -672,17 +684,35 @@
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
+* [setup] readme in setup. [Max Zwiessele]
+
+* []README. [Max Zwiessele]
+
+
+## v1.0.6 (2016-04-11)
+
+### Other
+
+* Merge pull request #367 from SheffieldML/devel. [Max Zwiessele]
+
+  Update setup to fix problems with slicing
+
 * Update __version__.py. [Max Zwiessele]
 
 * Update setup.cfg. [Max Zwiessele]
 
 * Update setup.py. [Max Zwiessele]
 
-* [setup] readme in setup. [Max Zwiessele]
-
-* []README. [Max Zwiessele]
-
 * [coverage] some more restrictions. [Max Zwiessele]
+
+
+## v1.0.5 (2016-04-08)
+
+### Other
+
+* Merge pull request #365 from SheffieldML/devel. [Max Zwiessele]
+
+  patch 1.0.5
 
 * [config] softfail when config cannot be written. [Max Zwiessele]
 
@@ -2287,37 +2317,42 @@
 
 * Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
 
-* Bump version: 0.8.7 → 0.8.8. [Max Zwiessele]
+* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
 
 * Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
 
-* Bump version: 0.8.6 → 0.8.7. [Max Zwiessele]
+* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
 
 * Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
 
-* [py3] print statement. [Max Zwiessele]
-
 * Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
-
-* [pred_var] added predictive variable as property now. [Max Zwiessele]
-
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
-
-* Bump version: 0.8.5 → 0.8.6. [Max Zwiessele]
-
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
-
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
-
-* Apply bug fix for set_XY. [Zhenwen Dai]
-
-* Converting .md to .rst automatically now. [Max Zwiessele]
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Bug fix for set_XY. [Zhenwen Dai]
 
 * Add set_XY test. [Zhenwen Dai]
+
+
+## v0.8.8 (2015-09-10)
+
+### Other
+
+* Bump version: 0.8.7 → 0.8.8. [Max Zwiessele]
+
+* Bump version: 0.8.6 → 0.8.7. [Max Zwiessele]
+
+* [py3] print statement. [Max Zwiessele]
+
+* [pred_var] added predictive variable as property now. [Max Zwiessele]
+
+* Bump version: 0.8.5 → 0.8.6. [Max Zwiessele]
+
+* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
+
+* Apply bug fix for set_XY. [Zhenwen Dai]
+
+* Converting .md to .rst automatically now. [Max Zwiessele]
 
 * Bump version: 0.8.4 → 0.8.5. [Max Zwiessele]
 
@@ -3700,6 +3735,786 @@
 * [huge merge] the second. [Max Zwiessele]
 
 * [huge merge] trying to merge old master and master. [Max Zwiessele]
+
+* Merge pull request #148 from martinsch/normalization_fix. [James Hensman]
+
+* Normalization: avoid division by zero for constant feature dimensions. [mschiegg]
+
+* Merge pull request #160 from slinderman/master. [James Hensman]
+
+  Removing set of numpy random seed
+
+  Great spot! We&#x27;re just about to relase the next iteratino of GPy, we&#x27;ll make sure it happens there too.
+
+  Thanks.
+
+* Removing set of numpy random seed. [Scott Linderman]
+
+* Removed unnecessary spaces from citation. [Nicolo Fusi]
+
+* Added a way to cite. [Nicolo Fusi]
+
+* Modified logexp transformation to prevent it returning zero when argument is under -36. [Neil Lawrence]
+
+* Version change. [Max Zwiessele]
+
+* Dim reduction examples clearer and init not as much black magic anymore. [Max Zwiessele]
+
+* Plot_latent now shows selected inputs, even after switching dimensions. [Max Zwiessele]
+
+* Added hapmap3 as dataset. [Max Zwiessele]
+
+* Sparse gp stability improved. [Max Zwiessele]
+
+* HapMap3 dataset added. [Max Zwiessele]
+
+* Added hapmap download, need to put in data preprocessing for actual usability. [Max Zwiessele]
+
+* Dim reduction examples. [mzwiessele]
+
+* Dim reduction examples. [mzwiessele]
+
+* Bgplvm steepest gradient map update. [mzwiessele]
+
+* Bgplvm steepest gradient map update. [mzwiessele]
+
+* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [mzwiessele]
+
+* Update README.md with funding acknowledgements. [Neil Lawrence]
+
+* Plotting bug for bgplvm fixed. [mzwiessele]
+
+* Scg optimizer scale bounds back to 1e-15. [mzwiessele]
+
+* Parameterized: added warning switch. [mzwiessele]
+
+* Mrd corrections. [mzwiessele]
+
+* Version change (early beta, do not change until everythin works. [Max Zwiessele]
+
+* Fixed the SCG optimizer, thanks to Yarin Gal. [James Hensman]
+
+* Version now 48. [Max Zwiessele]
+
+* Version update. [Max Zwiessele]
+
+* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
+
+* Pickling now allways binary as well as protocol -1. [Max Zwiessele]
+
+* Pickling now allways binary as well as protocol -1. [Max Zwiessele]
+
+* Using lbfgs algorithm from scipy.minimize, starting to convert all optimizers to minimize format. [Max Zwiessele]
+
+* Windows -.- [Max Zwiessele]
+
+* Versions update. [Max Zwiessele]
+
+* Image is a PIL requirement and should only be imported when actually using it. [Max Zwiessele]
+
+* Plot handling greatly improved for latent space visualizations. [Max Zwiessele]
+
+* Version file added. [Max Zwiessele]
+
+* Fixed Ctrl-C behaviour on Windows. [Nicolo Fusi]
+
+* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+
+* Fixed come path issues in sympykern. [James Hensman]
+
+* Rename and redoc. [Alan Saul]
+
+* Moving imports, attempting to update RTD. [Alan Saul]
+
+* Changed initalise_latent to take lower of init=PCA and corrected import. [Alan Saul]
+
+* Change order of imports for RTD. [Alan Saul]
+
+* Merge branch &#x27;devel&#x27; [Alan Saul]
+
+* Merge branch &#x27;master&#x27; into devel. [Alan Saul]
+
+* Removed variational.py. [Alan Saul]
+
+* Fixed plot_latent failure. [Alan Saul]
+
+* Ignore example tests. [Alan Saul]
+
+* Removed yes pipe for travis. [Alan Saul]
+
+* Seems to handle without answering now. [Alan Saul]
+
+* Reverse travis to see what it asks for. [Alan Saul]
+
+* Fixed some tests. [Alan Saul]
+
+* Merged and fixed conflict in ODE_UY.py. [Alan Saul]
+
+* Merge completed. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+
+* Small changes in svigp. [Andreas]
+
+* ODE UY dkdtheta. [mu]
+
+* UY dkdtheta. [mu]
+
+* UY dkdtheta. [mu]
+
+* BGPLVM with missing data. [Max Zwiessele]
+
+* Pca adjustements to lvm models. [Max Zwiessele]
+
+* Ppca added, ppca missing data not working yet. [Max Zwiessele]
+
+* Diagonal operations. [Max Zwiessele]
+
+* Subarray indexing. [Max Zwiessele]
+
+* Documenting. [Max Zwiessele]
+
+* Bug in ODE_UY fix. [Alan Saul]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+
+* Fixed the numerical quadrature, won&#x27;t work with large f unless normalized. [Alan Saul]
+
+* Fixed lots of breaking tests, reduced step size for checkgrad to 1e-4 in tests (perhaps this should be global), added some missing attributes to data_resources.json. [Alan Saul]
+
+* Set warnings for truncated hessian, it has been noted that that by truncating we can have incorrect posteriors, though at convergence this should not be a problem, could be fixed by not using Cholsky as the decomposition as it cannot handle non-positive definite mats. [Alan Saul]
+
+* Merge pull request #90 from jamesmcm/master. [Alan Saul]
+
+  Fixing ReadTheDocs reading docstrings, adding data_resources.json
+
+* Adding data_resources.json to setup data files. [James McMurray]
+
+* Testing modification for ReadTheDocs to stop docstring errors. [James McMurray]
+
+* Ensure_defaiult constraints in svigp. [James Hensman]
+
+* Fixed Ctrl-C behaviour on Windows. [Nicolo Fusi]
+
+* Removed print statements from config parser, commented out ODE kerns. [Nicolo Fusi]
+
+* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+
+* Ode UY. [mu]
+
+* Dk dparameter. [mu]
+
+* ODE_UY. [mu]
+
+* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
+
+* Added some more error checking for downloading datasets. [Neil Lawrence]
+
+* Fixed some bugs in mocap.py where errors weren&#x27;t being raised when file format was incorrect and made datasets.py check for 404 errors which previously were occuring silently ... shhhhh. [Neil Lawrence]
+
+* Fixed bugs in cmu_mocap loader where cmu_url was missing and loading in mocap data twice in same session led to incorrect url through copy error. [Neil Lawrence]
+
+* Fixed examples tests, started changing datasets code which has a few bugs. [Alan Saul]
+
+* Minor changes to naming of signitures. [Alan Saul]
+
+* Changed more examples to accept optimize and plot. [Alan Saul]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+
+* Added comments for models module and adjusted setup. [Max Zwiessele]
+
+* Merge branch &#x27;naniny&#x27; into devel. [Max Zwiessele]
+
+* Rename _models to models_modules to include in doc. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Some tidying in the regression examples. [James Hensman]
+
+* Added optimize and plot for classification, non_gaussian and stochastic examples. [Alan Saul]
+
+* Fixed gp_base and svigp for sampling (doesn&#x27;t use it but needs the arguments) [Alan Saul]
+
+* Added constant to Z_tilde, now log likelihoods are equal! [Alan Saul]
+
+* Changed some parameters of the laplace, tidied up examples. [Alan Saul]
+
+* Dimensionality reduction examples updated with optimize, plot and verbose. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Changing the seed seems to fix Alan&#x27;s bug. [James Hensman]
+
+* Fixed symmetry in checkgrad issue. [James Hensman]
+
+* Reverted the brent optimisation in laplace. [James Hensman]
+
+  (For the 1D linesearch using Brent)
+
+* Improved detectino of sympy. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Fixed exception handling bug in GPy/util/linalg.py:29. [Teo de Campos]
+
+* Argghdfklg. [James Hensman]
+
+* Better warings for cathcing of blaslib detection. [James Hensman]
+
+* Changeing models to _models in setup.py. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+
+* Fixed step size for likelihood tests and allowed randomizing of laplace. [Alan Saul]
+
+* Fixed student_t approximation demo and changed convergence critera to difference of f. [Alan Saul]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+
+* Added cfg file to manfiest and package_data. [Alan Saul]
+
+* Dimensionality reduction example (oil) updated. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Removed ipdb statement from kern, cleaned up some nasty whitespace. [James Hensman]
+
+* More readme. [James Hensman]
+
+* More readme stuff. [James Hensman]
+
+* More readme edits. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Minor edits to the README. [James Hensman]
+
+* Gradient checker comments and import updates. [Max Zwiessele]
+
+* Gradientchecker added as a model. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Push minor fix to eq_sympy kernel test. [Neil Lawrence]
+
+* Added some tips to the readme. [James Hensman]
+
+* Fixed import errors in tests. [Max Zwiessele]
+
+* Sympykern kern_tests now passing, code is inefficient but should be numerically stable. [Neil Lawrence]
+
+* Modified to improve part of stability, gradient checks still passing. [Neil Lawrence]
+
+* Added gradient of sympy kernel, seems to pass tests, but know it&#x27;s not numerically stable. Checking in before making numerically stable. [Neil Lawrence]
+
+* Fixed test in kern.py to request correct output dim for multioutput covariances. [Neil Lawrence]
+
+* ODE_UY. [mu]
+
+* Fixing up the blas detectino in linalg. [James Hensman]
+
+* Removing ipdb statements. [James Hensman]
+
+* Lots of medding with the likelihoods to get the tests working. the tests still don;t work. [James Hensman]
+
+* Formatting docstring. [James Hensman]
+
+* Changed nasty whitespace. [James Hensman]
+
+* Eq_ode1 working but test failing? [Neil Lawrence]
+
+* Added eq_ode1 to constructors.py. [Neil Lawrence]
+
+* Fixed bug in sympy kernel and added sympolic.py back into utils __init__.py. [Neil Lawrence]
+
+* Merge with James&#x27;s changes. [Neil Lawrence]
+
+* Merge. [James Hensman]
+
+* Removed some sympy stuff. [James Hensman]
+
+* Merge with James&#x27;s changes. [Neil Lawrence]
+
+* Committing change for master check out. [Neil Lawrence]
+
+* Skipping crossterm tests instead of expected failure. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Added a path for the data resources. not all users will be working in the GPy directory. [James Hensman]
+
+* Moved data resource information to a json file. [Neil Lawrence]
+
+* Bug fix for single output sympy kernel. [Neil Lawrence]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+
+* Fixed problem in warping. [Nicolo Fusi]
+
+* Constructor and init for ODE_UY. [mu]
+
+* Working eq_ode1 in sympy now. [Neil Lawrence]
+
+* Dim reduction imports. [Max Zwiessele]
+
+* Testing imports update and expected failure for crossterms. [Max Zwiessele]
+
+* Rename models to _models and import models in models.py. [Max Zwiessele]
+
+* Psistattests update. [Max Zwiessele]
+
+* Updated crossterms, rbf x any not working yet (derivatives) [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Weird merge. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+
+* Part implementation of ode_eq functionality. Not yet numerically stable or efficient (some horrible use of cut and paste to get things working ...) [Neil Lawrence]
+
+* A trial namespace renaming. [James Hensman]
+
+* Better handling of missing config files. [James Hensman]
+
+* Debugging the config paths. [James Hensman]
+
+* Allowing the passing of 1D X to a GP. with warning of course. [James Hensman]
+
+* More fiddling with the windows path for config. [James Hensman]
+
+  Where is the windows guru? out playing beach volley?
+
+* Changed how we search for config files on windows. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Fixed up symmetric kern. [James Hensman]
+
+* Half way through crossterm objective. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Added block matrix utility. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Added **likelihood_params to predictive_values. [Ricardo]
+
+* Changes in plot function: sampling vs numerical approximation. [Ricardo]
+
+* Adding docstring for symmetric kern. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Bug fixed in numerical approx. to the predictive variance. [Ricardo]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+
+* Numerical predictions fixed, sampling predictions are not working. [Ricardo]
+
+* Predictive_mean and predictive_variance now use gp_var as a parameter, rather than gp_std. [Ricardo]
+
+* Fixed product kern get and set state. [James Hensman]
+
+* Added getstate/setstate for product kernel. [James Hensman]
+
+* In the middle of crossterms. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* 2D plots fixed. [Ricardo]
+
+* Passing **noise_args into predictive_values. [Ricardo]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+
+* Missing term in the likelihood. [Ricardo]
+
+* Reverted broken kern. [Max Zwiessele]
+
+* Added variational distribution for latent space. [Max Zwiessele]
+
+* BGPLVM test for crossterms. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Even more data plotting. [James Hensman]
+
+* Fixed plotting isue with plot_f. [James Hensman]
+
+* Fixed the dpotrs use.. [Alan Saul]
+
+* Added dpotrs instead of cho_solve. [Alan Saul]
+
+* Removed ipython dependency from kern. [Alan Saul]
+
+* Sped up sampling a lot for student t, bernoulli and poisson, added sampling for gaussian and exponential (untested) [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
+
+* Ignoring examples tests again. [Alan Saul]
+
+* Added sampling to student_t noise distribution, very slow and is possible to speed up. predictive mean analytical and variance need checking. [Alan Saul]
+
+* Tidying up and fixed objective being vector. [Alan Saul]
+
+* Added sampling for predictive quantiles and also mean and variance where necessary. [Alan Saul]
+
+* Rederived gamma distribution. [Alan Saul]
+
+* Added derivatives for poisson and a couple of examples, need to fix for EP. [Alan Saul]
+
+* Merged with devel. [Alan Saul]
+
+* Reimplemented gradients for exponential, seems to work for laplace now, needs a visual test though. [Alan Saul]
+
+* Was a bug in the examples_tests.py, fixed and added brendan faces to ignore list. [Alan Saul]
+
+* Minor clean up. [Alan Saul]
+
+* Removed unnecessary laplace examples. [Alan Saul]
+
+* Updated laplace example to use predictive density aswell as RMSE. [Alan Saul]
+
+* Added log predictive density, ln p(y*|D) [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
+
+* Updated boston tests (more folds, allow a bias as the datasets are not normalized once split) and more folds. Tweaked some laplace line search parameters, added basis tests for ep. [Alan Saul]
+
+* Fixed bug in gradient checker where it worked differently given a integer parameter to a float. [Alan Saul]
+
+* Removed derivatives of variance wrt gp and derivatives of means with respect to gp from noise models. [Alan Saul]
+
+* Tore out code no longer used from noise_distributions due to rewriting using quadrature. [Alan Saul]
+
+* Added numerical mean and variance with quadrature, about to clean up. [Alan Saul]
+
+* Merge branch &#x27;master&#x27; into merge_branch. [Alan Saul]
+
+* Changed the gradients (perhaps for the worse) [Alan Saul]
+
+* A few typos. [Alan Saul]
+
+* Gaussian likelihood errors, still not working. [Alan Saul]
+
+* Added gaussian checker and gaussian likelihood, not checkgrading yet. [Alan Saul]
+
+* Started adding gaussian sanity checker. [Alan Saul]
+
+* Got rid of some overdoing the approximation. [Alan Saul]
+
+* Started adding gaussian likelihood, changed round preloading old_a. [Alan Saul]
+
+* Trying to debug kernel parameters learning (fails even when noise fixed) may be some instablility, seems like it can get it if it starts close. [Alan Saul]
+
+* Fixed 2*variance plotting instead of 2*std plotting, tidied up. [Alan Saul]
+
+* Changed incorrect naming. [Alan Saul]
+
+* Reparameratised in terms of sigma2. [Alan Saul]
+
+* Playing trying to find what makes it want to go so low. [Alan Saul]
+
+* Fixed bug where B wasn&#x27;t refering to current f location. [Alan Saul]
+
+* Everything seems to be gradchecking again. [Alan Saul]
+
+* Added minimizer for finding f, doesn&#x27;t help. [Alan Saul]
+
+* Now checkgrads a lot more of the time, but still fails in optimisation, seems also odd that when parameter is fixed kernel parameters go to infinity. [Alan Saul]
+
+* Added another optimisation which doesn&#x27;t use gradients. Seems like F is almost always found, but Y can be off, suggesting that Wi__Ki_W is wrong, maybe W? [Alan Saul]
+
+* Trying to fix optimisation problem, fixed a few bugs but still fails at very low noise. [Alan Saul]
+
+* Starting to fiddle with mode finding code. [Alan Saul]
+
+* Fixed a sign wrong, now gradchecks weirdly only above certain points. [Alan Saul]
+
+* Now gradchecks everytime but student_t fit is bad, noise is underestimated by a long way. [Alan Saul]
+
+* Checkgrads with explicit and implicit components half the time. [Alan Saul]
+
+* About to input new derivations for Z&#x27;s... [Alan Saul]
+
+* Took out all the asserts and using pure broadcasting method of diagonal now. [Alan Saul]
+
+* Made it use the fact that W is diagonal and put assertions in to ensure that the results are the same. [Alan Saul]
+
+* Broken it by getting rid of squeeze, but now working on making it faster using proper vector multiplciation for diagonals. [Alan Saul]
+
+* Made more numerically stable in a hope that it will work and I will find a bug... [Alan Saul]
+
+* Lots of name changing and went through all likelihood gradients again. [Alan Saul]
+
+* Ripped out all things Laplace parameter estimation, starting again with new tactic. [Alan Saul]
+
+* About to rip out old chain rule method of learning gradients. [Alan Saul]
+
+* Trying to fix dL_dytil gradient. [Alan Saul]
+
+* Changed name. [Alan Saul]
+
+* FIXED DYTIL_DFHAT. [Alan Saul]
+
+* Workong on doing explicit gradients. [Alan Saul]
+
+* Gradients almost there for dytil_dfhat, diagonal terms are right. [Alan Saul]
+
+* Merged with devel. [Alan Saul]
+
+* Still getting closer to grads for likelihood. [Alan Saul]
+
+* Almost have likelihood gradients working but kernels still way off. [Alan Saul]
+
+* Working on putting callback to update laplace in callback. [Alan Saul]
+
+* Seem to have gradients much closer now. [Alan Saul]
+
+* Scale and switch KW+I. [Alan Saul]
+
+* Merged with upstream. [Alan Saul]
+
+* Added a debug examples. [Alan Saul]
+
+* Merging. [Alan Saul]
+
+* Merged with master. [Alan Saul]
+
+* Plotting problematic kernel. [Alan Saul]
+
+* Adding gradients, shapes starting to make sense. [Alan Saul]
+
+* Attempted to introduce gradient methods, won&#x27;t work yet I doubt. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;upstream/devel&#x27; [Alan Saul]
+
+* Merged likelihood functions. [Alan Saul]
+
+* Should be working now, needed to change relative path names. [Alan Saul]
+
+* Merge branch &#x27;merge_trial&#x27; [Alan Saul]
+
+* Merge branch &#x27;old_repo&#x27; into merge_trial. [Alan Saul]
+
+* Make directory structure match that of GPy. [Alan Saul]
+
+* Tidy up comments. [Alan Saul]
+
+* Merged in the GPy upstream. [Alan Saul]
+
+* Merged in branch which had old_repo merged in. [Alan Saul]
+
+* Adding weibull likelihood, requires &#x27;extra_data&#x27; to be passed to likelihood, i.e. the censoring information. [Alan Saul]
+
+* Fixed the z scalings. [Alan Saul]
+
+* Fixed laplace approximation and made more numerically stable with cholesky decompositions, and commented. [Alan Saul]
+
+* Stabalised most of the algorithm (apart from the end inversion which is impossible) [Alan Saul]
+
+* Added timing and realised mdot can be faster as its almost always a diagonal matrix its multiplying with. [Alan Saul]
+
+* Got the mode finding without computing Ki. [Alan Saul]
+
+* Fixed broadcasting bug, rasm now appears to work. [Alan Saul]
+
+* Still working on rasmussen, link function needs vectorizing I think. [Alan Saul]
+
+* Tidying up. [Alan Saul]
+
+* Added predicted values for student t, works well. [Alan Saul]
+
+* Working laplace, just needs predictive values. [Alan Saul]
+
+* Seemed to be working, now its not. [Alan Saul]
+
+* Changing definitions again... [Alan Saul]
+
+* Worked out in terms of W, needs gradients implementing. [Alan Saul]
+
+* Just breaking some things... [Alan Saul]
+
+* Following naming convention better, lots of inverses which should be able to get rid of one or two, unsure if it works. [Alan Saul]
+
+* Got an idea of how to implement! written in docs. [Alan Saul]
+
+* Trying to &#x27;debug&#x27; [Alan Saul]
+
+* Got most of laplace approximation working. [Alan Saul]
+
+* Added some comments. [Alan Saul]
+
+* Initial commit, setting up the laplace approximation for a student t. [Alan Saul]
+
+* Initial commit. [James Hensman]
+
+* Use bfgs for laplace instead. [Alan Saul]
+
+* Moved transf_data to make data -1 or 1 from 0 or 1 for bernoulli with probit into the analytical moment match (but it 10% slower), needs removing from epmixednoise. [Alan Saul]
+
+* Changed naming from old derivatives of likelihoods to new ones in noise distributions. [Alan Saul]
+
+* Fixed breakage of dvar, tidied up to make more efficient. [Alan Saul]
+
+* Doc stringing. [Alan Saul]
+
+* Added quadrature numerical moment matching (but not predictive yet) [Alan Saul]
+
+* Fixed a few laplace bits. [Alan Saul]
+
+* Refactored gradients wrt parameters slightly, need to future proof against _get_param_names() disappearing. [Alan Saul]
+
+* Added more options to generic tests (constraining link function values as bernoulli requies R^{0,1}) and implemented new gradients for bernoulli. [Alan Saul]
+
+* Rename Binomial to Bernoulli (maybe generalise it with the constant later, but tilted distribution may change) [Alan Saul]
+
+* Added pdf_link&#x27;s for gaussian and student t, added third derivatives for transformations and tests for them. [Alan Saul]
+
+* Renamed laplace_tests to likelihoods_tests. [Alan Saul]
+
+* Tidying up laplace_tests.py. [Alan Saul]
+
+* Fixed some bugs, added third derivative for log transformation, and did some doccing. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Still tidying up, laplace now working again, gaussian and student_t likelihoods now done. [Alan Saul]
+
+* Started on chaining, must remember to chain _laplace_gradients aswell! [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Finished tearing gaussian noise down, time for student t. [Alan Saul]
+
+* Beginning to merge lik_functions and derivatives with richardos. [Alan Saul]
+
+* Docs. [Alan Saul]
+
+* Removed fit as it is unused. [Alan Saul]
+
+* More doc strings. [Alan Saul]
+
+* Doccing and testing for D dimensional input (not multiple dimensional Y yet) [Alan Saul]
+
+* Tidying up a lot, works for 1D, need to check for more dimensions. [Alan Saul]
+
+* Tidied up laplace. [Alan Saul]
+
+* Integrated Laplace and merged Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+  Conflicts:
+  	GPy/core/gp.py
+  	GPy/likelihoods/__init__.py
+  	GPy/likelihoods/likelihood_functions.py
+  	GPy/likelihoods/link_functions.py
+
+* Fixed white variance. [Alan Saul]
+
+* Boston housing works (apart from variance of student t is not valid below 2) [Alan Saul]
+
+* Tests setup but not fitting properly yet. [Alan Saul]
+
+* Changed the examples (started boston data) and increased tolerance of finding fhat. [Alan Saul]
+
+* Added some stability and tidied up. [Alan Saul]
+
+* Tidying up. [Alan Saul]
+
+* Student t likelihood function checkgrads (summed gradients wrt to sigma2), maybe some numerical instability in laplace. [Alan Saul]
+
+* Now checkgrads for gaussian, and ALMOST for student t. [Alan Saul]
+
+* All gradients now gradcheck. [Alan Saul]
+
+* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+
+* Refactored tests. [Alan Saul]
+
+* Tidied up grad checking. [Alan Saul]
+
+* Added tests and fixed some naming. [Alan Saul]
+
+* Modified gradient_checker to allow for variable &#x27;f&#x27; [Alan Saul]
+
+* Renamed some things, made some small (incorrect) gradient changes, generalised the gp regression for any likelihood, and added a place holder link function waiting for Richardos changes. [Alan Saul]
+
+* Removed unneeded dependency. [Alan Saul]
+
+* Merged GP models. [Alan Saul]
+
+* Dragged likelihood_function changes in. [Alan Saul]
+
+* Checked out relavent files. [Alan Saul]
+
+* Merged in real gpy. [Alan Saul]
+
+* Empty branch. [Alan Saul]
+
+* SPELLAFSDIUN. [Max Zwiessele]
+
+* Fixed up plotting in sparse_gp also. [James Hensman]
+
+* Fixed up the plotting. [James Hensman]
+
+* Fixed up plot in GP_base. [James Hensman]
+
+* Started changing the plotting in examples to remove plot_single_output. [James Hensman]
+
+* General tidying in models. [James Hensman]
+
+* Improved docstrings in svigp. [James Hensman]
+
+* Some tidying in gp.py. [James Hensman]
+
+* Docstrings and removal of duplicated plotting code in gp_base. [James Hensman]
+
+* Turned omp off by default as discussed. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+
+* Added configuration file. [Nicolò Fusi]
+
+  this was done to solve the OpenMP problem on Windows/mac, but I think it
+  is useful in general. All unit tests pass except the sympy kern ones.
+
+* Added xw_pen data. [Neil Lawrence]
+
+* Added xw_pen data. [Neil Lawrence]
+
+* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+
+* Basic sim code functional. [Neil Lawrence]
+
+* Minor change in tutorial. [mu]
+
+* Added link to user mailing list. [James Hensman]
+
+
+## v0.6.0 (2014-11-21)
+
+### Other
 
 * Small random perturbations in kernel tests helps with the symmetry gradcheck bug. [James Hensman]
 
@@ -6575,840 +7390,7 @@
 
 * Merged dimen reduction. [Max Zwiessele]
 
-* Domain and trtansformations namespace prettyfying. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
-
-* Tests updated. [Max Zwiessele]
-
-* Dim reduction examples Q= &gt; input_dim= [Max Zwiessele]
-
-* Numpy non hashable AHHHHHH. [Max Zwiessele]
-
-* Dont print brackets in transformations. [Max Zwiessele]
-
-* Parameterized first beta test. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
-
-* Cross term testing switched on. [Max Zwiessele]
-
-* Comment linear x linear for testing purposes. [Max Zwiessele]
-
-* Parameter_testing. [Max Zwiessele]
-
-* Index operations now work on flattened indices. [Max Zwiessele]
-
-* Unoptimized parameter, still slower than current implementation. [Max Zwiessele]
-
-* Ndarray subclass cleaned up. [Max Zwiessele]
-
-* Subclassing ndarray almost functional. [Max Zwiessele]
-
-* Parameters ndarray, stuck at using strides for transformations. [Max Zwiessele]
-
-* Transformations are singletons now, weak refs for memory managment. [Max Zwiessele]
-
-* Almost there with array inheriting. [Max Zwiessele]
-
-* With subclassing ndarray, current_slice problems not solved... [Max Zwiessele]
-
-* Without inheriting from numpy.ndarray. ndarray functionality missing. [Max Zwiessele]
-
-* NegativeLogexp Pep8ted. [Max Zwiessele]
-
-* Index operations finalized. [Max Zwiessele]
-
-* Added index_operations and deleted them from paramter. [Max Zwießele]
-
-* Added parameter files - Alan. [Max Zwiessele]
-
-* Transformations singleton. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
-
-  Conflicts:
-  	GPy/core/transformations.py
-  	GPy/kern/parts/kernpart.py
-
-* Parameterization changes take a while. [Max Zwiessele]
-
-* Correcterd minor errors (imports etc) [Max Zwiessele]
-
-* Pep8&#x27;ed transformations module. [Max Zwiessele]
-
-* Merge pull request #148 from martinsch/normalization_fix. [James Hensman]
-
-* Normalization: avoid division by zero for constant feature dimensions. [mschiegg]
-
-* Merge pull request #160 from slinderman/master. [James Hensman]
-
-  Removing set of numpy random seed
-
-  Great spot! We&#x27;re just about to relase the next iteratino of GPy, we&#x27;ll make sure it happens there too.
-
-  Thanks.
-
-* Removing set of numpy random seed. [Scott Linderman]
-
-* Removed unnecessary spaces from citation. [Nicolo Fusi]
-
-* Added a way to cite. [Nicolo Fusi]
-
-* Modified logexp transformation to prevent it returning zero when argument is under -36. [Neil Lawrence]
-
-* Version change. [Max Zwiessele]
-
-* Dim reduction examples clearer and init not as much black magic anymore. [Max Zwiessele]
-
-* Plot_latent now shows selected inputs, even after switching dimensions. [Max Zwiessele]
-
-* Added hapmap3 as dataset. [Max Zwiessele]
-
-* Sparse gp stability improved. [Max Zwiessele]
-
-* HapMap3 dataset added. [Max Zwiessele]
-
-* Added hapmap download, need to put in data preprocessing for actual usability. [Max Zwiessele]
-
-* Dim reduction examples. [mzwiessele]
-
-* Dim reduction examples. [mzwiessele]
-
-* Bgplvm steepest gradient map update. [mzwiessele]
-
-* Bgplvm steepest gradient map update. [mzwiessele]
-
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [mzwiessele]
-
-* Update README.md with funding acknowledgements. [Neil Lawrence]
-
-* Plotting bug for bgplvm fixed. [mzwiessele]
-
-* Scg optimizer scale bounds back to 1e-15. [mzwiessele]
-
-* Parameterized: added warning switch. [mzwiessele]
-
-* Mrd corrections. [mzwiessele]
-
-* Version change (early beta, do not change until everythin works. [Max Zwiessele]
-
-* Fixed the SCG optimizer, thanks to Yarin Gal. [James Hensman]
-
-* Version now 48. [Max Zwiessele]
-
-* Version update. [Max Zwiessele]
-
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
-
-* Pickling now allways binary as well as protocol -1. [Max Zwiessele]
-
-* Pickling now allways binary as well as protocol -1. [Max Zwiessele]
-
-* Using lbfgs algorithm from scipy.minimize, starting to convert all optimizers to minimize format. [Max Zwiessele]
-
-* Windows -.- [Max Zwiessele]
-
-* Versions update. [Max Zwiessele]
-
-* Image is a PIL requirement and should only be imported when actually using it. [Max Zwiessele]
-
-* Plot handling greatly improved for latent space visualizations. [Max Zwiessele]
-
-* Version file added. [Max Zwiessele]
-
-* Fixed Ctrl-C behaviour on Windows. [Nicolo Fusi]
-
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
-
-* Fixed come path issues in sympykern. [James Hensman]
-
-* Rename and redoc. [Alan Saul]
-
-* Moving imports, attempting to update RTD. [Alan Saul]
-
-* Changed initalise_latent to take lower of init=PCA and corrected import. [Alan Saul]
-
-* Change order of imports for RTD. [Alan Saul]
-
-* Merge branch &#x27;devel&#x27; [Alan Saul]
-
-* Merge branch &#x27;master&#x27; into devel. [Alan Saul]
-
-* Removed variational.py. [Alan Saul]
-
-* Fixed plot_latent failure. [Alan Saul]
-
-* Ignore example tests. [Alan Saul]
-
-* Removed yes pipe for travis. [Alan Saul]
-
-* Seems to handle without answering now. [Alan Saul]
-
-* Reverse travis to see what it asks for. [Alan Saul]
-
-* Fixed some tests. [Alan Saul]
-
-* Merged and fixed conflict in ODE_UY.py. [Alan Saul]
-
-* Merge completed. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
-
-* Small changes in svigp. [Andreas]
-
-* ODE UY dkdtheta. [mu]
-
-* UY dkdtheta. [mu]
-
-* UY dkdtheta. [mu]
-
-* BGPLVM with missing data. [Max Zwiessele]
-
-* Pca adjustements to lvm models. [Max Zwiessele]
-
-* Ppca added, ppca missing data not working yet. [Max Zwiessele]
-
-* Diagonal operations. [Max Zwiessele]
-
-* Subarray indexing. [Max Zwiessele]
-
-* Documenting. [Max Zwiessele]
-
-* Bug in ODE_UY fix. [Alan Saul]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
-
-* Fixed the numerical quadrature, won&#x27;t work with large f unless normalized. [Alan Saul]
-
-* Fixed lots of breaking tests, reduced step size for checkgrad to 1e-4 in tests (perhaps this should be global), added some missing attributes to data_resources.json. [Alan Saul]
-
-* Set warnings for truncated hessian, it has been noted that that by truncating we can have incorrect posteriors, though at convergence this should not be a problem, could be fixed by not using Cholsky as the decomposition as it cannot handle non-positive definite mats. [Alan Saul]
-
-* Merge pull request #90 from jamesmcm/master. [Alan Saul]
-
-  Fixing ReadTheDocs reading docstrings, adding data_resources.json
-
-* Adding data_resources.json to setup data files. [James McMurray]
-
-* Testing modification for ReadTheDocs to stop docstring errors. [James McMurray]
-
-* Ensure_defaiult constraints in svigp. [James Hensman]
-
-* Fixed Ctrl-C behaviour on Windows. [Nicolo Fusi]
-
-* Removed print statements from config parser, commented out ODE kerns. [Nicolo Fusi]
-
-* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
-
-* Ode UY. [mu]
-
-* Dk dparameter. [mu]
-
-* ODE_UY. [mu]
-
-* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
-
-* Added some more error checking for downloading datasets. [Neil Lawrence]
-
-* Fixed some bugs in mocap.py where errors weren&#x27;t being raised when file format was incorrect and made datasets.py check for 404 errors which previously were occuring silently ... shhhhh. [Neil Lawrence]
-
-* Fixed bugs in cmu_mocap loader where cmu_url was missing and loading in mocap data twice in same session led to incorrect url through copy error. [Neil Lawrence]
-
-* Fixed examples tests, started changing datasets code which has a few bugs. [Alan Saul]
-
-* Minor changes to naming of signitures. [Alan Saul]
-
-* Changed more examples to accept optimize and plot. [Alan Saul]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
-
-* Added comments for models module and adjusted setup. [Max Zwiessele]
-
-* Merge branch &#x27;naniny&#x27; into devel. [Max Zwiessele]
-
-* Rename _models to models_modules to include in doc. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Some tidying in the regression examples. [James Hensman]
-
-* Added optimize and plot for classification, non_gaussian and stochastic examples. [Alan Saul]
-
-* Fixed gp_base and svigp for sampling (doesn&#x27;t use it but needs the arguments) [Alan Saul]
-
-* Added constant to Z_tilde, now log likelihoods are equal! [Alan Saul]
-
-* Changed some parameters of the laplace, tidied up examples. [Alan Saul]
-
-* Dimensionality reduction examples updated with optimize, plot and verbose. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Changing the seed seems to fix Alan&#x27;s bug. [James Hensman]
-
-* Fixed symmetry in checkgrad issue. [James Hensman]
-
-* Reverted the brent optimisation in laplace. [James Hensman]
-
-  (For the 1D linesearch using Brent)
-
-* Improved detectino of sympy. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Fixed exception handling bug in GPy/util/linalg.py:29. [Teo de Campos]
-
-* Argghdfklg. [James Hensman]
-
-* Better warings for cathcing of blaslib detection. [James Hensman]
-
-* Changeing models to _models in setup.py. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
-
-* Fixed step size for likelihood tests and allowed randomizing of laplace. [Alan Saul]
-
-* Fixed student_t approximation demo and changed convergence critera to difference of f. [Alan Saul]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
-
-* Added cfg file to manfiest and package_data. [Alan Saul]
-
-* Dimensionality reduction example (oil) updated. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Removed ipdb statement from kern, cleaned up some nasty whitespace. [James Hensman]
-
-* More readme. [James Hensman]
-
-* More readme stuff. [James Hensman]
-
-* More readme edits. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Minor edits to the README. [James Hensman]
-
-* Gradient checker comments and import updates. [Max Zwiessele]
-
-* Gradientchecker added as a model. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Push minor fix to eq_sympy kernel test. [Neil Lawrence]
-
-* Added some tips to the readme. [James Hensman]
-
-* Fixed import errors in tests. [Max Zwiessele]
-
-* Sympykern kern_tests now passing, code is inefficient but should be numerically stable. [Neil Lawrence]
-
-* Modified to improve part of stability, gradient checks still passing. [Neil Lawrence]
-
-* Added gradient of sympy kernel, seems to pass tests, but know it&#x27;s not numerically stable. Checking in before making numerically stable. [Neil Lawrence]
-
-* Fixed test in kern.py to request correct output dim for multioutput covariances. [Neil Lawrence]
-
-* ODE_UY. [mu]
-
-* Fixing up the blas detectino in linalg. [James Hensman]
-
-* Removing ipdb statements. [James Hensman]
-
-* Lots of medding with the likelihoods to get the tests working. the tests still don;t work. [James Hensman]
-
-* Formatting docstring. [James Hensman]
-
-* Changed nasty whitespace. [James Hensman]
-
-* Eq_ode1 working but test failing? [Neil Lawrence]
-
-* Added eq_ode1 to constructors.py. [Neil Lawrence]
-
-* Fixed bug in sympy kernel and added sympolic.py back into utils __init__.py. [Neil Lawrence]
-
-* Merge with James&#x27;s changes. [Neil Lawrence]
-
-* Merge. [James Hensman]
-
-* Removed some sympy stuff. [James Hensman]
-
-* Merge with James&#x27;s changes. [Neil Lawrence]
-
-* Committing change for master check out. [Neil Lawrence]
-
-* Skipping crossterm tests instead of expected failure. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Added a path for the data resources. not all users will be working in the GPy directory. [James Hensman]
-
-* Moved data resource information to a json file. [Neil Lawrence]
-
-* Bug fix for single output sympy kernel. [Neil Lawrence]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
-
-* Fixed problem in warping. [Nicolo Fusi]
-
-* Constructor and init for ODE_UY. [mu]
-
-* Working eq_ode1 in sympy now. [Neil Lawrence]
-
-* Dim reduction imports. [Max Zwiessele]
-
-* Testing imports update and expected failure for crossterms. [Max Zwiessele]
-
-* Rename models to _models and import models in models.py. [Max Zwiessele]
-
-* Psistattests update. [Max Zwiessele]
-
-* Updated crossterms, rbf x any not working yet (derivatives) [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Weird merge. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
-
-* Part implementation of ode_eq functionality. Not yet numerically stable or efficient (some horrible use of cut and paste to get things working ...) [Neil Lawrence]
-
-* A trial namespace renaming. [James Hensman]
-
-* Better handling of missing config files. [James Hensman]
-
-* Debugging the config paths. [James Hensman]
-
-* Allowing the passing of 1D X to a GP. with warning of course. [James Hensman]
-
-* More fiddling with the windows path for config. [James Hensman]
-
-  Where is the windows guru? out playing beach volley?
-
-* Changed how we search for config files on windows. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Fixed up symmetric kern. [James Hensman]
-
-* Half way through crossterm objective. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Added block matrix utility. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Added **likelihood_params to predictive_values. [Ricardo]
-
-* Changes in plot function: sampling vs numerical approximation. [Ricardo]
-
-* Adding docstring for symmetric kern. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Bug fixed in numerical approx. to the predictive variance. [Ricardo]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
-
-* Numerical predictions fixed, sampling predictions are not working. [Ricardo]
-
-* Predictive_mean and predictive_variance now use gp_var as a parameter, rather than gp_std. [Ricardo]
-
-* Fixed product kern get and set state. [James Hensman]
-
-* Added getstate/setstate for product kernel. [James Hensman]
-
-* In the middle of crossterms. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* 2D plots fixed. [Ricardo]
-
-* Passing **noise_args into predictive_values. [Ricardo]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
-
-* Missing term in the likelihood. [Ricardo]
-
-* Reverted broken kern. [Max Zwiessele]
-
-* Added variational distribution for latent space. [Max Zwiessele]
-
-* BGPLVM test for crossterms. [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Even more data plotting. [James Hensman]
-
-* Fixed plotting isue with plot_f. [James Hensman]
-
-* Fixed the dpotrs use.. [Alan Saul]
-
-* Added dpotrs instead of cho_solve. [Alan Saul]
-
-* Removed ipython dependency from kern. [Alan Saul]
-
-* Sped up sampling a lot for student t, bernoulli and poisson, added sampling for gaussian and exponential (untested) [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
-
-* Ignoring examples tests again. [Alan Saul]
-
-* Added sampling to student_t noise distribution, very slow and is possible to speed up. predictive mean analytical and variance need checking. [Alan Saul]
-
-* Tidying up and fixed objective being vector. [Alan Saul]
-
-* Added sampling for predictive quantiles and also mean and variance where necessary. [Alan Saul]
-
-* Rederived gamma distribution. [Alan Saul]
-
-* Added derivatives for poisson and a couple of examples, need to fix for EP. [Alan Saul]
-
-* Merged with devel. [Alan Saul]
-
-* Reimplemented gradients for exponential, seems to work for laplace now, needs a visual test though. [Alan Saul]
-
-* Was a bug in the examples_tests.py, fixed and added brendan faces to ignore list. [Alan Saul]
-
-* Minor clean up. [Alan Saul]
-
-* Removed unnecessary laplace examples. [Alan Saul]
-
-* Updated laplace example to use predictive density aswell as RMSE. [Alan Saul]
-
-* Added log predictive density, ln p(y*|D) [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
-
-* Updated boston tests (more folds, allow a bias as the datasets are not normalized once split) and more folds. Tweaked some laplace line search parameters, added basis tests for ep. [Alan Saul]
-
-* Fixed bug in gradient checker where it worked differently given a integer parameter to a float. [Alan Saul]
-
-* Removed derivatives of variance wrt gp and derivatives of means with respect to gp from noise models. [Alan Saul]
-
-* Tore out code no longer used from noise_distributions due to rewriting using quadrature. [Alan Saul]
-
-* Added numerical mean and variance with quadrature, about to clean up. [Alan Saul]
-
-* Merge branch &#x27;master&#x27; into merge_branch. [Alan Saul]
-
-* Changed the gradients (perhaps for the worse) [Alan Saul]
-
-* A few typos. [Alan Saul]
-
-* Gaussian likelihood errors, still not working. [Alan Saul]
-
-* Added gaussian checker and gaussian likelihood, not checkgrading yet. [Alan Saul]
-
-* Started adding gaussian sanity checker. [Alan Saul]
-
-* Got rid of some overdoing the approximation. [Alan Saul]
-
-* Started adding gaussian likelihood, changed round preloading old_a. [Alan Saul]
-
-* Trying to debug kernel parameters learning (fails even when noise fixed) may be some instablility, seems like it can get it if it starts close. [Alan Saul]
-
-* Fixed 2*variance plotting instead of 2*std plotting, tidied up. [Alan Saul]
-
-* Changed incorrect naming. [Alan Saul]
-
-* Reparameratised in terms of sigma2. [Alan Saul]
-
-* Playing trying to find what makes it want to go so low. [Alan Saul]
-
-* Fixed bug where B wasn&#x27;t refering to current f location. [Alan Saul]
-
-* Everything seems to be gradchecking again. [Alan Saul]
-
-* Added minimizer for finding f, doesn&#x27;t help. [Alan Saul]
-
-* Now checkgrads a lot more of the time, but still fails in optimisation, seems also odd that when parameter is fixed kernel parameters go to infinity. [Alan Saul]
-
-* Added another optimisation which doesn&#x27;t use gradients. Seems like F is almost always found, but Y can be off, suggesting that Wi__Ki_W is wrong, maybe W? [Alan Saul]
-
-* Trying to fix optimisation problem, fixed a few bugs but still fails at very low noise. [Alan Saul]
-
-* Starting to fiddle with mode finding code. [Alan Saul]
-
-* Fixed a sign wrong, now gradchecks weirdly only above certain points. [Alan Saul]
-
-* Now gradchecks everytime but student_t fit is bad, noise is underestimated by a long way. [Alan Saul]
-
-* Checkgrads with explicit and implicit components half the time. [Alan Saul]
-
-* About to input new derivations for Z&#x27;s... [Alan Saul]
-
-* Took out all the asserts and using pure broadcasting method of diagonal now. [Alan Saul]
-
-* Made it use the fact that W is diagonal and put assertions in to ensure that the results are the same. [Alan Saul]
-
-* Broken it by getting rid of squeeze, but now working on making it faster using proper vector multiplciation for diagonals. [Alan Saul]
-
-* Made more numerically stable in a hope that it will work and I will find a bug... [Alan Saul]
-
-* Lots of name changing and went through all likelihood gradients again. [Alan Saul]
-
-* Ripped out all things Laplace parameter estimation, starting again with new tactic. [Alan Saul]
-
-* About to rip out old chain rule method of learning gradients. [Alan Saul]
-
-* Trying to fix dL_dytil gradient. [Alan Saul]
-
-* Changed name. [Alan Saul]
-
-* FIXED DYTIL_DFHAT. [Alan Saul]
-
-* Workong on doing explicit gradients. [Alan Saul]
-
-* Gradients almost there for dytil_dfhat, diagonal terms are right. [Alan Saul]
-
-* Merged with devel. [Alan Saul]
-
-* Still getting closer to grads for likelihood. [Alan Saul]
-
-* Almost have likelihood gradients working but kernels still way off. [Alan Saul]
-
-* Working on putting callback to update laplace in callback. [Alan Saul]
-
-* Seem to have gradients much closer now. [Alan Saul]
-
-* Scale and switch KW+I. [Alan Saul]
-
-* Merged with upstream. [Alan Saul]
-
-* Added a debug examples. [Alan Saul]
-
-* Merging. [Alan Saul]
-
-* Merged with master. [Alan Saul]
-
-* Plotting problematic kernel. [Alan Saul]
-
-* Adding gradients, shapes starting to make sense. [Alan Saul]
-
-* Attempted to introduce gradient methods, won&#x27;t work yet I doubt. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; [Alan Saul]
-
-* Merged likelihood functions. [Alan Saul]
-
-* Should be working now, needed to change relative path names. [Alan Saul]
-
-* Merge branch &#x27;merge_trial&#x27; [Alan Saul]
-
-* Merge branch &#x27;old_repo&#x27; into merge_trial. [Alan Saul]
-
-* Make directory structure match that of GPy. [Alan Saul]
-
-* Tidy up comments. [Alan Saul]
-
-* Merged in the GPy upstream. [Alan Saul]
-
-* Merged in branch which had old_repo merged in. [Alan Saul]
-
-* Adding weibull likelihood, requires &#x27;extra_data&#x27; to be passed to likelihood, i.e. the censoring information. [Alan Saul]
-
-* Fixed the z scalings. [Alan Saul]
-
-* Fixed laplace approximation and made more numerically stable with cholesky decompositions, and commented. [Alan Saul]
-
-* Stabalised most of the algorithm (apart from the end inversion which is impossible) [Alan Saul]
-
-* Added timing and realised mdot can be faster as its almost always a diagonal matrix its multiplying with. [Alan Saul]
-
-* Got the mode finding without computing Ki. [Alan Saul]
-
-* Fixed broadcasting bug, rasm now appears to work. [Alan Saul]
-
-* Still working on rasmussen, link function needs vectorizing I think. [Alan Saul]
-
-* Tidying up. [Alan Saul]
-
-* Added predicted values for student t, works well. [Alan Saul]
-
-* Working laplace, just needs predictive values. [Alan Saul]
-
-* Seemed to be working, now its not. [Alan Saul]
-
-* Changing definitions again... [Alan Saul]
-
-* Worked out in terms of W, needs gradients implementing. [Alan Saul]
-
-* Just breaking some things... [Alan Saul]
-
-* Following naming convention better, lots of inverses which should be able to get rid of one or two, unsure if it works. [Alan Saul]
-
-* Got an idea of how to implement! written in docs. [Alan Saul]
-
-* Trying to &#x27;debug&#x27; [Alan Saul]
-
-* Got most of laplace approximation working. [Alan Saul]
-
-* Added some comments. [Alan Saul]
-
-* Initial commit, setting up the laplace approximation for a student t. [Alan Saul]
-
-* Initial commit. [James Hensman]
-
-* Use bfgs for laplace instead. [Alan Saul]
-
-* Moved transf_data to make data -1 or 1 from 0 or 1 for bernoulli with probit into the analytical moment match (but it 10% slower), needs removing from epmixednoise. [Alan Saul]
-
-* Changed naming from old derivatives of likelihoods to new ones in noise distributions. [Alan Saul]
-
-* Fixed breakage of dvar, tidied up to make more efficient. [Alan Saul]
-
-* Doc stringing. [Alan Saul]
-
-* Added quadrature numerical moment matching (but not predictive yet) [Alan Saul]
-
-* Fixed a few laplace bits. [Alan Saul]
-
-* Refactored gradients wrt parameters slightly, need to future proof against _get_param_names() disappearing. [Alan Saul]
-
-* Added more options to generic tests (constraining link function values as bernoulli requies R^{0,1}) and implemented new gradients for bernoulli. [Alan Saul]
-
-* Rename Binomial to Bernoulli (maybe generalise it with the constant later, but tilted distribution may change) [Alan Saul]
-
-* Added pdf_link&#x27;s for gaussian and student t, added third derivatives for transformations and tests for them. [Alan Saul]
-
-* Renamed laplace_tests to likelihoods_tests. [Alan Saul]
-
-* Tidying up laplace_tests.py. [Alan Saul]
-
-* Fixed some bugs, added third derivative for log transformation, and did some doccing. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Still tidying up, laplace now working again, gaussian and student_t likelihoods now done. [Alan Saul]
-
-* Started on chaining, must remember to chain _laplace_gradients aswell! [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Finished tearing gaussian noise down, time for student t. [Alan Saul]
-
-* Beginning to merge lik_functions and derivatives with richardos. [Alan Saul]
-
-* Docs. [Alan Saul]
-
-* Removed fit as it is unused. [Alan Saul]
-
-* More doc strings. [Alan Saul]
-
-* Doccing and testing for D dimensional input (not multiple dimensional Y yet) [Alan Saul]
-
-* Tidying up a lot, works for 1D, need to check for more dimensions. [Alan Saul]
-
-* Tidied up laplace. [Alan Saul]
-
-* Integrated Laplace and merged Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-  Conflicts:
-  	GPy/core/gp.py
-  	GPy/likelihoods/__init__.py
-  	GPy/likelihoods/likelihood_functions.py
-  	GPy/likelihoods/link_functions.py
-
-* Fixed white variance. [Alan Saul]
-
-* Boston housing works (apart from variance of student t is not valid below 2) [Alan Saul]
-
-* Tests setup but not fitting properly yet. [Alan Saul]
-
-* Changed the examples (started boston data) and increased tolerance of finding fhat. [Alan Saul]
-
-* Added some stability and tidied up. [Alan Saul]
-
-* Tidying up. [Alan Saul]
-
-* Student t likelihood function checkgrads (summed gradients wrt to sigma2), maybe some numerical instability in laplace. [Alan Saul]
-
-* Now checkgrads for gaussian, and ALMOST for student t. [Alan Saul]
-
-* All gradients now gradcheck. [Alan Saul]
-
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
-
-* Refactored tests. [Alan Saul]
-
-* Tidied up grad checking. [Alan Saul]
-
-* Added tests and fixed some naming. [Alan Saul]
-
-* Modified gradient_checker to allow for variable &#x27;f&#x27; [Alan Saul]
-
-* Renamed some things, made some small (incorrect) gradient changes, generalised the gp regression for any likelihood, and added a place holder link function waiting for Richardos changes. [Alan Saul]
-
-* Removed unneeded dependency. [Alan Saul]
-
-* Merged GP models. [Alan Saul]
-
-* Dragged likelihood_function changes in. [Alan Saul]
-
-* Checked out relavent files. [Alan Saul]
-
-* Merged in real gpy. [Alan Saul]
-
-* Empty branch. [Alan Saul]
-
-* SPELLAFSDIUN. [Max Zwiessele]
-
-* Fixed up plotting in sparse_gp also. [James Hensman]
-
-* Fixed up the plotting. [James Hensman]
-
-* Fixed up plot in GP_base. [James Hensman]
-
-* Started changing the plotting in examples to remove plot_single_output. [James Hensman]
-
-* General tidying in models. [James Hensman]
-
-* Improved docstrings in svigp. [James Hensman]
-
-* Some tidying in gp.py. [James Hensman]
-
-* Docstrings and removal of duplicated plotting code in gp_base. [James Hensman]
-
-* Turned omp off by default as discussed. [James Hensman]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
-
-* Added configuration file. [Nicolò Fusi]
-
-  this was done to solve the OpenMP problem on Windows/mac, but I think it
-  is useful in general. All unit tests pass except the sympy kern ones.
-
-* Added xw_pen data. [Neil Lawrence]
-
-* Added xw_pen data. [Neil Lawrence]
-
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
-
 * Docstrinfs in kern.py. [James Hensman]
-
-* Basic sim code functional. [Neil Lawrence]
 
 * Updated sympy code, multioutput grad checks pass apart from wrt X. Similar problems with prediction as to sinc covariance, needs investigation. [Neil Lawrence]
 
@@ -7419,6 +7401,10 @@
   not everything works yet, but I&#x27;ve identified the main issues. Still
 
 * Added olivetti faces data set. It required adding netpbmfile.py a bsd licensed pgm file reader from Christoph Gohlke, which doesn&#x27;t seem to have a spearate installer. Also modified image_show to assume by default that array ordering is python instead of fortran. Modified brendan_faces demo to explicilty force fortran ordering. Notified Teo of change. [Neil Lawrence]
+
+* Domain and trtansformations namespace prettyfying. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Some fixes and changes to the sympykern. [Neil Lawrence]
 
@@ -7447,6 +7433,18 @@
 * Sampling function added. [Ricardo]
 
 * Added first draft of functionality for multiple output sympy kernels. [Neil Lawrence]
+
+* Tests updated. [Max Zwiessele]
+
+* Dim reduction examples Q= &gt; input_dim= [Max Zwiessele]
+
+* Numpy non hashable AHHHHHH. [Max Zwiessele]
+
+* Dont print brackets in transformations. [Max Zwiessele]
+
+* Parameterized first beta test. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
@@ -7544,23 +7542,55 @@
 
 * Added hetero back to the init. [James Hensman]
 
+* Epsilon and power_ep now are parameters of update_likelihood. [Ricardo]
+
+* Crescent data example is better organized. [Ricardo]
+
+* Cross term testing switched on. [Max Zwiessele]
+
+* Comment linear x linear for testing purposes. [Max Zwiessele]
+
+* Parameter_testing. [Max Zwiessele]
+
+* Index operations now work on flattened indices. [Max Zwiessele]
+
+* Unoptimized parameter, still slower than current implementation. [Max Zwiessele]
+
+* Ndarray subclass cleaned up. [Max Zwiessele]
+
+* Subclassing ndarray almost functional. [Max Zwiessele]
+
+* Parameters ndarray, stuck at using strides for transformations. [Max Zwiessele]
+
+* Transformations are singletons now, weak refs for memory managment. [Max Zwiessele]
+
+* Almost there with array inheriting. [Max Zwiessele]
+
+* With subclassing ndarray, current_slice problems not solved... [Max Zwiessele]
+
+* Without inheriting from numpy.ndarray. ndarray functionality missing. [Max Zwiessele]
+
+* NegativeLogexp Pep8ted. [Max Zwiessele]
+
+* Index operations finalized. [Max Zwiessele]
+
+* Added index_operations and deleted them from paramter. [Max Zwießele]
+
+* Added parameter files - Alan. [Max Zwiessele]
+
+* Transformations singleton. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
+
+  Conflicts:
+  	GPy/core/transformations.py
+  	GPy/kern/parts/kernpart.py
+
 * Merge pull request #77 from jamesmcm/devel. [James McMurray]
 
   Devel
 
 * Merge branch &#x27;devel&#x27; of git://github.com/SheffieldML/GPy into devel. [James McMurray]
-
-* Rebuilt documentation. [James McMurray]
-
-* Changes to fix autodoc - need to test with ReadTheDocs still. [James McMurray]
-
-* Fixed readme. [James McMurray]
-
-* Updated readme with instructions for compiling documentation, running unit tests. [James McMurray]
-
-* Epsilon and power_ep now are parameters of update_likelihood. [Ricardo]
-
-* Crescent data example is better organized. [Ricardo]
 
 * Bug in prod-coreg kernels fixed, not in the most elegant way though. [Ricardo]
 
@@ -7569,6 +7599,14 @@
 * Function grep_model added, works like print model, but accepts regexp. [Ricardo]
 
 * Reverting error. [Ricardo]
+
+* Rebuilt documentation. [James McMurray]
+
+* Changes to fix autodoc - need to test with ReadTheDocs still. [James McMurray]
+
+* Fixed readme. [James McMurray]
+
+* Updated readme with instructions for compiling documentation, running unit tests. [James McMurray]
 
 * Normalize_Y is passed to core function. [Ricardo]
 
@@ -7730,6 +7768,18 @@
 * Fixed args to bfgs. [James Hensman]
 
 * Fixed Alans checkgrad bug. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+
+* Working on the Poisson likelihood. [Ricardo]
+
+* Parameterization changes take a while. [Max Zwiessele]
+
+* Correcterd minor errors (imports etc) [Max Zwiessele]
+
+* Pep8&#x27;ed transformations module. [Max Zwiessele]
 
 * Mrd_sim stable and deprecated. [Max Zwiessele]
 
@@ -8055,10 +8105,6 @@
 
 * Merge branch &#x27;devel&#x27; into pickle. [Max Zwiessele]
 
-* Pcikling? [Max Zwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
-
 * Fixed an import. [Teo de Campos]
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
@@ -8067,53 +8113,31 @@
 
 * Removed sympy import. [Nicolo Fusi]
 
-* Added an include. [Teo de Campos]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
-
 * Added missing import in util.linalg. [Nicolo Fusi]
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
-* Removed sympy helpers from init. [Nicolo Fusi]
-
-* Working on the Poisson likelihood. [Ricardo]
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+
+* Merge remote-tracking branch &#x27;origin/devel&#x27; into devel. [Ricardo]
+
+* Bug fix in the confusion matrix. [Ricardo]
+
+* Removed sympy helpers from init. [Nicolo Fusi]
 
 * Added init. [Nicolo Fusi]
 
 * Removed unnecessary gitignore line. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
-
 * Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
-
-* Merging by hand... [James Hensman]
 
 * Kernels are now consistent with pep8 and common reason. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Added an include. [Teo de Campos]
 
-* Fixed fixed kernel (aha!) [Nicolo Fusi]
-
-* Merge remote-tracking branch &#x27;origin/devel&#x27; into devel. [Ricardo]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
-
-* Corrected minor bug in Brownian kernel. [Nicolas]
-
-* Comment import visual in visualize due to issues in Windows/OSX. [Neil Lawrence]
-
-* Mods to visualize and dimensionality to make stick demos work for summer school. [Neil Lawrence]
-
-* Changes to the efficiency of the sparse GP when there are many outputs. [James Hensman]
-
-* Bug fix in the confusion matrix. [Ricardo]
-
-* Minor change in tutorial. [mu]
-
-* Added link to user mailing list. [James Hensman]
+* Merging by hand... [James Hensman]
 
 * Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
 
@@ -8132,6 +8156,22 @@
   Example is implemented, but the step length is a bit crazy!
 
 * Changed manifest from docs to doc. [James Hensman]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+
+* Corrected minor bug in Brownian kernel. [Nicolas]
+
+* Comment import visual in visualize due to issues in Windows/OSX. [Neil Lawrence]
+
+* Mods to visualize and dimensionality to make stick demos work for summer school. [Neil Lawrence]
+
+* Changes to the efficiency of the sparse GP when there are many outputs. [James Hensman]
+
+* Fixed fixed kernel (aha!) [Nicolo Fusi]
+
+* Pcikling? [Max Zwiessele]
 
 * Pypi release update. [Max Zwiessele]
 
@@ -9450,11 +9490,6 @@
 * Linear is now by default non-ARD. [Nicolo Fusi]
 
 * Added fixed effect kernel. [Nicolo Fusi]
-
-
-## 0.2 (2013-03-13)
-
-### Other
 
 * Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
 

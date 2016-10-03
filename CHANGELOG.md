@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.5 (2016-10-03)
+
+### Other
+
+* Bump version: 1.5.4 → 1.5.5. [Max Zwiessele]
+
+
 ## v1.5.4 (2016-10-03)
 
 ### New

@@ -140,7 +140,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix='')
         meta = response.info()
         content_length_str = meta.get("Content-Length")
         if content_length_str:
-            file_size = int(content_length_str[0])
+            file_size = int(content_length_str)
         else:
             file_size = None
         status = ""

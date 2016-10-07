@@ -13,9 +13,9 @@ The Gaussian processes framework in Python.
 
 ## What's new:
 
-From now on we keep track of changes in the CHANGELOG.md. 
+From now on we keep track of changes in the CHANGELOG.md.
 If you want your changes to show up there follow the [guidelines](#gl).
-In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format. 
+In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
 ## Contributing to GPy
 
@@ -33,7 +33,7 @@ For an in depth description of pull requests, please visit https://help.github.c
  6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
  7. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
 
-For any further questions/suggestions head over to the issues section in GPy. 
+For any further questions/suggestions head over to the issues section in GPy.
 
 <a name=gl></a>
 ### Pull Request Guidelines
@@ -126,14 +126,14 @@ If you're having trouble installing GPy via `pip install GPy` here is a probable
 
 # Saving models in a consistent way across versions:
 
-As pickle is inconsistent across python versions and heavily dependent on class structure, it behaves inconsistent across versions. 
+As pickle is inconsistent across python versions and heavily dependent on class structure, it behaves inconsistent across versions.
 Pickling as meant to serialize models within the same environment, and not to store models on disk to be used later on.
 
 To save a model it is best to save the m.param_array of it to disk (using numpy’s np.save).
-Additionally, you save the script, which creates the model. 
-In this script you can create the model using initialize=False as a keyword argument and with the data loaded as normal. 
-You then set the model parameters by setting m.param_array[:] = loaded_params as the previously saved parameters. 
-Then you initialize the model by m.initialize_parameter(), which will make the model usable. 
+Additionally, you save the script, which creates the model.
+In this script you can create the model using initialize=False as a keyword argument and with the data loaded as normal.
+You then set the model parameters by setting m.param_array[:] = loaded_params as the previously saved parameters.
+Then you initialize the model by m.initialize_parameter(), which will make the model usable.
 Be aware that up to this point the model is in an inconsistent state and cannot be used to produce any results.
 
 ```python
@@ -161,15 +161,15 @@ New way of running tests is using coverage:
 Ensure nose and coverage is installed:
 
     pip install nose coverage
-    
+
 Run nosetests from root directory of repository:
 
     coverage run travis_tests.py
-    
+
 Create coverage report in htmlcov/
 
     coverage html
-    
+
 The coverage report is located in htmlcov/index.html
 
 ##### Legacy: using nosetests
@@ -223,7 +223,7 @@ If you want to merge a branch into devel make sure the following steps are met:
  - Check that tests are there and are checking code where applicable.
  - [optional] Make changes if necessary and commit and push to run tests.
  - [optional] Repeat the above until tests pass.
- - [optional] bump up the version of GPy using bumpversion. The configuration is done, so all you need is bumpversion [major|minor|patch]. 
+ - [optional] bump up the version of GPy using bumpversion. The configuration is done, so all you need is bumpversion [major|minor|patch].
  - Update the changelog using gitchangelog: `gitchangelog > CHANGELOG.md`
  - Commit the changes of the changelog as silent update: `git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
  - Push the changes into devel.
@@ -246,16 +246,16 @@ Then we are ready to make the last changes for the changelog and versioning:
 Now we can merge the pull request into devel:
 
     $ git checkout devel
-    $ git merge --no-ff kurtCutajar-devel
+    $ git merge --no-ff <pull-origin>-devel
     $ git push origin devel
-    
+
 This will update the devel branch of GPy.
 
 ### Deploying GPy
 
-We have set up all deployment automatic. 
-Thus, all you need to do is create a pull request from devel to deploy. 
-Wait for the tests to finish (successfully!) and merge the pull request. 
+We have set up all deployment automatic.
+Thus, all you need to do is create a pull request from devel to deploy.
+Wait for the tests to finish (successfully!) and merge the pull request.
 This will update the package on pypi for all platforms fully automatically.
 
 ## Funding Acknowledgements

@@ -74,7 +74,6 @@ ignore_regexps = [
 ## titles are the label, and a commit is classified under this section if any
 ## of the regexps associated is matching.
 ##
-section_regexps = [
     ('New', [
 	r'^[nN]ew\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
      ]),
@@ -178,6 +177,7 @@ unreleased_version_label = "Unreleased"
 ##        Examples:
 ##           - makotemplate("restructuredtext")
 ##
+>>>>>>> 287584f0cdac51a674996ff6d7092cc876b25ce6
 #output_engine = rest_py
 #output_engine = mustache("restructuredtext")
 output_engine = mustache("markdown")

@@ -3,7 +3,6 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from paramz.core.observable_array import ObsAr
 from paramz.caching import Cache_this
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce

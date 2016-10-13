@@ -1,12 +1,63 @@
 # Changelog
 
-## v1.5.3 (2016-09-06)
+## v1.5.5 (2016-10-03)
 
 ### Other
+
+* Bump version: 1.5.4 → 1.5.5. [Max Zwiessele]
+
+
+## v1.5.4 (2016-10-03)
+
+### New
+
+* Added deployment pull request instructions for developers. [mzwiessele]
+
+* Using gitchangelog to keep track of changes and log new features. [mzwiessele]
+
+### Changes
+
+* Version update on paramz. [Max Zwiessele]
+
+* Fixed naming in variational priors : [Max Zwiessele]
+
+* Changelog update. [mzwiessele]
+
+### Fix
+
+* Bug in dataset (in fn download_url) which wrongly interprets the Content-Length meta data, and just takes first character. [Michael T Smith]
+
+* What&#x27;s new update fix #425 in changelog. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.3 → 1.5.4. [Max Zwiessele]
+
+* Merge pull request #443 from SheffieldML/dataset_download_url_bugfix. [Max Zwiessele]
+
+  fix: Bug in datasets.py
+
+* Merge branch &#x27;kurtCutajar-devel&#x27; into devel. [mzwiessele]
 
 * Bump version: 1.5.2 → 1.5.3. [mzwiessele]
 
 * Merge branch &#x27;devel&#x27; into kurtCutajar-devel. [mzwiessele]
+
+* Bump version: 1.5.1 → 1.5.2. [mzwiessele]
+
+* Minor readme changes. [mzwiessele]
+
+* Bump version: 1.5.0 → 1.5.1. [mzwiessele]
+
+* Bump version: 1.4.3 → 1.5.0. [mzwiessele]
+
+* Bump version: 1.4.2 → 1.4.3. [mzwiessele]
+
+* Bump version: 1.4.1 → 1.4.2. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+
+* [kern] fix #440. [mzwiessele]
 
 * [doc] cleanup. [mzwiessele]
 
@@ -39,63 +90,6 @@
 * Added kernels for GpGrid and GpSsm regression. [kcutajar]
 
 * Added core code for GpSSM and GpGrid. [kcutajar]
-
-
-## v1.5.2 (2016-09-06)
-
-### New
-
-* Added deployment pull request instructions for developers. [mzwiessele]
-
-### Other
-
-* Bump version: 1.5.1 → 1.5.2. [mzwiessele]
-
-* Minor readme changes. [mzwiessele]
-
-
-## v1.5.1 (2016-09-06)
-
-### Fix
-
-* What&#x27;s new update fix #425 in changelog. [mzwiessele]
-
-### Other
-
-* Bump version: 1.5.0 → 1.5.1. [mzwiessele]
-
-
-## v1.5.0 (2016-09-06)
-
-### New
-
-* Using gitchangelog to keep track of changes and log new features. [mzwiessele]
-
-### Other
-
-* Bump version: 1.4.3 → 1.5.0. [mzwiessele]
-
-
-## v1.4.3 (2016-09-06)
-
-### Changes
-
-* Changelog update. [mzwiessele]
-
-### Other
-
-* Bump version: 1.4.2 → 1.4.3. [mzwiessele]
-
-
-## v1.4.2 (2016-09-06)
-
-### Other
-
-* Bump version: 1.4.1 → 1.4.2. [mzwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
-
-* [kern] fix #440. [mzwiessele]
 
 
 ## v1.4.1 (2016-09-06)
@@ -717,6 +711,11 @@
 * Update setup.py. [Max Zwiessele]
 
 * [coverage] some more restrictions. [Max Zwiessele]
+
+
+## v1.0.5 (2016-04-08)
+
+### Other
 
 * Merge pull request #365 from SheffieldML/devel. [Max Zwiessele]
 

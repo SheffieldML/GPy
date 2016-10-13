@@ -102,8 +102,8 @@ class BasisFuncKernel(Kern):
                 phi2 = phi2[:, None]
             return phi1.dot(phi2.T)
 
-class PolinomialBasisFuncKernel(BasisFuncKernel):
-    def __init__(self, input_dim, degree, variance=1., active_dims=None, ARD=True, name='polinomial_basis'):
+class PolynomialBasisFuncKernel(BasisFuncKernel):
+    def __init__(self, input_dim, degree, variance=1., active_dims=None, ARD=True, name='polynomial_basis'):
         """
         A linear segment transformation. The segments start at start, \
         are then linear to stop and constant again. The segments are
@@ -114,7 +114,7 @@ class PolinomialBasisFuncKernel(BasisFuncKernel):
         Behaviour of start stop is as np.where(X<start) would do.
         """
         self.degree = degree
-        super(PolinomialBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
+        super(PolynomialBasisFuncKernel, self).__init__(input_dim, variance, active_dims, ARD, name)
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):

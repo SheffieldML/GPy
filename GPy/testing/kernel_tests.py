@@ -495,6 +495,13 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.Add(ks)
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_basis_func_poly(self):
+        ks = []
+        for i in range(self.X.shape[1]):
+            ks.append(GPy.kern.PolynomialBasisFuncKernel(1, 5, ARD=i%2==0, active_dims=[i]))
+        k = GPy.kern.Add(ks)
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_basis_func_domain(self):
         start_stop = np.random.uniform(self.X.min(0), self.X.max(0), (4, self.X.shape[1])).T
         start_stop.sort(axis=1)

@@ -30,7 +30,7 @@ install:
 - source install_retry.sh
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]];
   then
-    conda install --yes pandoc
+    conda install --yes pandoc;
   fi;
 - pip install codecov
 - pip install coveralls

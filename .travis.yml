@@ -28,6 +28,10 @@ before_install:
 install:
 - echo $PATH
 - source install_retry.sh
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]];
+  then
+    conda install --yes pandoc
+  fi;
 - pip install codecov
 - pip install coveralls
 - pip install pypandoc

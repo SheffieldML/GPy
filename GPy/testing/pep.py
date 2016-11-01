@@ -9,6 +9,7 @@ class PEPgradienttest(unittest.TestCase):
     def setUp(self):
         ######################################
         # # 1 dimensional example
+        np.random.seed(10)
 
         N = 20
         # sample inputs and outputs
@@ -26,6 +27,7 @@ class PEPgradienttest(unittest.TestCase):
         # # more datapoints, check in alpha limits, the log marginal likelihood
         # # is consistent with FITC and VFE/Var_DTC
         M = 5
+        np.random.seed(42)
         self.X1 = np.c_[np.linspace(-1., 1., N)]
         self.Y1 = np.sin(self.X1) + np.random.randn(N, 1) * 0.05
         self.kernel = GPy.kern.RBF(input_dim=1, lengthscale=0.5, variance=1)

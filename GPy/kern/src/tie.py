@@ -40,7 +40,13 @@ class Tie(Kern):
                 print("Adding tie")
                 self.params.append(plist)
             
-        self.link_parameters(self.kern)        
+        self.link_parameters(self.kern)  
+        
+        for pitem in self.params:
+            l = len(pitem)
+            v,g = self.get_totals(pitem)
+            for p in pitem:
+                p.param_array[:] = v/l   
 
             
     def get_totals(self,param_list):

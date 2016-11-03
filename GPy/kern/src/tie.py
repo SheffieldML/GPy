@@ -37,7 +37,6 @@ class Tie(Kern):
             if len(plist)==0:
                 print("Warning: No parameters were added for (%s)" % str(tlist))
             else:
-                print("Adding tie")
                 self.params.append(plist)
             
         self.link_parameters(self.kern)  

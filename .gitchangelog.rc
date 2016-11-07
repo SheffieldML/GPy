@@ -177,7 +177,6 @@ unreleased_version_label = "Unreleased"
 ##        Examples:
 ##           - makotemplate("restructuredtext")
 ##
->>>>>>> 287584f0cdac51a674996ff6d7092cc876b25ce6
 #output_engine = rest_py
 #output_engine = mustache("restructuredtext")
 output_engine = mustache("markdown")

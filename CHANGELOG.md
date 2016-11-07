@@ -1,5 +1,78 @@
 # Changelog
 
+## v1.5.6 (2016-11-07)
+
+### New
+
+* Added ploy basis kernel tests and import. [mzwiessele]
+
+* Gitchangelogrc. [mzwiessele]
+
+### Changes
+
+* Added polynomial basis func kernel. [mzwiessele]
+
+### Fix
+
+* Installation #451. [Max Zwiessele]
+
+* Pandoc install under travis osx. [mzwiessele]
+
+* Pandoc install under travis osx. [mzwiessele]
+
+* Pypi changing to pypi.org. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.5 → 1.5.6. [mzwiessele]
+
+* Merge pull request #448 from thangbui/devel. [Max Zwiessele]
+
+  Added pep.py -- Sparse Gaussian processes using Power Expectation Propagation
+
+* Renamed pep test scripts. [Thang Bui]
+
+* Fixed seed in pep test script #448. [Thang Bui]
+
+* Added tests. [Thang Bui]
+
+* Added pep.py -- Sparse Gaussian processes using Power Expectation Propagation. [Thang Bui]
+
+  This allows interpolation between FITC (EP or alpha = 1), and Titsias&#x27;s variational (VarDTC, VFE when alpha = 0).
+
+* Merge pull request #452 from SheffieldML/setupreq. [Max Zwiessele]
+
+  fix: Installation #451
+
+* Merge pull request #447 from SheffieldML/polinomial. [Max Zwiessele]
+
+  Polynomial
+
+* Merge branch &#x27;devel&#x27; into polinomial. [mzwiessele]
+
+* Merge pull request #449 from SheffieldML/deploy. [Max Zwiessele]
+
+  Deploy
+
+* Update setup.py. [Mike Croucher]
+
+* Merge pull request #446 from SheffieldML/devel. [Max Zwiessele]
+
+  newest patch fixing some issues
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+
+* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+
+* Merge pull request #442 from SheffieldML/devel. [Max Zwiessele]
+
+  New Major for GPy
+
+* Merge pull request #426 from SheffieldML/devel. [Max Zwiessele]
+
+  some fixes from issues and beckdaniels warped gp improvements
+
+
 ## v1.5.5 (2016-10-03)
 
 ### Other
@@ -9,25 +82,15 @@
 
 ## v1.5.4 (2016-10-03)
 
-### New
-
-* Added deployment pull request instructions for developers. [mzwiessele]
-
-* Using gitchangelog to keep track of changes and log new features. [mzwiessele]
-
 ### Changes
 
 * Version update on paramz. [Max Zwiessele]
 
 * Fixed naming in variational priors : [Max Zwiessele]
 
-* Changelog update. [mzwiessele]
-
 ### Fix
 
 * Bug in dataset (in fn download_url) which wrongly interprets the Content-Length meta data, and just takes first character. [Michael T Smith]
-
-* What&#x27;s new update fix #425 in changelog. [mzwiessele]
 
 ### Other
 
@@ -39,25 +102,14 @@
 
 * Merge branch &#x27;kurtCutajar-devel&#x27; into devel. [mzwiessele]
 
+
+## v1.5.3 (2016-09-06)
+
+### Other
+
 * Bump version: 1.5.2 → 1.5.3. [mzwiessele]
 
 * Merge branch &#x27;devel&#x27; into kurtCutajar-devel. [mzwiessele]
-
-* Bump version: 1.5.1 → 1.5.2. [mzwiessele]
-
-* Minor readme changes. [mzwiessele]
-
-* Bump version: 1.5.0 → 1.5.1. [mzwiessele]
-
-* Bump version: 1.4.3 → 1.5.0. [mzwiessele]
-
-* Bump version: 1.4.2 → 1.4.3. [mzwiessele]
-
-* Bump version: 1.4.1 → 1.4.2. [mzwiessele]
-
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
-
-* [kern] fix #440. [mzwiessele]
 
 * [doc] cleanup. [mzwiessele]
 
@@ -90,6 +142,63 @@
 * Added kernels for GpGrid and GpSsm regression. [kcutajar]
 
 * Added core code for GpSSM and GpGrid. [kcutajar]
+
+
+## v1.5.2 (2016-09-06)
+
+### New
+
+* Added deployment pull request instructions for developers. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.1 → 1.5.2. [mzwiessele]
+
+* Minor readme changes. [mzwiessele]
+
+
+## v1.5.1 (2016-09-06)
+
+### Fix
+
+* What&#x27;s new update fix #425 in changelog. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.0 → 1.5.1. [mzwiessele]
+
+
+## v1.5.0 (2016-09-06)
+
+### New
+
+* Using gitchangelog to keep track of changes and log new features. [mzwiessele]
+
+### Other
+
+* Bump version: 1.4.3 → 1.5.0. [mzwiessele]
+
+
+## v1.4.3 (2016-09-06)
+
+### Changes
+
+* Changelog update. [mzwiessele]
+
+### Other
+
+* Bump version: 1.4.2 → 1.4.3. [mzwiessele]
+
+
+## v1.4.2 (2016-09-06)
+
+### Other
+
+* Bump version: 1.4.1 → 1.4.2. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+
+* [kern] fix #440. [mzwiessele]
 
 
 ## v1.4.1 (2016-09-06)

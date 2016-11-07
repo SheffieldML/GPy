@@ -74,6 +74,7 @@ ignore_regexps = [
 ## titles are the label, and a commit is classified under this section if any
 ## of the regexps associated is matching.
 ##
+section_regexps = [
     ('New', [
 	r'^[nN]ew\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
      ]),
@@ -86,7 +87,6 @@ ignore_regexps = [
 
     ('Other', None ## Match all lines
      ),
-
 ]
 
 

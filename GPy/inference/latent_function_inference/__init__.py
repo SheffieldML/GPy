@@ -67,6 +67,7 @@ from GPy.inference.latent_function_inference.var_dtc import VarDTC
 from .expectation_propagation import EP, EPDTC
 from .dtc import DTC
 from .fitc import FITC
+from .pep import PEP
 from .var_dtc_parallel import VarDTC_minibatch
 from .var_gauss import VarGauss
 from .gaussian_grid_inference import GaussianGridInference

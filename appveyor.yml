@@ -3,7 +3,7 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   COVERALLS_REPO_TOKEN:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
-  gpy_version: 1.5.5
+  gpy_version: 1.5.6
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
@@ -66,7 +66,7 @@ deploy_script:
 - echo password:%pip_access% >> %USERPROFILE%\\.pypirc
 - echo[
 - echo [test] >> %USERPROFILE%\\.pypirc
-- echo repository:https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
+- echo repository:https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc
 - echo username:maxz >> %USERPROFILE%\\.pypirc
 - echo password:%pip_access% >> %USERPROFILE%\\.pypirc
 - ps: >-

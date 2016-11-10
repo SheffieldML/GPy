@@ -199,6 +199,7 @@ class Model(ParamzModel, Priorizable):
         import paramz
 
         transformed_points = param_points.copy()
+        print transformed_points, point_densities
 
         # Need to transform the points to the space of parameters again
         f = np.ones(self.size).astype(bool)

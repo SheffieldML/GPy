@@ -199,13 +199,25 @@ class Model(ParamzModel, Priorizable):
         import paramz
 
         transformed_points = param_points.copy()
-        print transformed_points, point_densities
-
-        # Need to transform the points to the space of parameters again
+        #alan's original code to transform those parameters, to the true space of parameters again
+        #mike's change: some parameters have no transform, and thus won't be called by any of the
+        #iterations through m2.constraints.items(). To handle these we keep track of those parameters
+        #not included, and then add them (untransformed) at the end.
         f = np.ones(self.size).astype(bool)
         f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
-        new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
+        new_t_points = [] 
+        todo = range(0,self.size)
+        new_t_points = np.zeros_like(transformed_points)
+        for c, ind in self.constraints.items():
+            print c,ind
+            if c != paramz.transformations.__fixed__:
+                new_t_points[:,ind] = (c.f(transformed_points[:, ind[f[ind]]]))
+                todo.remove(ind)
 
+        for param_ind in todo:
+            new_t_points[:,param_ind] = transformed_points[:, param_ind]
+            
+            
         return new_t_points, point_densities
 
     def numerical_parameter_hessian(self, step_length=1e-3):

@@ -199,23 +199,30 @@ class Model(ParamzModel, Priorizable):
         import paramz
 
         transformed_points = param_points.copy()
+        print transformed_points.shape
         #alan's original code to transform those parameters, to the true space of parameters again
         #mike's change: some parameters have no transform, and thus won't be called by any of the
         #iterations through m2.constraints.items(). To handle these we keep track of those parameters
         #not included, and then add them (untransformed) at the end.
         f = np.ones(self.size).astype(bool)
         f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
+        
         new_t_points = [] 
-        todo = range(0,self.size)
+        todo = range(0,sum(f))
         new_t_points = np.zeros_like(transformed_points)
+        print new_t_points.shape
         for c, ind in self.constraints.items():
             print c,ind
             if c != paramz.transformations.__fixed__:
-                new_t_points[:,ind] = (c.f(transformed_points[:, ind[f[ind]]]))
-                todo.remove(ind)
+                for i in ind[f[ind]]:
+                    new_t_points[:,i] = (c.f(transformed_points[:, i]))
+                    print i
+                    todo.remove(i)
 
-        for param_ind in todo:
-            new_t_points[:,param_ind] = transformed_points[:, param_ind]
+        print todo
+        for i in todo:
+            print i
+            new_t_points[:,i] = transformed_points[:, i]
             
             
         return new_t_points, point_densities

@@ -52,6 +52,7 @@ class GmmBayesianGPLVM(SparseGP_MPI):
         if likelihood is None:
             likelihood = Gaussian()
 
+
         # Need to define what the model is initialised like
         pi = np.ones(n_component) / float(n_component) # p(k)
         variational_pi = pi.copy()

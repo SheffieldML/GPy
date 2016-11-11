@@ -58,7 +58,7 @@ class GmmNormalPrior(VariationalPrior):
         self.link_parameter(self.variational_pi)
         self.variational_pi.constrain_bounded(0.0, 1.0)
 
-        self.stop = 5
+        # self.stop = 5
 
     def KL_divergence(self, variational_posterior):
         # Lagrange multiplier maybe also needed here

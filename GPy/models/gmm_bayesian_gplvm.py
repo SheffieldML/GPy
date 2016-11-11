@@ -61,12 +61,6 @@ class GmmBayesianGPLVM(SparseGP_MPI):
             px_mu[i] = np.zeros(X_variance.shape)
             px_var[i] = np.ones(X_variance.shape)
         
-        # print("Should print")
-        # print(pi)
-        # print(px_mu)
-        # print(px_var)
-        # print(variational_pi)
-        # print("Didnt print")
         self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_var=px_var, pi=pi,
                                 n_component=n_component, variational_pi=variational_pi)
 

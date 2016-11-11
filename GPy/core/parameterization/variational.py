@@ -63,10 +63,6 @@ class GmmNormalPrior(VariationalPrior):
     def KL_divergence(self, variational_posterior):
         # Lagrange multiplier maybe also needed here
 
-        # var_mean = np.square(variational_posterior.mean).sum()
-        # var_S = (variational_posterior.variance - np.log(variational_posterior.variance)).sum()
-        # return 0.5 * (var_mean + var_S) - 0.5 * variational_posterior.input_dim * variational_posterior.num_data
-    
         mu = variational_posterior.mean
         S = variational_posterior.variance
         pi = self.variational_pi

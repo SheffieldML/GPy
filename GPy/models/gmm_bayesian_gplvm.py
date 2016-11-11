@@ -52,6 +52,7 @@ class GmmBayesianGPLVM(SparseGP_MPI):
         if likelihood is None:
             likelihood = Gaussian()
 
+<<<<<<< HEAD
 
         # Need to define what the model is initialised like
         pi = np.ones(n_component) / float(n_component) # p(k)
@@ -62,6 +63,26 @@ class GmmBayesianGPLVM(SparseGP_MPI):
             px_mu[i] = np.zeros(X_variance.shape)
             px_var[i] = np.ones(X_variance.shape)
         
+=======
+        # Need to define what the model is initialised like
+        pi = np.ones(n_component) / float(n_component) # p(k)
+        variational_pi = pi.copy()
+        # px_mu = np.zeros(n_component)
+        # px_var = np.ones(n_component)
+        px_mu = [[]] * n_component
+        px_var = [[]] * n_component
+        for i in range(n_component):
+            px_mu[i] = np.zeros_like(X_variance)
+            px_var[i] = np.ones_like(X_variance)
+        
+
+        # print("Should print")
+        # print(pi)
+        # print(px_mu)
+        # print(px_var)
+        # print(variational_pi)
+        # print("Didnt print")
+>>>>>>> a43d4b074832a791b7453c454f304eacd478c624
         self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_var=px_var, pi=pi,
                                 n_component=n_component, variational_pi=variational_pi)
 

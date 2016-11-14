@@ -40,7 +40,7 @@ class GmmNormalPrior(VariationalPrior):
     def __init__(self, px_mu, px_var, pi, n_component, variational_pi, name="GMMNormalPrior", **kw):
         super(GmmNormalPrior, self).__init__(name=name, **kw)
         self.n_component = n_component
-        
+
         self.px_mu = Param('mu_k', px_mu)
         self.px_var = Param('var_k', px_var)
 
@@ -48,9 +48,9 @@ class GmmNormalPrior(VariationalPrior):
         variational_pi = variational_pi / np.sum(variational_pi)
         pi = pi / np.sum(pi)
 
-        self.pi = pi # p(x) mixing coeffients 
-        self.variational_pi = Param('variational_pi', variational_pi) # variational mixing coefficients 
-        
+        self.pi = pi # p(x) mixing coeffients
+        self.variational_pi = Param('variational_pi', variational_pi) # variational mixing coefficients
+
         self.check_all_weights()
 
         self.link_parameter(self.px_mu)
@@ -58,22 +58,15 @@ class GmmNormalPrior(VariationalPrior):
         self.link_parameter(self.variational_pi)
         self.variational_pi.constrain_bounded(0.0, 1.0)
 
-<<<<<<< HEAD
-        # self.stop = 5
-=======
         self.stop = 5
->>>>>>> a43d4b074832a791b7453c454f304eacd478c624
 
     def KL_divergence(self, variational_posterior):
         # Lagrange multiplier maybe also needed here
 
-<<<<<<< HEAD
-=======
         # var_mean = np.square(variational_posterior.mean).sum()
         # var_S = (variational_posterior.variance - np.log(variational_posterior.variance)).sum()
         # return 0.5 * (var_mean + var_S) - 0.5 * variational_posterior.input_dim * variational_posterior.num_data
-    
->>>>>>> a43d4b074832a791b7453c454f304eacd478c624
+
         mu = variational_posterior.mean
         S = variational_posterior.variance
         pi = self.variational_pi
@@ -88,76 +81,48 @@ class GmmNormalPrior(VariationalPrior):
         return 0.5 * (cita[0] - (np.log(S)).sum() + cita[1]) + 0.5 * (cita[2] - total_n) + cita[3]
 
     def update_gradients_KL(self, variational_posterior):
-<<<<<<< HEAD
-        # import pdb; pdb.set_trace() # breakpoint 1
-        # print("Updating Gradients")
-        # if self.stop<1:
-        #     return
-        # self.stop-=1
-=======
+
         import pdb; pdb.set_trace() # breakpoint 1
         print("Updating Gradients")
         if self.stop<1:
             return
         self.stop-=1
->>>>>>> a43d4b074832a791b7453c454f304eacd478c624
+
         #dL:
         #variational_posterior.mean.gradient -= variational_posterior.mean
         #variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
-        
+
 
         mu = variational_posterior.mean
         S = variational_posterior.variance
         pi = self.variational_pi
 
-<<<<<<< HEAD
-        cita_0 = np.zeros(mu.shape)
-        cita_1 = np.zeros(mu.shape)
-        cita_2 = np.zeros(mu.shape)
-        cita_3 = np.zeros(pi.shape)
-        for i in range(self.n_component):        
-            cita_0 += pi.values[i] * (mu - self.px_mu.values[i]) / self.px_var.values[i]     
-            cita_1 += (pi[i] / self.px_var[i])
-            cita_2 += pi[i] * (S + np.square(mu - self.px_mu[i])) / np.square(self.px_var[i])
-            self.px_mu[i].gradient += pi[i] * (mu - self.px_mu[i]) / self.px_var[i]
-            self.px_var[i].gradient += (pi[i] * (S + np.square(mu - self.px_mu[i])) / np.square(self.px_var[i]) - (pi[i] / self.px_var[i])) * 0.5
-            cita_3[i] = (np.log(self.px_var[i]).sum() + (S / self.px_var[i]).sum()+ (np.square(mu - self.px_mu[i]) / self.px_var[i]).sum() )* (-0.5) + np.log(self.pi[i] / pi[i]) - 1
-            # self.variational_pi[i].gradient += cita_3[i]
-
-        variational_posterior.mean.gradient -= cita_0
-        variational_posterior.variance.gradient += (1. / (S) - cita_1) * 0.5
-        self.variational_pi.gradient +=cita_3
-
-=======
         cita_0 = np.zeros_like(mu)
         cita_1 = np.zeros_like(mu)
         cita_2 = np.zeros_like(mu)
         cita_3 = np.zeros_like(pi)
         for i in range(self.n_component):
-            
-            print("About to change the gradient")            
+
+            print("About to change the gradient")
             print pi.values[i]
             print mu
             print self.px_mu.values[i]
             print self.px_var.values[i]
-            
+
             cita_0 += pi.values[i] * (mu - self.px_mu.values[i]) / self.px_var.values[i]
             print "Has this helped?"
             self.px_mu[i].gradient += pi[i] * (mu - self.px_mu[i]) / self.px_var[i]
             cita_1 += (pi[i] / self.px_var[i])
             cita_2 += pi[i] * (S + np.square(mu - self.px_mu[i])) / np.square(self.px_var[i])
             self.px_var[i].gradient += (pi[i] * (S + np.square(mu - self.px_mu[i])) / np.square(self.px_var[i]) - (pi[i] / self.px_var[i])) * 0.5
-            cita_3[i] = (np.log(self.px_var[i]).sum() 
+            cita_3[i] = (np.log(self.px_var[i]).sum()
                         + (S / self.px_var[i]).sum()
                         + (np.square(mu - self.px_mu[i]) / self.px_var[i]).sum() )* (-0.5) + np.log(self.pi[i] / pi[i]) - pi[i] * np.log(self.pi[i] / np.square(pi[i]))
             self.variational_pi[i].gradient += cita_3[i]
 
         variational_posterior.mean.gradient -= cita_0
         variational_posterior.variance.gradient += (1. / (S) - cita_1) * 0.5
-        
-        
-    
->>>>>>> a43d4b074832a791b7453c454f304eacd478c624
+
     def check_weights(self, weights):
         assert weights.min() >= 0.0
         assert weights.max() <= 1.0
@@ -167,10 +132,7 @@ class GmmNormalPrior(VariationalPrior):
         self.check_weights(self.variational_pi)
         self.check_weights(self.pi)
 
-<<<<<<< HEAD
-=======
 
->>>>>>> a43d4b074832a791b7453c454f304eacd478c624
 class SpikeAndSlabPrior(VariationalPrior):
     def __init__(self, pi=None, learnPi=False, variance = 1.0, group_spike=False, name='SpikeAndSlabPrior', **kw):
         super(SpikeAndSlabPrior, self).__init__(name=name, **kw)

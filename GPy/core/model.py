@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .parameterization.priorizable import Priorizable
 from paramz import Model as ParamzModel
-
+from paramz import transformations
 import numpy as np
 from ..util.linalg import pdinv
 
@@ -101,14 +101,14 @@ class Model(ParamzModel, Priorizable):
             bottom_edge[i] = -np.sqrt(num_free_params)
             ccd_points = np.vstack([ccd_points, top_edge, bottom_edge])
 
-        # Find the appropriate scaling such that the edges lie on a boundry of equal density
+        # Find the appropriate scaling such that the edges lie on a boundary of equal density
         # First find the density at the mode
         log_marginal = lambda p: -self._objective(p)
         mode_density = log_marginal(modal_params)  # FIXME: We really want to evaluate the log_marginal not the negative objective as it makes more sense, but they are equivalent in this case
 
         # Treating the posterior over hyperparameters as a standard normal, moving z*sqrt(2) should make the likelihood drop by 1, as z should be acting as a unit vector along the principle components of the posterior. 
 
-        scalings = np.ones_like(ccd_points)
+        scalings = np.ones_like(ccd_points)        
         # The below code makes me feel dirty. Pythonise it!
         # This is naive scaling, assuming that it is well approximated by a standard normal, in practice you might want to scale in different directions seperately (split normal approximation)
         for j in range(num_free_params*2):
@@ -117,10 +117,11 @@ class Model(ParamzModel, Priorizable):
                 direction = -1
             else:
                 direction = 1
-            ind = np.ceil(j // 2)  # This integer division is required, will not work with python 3
+            ind = int(np.ceil(j // 2))  # This integer division is required, will not work with python 3
             temp[0, ind] = direction
             
             # This is the point mapped onto the contour of a unit gaussian, stretched by the eigenvectors over the marginal likelihood
+
             contour_point = modal_params + np.sqrt(2)*temp.dot(z)
             point_density = log_marginal(contour_point)
 
@@ -145,7 +146,7 @@ class Model(ParamzModel, Priorizable):
         point_densities = np.ones(param_points.shape[0])*np.nan
         for point_ind, param_point in enumerate(param_points):
             point_densities[point_ind] = log_marginal(param_point)
-        
+
         # Remove nan densities
         non_nan_densities = np.isfinite(point_densities).flatten()
         point_densities = point_densities[non_nan_densities]
@@ -161,7 +162,6 @@ class Model(ParamzModel, Priorizable):
             # normalize
             point_weights = point_weights / centre_weight
             centre_weight = 1.0
-
             point_densities[1:] *= point_weights
 
         # Normalize density
@@ -173,59 +173,29 @@ class Model(ParamzModel, Priorizable):
         param_points = param_points[non_small_densities, :]
         point_densities /= point_densities.sum()
 
-        # for dimension_ind, dimension in enumerate(num_free_params):
-            # # Due to the way we built the ccd_points up, every other one changes to the next direction
-            # ind = np.ceil(dimension_ind / 2.0)
-            # if dimension_ind % 2:
-                # direction = 1
-            # else:
-                # direction = -1
-            # print(z[param_dir,:])
-        # for direction in [1, -1]:
-            # for parameter in range(num_free_params):
-                #If the log likelihood doesn't even drop when we move away from the mode, then we havent found the modal points, or there are multiple modes in the posterior (bad)
-                # upper_density = self._objective(modal_params + np.sqrt(2)*np.dot(direction,z))
-
-                # We want to work out the scaling for every point, so we first figure out which way the vector is scaling from the mode, and scale in that direction
-                
-
-        # fig = plt.figure()
-        # if num_free_params == 3:
-            # ax = fig.add_subplot(111, projection='3d')
-            # ax.scatter(ccd_points[:,0], ccd_points[:,1], ccd_points[:,2]) 
-        # elif num_free_params == 2:
-            # plt.scatter(ccd_points[:,0], ccd_points[:,1])
-        # plt.show()
-        import paramz
-
         transformed_points = param_points.copy()
-        print transformed_points.shape
         #alan's original code to transform those parameters, to the true space of parameters again
         #mike's change: some parameters have no transform, and thus won't be called by any of the
         #iterations through m2.constraints.items(). To handle these we keep track of those parameters
         #not included, and then add them (untransformed) at the end.
         f = np.ones(self.size).astype(bool)
-        f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
-        
+        f[self.constraints[transformations.__fixed__]] = transformations.FIXED
+        #TODO Check: Presumably only one constraint applies to each parameter?
         new_t_points = [] 
         todo = range(0,sum(f))
         new_t_points = np.zeros_like(transformed_points)
-        print new_t_points.shape
         for c, ind in self.constraints.items():
-            print c,ind
-            if c != paramz.transformations.__fixed__:
+            if c != transformations.__fixed__:
                 for i in ind[f[ind]]:
+                    z[:,i] = c.f(z[:,i])
                     new_t_points[:,i] = (c.f(transformed_points[:, i]))
-                    print i
                     todo.remove(i)
 
-        print todo
         for i in todo:
-            print i
             new_t_points[:,i] = transformed_points[:, i]
             
             
-        return new_t_points, point_densities
+        return new_t_points, point_densities, scalings, z
 
     def numerical_parameter_hessian(self, step_length=1e-3):
         """

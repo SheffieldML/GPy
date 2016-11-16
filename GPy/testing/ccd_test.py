@@ -24,18 +24,33 @@ class SimpleModel(GPy.Model):
     def parameters_changed(self):
         for i,pos in enumerate(self.peak):
             self.params[i].gradient = -2*((self.params[i])-pos)
-    
-m2 = SimpleModel('simple')
-m2.optimize()
-assert np.all(np.isclose(m2.numerical_parameter_hessian(),np.array([[2,0],[0,2]]))), "Numerical approximation to Hessian doesn't match. Error in numerical_parameter_hessian()."
-assert np.isclose(m2.param0,1,atol=0.01), "Failed to find likelihood maximum of test model's param0 while testing CCD"
-assert np.isclose(m2.param1,2,atol=0.01), "Failed to find likelihood maximum of test model's param1 while testing CCD"
 
-ccdpos,ccdres = m2.CCD()
-m2.optimize()
+class CCDTest(unittest.TestCase):
+    def test_ccd_placement(self):
+        """
+        Test if the CCD algorithm placed the function evaluations at the
+        expected locations in parameter space, for the simple model.
+        """
+        
+        #create and optimise the simple model
+        m2 = SimpleModel('simple')
+        m2.optimize()
+        #confirm that the gradients of the likelihood over the parameters
+        #is as expected: [[2,0],[0,2]].
+        assert np.all(np.isclose(m2.numerical_parameter_hessian(),np.array([[2,0],[0,2]]))), "Numerical approximation to Hessian doesn't match. Error in numerical_parameter_hessian()."
+        
+        #check the optimizing step found the maximum correctly.
+        assert np.isclose(m2.param0,1,atol=0.01), "Failed to find likelihood maximum of test model's param0 while testing CCD"
+        assert np.isclose(m2.param1,2,atol=0.01), "Failed to find likelihood maximum of test model's param1 while testing CCD"
 
-assert np.all(np.isclose(np.sum((ccdpos-np.array([1,2]))**2,1)[1:],1.21,atol=0.01)), "CCD placement error - should be 1.21 from mode"
+        #get the CCD positions and log likelihoods at those locations.
+        ccdpos,ccdres = m2.CCD()
+        
+        #(optimise again as CCD moves the parameter values)
+        m2.optimize()
 
+        #The important assert - checking if the CCD positions are in the right places.
+        assert np.all(np.isclose(np.sum((ccdpos-np.array([1,2]))**2,1)[1:],1.21,atol=0.01)), "CCD placement error - should be 1.21 from mode"
 
 #####CODE TO COMBINE TODO!
 

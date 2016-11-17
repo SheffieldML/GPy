@@ -45,5 +45,4 @@ class LOOTest(unittest.TestCase):
         actual = m.LOO()
 
         for e,a in zip(expected,actual):
-            print "OK"
-            assert np.isclose(e,a,atol=0.0001,rtol=0.0001), "%s, %s" % (e,a)
+            assert np.isclose(e,a,atol=0.0001,rtol=0.0001), "LOO likelihoods don't match expected values"

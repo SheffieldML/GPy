@@ -2,17 +2,17 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from .model import Model
-from .parameterization.variational import VariationalPosterior
+from .. import kern
+from GPy.core.model import Model
+from paramz import ObsAr
 from .mapping import Mapping
 from .. import likelihoods
-from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from ..util.normalizer import Standardize
-from paramz import ObsAr
+from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
 import warnings
+from GPy.util.normalizer import MeanNorm
 logger = logging.getLogger("GP")
 
 class GP(Model):
@@ -28,7 +28,7 @@ class GP(Model):
     :param Norm normalizer:
         normalize the outputs Y.
         Prediction will be un-normalized using this normalizer.
-        If normalizer is None, we will normalize using Standardize.
+        If normalizer is None, we will normalize using MeanNorm.
         If normalizer is False, no normalization will be done.
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
@@ -49,7 +49,7 @@ class GP(Model):
         logger.info("initializing Y")
 
         if normalizer is True:
-            self.normalizer = Standardize()
+            self.normalizer = MeanNorm()
         elif normalizer is False:
             self.normalizer = None
         else:
@@ -64,7 +64,6 @@ class GP(Model):
             self.Y_normalized = self.Y
         else:
             self.Y = Y
-            self.Y_normalized = self.Y
 
         if Y.shape[0] != self.num_data:
             #There can be cases where we want inputs than outputs, for example if we have multiple latent
@@ -249,16 +248,14 @@ class GP(Model):
         """
         #predict the latent function values
         mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+        if self.normalizer is not None:
+            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         if include_likelihood:
             # now push through likelihood
             if likelihood is None:
                 likelihood = self.likelihood
             mu, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
-
-        if self.normalizer is not None:
-            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
-
         return mu, var
 
     def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
@@ -303,14 +300,11 @@ class GP(Model):
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
+        if self.normalizer is not None:
+            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         if likelihood is None:
             likelihood = self.likelihood
-            
-        quantiles = likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
-        
-        if self.normalizer is not None:
-            quantiles = [self.normalizer.inverse_mean(q) for q in quantiles]
-        return quantiles
+        return likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
 
     def predictive_gradients(self, Xnew, kern=None):
         """
@@ -343,7 +337,8 @@ class GP(Model):
         dv_dX += kern.gradients_X(alpha, Xnew, self._predictive_variable)
         return mean_jac, dv_dX
 
-    def predict_jacobian(self, Xnew, kern=None, full_cov=False):
+
+    def predict_jacobian(self, Xnew, kern=None, full_cov=True):
         """
         Compute the derivatives of the posterior of the GP.
 
@@ -361,11 +356,15 @@ class GP(Model):
         :param X: The points at which to get the predictive gradients.
         :type X: np.ndarray (Xnew x self.input_dim)
         :param kern: The kernel to compute the jacobian for.
-        :param boolean full_cov: whether to return the cross-covariance terms between
-        the N* Jacobian vectors
+        :param boolean full_cov: whether to return the full covariance of the jacobian.
 
         :returns: dmu_dX, dv_dX
         :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q,(D)) ]
+
+        Note: We always return sum in input_dim gradients, as the off-diagonals
+        in the input_dim are not needed for further calculations.
+        This is a compromise for increase in speed. Mathematically the jacobian would
+        have another dimension in Q.
         """
         if kern is None:
             kern = self.kern
@@ -384,26 +383,24 @@ class GP(Model):
             dK2_dXdX = kern.gradients_XX(one, Xnew)
         else:
             dK2_dXdX = kern.gradients_XX_diag(one, Xnew)
-            #dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
-            #for i in range(Xnew.shape[0]):
-            #    dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])
 
         def compute_cov_inner(wi):
             if full_cov:
-                var_jac = dK2_dXdX - np.einsum('qnm,msr->nsqr', dK_dXnew_full.T.dot(wi), dK_dXnew_full) # n,s = Xnew.shape[0], m = pred_var.shape[0]
+                # full covariance gradients:
+                var_jac = dK2_dXdX - np.einsum('qnm,miq->niq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
             else:
-                var_jac = dK2_dXdX - np.einsum('qnm,mnr->nqr', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
+                var_jac = dK2_dXdX - np.einsum('qim,miq->iq', dK_dXnew_full.T.dot(wi), dK_dXnew_full)
             return var_jac
 
         if self.posterior.woodbury_inv.ndim == 3: # Missing data:
             if full_cov:
-                var_jac = np.empty((Xnew.shape[0],Xnew.shape[0],Xnew.shape[1],Xnew.shape[1],self.output_dim))
-                for d in range(self.posterior.woodbury_inv.shape[2]):
-                    var_jac[:, :, :, :, d] = compute_cov_inner(self.posterior.woodbury_inv[:, :, d])
-            else:
-                var_jac = np.empty((Xnew.shape[0],Xnew.shape[1],Xnew.shape[1],self.output_dim))
+                var_jac = np.empty((Xnew.shape[0],Xnew.shape[0],Xnew.shape[1],self.output_dim))
                 for d in range(self.posterior.woodbury_inv.shape[2]):
                     var_jac[:, :, :, d] = compute_cov_inner(self.posterior.woodbury_inv[:, :, d])
+            else:
+                var_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+                for d in range(self.posterior.woodbury_inv.shape[2]):
+                    var_jac[:, :, d] = compute_cov_inner(self.posterior.woodbury_inv[:, :, d])
         else:
             var_jac = compute_cov_inner(self.posterior.woodbury_inv)
         return mean_jac, var_jac
@@ -427,11 +424,10 @@ class GP(Model):
         mu_jac, var_jac = self.predict_jacobian(Xnew, kern, full_cov=False)
         mumuT = np.einsum('iqd,ipd->iqp', mu_jac, mu_jac)
         Sigma = np.zeros(mumuT.shape)
-        if var_jac.ndim == 4: # Missing data
-            Sigma = var_jac.sum(-1)
+        if var_jac.ndim == 3:
+            Sigma[(slice(None), )+np.diag_indices(Xnew.shape[1], 2)] = var_jac.sum(-1)
         else:
-            Sigma = self.output_dim*var_jac
-
+            Sigma[(slice(None), )+np.diag_indices(Xnew.shape[1], 2)] = self.output_dim*var_jac
         G = 0.
         if mean:
             G += mumuT
@@ -455,7 +451,7 @@ class GP(Model):
         :param bool covariance: whether to include the covariance of the wishart embedding.
         :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
         """
-        G = self.predict_wishart_embedding(Xnew, kern, mean, covariance)
+        G = self.predict_wishard_embedding(Xnew, kern, mean, covariance)
         if dimensions is None:
             dimensions = self.get_most_significant_input_dimensions()[:2]
         G = G[:, dimensions][:,:,dimensions]
@@ -607,4 +603,11 @@ class GP(Model):
         """
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+
+    def LOO(self):
+        """
+        Evaluate the approximate leave one out error using the current state of the inference method
+        """
+        return self.inference_method.LOO(self.kern, self.X, self.Y, self.likelihood, self.posterior, Y_metadata=self.Y_metadata)
+
 

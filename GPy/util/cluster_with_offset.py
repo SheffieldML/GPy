@@ -4,60 +4,72 @@
 import GPy
 import numpy as np
 
-def add_index_column(inputs,data,clust):
+def get_log_likelihood_diff(inputs,data,clusti,clustj,common_kern,noise_scale):
+    
+    #offset indicies
+    ind_offset = np.vstack([np.zeros([N,1]),np.ones([N,1]),nans])
 
-    S = data[0].shape[0] #number of time series
-        
-    X = np.zeros([0,2]) #notice the extra column, this is for the cluster index
-    Y = np.zeros([0,S])
-    
-    #for each cluster, add their inputs and data to the new
-    #dataset. Note we add an index identifying which person is which data point.
-    #This is for the offset model to use, to allow it to know which data points
-    #to shift.
-    for i,p in enumerate(clust):
-        idx = i*np.ones([inputs[p].shape[0],1])
-        X = np.vstack([X,np.hstack([inputs[p],idx])])
-        Y = np.vstack([Y,data[p].T])
-    return X,Y
-    
-def get_individual_log_likelihood_offset(inputs,data,clust,common_kern):
-    """Get the LL of a pair of clusters, but having them independent
-    
-    arguments:
-    inputs -- the 'X's in a list, one item per cluster
-    data -- the 'Y's in a list, one item per cluster
-    clust -- list of clusters to use
-    
-    returns log likelihood
-    """
-    X,Y = add_index_column(inputs,data,clust)
-    k_independent = GPy.kern.IndependentOutputs(common_kern.copy(),index_dim=1)
-    m = GPy.models.GPRegression(X,Y,k_independent)
-    m.optimize()
-    ll=m.log_likelihood()    
-    return ll
+    #independent output indicies
+    ind_indpoutputs = np.vstack([np.zeros([N*2,1]),np.ones([N,1]),np.ones([N,1])*2])
+    X = np.hstack([X,ind_offset,ind_indpoutputs])
+    Y1 = np.sin((X[0:N,0])/10.0)[:,None]
+    #Y2 = np.sin((X[0:N,0])/10.0)[:,None]
+    Y2 = np.cos((X[0:N,0])/10.0)[:,None]
+    Y1 += np.random.randn(Y1.shape[0],Y1.shape[1])*0.1
+    Y2 += np.random.randn(Y2.shape[0],Y2.shape[1])*0.1
+    Y = np.vstack([Y1,Y2,Y1,Y2])
 
-def get_shared_log_likelihood_offset(inputs,data,clust,common_kern):
-    """Get the log likelihood of a combined set of clusters, fitting the offsets
-    
-    arguments:
-    inputs -- the 'X's in a list, one item per cluster
-    data -- the 'Y's in a list, one item per cluster
-    clust -- list of clusters to use
-    
-    returns a tuple:
-    log likelihood and the offset
-    """    
-    X,Y = add_index_column(inputs,data,clust)
-    m = GPy.models.GPOffsetRegression(X,Y,common_kern.copy())
-    # m.offset.set_prior(GPy.priors.Gaussian(0,20)) 
-    m.optimize()
-    ll = m.log_likelihood()
-    offset = m.offset.values[0]
-    return ll,offset
+    #Structure of inputs:
+    # actual input | offset_kernel_index | indp_output_index
+    #      2.4              0                     0
+    #      2.9              0                     0
+    #      3.4              1                     0
+    #      3.9              1                     0
+    #      2.4              nan                   1
+    #      2.9              nan                   1
+    #      3.4              nan                   2
+    #      3.9              nan                   2
+    #print X
+    #print Y
 
-def cluster(data,inputs,common_kern,verbose=False):
+    #base kernel to explain all time series with
+    common_kern = GPy.kern.Matern32(input_dim=1)
+
+    #the offset kernel, that can shift one time series wrt another
+    offset_kern = GPy.kern.Offset(common_kern,2,[0])
+
+    #we want to discourage massive offsets, which can achieve good fits by simply moving the two datasets far apart
+    offset_kern.offset.set_prior(GPy.priors.Gaussian(0,4.0))
+
+    #our overall kernel contains our offset kernel and two common kernels
+    independent_kern = GPy.kern.IndependentOutputs([offset_kern,common_kern.copy(),common_kern.copy()],index_dim=2)
+
+    tiekern = GPy.kern.Tie(independent_kern,3,[['.*lengthscale'],['.*variance']])
+
+    model = GPy.models.GPRegression(X,Y,tiekern)
+    model.optimize()
+
+
+
+
+    #base kernel to explain all time series with
+    common_kern = GPy.kern.Matern32(input_dim=1)
+
+    #the offset kernel, that can shift one time series wrt another
+    offset_kern = GPy.kern.Offset(common_kern,2,[0])
+
+    #we want to discourage massive offsets, which can achieve good fits by simply moving the two datasets far apart
+    offset_kern.offset.set_prior(GPy.priors.Gaussian(0,4.0))
+
+    #our overall kernel contains our offset kernel and two common kernels
+    independent_kern = GPy.kern.IndependentOutputs([common_kern.copy(),common_kern.copy()],index_dim=1)
+    independent_model = GPy.models.GPRegression(indepX,indepY,independent_kern)
+
+    offset_model = GPy.models.GPRegression(offsetX,offsetY,offset_kern)
+
+
+
+def cluster(data,inputs,common_kern,noise_scale=1.0,verbose=False):
     """Clusters data
     
     Using the new offset model, this method uses a greedy algorithm to cluster
@@ -74,55 +86,44 @@ def cluster(data,inputs,common_kern,verbose=False):
     """
     N=len(data)
     
-    
     #Define a set of N active cluster
     active = []
     for p in range(0,N):
         active.append([p])
 
-    individualloglikes = np.zeros([len(active),len(active)])
-    individualloglikes[:] = None
-    sharedloglikes = np.zeros([len(active),len(active)])
-    sharedloglikes[:] = None
-    sharedoffset = np.zeros([len(active),len(active)])
+    diffloglikes = np.zeros([len(active),len(active)])
+    diffloglikes[:] = None
+    offsets = np.zeros([len(active),len(active)])
 
     it = 0
     while True:
-    
         if verbose:
             it +=1
             print("Iteration %d" % it)
-        
-        #Compute the log-likelihood of each cluster
-        for clusti in range(len(active)):
-            #try combining with each other cluster...
+                
+        for clusti in range(len(active)):        
             for clustj in range(clusti): #count from 0 to clustj-1
-                temp = [clusti,clustj]
-                if np.isnan(sharedloglikes[clusti,clustj]):
-                    sharedloglikes[clusti,clustj],sharedoffset[clusti,clustj] = get_shared_log_likelihood_offset(inputs,data,temp,common_kern)    
-                    individualloglikes[clusti,clustj] = get_individual_log_likelihood_offset(inputs,data,temp,common_kern)
+                if np.isnan(diffloglikes[clusti,clustj]):
+                    diffloglikes[clusti,clustj],offsets[clusti,clustj] = get_log_likelihood_diff(inputs,data,[clusti,clustj],common_kern,noise_scale)
 
-        loglikeimprovement = sharedloglikes - individualloglikes #how much likelihood improves with clustering
-        top = np.unravel_index(np.nanargmax(sharedloglikes-individualloglikes), sharedloglikes.shape)
+        #np.fill_diagonal(diffloglikes,np.nan)
         
-        if loglikeimprovement[top[0],top[1]]>0:
+        top = np.unravel_index(np.nanargmax(diffloglikes), diffloglikes.shape)
+
+        if diffloglikes[top[0],top[1]]>0:
             active[top[0]].extend(active[top[1]])
-            offset=sharedoffset[top[0],top[1]]
+            offset=offsets[top[0],top[1]]
             inputs[top[0]] = np.vstack([inputs[top[0]],inputs[top[1]]-offset])
             data[top[0]] = np.hstack([data[top[0]],data[top[1]]])
             del inputs[top[1]]
             del data[top[1]]
             del active[top[1]]
-
+            
             #None = we need to recalculate
-            sharedloglikes[:,top[0]] = None 
-            sharedloglikes[top[0],:] = None 
-            sharedloglikes = np.delete(sharedloglikes,top[1],0)
-            sharedloglikes = np.delete(sharedloglikes,top[1],1)
-            individualloglikes[:,top[0]] = None 
-            individualloglikes[top[0],:] = None 
-            individualloglikes = np.delete(individualloglikes,top[1],0)
-            individualloglikes = np.delete(individualloglikes,top[1],1)
+            diffloglikes[:,top[0]] = None
+            diffloglikes[top[0],:] = None
+            diffloglikes = np.delete(diffloglikes,top[1],0)
+            diffloglikes = np.delete(diffloglikes,top[1],1)
         else:
             break
             

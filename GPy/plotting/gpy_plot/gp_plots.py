@@ -81,7 +81,6 @@ def _plot_mean(self, canvas, helper_data, helper_prediction,
               **kwargs):
 
     _, free_dims, Xgrid, x, y, _, _, resolution = helper_data
-    plots = dict()
     if len(free_dims)<=2:
         mu, _, _ = helper_prediction
         if len(free_dims)==1:

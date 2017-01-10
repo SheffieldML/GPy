@@ -339,9 +339,17 @@ class GP(Model):
         # gradients wrt the diagonal part k_{xx}
         dv_dX = kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
         #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
-        alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
-        dv_dX += kern.gradients_X(alpha, Xnew, self._predictive_variable)
-        return mean_jac, dv_dX
+        if self.posterior.woodbury_inv.ndim == 3:
+            tmp = np.empty(dv_dX.shape + (self.posterior.woodbury_inv.shape[2],))
+            tmp[:] = dv_dX[:,:,None]
+            for i in range(self.posterior.woodbury_inv.shape[2]):
+                alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv[:, :, i])
+                tmp[:, :, i] += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        else:
+            tmp = dv_dX
+            alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
+            tmp += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        return mean_jac, tmp
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=False):
         """

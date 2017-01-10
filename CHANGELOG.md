@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.5.7 (2017-01-09)
+
+### Fix
+
+* Removed additional dict line. [mzwiessele]
+
+* Plotting also allows 3D (capitals) [mzwiessele]
+
+* Fallback for when no environment variables are set (#467) [Safrone]
+
+  * fix: dev: add or in home directory getting
+
+  adds another or when getting the home directory with os.getenv() so that if neither $HOME nor $USERPROFILE environment variable is set, os.path.join() will not fail by getting a None and the config will revert to the default configuration file.
+
+  * fix: remove extra statement
+
+### Other
+
+* Bump version: 1.5.6 → 1.5.7. [mzwiessele]
+
+* Changed the order of the operations, ensuring that the covariance matrix is symmetric despite numerical precision issues. Suggested by Alan. [Teo de Campos]
+
+* Delete gmm_bayesian_gplvm.py. [beiwang]
+
+* Gmm_creation. [beiwang]
+
+* Gmm_creation. [beiwang]
+
+
 ## v1.5.6 (2016-11-07)
 
 ### New

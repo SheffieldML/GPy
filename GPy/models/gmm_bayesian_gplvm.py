@@ -53,25 +53,29 @@ class GmmBayesianGPLVM(SparseGP_MPI):
             likelihood = Gaussian()
 
         # Need to define what the model is initialised like
-        pi = np.ones(n_component) / float(n_component) # p(k)
-        variational_pi = pi.copy()
-        # px_mu = np.zeros(n_component)
-        # px_var = np.ones(n_component)
-        px_mu = [[]] * n_component
-        px_var = [[]] * n_component
-        for i in range(n_component):
-            px_mu[i] = np.zeros_like(X_variance)
-            px_var[i] = np.ones_like(X_variance)
+        # pi = np.ones(n_component) / float(n_component) # p(k)
 
+        # pi = (np.array(range(3),dtype = float)+1) / (np.array(range(3),dtype = float)+1).sum()
+        # wi = (np.array(range(3),dtype = float)+1)
+        wi = np.ones((n_component, X_variance.shape[0]))
+        # wi = (np.ones((X_variance.shape[0], n_component)) * (range(1, n_component+1))).T
+        variational_wi = wi.copy() 
+        pi = np.exp(wi)/np.exp(wi).sum(axis = 0)
+        
+        # wi = wi / wi.sum(axis=0)
+        # wi = np.zeros((n_component, X_variance.shape[0]))
+        # pi = np.log(1 + np.exp(wi)) / np.log(1 + np.exp(wi)).sum(axis = 0)
+        
+        # px_mu = np.zeros((n_component, X_variance.shape[0], X_variance.shape[1]))               
+        # px_var = np.ones((n_component, X_variance.shape[0], X_variance.shape[1]))
 
-        # print("Should print")
-        # print(pi)
-        # print(px_mu)
-        # print(px_var)
-        # print(variational_pi)
-        # print("Didnt print")
-        self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_var=px_var, pi=pi,
-                                n_component=n_component, variational_pi=variational_pi)
+        px_mu = (np.ones((X_variance.shape[1], n_component )) * (range(n_component))).T + np.random.randn(n_component, X_variance.shape[1])  # initialization can be changed   
+        # print px_mu
+        # px_mu = np.zeros(( n_component, X_variance.shape[1]))
+        px_var = np.zeros(( n_component, X_variance.shape[1], X_variance.shape[1] ))+ np.eye(X_variance.shape[1])[np.newaxis, :,:]
+
+        self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_var=px_var, pi = pi, wi=wi,
+                                n_component=n_component, variational_wi=variational_wi)
 
         X = NormalPosterior(X, X_variance)
 

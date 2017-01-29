@@ -193,7 +193,7 @@ class SSGPLVM(SparseGP_MPI):
         self.init = init
         self.sharedX = sharedX
         
-        if X == None:
+        if X is None:
             from ..util.initialization import initialize_latent
             X, fracs = initialize_latent(init, input_dim, Y)
         else:

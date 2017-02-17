@@ -192,7 +192,7 @@ class Posterior(object):
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
         woodbury_vector = self.woodbury_vector
         woodbury_inv = self.woodbury_inv
-        
+
         if not isinstance(Xnew, VariationalPosterior):
             Kx = kern.K(pred_var, Xnew)
             mu = np.dot(Kx.T, woodbury_vector)
@@ -220,7 +220,7 @@ class Posterior(object):
         else:
             psi0_star = kern.psi0(pred_var, Xnew)
             psi1_star = kern.psi1(pred_var, Xnew)
-            psi2_star = kern.psi2n(pred_var, Xnew) 
+            psi2_star = kern.psi2n(pred_var, Xnew)
             la = woodbury_vector
             mu = np.dot(psi1_star, la) # TODO: dimensions?
             N,M,D = psi0_star.shape[0],psi1_star.shape[1], la.shape[1]
@@ -231,18 +231,19 @@ class Posterior(object):
                 di = np.diag_indices(la.shape[1])
             else:
                 tmp = psi2_star - psi1_star[:,:,None]*psi1_star[:,None,:]
-                var = (tmp.reshape(-1,M).dot(la).reshape(N,M,D)*la[None,:,:]).sum(1) + psi0_star[:,None] 
+                var = (tmp.reshape(-1,M).dot(la).reshape(N,M,D)*la[None,:,:]).sum(1) + psi0_star[:,None]
                 if woodbury_inv.ndim==2:
                     var += -psi2_star.reshape(N,-1).dot(woodbury_inv.flat)[:,None]
                 else:
                     var += -psi2_star.reshape(N,-1).dot(woodbury_inv.reshape(-1,D))
         var = np.clip(var,1e-15,np.inf)
         return mu, var
-    
+
+
 class PosteriorExact(Posterior):
-     
+
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
-        
+
         Kx = kern.K(pred_var, Xnew)
         mu = np.dot(Kx.T, self.woodbury_vector)
         if len(mu.shape)==1:
@@ -269,4 +270,38 @@ class PosteriorExact(Posterior):
                     tmp = dtrtrs(self._woodbury_chol[:,:,i], Kx)[0]
                     var[:, i] = (Kxx - np.square(tmp).sum(0))
             var = var
+        return mu, var
+
+class PosteriorEP(Posterior):
+
+    def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
+
+        Kx = kern.K(pred_var, Xnew)
+        mu = np.dot(Kx.T, self.woodbury_vector)
+        if len(mu.shape)==1:
+            mu = mu.reshape(-1,1)
+
+        if full_cov:
+            Kxx = kern.K(Xnew)
+            if self._woodbury_inv.ndim == 2:
+                tmp = np.dot(Kx.T,np.dot(self._woodbury_inv, Kx))
+                var = Kxx - tmp
+            elif self._woodbury_inv.ndim == 3: # Missing data
+                var = np.empty((Kxx.shape[0],Kxx.shape[1],self._woodbury_inv.shape[2]))
+                for i in range(var.shape[2]):
+                    tmp = np.dot(Kx.T,np.dot(self._woodbury_inv[:,:,i], Kx))
+                    var[:, :, i] = (Kxx - tmp)
+            var = var
+        else:
+            Kxx = kern.Kdiag(Xnew)
+            if self._woodbury_inv.ndim == 2:
+                tmp = (np.dot(self._woodbury_inv, Kx) * Kx).sum(0)
+                var = (Kxx - tmp)[:,None]
+            elif self._woodbury_inv.ndim == 3: # Missing data
+                var = np.empty((Kxx.shape[0],self._woodbury_inv.shape[2]))
+                for i in range(var.shape[1]):
+                    tmp = (Kx * np.dot(self._woodbury_inv[:,:,i], Kx)).sum(0)
+                    var[:, i] = (Kxx - tmp)
+            var = var
+
         return mu, var

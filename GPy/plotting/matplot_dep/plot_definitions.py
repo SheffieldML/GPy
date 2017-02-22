@@ -92,7 +92,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if title is not None: ax.figure.suptitle(title)
         return ax
 
-    def show_canvas(self, ax):
+    def show_canvas(self, ax, **kwargs):
         ax.figure.canvas.draw()
         return ax.figure
 

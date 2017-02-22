@@ -46,3 +46,6 @@ iterate.dat
 # git merge files #
 ###################
 *.orig
+
+# pycharm IDE stuff
+.idea/

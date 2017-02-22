@@ -31,8 +31,9 @@ import numpy as np
 from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
+OFFLINE=False
+import plotly
 from plotly import tools
-from plotly import plotly as py
 from plotly.graph_objs import Scatter, Scatter3d, Line,\
     Marker, ErrorX, ErrorY, Bar, Heatmap, Trace,\
     Annotations, Annotation, Contour, Font, Surface
@@ -53,10 +54,12 @@ SYMBOL_MAP = {
 }
 
 class PlotlyPlots(AbstractPlottingLibrary):
-    def __init__(self):
+    def __init__(self, offline=False):
         super(PlotlyPlots, self).__init__()
         self._defaults = defaults.__dict__
         self.current_states = dict()
+        global OFFLINE
+        OFFLINE=offline
 
     def figure(self, rows=1, cols=1, specs=None, is_3d=False, **kwargs):
         if specs is None:
@@ -96,7 +99,10 @@ class PlotlyPlots(AbstractPlottingLibrary):
                 xref, yref = figure._grid_ref[row-1][col-1]
                 for a in traces:
                     append_annotation(a, xref, yref)
-            elif isinstance(traces, (Trace)):
+            # elif isinstance(traces, (Trace)):  # doesn't work
+            # elif type(traces) in [v for k,v in go.__dict__.iteritems()]:
+            elif isinstance(traces, (Scatter, Scatter3d, Line, Marker, ErrorX,
+                        ErrorY, Bar, Heatmap, Trace, Contour, Font, Surface)):
                 try:
                     append_trace(traces, row, col)
                 except PlotlyDictKeyError:
@@ -120,9 +126,16 @@ class PlotlyPlots(AbstractPlottingLibrary):
             figure.append_trace(Scatter(x=[], y=[], name='', showlegend=False), 1, 1)
         from ..gpy_plot.plot_util import in_ipynb
         if in_ipynb():
-            return py.iplot(figure, filename=filename)#self.current_states[hex(id(figure))]['filename'])
+            if OFFLINE:
+                plotly.offline.init_notebook_mode(connected=True)
+                return plotly.offline.iplot(figure, filename=filename, **kwargs)#self.current_states[hex(id(figure))]['filename'])
+            else:
+                return plotly.plotly.iplot(figure, filename=filename, **kwargs)
         else:
-            return py.plot(figure, filename=filename)#self.current_states[hex(id(figure))]['filename'])
+            if OFFLINE:
+                return plotly.offline.plot(figure, filename=filename, **kwargs)
+            else:
+                return plotly.plotly.plot(figure, filename=filename, **kwargs)#self.current_states[hex(id(figure))]['filename'])
 
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], cmap=None, label=None, marker='o', marker_kwargs=None, **kwargs):
         try:

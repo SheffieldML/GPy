@@ -293,13 +293,13 @@ class StateSpace(Model):
 
             # Update step (only if there is data)
             if not np.isnan(Y[:,k]):
-                 if Y.shape[0]==1:
-                     K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
-                 else:
-                     LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
-                     K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
-                 MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
-                 PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
+                if Y.shape[0]==1:
+                    K = PF[:,:,k].dot(H.T)/(H.dot(PF[:,:,k]).dot(H.T) + R)
+                else:
+                    LL = linalg.cho_factor(H.dot(PF[:,:,k]).dot(H.T) + R)
+                    K = linalg.cho_solve(LL, H.dot(PF[:,:,k].T)).T
+                MF[:,k] += K.dot(Y[:,k]-H.dot(MF[:,k]))
+                PF[:,:,k] -= K.dot(H).dot(PF[:,:,k])
 
         # Return values
         return (MF, PF)

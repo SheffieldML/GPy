@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.5.9 (2017-02-23)
+
+### Other
+
+* Bump version: 1.5.8 → 1.5.9. [mzwiessele]
+
+* Merge remote-tracking branch &#x27;origin/deploy&#x27; into devel. [mzwiessele]
+
+* Merge pull request #455 from SheffieldML/devel. [Max Zwiessele]
+
+  1.5.6
+
+
 ## v1.5.8 (2017-02-23)
 
 ### Fix

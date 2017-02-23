@@ -1,8 +1,10 @@
 # Changelog
 
-## v1.5.7 (2017-01-09)
+## v1.5.8 (2017-02-23)
 
 ### Fix
+
+* Predictive_gradients for new posterior class. [mzwiessele]
 
 * Removed additional dict line. [mzwiessele]
 
@@ -17,6 +19,20 @@
   * fix: remove extra statement
 
 ### Other
+
+* Bump version: 1.5.7 → 1.5.8. [mzwiessele]
+
+* Update ss_gplvm.py. [Zhenwen Dai]
+
+  resolve the future warning: FutureWarning:comparison to `None` will result in an elementwise object comparison in the future.
+
+* Merge pull request #472 from SheffieldML/predictive_gradients. [Max Zwiessele]
+
+  fix: predictive_gradients for new posterior class
+
+* Merge pull request #470 from SheffieldML/plotting_fix. [Max Zwiessele]
+
+  Plotting fix
 
 * Bump version: 1.5.6 → 1.5.7. [mzwiessele]
 

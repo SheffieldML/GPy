@@ -260,7 +260,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
 
     x = _np.linspace(0, 4 * _np.pi, N)[:, None]
     s1 = _np.vectorize(lambda x: _np.sin(x))
-    s2 = _np.vectorize(lambda x: _np.cos(x) ** 2)
+    s2 = _np.vectorize(lambda x: _np.cos(x))
     s3 = _np.vectorize(lambda x:-_np.exp(-_np.cos(2 * x)))
     sS = _np.vectorize(lambda x: _np.cos(x))
 
@@ -302,8 +302,8 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
 
 def _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS):
     S1 = _np.hstack([s1, sS])
-    S2 = _np.hstack([s2, s3, sS])
-    S3 = _np.hstack([s3, sS])
+    S2 = _np.hstack([sS])
+    S3 = _np.hstack([s1, s3, sS])
     Y1 = S1.dot(_np.random.randn(S1.shape[1], D1))
     Y2 = S2.dot(_np.random.randn(S2.shape[1], D2))
     Y3 = S3.dot(_np.random.randn(S3.shape[1], D3))

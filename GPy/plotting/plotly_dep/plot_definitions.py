@@ -128,7 +128,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         marker_kwargs = marker_kwargs or {}
         if 'symbol' not in marker_kwargs:
             marker_kwargs['symbol'] = marker
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              showlegend=label is not None,
                              marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
@@ -140,7 +142,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
     def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):
         if 'mode' not in kwargs:
             kwargs['mode'] = 'lines'
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
         return Scatter(x=X, y=Y, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
 
@@ -186,7 +190,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
         else:
             error_kwargs.update(dict(array=error, symmetric=True))
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              error_x=ErrorX(color=color, **error_kwargs or {}),
                              marker=Marker(size='0'), name=label,
@@ -203,7 +209,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
         else:
             error_kwargs.update(dict(array=error, symmetric=True))
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              error_y=ErrorY(color=color, **error_kwargs or {}),
                              marker=Marker(size='0'), name=label,

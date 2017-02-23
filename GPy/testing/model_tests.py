@@ -54,7 +54,7 @@ class MiscTests(unittest.TestCase):
         m.randomize()
         m.optimize()
         # Compute the mean of model prediction on 1e5 Monte Carlo samples
-        Xp = np.random.uniform(size=(1e5,2))
+        Xp = np.random.uniform(size=(int(1e5),2))
         Xp[:,0] = Xp[:,0]*15-5
         Xp[:,1] = Xp[:,1]*15
         _, var = m.predict(Xp)

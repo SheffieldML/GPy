@@ -206,7 +206,7 @@ def test_figure():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        ax, _ = pl().new_canvas(num=1)
+        ax, _ = pl().new_canvas(num="imshow_interact")
         def test_func(x):
             return x[:, 0].reshape(3,3)
         pl().imshow_interact(ax, test_func, extent=(-1,1,-1,1), resolution=3)
@@ -228,7 +228,7 @@ def test_figure():
 
         pl().fill_gradient(ax, x, y, facecolors=['r', 'g'], array=array, cmap=cmap)
 
-        ax, _ = pl().new_canvas(num=4, figsize=(4,3), projection='3d', xlabel='x', ylabel='y', zlabel='z', title='awsome title', xlim=(-1,1), ylim=(-1,1), zlim=(-3,3))
+        ax, _ = pl().new_canvas(num="3d_plot", figsize=(4,3), projection='3d', xlabel='x', ylabel='y', zlabel='z', title='awsome title', xlim=(-1,1), ylim=(-1,1), zlim=(-3,3))
         z = 2-np.abs(np.linspace(-2,2,(100)))+1
         x, y = z*np.sin(np.linspace(-2*np.pi,2*np.pi,(100))), z*np.cos(np.linspace(-np.pi,np.pi,(100)))
 

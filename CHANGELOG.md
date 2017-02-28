@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.6.1 (2017-02-28)
+
+### Fix
+
+* Beiwang will add GMM in full. [mzwiessele]
+
+### Other
+
+* Bump version: 1.6.0 → 1.6.1. [mzwiessele]
+
+
 ## v1.6.0 (2017-02-28)
 
 ### Fix

@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.6.0 (2017-02-28)
+
+### Fix
+
+* Kernel tests and variational tests. [mzwiessele]
+
+* Plotting tests for new matplotlib. [mzwiessele]
+
+* Model tests numpy integer error. [mzwiessele]
+
+* Replot with new matplotlib. [mzwiessele]
+
+* Offline plotting workaround with squeezing arrays. [mzwiessele]
+
+* Fixed numpy 1.12 indexing and shape preservation. [mzwiessele]
+
+### Other
+
+* Bump version: 1.5.9 → 1.6.0. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; into alexfeld-offline_plotly. [mzwiessele]
+
+* Merge branch &#x27;devel&#x27; into alexfeld-offline_plotly. [mzwiessele]
+
+* Merge branch &#x27;offline_plotly&#x27; of git://github.com/alexfeld/GPy into alexfeld-offline_plotly. [mzwiessele]
+
+* Provide two classes for plotly plots to remove global variable. [Alex Feldstein]
+
+* Add offline plotting for plotly. [Alex Feldstein]
+
+
 ## v1.5.9 (2017-02-23)
 
 ### Other

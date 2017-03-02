@@ -55,7 +55,6 @@ class StdPeriodic(Kern):
 
     def __init__(self, input_dim, variance=1., period=None, lengthscale=None, ARD1=False, ARD2=False, active_dims=None, name='std_periodic',useGPU=False):
         super(StdPeriodic, self).__init__(input_dim, active_dims, name, useGPU=useGPU)
-        self.input_dim = input_dim
         self.ARD1 = ARD1 # correspond to periods
         self.ARD2 = ARD2 # correspond to lengthscales
 
@@ -66,7 +65,7 @@ class StdPeriodic(Kern):
                 period = np.asarray(period)
                 assert period.size == 1, "Only one period needed for non-ARD kernel"
             else:
-                period = np.ones(1.0)
+                period = np.ones(1)
         else:
             if period is not None:
                 period = np.asarray(period)

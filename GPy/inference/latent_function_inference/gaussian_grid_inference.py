@@ -36,12 +36,12 @@ class GaussianGridInference(LatentFunctionInference):
         x = b
         N = 1
         D = len(A)
-        G = np.zeros((D,1))
+        G = np.zeros((D), dtype=np.int_)
         for d in range(0, D):
             G[d] = len(A[d])
         N = np.prod(G)
         for d in range(D-1, -1, -1):
-            X = np.reshape(x, (G[d], np.round(N/G[d])), order='F')
+            X = np.reshape(x, (G[d], int(np.round(N/G[d]))), order='F')
             Z = np.dot(A[d], X)
             Z = Z.T
             x = np.reshape(Z, (-1, 1), order='F')

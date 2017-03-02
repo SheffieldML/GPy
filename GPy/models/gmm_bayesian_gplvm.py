@@ -72,9 +72,9 @@ class GmmBayesianGPLVM(SparseGP_MPI):
         px_mu = (np.ones((X_variance.shape[1], n_component )) * (range(n_component))).T + np.random.randn(n_component, X_variance.shape[1])  # initialization can be changed   
         # print px_mu
         # px_mu = np.zeros(( n_component, X_variance.shape[1]))
-        px_var = np.zeros(( n_component, X_variance.shape[1], X_variance.shape[1] ))+ np.eye(X_variance.shape[1])[np.newaxis, :,:]
+        px_lmatrix = np.zeros(( n_component, X_variance.shape[1], X_variance.shape[1] ))+ np.eye(X_variance.shape[1])[np.newaxis, :,:]
 
-        self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_var=px_var, pi = pi, wi=wi,
+        self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_lmatrix=px_lmatrix, pi = pi, wi=wi,
                                 n_component=n_component, variational_wi=variational_wi)
 
         X = NormalPosterior(X, X_variance)

@@ -39,6 +39,7 @@ class NormalPrior(VariationalPrior):
         # print variational_posterior.mean
         # print variational_posterior.variance.gradient
 
+
 class GmmNormalPrior(VariationalPrior):
     def __init__(self, px_mu, px_lmatrix, pi, wi, n_component, variational_wi, name="GMMNormalPrior", **kw):
         super(GmmNormalPrior, self).__init__(name=name, **kw)

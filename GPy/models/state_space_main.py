@@ -215,7 +215,7 @@ class R_handling_Python(Measurement_Callables_Class):
             inv_R_square_root(k)
         """
         self.R = R
-        self.index = index
+        self.index = np.asarray(index, np.int_)
         self.R_time_var_index = int(R_time_var_index)
         self.dR = dR
 
@@ -350,7 +350,7 @@ class Q_handling_Python(Dynamic_Callables_Class):
         """
 
         self.Q = Q
-        self.index = index
+        self.index = np.asarray(index, np.int_)
         self.Q_time_var_index = Q_time_var_index
         self.dQ = dQ
 
@@ -427,7 +427,7 @@ class Std_Dynamic_Callables_Python(Q_handling_Class):
               self).__init__(Q, index, Q_time_var_index, unique_Q_number, dQ)
 
         self.A = A
-        self.A_time_var_index = A_time_var_index
+        self.A_time_var_index = np.asarray(A_time_var_index, np.int_)
         self.dA = dA
 
     def f_a(self, k, m, A):

@@ -2,10 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 current_lib = [None]
 
-supported_libraries = ['matplotlib', 'plotly', 'none']
+supported_libraries = ['matplotlib', 'plotly', 'plotly_online', 'plotly_offline', 'none']
 error_suggestion = "Please make sure you specify your plotting library in your configuration file (<User>/.config/GPy/user.cfg).\n\n[plotting]\nlibrary = <library>\n\nCurrently supported libraries: {}".format(", ".join(supported_libraries))
 
-def change_plotting_library(lib):
+def change_plotting_library(lib, **kwargs):
     try:
         #===========================================================================
         # Load in your plotting library here and
@@ -19,10 +19,14 @@ def change_plotting_library(lib):
             from .matplot_dep.plot_definitions import MatplotlibPlots
             from .matplot_dep import visualize, mapping_plots, priors_plots, ssgplvm, svig_plots, variational_plots, img_plots
             current_lib[0] = MatplotlibPlots()
-        if lib == 'plotly':
+        if lib in ['plotly', 'plotly_online']:
             import plotly
-            from .plotly_dep.plot_definitions import PlotlyPlots
-            current_lib[0] = PlotlyPlots()
+            from .plotly_dep.plot_definitions import PlotlyPlotsOnline
+            current_lib[0] = PlotlyPlotsOnline(**kwargs)
+        if lib == 'plotly_offline':
+            import plotly
+            from .plotly_dep.plot_definitions import PlotlyPlotsOffline
+            current_lib[0] = PlotlyPlotsOffline(**kwargs)
         if lib == 'none':
             current_lib[0] = None
         inject_plotting()

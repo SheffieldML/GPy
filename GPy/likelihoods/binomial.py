@@ -63,7 +63,8 @@ class Binomial(Likelihood):
         :rtype: float
         """
         N = Y_metadata['trials']
-        assert N.shape == y.shape
+        np.testing.assert_array_equal(N.shape, y.shape)
+
         nchoosey = special.gammaln(N+1) - special.gammaln(y+1) - special.gammaln(N-y+1)
         return nchoosey + y*np.log(inv_link_f) + (N-y)*np.log(1.-inv_link_f)
 
@@ -83,7 +84,8 @@ class Binomial(Likelihood):
         :rtype: Nx1 array
         """
         N = Y_metadata['trials']
-        assert N.shape == y.shape
+        np.testing.assert_array_equal(N.shape, y.shape)
+
         return y/inv_link_f - (N-y)/(1.-inv_link_f)
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
@@ -108,7 +110,7 @@ class Binomial(Likelihood):
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
         N = Y_metadata['trials']
-        assert N.shape == y.shape
+        np.testing.assert_array_equal(N.shape, y.shape)
         return -y/np.square(inv_link_f) - (N-y)/np.square(1.-inv_link_f)
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
@@ -131,7 +133,8 @@ class Binomial(Likelihood):
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
         N = Y_metadata['trials']
-        assert N.shape == y.shape
+        np.testing.assert_array_equal(N.shape, y.shape)
+
         inv_link_f2 = np.square(inv_link_f)
         return 2*y/inv_link_f**3 - 2*(N-y)/(1.-inv_link_f)**3
 

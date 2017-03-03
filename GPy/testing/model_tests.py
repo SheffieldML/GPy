@@ -1,6 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
+from __future__ import division
 
 import unittest
 import numpy as np
@@ -54,7 +54,7 @@ class MiscTests(unittest.TestCase):
         m.randomize()
         m.optimize()
         # Compute the mean of model prediction on 1e5 Monte Carlo samples
-        Xp = np.random.uniform(size=(1e5,2))
+        Xp = np.random.uniform(size=(int(1e5),2))
         Xp[:,0] = Xp[:,0]*15-5
         Xp[:,1] = Xp[:,1]*15
         _, var = m.predict(Xp)
@@ -759,16 +759,18 @@ class GradientTests(np.testing.TestCase):
 
     def test_GP_EP_probit(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.GPClassification(X, Y, kernel=kernel)
         self.assertTrue(m.checkgrad())
 
     def test_sparse_EP_DTC_probit(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, Z=Z)
@@ -776,8 +778,9 @@ class GradientTests(np.testing.TestCase):
 
     def test_sparse_EP_DTC_probit_uncertain_inputs(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
         X_var = np.random.uniform(0.1, 0.2, X.shape)
         kernel = GPy.kern.RBF(1)

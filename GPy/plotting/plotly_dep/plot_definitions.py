@@ -31,8 +31,8 @@ import numpy as np
 from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
+import plotly
 from plotly import tools
-from plotly import plotly as py
 from plotly.graph_objs import Scatter, Scatter3d, Line,\
     Marker, ErrorX, ErrorY, Bar, Heatmap, Trace,\
     Annotations, Annotation, Contour, Font, Surface
@@ -52,9 +52,9 @@ SYMBOL_MAP = {
     'd': 'diamond',
 }
 
-class PlotlyPlots(AbstractPlottingLibrary):
+class PlotlyPlotsBase(AbstractPlottingLibrary):
     def __init__(self):
-        super(PlotlyPlots, self).__init__()
+        super(PlotlyPlotsBase, self).__init__()
         self._defaults = defaults.__dict__
         self.current_states = dict()
 
@@ -96,7 +96,10 @@ class PlotlyPlots(AbstractPlottingLibrary):
                 xref, yref = figure._grid_ref[row-1][col-1]
                 for a in traces:
                     append_annotation(a, xref, yref)
-            elif isinstance(traces, (Trace)):
+            # elif isinstance(traces, (Trace)):  # doesn't work
+            # elif type(traces) in [v for k,v in go.__dict__.iteritems()]:
+            elif isinstance(traces, (Scatter, Scatter3d, ErrorX,
+                        ErrorY, Bar, Heatmap, Trace, Contour, Surface)):
                 try:
                     append_trace(traces, row, col)
                 except PlotlyDictKeyError:
@@ -114,15 +117,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
         return canvas
 
     def show_canvas(self, canvas, filename=None, **kwargs):
-        figure, _, _ = canvas
-        if len(figure.data) == 0:
-            # add mock data
-            figure.append_trace(Scatter(x=[], y=[], name='', showlegend=False), 1, 1)
-        from ..gpy_plot.plot_util import in_ipynb
-        if in_ipynb():
-            return py.iplot(figure, filename=filename)#self.current_states[hex(id(figure))]['filename'])
-        else:
-            return py.plot(figure, filename=filename)#self.current_states[hex(id(figure))]['filename'])
+        return NotImplementedError
 
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], cmap=None, label=None, marker='o', marker_kwargs=None, **kwargs):
         try:
@@ -133,7 +128,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
         marker_kwargs = marker_kwargs or {}
         if 'symbol' not in marker_kwargs:
             marker_kwargs['symbol'] = marker
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              showlegend=label is not None,
                              marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
@@ -145,7 +142,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
     def plot(self, ax, X, Y, Z=None, color=None, label=None, line_kwargs=None, **kwargs):
         if 'mode' not in kwargs:
             kwargs['mode'] = 'lines'
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
         return Scatter(x=X, y=Y, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs)
 
@@ -191,7 +190,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
             error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
         else:
             error_kwargs.update(dict(array=error, symmetric=True))
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              error_x=ErrorX(color=color, **error_kwargs or {}),
                              marker=Marker(size='0'), name=label,
@@ -208,7 +209,9 @@ class PlotlyPlots(AbstractPlottingLibrary):
             error_kwargs.update(dict(array=error[1], arrayminus=error[0], symmetric=False))
         else:
             error_kwargs.update(dict(array=error, symmetric=True))
+        X, Y = np.squeeze(X), np.squeeze(Y)
         if Z is not None:
+            Z = np.squeeze(Z)
             return Scatter3d(x=X, y=Y, z=Z, mode='markers',
                              error_y=ErrorY(color=color, **error_kwargs or {}),
                              marker=Marker(size='0'), name=label,
@@ -232,7 +235,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
 
     def imshow_interact(self, ax, plot_function, extent=None, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs):
         # TODO stream interaction?
-        super(PlotlyPlots, self).imshow_interact(ax, plot_function)
+        super(PlotlyPlotsBase, self).imshow_interact(ax, plot_function)
 
     def annotation_heatmap(self, ax, X, annotation, extent=None, label='Gradient', imshow_kwargs=None, **annotation_kwargs):
         imshow_kwargs.setdefault('label', label)
@@ -259,7 +262,7 @@ class PlotlyPlots(AbstractPlottingLibrary):
         return imshow, annotations
 
     def annotation_heatmap_interact(self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs):
-        super(PlotlyPlots, self).annotation_heatmap_interact(ax, plot_function, extent)
+        super(PlotlyPlotsBase, self).annotation_heatmap_interact(ax, plot_function, extent)
 
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
         return Contour(x=X, y=Y, z=C,
@@ -312,3 +315,35 @@ class PlotlyPlots(AbstractPlottingLibrary):
                                        name=None, line=Line(width=1, smoothing=0, color=fcolor), mode='none', fill='tonextx',
                                        legendgroup='density', hoverinfo='none', **kwargs))
         return polycol
+
+
+class PlotlyPlotsOnline(PlotlyPlotsBase):
+    def __init__(self):
+        super(PlotlyPlotsOnline, self).__init__()
+
+    def show_canvas(self, canvas, filename=None, **kwargs):
+        figure, _, _ = canvas
+        if len(figure.data) == 0:
+            # add mock data
+            figure.append_trace(Scatter(x=[], y=[], name='', showlegend=False), 1, 1)
+        from ..gpy_plot.plot_util import in_ipynb
+        if in_ipynb():
+            return plotly.plotly.iplot(figure, filename=filename, **kwargs)
+        else:
+            return plotly.plotly.plot(figure, filename=filename, **kwargs)#self.current_states[hex(id(figure))]['filename'])
+
+class PlotlyPlotsOffline(PlotlyPlotsBase):
+    def __init__(self):
+        super(PlotlyPlotsOffline, self).__init__()
+
+    def show_canvas(self, canvas, filename=None, **kwargs):
+        figure, _, _ = canvas
+        if len(figure.data) == 0:
+            # add mock data
+            figure.append_trace(Scatter(x=[], y=[], name='', showlegend=False), 1, 1)
+        from ..gpy_plot.plot_util import in_ipynb
+        if in_ipynb():
+            plotly.offline.init_notebook_mode(connected=True)
+            return plotly.offline.iplot(figure, filename=filename, **kwargs)#self.current_states[hex(id(figure))]['filename'])
+        else:
+            return plotly.offline.plot(figure, filename=filename, **kwargs)

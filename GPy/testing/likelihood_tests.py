@@ -119,7 +119,7 @@ class TestNoiseModels(object):
         self.integer_Y = np.where(tmp > 0, tmp, 0)
         self.ns = np.random.poisson(50, size=self.N)[:, None]
         p = np.abs(np.cos(2*np.pi*self.X + np.random.normal(scale=.2, size=(self.N, self.D)))).mean(1)
-        self.binomial_Y = np.array([np.random.binomial(self.ns[i], p[i]) for i in range(p.shape[0])])[:, None]
+        self.binomial_Y = np.array([np.random.binomial(int(self.ns[i]), p[i]) for i in range(p.shape[0])])[:, None]
         
         self.var = 0.2
         self.deg_free = 4.0
@@ -570,7 +570,6 @@ class TestNoiseModels(object):
         white_var = 1e-4
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
-
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
         m.kern.white.constrain_fixed(white_var)
 

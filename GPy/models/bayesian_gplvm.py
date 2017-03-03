@@ -54,6 +54,7 @@ class BayesianGPLVM(SparseGP_MPI):
 
         if variational_prior is None:
             variational_prior = NormalPrior()
+        self.variational_prior = variational_prior
         
         X = NormalPosterior(X, X_variance)
 

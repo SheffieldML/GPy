@@ -2,14 +2,11 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from .. import kern
-from ..core.sparse_gp_mpi import SparseGP_MPI
-from ..likelihoods import Gaussian
 from ..core.parameterization.variational import NormalPosterior, GmmNormalPrior
 from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
-import logging
+from . import BayesianGPLVM
 
-class GmmBayesianGPLVM(SparseGP_MPI):
+class GmmBayesianGPLVM(BayesianGPLVM):
     """
     Gaussian mixture model Bayesian Gaussian Process Latent Variable Model
 
@@ -26,38 +23,14 @@ class GmmBayesianGPLVM(SparseGP_MPI):
                  name='gmm bayesian gplvm', mpi_comm=None, normalizer=None,
                  missing_data=False, stochastic=False, batchsize=1, Y_metadata=None):
 
-        self.logger = logging.getLogger(self.__class__.__name__)
-        if X is None:
-            from ..util.initialization import initialize_latent
-            self.logger.info("initializing latent space X with method {}".format(init))
-            X, fracs = initialize_latent(init, input_dim, Y)
-        else:
-            fracs = np.ones(input_dim)
-
-        self.init = init
-
-        if X_variance is None:
-            self.logger.info("initializing latent space variance ~ uniform(0,.1)")
-            X_variance = np.random.uniform(0,.1,X.shape)
-
-        if Z is None:
-            self.logger.info("initializing inducing inputs")
-            Z = np.random.permutation(X.copy())[:num_inducing]
-        assert Z.shape[1] == X.shape[1]
-
-        if kernel is None:
-            self.logger.info("initializing kernel RBF")
-            kernel = kern.RBF(input_dim, lengthscale=1./fracs, ARD=True) #+ kern.Bias(input_dim) + kern.White(input_dim)
-
-        if likelihood is None:
-            likelihood = Gaussian()
-
+        N = Y.shape[0]
+        Q = input_dim
         # Need to define what the model is initialised like
         # pi = np.ones(n_component) / float(n_component) # p(k)
 
         # pi = (np.array(range(3),dtype = float)+1) / (np.array(range(3),dtype = float)+1).sum()
         # wi = (np.array(range(3),dtype = float)+1)
-        wi = np.ones((n_component, X_variance.shape[0]))
+        wi = np.ones((n_component, N))
         # wi = (np.ones((X_variance.shape[0], n_component)) * (range(1, n_component+1))).T
         variational_wi = wi.copy() 
         pi = np.exp(wi)/np.exp(wi).sum(axis = 0)
@@ -69,33 +42,20 @@ class GmmBayesianGPLVM(SparseGP_MPI):
         # px_mu = np.zeros((n_component, X_variance.shape[0], X_variance.shape[1]))               
         # px_var = np.ones((n_component, X_variance.shape[0], X_variance.shape[1]))
 
-        px_mu = (np.ones((X_variance.shape[1], n_component )) * (range(n_component))).T + np.random.randn(n_component, X_variance.shape[1])  # initialization can be changed   
+        px_mu = (np.ones((Q, n_component )) * (range(n_component))).T + np.random.randn(n_component, Q)  # initialization can be changed   
         # print px_mu
         # px_mu = np.zeros(( n_component, X_variance.shape[1]))
-        px_lmatrix = np.zeros(( n_component, X_variance.shape[1], X_variance.shape[1] ))+ np.eye(X_variance.shape[1])[np.newaxis, :,:]
+        px_lmatrix = np.zeros(( n_component, Q, Q ))+ np.eye(Q)[np.newaxis, :,:]
 
         self.variational_prior = GmmNormalPrior(px_mu=px_mu, px_lmatrix=px_lmatrix, pi = pi, wi=wi,
                                 n_component=n_component, variational_wi=variational_wi)
 
-        X = NormalPosterior(X, X_variance)
-
-        if inference_method is None:
-            if mpi_comm is not None:
-                inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
-            else:
-                from ..inference.latent_function_inference.var_dtc import VarDTC
-                self.logger.debug("creating inference_method var_dtc")
-                inference_method = VarDTC(limit=1 if not missing_data else Y.shape[1])
-        if isinstance(inference_method,VarDTC_minibatch):
-            inference_method.mpi_comm = mpi_comm
-
-        super(GmmBayesianGPLVM,self).__init__(X, Y, Z, kernel, likelihood=likelihood,
-                                           name=name, inference_method=inference_method,
-                                           normalizer=normalizer, mpi_comm=mpi_comm,
-                                           variational_prior=self.variational_prior,
-                                           Y_metadata=Y_metadata
-                                           )
-        self.link_parameter(self.X, index=0)
+        super(GmmBayesianGPLVM, self).__init__(Y, input_dim, X, X_variance, init, num_inducing,
+                 Z=Z, kernel=kernel, inference_method=inference_method, likelihood=likelihood,
+                 name=name, mpi_comm=mpi_comm, normalizer=normalizer,
+                 missing_data=missing_data, stochastic=stochastic, 
+                 batchsize=batchsize, Y_metadata=Y_metadata, variational_prior=self.variational_prior)
+        
 
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
@@ -107,21 +67,8 @@ class GmmBayesianGPLVM(SparseGP_MPI):
 
     def parameters_changed(self):
         super(GmmBayesianGPLVM,self).parameters_changed()
-        if isinstance(self.inference_method, VarDTC_minibatch):
-            return
-
-        kl_fctr = 1.
-        self._log_marginal_likelihood -= kl_fctr*self.variational_prior.KL_divergence(self.X)
-
-        self.X.mean.gradient, self.X.variance.gradient = self.kern.gradients_qX_expectations(
-                                            variational_posterior=self.X,
-                                            Z=self.Z,
-                                            dL_dpsi0=self.grad_dict['dL_dpsi0'],
-                                            dL_dpsi1=self.grad_dict['dL_dpsi1'],
-                                            dL_dpsi2=self.grad_dict['dL_dpsi2'])
-
+        
         self.variational_prior.update_gradients_KL(self.X)
-
 
         #super(BayesianGPLVM, self).parameters_changed()
         #self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
@@ -147,19 +94,19 @@ class GmmBayesianGPLVM(SparseGP_MPI):
         # update for the KL divergence
         #self.variational_prior.update_gradients_KL(self.X)
 
-    def plot_latent(self, labels=None, which_indices=None,
-                resolution=50, ax=None, marker='o', s=40,
-                fignum=None, plot_inducing=True, legend=True,
-                plot_limits=None,
-                aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
-        import sys
-        assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
-        from ..plotting.matplot_dep import dim_reduction_plots
-
-        return dim_reduction_plots.plot_latent(self, labels, which_indices,
-                resolution, ax, marker, s,
-                fignum, plot_inducing, legend,
-                plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
+#     def plot_latent(self, labels=None, which_indices=None,
+#                 resolution=50, ax=None, marker='o', s=40,
+#                 fignum=None, plot_inducing=True, legend=True,
+#                 plot_limits=None,
+#                 aspect='auto', updates=False, predict_kwargs={}, imshow_kwargs={}):
+#         import sys
+#         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
+#         from ..plotting.matplot_dep import dim_reduction_plots
+# 
+#         return dim_reduction_plots.plot_latent(self, labels, which_indices,
+#                 resolution, ax, marker, s,
+#                 fignum, plot_inducing, legend,
+#                 plot_limits, aspect, updates, predict_kwargs, imshow_kwargs)
 
     def do_test_latents(self, Y):
         """

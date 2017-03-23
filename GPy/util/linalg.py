@@ -11,12 +11,8 @@ from scipy.linalg import lapack, blas
 from .config import config
 import logging
 
-try:
+if config.getboolean('cython', 'working'):
     from . import linalg_cython
-    config.set('cython', 'working', 'True')
-except ImportError:
-    config.set('cython', 'working', 'False')
-
 
 def force_F_ordered_symmetric(A):
     """

@@ -88,6 +88,10 @@ class VarDTC(LatentFunctionInference):
             Kmm = kern.K(Z).copy()
             diag.add(Kmm, self.const_jitter)
             Lm = jitchol(Kmm)
+        else:
+            Kmm = tdot(Lm)
+            symmetrify(Kmm)
+
 
         # The rather complex computations of A, and the psi stats
         if uncertain_inputs:

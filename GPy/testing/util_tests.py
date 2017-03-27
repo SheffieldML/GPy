@@ -1,21 +1,21 @@
 #===============================================================================
 # Copyright (c) 2016, Max Zwiessele, Alan Saul
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of GPy.testing.util_tests nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -36,7 +36,7 @@ class TestDebug(unittest.TestCase):
         from GPy.util.debug import checkFinite
         array = np.random.normal(0, 1, 100).reshape(25,4)
         self.assertTrue(checkFinite(array, name='test'))
-        
+
         array[np.random.binomial(1, .3, array.shape).astype(bool)] = np.nan
         self.assertFalse(checkFinite(array))
 
@@ -45,10 +45,10 @@ class TestDebug(unittest.TestCase):
         from GPy.util.linalg import tdot
         array = np.random.normal(0, 1, 100).reshape(25,4)
         self.assertFalse(checkFullRank(tdot(array), name='test'))
-        
+
         array = np.random.normal(0, 1, (25,25))
         self.assertTrue(checkFullRank(tdot(array)))
-    
+
     def test_fixed_inputs_median(self):
         """ test fixed_inputs convenience function """
         from GPy.plotting.matplot_dep.util import fixed_inputs
@@ -113,8 +113,8 @@ class TestDebug(unittest.TestCase):
         #test data set. Not using random noise just in case it occasionally
         #causes it not to cluster correctly.
         #groundtruth cluster identifiers are: [0,1,1,0]
-        
-        #data contains a list of the four sets of time series (3 per data point)      
+
+        #data contains a list of the four sets of time series (3 per data point)
 
         data = [np.array([[ 2.18094245,  1.96529789,  2.00265523,  2.18218742,  2.06795428],
                 [ 1.62254829,  1.75748448,  1.83879347,  1.87531326,  1.52503496],
@@ -130,7 +130,7 @@ class TestDebug(unittest.TestCase):
                 [ 1.69336013,  1.72285186,  1.6339506 ,  1.61212022,  1.39198698]])]
 
         #inputs contains their associated X values
-        
+
         inputs = [np.array([[ 0.        ],
                 [ 0.68040097],
                 [ 1.20316795],
@@ -148,10 +148,66 @@ class TestDebug(unittest.TestCase):
                 [ 1.71881079],
                 [ 2.67162871],
                 [ 3.23761907]])]
-                    
+
         #try doing the clustering
         active = GPy.util.cluster_with_offset.cluster(data,inputs)
         #check to see that the clustering has correctly clustered the time series.
         clusters = set([frozenset(cluster) for cluster in active])
         assert set([1,2]) in clusters, "Offset Clustering algorithm failed"
         assert set([0,3]) in clusters, "Offset Clustering algoirthm failed"
+
+
+class TestUnivariateGaussian(unittest.TestCase):
+    def setUp(self):
+        self.zz = [-5.0, -0.8, 0.0, 0.5, 2.0, 10.0]
+
+    def test_logPdfNormal(self):
+        from GPy.util.univariate_Gaussian import logPdfNormal
+        pySols = [-13.4189385332,
+            -1.2389385332,
+            -0.918938533205,
+            -1.0439385332,
+            -2.9189385332,
+            -50.9189385332]
+        diff = 0.0
+        for i in range(len(pySols)):
+            diff += abs(logPdfNormal(self.zz[i]) - pySols[i])
+        self.assertTrue(diff  < 1e-10)
+
+    def test_cdfNormal(self):
+        from GPy.util.univariate_Gaussian import cdfNormal
+        pySols = [2.86651571879e-07,
+          0.211855398583,
+          0.5,
+          0.691462461274,
+          0.977249868052,
+          1.0]
+        diff = 0.0
+        for i in range(len(pySols)):
+            diff += abs(cdfNormal(self.zz[i]) - pySols[i])
+        self.assertTrue(diff  < 1e-10)
+
+    def test_logCdfNormal(self):
+        from GPy.util.univariate_Gaussian import logCdfNormal
+        pySols = [-15.064998394,
+          -1.55185131919,
+          -0.69314718056,
+          -0.368946415289,
+          -0.023012909329,
+          0.0]
+        diff = 0.0
+        for i in range(len(pySols)):
+            diff += abs(logCdfNormal(self.zz[i]) - pySols[i])
+        self.assertTrue(diff  < 1e-10)
+    def test_derivLogCdfNormal(self):
+        from GPy.util.univariate_Gaussian import derivLogCdfNormal
+        pySols = [5.18650396941,
+          1.3674022693,
+          0.79788456081,
+          0.50916043387,
+          0.0552478626962,
+          0.0]
+        diff = 0.0
+        for i in range(len(pySols)):
+          diff += abs(derivLogCdfNormal(self.zz[i]) - pySols[i])
+        self.assertTrue(diff  < 1e-8)

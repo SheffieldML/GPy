@@ -25,6 +25,30 @@ class Mapping(Parameterized):
     def update_gradients(self, dL_dF, X):
         raise NotImplementedError
 
+    def to_dict(self):
+        raise NotImplementedError
+
+    def _to_dict(self):
+        input_dict = {}
+        input_dict["input_dim"] = self.input_dim
+        input_dict["output_dim"] = self.output_dim
+        input_dict["name"] = self.name
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        mapping_class = input_dict.pop('class')
+        input_dict["name"] = str(input_dict["name"])
+        import GPy
+        mapping_class = eval(mapping_class)
+        return mapping_class._from_dict(mapping_class, input_dict)
+
+    @staticmethod
+    def _from_dict(mapping_class, input_dict):
+        return mapping_class(**input_dict)
+
 
 class Bijective_mapping(Mapping):
     """
@@ -37,5 +61,3 @@ class Bijective_mapping(Mapping):
     def g(self, f):
         """Inverse mapping from output domain of the function to the inputs."""
         raise NotImplementedError
-
-

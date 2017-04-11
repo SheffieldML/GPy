@@ -8,6 +8,61 @@ class Model(ParamzModel, Priorizable):
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
 
+    def _to_dict(self):
+        input_dict = {}
+        input_dict["name"] = self.name
+        return input_dict
+
+    def to_dict(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def from_dict(input_dict, data=None):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        model_class = input_dict.pop('class')
+        input_dict["name"] = str(input_dict["name"])
+        import GPy
+        model_class = eval(model_class)
+        return model_class._from_dict(input_dict, data)
+
+    @staticmethod
+    def _from_dict(model_class, input_dict, data=None):
+        return model_class(**input_dict)
+
+    def save_model(self, output_filename, compress=True, save_data=True):
+        raise NotImplementedError
+
+    def _save_model(self, output_filename, compress=True, save_data=True):
+        import json
+        output_dict = self.to_dict(save_data)
+        if compress:
+            import gzip
+            with gzip.GzipFile(output_filename + ".zip", 'w') as outfile:
+                json_str = json.dumps(output_dict)
+                json_bytes = json_str.encode('utf-8')
+                outfile.write(json_bytes)
+        else:
+            with open(output_filename + ".json", 'w') as outfile:
+                json.dump(output_dict, outfile)
+
+    @staticmethod
+    def load_model(output_filename, data=None):
+        compress = output_filename.split(".")[-1] == "zip"
+        import json
+        if compress:
+            import gzip
+            with gzip.GzipFile(output_filename, 'r') as json_data:
+                json_bytes = json_data.read()
+                json_str = json_bytes.decode('utf-8')
+                output_dict = json.loads(json_str)
+        else:
+            with open(output_filename) as json_data:
+                output_dict = json.load(json_data)
+        import GPy
+        return GPy.core.model.Model.from_dict(output_dict, data)
+
+
     def log_likelihood(self):
         raise NotImplementedError("this needs to be implemented to use the model class")
 

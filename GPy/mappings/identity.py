@@ -19,8 +19,7 @@ class Identity(Mapping):
     def gradients_X(self, dL_dF, X):
         return dL_dF
 
-
-
-
-
-
+    def to_dict(self):
+        input_dict = super(Identity, self)._to_dict()
+        input_dict["class"] = "GPy.mappings.Identity"
+        return input_dict

@@ -13,9 +13,9 @@ class Add(CombinationKernel):
     propagates gradients through.
 
     This kernel will take over the active dims of it's subkernels passed in.
-    
-    NOTE: The subkernels will be copies of the original kernels, to prevent 
-    unexpected behavior. 
+
+    NOTE: The subkernels will be copies of the original kernels, to prevent
+    unexpected behavior.
     """
     def __init__(self, subkerns, name='sum'):
         _newkerns = []
@@ -26,7 +26,7 @@ class Add(CombinationKernel):
                     _newkerns.append(part.copy())
             else:
                 _newkerns.append(kern.copy())
-                    
+
         super(Add, self).__init__(_newkerns, name)
         self._exact_psicomp = self._check_exact_psicomp()
 
@@ -42,6 +42,11 @@ class Add(CombinationKernel):
             return True
         else:
             return False
+
+    def to_dict(self):
+        input_dict = super(Add, self)._to_dict()
+        input_dict["class"] = str("GPy.kern.Add")
+        return input_dict
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])
     def K(self, X, X2=None, which_parts=None):

@@ -31,6 +31,14 @@ class RBF(Stationary):
             self.inv_l = Param('inv_lengthscale',1./self.lengthscale**2, Logexp())
             self.link_parameter(self.inv_l)
 
+    def to_dict(self):
+        input_dict = super(RBF, self)._to_dict()
+        input_dict["class"] = "GPy.kern.RBF"
+        input_dict["inv_l"] = self.use_invLengthscale
+        if input_dict["inv_l"] == True:
+            input_dict["lengthscale"] = np.sqrt(1 / float(self.inv_l))
+        return input_dict
+
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
@@ -42,7 +50,7 @@ class RBF(Stationary):
 
     def dK2_drdr_diag(self):
         return -self.variance # as the diagonal of r is always filled with zeros
-    
+
     def __getstate__(self):
         dc = super(RBF, self).__getstate__()
         if self.useGPU:

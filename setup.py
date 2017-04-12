@@ -170,8 +170,13 @@ setup(name = 'GPy',
                    'Operating System :: POSIX :: Linux',
                    'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3.3',
-                   'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5',
+                   'Framework :: IPython',
+                   'Intended Audience :: Science/Research',
+                   'Intended Audience :: Developers',
+                   'Topic :: Software Development',
+                   'Topic :: Software Development :: Libraries :: Python Modules',
+                   
                    ]
       )
 

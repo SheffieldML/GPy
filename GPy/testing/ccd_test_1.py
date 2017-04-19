@@ -80,10 +80,10 @@ class CCDTests(unittest.TestCase):
         # basically checks that all CCD points are equidistant from the central point.
         assert np.all(np.isclose(dists, np.mean(dists),
                                  atol=0.01)), "CCD placement error - Points should be equidistant!"
-        # assert np.all(np.isclose(np.sum(ccdres[1:] / ccdres[0]), 4.7619,
-        #                          atol=0.1)), "CCD placement error - off-centre locations should have log likelihood" \
-        #                                      " ratios to central point summing to 4.76 times the centre, for nd" \
-        #                                      " symmetrical Quadratic test case"
+        assert np.all(np.isclose(np.sum(ccdres[1:] / ccdres[0]), 4.7619,
+                                 atol=0.1)), "CCD placement error - off-centre locations should have log likelihood" \
+                                             " ratios to central point summing to 4.76 times the centre, for nd" \
+                                             " symmetrical Quadratic test case"
 
     @nottest
     def find_likes(self, stepsize=0.3,rangemin=-2,rangemax=7):

@@ -1,7 +1,6 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
-import itertools
 from ...util.linalg import jitchol, DSYR, dtrtrs, dtrtri, pdinv, dpotrs, tdot, symmetrify
 from paramz import ObsAr
 from . import ExactGaussianInference, VarDTC

@@ -7,7 +7,6 @@ from paramz import ObsAr
 from . import ExactGaussianInference, VarDTC
 from ...util import diag
 from .posterior import PosteriorEP as Posterior
-from .posterior import MultioutputPosteriorEP as MultioutputPosterior
 
 log_2_pi = np.log(2*np.pi)
 

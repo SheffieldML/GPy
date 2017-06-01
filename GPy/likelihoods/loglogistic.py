@@ -5,10 +5,11 @@ from __future__ import division
 import numpy as np
 from scipy import stats,special
 import scipy as sp
-from GPy.likelihoods.link_functions import Log, Identity
-from GPy.likelihoods.likelihood import Likelihood
-from GPy.core.parameterization import Param
-from GPy.core.parameterization.transformations import Logexp
+from ..core.parameterization import Param
+from ..core.parameterization.transformations import Logexp
+from . import link_functions
+from .likelihood import Likelihood
+from .link_functions import Log
 
 class LogLogistic(Likelihood):
     """

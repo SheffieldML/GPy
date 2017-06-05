@@ -34,17 +34,6 @@ class SimpleModel(GPy.Model):
             self.params[i].gradient = -2 * ((self.params[i]) - pos)
 
 
-class BiQuadModel(SimpleModel):
-    def log_likelihood(self):
-        like = 0
-        for i, pos in enumerate(self.peak_loc):
-            like = like - (self.params[i] - pos) ** 4
-        return like
-
-    def parameters_changed(self):
-        pass
-
-
 class CCDTests(unittest.TestCase):
     """
     general ccd test for a particular model-scenario.
@@ -86,23 +75,26 @@ class CCDTests(unittest.TestCase):
                                              " symmetrical Quadratic test case"
 
     @nottest
-    def find_likes(self, stepsize=0.3,rangemin=-2,rangemax=7):
-        params = self.m.parameter_names_flat()
+    def find_likes(self, model, stepsize=0.3,rangemin=-2,rangemax=7):
+        params = model.parameter_names_flat()
         param_ranges = []
         for param in params:
             param_ranges.append(np.arange(rangemin, rangemax, stepsize))
         combs = itertools.product(*param_ranges)
         llsum = 0
         for el in combs:
-            llsum += np.exp(-self.m._objective(el))
+            llsum += np.exp(-model._objective(el))
         return llsum
 
-    def test_ccd_integration(self):
-        ls = self.find_likes(self.stepsize)
+    def test_ccd_integration(self, model=None):
+        if model is None:
+            model = self.m
+        ls = self.find_likes(self.m, self.stepsize)
         numsum = ls*(self.stepsize**self.ndims)
-        self.m.optimize()
-        hes = self.m.numerical_parameter_hessian()
-        hessum = np.exp(self.m.log_likelihood()) * 1 / np.sqrt(np.linalg.det(1 / (2 * np.pi) * hes))
+        model.optimize()
+        hes = model.numerical_parameter_hessian()
+        # Laplace approximation to find marginal likelihoods of submodels, integrate out hyperparams of kernel matrix and likelihood params
+        hessum = np.exp(model.log_likelihood()) * 1 / np.sqrt(np.linalg.det(1 / (2 * np.pi) * hes))
         print hessum, hes
         print numsum
         assert np.isclose(hessum, numsum,
@@ -110,9 +102,31 @@ class CCDTests(unittest.TestCase):
                                      " equal to numerical grid sum=%0.4f" % (
         hessum, numsum)
 
+    def test_gp_integration(self):
+        # create a simple GP model
+        X = np.arange(0, 40, 1)[:, None]
+        Y = np.sin(X / 5) + np.random.randn(X.shape[0], X.shape[1]) * 0.1
+        k = GPy.kern.RBF(1)
+
+        # create model and optimise
+        m2 = GPy.models.GPRegression(X, Y, k)
+        m2.Gaussian_noise.fix(0.5)
+        m2.optimize()
+
+        m2.numerical_parameter_hessian()
+
+        dims = 2  # equals the number of unfixed parameters
+        stepsize = 0.2
+        ls = self.find_likes(m2, stepsize, rangemin=0.0001, rangemax=20)
+        numsum = ls * (stepsize ** dims)
+        m2.optimize()
+        hes = m2.numerical_parameter_hessian()
+        hessum = np.exp(m2.log_likelihood()) * 1 / np.sqrt(np.linalg.det(1 / (2 * np.pi) * hes))
+        assert np.isclose(hessum, numsum, atol=0,
+                          rtol=0.1), "Laplace approximation using numerical_parameter_hessian() not equal to numerical grid sum"
+
 
 if __name__ == "__main__":
     unittest.main()
-    # ndims = 6
     # for i in range(1, ndims):
     #     m = SimpleModel(i)

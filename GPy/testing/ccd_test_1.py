@@ -112,9 +112,6 @@ class CCDTests(unittest.TestCase):
         m2 = GPy.models.GPRegression(X, Y, k)
         m2.Gaussian_noise.fix(0.5)
         m2.optimize()
-
-        m2.numerical_parameter_hessian()
-
         dims = 2  # equals the number of unfixed parameters
         stepsize = 0.2
         ls = self.find_likes(m2, stepsize, rangemin=0.0001, rangemax=20)

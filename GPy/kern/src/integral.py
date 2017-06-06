@@ -27,8 +27,9 @@ class Integral(Kern): #todo do I need to inherit from Stationary
     def h(self, z):
         return 0.5 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))        
 
-    def dk_dl(self, t, tprime, l): #derivative of the kernel wrt lengthscale
-        return l * ( self.h(t/l) - self.h((t - tprime)/l) + self.h(tprime/l) - 1)
+    def dk_dl(self, t, tprime, lengthscale): #derivative of the kernel wrt lengthscale
+        l = lengthscale * np.sqrt(2)    
+        return np.sqrt(2) * l * ( self.h(t/l) - self.h((t - tprime)/l) + self.h(tprime/l) - 1)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:  #we're finding dK_xx/dTheta
@@ -48,14 +49,17 @@ class Integral(Kern): #todo do I need to inherit from Stationary
         return 1.0 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))
 
     #covariance between gradients (it's the gradients that we want out... maybe we should have a way of getting K_ff too? Currently you get the diag of K_ff from Kdiag)
-    def k_xx(self,t,tprime,l):
+    def k_xx(self,t,tprime,lengthscale):
+        l = lengthscale * np.sqrt(2)    
         return 0.5 * (l**2) * ( self.g(t/l) - self.g((t - tprime)/l) + self.g(tprime/l) - 1)
 
-    def k_ff(self,t,tprime,l):
+    def k_ff(self,t,tprime,lengthscale):
+        l = lengthscale * np.sqrt(2)    
         return np.exp(-((t-tprime)**2)/(l**2)) #rbf
 
     #covariance between the gradient and the actual value
-    def k_xf(self,t,tprime,l):
+    def k_xf(self,t,tprime,lengthscale):
+        l = lengthscale * np.sqrt(2)    
         return 0.5 * np.sqrt(math.pi) * l * (math.erf((t-tprime)/l) + math.erf(tprime/l))
 
     def K(self, X, X2=None):

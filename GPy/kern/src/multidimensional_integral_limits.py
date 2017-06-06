@@ -33,8 +33,11 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
     def h(self, z):
         return 0.5 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))
 
-    def dk_dl(self, t, tprime, s, sprime, l): #derivative of the kernel wrt lengthscale
-        return l * ( self.h((t-sprime)/l) - self.h((t - tprime)/l) + self.h((tprime-s)/l) - self.h((s-sprime)/l))
+    def dk_dl(self, t, tprime, s, sprime, lengthscale): #derivative of the kernel wrt lengthscale
+        l = lengthscale * np.sqrt(2)    
+        grad = l * ( self.h((t-sprime)/l) - self.h((t - tprime)/l) + self.h((tprime-s)/l) - self.h((s-sprime)/l))
+        return grad * np.sqrt(2)
+        
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:  #we're finding dK_xx/dTheta
@@ -65,7 +68,7 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
     def g(self,z):
         return 1.0 * z * np.sqrt(math.pi) * math.erf(z) + np.exp(-(z**2))
 
-    def k_xx(self,t,tprime,s,sprime,l):
+    def k_xx(self,t,tprime,s,sprime,lengthscale):
         """Covariance between observed values.
 
         s and t are one domain of the integral (i.e. the integral between s and t)
@@ -74,17 +77,20 @@ class Multidimensional_Integral_Limits(Kern): #todo do I need to inherit from St
         We're interested in how correlated these two integrals are.
 
         Note: We've not multiplied by the variance, this is done in K."""
+        l = lengthscale * np.sqrt(2)
         return 0.5 * (l**2) * ( self.g((t-sprime)/l) + self.g((tprime-s)/l) - self.g((t - tprime)/l) - self.g((s-sprime)/l))
 
-    def k_ff(self,t,tprime,l):
-        """Doesn't need s or sprime as we're looking at the 'derivatives', so no domains over which to integrate are required"""
+    def k_ff(self,t,tprime,lengthscale):
+        """Doesn't need s or sprime as we're looking at the 'derivatives', so no domains over which to integrate are required"""        
+        l = lengthscale * np.sqrt(2)        
         return np.exp(-((t-tprime)**2)/(l**2)) #rbf
 
-    def k_xf(self,t,tprime,s,l):
+    def k_xf(self,t,tprime,s,lengthscale):
         """Covariance between the gradient (latent value) and the actual (observed) value.
 
         Note that sprime isn't actually used in this expression, presumably because the 'primes' are the gradient (latent) values which don't
         involve an integration, and thus there is no domain over which they're integrated, just a single value that we want."""
+        l = lengthscale * np.sqrt(2)        
         return 0.5 * np.sqrt(math.pi) * l * (math.erf((t-tprime)/l) + math.erf((tprime-s)/l))
 
     def calc_K_xx_wo_variance(self,X):

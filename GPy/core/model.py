@@ -5,7 +5,6 @@ from paramz import Model as ParamzModel
 from paramz import transformations
 import numpy as np
 import warnings
-import timeit
 from ..util.linalg import pdinv
 
 
@@ -122,15 +121,9 @@ class Model(ParamzModel, Priorizable):
         # Now we add the points on the unit hyper-sphere that arent on the corners also known as star points.
         for i in range(num_free_params):
             top_edge = np.zeros(num_free_params)
-            if rotate == True:
-                top_edge[i] = np.sqrt(num_free_params)
-            else:
-                top_edge[i] = 1.
+            top_edge[i] = np.sqrt(num_free_params)
             bottom_edge = np.zeros(num_free_params)
-            if rotate == True:
-                bottom_edge[i] = -np.sqrt(num_free_params)
-            else:
-                bottom_edge[i] = 1.
+            bottom_edge[i] = -np.sqrt(num_free_params)
             ccd_points = np.vstack([ccd_points, top_edge, bottom_edge])
 
         # Find the appropriate scaling such that the edges lie on a boundary of equal density
@@ -144,15 +137,12 @@ class Model(ParamzModel, Priorizable):
         scalings = np.ones_like(ccd_points)
         # This is naive scaling, assuming that it is well approximated by a standard normal, in practice you might want to scale in different directions seperately (split normal approximation)
         j = np.arange(num_free_params * 2)
-        temp = np.zeros((1, num_free_params))
         direction = np.ones_like(j)
         direction[::2] = -1
         # # each direction has a numeric index.
-        dir_ind = np.arange(num_free_params)
         #  # make a matrix where each column is a contour point.
         modal_params = modal_params[:, None]
         modal_params = modal_params.T
-        # print modal_params.shape
         modal_params_mat = np.repeat(modal_params, [num_free_params * 2], axis=0)
         temp = np.eye(num_free_params)
         temp = np.repeat(temp, [2], axis=0)
@@ -178,7 +168,6 @@ class Model(ParamzModel, Priorizable):
 
         scalings_odd, scalings_even = scalings_bi[0, 1:num_free_params * 2:2], scalings_bi[0, 0:num_free_params * 2:2]
 
-        # print scalings_odd, scalings_even, scalings_bi
         # each axis has two directions, and each direction has a different scaling, so we do that here ...
         scalings_odd_rep = np.tile(scalings_odd, num_ccd_points)
         scalings_even_rep = np.tile(scalings_even, num_ccd_points)

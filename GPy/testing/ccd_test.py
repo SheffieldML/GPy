@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import GPy
-%matplotlib inline
 np.set_printoptions(suppress=True, precision=10)
 from paramz.transformations import Logexp
 
@@ -57,7 +56,6 @@ class CCDTest(unittest.TestCase):
 import numpy as np
 import matplotlib.pyplot as plt
 import GPy
-%matplotlib inline
 np.set_printoptions(suppress=True, precision=10)
 from paramz.transformations import Logexp
 

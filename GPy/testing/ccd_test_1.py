@@ -95,8 +95,6 @@ class CCDTests(unittest.TestCase):
         hes = model.numerical_parameter_hessian()
         # Laplace approximation to find marginal likelihoods of submodels, integrate out hyperparams of kernel matrix and likelihood params
         hessum = np.exp(model.log_likelihood()) * 1 / np.sqrt(np.linalg.det(1 / (2 * np.pi) * hes))
-        print hessum, hes
-        print numsum
         assert np.isclose(hessum, numsum,
                           atol=0.2), "Laplace approximation using numerical_parameter_hessian()=%0.4f not" \
                                      " equal to numerical grid sum=%0.4f" % (

@@ -73,11 +73,11 @@ class InferenceGPEP(unittest.TestCase):
                         inference_method=inf,
                         likelihood=lik)
         K = self.model.kern.K(X)
-        mu, Sigma, mu_tilde, tau_tilde, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
+        post_params, ga_approx, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
 
-        v_tilde = mu_tilde * tau_tilde
-        p, m, d = self.model.inference_method._inference(K, tau_tilde, v_tilde, lik, Y_metadata=None,  Z_tilde=log_Z_tilde.sum())
-        p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, inf).inference(k, X,lik ,mu_tilde[:,None], mean_function=None, variance=1./tau_tilde, K=K, Z_tilde=log_Z_tilde.sum() + np.sum(- 0.5*np.log(tau_tilde) + 0.5*(v_tilde*v_tilde*1./tau_tilde)))
+        mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
+        p, m, d = self.model.inference_method._inference(K, ga_approx, lik, Y_metadata=None,  Z_tilde=log_Z_tilde)
+        p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, inf).inference(k, X,lik ,mu_tilde[:,None], mean_function=None, variance=1./ga_approx.tau, K=K, Z_tilde=log_Z_tilde + np.sum(- 0.5*np.log(ga_approx.tau) + 0.5*(ga_approx.v*ga_approx.v*1./ga_approx.tau)))
 
         assert (np.sum(np.array([m - m0,
                     np.sum(d['dL_dK'] - d0['dL_dK']),

@@ -27,6 +27,8 @@ from .src.eq_ode2 import EQ_ODE2
 from .src.integral import Integral
 from .src.integral_limits import Integral_Limits
 from .src.multidimensional_integral_limits import Multidimensional_Integral_Limits
+from .src.shapeintegrals import ShapeIntegral
+from .src.integral_output_observed import Integral_Output_Observed
 from .src.offset import Offset
 from .src.tie import Tie
 

@@ -100,8 +100,8 @@ class StateSpace(Model):
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dFt,dQct,dP_inft, dP0t) = self.kern.sde()
-        #Qc = Qc + np.eye(Qc.shape[0]) * 1e-8
-        #import pdb; pdb.set_trace()
+        
+        
         # necessary parameters
         measurement_dim = self.output_dim
         grad_params_no = dFt.shape[2]+1 # we also add measurement noise as a parameter

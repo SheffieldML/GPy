@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## v1.7.2 (2017-06-17)
 
 ### Fix
 
 * Appveyor build python 3.6. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.1 → 1.7.2. [mzwiessele]
 
 
 ## v1.7.1 (2017-06-17)

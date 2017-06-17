@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+* Appveyor build python 3.6. [mzwiessele]
+
+
 ## v1.7.1 (2017-06-17)
 
 ### Fix

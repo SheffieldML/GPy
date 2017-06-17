@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.6.3 (2017-06-17)
+
+### Other
+
+* Bump version: 1.6.2 → 1.6.3. [mzwiessele]
+
+* Merge pull request #504 from rmcantin/devel. [Max Zwiessele]
+
+* Fix python 2-3 compatibility. [Ruben Martinez-Cantin]
+
+* Merge pull request #511 from dirmeier/devel. [Max Zwiessele]
+
+* Added LICENSE file to MANIFEST.in. [dirmeier]
+
+
 ## v1.6.2 (2017-04-12)
 
 ### Fix

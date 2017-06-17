@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.0 (2017-06-17)
+
+### Fix
+
+* Support for 3.5 and higher now that 3.6 is out. [mzwiessele]
+
+### Other
+
+* Bump version: 1.6.3 → 1.7.0. [mzwiessele]
+
+
 ## v1.6.3 (2017-06-17)
 
 ### Other

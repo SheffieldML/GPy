@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.6 (2017-06-19)
+
+### Fix
+
+* Appveyor not uploading to testpypi for now. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.5 → 1.7.6. [mzwiessele]
+
+
 ## v1.7.5 (2017-06-19)
 
 ### Fix

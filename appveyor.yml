@@ -72,16 +72,17 @@ deploy_script:
 - echo username = maxz >> %USERPROFILE%\\.pypirc
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
 - ps: >-
-    if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        twine upload --skip-existing -r test dist/*
-    }
-    elseif ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
+    if ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
         twine upload --skip-existing dist/*
     }
     else {
         echo not deploying on other branches
     }
  
+# if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
+#     twine upload --skip-existing -r test dist/*
+# } # This is for testing the upload to testpypi, it causes a fail, so we will undo it here
+
 # deploy:
 #   - provider: GitHub
 #     release: GPy-v$(gpy_version)

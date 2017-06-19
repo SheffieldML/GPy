@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.3 (2017-06-19)
+
+### Fix
+
+* Appveyor build failing. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.2 → 1.7.3. [mzwiessele]
+
+
 ## v1.7.2 (2017-06-17)
 
 ### Fix

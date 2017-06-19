@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.5 (2017-06-19)
+
+### Fix
+
+* Splitting forecast tests into 3 to circumvent 10 minute stop of travis. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.4 → 1.7.5. [mzwiessele]
+
+
 ## v1.7.4 (2017-06-19)
 
 ### Fix

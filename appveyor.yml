@@ -73,10 +73,10 @@ deploy_script:
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
 - ps: >-
     if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        twine upload --skip-existing -r test "dist/*"
+        twine upload --skip-existing -r test dist/*
     }
     elseif ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
-        twine upload --skip-existing "dist/*"
+        twine upload --skip-existing dist/*
     }
     else {
         echo not deploying on other branches

@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## v1.7.4 (2017-06-19)
 
 ### Fix
 
 * Paramz version for parallel optimization fix. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.3 → 1.7.4. [mzwiessele]
 
 
 ## v1.7.3 (2017-06-19)

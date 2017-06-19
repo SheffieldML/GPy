@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+* Paramz version for parallel optimization fix. [mzwiessele]
+
+
 ## v1.7.3 (2017-06-19)
 
 ### Fix

@@ -562,11 +562,12 @@ class GP(Model):
         """
         self.inference_method.on_optimization_start()
         try:
-            super(GP, self).optimize(optimizer, start, messages, max_iters, ipython_notebook, clear_after_finish, **kwargs)
+            ret = super(GP, self).optimize(optimizer, start, messages, max_iters, ipython_notebook, clear_after_finish, **kwargs)
         except KeyboardInterrupt:
             print("KeyboardInterrupt caught, calling on_optimization_end() to round things up")
             self.inference_method.on_optimization_end()
             raise
+        return ret
 
     def infer_newX(self, Y_new, optimize=True):
         """

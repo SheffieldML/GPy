@@ -1,7 +1,7 @@
 '''
 Created on Aug 27, 2014
 
-@author: t-mazwie
+@author: Max Zwiessele
 '''
 import logging
 import numpy as np

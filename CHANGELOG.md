@@ -1,5 +1,105 @@
 # Changelog
 
+## v1.7.2 (2017-06-17)
+
+### Fix
+
+* Appveyor build python 3.6. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.1 → 1.7.2. [mzwiessele]
+
+
+## v1.7.1 (2017-06-17)
+
+### Fix
+
+* Appveyor build python 3.6. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.0 → 1.7.1. [mzwiessele]
+
+
+## v1.7.0 (2017-06-17)
+
+### Fix
+
+* Support for 3.5 and higher now that 3.6 is out. [mzwiessele]
+
+### Other
+
+* Bump version: 1.6.3 → 1.7.0. [mzwiessele]
+
+
+## v1.6.3 (2017-06-17)
+
+### Other
+
+* Bump version: 1.6.2 → 1.6.3. [mzwiessele]
+
+* Merge pull request #504 from rmcantin/devel. [Max Zwiessele]
+
+* Fix python 2-3 compatibility. [Ruben Martinez-Cantin]
+
+* Merge pull request #511 from dirmeier/devel. [Max Zwiessele]
+
+* Added LICENSE file to MANIFEST.in. [dirmeier]
+
+
+## v1.6.2 (2017-04-12)
+
+### Fix
+
+* Updated keywords. [mzwiessele]
+
+### Other
+
+* Bump version: 1.6.1 → 1.6.2. [mzwiessele]
+
+* Merge pull request #491 from alexfeld/parallel_opt. [Max Zwiessele]
+
+  fix for parallel optimization
+
+* Fix in sparse_gp_mpi optimizer. [Alex Feldstein]
+
+* Fix for parallel optimization. [Alex Feldstein]
+
+* Merge pull request #492 from pgmoren/devel. [Zhenwen Dai]
+
+  We did some benchmarking on classification. These changes should be fine. Let&#x27;s merge it in.
+
+* Changes in EP/EPDTC to fix numerical issues and increase the flexibility of the inference. [Moreno]
+
+  Changes to avoid numerical issues and improve the performance:
+      - Keep value of the EP parameters between calls
+      - Enforce positivity of tau_tilde
+      - Stable computation of the EP moments for the Bernoulli likelihood
+      - Compute marginal in the GP model without directly inverting tau_tilde
+
+      Changes to improve the flexibility:
+      - Add parameter for maximum number of iterations
+      - Distinguish between alternated/nested mode
+      - Distinguish between sequential/parallel updates in EP
+
+* Merge pull request #489 from SheffieldML/linalg_cython-1. [Max Zwiessele]
+
+  cython in linalg fix #458
+
+* Cython in linalg. [Max Zwiessele]
+
+  did set cython to working if linalg_cython was importable.
+
+* Merge pull request #486 from SheffieldML/deploy. [Max Zwiessele]
+
+  Merge pull request #471 from SheffieldML/devel
+
+* Merge pull request #471 from SheffieldML/devel. [Max Zwiessele]
+
+  new version
+
+
 ## v1.6.1 (2017-02-28)
 
 ### Fix

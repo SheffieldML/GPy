@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.7.6 (2017-06-19)
+
+### Fix
+
+* Appveyor not uploading to testpypi for now. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.5 → 1.7.6. [mzwiessele]
+
+
+## v1.7.5 (2017-06-19)
+
+### Fix
+
+* Splitting forecast tests into 3 to circumvent 10 minute stop of travis. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.4 → 1.7.5. [mzwiessele]
+
+
+## v1.7.4 (2017-06-19)
+
+### Fix
+
+* Paramz version for parallel optimization fix. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.3 → 1.7.4. [mzwiessele]
+
+
 ## v1.7.3 (2017-06-19)
 
 ### Fix

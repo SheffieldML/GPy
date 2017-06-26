@@ -150,7 +150,7 @@ class EPBase(object):
     def _stop_criteria(self, ga_approx):
         tau_diff = np.mean(np.square(ga_approx.tau-self.ga_approx_old.tau))
         v_diff = np.mean(np.square(ga_approx.v-self.ga_approx_old.v))
-        return ((tau_diff > self.epsilon) or (v_diff > self.epsilon))
+        return ((tau_diff < self.epsilon) and (v_diff < self.epsilon))
 
     def __setstate__(self, state):
         super(EPBase, self).__setstate__(state[0])

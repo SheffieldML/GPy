@@ -53,6 +53,76 @@ class Model(ParamzModel, Priorizable):
     def CCD(self):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
+
+
+
+        CCD = 	Central Composite Design, pick hyperparameters around the MAP estimate to allow us to estimate the
+	        integral over them.
+
+        Quoting https://arxiv.org/pdf/1206.5754.pdf (section 5.4) which
+        describes GPStuff, which this work is based upon.
+                
+        "Rue et al. (2009) suggest a central composite design (CCD) for choosing
+        the representative points from the posterior of the parameters with
+        the aim of finding points that allow one to estimate the curvature
+        of the posterior distribution around the mode. The design used here
+        copies GPstuff's fractional factorial design (Sanchez and Sanchez, 2005)
+        augmented with a center point and a group of star points."
+        
+        "The design points are all on the surface of a d-dimensional sphere
+        and the star points consist of 2d points along each axis. The
+        integration is then a finite sum with special weights (Vanhatalo et al.,
+        2010)."
+        
+        Quoting that article:
+        
+        "The integration weights can then be determined from the statistics of a
+        standard Gaussian variable,
+        
+        E[z^T z] = d
+        E[z] = 0
+        E[1] = 1
+        
+        where d is the dimensionality of \theta.
+        sphere has radius \sqrt{d}f_0.
+        The integration weights are equal for the points on the sphere.
+        
+        This results in integration weights,
+        
+        \Delta = [  (n_p-1) e^(-df_0^2/2) (f_0^2-1)  ]^{-1}
+        
+        n_p = number of points on sphere.
+        
+        
+        "CCD integration speeds up the computations considerably compared to the
+        grid search or Monte Carlo integration since the number of the design
+        points grows very moderately."
+        
+        "Since CCD is based on the assumption that the posterior of the parameter
+        is (close to) Gaussian, the densities at the points on the circumference
+        should be monitored in order to detect serious discrepancies from this
+        assumption. These densities are identical if the posterior is Gaussian
+        and we have located the mode correctly, and thereby great variability on
+        their values indicates that CCD has failed."
+        
+        TODO: From the description of GPStuff: "The posterior of the
+        parameters may be far from a Gaussian distribution but for a suitable
+        transformation, which is made automatically in the toolbox..." -- is
+        this the same transformation we perform below?
+        
+        TODO: Implement the above weights in the summation.
+        
+        
+        References:
+                Sanchez, Susan M., and Paul J. Sanchez. "Very large fractional factorial and central composite designs." ACM Transactions on Modeling and Computer Simulation (TOMACS) 15.4 (2005): 362-377.
+                http://calhoun.nps.edu/bitstream/handle/10945/35346/SanchezSanchezACM_TOMACS_05.pdf?sequence=1
+                
+                Rue, Håvard, Sara Martino, and Nicolas Chopin. "Approximate Bayesian inference for latent Gaussian models by using integrated nested Laplace approximations." Journal of the royal statistical society: Series b (statistical methodology) 71.2 (2009): 319-392.
+                http://www.jstor.org/stable/40247579
+                
+                Vanhatalo, Jarno, Ville Pietiläinen, and Aki Vehtari. "Approximate inference for disease mapping with sparse Gaussian processes." Statistics in medicine 29.15 (2010): 1580-1607.
+                http://lib.tkk.fi/Diss/2010/isbn9789526033815/article4.pdf
+                
         """
         modal_params = self.optimizer_array[:].copy()
         num_free_params = modal_params.shape[0]

@@ -182,7 +182,7 @@ class Model(ParamzModel, Priorizable):
         f[self.constraints[transformations.__fixed__]] = transformations.FIXED
         #TODO Check: Presumably only one constraint applies to each parameter?
         new_t_points = [] 
-        todo = range(0,sum(f))
+        todo = list(range(0,sum(f)))
         new_t_points = np.zeros_like(transformed_points)
         for c, ind in self.constraints.items():
             if c != transformations.__fixed__:

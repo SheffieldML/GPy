@@ -93,6 +93,8 @@ class Model(ParamzModel, Priorizable):
         
         n_p = number of points on sphere.
         
+        f_0 > 1 is any constant (from http://www.statslab.cam.ac.uk/~rjs57/RSS/0708/Rue08.pdf, p31)
+        
         
         "CCD integration speeds up the computations considerably compared to the
         grid search or Monte Carlo integration since the number of the design
@@ -242,6 +244,10 @@ class Model(ParamzModel, Priorizable):
         point_densities = point_densities[non_small_densities]
         param_points = param_points[non_small_densities, :]
         point_densities /= point_densities.sum()
+        
+        
+        #Mike's temporary attempt to calculate point_densities
+        #TODO
 
         transformed_points = param_points.copy()
         #alan's original code to transform those parameters, to the true space of parameters again

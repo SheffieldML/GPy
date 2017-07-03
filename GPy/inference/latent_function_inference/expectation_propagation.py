@@ -6,6 +6,7 @@ from paramz import ObsAr
 from . import ExactGaussianInference, VarDTC
 from ...util import diag
 from .posterior import PosteriorEP as Posterior
+from ...likelihoods import Gaussian
 
 log_2_pi = np.log(2*np.pi)
 
@@ -185,7 +186,7 @@ class EP(EPBase, ExactGaussianInference):
         else:
             raise ValueError("ep_mode value not valid")
 
-        return self._inference(K, ga_approx, likelihood, Y_metadata=Y_metadata,  Z_tilde=log_Z_tilde)
+        return self._inference(Y, K, ga_approx, likelihood, Y_metadata=Y_metadata,  Z_tilde=log_Z_tilde)
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
@@ -280,7 +281,7 @@ class EP(EPBase, ExactGaussianInference):
 
         return log_marginal, post_params
 
-    def _inference(self, K, ga_approx, likelihood, Z_tilde, Y_metadata=None):
+    def _inference(self, Y, K, ga_approx, likelihood, Z_tilde, Y_metadata=None):
         log_marginal, post_params = self._ep_marginal(K, ga_approx, Z_tilde)
 
         tau_tilde_root = np.sqrt(ga_approx.tau)
@@ -293,8 +294,10 @@ class EP(EPBase, ExactGaussianInference):
         symmetrify(Wi) #(K + Sigma^(\tilde))^(-1)
 
         dL_dK = 0.5 * (tdot(alpha) - Wi)
-        dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK), Y_metadata)
-
+        if not isinstance(likelihood, Gaussian):
+            dL_dthetaL = likelihood.ep_gradients(Y, ga_approx.tau, ga_approx.v, Y_metadata=Y_metadata)
+        else:
+            dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK), Y_metadata)
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}
 
 

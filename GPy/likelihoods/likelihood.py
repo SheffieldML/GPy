@@ -6,8 +6,12 @@ from scipy import stats,special
 import scipy as sp
 from . import link_functions
 from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
+from ..util.quad_integrate import quadgk_int
 from scipy.integrate import quad
+from functools import partial
+
 import warnings
+
 from ..core.parameterization import Parameterized
 
 class Likelihood(Parameterized):
@@ -222,6 +226,105 @@ class Likelihood(Parameterized):
         if self.__gh_points is None:
             self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
+
+    def ep_gradients(self, Y, tau, v, Y_metadata=None, gh_points=None, approx=False, boost_grad=1.):
+        if self.size > 0:
+            shape = Y.shape
+            tau,v,Y = tau.flatten(), v.flatten(),Y.flatten()
+            mu = v/tau
+            sigma2 = 1./tau
+
+            # assert Y.shape == v.shape
+            dlik_dtheta = np.empty((self.size, Y.shape[0]))
+            # for j in range(self.size):
+            Y_metadata_list = []
+            for index in range(len(Y)):
+                Y_metadata_i = {}
+                if Y_metadata is not None:
+                    for key in Y_metadata.keys():
+                        Y_metadata_i[key] = Y_metadata[key][index,:]
+                    Y_metadata_list.append(Y_metadata_i)
+
+                val = self.site_derivatives_ep(Y[index], tau[index], v[index], Y_metadata_i)
+                dlik_dtheta[:, index] = val.ravel()
+
+            f = partial(self.integrate)
+            quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
+            quads = np.vstack(quads)
+            quads.reshape(self.size, shape[0], shape[1])
+
+            dL_dtheta_avg = boost_grad * np.nanmean(quads, axis=1)
+            dL_dtheta = boost_grad * np.nansum(quads, axis=1)
+            # dL_dtheta = boost_grad * np.nansum(dlik_dtheta, axis=1)
+        else:
+            dL_dtheta = np.zeros(self.num_params)
+        return dL_dtheta
+
+
+    def integrate(self, Y, mu, sigma):
+        fmin = -np.inf
+        fmax = np.inf
+        SQRT_2PI = np.sqrt(2.*np.pi)
+        def generate_integral(f):
+            a = np.exp(self.logpdf_link(f, Y)) * np.exp(-0.5 * np.square((f - mu) / sigma)) / (
+                SQRT_2PI * sigma)
+            fn1 = a * self.dlogpdf_dtheta(f, Y)
+            fn = fn1
+            return fn
+
+        dF_dtheta_i = quadgk_int(generate_integral, fmin=fmin, fmax=fmax)
+        return dF_dtheta_i
+
+
+
+    def site_derivatives_ep(self,obs,tau,v,Y_metadata_i=None, approx=False, gh_points=None):
+        # "calculate site derivatives E_f{d logp(y_i|f_i)/da} where a is a likelihood parameter
+        # and the expectation is over the exact marginal posterior, which is not gaussian- and is
+        # unnormalised product of the cavity distribution(a Gaussian) and the exact likelihood term.
+        #
+        # calculate the expectation wrt the approximate marginal posterior, which should be approximately the same.
+        # . This term is needed for evaluating the
+        # gradients of the marginal likelihood estimate Z_EP wrt likelihood parameters."
+        # "writing it explicitly "
+        # use them for gaussian-hermite quadrature
+
+        mu = v/tau
+        sigma2 = 1./tau
+        sigma = np.sqrt(sigma2)
+
+        # yc = 1 - Y_metadata_i['censored']
+        fmin = -np.inf
+        fmax = np.inf
+        SQRT_2PI = np.sqrt(2.*np.pi)
+
+        def get_integral_limits(obs, tau, v, yc):
+            # find the mode fi, fmin, and fmax - limit the range of integration to gather better weights
+            pass
+
+        if gh_points is None:
+            gh_x, gh_w = self._gh_points(32)
+        else:
+            gh_x, gh_w = gh_points
+
+        X = gh_x[None,:]*np.sqrt(2.*sigma2) + mu
+        # X = gh_x[None,:]
+
+        logp = self.logpdf(X, obs, Y_metadata=Y_metadata_i)
+        dlogp_dtheta = self.dlogpdf_dtheta(X, obs, Y_metadata=Y_metadata_i)
+
+
+        if not approx:
+            def generate_integral(x):
+                a = np.exp(self.logpdf_link(x, obs, Y_metadata=Y_metadata_i)) * np.exp(-0.5 * np.square((x - mu) / sigma)) / (
+                SQRT_2PI * sigma)
+                fn1 = a * self.dlogpdf_dtheta(x, obs, Y_metadata=Y_metadata_i)
+                fn =  fn1
+                return fn
+            dF_dtheta_i =  quadgk_int(generate_integral, fmin=fmin,fmax=fmax)
+            return dF_dtheta_i
+
+        dF_dtheta_i = np.dot(dlogp_dtheta, gh_w)/np.sqrt(np.pi)
+        return dF_dtheta_i
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         """

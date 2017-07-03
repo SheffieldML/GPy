@@ -58,6 +58,9 @@ class Gaussian(Likelihood):
         self.variance.gradient = grad
 
     def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag,Y_metadata=None):
+        return self.exact_inference_gradients(dL_dKdiag)
+
+    def exact_inference_gradients(self, dL_dKdiag):
         return dL_dKdiag.sum()
 
     def _preprocess_values(self, Y):

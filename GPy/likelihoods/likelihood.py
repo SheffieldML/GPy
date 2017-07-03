@@ -227,10 +227,10 @@ class Likelihood(Parameterized):
             self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
 
-    def ep_gradients(self, Y, tau, v, Y_metadata=None, gh_points=None, approx=False, boost_grad=1.):
+    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode='gk', boost_grad=1.):
         if self.size > 0:
             shape = Y.shape
-            tau,v,Y = tau.flatten(), v.flatten(),Y.flatten()
+            tau,v,Y = cav_tau.flatten(), cav_v.flatten(),Y.flatten()
             mu = v/tau
             sigma2 = 1./tau
 
@@ -245,14 +245,19 @@ class Likelihood(Parameterized):
                         Y_metadata_i[key] = Y_metadata[key][index,:]
                     Y_metadata_list.append(Y_metadata_i)
 
-                val = self.site_derivatives_ep(Y[index], tau[index], v[index], Y_metadata_i)
-                dlik_dtheta[:, index] = val.ravel()
-
-            f = partial(self.integrate)
-            quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
-            quads = np.vstack(quads)
-            quads.reshape(self.size, shape[0], shape[1])
-
+            if quad_mode == 'gk':
+                f = partial(self.integrate_gk)
+                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list))
+                quads = np.vstack(quads)
+                quads.reshape(self.size, shape[0], shape[1])
+            elif quad_mode == 'gh':
+                f = partial(self.integrate_gh)
+                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
+                quads = np.hstack(quads)
+                quads = quads.T
+            else:
+                raise Exception("no other quadrature mode available")
+            #     do a gaussian-hermite integration
             dL_dtheta_avg = boost_grad * np.nanmean(quads, axis=1)
             dL_dtheta = boost_grad * np.nansum(quads, axis=1)
             # dL_dtheta = boost_grad * np.nansum(dlik_dtheta, axis=1)
@@ -261,23 +266,23 @@ class Likelihood(Parameterized):
         return dL_dtheta
 
 
-    def integrate(self, Y, mu, sigma):
+    def integrate_gk(self, Y, mu, sigma, Y_metadata_i=None):
+        # gaussian-kronrod integration.
         fmin = -np.inf
         fmax = np.inf
         SQRT_2PI = np.sqrt(2.*np.pi)
         def generate_integral(f):
-            a = np.exp(self.logpdf_link(f, Y)) * np.exp(-0.5 * np.square((f - mu) / sigma)) / (
+            a = np.exp(self.logpdf_link(f, Y, Y_metadata_i)) * np.exp(-0.5 * np.square((f - mu) / sigma)) / (
                 SQRT_2PI * sigma)
-            fn1 = a * self.dlogpdf_dtheta(f, Y)
+            fn1 = a * self.dlogpdf_dtheta(f, Y, Y_metadata_i)
             fn = fn1
             return fn
 
         dF_dtheta_i = quadgk_int(generate_integral, fmin=fmin, fmax=fmax)
         return dF_dtheta_i
 
-
-
-    def site_derivatives_ep(self,obs,tau,v,Y_metadata_i=None, approx=False, gh_points=None):
+    def integrate_gh(self, Y, mu, sigma, Y_metadata_i=None, gh_points=None):
+        # gaussian-hermite quadrature.
         # "calculate site derivatives E_f{d logp(y_i|f_i)/da} where a is a likelihood parameter
         # and the expectation is over the exact marginal posterior, which is not gaussian- and is
         # unnormalised product of the cavity distribution(a Gaussian) and the exact likelihood term.
@@ -288,42 +293,23 @@ class Likelihood(Parameterized):
         # "writing it explicitly "
         # use them for gaussian-hermite quadrature
 
-        mu = v/tau
-        sigma2 = 1./tau
-        sigma = np.sqrt(sigma2)
-
-        # yc = 1 - Y_metadata_i['censored']
-        fmin = -np.inf
-        fmax = np.inf
         SQRT_2PI = np.sqrt(2.*np.pi)
-
-        def get_integral_limits(obs, tau, v, yc):
-            # find the mode fi, fmin, and fmax - limit the range of integration to gather better weights
-            pass
-
         if gh_points is None:
             gh_x, gh_w = self._gh_points(32)
         else:
             gh_x, gh_w = gh_points
 
-        X = gh_x[None,:]*np.sqrt(2.*sigma2) + mu
-        # X = gh_x[None,:]
+        X = gh_x[None,:]*np.sqrt(2.)*sigma + mu
 
-        logp = self.logpdf(X, obs, Y_metadata=Y_metadata_i)
-        dlogp_dtheta = self.dlogpdf_dtheta(X, obs, Y_metadata=Y_metadata_i)
+        # Here X is a grid vector of possible fi values, while Y is just a single value which will be broadcasted.
+        a = np.exp(self.logpdf_link(X, Y, Y_metadata_i))
+        a = a.repeat(self.num_params,0)
+        b = self.dlogpdf_dtheta(X, Y, Y_metadata_i)
+        old_shape = b.shape
+        fn = np.array([i*j for i,j in zip(a.flatten(), b.flatten())])
+        fn = fn.reshape(old_shape)
 
-
-        if not approx:
-            def generate_integral(x):
-                a = np.exp(self.logpdf_link(x, obs, Y_metadata=Y_metadata_i)) * np.exp(-0.5 * np.square((x - mu) / sigma)) / (
-                SQRT_2PI * sigma)
-                fn1 = a * self.dlogpdf_dtheta(x, obs, Y_metadata=Y_metadata_i)
-                fn =  fn1
-                return fn
-            dF_dtheta_i =  quadgk_int(generate_integral, fmin=fmin,fmax=fmax)
-            return dF_dtheta_i
-
-        dF_dtheta_i = np.dot(dlogp_dtheta, gh_w)/np.sqrt(np.pi)
+        dF_dtheta_i = np.dot(fn, gh_w)/np.sqrt(np.pi)
         return dF_dtheta_i
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):

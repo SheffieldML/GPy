@@ -175,7 +175,7 @@ class EP(EPBase, ExactGaussianInference):
         if self.ep_mode=="nested":
             #Force EP at each step of the optimization
             self._ep_approximation = None
-            post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+            post_params, ga_approx, cav_params, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         elif self.ep_mode=="alternated":
             if getattr(self, '_ep_approximation', None) is None:
                 #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation

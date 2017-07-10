@@ -6,7 +6,6 @@ from .kern import Kern
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 import math
-from rbf import RBF
 from scipy.misc import factorial
 
 

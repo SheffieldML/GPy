@@ -318,7 +318,6 @@ class StudentTPosterior(PosteriorExact):
         self.nu = deg_free
 
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
-        print(self.nu)
         mu, var = super(StudentTPosterior, self)._raw_predict(kern, Xnew, pred_var, full_cov)
         beta = np.sum(self.woodbury_vector * self.mean)
         N = self.woodbury_vector.shape[0]

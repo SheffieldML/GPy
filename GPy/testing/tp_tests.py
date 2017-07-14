@@ -131,11 +131,11 @@ class Test(unittest.TestCase):
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.optimize()
-
-        k1 = GPy.kern.RBF(1, variance=k.variance, lengthscale=k.lengthscale)
+        mu1, var1 = m.predict(self.X)
+        k1 = GPy.kern.RBF(1)
+        k1[:] = k[:]
         k2 = GPy.kern.White(1, variance=m.likelihood.variance)
         m2 = GPy.models.TPRegression(self.X, self.Y, kernel=k1 + k2, deg_free=1e6)
-        mu1, var1 = m.predict(self.X)
         mu2, var2 = m2.predict(self.X)
         np.testing.assert_allclose(mu1, mu2)
         np.testing.assert_allclose(var1, var2)

@@ -92,7 +92,6 @@ class Test(unittest.TestCase):
         Y = p.f(X) + np.random.multivariate_normal(np.zeros(X.shape[0]), k.K(X)+np.eye(X.shape[0])*1e-8)[:,None] + np.random.normal(0, .1, (X.shape[0], 1))
         m = GPy.models.GPRegression(X, Y, mean_function=p)
         m.randomize()
-        print(m)
         assert(m.checkgrad())
         _ = m.predict(m.X)
 

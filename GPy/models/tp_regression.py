@@ -98,9 +98,7 @@ class TPRegression(Model):
 
     def _update_posterior_dof(self, dof, which):
         if self.posterior is not None:
-            print(dof)
             self.posterior.nu = dof
-            print(self.posterior.nu)
 
     @property
     def _predictive_variable(self):

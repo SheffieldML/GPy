@@ -83,9 +83,7 @@ class TPRegression(Model):
             self.link_parameter(mean_function)
 
         # Degrees of freedom
-        # self.nu = Param('deg_free', float(deg_free), LogexpClipped(lower=2.))
         self.nu = Param('deg_free', float(deg_free), Logexp())
-        # self.nu = Param('deg_free', float(deg_free), Logistic(2., np.inf))
         self.link_parameter(self.nu)
 
         # Inference
@@ -245,7 +243,7 @@ class TPRegression(Model):
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
         mu, var = self._raw_predict(X, full_cov=False, kern=kern)
-        quantiles = [stats.t.ppf(q / 100., self.nu + self.num_data) * np.sqrt(var) + mu for q in quantiles]
+        quantiles = [stats.t.ppf(q / 100., self.nu + 2 + self.num_data) * np.sqrt(var) + mu for q in quantiles]
 
         if self.normalizer is not None:
             quantiles = [self.normalizer.inverse_mean(q) for q in quantiles]
@@ -276,7 +274,7 @@ class TPRegression(Model):
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
         def sim_one_dim(m, v):
-            nu = self.nu + self.num_data
+            nu = self.nu + 2 + self.num_data
             v = np.diag(v.flatten()) if not full_cov else v
             Z = np.random.multivariate_normal(np.zeros(X.shape[0]), v, size).T
             g = np.tile(np.random.gamma(nu / 2., 2. / nu, size), (X.shape[0], 1))

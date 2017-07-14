@@ -92,6 +92,19 @@ def inject_plotting():
         SSGPLVM.plot_inducing = gpy_plot.latent_plots.plot_latent_inducing
         SSGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
 
+        from ..models import TPRegression
+        TPRegression.plot_data = gpy_plot.data_plots.plot_data
+        TPRegression.plot = gpy_plot.gp_plots.plot
+        TPRegression.plot_data_error = gpy_plot.data_plots.plot_data_error
+        TPRegression.plot_errorbars_trainset = gpy_plot.data_plots.plot_errorbars_trainset
+        TPRegression.plot_mean = gpy_plot.gp_plots.plot_mean
+        TPRegression.plot_confidence = gpy_plot.gp_plots.plot_confidence
+        TPRegression.plot_density = gpy_plot.gp_plots.plot_density
+        TPRegression.plot_samples = gpy_plot.gp_plots.plot_samples
+        TPRegression.plot_f = gpy_plot.gp_plots.plot_f
+        TPRegression.plot_latent = gpy_plot.gp_plots.plot_f
+        TPRegression.plot_noiseless = gpy_plot.gp_plots.plot_f
+
         from ..kern import Kern
         Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
         def deprecate_plot(self, *args, **kwargs):

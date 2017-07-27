@@ -306,11 +306,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                             gp_kernel=gp_kernel,
                             mean_compare_decimal=2, var_compare_decimal=2)
 
-    def test_forecast(self,):
-        """
-        Test time-series forecasting.
-        """
-
+    def test_forecast_regular(self,):
         # Generate data ->
         np.random.seed(339) # seed the random number generator
         #import pdb; pdb.set_trace()
@@ -334,37 +330,102 @@ class StateSpaceKernelsTests(np.testing.TestCase):
 
         #import pdb; pdb.set_trace()
 
-        def get_new_kernels():
-            periodic_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
-            gp_kernel = GPy.kern.Linear(1, active_dims=[0,]) + GPy.kern.Bias(1, active_dims=[0,]) + periodic_kernel
-            gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
-            gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+        periodic_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
+        gp_kernel = GPy.kern.Linear(1, active_dims=[0,]) + GPy.kern.Bias(1, active_dims=[0,]) + periodic_kernel
+        gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)
 
-            periodic_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
-            ss_kernel = GPy.kern.sde_Linear(1,X,active_dims=[0,]) + \
-                GPy.kern.sde_Bias(1, active_dims=[0,]) + periodic_kernel
+        periodic_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
+        ss_kernel = GPy.kern.sde_Linear(1,X,active_dims=[0,]) + \
+            GPy.kern.sde_Bias(1, active_dims=[0,]) + periodic_kernel
 
-            ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
-            ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+        ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
 
-            return ss_kernel, gp_kernel
-
-        ss_kernel, gp_kernel = get_new_kernels()
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'regular',
                            use_cython=False, optimize_max_iters=30, check_gradients=True,
                            predict_X=X_test,
                            gp_kernel=gp_kernel,
                            mean_compare_decimal=2, var_compare_decimal=2)
 
+    def test_forecast_svd(self,):
+        # Generate data ->
+        np.random.seed(339) # seed the random number generator
+        #import pdb; pdb.set_trace()
+        (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=5.0, noise_var=2.0,
+                        plot = False, points_num=100, x_interval = (0, 40), random=True)
 
-        ss_kernel, gp_kernel = get_new_kernels()
+        (X1,Y1) = generate_linear_data(x_points=X, tangent=1.0, add_term=20.0, noise_var=0.0,
+                    plot = False, points_num=100, x_interval = (0, 40), random=True)
+
+        Y = Y + Y1
+
+        X_train = X[X <= 20]
+        Y_train = Y[X <= 20]
+        X_test = X[X > 20]
+        Y_test = Y[X > 20]
+
+        X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
+        X_train.shape = (X_train.shape[0],1); Y_train.shape = (Y_train.shape[0],1)
+        X_test.shape = (X_test.shape[0],1); Y_test.shape = (Y_test.shape[0],1)
+        # Generate data <-
+
+        #import pdb; pdb.set_trace()
+
+        periodic_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
+        gp_kernel = GPy.kern.Linear(1, active_dims=[0,]) + GPy.kern.Bias(1, active_dims=[0,]) + periodic_kernel
+        gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+
+        periodic_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
+        ss_kernel = GPy.kern.sde_Linear(1,X,active_dims=[0,]) + \
+            GPy.kern.sde_Bias(1, active_dims=[0,]) + periodic_kernel
+
+        ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'svd',
                            use_cython=False, optimize_max_iters=30, check_gradients=False,
                            predict_X=X_test,
                            gp_kernel=gp_kernel,
                            mean_compare_decimal=2, var_compare_decimal=2)
 
-        ss_kernel, gp_kernel = get_new_kernels()
+    def test_forecast_svd_cython(self,):
+        # Generate data ->
+        np.random.seed(339) # seed the random number generator
+        #import pdb; pdb.set_trace()
+        (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=5.0, noise_var=2.0,
+                        plot = False, points_num=100, x_interval = (0, 40), random=True)
+
+        (X1,Y1) = generate_linear_data(x_points=X, tangent=1.0, add_term=20.0, noise_var=0.0,
+                    plot = False, points_num=100, x_interval = (0, 40), random=True)
+
+        Y = Y + Y1
+
+        X_train = X[X <= 20]
+        Y_train = Y[X <= 20]
+        X_test = X[X > 20]
+        Y_test = Y[X > 20]
+
+        X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
+        X_train.shape = (X_train.shape[0],1); Y_train.shape = (Y_train.shape[0],1)
+        X_test.shape = (X_test.shape[0],1); Y_test.shape = (Y_test.shape[0],1)
+        # Generate data <-
+
+        #import pdb; pdb.set_trace()
+
+        periodic_kernel = GPy.kern.StdPeriodic(1,active_dims=[0,])
+        gp_kernel = GPy.kern.Linear(1, active_dims=[0,]) + GPy.kern.Bias(1, active_dims=[0,]) + periodic_kernel
+        gp_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        gp_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+
+        periodic_kernel = GPy.kern.sde_StdPeriodic(1,active_dims=[0,])
+        ss_kernel = GPy.kern.sde_Linear(1,X,active_dims=[0,]) + \
+            GPy.kern.sde_Bias(1, active_dims=[0,]) + periodic_kernel
+
+        ss_kernel.std_periodic.lengthscale.constrain_bounded(0.25, 1000)
+        ss_kernel.std_periodic.period.constrain_bounded(0.15, 100)
+
         self.run_for_model(X_train, Y_train, ss_kernel, kalman_filter_type = 'svd',
                            use_cython=True, optimize_max_iters=30, check_gradients=False,
                            predict_X=X_test,

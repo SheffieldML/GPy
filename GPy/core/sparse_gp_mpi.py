@@ -88,9 +88,9 @@ class SparseGP_MPI(SparseGP):
     def optimize(self, optimizer=None, start=None, **kwargs):
         self._IN_OPTIMIZATION_ = True
         if self.mpi_comm==None:
-            super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
+            ret = super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
         elif self.mpi_comm.rank==0:
-            super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
+            ret = super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
             self.mpi_comm.Bcast(np.int32(-1),root=0)
         elif self.mpi_comm.rank>0:
             x = self.optimizer_array.copy()
@@ -111,6 +111,7 @@ class SparseGP_MPI(SparseGP):
                     self._IN_OPTIMIZATION_ = False
                     raise Exception("Unrecognizable flag for synchronization!")
         self._IN_OPTIMIZATION_ = False
+        return ret
 
     def parameters_changed(self):
         if isinstance(self.inference_method,VarDTC_minibatch):

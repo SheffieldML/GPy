@@ -292,19 +292,6 @@ class TestNoiseModels(object):
                 "Y": self.positive_Y,
                 "Y_metadata": self.Y_metadata,
                 "laplace": True
-            },
-            "loggaussian": {
-                "model": GPy.likelihoods.LogGaussian(),
-                "link_f_constraints": [self.constrain_positive],
-                "Y": self.positive_Y,
-                "laplace": True
-            },
-            "loggaussian_censored": {
-                "model": GPy.likelihoods.LogGaussian(),
-                "link_f_constraints": [self.constrain_positive],
-                "Y": self.positive_Y,
-                "Y_metadata": self.Y_metadata,
-                "laplace": True
             }
             #,
             #GAMMA needs some work!"Gamma_default": {

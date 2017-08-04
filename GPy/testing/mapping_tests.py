@@ -48,7 +48,7 @@ class MappingTests(unittest.TestCase):
         for activation in ['tanh', 'relu', 'sigmoid']:
             mapping = GPy.mappings.MLPext(input_dim=3, hidden_dims=[5,5,5], output_dim=2, activation=activation)
             X = np.random.randn(100,3)
-            self.assertTrue(MappingGradChecker(mapping, X).checkgrad(verbose=True))
+            self.assertTrue(MappingGradChecker(mapping, X).checkgrad())
 
     def test_addmapping(self):
         m1 = GPy.mappings.MLP(input_dim=3, hidden_dim=5, output_dim=2)

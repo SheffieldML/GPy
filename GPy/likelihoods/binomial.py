@@ -66,7 +66,14 @@ class Binomial(Likelihood):
         np.testing.assert_array_equal(N.shape, y.shape)
 
         nchoosey = special.gammaln(N+1) - special.gammaln(y+1) - special.gammaln(N-y+1)
-        return nchoosey + y*np.log(inv_link_f) + (N-y)*np.log(1.-inv_link_f)
+        
+        Ny = N-y
+        t1 = np.zeros(y.shape)
+        t2 = np.zeros(y.shape)
+        t1[y>0] = y[y>0]*np.log(inv_link_f[y>0])
+        t2[Ny>0] = Ny[Ny>0]*np.log(1.-inv_link_f[Ny>0])
+        
+        return nchoosey + t1 + t2
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -86,7 +93,13 @@ class Binomial(Likelihood):
         N = Y_metadata['trials']
         np.testing.assert_array_equal(N.shape, y.shape)
 
-        return y/inv_link_f - (N-y)/(1.-inv_link_f)
+        Ny = N-y
+        t1 = np.zeros(y.shape)
+        t2 = np.zeros(y.shape)
+        t1[y>0] = y[y>0]/inv_link_f[y>0]
+        t2[Ny>0] = (Ny[Ny>0])/(1.-inv_link_f[Ny>0])        
+
+        return t1 - t2
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
@@ -111,7 +124,13 @@ class Binomial(Likelihood):
         """
         N = Y_metadata['trials']
         np.testing.assert_array_equal(N.shape, y.shape)
-        return -y/np.square(inv_link_f) - (N-y)/np.square(1.-inv_link_f)
+        
+        Ny = N-y
+        t1 = np.zeros(y.shape)
+        t2 = np.zeros(y.shape)
+        t1[y>0] = -y[y>0]/np.square(inv_link_f[y>0])
+        t2[Ny>0] = -(Ny[Ny>0])/np.square(1.-inv_link_f[Ny>0])
+        return t1+t2
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """
@@ -135,8 +154,14 @@ class Binomial(Likelihood):
         N = Y_metadata['trials']
         np.testing.assert_array_equal(N.shape, y.shape)
 
-        inv_link_f2 = np.square(inv_link_f)
-        return 2*y/inv_link_f**3 - 2*(N-y)/(1.-inv_link_f)**3
+        #inv_link_f2 = np.square(inv_link_f)  #TODO Remove. Why is this here?
+        
+        Ny = N-y
+        t1 = np.zeros(y.shape)
+        t2 = np.zeros(y.shape)
+        t1[y>0] = 2*y[y>0]/inv_link_f[y>0]**3
+        t2[Ny>0] = - 2*(Ny[Ny>0])/(1.-inv_link_f[Ny>0])**3
+        return t1 + t2
 
     def samples(self, gp, Y_metadata=None, **kw):
         """

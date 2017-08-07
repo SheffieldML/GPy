@@ -64,13 +64,13 @@ class InferenceGPEP(unittest.TestCase):
     def genNoisyData(self):
         np.random.seed(1)
         X = np.random.rand(100,1)
-        self.real_std = 0.2
+        self.real_std = 0.1
         noise = np.random.randn(*X[:, 0].shape)*self.real_std
         Y = (np.sin(X[:, 0]*2*np.pi) + noise)[:, None]
         self.f = np.random.rand(X.shape[0],1)
         Y_extra_noisy = Y.copy()
-        Y_extra_noisy[50:53] += 4.
-        Y_extra_noisy[80:83] -= 2.
+        Y_extra_noisy[50] += 4.
+        # Y_extra_noisy[80:83] -= 2.
         return X, Y, Y_extra_noisy
 
     def test_inference_EP(self):
@@ -85,10 +85,10 @@ class InferenceGPEP(unittest.TestCase):
                         inference_method=inf,
                         likelihood=lik)
         K = self.model.kern.K(X)
-        post_params, ga_approx, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
+        post_params, ga_approx, cav_params, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
-        p, m, d = self.model.inference_method._inference(K, ga_approx, lik, Y_metadata=None,  Z_tilde=log_Z_tilde)
+        p, m, d = self.model.inference_method._inference(Y, K, ga_approx, cav_params, lik, Y_metadata=None,  Z_tilde=log_Z_tilde)
         p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, inf).inference(k, X,lik ,mu_tilde[:,None], mean_function=None, variance=1./ga_approx.tau, K=K, Z_tilde=log_Z_tilde + np.sum(- 0.5*np.log(ga_approx.tau) + 0.5*(ga_approx.v*ga_approx.v*1./ga_approx.tau)))
 
         assert (np.sum(np.array([m - m0,
@@ -109,19 +109,19 @@ class InferenceGPEP(unittest.TestCase):
     def test_inference_EP_non_classification(self):
         from paramz import ObsAr
         X, Y, Y_extra_noisy = self.genNoisyData()
-        deg_freedom = 5
-        init_noise_var = 0.4
+        deg_freedom = 5.
+        init_noise_var = 0.08
         lik_studentT = GPy.likelihoods.StudentT(deg_free=deg_freedom, sigma2=init_noise_var)
         # like_gaussian_noise = GPy.likelihoods.MixedNoise()
         k = GPy.kern.RBF(1, variance=2., lengthscale=1.1)
-        ep_inf_alt = GPy.inference.latent_function_inference.expectation_propagation.EP(max_iters=100, delta=0.5)
-        ep_inf_nested = GPy.inference.latent_function_inference.expectation_propagation.EP(ep_mode='nested', max_iters=100, delta=0.5)
+        ep_inf_alt = GPy.inference.latent_function_inference.expectation_propagation.EP(max_iters=4, delta=0.5)
+        # ep_inf_nested = GPy.inference.latent_function_inference.expectation_propagation.EP(ep_mode='nested', max_iters=100, delta=0.5)
         m = GPy.core.GP(X=X,Y=Y_extra_noisy,kernel=k,likelihood=lik_studentT,inference_method=ep_inf_alt)
         K = m.kern.K(X)
-        post_params, ga_approx, log_Z_tilde = m.inference_method.expectation_propagation(K, ObsAr(Y_extra_noisy), lik_studentT, None)
+        post_params, ga_approx, cav_params, log_Z_tilde = m.inference_method.expectation_propagation(K, ObsAr(Y_extra_noisy), lik_studentT, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
-        p, m, d = m.inference_method._inference(K, ga_approx, lik_studentT, Y_metadata=None,  Z_tilde=log_Z_tilde)
+        p, m, d = m.inference_method._inference(Y_extra_noisy, K, ga_approx, cav_params, lik_studentT, Y_metadata=None,  Z_tilde=log_Z_tilde)
         p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, ep_inf_alt).inference(k, X,lik_studentT ,mu_tilde[:,None], mean_function=None, variance=1./ga_approx.tau, K=K, Z_tilde=log_Z_tilde + np.sum(- 0.5*np.log(ga_approx.tau) + 0.5*(ga_approx.v*ga_approx.v*1./ga_approx.tau)))
 
         assert (np.sum(np.array([m - m0,

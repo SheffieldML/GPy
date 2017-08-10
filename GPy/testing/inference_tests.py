@@ -85,6 +85,7 @@ class InferenceGPEP(unittest.TestCase):
                         inference_method=inf,
                         likelihood=lik)
         K = self.model.kern.K(X)
+
         post_params, ga_approx, cav_params, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)

@@ -1,5 +1,97 @@
 # Changelog
 
+## v1.7.6 (2017-06-19)
+
+### Fix
+
+* Appveyor not uploading to testpypi for now. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.5 → 1.7.6. [mzwiessele]
+
+
+## v1.7.5 (2017-06-19)
+
+### Fix
+
+* Splitting forecast tests into 3 to circumvent 10 minute stop of travis. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.4 → 1.7.5. [mzwiessele]
+
+
+## v1.7.4 (2017-06-19)
+
+### Fix
+
+* Paramz version for parallel optimization fix. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.3 → 1.7.4. [mzwiessele]
+
+
+## v1.7.3 (2017-06-19)
+
+### Fix
+
+* Appveyor build failing. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.2 → 1.7.3. [mzwiessele]
+
+
+## v1.7.2 (2017-06-17)
+
+### Fix
+
+* Appveyor build python 3.6. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.1 → 1.7.2. [mzwiessele]
+
+
+## v1.7.1 (2017-06-17)
+
+### Fix
+
+* Appveyor build python 3.6. [mzwiessele]
+
+### Other
+
+* Bump version: 1.7.0 → 1.7.1. [mzwiessele]
+
+
+## v1.7.0 (2017-06-17)
+
+### Fix
+
+* Support for 3.5 and higher now that 3.6 is out. [mzwiessele]
+
+### Other
+
+* Bump version: 1.6.3 → 1.7.0. [mzwiessele]
+
+
+## v1.6.3 (2017-06-17)
+
+### Other
+
+* Bump version: 1.6.2 → 1.6.3. [mzwiessele]
+
+* Merge pull request #504 from rmcantin/devel. [Max Zwiessele]
+
+* Fix python 2-3 compatibility. [Ruben Martinez-Cantin]
+
+* Merge pull request #511 from dirmeier/devel. [Max Zwiessele]
+
+* Added LICENSE file to MANIFEST.in. [dirmeier]
+
+
 ## v1.6.2 (2017-04-12)
 
 ### Fix

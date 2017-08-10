@@ -16,6 +16,9 @@ recursive-include GPy *.c
 recursive-include GPy *.h
 recursive-include GPy *.pyx
 
+# LICENSE
+include LICENSE.txt
+
 # Testing
 #include GPy/testing/baseline/*.png
 #include GPy/testing/pickle_test.pickle

@@ -124,13 +124,14 @@ class Binomial(Likelihood):
         """
         N = Y_metadata['trials']
         np.testing.assert_array_equal(N.shape, y.shape)
-        
+
         Ny = N-y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
         t1[y>0] = -y[y>0]/np.square(inv_link_f[y>0])
         t2[Ny>0] = -(Ny[Ny>0])/np.square(1.-inv_link_f[Ny>0])
         return t1+t2
+
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """

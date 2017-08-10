@@ -124,7 +124,6 @@ class Binomial(Likelihood):
         """
         N = Y_metadata['trials']
         np.testing.assert_array_equal(N.shape, y.shape)
-
         Ny = N-y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)

@@ -3,12 +3,14 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   COVERALLS_REPO_TOKEN:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
-  gpy_version: 1.6.2
+  gpy_version: 1.7.7
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
+    - PYTHON_VERSION: 3.6
+      MINICONDA: C:\Miniconda36-x64
 
 #configuration:
 #  - Debug
@@ -62,21 +64,21 @@ deploy_script:
 - echo     test >> %USERPROFILE%\\.pypirc
 - echo[
 - echo [pypi] >> %USERPROFILE%\\.pypirc
-- echo username:maxz >> %USERPROFILE%\\.pypirc
-- echo password:%pip_access% >> %USERPROFILE%\\.pypirc
+- echo username = maxz >> %USERPROFILE%\\.pypirc
+- echo password = %pip_access% >> %USERPROFILE%\\.pypirc
 - echo[
 - echo [test] >> %USERPROFILE%\\.pypirc
-- echo repository:https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc
-- echo username:maxz >> %USERPROFILE%\\.pypirc
-- echo password:%pip_access% >> %USERPROFILE%\\.pypirc
+- echo repository = https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
+- echo username = maxz >> %USERPROFILE%\\.pypirc
+- echo password = %pip_access% >> %USERPROFILE%\\.pypirc
 - ps: >-
-    if ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        twine upload --skip-existing -r test dist/*
+    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
+        echo not deploying on devel # twine upload --skip-existing -r test dist/*
     }
-    elseif ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
+    ElseIf ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
         twine upload --skip-existing dist/*
     }
-    else {
+    Else {
         echo not deploying on other branches
     }
  

@@ -6,6 +6,7 @@ from paramz import ObsAr
 from . import ExactGaussianInference, VarDTC
 from ...util import diag
 from .posterior import PosteriorEP as Posterior
+from ...likelihoods import Gaussian
 
 log_2_pi = np.log(2*np.pi)
 
@@ -174,18 +175,18 @@ class EP(EPBase, ExactGaussianInference):
         if self.ep_mode=="nested":
             #Force EP at each step of the optimization
             self._ep_approximation = None
-            post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+            post_params, ga_approx, cav_params, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
         elif self.ep_mode=="alternated":
             if getattr(self, '_ep_approximation', None) is None:
                 #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
-                post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+                post_params, ga_approx, cav_params, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
             else:
                 #if we've already run EP, just use the existing approximation stored in self._ep_approximation
-                post_params, ga_approx, log_Z_tilde = self._ep_approximation
+                post_params, ga_approx, cav_params, log_Z_tilde = self._ep_approximation
         else:
             raise ValueError("ep_mode value not valid")
 
-        return self._inference(K, ga_approx, likelihood, Y_metadata=Y_metadata,  Z_tilde=log_Z_tilde)
+        return self._inference(Y, K, ga_approx, cav_params, likelihood, Y_metadata=Y_metadata,  Z_tilde=log_Z_tilde)
 
     def expectation_propagation(self, K, Y, likelihood, Y_metadata):
 
@@ -220,7 +221,7 @@ class EP(EPBase, ExactGaussianInference):
         # This terms cancel with the coreresponding terms in the marginal loglikelihood
         log_Z_tilde = self._log_Z_tilde(marg_moments, ga_approx, cav_params)
                          # - 0.5*np.log(tau_tilde) + 0.5*(v_tilde*v_tilde*1./tau_tilde)
-        return (post_params, ga_approx, log_Z_tilde)
+        return (post_params, ga_approx, cav_params, log_Z_tilde)
 
     def _init_approximations(self, K, num_data):
         #initial values - Gaussian factors
@@ -280,7 +281,7 @@ class EP(EPBase, ExactGaussianInference):
 
         return log_marginal, post_params
 
-    def _inference(self, K, ga_approx, likelihood, Z_tilde, Y_metadata=None):
+    def _inference(self, Y, K, ga_approx, cav_params, likelihood, Z_tilde, Y_metadata=None):
         log_marginal, post_params = self._ep_marginal(K, ga_approx, Z_tilde)
 
         tau_tilde_root = np.sqrt(ga_approx.tau)
@@ -293,8 +294,7 @@ class EP(EPBase, ExactGaussianInference):
         symmetrify(Wi) #(K + Sigma^(\tilde))^(-1)
 
         dL_dK = 0.5 * (tdot(alpha) - Wi)
-        dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK), Y_metadata)
-
+        dL_dthetaL = likelihood.ep_gradients(Y, cav_params.tau, cav_params.v, np.diag(dL_dK), Y_metadata=Y_metadata, quad_mode='gh')
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}
 
 

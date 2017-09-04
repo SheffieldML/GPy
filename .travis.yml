@@ -16,8 +16,9 @@ addons:
 env:
   - PYTHON_VERSION=2.7
   #- PYTHON_VERSION=3.3
-  - PYTHON_VERSION=3.4
+  #- PYTHON_VERSION=3.4
   - PYTHON_VERSION=3.5
+  - PYTHON_VERSION=3.6
 
 before_install:
 - wget https://github.com/mzwiessele/travis_scripts/raw/master/download_miniconda.sh

@@ -7,4 +7,5 @@ from .student_t import StudentT
 from .likelihood import Likelihood
 from .mixed_noise import MixedNoise
 from .binomial import Binomial
-
+from .weibull import Weibull
+from .loglogistic import LogLogistic

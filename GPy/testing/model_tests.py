@@ -399,6 +399,68 @@ class MiscTests(unittest.TestCase):
         m.optimize()
         print(m)
 
+    def test_input_warped_gp_identity(self):
+        """
+        A InputWarpedGP with the identity warping function should be
+        equal to a standard GP.
+        """
+        k = GPy.kern.RBF(1)
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
+        m.optimize()
+        preds = m.predict(self.X)
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.input_warping_functions.IdentifyWarping()
+        warp_m = GPy.models.InputWarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
+        warp_m.optimize()
+        warp_preds = warp_m.predict(self.X)
+
+        np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
+
+    def test_kumar_warping_gradient(self):
+        n_X = 100
+        np.random.seed(0)
+        X = np.random.randn(n_X, 2)
+        Y = np.sum(np.sin(X), 1).reshape(n_X, 1)
+
+        k1 = GPy.kern.Linear(2)
+        m1 = GPy.models.InputWarpedGP(X, Y, kernel=k1)
+        m1.randomize()
+        self.assertEquals(m1.checkgrad(), True)
+
+        k2 = GPy.kern.RBF(2)
+        m2 = GPy.models.InputWarpedGP(X, Y, kernel=k2)
+        m2.randomize()
+        m2.checkgrad()
+        self.assertEquals(m2.checkgrad(), True)
+
+        k3 = GPy.kern.Matern52(2)
+        m3 = GPy.models.InputWarpedGP(X, Y, kernel=k3)
+        m3.randomize()
+        m3.checkgrad()
+        self.assertEquals(m3.checkgrad(), True)
+
+    def test_kumar_warping_parameters(self):
+        np.random.seed(1)
+        X = np.random.rand(5, 2)
+        epsilon = 1e-6
+
+        # testing warping indices
+        warping_ind_1 = [0, 1, 2]
+        warping_ind_2 = [-1, 1, 2]
+        warping_ind_3 = [0, 1.5, 2]
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_1)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_2)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_3)
+
+        # testing Xmin and Xmax
+        Xmin_1, Xmax_1 = None, [1, 1]
+        Xmin_2, Xmax_2 = [0, 0], None
+        Xmin_3, Xmax_3 = [0, 0, 0], [1, 1]
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_1, Xmax_1)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_2, Xmax_2)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_3, Xmax_3)
+
     def test_warped_gp_identity(self):
         """
         A WarpedGP with the identity warping function should be

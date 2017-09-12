@@ -109,17 +109,79 @@ class GP(Model):
         self.link_parameter(self.likelihood)
         self.posterior = None
 
-        # The predictive variable to be used to predict using the posterior object's
-        # woodbury_vector and woodbury_inv is defined as predictive_variable
-        # as long as the posterior has the right woodbury entries.
-        # It is the input variable used for the covariance between
-        # X_star and the posterior of the GP.
-        # This is usually just a link to self.X (full GP) or self.Z (sparse GP).
-        # Make sure to name this variable and the predict functions will "just work"
-        # In maths the predictive variable is:
-        #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
-        #         W_{pp} := \texttt{Woodbury inv}
-        #         p := _predictive_variable
+    def to_dict(self, save_data=True):
+        input_dict = super(GP, self)._to_dict()
+        input_dict["class"] = "GPy.core.GP"
+        if not save_data:
+            input_dict["X"] = None
+            input_dict["Y"] = None
+        else:
+            try:
+                input_dict["X"] = self.X.values.tolist()
+            except:
+                input_dict["X"] = self.X.tolist()
+            try:
+                input_dict["Y"] = self.Y.values.tolist()
+            except:
+                input_dict["Y"] = self.Y.tolist()
+        input_dict["kernel"] = self.kern.to_dict()
+        input_dict["likelihood"] = self.likelihood.to_dict()
+        if self.mean_function is not None:
+            input_dict["mean_function"] = self.mean_function.to_dict()
+        input_dict["inference_method"] = self.inference_method.to_dict()
+        #FIXME: Assumes the Y_metadata is serializable. We should create a Metadata class
+        if self.Y_metadata is not None:
+            input_dict["Y_metadata"] = self.Y_metadata
+        if self.normalizer is not None:
+            input_dict["normalizer"] = self.normalizer.to_dict()
+        return input_dict
+
+    @staticmethod
+    def _from_dict(input_dict, data=None):
+        import GPy
+        import numpy as np
+        if (input_dict['X'] is None) or (input_dict['Y'] is None):
+            assert(data is not None)
+            input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
+        elif data is not None:
+            print("WARNING: The model has been saved with X,Y! The original values are being overriden!")
+            input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
+        else:
+            input_dict["X"], input_dict["Y"] = np.array(input_dict['X']), np.array(input_dict['Y'])
+        input_dict["kernel"] = GPy.kern.Kern.from_dict(input_dict["kernel"])
+        input_dict["likelihood"] = GPy.likelihoods.likelihood.Likelihood.from_dict(input_dict["likelihood"])
+        mean_function = input_dict.get("mean_function")
+        if mean_function is not None:
+            input_dict["mean_function"] = GPy.core.mapping.Mapping.from_dict(mean_function)
+        else:
+            input_dict["mean_function"] = mean_function
+        input_dict["inference_method"] = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(input_dict["inference_method"])
+
+        #FIXME: Assumes the Y_metadata is serializable. We should create a Metadata class
+        Y_metadata = input_dict.get("Y_metadata")
+        input_dict["Y_metadata"] = Y_metadata
+
+        normalizer = input_dict.get("normalizer")
+        if normalizer is not None:
+            input_dict["normalizer"] = GPy.util.normalizer._Norm.from_dict(normalizer)
+        else:
+            input_dict["normalizer"] = normalizer
+        return GP(**input_dict)
+
+    def save_model(self, output_filename, compress=True, save_data=True):
+        self._save_model(output_filename, compress=True, save_data=True)
+
+    # The predictive variable to be used to predict using the posterior object's
+    # woodbury_vector and woodbury_inv is defined as predictive_variable
+    # as long as the posterior has the right woodbury entries.
+    # It is the input variable used for the covariance between
+    # X_star and the posterior of the GP.
+    # This is usually just a link to self.X (full GP) or self.Z (sparse GP).
+    # Make sure to name this variable and the predict functions will "just work"
+    # In maths the predictive variable is:
+    #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
+    #         W_{pp} := \texttt{Woodbury inv}
+    #         p := _predictive_variable
 
     @property
     def _predictive_variable(self):
@@ -305,9 +367,9 @@ class GP(Model):
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if likelihood is None:
             likelihood = self.likelihood
-            
+
         quantiles = likelihood.predictive_quantiles(m, v, quantiles, Y_metadata=Y_metadata)
-        
+
         if self.normalizer is not None:
             quantiles = [self.normalizer.inverse_mean(q) for q in quantiles]
         return quantiles
@@ -616,4 +678,3 @@ class GP(Model):
         """
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
-

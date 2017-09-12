@@ -29,6 +29,11 @@ class Bernoulli(Likelihood):
         if isinstance(gp_link , (link_functions.Heaviside, link_functions.Probit)):
             self.log_concave = True
 
+    def to_dict(self):
+        input_dict = super(Bernoulli, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.Bernoulli"
+        return input_dict
+
     def _preprocess_values(self, Y):
         """
         Check if the values of the observations correspond to the values

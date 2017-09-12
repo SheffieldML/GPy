@@ -400,4 +400,3 @@ class PeriodicMatern52(Periodic):
         self.variance.gradient = np.sum(dK_dvar*dL_dK)
         self.lengthscale.gradient = np.sum(dK_dlen*dL_dK)
         self.period.gradient = np.sum(dK_dper*dL_dK)
-

@@ -44,6 +44,37 @@ class Likelihood(Parameterized):
         self.gp_link = gp_link
         self.log_concave = False
         self.not_block_really = False
+        self.name = name
+
+    def to_dict(self):
+        raise NotImplementedError
+
+    def _to_dict(self):
+        input_dict = {}
+        input_dict["name"] = self.name
+        input_dict["gp_link_dict"] = self.gp_link.to_dict()
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        likelihood_class = input_dict.pop('class')
+        input_dict["name"] = str(input_dict["name"])
+        name = input_dict.pop('name')
+        import GPy
+        likelihood_class = eval(likelihood_class)
+        return likelihood_class._from_dict(likelihood_class, input_dict)
+
+    @staticmethod
+    def _from_dict(likelihood_class, input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        gp_link_dict = input_dict.pop('gp_link_dict')
+        import GPy
+        gp_link = GPy.likelihoods.link_functions.GPTransformation.from_dict(gp_link_dict)
+        input_dict["gp_link"] = gp_link
+        return likelihood_class(**input_dict)
 
     def request_num_latent_functions(self, Y):
         """

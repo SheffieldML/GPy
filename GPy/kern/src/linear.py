@@ -51,6 +51,18 @@ class Linear(Kern):
         self.link_parameter(self.variances)
         self.psicomp = PSICOMP_Linear()
 
+    def to_dict(self):
+        input_dict = super(Linear, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Linear"
+        input_dict["variances"] = self.variances.values.tolist()
+        input_dict["ARD"] = self.ARD
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Linear(**input_dict)
+
     @Cache_this(limit=3)
     def K(self, X, X2=None):
         if self.ARD:
@@ -211,5 +223,3 @@ class LinearFull(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         P = np.dot(self.W, self.W.T) + np.diag(self.kappa)
         return 2.*np.einsum('jk,i,ij->ik', P, dL_dKdiag, X)
-
-

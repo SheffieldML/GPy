@@ -46,6 +46,13 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
+    def to_dict(self):
+        input_dict = super(Gaussian, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.Gaussian"
+        input_dict["variance"] = self.variance.values.tolist()
+        return input_dict
+
+
     def betaY(self,Y,Y_metadata=None):
         #TODO: ~Ricardo this does not live here
         raise RuntimeError("Please notify the GPy developers, this should not happen")

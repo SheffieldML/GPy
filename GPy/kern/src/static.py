@@ -14,6 +14,11 @@ class Static(Kern):
         self.variance = Param('variance', variance, Logexp())
         self.link_parameters(self.variance)
 
+    def _to_dict(self):
+        input_dict = super(Static, self)._to_dict()
+        input_dict["variance"] =  self.variance.values.tolist()
+        return input_dict
+
     def Kdiag(self, X):
         ret = np.empty((X.shape[0],), dtype=np.float64)
         ret[:] = self.variance
@@ -133,6 +138,16 @@ class Bias(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):
         super(Bias, self).__init__(input_dim, variance, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(Bias, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Bias"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Bias(**input_dict)
+
     def K(self, X, X2=None):
         shape = (X.shape[0], X.shape[0] if X2 is None else X2.shape[0])
         return np.full(shape, self.variance, dtype=np.float64)
@@ -250,4 +265,3 @@ class Precomputed(Fixed):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self._index(X, None))
-

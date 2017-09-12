@@ -38,3 +38,9 @@ class Constant(Mapping):
 
     def gradients_X(self, dL_dF, X):
         return np.zeros_like(X)
+
+    def to_dict(self):
+        input_dict = super(Constant, self)._to_dict()
+        input_dict["class"] = "GPy.mappings.Constant"
+        input_dict["value"] = self.C.values[0]
+        return input_dict

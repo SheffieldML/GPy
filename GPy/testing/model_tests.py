@@ -335,29 +335,29 @@ class MiscTests(unittest.TestCase):
         Y2 = np.random.normal(0, 1, (40, 6))
         Y3 = np.random.normal(0, 1, (40, 8))
         Q = 5
-        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, 
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q,
                            )
         m.randomize()
         self.assertTrue(m.checkgrad())
-        
-        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='PCA_single', 
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='PCA_single',
                            initz='random',
-                           kernel=[GPy.kern.RBF(Q, ARD=1) for _ in range(3)], 
+                           kernel=[GPy.kern.RBF(Q, ARD=1) for _ in range(3)],
                            inference_method=InferenceMethodList([VarDTC() for _ in range(3)]),
                            likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
         m.randomize()
         self.assertTrue(m.checkgrad())
 
-        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='random', 
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='random',
                            initz='random',
-                           kernel=GPy.kern.RBF(Q, ARD=1), 
+                           kernel=GPy.kern.RBF(Q, ARD=1),
                            )
         m.randomize()
         self.assertTrue(m.checkgrad())
 
-        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, X=np.random.normal(0,1,size=(40,Q)), 
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, X=np.random.normal(0,1,size=(40,Q)),
                            X_variance=False,
-                           kernel=GPy.kern.RBF(Q, ARD=1), 
+                           kernel=GPy.kern.RBF(Q, ARD=1),
                            likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
         m.randomize()
         self.assertTrue(m.checkgrad())
@@ -959,6 +959,123 @@ class GradientTests(np.testing.TestCase):
         # k = kern.RBF(Q, ARD=True, lengthscale=10.)
         m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
         m.randomize()
+        self.assertTrue(m.checkgrad())
+
+    def test_multiout_regression(self):
+        np.random.seed(1234)
+        import GPy
+
+        N = 10
+        N_train = 5
+        D = 4
+        noise_var = .3
+
+        k = GPy.kern.RBF(1,lengthscale=0.1)
+        x = np.random.rand(N,1)
+        cov = k.K(x)
+
+        k_r = GPy.kern.RBF(2,lengthscale=.4)
+        x_r = np.random.rand(D,2)
+        cov_r = k_r.K(x_r)
+
+        cov_all = np.kron(cov_r,cov)
+        L = GPy.util.linalg.jitchol(cov_all)
+
+        y_latent = L.dot(np.random.randn(N*D)).reshape(D,N).T
+
+        x_test = x[N_train:]
+        y_test = y_latent[N_train:]
+        x = x[:N_train]
+        y = y_latent[:N_train]+np.random.randn(N_train,D)*np.sqrt(noise_var)
+
+        Mr = D
+        Mc = x.shape[0]
+        Qr = 5
+        Qc = x.shape[1]
+
+        m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='GP')
+        m_mr.optimize_auto(max_iters=10)
+        self.assertTrue(m_mr.checkgrad())
+
+        m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='rand')
+        m_mr.optimize_auto(max_iters=10)
+        self.assertTrue(m_mr.checkgrad())
+
+    def test_multiout_regression_md(self):
+        import GPy
+        np.random.seed(0)
+
+        N = 20
+        N_train = 5
+        D = 8
+        noise_var = 0.3
+
+        k = GPy.kern.RBF(1,lengthscale=0.1)
+        x_raw = np.random.rand(N*D,1)
+
+        # dimension assignment
+        D_list = []
+        for i in range(2):
+            while True:
+                D_sub_list = []
+                ratios = []
+                r_p = 0.
+                for j in range(3):
+                    ratios.append(np.random.rand()*(1-r_p)+r_p)
+                    D_sub_list.append(int((ratios[-1]-r_p)*4*N_train))
+                    r_p = ratios[-1]
+                D_sub_list.append(4*N_train - np.sum(D_sub_list))
+                if (np.array(D_sub_list)!=0).all():
+                    D_list.extend([a+N-N_train for a in D_sub_list])
+                    break
+
+        cov = k.K(x_raw)
+
+        k_r = GPy.kern.RBF(2,lengthscale=.4)
+        x_r = np.random.rand(D,2)
+        cov_r = k_r.K(x_r)
+
+        cov_all = np.repeat(np.repeat(cov_r,D_list,axis=0),D_list,axis=1)*cov
+        L = GPy.util.linalg.jitchol(cov_all)
+
+        y_latent = L.dot(np.random.randn(N*D))
+
+        x = np.zeros((D*N_train,))
+        y = np.zeros((D*N_train,))
+        x_test = np.zeros((D*(N-N_train),))
+        y_test = np.zeros((D*(N-N_train),))
+        indexD = np.zeros((D*N_train),dtype=np.int)
+        indexD_test = np.zeros((D*(N-N_train)),dtype=np.int)
+
+        offset_all = 0
+        offset_train = 0
+        offset_test = 0
+        for i in range(D):
+            D_test = N-N_train
+            D_train = D_list[i] - N+N_train
+            y[offset_train:offset_train+D_train] = y_latent[offset_all:offset_all+D_train]
+            x[offset_train:offset_train+D_train] = x_raw[offset_all:offset_all+D_train,0]
+            y_test[offset_test:offset_test+D_test] = y_latent[offset_all+D_train:offset_all+D_train+D_test]
+            x_test[offset_test:offset_test+D_test] = x_raw[offset_all+D_train:offset_all+D_train+D_test,0]
+            indexD[offset_train:offset_train+D_train] = i
+            indexD_test[offset_test:offset_test+D_test] = i
+            offset_train += D_train
+            offset_test += D_test
+            offset_all += D_train+D_test
+
+        y_noisefree = y.copy()
+        y += np.random.randn(*y.shape)*np.sqrt(noise_var)
+        x_flat = x.flatten()[:,None]
+        y_flat = y.flatten()[:,None]
+
+        Mr, Mc, Qr, Qc = 4,3,2,1
+
+        m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr))
+        m.optimize_auto(max_iters=10)
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr),init='rand')
+        m.optimize_auto(max_iters=10)
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

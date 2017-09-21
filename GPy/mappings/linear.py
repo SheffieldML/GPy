@@ -37,3 +37,21 @@ class Linear(Mapping):
 
     def gradients_X(self, dL_dF, X):
         return np.dot(dL_dF, self.A.T)
+
+    def to_dict(self):
+        input_dict = super(Linear, self)._to_dict()
+        input_dict["class"] = "GPy.mappings.Linear"
+        input_dict["A"] = self.A.values.tolist()
+        return input_dict
+
+    @staticmethod
+    def _from_dict(mapping_class, input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        A = np.array(input_dict.pop('A'))
+        l = Linear(**input_dict)
+        l.unlink_parameter(l.A)
+        l.update_model(False)
+        l.A = Param('A', A)
+        l.link_parameter(l.A)
+        return l

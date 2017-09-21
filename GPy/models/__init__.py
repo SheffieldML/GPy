@@ -9,6 +9,7 @@ from .gplvm import GPLVM
 from .bcgplvm import BCGPLVM
 from .sparse_gplvm import SparseGPLVM
 from .warped_gp import WarpedGP
+from .input_warped_gp import InputWarpedGP
 from .bayesian_gplvm import BayesianGPLVM
 from .mrd import MRD
 from .gradient_checker import GradientChecker, HessianChecker, SkewChecker

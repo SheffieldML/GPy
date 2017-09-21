@@ -46,6 +46,13 @@ class Gaussian(Likelihood):
         if isinstance(gp_link, link_functions.Identity):
             self.log_concave = True
 
+    def to_dict(self):
+        input_dict = super(Gaussian, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.Gaussian"
+        input_dict["variance"] = self.variance.values.tolist()
+        return input_dict
+
+
     def betaY(self,Y,Y_metadata=None):
         #TODO: ~Ricardo this does not live here
         raise RuntimeError("Please notify the GPy developers, this should not happen")
@@ -57,7 +64,10 @@ class Gaussian(Likelihood):
     def update_gradients(self, grad):
         self.variance.gradient = grad
 
-    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode='gk', boost_grad=1.):
+        return self.exact_inference_gradients(dL_dKdiag)
+
+    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
         return dL_dKdiag.sum()
 
     def _preprocess_values(self, Y):

@@ -35,7 +35,7 @@ class MLP(Mapping):
 
         # Backpropagation to hidden layer.
         dL_dact = np.dot(dL_dF, self.W2.T)
-        dL_dlayer1 = dL_dact / np.square(np.cosh(layer1))
+        dL_dlayer1 = dL_dact * (1 - np.square(activations))
 
         # Finally, evaluate the first-layer gradients.
         self.W1.gradient = np.dot(X.T,dL_dlayer1)
@@ -47,7 +47,7 @@ class MLP(Mapping):
 
         # Backpropagation to hidden layer.
         dL_dact = np.dot(dL_dF, self.W2.T)
-        dL_dlayer1 = dL_dact / np.square(np.cosh(layer1))
+        dL_dlayer1 = dL_dact * (1 - np.square(activations))
 
         return np.dot(dL_dlayer1, self.W1.T)
 

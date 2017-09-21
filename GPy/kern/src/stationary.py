@@ -79,6 +79,13 @@ class Stationary(Kern):
         assert self.variance.size==1
         self.link_parameters(self.variance, self.lengthscale)
 
+    def _to_dict(self):
+        input_dict = super(Stationary, self)._to_dict()
+        input_dict["variance"] =  self.variance.values.tolist()
+        input_dict["lengthscale"] = self.lengthscale.values.tolist()
+        input_dict["ARD"] = self.ARD
+        return input_dict
+
     def K_of_r(self, r):
         raise NotImplementedError("implement the covariance function as a fn of r to use this class")
 
@@ -351,6 +358,16 @@ class Exponential(Stationary):
     def dK_dr(self, r):
         return -self.K_of_r(r)
 
+    def to_dict(self):
+        input_dict = super(Exponential, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Exponential"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Exponential(**input_dict)
+
 #    def sde(self):
 #        """
 #        Return the state space representation of the covariance.
@@ -398,6 +415,16 @@ class Matern32(Stationary):
 
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat32'):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def to_dict(self):
+        input_dict = super(Matern32, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Matern32"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Matern32(**input_dict)
 
     def K_of_r(self, r):
         return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
@@ -478,6 +505,16 @@ class Matern52(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(Matern52, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Matern52"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Matern52(**input_dict)
+
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
 
@@ -533,6 +570,16 @@ class ExpQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(ExpQuad, self)._to_dict()
+        input_dict["class"] = "GPy.kern.ExpQuad"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return ExpQuad(**input_dict)
+
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
@@ -566,6 +613,17 @@ class RatQuad(Stationary):
         self.power = Param('power', power, Logexp())
         self.link_parameters(self.power)
 
+    def to_dict(self):
+        input_dict = super(RatQuad, self)._to_dict()
+        input_dict["class"] = "GPy.kern.RatQuad"
+        input_dict["power"] = self.power.values.tolist()
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return RatQuad(**input_dict)
+
     def K_of_r(self, r):
         r2 = np.square(r)
 #         return self.variance*np.power(1. + r2/2., -self.power)
@@ -588,5 +646,3 @@ class RatQuad(Stationary):
     def update_gradients_diag(self, dL_dKdiag, X):
         super(RatQuad, self).update_gradients_diag(dL_dKdiag, X)
         self.power.gradient = 0.
-
-

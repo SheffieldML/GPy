@@ -65,7 +65,7 @@ def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
 
 
     if canvas is None:
-        canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='sensitivity', **kwargs)
+        canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='ard contribution', **kwargs)
 
     for i in range(ard_params.shape[0]):
         if parts[i].name in filtering:

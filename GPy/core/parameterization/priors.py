@@ -100,7 +100,11 @@ class Uniform(Prior):
             for instance in cls._instances:
                 if instance().lower == lower and instance().upper == upper:
                     return instance()
-        o = super(Prior, cls).__new__(cls, lower, upper)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, lower, upper)     
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

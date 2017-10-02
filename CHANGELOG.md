@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.8.3 (2017-10-02)
+
+### Fix
+
+* Uniform prior instantiation. [mzwiessele]
+
+* Use paramz 0.8.5. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.2 → 1.8.3. [mzwiessele]
+
+
 ## v1.8.2 (2017-10-02)
 
 ### Fix

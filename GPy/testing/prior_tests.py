@@ -83,6 +83,35 @@ class PriorTests(unittest.TestCase):
         # should raise an assertionerror.
         self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
 
+    def test_uniform(self):
+        xmin, xmax = 1, 2.5*np.pi
+        b, C, SNR = 1, 0, 0.1
+        X = np.linspace(xmin, xmax, 500)
+        y  = b*X + C + 1*np.sin(X)
+        y += 0.05*np.random.randn(len(X))
+        X, y = X[:, None], y[:, None]
+        m = GPy.models.SparseGPRegression(X, y)
+        uniform = GPy.priors.Uniform(0, 2)
+        m.rbf.set_prior(uniform)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+        
+        m.Z.set_prior(uniform)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+        
+        m.Z.unconstrain()
+        uniform = GPy.priors.Uniform(-1, 10)
+        m.Z.set_prior(uniform)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m.Z.constrain_negative()
+        uniform = GPy.priors.Uniform(-1, 0)
+        m.Z.set_prior(uniform)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
     def test_set_gaussian_for_reals(self):
         xmin, xmax = 1, 2.5*np.pi
         b, C, SNR = 1, 0, 0.1

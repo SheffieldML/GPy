@@ -45,7 +45,7 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python evrsion you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
-  - "coverage run travis_tests.py"
+  #- "coverage run travis_tests.py"
 
 after_test:
   # This step builds your wheels.
@@ -71,16 +71,17 @@ deploy_script:
 - echo repository = https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
 - echo username = maxz >> %USERPROFILE%\\.pypirc
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
-- ps: >-
-    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        echo not deploying on devel # twine upload --skip-existing -r test dist/*
-    }
-    ElseIf ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
-        twine upload --skip-existing dist/*
-    }
-    Else {
-        echo not deploying on other branches
-    }
+- echo %APPVEYOR_REPO_BRANCH%
+#- ps: >-
+#    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
+#        echo not deploying on devel # twine upload --skip-existing -r test dist/*
+#    }
+#    ElseIf ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
+#        twine upload --skip-existing dist/*
+#    }
+#    Else {
+#        echo not deploying on other branches
+#    }
  
 # deploy:
 #   - provider: GitHub

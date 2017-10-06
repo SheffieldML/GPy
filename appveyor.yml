@@ -17,22 +17,22 @@ environment:
 #  - Release
   
 install:
- - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
- - conda config --set always_yes yes --set changeps1 no
- - conda update -q conda
- - conda info -a
- - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
- - activate build-environment
- # We need wheel installed to build wheels
- - python -m pip install wheel
- # GPy needs paramz
- - python -m pip install paramz
- - python -m pip install nose-show-skipped
- - python -m pip install coverage
- - python -m pip install coveralls
- - python -m pip install codecov
- - python -m pip install twine
- - "python setup.py develop"
+ # - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+ # - conda config --set always_yes yes --set changeps1 no
+ # - conda update -q conda
+ # - conda info -a
+ # - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+ # - activate build-environment
+ # # We need wheel installed to build wheels
+ # - python -m pip install wheel
+ # # GPy needs paramz
+ # - python -m pip install paramz
+ # - python -m pip install nose-show-skipped
+ # - python -m pip install coverage
+ # - python -m pip install coveralls
+ # - python -m pip install codecov
+ # - python -m pip install twine
+ # - "python setup.py develop"
  
 build: off
 
@@ -49,8 +49,8 @@ test_script:
 
 after_test:
   # This step builds your wheels.
-  - "python setup.py bdist_wheel bdist_wininst"
-  - codecov
+  # - "python setup.py bdist_wheel bdist_wininst"
+  # - codecov
   
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory

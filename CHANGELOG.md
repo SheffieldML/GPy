@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.8.4 (2017-10-06)
+
+### Other
+
+* Bump version: 1.8.3 → 1.8.4. [mzwiessele]
+
+* Update appveyor.yml. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+
+* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+
+* Merge pull request #557 from SheffieldML/devel. [Max Zwiessele]
+
+  Paramz 0.8 update
+
+* Merge pull request #544 from SheffieldML/devel. [Zhenwen Dai]
+
+  Release GPy 1.8.x
+
+
 ## v1.8.3 (2017-10-02)
 
 ### Fix

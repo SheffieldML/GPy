@@ -1,5 +1,5 @@
 IF "%APPVEYOR_REPO_BRANCH%"=="deploy" (
-  ECHO "twine upload --skip-existing dist/*" 1>&2
+  twine upload --skip-existing dist/*
 ) ELSE (
-  ECHO Only deploy on deploy branch 1>&2
+  ECHO Only deploy on deploy branch
 )

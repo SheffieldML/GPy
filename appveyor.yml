@@ -17,22 +17,22 @@ environment:
 #  - Release
   
 install:
- # - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
- # - conda config --set always_yes yes --set changeps1 no
- # - conda update -q conda
- # - conda info -a
- # - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
- # - activate build-environment
- # # We need wheel installed to build wheels
- # - python -m pip install wheel
- # # GPy needs paramz
- # - python -m pip install paramz
- # - python -m pip install nose-show-skipped
- # - python -m pip install coverage
- # - python -m pip install coveralls
- # - python -m pip install codecov
- # - python -m pip install twine
- # - "python setup.py develop"
+ - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+ - conda config --set always_yes yes --set changeps1 no
+ - conda update -q conda
+ - conda info -a
+ - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+ - activate build-environment
+ # We need wheel installed to build wheels
+ - python -m pip install wheel
+ # GPy needs paramz
+ - python -m pip install paramz
+ - python -m pip install nose-show-skipped
+ - python -m pip install coverage
+ - python -m pip install coveralls
+ - python -m pip install codecov
+ - python -m pip install twine
+ - "python setup.py develop"
  
 build: off
 
@@ -45,12 +45,12 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python evrsion you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
-  #- "coverage run travis_tests.py"
+  - "coverage run travis_tests.py"
 
 after_test:
-  # This step builds your wheels.
-  # - "python setup.py bdist_wheel bdist_wininst"
-  # - codecov
+  This step builds your wheels.
+  - "python setup.py bdist_wheel bdist_wininst"
+  - codecov
   
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
@@ -72,16 +72,6 @@ deploy_script:
 - echo username = maxz >> %USERPROFILE%\\.pypirc
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
 - .appveyor_twine_upload.bat
-#- ps: >-
-#    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-#        echo not deploying on devel # twine upload --skip-existing -r test dist/*
-#    }
-#    ElseIf ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
-#        twine upload --skip-existing dist/*
-#    }
-#    Else {
-#        echo not deploying on other branches
-#    }
  
 # deploy:
 #   - provider: GitHub

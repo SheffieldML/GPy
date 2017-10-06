@@ -48,7 +48,7 @@ test_script:
   - "coverage run travis_tests.py"
 
 after_test:
-  This step builds your wheels.
+  # This step builds your wheels.
   - "python setup.py bdist_wheel bdist_wininst"
   - codecov
   

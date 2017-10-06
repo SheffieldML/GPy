@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.8.3 (2017-10-02)
+
+### Fix
+
+* Uniform prior instantiation. [mzwiessele]
+
+* Use paramz 0.8.5. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.2 → 1.8.3. [mzwiessele]
+
+
+## v1.8.2 (2017-10-02)
+
+### Fix
+
+* Uniform prior tests. [mzwiessele]
+
+* Uniform prior can be positive and negative, depending on lower and upper bound. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.1 → 1.8.2. [mzwiessele]
+
+
 ## v1.8.1 (2017-10-02)
 
 ### Fix

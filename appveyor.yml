@@ -71,7 +71,7 @@ deploy_script:
 - echo repository = https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
 - echo username = maxz >> %USERPROFILE%\\.pypirc
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
-- echo %APPVEYOR_REPO_BRANCH%
+- .appveyor_twine_upload.bat
 #- ps: >-
 #    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
 #        echo not deploying on devel # twine upload --skip-existing -r test dist/*

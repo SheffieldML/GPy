@@ -3,7 +3,7 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   COVERALLS_REPO_TOKEN:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
-  gpy_version: 1.8.0
+  gpy_version: 1.8.4
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64
@@ -71,16 +71,7 @@ deploy_script:
 - echo repository = https://testpypi.python.org/pypi >> %USERPROFILE%\\.pypirc
 - echo username = maxz >> %USERPROFILE%\\.pypirc
 - echo password = %pip_access% >> %USERPROFILE%\\.pypirc
-- ps: >-
-    If ($env:APPVEYOR_REPO_BRANCH -eq 'devel') { 
-        echo not deploying on devel # twine upload --skip-existing -r test dist/*
-    }
-    ElseIf ($env:APPVEYOR_REPO_BRANCH -eq 'deploy') {  
-        twine upload --skip-existing dist/*
-    }
-    Else {
-        echo not deploying on other branches
-    }
+- .appveyor_twine_upload.bat
  
 # deploy:
 #   - provider: GitHub

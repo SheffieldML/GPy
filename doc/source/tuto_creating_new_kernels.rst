@@ -41,8 +41,8 @@ For all Kerns the first parameter ``input_dim`` corresponds to the
 dimension of the input space, and the following parameters stand for
 the parameterization of the kernel.
 
-You have to call ``super(<class_name>, self).__init__(input_dim,
-name)`` to make sure the input dimension and name of the kernel are
+You have to call ``super(<class_name>, self).__init__(input_dim, active_dims, 
+name)`` to make sure the input dimension (and possible dimension restrictions using active_dims) and name of the kernel are
 stored in the right place. These attributes are available as
 ``self.input_dim`` and ``self.name`` at runtime.  Parameterization is
 done by adding :py:class:`~GPy.core.parameterization.param.Param`
@@ -53,8 +53,8 @@ your code. The parameters have to be added by calling
 :py:class:`~GPy.core.parameterization.param.Param` objects as
 arguments::
 
-    def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.):
-        super(RationalQuadratic, self).__init__(input_dim, 'rat_quad')
+    def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.,active_dims=None):
+        super(RationalQuadratic, self).__init__(input_dim, active_dims, 'rat_quad')
 	assert input_dim == 1, "For this kernel we assume input_dim=1"
         self.variance = Param('variance', variance)
         self.lengthscale = Param('lengtscale', lengthscale)

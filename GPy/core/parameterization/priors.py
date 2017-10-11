@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
-from paramz.domains import _REAL, _POSITIVE
+from paramz.domains import _REAL, _POSITIVE, _NEGATIVE
 import warnings
 import weakref
 
@@ -92,7 +92,6 @@ class Gaussian(Prior):
 #         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
 class Uniform(Prior):
-    domain = _REAL
     _instances = []
 
     def __new__(cls, lower=0, upper=1):  # Singleton:
@@ -101,13 +100,24 @@ class Uniform(Prior):
             for instance in cls._instances:
                 if instance().lower == lower and instance().upper == upper:
                     return instance()
-        o = super(Prior, cls).__new__(cls, lower, upper)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, lower, upper)     
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
     def __init__(self, lower, upper):
         self.lower = float(lower)
         self.upper = float(upper)
+        assert self.lower < self.upper, "Lower needs to be strictly smaller than upper."
+        if self.lower >= 0:
+            self.domain = _POSITIVE
+        elif self.upper <= 0:
+            self.domain = _NEGATIVE
+        else:
+            self.domain = _REAL
 
     def __str__(self):
         return "[{:.2g}, {:.2g}]".format(self.lower, self.upper)

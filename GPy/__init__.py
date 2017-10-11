@@ -18,7 +18,7 @@ from .util import normalizer
 
 # backwards compatibility
 import sys
-backwards_compatibility = ['lists_and_dicts', 'observable_array', 'ties_and_remappings', 'index_operations']
+backwards_compatibility = ['lists_and_dicts', 'observable_array', 'index_operations']
 for bc in backwards_compatibility:
     sys.modules['GPy.core.parameterization.{!s}'.format(bc)] = getattr(core.parameterization, bc)
 

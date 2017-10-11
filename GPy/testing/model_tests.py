@@ -962,7 +962,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue(m.checkgrad())
 
     def test_multiout_regression(self):
-        np.random.seed(1234)
+        np.random.seed(0)
         import GPy
 
         N = 10
@@ -994,11 +994,13 @@ class GradientTests(np.testing.TestCase):
         Qc = x.shape[1]
 
         m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='GP')
-        m_mr.optimize_auto(max_iters=10)
+        m_mr.optimize_auto(max_iters=1)
+        m_mr.randomize()
         self.assertTrue(m_mr.checkgrad())
 
         m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='rand')
-        m_mr.optimize_auto(max_iters=10)
+        m_mr.optimize_auto(max_iters=1)
+        m_mr.randomize()
         self.assertTrue(m_mr.checkgrad())
 
     def test_multiout_regression_md(self):
@@ -1071,11 +1073,13 @@ class GradientTests(np.testing.TestCase):
         Mr, Mc, Qr, Qc = 4,3,2,1
 
         m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr))
-        m.optimize_auto(max_iters=10)
+        m.optimize_auto(max_iters=1)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
         m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr),init='rand')
-        m.optimize_auto(max_iters=10)
+        m.optimize_auto(max_iters=1)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

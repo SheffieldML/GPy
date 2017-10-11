@@ -91,6 +91,8 @@ from .pep import PEP
 from .var_dtc_parallel import VarDTC_minibatch
 from .var_gauss import VarGauss
 from .gaussian_grid_inference import GaussianGridInference
+from .vardtc_svi_multiout import VarDTC_SVI_Multiout
+from .vardtc_svi_multiout_miss import VarDTC_SVI_Multiout_Miss
 
 
 # class FullLatentFunctionData(object):

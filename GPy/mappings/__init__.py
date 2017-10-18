@@ -4,6 +4,7 @@
 from .kernel import Kernel
 from .linear import Linear
 from .mlp import MLP
+from .mlpext import MLPext
 from .additive import Additive
 from .compound import Compound
 from .constant import Constant

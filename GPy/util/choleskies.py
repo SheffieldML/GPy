@@ -4,11 +4,14 @@
 import numpy as np
 from . import linalg
 from .config import config
+
 try:
     from . import choleskies_cython
-    config.set('cython', 'working', 'True')
+    cython_choleskies_working = True
 except ImportError:
-    config.set('cython', 'working', 'False')
+    print('warning in choleskies: failed to import cython module: falling back to numpy')
+    cython_choleskies_working = False
+
 
 def safe_root(N):
     i = np.sqrt(N)
@@ -100,7 +103,7 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2+size)/2), keep)
 
 
-if config.getboolean('cython', 'working'):
+if cython_choleskies_working and config.getboolean('cython', 'working'):
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
     backprop_gradient = choleskies_cython.backprop_gradient_par_c

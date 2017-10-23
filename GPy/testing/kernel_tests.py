@@ -14,10 +14,10 @@ from ..util.config import config
 verbose = 0
 
 try:
-    from ..util import linalg_cython
-    config.set('cython', 'working', 'True')
+    from ..util import choleskies_cython
+    cython_choleskies_working = True
 except ImportError:
-    config.set('cython', 'working', 'False')
+    cython_choleskies_working = False
 
 
 class Kern_check_model(GPy.core.Model):
@@ -618,7 +618,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not cython_choleskies_working,"Cython choleskies module has not been built on this machine")
 class Coregionalize_cython_test(unittest.TestCase):
     """
     Make sure that the coregionalize kernel work with and without cython enabled

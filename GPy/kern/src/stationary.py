@@ -14,9 +14,10 @@ from paramz.transformations import Logexp
 
 try:
     from . import stationary_cython
+    cython_stationary_working = True
 except ImportError:
     print('warning in stationary: failed to import cython module: falling back to numpy')
-    config.set('cython', 'working', 'false')
+    cython_stationary_working = False
 
 
 class Stationary(Kern):
@@ -196,7 +197,7 @@ class Stationary(Kern):
 
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            if config.getboolean('cython', 'working'):
+            if cython_stationary_working and config.getboolean('cython', 'working'):
                 self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
                 self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
@@ -239,7 +240,7 @@ class Stationary(Kern):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
-        if config.getboolean('cython', 'working'):
+        if cython_stationary_working and config.getboolean('cython', 'working'):
             return self._gradients_X_cython(dL_dK, X, X2)
         else:
             return self._gradients_X_pure(dL_dK, X, X2)

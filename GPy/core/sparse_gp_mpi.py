@@ -34,7 +34,9 @@ class SparseGP_MPI(SparseGP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, variational_prior=None, inference_method=None, name='sparse gp', Y_metadata=None, mpi_comm=None, normalizer=False):
+    def __init__(self, X, Y, Z, kernel, likelihood, variational_prior=None,
+                 mean_function=None, inference_method=None, name='sparse gp',
+                 Y_metadata=None, mpi_comm=None, normalizer=False):
         self._IN_OPTIMIZATION_ = False
         if mpi_comm != None:
             if inference_method is None:
@@ -42,12 +44,12 @@ class SparseGP_MPI(SparseGP):
             else:
                 assert isinstance(inference_method, VarDTC_minibatch), 'inference_method has to support MPI!'
 
-        super(SparseGP_MPI, self).__init__(X, Y, Z, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        super(SparseGP_MPI, self).__init__(X, Y, Z, kernel, likelihood, inference_method=inference_method, mean_function=mean_function, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         self.update_model(False)
-        
+
         if variational_prior is not None:
             self.link_parameter(variational_prior)
-            
+
         self.mpi_comm = mpi_comm
         # Manage the data (Y) division
         if mpi_comm != None:
@@ -118,4 +120,3 @@ class SparseGP_MPI(SparseGP):
             update_gradients(self, mpi_comm=self.mpi_comm)
         else:
             super(SparseGP_MPI,self).parameters_changed()
-

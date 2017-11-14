@@ -329,7 +329,8 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    A = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=True)
+    At = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=False) #See https://github.com/scipy/scipy/issues/8155
+    A[:] = At
     symmetrify(A, upper=True)
 
 def DSYR_numpy(A, x, alpha=1.):

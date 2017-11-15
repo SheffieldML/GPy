@@ -38,7 +38,7 @@ from nose import SkipTest
 
 try:
     import matplotlib
-    matplotlib.use('agg')
+    #matplotlib.use('agg')
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest

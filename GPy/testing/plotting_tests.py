@@ -38,11 +38,11 @@ from nose import SkipTest
 
 try:
     import matplotlib
-    #matplotlib.use('agg')
+    matplotlib.use('agg')
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest
-    raise
+    raise SkipTest("Error importing matplotlib")
 
 from unittest.case import TestCase
 
@@ -70,7 +70,8 @@ try:
     from matplotlib.testing.compare import compare_images
     from matplotlib.testing.noseclasses import ImageComparisonFailure
 except ImportError:
-    raise SkipTest("Matplotlib not installed, not testing plots")
+    raise
+    # raise SkipTest("Matplotlib not installed, not testing plots")
 
 extensions = ['npz']
 

@@ -42,7 +42,7 @@ try:
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest
-    raise SkipTest("Skipping Matplotlib testing")
+    raise
 
 from unittest.case import TestCase
 

@@ -68,10 +68,8 @@ if config.get('plotting', 'library') != 'matplotlib':
 try:
     from matplotlib import cbook, pyplot as plt
     from matplotlib.testing.compare import compare_images
-    from matplotlib.testing.noseclasses import ImageComparisonFailure
 except ImportError:
-    raise
-    # raise SkipTest("Matplotlib not installed, not testing plots")
+    raise SkipTest("Matplotlib not installed, not testing plots")
 
 extensions = ['npz']
 

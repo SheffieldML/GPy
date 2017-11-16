@@ -49,6 +49,7 @@ class InferenceXTestCase(unittest.TestCase):
         m.optimize()
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X, mi.X, decimal=2)
+
 class InferenceGPEP(unittest.TestCase):
 
     def genData(self):
@@ -131,6 +132,16 @@ class InferenceGPEP(unittest.TestCase):
                     np.sum(d['dL_dm'] - d0['dL_dm']),
                     np.sum(p._woodbury_vector - p0._woodbury_vector),
                     np.sum(p.woodbury_inv - p0.woodbury_inv)])) < 1e6)
+
+class VarDtcTest(unittest.TestCase):
+
+    def test_var_dtc_inference_with_mean(self):
+        """ Check dL_dm in var_dtc is calculated correctly"""
+        np.random.seed(1)
+        x = np.linspace(0.,2*np.pi,100)[:,None]
+        y = -np.cos(x)+np.random.randn(*x.shape)*0.3+1
+        m = GPy.models.SparseGPRegression(x,y, mean_function=GPy.mappings.Linear(input_dim=1, output_dim=1))
+        self.assertTrue(m.checkgrad())
 
 
 class HMCSamplerTest(unittest.TestCase):

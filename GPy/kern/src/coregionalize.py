@@ -9,10 +9,10 @@ from ...util.config import config # for assesing whether to use cython
 
 try:
     from . import coregionalize_cython
-    cython_coregionalize_working = True
+    use_coregionalize_cython = config.getboolean('cython', 'working')
 except ImportError:
     print('warning in coregionalize: failed to import cython module: falling back to numpy')
-    cython_coregionalize_working = False
+    use_coregionalize_cython = False
 
 
 class Coregionalize(Kern):
@@ -64,7 +64,7 @@ class Coregionalize(Kern):
         self.B = np.dot(self.W, self.W.T) + np.diag(self.kappa)
 
     def K(self, X, X2=None):
-        if cython_coregionalize_working and config.getboolean('cython', 'working'):
+        if use_coregionalize_cython:
             return self._K_cython(X, X2)
         else:
             return self._K_numpy(X, X2)
@@ -95,7 +95,7 @@ class Coregionalize(Kern):
             index2 = np.asarray(X2, dtype=np.int)
 
         #attempt to use cython for a nasty double indexing loop: fall back to numpy
-        if cython_coregionalize_working and config.getboolean('cython', 'working'):
+        if use_coregionalize_cython:
             dL_dK_small = self._gradient_reduce_cython(dL_dK, index, index2)
         else:
             dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)

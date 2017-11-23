@@ -30,7 +30,7 @@ class SparseGPRegression(SparseGP_MPI):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None, mpi_comm=None, name='sparse_gp'):
+    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, mean_function=None, normalizer=None, mpi_comm=None, name='sparse_gp'):
         num_data, input_dim = X.shape
 
         # kern defaults to rbf (plus white for stability)
@@ -55,7 +55,8 @@ class SparseGPRegression(SparseGP_MPI):
         else:
             infr = VarDTC()
 
-        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
+        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, mean_function=mean_function,
+        inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
 
     def parameters_changed(self):
         from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp,VarDTC_minibatch

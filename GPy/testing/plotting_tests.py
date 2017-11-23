@@ -42,7 +42,7 @@ try:
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest
-    raise SkipTest("Skipping Matplotlib testing")
+    raise SkipTest("Error importing matplotlib")
 
 from unittest.case import TestCase
 
@@ -68,7 +68,6 @@ if config.get('plotting', 'library') != 'matplotlib':
 try:
     from matplotlib import cbook, pyplot as plt
     from matplotlib.testing.compare import compare_images
-    from matplotlib.testing.noseclasses import ImageComparisonFailure
 except ImportError:
     raise SkipTest("Matplotlib not installed, not testing plots")
 

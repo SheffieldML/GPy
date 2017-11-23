@@ -17,7 +17,7 @@ class GPMultioutRegression(SparseGP):
 
     This is an implementation of Latent Variable Multiple Output Gaussian Processes (LVMOGP) in [Dai et al. 2017].
 
-    Zhenwen Dai, Mauricio A. Álvarez and Neil D. Lawrence. Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
+    Zhenwen Dai, Mauricio A. Alvarez and Neil D. Lawrence. Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
 
     :param X: input observations. Numpy.ndarray
     :param Y: output observations, each column corresponding to an output dimension. Numpy.ndarray

@@ -1,4 +1,6 @@
-#from .posterior import Posterior
+# Copyright (c) 2017, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri,pdinv, dpotri
 from GPy.util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
@@ -10,13 +12,7 @@ log_2_pi = np.log(2*np.pi)
 
 class VarDTC_SVI_Multiout(LatentFunctionInference):
     """
-    An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
-
-    The function self.inference returns a Posterior object, which summarizes
-    the posterior.
-
-    For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
-
+    The VarDTC inference method for Multi-output GP regression (GPy.models.GPMultioutRegression)
     """
     const_jitter = 1e-6
 
@@ -100,7 +96,7 @@ class VarDTC_SVI_Multiout(LatentFunctionInference):
                - (LcInvMLrInvT.T.dot(LcInvPsi2_cLcInvT).dot(LcInvMLrInvT)*LrInvPsi2_rLrInvT).sum() \
                -  tr_LrInvPsi2_rLrInvT_LrInvSrLrInvT* tr_LcInvPsi2_cLcInvT_LcInvScLcInvT \
                + 2 * (Y * LcInvPsi1_cT.T.dot(LcInvMLrInvT).dot(LrInvPsi1_rT)).sum() - psi0_c * psi0_r \
-               + tr_LrInvPsi2_rLrInvT * tr_LcInvPsi2_cLcInvT 
+               + tr_LrInvPsi2_rLrInvT * tr_LcInvPsi2_cLcInvT
 
         logL = -N*D/2.*(np.log(2.*np.pi)-np.log(beta)) + beta/2.* logL_A \
                -Mc * (np.log(np.diag(Lr)).sum()-np.log(np.diag(LSr)).sum())  -Mr * (np.log(np.diag(Lc)).sum()-np.log(np.diag(LSc)).sum()) \

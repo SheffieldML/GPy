@@ -1,4 +1,4 @@
-# Copyright (c) 2012, James Hensman
+# Copyright (c) 2017, Zhenwen Dai
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 
@@ -12,9 +12,20 @@ from GPy.core.parameterization.variational import NormalPosterior
 class SparseGPRegressionMD(SparseGP_MPI):
     """
     Sparse Gaussian Process Regression with Missing Data
+
+    This model targets at the use case, in which there are multiple output dimensions (different dimensions are assumed to be independent following the same GP prior) and each output dimension is observed at a different set of inputs. The model takes a different data format: the inputs and outputs observations of all the output dimensions are stacked together correspondingly into two matrices. An extra array is used to indicate the index of output dimension for each data point. The output dimensions are indexed using integers from 0 to D-1 assuming there are D output dimensions.
+
+    :param X: input observations. Numpy.ndarray
+    :param Y: output observations, each column corresponding to an output dimension. Numpy.ndarray
+    :param indexD: the array containing the index of output dimension for each data point
+    :param kernel: a GPy kernel for GP of individual output dimensions ** defaults to RBF **
+    :param Z: inducing inputs
+    :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space.
+    :param individual_Y_noise: whether individual output dimensions have their own noise variance or not, boolean
+    :param name: the name of the model
     """
 
-    def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):
+    def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10,  normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):
 
         assert len(Y.shape)==1 or Y.shape[1]==1
         self.individual_Y_noise = individual_Y_noise
@@ -38,9 +49,6 @@ class SparseGPRegressionMD(SparseGP_MPI):
             likelihood = likelihoods.Gaussian(variance=np.array([np.var(Y[indexD==d]) for d in range(output_dim)])*0.01)
         else:
             likelihood = likelihoods.Gaussian(variance=np.var(Y)*0.01)
-
-        if not (X_variance is None):
-            X = NormalPosterior(X,X_variance)
 
         infr = VarDTC_MD()
 

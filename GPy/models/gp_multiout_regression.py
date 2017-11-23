@@ -13,26 +13,28 @@ from ..util.linalg import tdot
 
 class GPMultioutRegression(SparseGP):
     """
-    Gaussian Process model for scalable multioutput regression
+    Gaussian Process model for multi-output regression without missing data
 
-    This is a thin wrapper around the models.GP class, with a set of sensible defaults
+    This is an implementation of Latent Variable Multiple Output Gaussian Processes (LVMOGP) in [Dai et al. 2017].
 
-    :param X_list: list of input observations corresponding to each output
-    :type X_list: list of numpy arrays
-    :param Y_list: list of observed values related to the different noise models
-    :type Y_list: list of numpy arrays
-    :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
-    :type kernel: None | GPy.kernel defaults
-    :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
-    :type likelihoods_list: None | a list GPy.likelihoods
-    :param name: model name
-    :type name: string
-    :param W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
-    :type W_rank: integer
-    :param kernel_name: name of the kernel
-    :type kernel_name: string
+    Zhenwen Dai, Mauricio A. Álvarez and Neil D. Lawrence. Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
+
+    :param X: input observations. Numpy.ndarray
+    :param Y: output observations, each column corresponding to an output dimension. Numpy.ndarray
+    :param Xr_dim: the dimensionality of a latent space, in which output dimensions are embedded in
+    :param kernel: a GPy kernel for GP of individual output dimensions ** defaults to RBF **
+    :param kernel_row: a GPy kernel for the GP of the latent space ** defaults to RBF **
+    :param Z: inducing inputs
+    :param Z_row: inducing inputs for the latent space
+    :param X_row: the initial value of the mean of the variational posterior distribution of points in the latent space
+    :param Xvariance_row: the initial value of the variance of the variational posterior distribution of points in the latent space
+    :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space.
+    :param qU_var_r_W_dim: the dimensionality of the covariance of q(U) for the latent space. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
+    :param qU_var_c_W_dim: the dimensionality of the covariance of q(U) for the GP regression. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
+    :param init: the choice of initialization: 'GP' or 'rand'. With 'rand', the model is initialized randomly. With 'GP', the model is initialized through a protocol as follows: (1) fits a sparse GP (2) fits a BGPLVM based on the outcome of sparse GP (3) initialize the model based on the outcome of the BGPLVM.
+    :param name: the name of the model
     """
-    def __init__(self, X, Y, Xr_dim, kernel=None, kernel_row=None, likelihood=None, Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', name='GPMR'):
+    def __init__(self, X, Y, Xr_dim, kernel=None, kernel_row=None, Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', name='GPMR'):
 
         #Kernel
         if kernel is None:
@@ -165,6 +167,12 @@ class GPMultioutRegression(SparseGP):
         self.variational_prior_row.update_gradients_KL(self.X_row)
 
     def optimize_auto(self,max_iters=10000,verbose=True):
+        """
+        Optimize the model parameters through a pre-defined protocol.
+
+        :param max_iters: the maximum number of iterations.
+        :param verbose: print the progress of optimization or not.
+        """
         self.Z.fix(warning=False)
         self.kern.fix(warning=False)
         self.kern_row.fix(warning=False)

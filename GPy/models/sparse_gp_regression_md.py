@@ -15,14 +15,20 @@ class SparseGPRegressionMD(SparseGP_MPI):
 
     This model targets at the use case, in which there are multiple output dimensions (different dimensions are assumed to be independent following the same GP prior) and each output dimension is observed at a different set of inputs. The model takes a different data format: the inputs and outputs observations of all the output dimensions are stacked together correspondingly into two matrices. An extra array is used to indicate the index of output dimension for each data point. The output dimensions are indexed using integers from 0 to D-1 assuming there are D output dimensions.
 
-    :param X: input observations. Numpy.ndarray
-    :param Y: output observations, each column corresponding to an output dimension. Numpy.ndarray
+    :param X: input observations.
+    :type X: numpy.ndarray
+    :param Y: output observations, each column corresponding to an output dimension.
+    :type Y: numpy.ndarray
     :param indexD: the array containing the index of output dimension for each data point
+    :type indexD: numpy.ndarray
     :param kernel: a GPy kernel for GP of individual output dimensions ** defaults to RBF **
+    :type kernel: GPy.kern.Kern or None
     :param Z: inducing inputs
+    :type Z: numpy.ndarray or None
     :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space.
-    :param individual_Y_noise: whether individual output dimensions have their own noise variance or not, boolean
-    :param name: the name of the model
+    :type num_inducing: (int, int)
+    :param boolean individual_Y_noise: whether individual output dimensions have their own noise variance or not, boolean
+    :param str name: the name of the model
     """
 
     def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10,  normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):

@@ -20,22 +20,32 @@ class GPMultioutRegressionMD(SparseGP):
 
     Zhenwen Dai, Mauricio A. Alvarez and Neil D. Lawrence. Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
 
-    :param X: input observations. Numpy.ndarray
-    :param Y: output observations, each column corresponding to an output dimension. Numpy.ndarray
+    :param X: input observations.
+    :type X: numpy.ndarray
+    :param Y: output observations, each column corresponding to an output dimension.
+    :type Y: numpy.ndarray
     :param indexD: the array containing the index of output dimension for each data point
-    :param Xr_dim: the dimensionality of a latent space, in which output dimensions are embedded in
+    :type indexD: numpy.ndarray
+    :param int Xr_dim: the dimensionality of a latent space, in which output dimensions are embedded in
     :param kernel: a GPy kernel for GP of individual output dimensions ** defaults to RBF **
+    :type kernel: GPy.kern.Kern or None
     :param kernel_row: a GPy kernel for the GP of the latent space ** defaults to RBF **
+    :type kernel_row: GPy.kern.Kern or None
     :param Z: inducing inputs
+    :type Z: numpy.ndarray or None
     :param Z_row: inducing inputs for the latent space
+    :type Z_row: numpy.ndarray or None
     :param X_row: the initial value of the mean of the variational posterior distribution of points in the latent space
+    :type X_row: numpy.ndarray or None
     :param Xvariance_row: the initial value of the variance of the variational posterior distribution of points in the latent space
+    :type Xvariance_row: numpy.ndarray or None
     :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space.
-    :param qU_var_r_W_dim: the dimensionality of the covariance of q(U) for the latent space. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
-    :param qU_var_c_W_dim: the dimensionality of the covariance of q(U) for the GP regression. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
-    :param init: the choice of initialization: 'GP' or 'rand'. With 'rand', the model is initialized randomly. With 'GP', the model is initialized through a protocol as follows: (1) fits a sparse GP (2) fits a BGPLVM based on the outcome of sparse GP (3) initialize the model based on the outcome of the BGPLVM.
-    :param heter_noise: whether assuming heteroscedastic noise in the model, boolean
-    :param name: the name of the model
+    :type num_inducing: (int, int)
+    :param int qU_var_r_W_dim: the dimensionality of the covariance of q(U) for the latent space. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
+    :param int qU_var_c_W_dim: the dimensionality of the covariance of q(U) for the GP regression. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
+    :param str init: the choice of initialization: 'GP' or 'rand'. With 'rand', the model is initialized randomly. With 'GP', the model is initialized through a protocol as follows: (1) fits a sparse GP (2) fits a BGPLVM based on the outcome of sparse GP (3) initialize the model based on the outcome of the BGPLVM.
+    :param boolean heter_noise: whether assuming heteroscedastic noise in the model, boolean
+    :param str name: the name of the model
     """
     def __init__(self, X, Y, indexD, Xr_dim, kernel=None, kernel_row=None,  Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', heter_noise=False, name='GPMRMD'):
 
@@ -185,8 +195,8 @@ class GPMultioutRegressionMD(SparseGP):
         """
         Optimize the model parameters through a pre-defined protocol.
 
-        :param max_iters: the maximum number of iterations.
-        :param verbose: print the progress of optimization or not.
+        :param int max_iters: the maximum number of iterations.
+        :param boolean verbose: print the progress of optimization or not.
         """
         self.Z.fix(warning=False)
         self.kern.fix(warning=False)

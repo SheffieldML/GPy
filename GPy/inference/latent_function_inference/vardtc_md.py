@@ -1,5 +1,5 @@
-
-
+# Copyright (c) 2017, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri,pdinv, dpotri
 from GPy.util import diag
@@ -12,13 +12,7 @@ log_2_pi = np.log(2*np.pi)
 
 class VarDTC_MD(LatentFunctionInference):
     """
-    An object for inference when the likelihood is Gaussian, but we want to do sparse inference.
-
-    The function self.inference returns a Posterior object, which summarizes
-    the posterior.
-
-    For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
-
+    The VarDTC inference method for sparse GP with missing data (GPy.models.SparseGPRegressionMD)
     """
     const_jitter = 1e-6
 

@@ -1,4 +1,6 @@
-#from .posterior import Posterior
+# Copyright (c) 2017, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri,pdinv, dpotri
 from GPy.util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
@@ -11,6 +13,7 @@ log_2_pi = np.log(2*np.pi)
 
 class VarDTC_SVI_Multiout_Miss(LatentFunctionInference):
     """
+    The VarDTC inference method for Multi-output GP regression with missing data (GPy.models.GPMultioutRegressionMD)
     """
     const_jitter = 1e-6
 

@@ -61,15 +61,19 @@ class VarDTC(LatentFunctionInference):
             return jitchol(tdot(Y))
 
     def get_VVTfactor(self, Y, prec):
-        return Y * prec # TODO chache this, and make it effective
+        return Y * prec # TODO cache this, and make it effective
 
     def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, Z_tilde=None):
-        assert mean_function is None, "inference with a mean function not implemented"
 
         num_data, output_dim = Y.shape
         num_inducing = Z.shape[0]
 
         uncertain_inputs = isinstance(X, VariationalPosterior)
+
+        if mean_function is not None:
+            mean = mean_function.f(X)
+        else:
+            mean = 0
 
         if precision is None:
             #assume Gaussian likelihood
@@ -78,10 +82,11 @@ class VarDTC(LatentFunctionInference):
         if precision.ndim == 1:
             precision = precision[:, None]
         het_noise = precision.size > 1
+        if (het_noise or uncertain_inputs) and mean_function is not None:
+            raise ValueError('Mean function not implemented with uncertain inputs or heteroscedasticity')
 
-        VVT_factor = precision*Y
-        #VVT_factor = precision*Y
-        trYYT = self.get_trYYT(Y)
+        VVT_factor = precision*(Y-mean)
+        trYYT = self.get_trYYT(Y-mean)
 
         # kernel computations, using BGPLVM notation
         if Lm is None:
@@ -128,14 +133,18 @@ class VarDTC(LatentFunctionInference):
         # factor B
         B = np.eye(num_inducing) + A
         LB = jitchol(B)
-        psi1Vf = np.dot(psi1.T, VVT_factor)
+
         # back substutue C into psi1Vf
-        tmp, _ = dtrtrs(Lm, psi1Vf, lower=1, trans=0)
-        _LBi_Lmi_psi1Vf, _ = dtrtrs(LB, tmp, lower=1, trans=0)
+        tmp, _ = dtrtrs(Lm, psi1.T, lower=1, trans=0)
+        _LBi_Lmi_psi1, _ = dtrtrs(LB, tmp, lower=1, trans=0)
+        _LBi_Lmi_psi1Vf = np.dot(_LBi_Lmi_psi1, VVT_factor)
         tmp, _ = dtrtrs(LB, _LBi_Lmi_psi1Vf, lower=1, trans=1)
         Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
 
         # data fit and derivative of L w.r.t. Kmm
+        dL_dm = -np.dot((_LBi_Lmi_psi1.T.dot(_LBi_Lmi_psi1))
+                        - np.eye(Y.shape[0]), VVT_factor)
+
         delit = tdot(_LBi_Lmi_psi1Vf)
         data_fit = np.trace(delit)
         DBi_plus_BiPBi = backsub_both_sides(LB, output_dim * np.eye(num_inducing) + delit)
@@ -181,7 +190,8 @@ class VarDTC(LatentFunctionInference):
             grad_dict = {'dL_dKmm': dL_dKmm,
                          'dL_dKdiag':dL_dpsi0,
                          'dL_dKnm':dL_dpsi1,
-                         'dL_dthetaL':dL_dthetaL}
+                         'dL_dthetaL':dL_dthetaL,
+                         'dL_dm':dL_dm}
 
         #get sufficient things for posterior prediction
         #TODO: do we really want to do this in  the loop?

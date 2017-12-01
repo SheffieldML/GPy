@@ -27,3 +27,5 @@ from .state_space_model import StateSpace
 from .ibp_lfm import IBPLFM
 from .gp_offset_regression import GPOffsetRegression
 from .gp_grid_regression import GPRegressionGrid
+from .gp_multiout_regression import GPMultioutRegression
+from .gp_multiout_regression_md import GPMultioutRegressionMD

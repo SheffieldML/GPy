@@ -74,11 +74,16 @@ class SparseGP(GP):
         if trigger_update: self.update_model(True)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = \
+        self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood,
+                                        self.Y, Y_metadata=self.Y_metadata,
+                                        mean_function=self.mean_function)
         self._update_gradients()
 
     def _update_gradients(self):
         self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
+        if self.mean_function is not None:
+            self.mean_function.update_gradients(self.grad_dict['dL_dm'], self.X)
 
         if isinstance(self.X, VariationalPosterior):
             #gradients wrt kernel
@@ -112,4 +117,3 @@ class SparseGP(GP):
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
         self._Zgrad = self.Z.gradient.copy()
-

@@ -97,6 +97,20 @@ class TestDebug(unittest.TestCase):
         self.assertTrue((2, np.median(X.mean.values[:,2])) in fixed)
         self.assertTrue(len([t for t in fixed if t[0] == 1]) == 0) # Unfixed input should not be in fixed
 
+    def test_DSYR(self):
+        from GPy.util.linalg import DSYR, DSYR_numpy
+        A = np.arange(9.0).reshape(3,3)
+        A = np.dot(A.T, A)
+        b = np.ones(3, dtype=float)
+        alpha = 1.0
+        DSYR(A, b, alpha)
+        R = np.array([
+            [46, 55, 64],
+            [55, 67, 79],
+            [64, 79, 94]]
+            )
+        self.assertTrue(abs(np.sum(A - R)) < 1e-12)
+
     def test_subarray(self):
         import GPy
         X = np.zeros((3,6), dtype=bool)

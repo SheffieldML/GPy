@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.8.5 (2017-12-01)
+
+### New Features
+
+* Implement [Latent Variable Multiple Output Gaussian Processes (LVMOGP)](https://arxiv.org/abs/1705.09862) [Zhenwen Dai]
+
+* Add mean function functionality to dtc inference method [Mark Pullin]
+
+* Allow non-zero mean GP prior for EP [Pablo Moreno]
+
+### Fix
+
+* Fix DSYR function interface (to support SciPy 1.0) [Pablo Moreno]
+
+* Fix scipy=1.0.0 incompatibility of lyapunov [Alan Saul]
+
+* Fix tests for Matplotlib plotting issue [Alan Saul]
+
 ## v1.8.4 (2017-10-06)
 
 ### Other

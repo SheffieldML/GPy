@@ -49,6 +49,7 @@ class InferenceXTestCase(unittest.TestCase):
         m.optimize()
         x, mi = m.infer_newX(m.Y, optimize=True)
         np.testing.assert_array_almost_equal(m.X, mi.X, decimal=2)
+
 class InferenceGPEP(unittest.TestCase):
 
     def genData(self):
@@ -85,11 +86,11 @@ class InferenceGPEP(unittest.TestCase):
                         inference_method=inf,
                         likelihood=lik)
         K = self.model.kern.K(X)
-
-        post_params, ga_approx, cav_params, log_Z_tilde = self.model.inference_method.expectation_propagation(K, ObsAr(Y), lik, None)
+        mean_prior = np.zeros(K.shape[0])
+        post_params, ga_approx, cav_params, log_Z_tilde = self.model.inference_method.expectation_propagation(mean_prior, K, ObsAr(Y), lik, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
-        p, m, d = self.model.inference_method._inference(Y, K, ga_approx, cav_params, lik, Y_metadata=None,  Z_tilde=log_Z_tilde)
+        p, m, d = self.model.inference_method._inference(Y, mean_prior, K, ga_approx, cav_params, lik, Y_metadata=None,  Z_tilde=log_Z_tilde)
         p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, inf).inference(k, X,lik ,mu_tilde[:,None], mean_function=None, variance=1./ga_approx.tau, K=K, Z_tilde=log_Z_tilde + np.sum(- 0.5*np.log(ga_approx.tau) + 0.5*(ga_approx.v*ga_approx.v*1./ga_approx.tau)))
 
         assert (np.sum(np.array([m - m0,
@@ -119,10 +120,11 @@ class InferenceGPEP(unittest.TestCase):
         # ep_inf_nested = GPy.inference.latent_function_inference.expectation_propagation.EP(ep_mode='nested', max_iters=100, delta=0.5)
         m = GPy.core.GP(X=X,Y=Y_extra_noisy,kernel=k,likelihood=lik_studentT,inference_method=ep_inf_alt)
         K = m.kern.K(X)
-        post_params, ga_approx, cav_params, log_Z_tilde = m.inference_method.expectation_propagation(K, ObsAr(Y_extra_noisy), lik_studentT, None)
+        mean_prior = np.zeros(K.shape[0])
+        post_params, ga_approx, cav_params, log_Z_tilde = m.inference_method.expectation_propagation(mean_prior, K, ObsAr(Y_extra_noisy), lik_studentT, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
-        p, m, d = m.inference_method._inference(Y_extra_noisy, K, ga_approx, cav_params, lik_studentT, Y_metadata=None,  Z_tilde=log_Z_tilde)
+        p, m, d = m.inference_method._inference(Y_extra_noisy, mean_prior, K, ga_approx, cav_params, lik_studentT, Y_metadata=None,  Z_tilde=log_Z_tilde)
         p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, ep_inf_alt).inference(k, X,lik_studentT ,mu_tilde[:,None], mean_function=None, variance=1./ga_approx.tau, K=K, Z_tilde=log_Z_tilde + np.sum(- 0.5*np.log(ga_approx.tau) + 0.5*(ga_approx.v*ga_approx.v*1./ga_approx.tau)))
 
         assert (np.sum(np.array([m - m0,
@@ -131,6 +133,16 @@ class InferenceGPEP(unittest.TestCase):
                     np.sum(d['dL_dm'] - d0['dL_dm']),
                     np.sum(p._woodbury_vector - p0._woodbury_vector),
                     np.sum(p.woodbury_inv - p0.woodbury_inv)])) < 1e6)
+
+class VarDtcTest(unittest.TestCase):
+
+    def test_var_dtc_inference_with_mean(self):
+        """ Check dL_dm in var_dtc is calculated correctly"""
+        np.random.seed(1)
+        x = np.linspace(0.,2*np.pi,100)[:,None]
+        y = -np.cos(x)+np.random.randn(*x.shape)*0.3+1
+        m = GPy.models.SparseGPRegression(x,y, mean_function=GPy.mappings.Linear(input_dim=1, output_dim=1))
+        self.assertTrue(m.checkgrad())
 
 
 class HMCSamplerTest(unittest.TestCase):

@@ -9,6 +9,10 @@ from .stationary import RatQuad
 
 import numpy as np
 import scipy as sp
+try:
+    from scipy.linalg import solve_continuous_lyapunov as lyap
+except ImportError:
+    from scipy.linalg import solve_lyapunov as lyap
 
 class sde_RBF(RBF):
     """
@@ -67,7 +71,7 @@ class sde_RBF(RBF):
         H[0,0] = 1
         
         # Infinite covariance:
-        Pinf = sp.linalg.solve_lyapunov(F, -np.dot(L,np.dot( Qc[0,0],L.T)))
+        Pinf = lyap(F, -np.dot(L,np.dot( Qc[0,0],L.T)))
         Pinf = 0.5*(Pinf + Pinf.T)
         # Allocating space for derivatives        
         dF    = np.empty([F.shape[0],F.shape[1],2])

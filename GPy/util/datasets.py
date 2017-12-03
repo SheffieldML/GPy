@@ -622,7 +622,7 @@ def robot_wireless(data_set='robot_wireless'):
         download_data(data_set)
     file_name = os.path.join(data_path, data_set, 'uw-floor.txt')
     all_time = np.genfromtxt(file_name, usecols=(0))
-    macaddress = np.genfromtxt(file_name, usecols=(1), dtype='string')
+    macaddress = np.genfromtxt(file_name, usecols=(1), dtype=str)
     x = np.genfromtxt(file_name, usecols=(2))
     y = np.genfromtxt(file_name, usecols=(3))
     strength = np.genfromtxt(file_name, usecols=(4))

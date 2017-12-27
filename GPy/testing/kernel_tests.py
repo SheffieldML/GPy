@@ -482,6 +482,13 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+    
+    def test_MultioutputKern(self):
+        k1 = GPy.kern.RBF(self.D-1, ARD=True)
+        k1.randomize()
+        k2 = GPy.kern.RBF(self.D-1, ARD=True)
+        k2.randomize()
+        k = GPy.kern.MultioutputKern([k1,k2],)
 
     def test_Precomputed(self):
         Xall = np.concatenate([self.X, self.X2])

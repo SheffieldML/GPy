@@ -206,6 +206,9 @@ class Kern(Parameterized):
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         self.gradient[:] = dtheta
 
+    def reset_gradients(self):
+        raise NotImplementedError
+
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
                                 psi0=None, psi1=None, psi2=None):
         """

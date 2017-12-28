@@ -107,10 +107,10 @@ class RBF(Stationary):
     def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[3:]
 
-    def update_gradients_diag(self, dL_dKdiag, X):
-        super(RBF,self).update_gradients_diag(dL_dKdiag, X)
+    def update_gradients_diag(self, dL_dKdiag, X, reset=True):
+        super(RBF,self).update_gradients_diag(dL_dKdiag, X, reset=reset)
         if self.use_invLengthscale: self.inv_l.gradient =self.lengthscale.gradient*(self.lengthscale**3/-2.)
 
-    def update_gradients_full(self, dL_dK, X, X2=None):
-        super(RBF,self).update_gradients_full(dL_dK, X, X2)
+    def update_gradients_full(self, dL_dK, X, X2=None, reset=True):
+        super(RBF,self).update_gradients_full(dL_dK, X, X2, reset=reset)
         if self.use_invLengthscale: self.inv_l.gradient =self.lengthscale.gradient*(self.lengthscale**3/-2.)

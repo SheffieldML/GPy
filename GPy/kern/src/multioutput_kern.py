@@ -1,11 +1,11 @@
 from .kern import Kern, CombinationKernel
 import numpy as np
 from functools import reduce, partial
-from GPy.util.multioutput import index_to_slices
+from .independent_outputs import index_to_slices
 from paramz.caching import Cache_this
 
 class MultioutputKern(CombinationKernel):
-    def __init__(self, kernels, cross_covariances, name='MultioutputKern'):
+    def __init__(self, kernels, cross_covariances={}, name='MultioutputKern'):
         #kernels contains a list of kernels as input, 
         if not isinstance(kernels, list):
             self.single_kern = True
@@ -20,7 +20,7 @@ class MultioutputKern(CombinationKernel):
         # after slicing. This is why the index_dim is just the last column:
         self.index_dim = -1
         
-        super(MultioutputKern, self).__init__(kernels=kernels, extra_dims=[self.index_dim], name=name, link_params=False)
+        super(MultioutputKern, self).__init__(kernels=kernels, extra_dims=[self.index_dim], name=name, link_parameters=False)
 
         nl = len(kernels)
         #build covariance structure
@@ -36,7 +36,7 @@ class MultioutputKern(CombinationKernel):
                 elif cross_covariances.get((i,j)) is not None: #cross covariance is given
                     covariance[i][j] = cross_covariances.get((i,j))
                 else: # zero matrix
-                    covariance[i][j] = {'K': lambda x, x2: np.zeros((x.shape[0],x2.shape[0])), 'update_gradients_full': lambda x, x2: np.zeros((x.shape[0],x2.shape[0])), 'gradients_X': lambda x, x2: np.zeros((x.shape[0],x.shape[1]))}       
+                    covariance[i][j] = {'K': lambda x, x2: np.zeros((x.shape[0],x2.shape[0])), 'update_gradients_full': lambda dl_dk, x, x2, reset: np.zeros(dl_dk.shape), 'gradients_X': lambda dl_dk, x, x2: np.zeros((x.shape[0],x.shape[1]))}       
             if unique is True:
                 linked.append(i)
         self.covariance = covariance
@@ -63,26 +63,27 @@ class MultioutputKern(CombinationKernel):
     def reset_gradients(self):
         for kern in self.kern: kern.reset_gradients()
 
-    def update_gradients_full(self,dL_dK,X,X2=None, reset=True):
-        if reset:
-            self.reset_gradients()
-        if X2 is None:
-            X2 = X
+    def update_gradients_full(self,dL_dK, X, X2=None, reset=True):
+        if reset: self.reset_gradients()
         slices = index_to_slices(X[:,self.index_dim])
-        slices2 = index_to_slices(X2[:,self.index_dim])                
-        [[[[ self.covariance[i][j]['update_gradients_full'](dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:], False) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
-        
-    def update_gradients_diag(self, dL_dKdiag, X):
-        for kern in self.kerns: kern.reset_gradients()
+        if X2 is not None:
+            slices2 = index_to_slices(X2[:,self.index_dim])
+            [[[[ self.covariance[i][j]['update_gradients_full'](dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:], False) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
+        else:
+            [[[[ self.covariance[i][j]['update_gradients_full'](dL_dK[slices[i][k],slices[j][l]], X[slices[i][k],:], X[slices[j][l],:] , False) for k in range(len(slices[i]))] for l in range(len(slices[j]))] for i in range(len(slices))] for j in range(len(slices))]
+            
+    def update_gradients_diag(self, dL_dKdiag, X, reset=True):
+        if reset: self.reset_gradients()
         slices = index_to_slices(X[:,self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
-        [[ self.kerns[i].update_gradients_diag(dL_dKdiag[slices[i][k]], X[slices[i][k],:], False) for k in range(len(slices[i]))] for i in range(len(slices))]
+        [[ self.kern[i].update_gradients_diag(dL_dKdiag[slices[i][k]], X[slices[i][k],:], False) for k in range(len(slices[i]))] for i in range(len(slices))]
     
     def gradients_X(self,dL_dK, X, X2=None):
-        if X2 is None:
-            X2 = X
         slices = index_to_slices(X[:,self.index_dim])
-        slices2 = index_to_slices(X2[:,self.index_dim])
         target = np.zeros((X.shape[0], X.shape[1]) )
-        [[[[ target.__setitem__((slices[i][k]), target[slices[i][k],:] + self.covariance[i][j]['gradients_X'](dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:]) ) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))] 
+        if X2 is not None:
+            slices2 = index_to_slices(X2[:,self.index_dim])
+            [[[[ target.__setitem__((slices[i][k]), target[slices[i][k],:] + self.covariance[i][j]['gradients_X'](dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:]) ) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
+        else:
+            [[[[ target.__setitem__((slices[i][k]), target[slices[i][k],:] + self.covariance[i][j]['gradients_X'](dL_dK[slices[i][k],slices[j][l]], X[slices[i][k],:], (None if (i==j and k==l) else X[slices[j][l],:] )) ) for k in range(len(slices[i]))] for l in range(len(slices[j]))] for i in range(len(slices))] for j in range(len(slices))]
         return target

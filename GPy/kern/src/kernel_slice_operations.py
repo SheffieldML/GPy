@@ -97,17 +97,17 @@ def _slice_Kdiag(f):
 
 def _slice_update_gradients_full(f):
     @wraps(f)
-    def wrap(self, dL_dK, X, X2=None):
+    def wrap(self, dL_dK, X, X2=None, *a, **kw):
         with _Slice_wrap(self, X, X2) as s:
-            ret = f(self, dL_dK, s.X, s.X2)
+            ret = f(self, dL_dK, s.X, s.X2, *a, **kw)
         return ret
     return wrap
 
 def _slice_update_gradients_diag(f):
     @wraps(f)
-    def wrap(self, dL_dKdiag, X):
+    def wrap(self, dL_dKdiag, X, *a, **kw):
         with _Slice_wrap(self, X, None) as s:
-            ret = f(self, dL_dKdiag, s.X)
+            ret = f(self, dL_dKdiag, s.X, *a, **kw)
         return ret
     return wrap
 

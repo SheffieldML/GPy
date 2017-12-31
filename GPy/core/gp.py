@@ -568,7 +568,7 @@ class GP(Model):
             for d in range(self.output_dim):
                 if full_cov and v.ndim == 3:
                     fsim[d] = sim_one_dim(m[:, d], v[:, :, d])
-                elif (not full_cov) and v.ndim == 2:
+                elif (not full_cov) and v.shape[1]>1:
                     fsim[d] = sim_one_dim(m[:, d], v[:, d])
                 else:
                     fsim[d] = sim_one_dim(m[:, d], v)

@@ -259,29 +259,18 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
     def test_missing_data(self):
-        from GPy import kern
-        from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
-        from GPy.examples.dimensionality_reduction import _simulate_matern
+        Q = 4
 
-        D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 400, 3, 4
-        _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
-        Y = Ylist[0]
-
-        inan = np.random.binomial(1, .9, size=Y.shape).astype(bool) # 80% missing data
-        Ymissing = Y.copy()
-        Ymissing[inan] = np.nan
-
-        k = kern.Linear(Q, ARD=True) + kern.White(Q, np.exp(-2)) # + kern.bias(Q)
-        m = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
-                          kernel=k, missing_data=True)
+        k = GPy.kern.Linear(Q, ARD=True) + GPy.kern.White(Q, np.exp(-2)) # + kern.bias(Q)
+        m = _create_missing_data_model(k, Q)
         assert(m.checkgrad())
         mul, varl = m.predict(m.X)
 
-        k = kern.RBF(Q, ARD=True) + kern.White(Q, np.exp(-2)) # + kern.bias(Q)
-        m2 = BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
-                          kernel=k, missing_data=True)
+        k = GPy.kern.RBF(Q, ARD=True) + GPy.kern.White(Q, np.exp(-2)) # + kern.bias(Q)
+        m2 = _create_missing_data_model(k, Q)
         assert(m.checkgrad())
         m2.kern.rbf.lengthscale[:] = 1e6
+
         m2.X[:] = m.X.param_array
         m2.likelihood[:] = m.likelihood[:]
         m2.kern.white[:] = m.kern.white[:]
@@ -1081,6 +1070,46 @@ class GradientTests(np.testing.TestCase):
         m.optimize_auto(max_iters=1)
         m.randomize()
         self.assertTrue(m.checkgrad())
+
+    def test_posterior_covariance(self):
+        k = GPy.kern.Poly(2, order=1)
+        X1 = np.array([
+                 [-2, 2],
+                 [-1, 1]
+             ])
+        X2 = np.array([
+                 [2, 3],
+                 [-1, 3]
+             ])
+        Y = np.array([[1], [2]])
+        m = GPy.models.GPRegression(X1, Y, kernel=k)
+
+        result = m.posterior_covariance(X1, X2)
+        expected = np.array([[0.4, 2.2], [1.0, 1.0]]) / 3.0
+
+        self.assertTrue(np.allclose(result, expected))
+
+    def test_posterior_covariance_missing_data(self):
+        Q = 4
+        k = GPy.kern.Linear(Q, ARD=True)
+        m = _create_missing_data_model(k, Q)
+
+        with self.assertRaises(RuntimeError):
+            m.posterior_covariance(np.array([[1], [2]]), np.array([[3], [4]]))
+
+def _create_missing_data_model(kernel, Q):
+    D1, D2, D3, N, num_inducing = 13, 5, 8, 400, 3
+    _, _, Ylist = GPy.examples.dimensionality_reduction._simulate_matern(D1, D2, D3, N, num_inducing, False)
+    Y = Ylist[0]
+
+    inan = np.random.binomial(1, .9, size=Y.shape).astype(bool) # 80% missing data
+    Ymissing = Y.copy()
+    Ymissing[inan] = np.nan
+
+    m = GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch(Ymissing, Q, init="random", num_inducing=num_inducing,
+                      kernel=kernel, missing_data=True)
+
+    return m
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

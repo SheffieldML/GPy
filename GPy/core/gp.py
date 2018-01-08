@@ -8,7 +8,6 @@ from .mapping import Mapping
 from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from ..util.linalg import dtrtrs
 from ..util.normalizer import Standardize
 from paramz import ObsAr
 
@@ -680,23 +679,11 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
-    def posterior_covariance(self, X1, X2):
+    def posterior_covariance_between_points(self, X1, X2):
         """
         Computes the posterior covariance between points.
 
         :param X1: some input observations
         :param X2: other input observations
         """
-        # ndim == 3 is a model for missing data
-        if self.posterior.woodbury_chol.ndim != 2:
-            raise RuntimeError("This method does not support posterior for missing data models")
-
-        Kx1 = self.kern.K(self.X, X1)
-        Kx2 = self.kern.K(self.X, X2)
-        K12 = self.kern.K(X1, X2)
-
-        tmp1 = dtrtrs(self.posterior.woodbury_chol, Kx1)[0]
-        tmp2 = dtrtrs(self.posterior.woodbury_chol, Kx2)[0]
-        var = K12 - tmp1.T.dot(tmp2)
-
-        return var
+        return self.posterior.covariance_between_points(self.kern, self.X, X1, X2)

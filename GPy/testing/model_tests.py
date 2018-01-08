@@ -1084,7 +1084,7 @@ class GradientTests(np.testing.TestCase):
         Y = np.array([[1], [2]])
         m = GPy.models.GPRegression(X1, Y, kernel=k)
 
-        result = m.posterior_covariance(X1, X2)
+        result = m.posterior_covariance_between_points(X1, X2)
         expected = np.array([[0.4, 2.2], [1.0, 1.0]]) / 3.0
 
         self.assertTrue(np.allclose(result, expected))
@@ -1095,7 +1095,7 @@ class GradientTests(np.testing.TestCase):
         m = _create_missing_data_model(k, Q)
 
         with self.assertRaises(RuntimeError):
-            m.posterior_covariance(np.array([[1], [2]]), np.array([[3], [4]]))
+            m.posterior_covariance_between_points(np.array([[1], [2]]), np.array([[3], [4]]))
 
 def _create_missing_data_model(kernel, Q):
     D1, D2, D3, N, num_inducing = 13, 5, 8, 400, 3

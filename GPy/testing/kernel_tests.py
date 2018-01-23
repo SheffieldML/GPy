@@ -494,7 +494,6 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         X2t,_,_ = GPy.util.multioutput.build_XY([self.X2, self.X2])
         self.assertTrue(check_kernel_gradient_functions(k, X=Xt, X2=X2t, verbose=verbose, fixed_X_dims=-1))
 
-
     def test_Precomputed(self):
         Xall = np.concatenate([self.X, self.X2])
         cov = np.dot(Xall, Xall.T)

@@ -178,7 +178,7 @@ class Stationary(Kern):
         else:
             self.lengthscale.gradient = np.zeros(self.input_dim)
 
-    def update_gradients_diag(self, dL_dKdiag, X, reset=True):
+    def update_gradients_diag(self, dL_dKdiag, X):
         """
         Given the derivative of the objective with respect to the diagonal of
         the covariance matrix, compute the derivative wrt the parameters of
@@ -186,9 +186,8 @@ class Stationary(Kern):
 
         See also update_gradients_full
         """
-        if reset: self.reset_gradients()
-        self.variance.gradient += np.sum(dL_dKdiag)
-        self.lengthscale.gradient += 0.
+        self.variance.gradient = np.sum(dL_dKdiag)
+        self.lengthscale.gradient = 0.
 
     def update_gradients_full(self, dL_dK, X, X2=None, reset=True):
         """
@@ -196,8 +195,7 @@ class Stationary(Kern):
         (dL_dK), compute the gradient wrt the parameters of this kernel,
         and store in the parameters object as e.g. self.variance.gradient
         """
-        if reset: self.reset_gradients()
-        self.variance.gradient += np.sum(self.K(X, X2)* dL_dK)/self.variance
+        self.variance.gradient = np.sum(self.K(X, X2)* dL_dK)/self.variance
 
         #now the lengthscale gradient(s)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
@@ -206,12 +204,12 @@ class Stationary(Kern):
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
             if config.getboolean('cython', 'working'):
-                self.lengthscale.gradient += self._lengthscale_grads_cython(tmp, X, X2)
+                self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
-                self.lengthscale.gradient += self._lengthscale_grads_pure(tmp, X, X2)
+                self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
-            self.lengthscale.gradient += -np.sum(dL_dr*r)/self.lengthscale
+            self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
 
     def update_gradients_direct(self, dL_dVar, dL_dLen):

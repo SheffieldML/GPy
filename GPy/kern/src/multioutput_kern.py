@@ -93,12 +93,12 @@ class MultioutputKern(CombinationKernel):
         [[np.copyto(target[s], kern.Kdiag(X[s])) for s in slices_i] for kern, slices_i in zip(kerns, slices)]
         return target
     
-    def update_gradients_full_wrapper(self, cov_struct, dL_dK, X, X2):
+    def _update_gradients_full_wrapper(self, cov_struct, dL_dK, X, X2):
         gradient = cov_struct['kern'].gradient.copy()
         cov_struct['update_gradients_full'](dL_dK, X, X2)
         cov_struct['kern'].gradient += gradient
     
-    def update_gradients_diag_wrapper(self, kern, dL_dKdiag, X):
+    def _update_gradients_diag_wrapper(self, kern, dL_dKdiag, X):
         gradient = kern.gradient.copy()
         kern.update_gradients_diag(dL_dKdiag, X)
         kern.gradient += gradient
@@ -111,14 +111,14 @@ class MultioutputKern(CombinationKernel):
         slices = index_to_slices(X[:,self.index_dim])
         if X2 is not None:
             slices2 = index_to_slices(X2[:,self.index_dim])
-            [[[[ self.update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
+            [[[[ self._update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
         else:
-            [[[[ self.update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices[j][l]], X[slices[i][k],:], X[slices[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices[j]))] for i in range(len(slices))] for j in range(len(slices))]
+            [[[[ self._update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices[j][l]], X[slices[i][k],:], X[slices[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices[j]))] for i in range(len(slices))] for j in range(len(slices))]
             
     def update_gradients_diag(self, dL_dKdiag, X):
         self.reset_gradients()
         slices = index_to_slices(X[:,self.index_dim])
-        [[ self.update_gradients_diag_wrapper(self.covariance[i][i]['kern'], dL_dKdiag[slices[i][k]], X[slices[i][k],:]) for k in range(len(slices[i]))] for i in range(len(slices))]
+        [[ self._update_gradients_diag_wrapper(self.covariance[i][i]['kern'], dL_dKdiag[slices[i][k]], X[slices[i][k],:]) for k in range(len(slices[i]))] for i in range(len(slices))]
     
     def gradients_X(self,dL_dK, X, X2=None):
         slices = index_to_slices(X[:,self.index_dim])

@@ -185,6 +185,9 @@ class Kern(Parameterized):
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
+    
+    def reset_gradients(self):
+        raise NotImplementedError
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
@@ -345,7 +348,7 @@ class CombinationKernel(Kern):
     A combination kernel combines (a list of) kernels and works on those.
     Examples are the HierarchicalKernel or Add and Prod kernels.
     """
-    def __init__(self, kernels, name, extra_dims=[]):
+    def __init__(self, kernels, name, extra_dims=[], link_parameters=True):
         """
         Abstract super class for combination kernels.
         A combination kernel combines (a list of) kernels and works on those.
@@ -369,7 +372,8 @@ class CombinationKernel(Kern):
         self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
 
         self.extra_dims = extra_dims
-        self.link_parameters(*kernels)
+        if link_parameters:
+            self.link_parameters(*kernels)
 
     def _to_dict(self):
         input_dict = super(CombinationKernel, self)._to_dict()

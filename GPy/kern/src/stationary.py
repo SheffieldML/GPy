@@ -171,6 +171,13 @@ class Stationary(Kern):
         ret[:] = self.variance
         return ret
 
+    def reset_gradients(self):
+        self.variance.gradient = 0.
+        if not self.ARD:
+            self.lengthscale.gradient = 0.
+        else:
+            self.lengthscale.gradient = np.zeros(self.input_dim)
+
     def update_gradients_diag(self, dL_dKdiag, X):
         """
         Given the derivative of the objective with respect to the diagonal of
@@ -182,7 +189,7 @@ class Stationary(Kern):
         self.variance.gradient = np.sum(dL_dKdiag)
         self.lengthscale.gradient = 0.
 
-    def update_gradients_full(self, dL_dK, X, X2=None):
+    def update_gradients_full(self, dL_dK, X, X2=None, reset=True):
         """
         Given the derivative of the objective wrt the covariance matrix
         (dL_dK), compute the gradient wrt the parameters of this kernel,
@@ -632,7 +639,7 @@ class RatQuad(Stationary):
     def dK_dr(self, r):
         r2 = np.square(r)
 #         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
-        return-self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
+        return -self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)

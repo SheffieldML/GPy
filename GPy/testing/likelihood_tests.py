@@ -128,7 +128,7 @@ class TestNoiseModels(object):
         censored[random_inds] = 1
         self.Y_metadata = dict()
         self.Y_metadata['censored'] = censored
-
+        self.Y_metadata['output_index'] = np.zeros((self.N,1), dtype=int)
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-4
 
@@ -292,6 +292,15 @@ class TestNoiseModels(object):
                 "Y": self.positive_Y,
                 "Y_metadata": self.Y_metadata,
                 "laplace": True
+            },
+            "multioutput_default": {
+                "model": GPy.likelihoods.MultioutputLikelihood([GPy.likelihoods.Bernoulli()]),
+                "link_f_constraints": [partial(self.constrain_bounded, lower=0, upper=1)],
+                "laplace": True,
+                "Y": self.binary_Y,
+                "Y_metadata": self.Y_metadata,
+                "ep": True,
+                "variational_expectations": True,
             }
             #,
             #GAMMA needs some work!"Gamma_default": {

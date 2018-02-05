@@ -118,6 +118,24 @@ class MiscTests(unittest.TestCase):
         from scipy.stats import norm
         np.testing.assert_allclose((mu+(norm.ppf(qs/100.)*np.sqrt(var))).flatten(), np.array(q95).flatten())
 
+    def test_multioutput_regression_with_normalizer(self):
+        """
+        Test that normalizing works in multi-output case
+        """
+
+        # Create test inputs
+        X1 = (np.random.rand(50, 1) * 8)
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y = np.hstack((Y1, Y2))
+
+        m = GPy.models.GPRegression(X1, Y, normalizer=True)
+
+        n_test_point = 10
+        mean, covaraince = m.predict(np.random.rand(n_test_point, 1),
+                                     full_cov=True)
+        self.assertTrue(covaraince.shape == (n_test_point, n_test_point, 2))
+
     def check_jacobian(self):
         try:
             import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt

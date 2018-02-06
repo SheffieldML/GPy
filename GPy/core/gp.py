@@ -376,13 +376,16 @@ class GP(Model):
 
     def predictive_gradients(self, Xnew, kern=None):
         """
-        Compute the derivatives of the predicted latent function with respect to X*
+        Compute the derivatives of the predicted latent function with respect
+        to X*
 
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
-         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+            dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP
+            (usually one).
 
-        Note that this is not the same as computing the mean and variance of the derivative of the function!
+        Note that this is not the same as computing the mean and variance of
+        the derivative of the function!
 
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
         :param X: The points at which to get the predictive gradients
@@ -393,25 +396,32 @@ class GP(Model):
         """
         if kern is None:
             kern = self.kern
-        mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+        mean_jac = np.empty((Xnew.shape[0], Xnew.shape[1], self.output_dim))
 
         for i in range(self.output_dim):
-            mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
+            mean_jac[:, :, i] = kern.gradients_X(
+                self.posterior.woodbury_vector[:, i:i+1].T, Xnew,
+                self._predictive_variable)
 
-        # gradients wrt the diagonal part k_{xx}
-        dv_dX = kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
-        #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
+        # Gradients wrt the diagonal part k_{xx}
+        dv_dX = kern.gradients_X_diag(np.ones(Xnew.shape[0]), Xnew)
+
+        # Grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
         if self.posterior.woodbury_inv.ndim == 3:
-            tmp = np.empty(dv_dX.shape + (self.posterior.woodbury_inv.shape[2],))
-            tmp[:] = dv_dX[:,:,None]
+            var_jac = np.empty(dv_dX.shape +
+                               (self.posterior.woodbury_inv.shape[2],))
+            var_jac[:] = dv_dX[:, :, None]
             for i in range(self.posterior.woodbury_inv.shape[2]):
-                alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv[:, :, i])
-                tmp[:, :, i] += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+                alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
+                                   self.posterior.woodbury_inv[:, :, i])
+                var_jac[:, :, i] += kern.gradients_X(alpha, Xnew,
+                                                     self._predictive_variable)
         else:
-            tmp = dv_dX
-            alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
-            tmp += kern.gradients_X(alpha, Xnew, self._predictive_variable)
-        return mean_jac, tmp
+            var_jac = dv_dX
+            alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
+                               self.posterior.woodbury_inv)
+            var_jac += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        return mean_jac, var_jac
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=False):
         """

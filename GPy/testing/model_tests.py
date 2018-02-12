@@ -124,17 +124,44 @@ class MiscTests(unittest.TestCase):
         """
 
         # Create test inputs
-        X1 = (np.random.rand(50, 1) * 8)
-        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
-        Y2 = -np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        X = self.X
+        Y1 = np.sin(X) + np.random.randn(*X.shape) * 0.2
+        Y2 = -np.sin(X) + np.random.randn(*X.shape) * 0.05
         Y = np.hstack((Y1, Y2))
 
-        m = GPy.models.GPRegression(X1, Y, normalizer=True)
+        mu, std = Y.mean(0), Y.std(0)
+        m = GPy.models.GPRegression(X, Y, normalizer=True)
+        m.optimize(messages=True)
+        assert(m.checkgrad())
+        k = GPy.kern.RBF(1)
+        m2 = GPy.models.GPRegression(X, (Y-mu)/std, normalizer=False)
+        m2[:] = m[:]
 
-        n_test_point = 10
-        mean, covaraince = m.predict(np.random.rand(n_test_point, 1),
-                                     full_cov=True)
-        self.assertTrue(covaraince.shape == (n_test_point, n_test_point, 2))
+        mu1, var1 = m.predict(m.X, full_cov=True)
+        mu2, var2 = m2.predict(m2.X, full_cov=True)
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2[:, :, None]*std[None, None, :]**2)
+
+        mu1, var1 = m.predict(m.X, full_cov=False)
+        mu2, var2 = m2.predict(m2.X, full_cov=False)
+
+        np.testing.assert_allclose(mu1, (mu2*std)+mu)
+        np.testing.assert_allclose(var1, var2*std[None, :]**2)
+
+        q50n = m.predict_quantiles(m.X, (50,))
+        q50 = m2.predict_quantiles(m2.X, (50,))
+
+        np.testing.assert_allclose(q50n[0], (q50[0]*std)+mu)
+
+        # Test variance component:
+        qs = np.array([2.5, 97.5])
+        # The quantiles get computed before unormalization
+        # And transformed using the mean transformation:
+        c = np.random.choice(X.shape[0])
+        q95 = m2.predict_quantiles(X[[c]], qs)
+        mu, var = m2.predict(X[[c]])
+        from scipy.stats import norm
+        np.testing.assert_allclose((mu.T+(norm.ppf(qs/100.)*np.sqrt(var))).T.flatten(), np.array(q95).flatten())
 
     def check_jacobian(self):
         try:

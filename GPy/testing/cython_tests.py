@@ -4,15 +4,17 @@ from GPy.util import choleskies
 import GPy
 import unittest
 
+from ..util.config import config
+
 try:
     from ..util import choleskies_cython
-    choleskies_cython_working = True
+    choleskies_cython_working = config.getboolean('cython', 'working')
 except ImportError:
     choleskies_cython_working = False
 
 try:
     from ..kern.src import stationary_cython
-    stationary_cython_working = True
+    stationary_cython_working = config.getboolean('cython', 'working')
 except ImportError:
     stationary_cython_working = False
 

@@ -15,7 +15,7 @@ verbose = 0
 
 try:
     from ..kern.src import coregionalize_cython
-    cython_coregionalize_working = True
+    cython_coregionalize_working = config.getboolean('cython', 'working')
 except ImportError:
     cython_coregionalize_working = False
 

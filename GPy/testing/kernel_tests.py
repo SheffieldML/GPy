@@ -631,41 +631,31 @@ class Coregionalize_cython_test(unittest.TestCase):
 
     def test_sym(self):
         dL_dK = np.random.randn(self.N1, self.N1)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X)
+        K_cython = self.k._K_cython(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X)
+        K_numpy = self.k._K_numpy(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
     def test_nonsym(self):
         dL_dK = np.random.randn(self.N1, self.N2)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X, self.X2)
+        K_cython = self.k._K_cython(self.X, self.X2)
         self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X, self.X2)
+        K_numpy = self.k._K_numpy(self.X, self.X2)
         self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
 
 

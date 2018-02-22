@@ -36,7 +36,8 @@ from unittest.mock import MagicMockclass Mock(MagicMock):
 
 MOCK_MODULES = [
     "GPy.util.linalg.linalg_cython", 
-    "GPy.util.linalg_cython", "sympy", 
+    "GPy.util.linalg_cython", 
+    "sympy", 
     'GPy.kern.stationary_cython'
 ]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
@@ -48,7 +49,7 @@ if on_rtd:
     import subprocess
 
     # build extensions:
-    # proc = subprocess.Popen("cd ../../; python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
+    # proc = subprocess.Popen("cd ../../; python setup.py build_ext install", stdout=subprocess.PIPE, shell=True)
     # (out, err) = proc.communicate()
     # print("build_ext develop:")
     # print(out)

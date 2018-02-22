@@ -27,19 +27,20 @@ sys.path.insert(0, os.path.abspath('../../GPy/'))
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 import sys
-from unittest.mock import MagicMockclass Mock(MagicMock):
+from unittest.mock import MagicMock
 
-
+class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
-            return MagicMock()
+        return MagicMock()
 
 MOCK_MODULES = [
     "GPy.util.linalg.linalg_cython", 
     "GPy.util.linalg_cython", 
     "sympy", 
-    'GPy.kern.stationary_cython'
+    'GPy.kern.stationary_cython',
 ]
+
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 #on_rtd = True

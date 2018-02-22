@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.9.1 (2018-02-22)
+
+### Fix
+
+* Paramz newest version. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.0 → 1.9.1. [mzwiessele]
+
+
 ## v1.9.0 (2018-02-22)
 
 ### Other

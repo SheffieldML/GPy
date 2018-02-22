@@ -135,7 +135,21 @@ print version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'python'
+
+# autodoc:
+autoclass_content = 'both'
+autodoc_default_flags = ['members',
+                         #'undoc-members',
+                         #'private-members',
+                         #'special-members',
+                         #'inherited-members',
+                         'show-inheritance']
+autodoc_member_order = 'groupwise'
+add_function_parentheses = False
+add_module_names = False
+modindex_common_prefix = ['paramz']
+show_authors = True
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -163,7 +177,7 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-#pygments_style = 'sphinx'
+pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -208,7 +222,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -233,16 +247,16 @@ html_theme = 'sphinx_rtd_theme'
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_domain_indices = False
+html_domain_indices = False
 
 # If false, no index is generated.
-#html_use_index = False
+html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
 html_split_index = True
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
@@ -277,9 +291,9 @@ htmlhelp_basename = 'GPydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-#latex_elements = {
+latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'a4paper',
 
 # The font size ('10pt', '11pt' or '12pt').
 #'pointsize': '10pt',
@@ -288,8 +302,8 @@ htmlhelp_basename = 'GPydoc'
 #'preamble': '',
 
 # Latex figure (float) alignment
-#'figure_align': 'htbp',
-#}
+'figure_align': 'htbp',
+}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

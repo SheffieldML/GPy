@@ -1,5 +1,69 @@
 # Changelog
 
+## v1.8.7 (2018-02-22)
+
+### Fix
+
+* Merge deploy back into devel. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.6 → 1.8.7. [mzwiessele]
+
+* Deploy version 1.8.5. [Zhenwen Dai]
+
+  * added extended version of MLP function with multiple hidden layers and different activation functions
+
+  * Update mapping_tests.py
+
+  Make output of gradient check verbose to diagnose error
+
+  * Update mapping_tests.py
+
+  Remove verbosity again after gradient checks passed without problem with verbosity
+
+  * the implementation of SVI-MOGP
+
+  * Try to fix the issue with model_tests
+
+  * updated mapping test to pass gradient checks
+
+  * Fix random seed for reproducible results in tests
+
+  * Add mean function functionality to dtc inference method
+
+  * Fix DSYR function (See https://github.com/scipy/scipy/issues/8155)
+
+  * Updated sde_kern to work with scipy=1.0.0
+
+  * Trying to fix tests for Matplotlib plotting issue
+
+  * Testing Again #575
+
+  * Figured it must be a matplotlib import error #575
+
+  New import matplotlib must be missing a package
+
+  * Removed ImageComparisonFailure #575
+
+  ImageComparisonFailure no longer exists which causes issues with travis testing using the most recent matplotlib
+
+  * Fix EP for non-zero mean GP priors
+
+  * improve the documentation for LVMOGP
+
+  * remove non-ascii characters
+
+  * Small correction to doc
+
+  * add type into docstring
+
+  * update changelog for 1.8.5
+
+  * bump the version: 1.8.4 -&gt; 1.8.5
+
+
+## v1.8.6 (2018-02-22)
 
 ### Fix
 
@@ -182,6 +246,25 @@
 * The implementation of SVI-MOGP. [Zhenwen Dai]
 
 
+## v1.8.4 (2017-10-06)
+
+### Other
+
+* Bump version: 1.8.3 → 1.8.4. [mzwiessele]
+
+* Update appveyor.yml. [Max Zwiessele]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+
+* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+
+* Merge pull request #557 from SheffieldML/devel. [Max Zwiessele]
+
+  Paramz 0.8 update
+
+* Merge pull request #544 from SheffieldML/devel. [Zhenwen Dai]
+
+  Release GPy 1.8.x
 
 
 ## v1.8.3 (2017-10-02)

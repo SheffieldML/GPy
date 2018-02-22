@@ -5,3 +5,4 @@ decorator
 matplotlib
 paramz
 cython
+mock

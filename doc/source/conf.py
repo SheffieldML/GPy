@@ -26,6 +26,17 @@ sys.path.insert(0, os.path.abspath('../../GPy/'))
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+import sys
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+
+MOCK_MODULES = ["GPy.linalg.linalg_cython", "sympy"]
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 #on_rtd = True
 if on_rtd:
     # sys.path.append(os.path.abspath('../GPy'))
@@ -33,10 +44,10 @@ if on_rtd:
     import subprocess
 
     # build extensions:
-    proc = subprocess.Popen("cd ../../; python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    print("build_ext develop:")
-    print(out)
+    # proc = subprocess.Popen("cd ../../; python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
+    # (out, err) = proc.communicate()
+    # print("build_ext develop:")
+    # print(out)
 
     # print current folder:
     proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)

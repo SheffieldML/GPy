@@ -35,9 +35,9 @@ class Mock(MagicMock):
         return MagicMock()
 
 MOCK_MODULES = [
-    "GPy.util.linalg.linalg_cython", 
-    "GPy.util.linalg_cython", 
-    "sympy", 
+    "GPy.util.linalg.linalg_cython",
+    "GPy.util.linalg_cython",
+    "sympy",
     'GPy.kern.stationary_cython',
     "sympy.utilities",
     "sympy.utilities.lambdify",
@@ -62,13 +62,13 @@ if on_rtd:
     (out, err) = proc.communicate()
     print("$ pwd: ")
     print(out)
-    
+
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
     proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print("$ Apidoc:")
     print(out)
- 
+
 
 # -- General configuration ------------------------------------------------
 
@@ -108,6 +108,7 @@ autodoc_default_flags = ['members',
                          #'special-members',
                          #'inherited-members',
                          'show-inheritance']
+
 autodoc_member_order = 'groupwise'
 add_function_parentheses = False
 add_module_names = False

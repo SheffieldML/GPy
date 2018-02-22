@@ -7,3 +7,4 @@ paramz
 cython
 mock
 sympy
+nose

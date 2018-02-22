@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.9.0 (2018-02-22)
+
+### Other
+
+* Bump version: 1.8.7 → 1.9.0. [mzwiessele]
+
+
 ## v1.8.7 (2018-02-22)
 
 ### Fix

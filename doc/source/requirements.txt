@@ -6,3 +6,4 @@ matplotlib
 paramz
 cython
 mock
+sympy

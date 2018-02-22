@@ -33,23 +33,22 @@ if on_rtd:
     import subprocess
 
     # build extensions:
-    proc = subprocess.Popen("cd ../../", stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("cd ../../; python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    proc = subprocess.Popen("python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    print("program output:", out)
-    proc = subprocess.Popen("cd doc/source/", stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
+    print("build_ext develop:")
+    print(out)
 
     # print current folder:
     proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    print("$ pwd: ", out)
+    print("$ pwd: ")
+    print(out)
     
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
     proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    print("Apidoc:", out)
+    print("Apidoc:")
+    print(out)
  
 
 # -- General configuration ------------------------------------------------

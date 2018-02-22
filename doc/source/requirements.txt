@@ -1,1 +1,6 @@
+numpy
+scipy
+six
+decorator
+matplotlib
 paramz

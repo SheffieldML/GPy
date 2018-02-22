@@ -71,3 +71,4 @@ deploy:
     branch: deploy
   distributions: $DIST
   skip_cleanup: true
+  skip_upload_docs: false

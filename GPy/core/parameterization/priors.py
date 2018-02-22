@@ -288,9 +288,17 @@ class Gamma(Prior):
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
+    @property
+    def a(self):
+        return self._a
+
+    @property
+    def b(self):
+        return self._b
+
     def __init__(self, a, b):
-        self.a = float(a)
-        self.b = float(b)
+        self._a = float(a)
+        self._b = float(b)
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
@@ -333,8 +341,8 @@ class Gamma(Prior):
         return self.a, self.b
 
     def __setstate__(self, state):
-        self.a = state[0]
-        self.b = state[1]
+        self._a = state[0]
+        self._b = state[1]
         self.constant = -gammaln(self.a) + self.a * np.log(self.b)
 
 class InverseGamma(Gamma):
@@ -360,8 +368,8 @@ class InverseGamma(Gamma):
         return cls._instances[-1]()
 
     def __init__(self, a, b):
-        self.a = float(a)
-        self.b = float(b)
+        self._a = float(a)
+        self._b = float(b)
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):

@@ -32,23 +32,25 @@ if on_rtd:
 
     import subprocess
 
+    # build extensions:
+    proc = subprocess.Popen("cd ../../", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    proc = subprocess.Popen("python setup.py build_ext develop", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    print("program output:", out)
+    proc = subprocess.Popen("cd doc/source/", stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+
+    # print current folder:
     proc = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    print "program output:", out
-    proc = subprocess.Popen("ls ../../", stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    print "program output:", out
+    print("$ pwd: ", out)
+    
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
     proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    print "program output:", out
-    #proc = subprocess.Popen("whereis numpy", stdout=subprocess.PIPE, shell=True)
-    #(out, err) = proc.communicate()
-    #print "program output:", out
-    #proc = subprocess.Popen("whereis matplotlib", stdout=subprocess.PIPE, shell=True)
-    #(out, err) = proc.communicate()
-    #print "program output:", out
-
+    print("Apidoc:", out)
+ 
 
 # -- General configuration ------------------------------------------------
 

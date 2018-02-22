@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.9.2 (2018-02-22)
+
+### Fix
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.1 → 1.9.2. [mzwiessele]
+
+
 ## v1.9.1 (2018-02-22)
 
 ### Fix

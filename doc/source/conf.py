@@ -34,7 +34,7 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return MagicMock()
 
-MOCK_MODULES = ["GPy.linalg.linalg_cython", "sympy"]
+MOCK_MODULES = ["GPy.linalg.linalg_cython", "sympy", 'GPy.kern.stationary_cython']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 #on_rtd = True

@@ -27,14 +27,18 @@ sys.path.insert(0, os.path.abspath('../../GPy/'))
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMockclass Mock(MagicMock):
 
-class Mock(MagicMock):
+
     @classmethod
     def __getattr__(cls, name):
             return MagicMock()
 
-MOCK_MODULES = ["GPy.linalg.linalg_cython", "sympy", 'GPy.kern.stationary_cython']
+MOCK_MODULES = [
+    "GPy.util.linalg.linalg_cython", 
+    "GPy.util.linalg_cython", "sympy", 
+    'GPy.kern.stationary_cython'
+]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 #on_rtd = True
@@ -58,7 +62,7 @@ if on_rtd:
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
     proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    print("Apidoc:")
+    print("$ Apidoc:")
     print(out)
  
 

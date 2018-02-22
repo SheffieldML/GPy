@@ -4,3 +4,4 @@ six
 decorator
 matplotlib
 paramz
+cython

@@ -76,7 +76,7 @@ class SparseGP(GP):
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = \
         self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood,
-                                        self.Y, Y_metadata=self.Y_metadata,
+                                        self.Y_normalized, Y_metadata=self.Y_metadata,
                                         mean_function=self.mean_function)
         self._update_gradients()
 

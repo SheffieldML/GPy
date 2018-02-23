@@ -15,7 +15,7 @@ class MLP(Kern):
 
     .. math::
 
-          k(x,y) = \\sigma^{2}\\frac{2}{\\pi }  \\text{asin} \\left ( \\frac{ \\sigma_w^2 x^\\top y+\\sigma_b^2}{\\sqrt{\\sigma_w^2x^\\top x + \\sigma_b^2 + 1}\\sqrt{\\sigma_w^2 y^\\top y \\sigma_b^2 +1}} \\right )
+          k(x,y) = \\sigma^{2}\\frac{2}{\\pi }  \\text{asin} \\left ( \\frac{ \\sigma_w^2 x^\\top y+\\sigma_b^2}{\\sqrt{\\sigma_w^2x^\\top x + \\sigma_b^2 + 1}\\sqrt{\\sigma_w^2 y^\\top y + \\sigma_b^2 +1}} \\right )
 
 
     :param input_dim: the number of input dimensions

@@ -28,7 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-import unittest, numpy as np
+import unittest
+import numpy as np
 import GPy
 
 class TestDebug(unittest.TestCase):
@@ -225,3 +226,17 @@ class TestUnivariateGaussian(unittest.TestCase):
         for i in range(len(pySols)):
           diff += abs(derivLogCdfNormal(self.zz[i]) - pySols[i])
         self.assertTrue(diff  < 1e-8)
+
+class TestStandardize(unittest.TestCase):
+    def setUp(self):
+        self.normalizer = GPy.util.normalizer.Standardize()
+        y = np.stack([np.random.randn(10), 2*np.random.randn(10)], axis=1)
+        self.normalizer.scale_by(y)
+    
+    def test_inverse_covariance(self):
+        """
+        Test inverse covariance outputs correct size
+        """
+        covariance = np.random.rand(100, 100)
+        output = self.normalizer.inverse_covariance(covariance)
+        self.assertTrue(output.shape == (100, 100, 2))

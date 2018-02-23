@@ -282,10 +282,12 @@ class GP(Model):
             mu += self.mean_function.f(Xnew)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None, include_likelihood=True):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, 
+                likelihood=None, include_likelihood=True):
         """
-        Predict the function(s) at the new point(s) Xnew. This includes the likelihood
-        variance added to the predicted underlying function (usually referred to as f).
+        Predict the function(s) at the new point(s) Xnew. This includes the
+        likelihood variance added to the predicted underlying function
+        (usually referred to as f).
 
         In order to predict without adding in the likelihood give
         `include_likelihood=False`, or refer to self.predict_noiseless().
@@ -295,33 +297,49 @@ class GP(Model):
         :param full_cov: whether to return the full covariance matrix, or just
                          the diagonal
         :type full_cov: bool
-        :param Y_metadata: metadata about the predicting point to pass to the likelihood
+        :param Y_metadata: metadata about the predicting point to pass to the
+                           likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
-        :param bool include_likelihood: Whether or not to add likelihood noise to the predicted underlying latent function f.
+        :param include_likelihood: Whether or not to add likelihood noise to
+                                   the predicted underlying latent function f.
+        :type include_likelihood: bool
 
         :returns: (mean, var):
             mean: posterior mean, a Numpy array, Nnew x self.input_dim
-            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False,
+                 Nnew x Nnew otherwise
 
-           If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
-           This is to allow for different normalizations of the output dimensions.
+            If full_cov and self.input_dim > 1, the return shape of var is
+            Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return
+            shape is Nnew x Nnew. This is to allow for different normalizations
+            of the output dimensions.
 
-        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        Note: If you want the predictive quantiles (e.g. 95% confidence
+        interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
         """
-        #predict the latent function values
-        mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+
+        # Predict the latent function values
+        mean, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
 
         if include_likelihood:
             # now push through likelihood
             if likelihood is None:
                 likelihood = self.likelihood
-            mu, var = likelihood.predictive_values(mu, var, full_cov, Y_metadata=Y_metadata)
+            mean, var = likelihood.predictive_values(mean, var, full_cov,
+                                                     Y_metadata=Y_metadata)
 
         if self.normalizer is not None:
-            mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
+            mean = self.normalizer.inverse_mean(mean)
 
-        return mu, var
+            # We need to create 3d array for the full covariance matrix with
+            # multiple outputs.
+            if full_cov & (mean.shape[1] > 1):
+                var = self.normalizer.inverse_covariance(var)
+            else:
+                var = self.normalizer.inverse_variance(var)
+
+        return mean, var
 
     def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
         """
@@ -376,13 +394,16 @@ class GP(Model):
 
     def predictive_gradients(self, Xnew, kern=None):
         """
-        Compute the derivatives of the predicted latent function with respect to X*
+        Compute the derivatives of the predicted latent function with respect
+        to X*
 
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
-         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+            dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP
+            (usually one).
 
-        Note that this is not the same as computing the mean and variance of the derivative of the function!
+        Note that this is not the same as computing the mean and variance of
+        the derivative of the function!
 
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
         :param X: The points at which to get the predictive gradients
@@ -393,25 +414,32 @@ class GP(Model):
         """
         if kern is None:
             kern = self.kern
-        mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1],self.output_dim))
+        mean_jac = np.empty((Xnew.shape[0], Xnew.shape[1], self.output_dim))
 
         for i in range(self.output_dim):
-            mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)
+            mean_jac[:, :, i] = kern.gradients_X(
+                self.posterior.woodbury_vector[:, i:i+1].T, Xnew,
+                self._predictive_variable)
 
-        # gradients wrt the diagonal part k_{xx}
-        dv_dX = kern.gradients_X(np.eye(Xnew.shape[0]), Xnew)
-        #grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
+        # Gradients wrt the diagonal part k_{xx}
+        dv_dX = kern.gradients_X_diag(np.ones(Xnew.shape[0]), Xnew)
+
+        # Grads wrt 'Schur' part K_{xf}K_{ff}^{-1}K_{fx}
         if self.posterior.woodbury_inv.ndim == 3:
-            tmp = np.empty(dv_dX.shape + (self.posterior.woodbury_inv.shape[2],))
-            tmp[:] = dv_dX[:,:,None]
+            var_jac = np.empty(dv_dX.shape +
+                               (self.posterior.woodbury_inv.shape[2],))
+            var_jac[:] = dv_dX[:, :, None]
             for i in range(self.posterior.woodbury_inv.shape[2]):
-                alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv[:, :, i])
-                tmp[:, :, i] += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+                alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
+                                   self.posterior.woodbury_inv[:, :, i])
+                var_jac[:, :, i] += kern.gradients_X(alpha, Xnew,
+                                                     self._predictive_variable)
         else:
-            tmp = dv_dX
-            alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable), self.posterior.woodbury_inv)
-            tmp += kern.gradients_X(alpha, Xnew, self._predictive_variable)
-        return mean_jac, tmp
+            var_jac = dv_dX
+            alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
+                               self.posterior.woodbury_inv)
+            var_jac += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+        return mean_jac, var_jac
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=False):
         """
@@ -678,3 +706,12 @@ class GP(Model):
         """
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+
+    def posterior_covariance_between_points(self, X1, X2):
+        """
+        Computes the posterior covariance between points.
+
+        :param X1: some input observations
+        :param X2: other input observations
+        """
+        return self.posterior.covariance_between_points(self.kern, self.X, X1, X2)

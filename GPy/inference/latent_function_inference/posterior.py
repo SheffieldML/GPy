@@ -101,6 +101,29 @@ class Posterior(object):
             #self._covariance = self._K - self._K.dot(self.woodbury_inv).dot(self._K)
         return self._covariance
 
+    def covariance_between_points(self, kern, X, X1, X2):
+        """
+        Computes the posterior covariance between points.
+
+        :param kern: GP kernel
+        :param X: current input observations
+        :param X1: some input observations
+        :param X2: other input observations
+        """
+        # ndim == 3 is a model for missing data
+        if self.woodbury_chol.ndim != 2:
+            raise RuntimeError("This method does not support posterior for missing data models")
+
+        Kx1 = kern.K(X, X1)
+        Kx2 = kern.K(X, X2)
+        K12 = kern.K(X1, X2)
+
+        tmp1 = dtrtrs(self.woodbury_chol, Kx1)[0]
+        tmp2 = dtrtrs(self.woodbury_chol, Kx2)[0]
+        var = K12 - tmp1.T.dot(tmp2)
+
+        return var
+
     @property
     def precision(self):
         """

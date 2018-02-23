@@ -64,6 +64,8 @@ deploy:
     secure: "vMEOlP7DQhFJ7hQAKtKC5hrJXFl5BkUt4nXdosWWiw//Kg8E+PPLg88XPI2gqIosir9wwgtbSBBbbwCxkM6uxRNMpoNR8Ixyv9fmSXp4rLl7bbBY768W7IRXKIBjpuEy2brQjoT+CwDDSzUkckHvuUjJDNRvUv8ab4P/qYO1LG4="
   on:
     branch: deploy
+  edge:
+    branch: v1.8.45
   distributions: $DIST
   skip_existing: true
   skip_cleanup: true

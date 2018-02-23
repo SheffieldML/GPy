@@ -49,11 +49,6 @@ after_success:
   - coveralls
 
 before_deploy:
-  - cd doc
-  - pip install sphinx_rtd_theme
-  - sphinx-apidoc -o source/ ../GPy
-  - make html
-  - cd ../
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
     then
       export DIST='sdist';
@@ -70,5 +65,6 @@ deploy:
   on:
     branch: deploy
   distributions: $DIST
+  skip_existing: true
   skip_cleanup: true
   skip_upload_docs: false

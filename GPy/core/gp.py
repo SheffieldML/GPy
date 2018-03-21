@@ -592,7 +592,7 @@ class GP(Model):
         if self.output_dim == 1:
             return sim_one_dim(m, v)
         else:
-            fsim = np.empty((self.output_dim, self.num_data, size))
+            fsim = np.empty((self.output_dim, len(X), size))
             for d in range(self.output_dim):
                 if full_cov and v.ndim == 3:
                     fsim[d] = sim_one_dim(m[:, d], v[:, :, d])

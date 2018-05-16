@@ -402,7 +402,7 @@ class EP(EPBase, ExactGaussianInference):
 
 class EPDTC(EPBase, VarDTC):
     def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
-        if self.always_reset:
+        if self.always_reset and not self.loading:
             self.reset()
 
         num_data, output_dim = Y.shape
@@ -420,11 +420,11 @@ class EPDTC(EPBase, VarDTC):
         else:
             Kmn = psi1.T
 
-        if self.ep_mode=="nested":
+        if self.ep_mode=="nested" and not self.loading:
             #Force EP at each step of the optimization
             self._ep_approximation = None
             post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(Kmm, Kmn, Y, likelihood, Y_metadata)
-        elif self.ep_mode=="alternated":
+        elif self.ep_mode=="alternated" or self.loading:
             if getattr(self, '_ep_approximation', None) is None:
                 #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
                 post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(Kmm, Kmn, Y, likelihood, Y_metadata)
@@ -433,6 +433,8 @@ class EPDTC(EPBase, VarDTC):
                 post_params, ga_approx, log_Z_tilde = self._ep_approximation
         else:
             raise ValueError("ep_mode value not valid")
+
+        self.loading = False
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
 
@@ -551,8 +553,7 @@ class EPDTC(EPBase, VarDTC):
             input_dict["_ep_approximation"] = {}
             input_dict["_ep_approximation"]["post_params"] = self._ep_approximation[0].to_dict()
             input_dict["_ep_approximation"]["ga_approx"] = self._ep_approximation[1].to_dict()
-            input_dict["_ep_approximation"]["cav_params"] = self._ep_approximation[2].to_dict()
-            input_dict["_ep_approximation"]["log_Z_tilde"] = self._ep_approximation[3].tolist()
+            input_dict["_ep_approximation"]["log_Z_tilde"] = self._ep_approximation[2]
 
         return input_dict
 
@@ -566,8 +567,7 @@ class EPDTC(EPBase, VarDTC):
         if _ep_approximation is not None:
             _ep_approximation.append(posteriorParamsDTC.from_dict(_ep_approximation_dict["post_params"]))
             _ep_approximation.append(gaussianApproximation.from_dict(_ep_approximation_dict["ga_approx"]))
-            _ep_approximation.append(cavityParams.from_dict(_ep_approximation_dict["cav_params"]))
-            _ep_approximation.append(np.array(_ep_approximation_dict["log_Z_tilde"]))
+            _ep_approximation.append(_ep_approximation_dict["log_Z_tilde"])
         ee = EPDTC(**input_dict)
         ee.ga_approx_old = ga_approx_old
         ee._ep_approximation = _ep_approximation

@@ -110,7 +110,14 @@ class GP(Model):
         self.posterior = None
 
     def to_dict(self, save_data=True):
-        input_dict = super(GP, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(GP, self)._save_to_input_dict()
         input_dict["class"] = "GPy.core.GP"
         if not save_data:
             input_dict["X"] = None
@@ -137,7 +144,7 @@ class GP(Model):
         return input_dict
 
     @staticmethod
-    def _from_dict(input_dict, data=None):
+    def _build_from_input_dict(input_dict, data=None):
         import GPy
         import numpy as np
         if (input_dict['X'] is None) or (input_dict['Y'] is None):
@@ -282,7 +289,7 @@ class GP(Model):
             mu += self.mean_function.f(Xnew)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, 
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None,
                 likelihood=None, include_likelihood=True):
         """
         Predict the function(s) at the new point(s) Xnew. This includes the

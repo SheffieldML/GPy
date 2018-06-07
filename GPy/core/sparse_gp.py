@@ -119,16 +119,24 @@ class SparseGP(GP):
         self._Zgrad = self.Z.gradient.copy()
 
     def to_dict(self, save_data=True):
+        """
+        Convert the object into a json serializable dictionary.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
         input_dict = super(SparseGP, self).to_dict(save_data)
         input_dict["class"] = "GPy.core.SparseGP"
         input_dict["Z"] = self.Z.tolist()
         return input_dict
 
     @staticmethod
-    def _from_dict(input_dict, data=None):
+    def _build_from_input_dict(input_dict, data=None):
+        # Called from the from_dict method.
         import GPy
         if (input_dict['X'] is None) or (input_dict['Y'] is None):
-            assert(data is not None)
+            if data is None:
+                raise ValueError("The model was serialized whithout the training data. 'data' must be not None!")
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         elif data is not None:
             print("WARNING: The model has been saved with X,Y! The original values are being overriden!")

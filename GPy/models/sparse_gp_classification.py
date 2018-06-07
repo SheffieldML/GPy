@@ -48,17 +48,41 @@ class SparseGPClassification(SparseGP):
         SparseGPClassification(sparse_gp.X, sparse_gp.Y, sparse_gp.Z, sparse_gp.kern, sparse_gp.likelihood, sparse_gp.inference_method, sparse_gp.mean_function, name='sparse_gp_classification')
 
     def to_dict(self, save_data=True):
+        """
+        Store the object into a json serializable dictionary
+
+        :param boolean save_data: if true, it adds the data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
         model_dict = super(SparseGPClassification,self).to_dict(save_data)
         model_dict["class"] = "GPy.models.SparseGPClassification"
         return model_dict
 
     @staticmethod
     def from_dict(input_dict, data=None):
+        """
+        Instantiate an SparseGPClassification object using the information
+        in input_dict (built by the to_dict method).
+
+        :param data: It is used to provide X and Y for the case when the model
+           was saved using save_data=False in to_dict method.
+        :type data: tuple(:class:`np.ndarray`, :class:`np.ndarray`)
+        """
         import GPy
         m = GPy.core.model.Model.from_dict(input_dict, data)
-        return GPClassification.from_sparse_gp(m)
+        from copy import deepcopy
+        sparse_gp = deepcopy(m)
+        return SparseGPClassification(sparse_gp.X, sparse_gp.Y, sparse_gp.Z, sparse_gp.kern, sparse_gp.likelihood,  sparse_gp.inference_method, sparse_gp.mean_function, name='sparse_gp_classification')
 
     def save_model(self, output_filename, compress=True, save_data=True):
+        """
+        Method to serialize the model.
+
+        :param string output_filename: Output file
+        :param boolean compress: If true compress the file using zip
+        :param boolean save_data: if true, it serializes the training data
+            (self.X and self.Y)
+        """
         self._save_model(output_filename, compress=True, save_data=True)
 
 

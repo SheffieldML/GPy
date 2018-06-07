@@ -28,6 +28,14 @@ class cavityParams(object):
         self.tau[i] = 1./post_params.Sigma_diag[i] - eta*ga_approx.tau[i]
         self.v[i] = post_params.mu[i]/post_params.Sigma_diag[i] - eta*ga_approx.v[i]
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return {"tau": self.tau.tolist(), "v": self.v.tolist()}
     @staticmethod
     def from_dict(input_dict):
@@ -59,6 +67,14 @@ class gaussianApproximation(object):
 
         return (delta_tau, delta_v)
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return {"tau": self.tau.tolist(), "v": self.v.tolist()}
     @staticmethod
     def from_dict(input_dict):
@@ -89,6 +105,14 @@ class posteriorParams(posteriorParamsBase):
         DSYR(self.Sigma, si, -ci)
 
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         #TODO: Implement a more memory efficient variant
         if self.L is None:
             return { "mu": self.mu.tolist(), "Sigma": self.Sigma.tolist()}
@@ -133,6 +157,14 @@ class posteriorParamsDTC(posteriorParamsBase):
         #mu = np.dot(Sigma, v_tilde)
 
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return { "mu": self.mu.tolist(), "Sigma_diag": self.Sigma_diag.tolist()}
 
     @staticmethod
@@ -205,8 +237,8 @@ class EPBase(object):
     def __getstate__(self):
         return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
 
-    def _to_dict(self):
-        input_dict = super(EPBase, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(EPBase, self)._save_to_input_dict()
         input_dict["epsilon"]=self.epsilon
         input_dict["eta"]=self.eta
         input_dict["delta"]=self.delta
@@ -370,7 +402,15 @@ class EP(EPBase, ExactGaussianInference):
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}
 
     def to_dict(self):
-        input_dict = super(EP, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(EP, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.expectation_propagation.EP"
         if self.ga_approx_old is not  None:
             input_dict["ga_approx_old"] = self.ga_approx_old.to_dict()
@@ -384,7 +424,7 @@ class EP(EPBase, ExactGaussianInference):
         return input_dict
 
     @staticmethod
-    def _from_dict(inference_class, input_dict):
+    def _build_from_input_dict(inference_class, input_dict):
         ga_approx_old = input_dict.pop('ga_approx_old', None)
         if ga_approx_old is not None:
             ga_approx_old = gaussianApproximation.from_dict(ga_approx_old)
@@ -545,7 +585,15 @@ class EPDTC(EPBase, VarDTC):
 
 
     def to_dict(self):
-        input_dict = super(EPDTC, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(EPDTC, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.expectation_propagation.EPDTC"
         if self.ga_approx_old is not  None:
             input_dict["ga_approx_old"] = self.ga_approx_old.to_dict()
@@ -558,7 +606,7 @@ class EPDTC(EPBase, VarDTC):
         return input_dict
 
     @staticmethod
-    def _from_dict(inference_class, input_dict):
+    def _build_from_input_dict(inference_class, input_dict):
         ga_approx_old = input_dict.pop('ga_approx_old', None)
         if ga_approx_old is not None:
             ga_approx_old = gaussianApproximation.from_dict(ga_approx_old)

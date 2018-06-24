@@ -31,13 +31,16 @@ class Prod(CombinationKernel):
 
     """
     def __init__(self, kernels, name='mul'):
-        for i, kern in enumerate(kernels[:]):
+        _newkerns = []
+        for kern in kernels:
             if isinstance(kern, Prod):
-                del kernels[i]
-                for part in kern.parts[::-1]:
-                    kern.unlink_parameter(part)
-                    kernels.insert(i, part)
-        super(Prod, self).__init__(kernels, name)
+                for part in kern.parts:
+                    #kern.unlink_parameter(part)
+                    _newkerns.append(part.copy())
+            else:
+                _newkerns.append(kern.copy())
+
+        super(Prod, self).__init__(_newkerns, name)
 
     def to_dict(self):
         input_dict = super(Prod, self)._to_dict()

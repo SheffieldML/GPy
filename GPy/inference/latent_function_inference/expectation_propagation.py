@@ -132,6 +132,13 @@ class posteriorParamsDTC(posteriorParamsBase):
         self.mu += (delta_v-delta_tau*self.mu[i])*si
         #mu = np.dot(Sigma, v_tilde)
 
+    def to_dict(self):
+        return { "mu": self.mu.tolist(), "Sigma_diag": self.Sigma_diag.tolist()}
+
+    @staticmethod
+    def from_dict(input_dict):
+        return posteriorParamsDTC(np.array(input_dict["mu"]), np.array(input_dict["Sigma_diag"]))
+
     @staticmethod
     def _recompute(LLT0, Kmn, ga_approx):
         LLT = LLT0 + np.dot(Kmn*ga_approx.tau[None,:],Kmn.T)
@@ -533,3 +540,35 @@ class EPDTC(EPBase, VarDTC):
             #Posterior distribution parameters update
             if self.parallel_updates == False:
                 post_params._update_rank1(LLT, Kmn, delta_v, delta_tau, i)
+
+
+    def to_dict(self):
+        input_dict = super(EPDTC, self)._to_dict()
+        input_dict["class"] = "GPy.inference.latent_function_inference.expectation_propagation.EPDTC"
+        if self.ga_approx_old is not  None:
+            input_dict["ga_approx_old"] = self.ga_approx_old.to_dict()
+        if self._ep_approximation is not  None:
+            input_dict["_ep_approximation"] = {}
+            input_dict["_ep_approximation"]["post_params"] = self._ep_approximation[0].to_dict()
+            input_dict["_ep_approximation"]["ga_approx"] = self._ep_approximation[1].to_dict()
+            input_dict["_ep_approximation"]["cav_params"] = self._ep_approximation[2].to_dict()
+            input_dict["_ep_approximation"]["log_Z_tilde"] = self._ep_approximation[3].tolist()
+
+        return input_dict
+
+    @staticmethod
+    def _from_dict(inference_class, input_dict):
+        ga_approx_old = input_dict.pop('ga_approx_old', None)
+        if ga_approx_old is not None:
+            ga_approx_old = gaussianApproximation.from_dict(ga_approx_old)
+        _ep_approximation_dict = input_dict.pop('_ep_approximation', None)
+        _ep_approximation = []
+        if _ep_approximation is not None:
+            _ep_approximation.append(posteriorParamsDTC.from_dict(_ep_approximation_dict["post_params"]))
+            _ep_approximation.append(gaussianApproximation.from_dict(_ep_approximation_dict["ga_approx"]))
+            _ep_approximation.append(cavityParams.from_dict(_ep_approximation_dict["cav_params"]))
+            _ep_approximation.append(np.array(_ep_approximation_dict["log_Z_tilde"]))
+        ee = EPDTC(**input_dict)
+        ee.ga_approx_old = ga_approx_old
+        ee._ep_approximation = _ep_approximation
+        return ee

@@ -337,7 +337,7 @@ def plot(self, plot_limits=None, fixed_inputs=None,
         plot_data = False
     plots = {}
     if hasattr(self, 'Z') and plot_inducing:
-        plots.update(_plot_inducing(self, canvas, visible_dims, projection, 'Inducing'))
+        plots.update(_plot_inducing(self, canvas, free_dims, projection, 'Inducing'))
     if plot_data:
         plots.update(_plot_data(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data"))
         plots.update(_plot_data_error(self, canvas, which_data_rows, which_data_ycols, free_dims, projection, "Data Error"))

@@ -116,10 +116,44 @@ class Test(unittest.TestCase):
         np.testing.assert_array_equal(e1._ep_approximation[2].v[:], e1_r._ep_approximation[2].v[:])
         np.testing.assert_array_equal(e1._ep_approximation[3][:], e1_r._ep_approximation[3][:])
 
+
+        e1 = GPy.inference.latent_function_inference.expectation_propagation.EPDTC(ep_mode="nested")
+        e1.ga_approx_old = GPy.inference.latent_function_inference.expectation_propagation.gaussianApproximation(np.random.rand(10),np.random.rand(10))
+        e1._ep_approximation = []
+        e1._ep_approximation.append(GPy.inference.latent_function_inference.expectation_propagation.posteriorParamsDTC(np.random.rand(10),np.random.rand(10)))
+        e1._ep_approximation.append(GPy.inference.latent_function_inference.expectation_propagation.gaussianApproximation(np.random.rand(10),np.random.rand(10)))
+        e1._ep_approximation.append(GPy.inference.latent_function_inference.expectation_propagation.cavityParams(10))
+        e1._ep_approximation[-1].v = np.random.rand(10)
+        e1._ep_approximation[-1].tau = np.random.rand(10)
+        e1._ep_approximation.append(np.random.rand(10))
+        e1_r = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(e1.to_dict())
+
+
+        assert type(e1) == type(e1_r)
+        assert e1.epsilon==e1_r.epsilon
+        assert e1.eta==e1_r.eta
+        assert e1.delta==e1_r.delta
+        assert e1.always_reset==e1_r.always_reset
+        assert e1.max_iters==e1_r.max_iters
+        assert e1.ep_mode==e1_r.ep_mode
+        assert e1.parallel_updates==e1_r.parallel_updates
+
+        np.testing.assert_array_equal(e1.ga_approx_old.tau[:], e1_r.ga_approx_old.tau[:])
+        np.testing.assert_array_equal(e1.ga_approx_old.v[:], e1_r.ga_approx_old.v[:])
+        np.testing.assert_array_equal(e1._ep_approximation[0].mu[:], e1_r._ep_approximation[0].mu[:])
+        np.testing.assert_array_equal(e1._ep_approximation[0].Sigma_diag[:], e1_r._ep_approximation[0].Sigma_diag[:])
+        np.testing.assert_array_equal(e1._ep_approximation[1].tau[:], e1_r._ep_approximation[1].tau[:])
+        np.testing.assert_array_equal(e1._ep_approximation[1].v[:], e1_r._ep_approximation[1].v[:])
+        np.testing.assert_array_equal(e1._ep_approximation[2].tau[:], e1_r._ep_approximation[2].tau[:])
+        np.testing.assert_array_equal(e1._ep_approximation[2].v[:], e1_r._ep_approximation[2].v[:])
+        np.testing.assert_array_equal(e1._ep_approximation[3][:], e1_r._ep_approximation[3][:])
+
+
         e2 = GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference()
         e2_r = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(e2.to_dict())
 
         assert type(e2) == type(e2_r)
+
 
     def test_serialize_deserialize_model(self):
         np.random.seed(fixed_seed)

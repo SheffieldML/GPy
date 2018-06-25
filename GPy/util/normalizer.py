@@ -52,21 +52,33 @@ class _Norm(object):
     def to_dict(self):
         raise NotImplementedError
 
-    def _to_dict(self):
+    def _save_to_input_dict(self):
         input_dict = {}
         return input_dict
 
     @staticmethod
     def from_dict(input_dict):
+        """
+        Instantiate an object of a derived class using the information
+        in input_dict (built by the to_dict method of the derived class).
+        More specifically, after reading the derived class from input_dict,
+        it calls the method _build_from_input_dict of the derived class.
+        Note: This method should not be overrided in the derived class. In case
+        it is needed, please override _build_from_input_dict instate.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
+
         import copy
         input_dict = copy.deepcopy(input_dict)
         normalizer_class = input_dict.pop('class')
         import GPy
         normalizer_class = eval(normalizer_class)
-        return normalizer_class._from_dict(normalizer_class, input_dict)
+        return normalizer_class._build_from_input_dict(normalizer_class, input_dict)
 
     @staticmethod
-    def _from_dict(normalizer_class, input_dict):
+    def _build_from_input_dict(normalizer_class, input_dict):
         return normalizer_class(**input_dict)
 
 
@@ -96,7 +108,15 @@ class Standardize(_Norm):
         return self.mean is not None
 
     def to_dict(self):
-        input_dict = super(Standardize, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Standardize, self)._save_to_input_dict()
         input_dict["class"] = "GPy.util.normalizer.Standardize"
         if self.mean is not None:
             input_dict["mean"] = self.mean.tolist()
@@ -104,7 +124,7 @@ class Standardize(_Norm):
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         s = Standardize()
         if "mean" in input_dict:
             s.mean = np.array(input_dict["mean"])

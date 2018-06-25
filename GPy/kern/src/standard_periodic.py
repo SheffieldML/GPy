@@ -94,7 +94,15 @@ class StdPeriodic(Kern):
         self.link_parameters(self.variance,  self.period, self.lengthscale)
 
     def to_dict(self):
-        input_dict = super(StdPeriodic, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(StdPeriodic, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.StdPeriodic"
         input_dict["variance"] = self.variance.values.tolist()
         input_dict["period"] = self.period.values.tolist()

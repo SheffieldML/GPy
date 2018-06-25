@@ -28,6 +28,14 @@ class cavityParams(object):
         self.tau[i] = 1./post_params.Sigma_diag[i] - eta*ga_approx.tau[i]
         self.v[i] = post_params.mu[i]/post_params.Sigma_diag[i] - eta*ga_approx.v[i]
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return {"tau": self.tau.tolist(), "v": self.v.tolist()}
     @staticmethod
     def from_dict(input_dict):
@@ -59,6 +67,14 @@ class gaussianApproximation(object):
 
         return (delta_tau, delta_v)
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return {"tau": self.tau.tolist(), "v": self.v.tolist()}
     @staticmethod
     def from_dict(input_dict):
@@ -89,6 +105,14 @@ class posteriorParams(posteriorParamsBase):
         DSYR(self.Sigma, si, -ci)
 
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         #TODO: Implement a more memory efficient variant
         if self.L is None:
             return { "mu": self.mu.tolist(), "Sigma": self.Sigma.tolist()}
@@ -133,6 +157,14 @@ class posteriorParamsDTC(posteriorParamsBase):
         #mu = np.dot(Sigma, v_tilde)
 
     def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
         return { "mu": self.mu.tolist(), "Sigma_diag": self.Sigma_diag.tolist()}
 
     @staticmethod
@@ -205,8 +237,8 @@ class EPBase(object):
     def __getstate__(self):
         return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
 
-    def _to_dict(self):
-        input_dict = super(EPBase, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(EPBase, self)._save_to_input_dict()
         input_dict["epsilon"]=self.epsilon
         input_dict["eta"]=self.eta
         input_dict["delta"]=self.delta
@@ -370,7 +402,15 @@ class EP(EPBase, ExactGaussianInference):
         return Posterior(woodbury_inv=Wi, woodbury_vector=alpha, K=K), log_marginal, {'dL_dK':dL_dK, 'dL_dthetaL':dL_dthetaL, 'dL_dm':alpha}
 
     def to_dict(self):
-        input_dict = super(EP, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(EP, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.expectation_propagation.EP"
         if self.ga_approx_old is not  None:
             input_dict["ga_approx_old"] = self.ga_approx_old.to_dict()
@@ -384,7 +424,7 @@ class EP(EPBase, ExactGaussianInference):
         return input_dict
 
     @staticmethod
-    def _from_dict(inference_class, input_dict):
+    def _build_from_input_dict(inference_class, input_dict):
         ga_approx_old = input_dict.pop('ga_approx_old', None)
         if ga_approx_old is not None:
             ga_approx_old = gaussianApproximation.from_dict(ga_approx_old)
@@ -402,7 +442,7 @@ class EP(EPBase, ExactGaussianInference):
 
 class EPDTC(EPBase, VarDTC):
     def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None):
-        if self.always_reset:
+        if self.always_reset and not self.loading:
             self.reset()
 
         num_data, output_dim = Y.shape
@@ -420,11 +460,11 @@ class EPDTC(EPBase, VarDTC):
         else:
             Kmn = psi1.T
 
-        if self.ep_mode=="nested":
+        if self.ep_mode=="nested" and not self.loading:
             #Force EP at each step of the optimization
             self._ep_approximation = None
             post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(Kmm, Kmn, Y, likelihood, Y_metadata)
-        elif self.ep_mode=="alternated":
+        elif self.ep_mode=="alternated" or self.loading:
             if getattr(self, '_ep_approximation', None) is None:
                 #if we don't yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
                 post_params, ga_approx, log_Z_tilde = self._ep_approximation = self.expectation_propagation(Kmm, Kmn, Y, likelihood, Y_metadata)
@@ -433,6 +473,8 @@ class EPDTC(EPBase, VarDTC):
                 post_params, ga_approx, log_Z_tilde = self._ep_approximation
         else:
             raise ValueError("ep_mode value not valid")
+
+        self.loading = False
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
 
@@ -543,7 +585,15 @@ class EPDTC(EPBase, VarDTC):
 
 
     def to_dict(self):
-        input_dict = super(EPDTC, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(EPDTC, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.expectation_propagation.EPDTC"
         if self.ga_approx_old is not  None:
             input_dict["ga_approx_old"] = self.ga_approx_old.to_dict()
@@ -551,13 +601,12 @@ class EPDTC(EPBase, VarDTC):
             input_dict["_ep_approximation"] = {}
             input_dict["_ep_approximation"]["post_params"] = self._ep_approximation[0].to_dict()
             input_dict["_ep_approximation"]["ga_approx"] = self._ep_approximation[1].to_dict()
-            input_dict["_ep_approximation"]["cav_params"] = self._ep_approximation[2].to_dict()
-            input_dict["_ep_approximation"]["log_Z_tilde"] = self._ep_approximation[3].tolist()
+            input_dict["_ep_approximation"]["log_Z_tilde"] = self._ep_approximation[2]
 
         return input_dict
 
     @staticmethod
-    def _from_dict(inference_class, input_dict):
+    def _build_from_input_dict(inference_class, input_dict):
         ga_approx_old = input_dict.pop('ga_approx_old', None)
         if ga_approx_old is not None:
             ga_approx_old = gaussianApproximation.from_dict(ga_approx_old)
@@ -566,8 +615,7 @@ class EPDTC(EPBase, VarDTC):
         if _ep_approximation is not None:
             _ep_approximation.append(posteriorParamsDTC.from_dict(_ep_approximation_dict["post_params"]))
             _ep_approximation.append(gaussianApproximation.from_dict(_ep_approximation_dict["ga_approx"]))
-            _ep_approximation.append(cavityParams.from_dict(_ep_approximation_dict["cav_params"]))
-            _ep_approximation.append(np.array(_ep_approximation_dict["log_Z_tilde"]))
+            _ep_approximation.append(_ep_approximation_dict["log_Z_tilde"])
         ee = EPDTC(**input_dict)
         ee.ga_approx_old = ga_approx_old
         ee._ep_approximation = _ep_approximation

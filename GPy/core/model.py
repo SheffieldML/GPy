@@ -8,7 +8,10 @@ class Model(ParamzModel, Priorizable):
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
 
-    def _to_dict(self):
+    def _save_to_input_dict(self):
+        """
+        It is used by the public method to_dict to create json serializable dictionary.
+        """
         input_dict = {}
         input_dict["name"] = self.name
         return input_dict
@@ -18,16 +21,37 @@ class Model(ParamzModel, Priorizable):
 
     @staticmethod
     def from_dict(input_dict, data=None):
+        """
+        Instantiate an object of a derived class using the information
+        in input_dict (built by the to_dict method of the derived class).
+        More specifically, after reading the derived class from input_dict,
+        it calls the method _build_from_input_dict of the derived class.
+        Note: This method should not be overrided in the derived class. In case
+        it is needed, please override _build_from_input_dict instate.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
         import copy
         input_dict = copy.deepcopy(input_dict)
         model_class = input_dict.pop('class')
         input_dict["name"] = str(input_dict["name"])
         import GPy
         model_class = eval(model_class)
-        return model_class._from_dict(input_dict, data)
+        return model_class._build_from_input_dict(input_dict, data)
 
     @staticmethod
-    def _from_dict(model_class, input_dict, data=None):
+    def _build_from_input_dict(model_class, input_dict, data=None):
+        """
+        This method is used by the public method from_dict to build an object
+        of class model_class using the information contained in input_dict.
+        Note: This method is often overrided in the derived class to deal with
+        any pre-processing of the parameters in input_dict before calling the
+        constructor of the object.
+
+        :param str model_class: Class of the object to build.
+        :param dict input_dict: Extra information needed by the constructor of model_class.
+        """
         return model_class(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):

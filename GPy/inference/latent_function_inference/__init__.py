@@ -41,7 +41,7 @@ class LatentFunctionInference(object):
         """
         pass
 
-    def _to_dict(self):
+    def _save_to_input_dict(self):
         input_dict = {}
         return input_dict
 
@@ -50,15 +50,27 @@ class LatentFunctionInference(object):
 
     @staticmethod
     def from_dict(input_dict):
+        """
+        Instantiate an object of a derived class using the information
+        in input_dict (built by the to_dict method of the derived class).
+        More specifically, after reading the derived class from input_dict,
+        it calls the method _build_from_input_dict of the derived class.
+        Note: This method should not be overrided in the derived class. In case
+        it is needed, please override _build_from_input_dict instate.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
+
         import copy
         input_dict = copy.deepcopy(input_dict)
         inference_class = input_dict.pop('class')
         import GPy
         inference_class = eval(inference_class)
-        return inference_class._from_dict(inference_class, input_dict)
+        return inference_class._build_from_input_dict(inference_class, input_dict)
 
     @staticmethod
-    def _from_dict(inference_class, input_dict):
+    def _build_from_input_dict(inference_class, input_dict):
         return inference_class(**input_dict)
 
 class InferenceMethodList(LatentFunctionInference, list):

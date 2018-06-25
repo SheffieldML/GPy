@@ -39,13 +39,21 @@ class Linear(Mapping):
         return np.dot(dL_dF, self.A.T)
 
     def to_dict(self):
-        input_dict = super(Linear, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Linear, self)._save_to_input_dict()
         input_dict["class"] = "GPy.mappings.Linear"
         input_dict["A"] = self.A.values.tolist()
         return input_dict
 
     @staticmethod
-    def _from_dict(mapping_class, input_dict):
+    def _build_from_input_dict(mapping_class, input_dict):
         import copy
         input_dict = copy.deepcopy(input_dict)
         A = np.array(input_dict.pop('A'))

@@ -30,9 +30,13 @@ class Symmetric(Kern):
         k(x, x') \pm k(Ax, x') \pm k(x, Ax') + k(Ax, Ax')
 
     where k(x, x') is the kernel of g(x)
+
+    :param base_kernel: kernel to make symmetric
+    :param transform: transformation matrix describing symmetry plane, A in equations above
+    :param symmetry_type: 'odd' or 'even' depending on the symmetry needed
     """
 
-    def __init__(self, base_kernel, transform, symmetry_type):
+    def __init__(self, base_kernel, transform, symmetry_type='even'):
 
         super().__init__(1, [0], name='symmetric_kernel')
         if symmetry_type is 'odd':

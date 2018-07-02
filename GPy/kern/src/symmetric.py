@@ -38,7 +38,7 @@ class Symmetric(Kern):
 
     def __init__(self, base_kernel, transform, symmetry_type='even'):
 
-        super().__init__(1, [0], name='symmetric_kernel')
+        super(Symmetric, self).__init__(1, [0], name='symmetric_kernel')
         if symmetry_type is 'odd':
             self.symmetry_sign = -1.
         elif symmetry_type is 'even':
@@ -77,7 +77,7 @@ class Symmetric(Kern):
         # Evaluate cross terms in batches, taking the diag of a larger matrix
         # is wasteful, but is more efficient than calling kernel.K for each data point
         batch_size = 100
-        n_batches = int(np.ceil(n_points / batch_size))
+        n_batches = int(np.ceil(n_points / float(batch_size)))
         cross_term = np.zeros(X.shape[0])
         for i in range(n_batches):
             i_start = i * batch_size

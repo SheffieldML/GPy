@@ -7,11 +7,25 @@ class Symmetric(Kern):
     """
     Symmetric kernel that models a function with even or odd symmetry:
 
+    For even symmetry we have:
+
     .. math::
 
         f(x) = f(Ax)
 
-    or
+    we then model the function as:
+
+    .. math::
+
+        f(x) = g(x) + g(Ax)
+
+    the corresponding kernel is:
+
+    .. math::
+
+        k(x, x') + k(Ax, x') + k(x, Ax') + k(Ax, Ax')
+
+    For odd symmetry we have:
 
     .. math::
 
@@ -21,13 +35,13 @@ class Symmetric(Kern):
 
     .. math::
 
-        f(x) = g(x) \pm g(Ax)
+        f(x) = g(x) - g(Ax)
 
     with kernel
 
     .. math::
 
-        k(x, x') \pm k(Ax, x') \pm k(x, Ax') + k(Ax, Ax')
+        k(x, x') - k(Ax, x') - k(x, Ax') + k(Ax, Ax')
 
     where k(x, x') is the kernel of g(x)
 
@@ -37,8 +51,8 @@ class Symmetric(Kern):
     """
 
     def __init__(self, base_kernel, transform, symmetry_type='even'):
-
-        super(Symmetric, self).__init__(1, [0], name='symmetric_kernel')
+        n_dims = max(base_kernel.active_dims) + 1
+        super(Symmetric, self).__init__(n_dims, list(range(n_dims)), name='symmetric_kernel')
         if symmetry_type is 'odd':
             self.symmetry_sign = -1.
         elif symmetry_type is 'even':
@@ -114,15 +128,30 @@ class Symmetric(Kern):
         dL_dK_full = np.diag(dL_dK)
         X_sym = X.dot(self.transform)
 
+        # Calculate gradient for k(Ax, Ax')
         self.base_kernel.update_gradients_diag(dL_dK, X_sym)
         gradient = self.base_kernel.gradient.copy()
 
+        # Calculate gradient for k(x, x')
         self.base_kernel.update_gradients_diag(dL_dK, X)
         gradient += self.base_kernel.gradient.copy()
 
-        # The contribution from both cross terms is the same
-        self.base_kernel.update_gradients_full(dL_dK_full, X, X_sym)
-        gradient += 2 * self.symmetry_sign * self.base_kernel.gradient.copy()
+        # Batch process cross term for speed
+        batch_size = 100
+        n_points = dL_dK.shape[0]
+        n_batches = int(np.ceil(n_points / float(batch_size)))
+        gradient_part = np.zeros(gradient.shape)
+        for i in range(n_batches):
+            i_start = i * batch_size
+            i_end = np.min([(i + 1) * batch_size, n_points])
+            dL_dK_part = dL_dK_full[i_start:i_end, i_start:i_end]
+            X_part = X[i_start:i_end, :]
+            X_sym_part = X_sym[i_start:i_end, :]
+            self.base_kernel.update_gradients_full(
+                dL_dK_part, X_part, X_sym_part)
+            gradient_part += self.base_kernel.gradient.copy()
+
+        gradient += 2 * self.symmetry_sign * gradient_part
 
         self.base_kernel.gradient = gradient
 

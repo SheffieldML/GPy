@@ -144,14 +144,14 @@ class GP(Model):
         return input_dict
 
     @staticmethod
-    def _build_from_input_dict(input_dict, data=None):
+    def _format_input_dict(input_dict, data=None):
         import GPy
         import numpy as np
         if (input_dict['X'] is None) or (input_dict['Y'] is None):
             assert(data is not None)
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         elif data is not None:
-            print("WARNING: The model has been saved with X,Y! The original values are being overriden!")
+            warnings.warn("WARNING: The model has been saved with X,Y! The original values are being overridden!")
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         else:
             input_dict["X"], input_dict["Y"] = np.array(input_dict['X']), np.array(input_dict['Y'])
@@ -173,6 +173,11 @@ class GP(Model):
             input_dict["normalizer"] = GPy.util.normalizer._Norm.from_dict(normalizer)
         else:
             input_dict["normalizer"] = normalizer
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        input_dict = GP._format_input_dict(input_dict, data)
         return GP(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):

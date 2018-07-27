@@ -1,5 +1,62 @@
 # Changelog
 
+## v1.9.3 (2018-07-27)
+
+### Fix
+
+* Python=3.7. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.2 → 1.9.3. [mzwiessele]
+
+* Merge pull request #655 from davidsmf/patch-2. [Zhenwen Dai]
+
+  Allow setup.py to be parsed without numpy
+
+* Allow setup.py to be parsed without numpy. [David Sheldon]
+
+  If numpy isn&#x27;t available, don&#x27;t define ext_mods, pip will then determine numpy is required, install it, then call us again.
+
+  Fixes #653
+
+* Merge pull request #640 from pgmoren/devel. [Zhenwen Dai]
+
+  Sparse GP serialization
+
+* Serialization: Add docstrings. [Moreno]
+
+* Sparse GP serialization. [Moreno]
+
+* Merge pull request #613 from dtorrejo/Multi_sample_bug. [Max Zwiessele]
+
+  Fixes the dimensions of the samples output
+
+* Maintains consistency with numpy arrays. [Diego Torrejon]
+
+* Fixes the dimensions of the samples output. [Diego Torrejon]
+
+* Merge pull request #607 from pgmoren/devel. [Zhenwen Dai]
+
+  Add serialization functions for EPDTC
+
+* Add serialization functions for EPDTC. [Moreno]
+
+* Merge pull request #604 from SheffieldML/deploy. [Max Zwiessele]
+
+  Deploy
+
+* Use old deploy pypi behavior. [Max Zwiessele]
+
+  Until skip_existing option exists, use the old travis dpl behaviour to not fail on existing files.
+
+* Don’t build docs anymore in travis. [Max Zwiessele]
+
+* Merge pull request #603 from SheffieldML/devel. [Max Zwiessele]
+
+  1.9.*
+
+
 ## v1.9.2 (2018-02-22)
 
 ### Fix

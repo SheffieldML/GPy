@@ -1,22 +1,368 @@
 # Changelog
 
-## v1.8.5 (2017-12-01)
-
-### New Features
-
-* Implement [Latent Variable Multiple Output Gaussian Processes (LVMOGP)](https://arxiv.org/abs/1705.09862) [Zhenwen Dai]
-
-* Add mean function functionality to dtc inference method [Mark Pullin]
-
-* Allow non-zero mean GP prior for EP [Pablo Moreno]
+## v1.9.3 (2018-07-27)
 
 ### Fix
 
-* Fix DSYR function interface (to support SciPy 1.0) [Pablo Moreno]
+* Python=3.7. [mzwiessele]
 
-* Fix scipy=1.0.0 incompatibility of lyapunov [Alan Saul]
+### Other
 
-* Fix tests for Matplotlib plotting issue [Alan Saul]
+* Bump version: 1.9.2 → 1.9.3. [mzwiessele]
+
+* Merge pull request #655 from davidsmf/patch-2. [Zhenwen Dai]
+
+  Allow setup.py to be parsed without numpy
+
+* Allow setup.py to be parsed without numpy. [David Sheldon]
+
+  If numpy isn&#x27;t available, don&#x27;t define ext_mods, pip will then determine numpy is required, install it, then call us again.
+
+  Fixes #653
+
+* Merge pull request #640 from pgmoren/devel. [Zhenwen Dai]
+
+  Sparse GP serialization
+
+* Serialization: Add docstrings. [Moreno]
+
+* Sparse GP serialization. [Moreno]
+
+* Merge pull request #613 from dtorrejo/Multi_sample_bug. [Max Zwiessele]
+
+  Fixes the dimensions of the samples output
+
+* Maintains consistency with numpy arrays. [Diego Torrejon]
+
+* Fixes the dimensions of the samples output. [Diego Torrejon]
+
+* Merge pull request #607 from pgmoren/devel. [Zhenwen Dai]
+
+  Add serialization functions for EPDTC
+
+* Add serialization functions for EPDTC. [Moreno]
+
+* Merge pull request #604 from SheffieldML/deploy. [Max Zwiessele]
+
+  Deploy
+
+* Use old deploy pypi behavior. [Max Zwiessele]
+
+  Until skip_existing option exists, use the old travis dpl behaviour to not fail on existing files.
+
+* Don’t build docs anymore in travis. [Max Zwiessele]
+
+* Merge pull request #603 from SheffieldML/devel. [Max Zwiessele]
+
+  1.9.*
+
+
+## v1.9.2 (2018-02-22)
+
+### Fix
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+* Rtd. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.1 → 1.9.2. [mzwiessele]
+
+
+## v1.9.1 (2018-02-22)
+
+### Fix
+
+* Paramz newest version. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.0 → 1.9.1. [mzwiessele]
+
+
+## v1.9.0 (2018-02-22)
+
+### Other
+
+* Bump version: 1.8.7 → 1.9.0. [mzwiessele]
+
+
+## v1.8.7 (2018-02-22)
+
+### Fix
+
+* Merge deploy back into devel. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.6 → 1.8.7. [mzwiessele]
+
+* Deploy version 1.8.5. [Zhenwen Dai]
+
+  * added extended version of MLP function with multiple hidden layers and different activation functions
+
+  * Update mapping_tests.py
+
+  Make output of gradient check verbose to diagnose error
+
+  * Update mapping_tests.py
+
+  Remove verbosity again after gradient checks passed without problem with verbosity
+
+  * the implementation of SVI-MOGP
+
+  * Try to fix the issue with model_tests
+
+  * updated mapping test to pass gradient checks
+
+  * Fix random seed for reproducible results in tests
+
+  * Add mean function functionality to dtc inference method
+
+  * Fix DSYR function (See https://github.com/scipy/scipy/issues/8155)
+
+  * Updated sde_kern to work with scipy=1.0.0
+
+  * Trying to fix tests for Matplotlib plotting issue
+
+  * Testing Again #575
+
+  * Figured it must be a matplotlib import error #575
+
+  New import matplotlib must be missing a package
+
+  * Removed ImageComparisonFailure #575
+
+  ImageComparisonFailure no longer exists which causes issues with travis testing using the most recent matplotlib
+
+  * Fix EP for non-zero mean GP priors
+
+  * improve the documentation for LVMOGP
+
+  * remove non-ascii characters
+
+  * Small correction to doc
+
+  * add type into docstring
+
+  * update changelog for 1.8.5
+
+  * bump the version: 1.8.4 -&gt; 1.8.5
+
+
+## v1.8.6 (2018-02-22)
+
+### Fix
+
+* Gamma prior no assignment after init. [mzwiessele]
+
+* #568, product kernel resolution. [mzwiessele]
+
+* #590. [Max Zwiessele]
+
+  Y_normalized was not used for running optimization
+
+* Appveyor comment missing. [mzwiessele]
+
+### Other
+
+* Bump version: 1.8.5 → 1.8.6. [mzwiessele]
+
+* Merge pull request #597 from marpulli/devel. [Max Zwiessele]
+
+  Allow calculation of full predictive covariance matrices with multipl…
+
+* Allow calculation of full predictive covariance matrices with multiple outputs and normalization. [Mark Pullin]
+
+* Merge pull request #600 from marpulli/plotting_fix. [Max Zwiessele]
+
+  Fix visible dimensions for plotting inducing points
+
+* Fix visible dimensions for plotting inducing points. [Mark Pullin]
+
+* Merge pull request #599 from marpulli/grads_efficiency. [Zhenwen Dai]
+
+  Make predictive_gradients more efficient
+
+* Make predictive_gradients more efficient. [Mark Pullin]
+
+* Merge pull request #587 from esiivola/feature-multioutput. [Zhenwen Dai]
+
+  Merge the implementation of Multioutput kernel
+
+* Changed two function names so that they follow the python naming convention. [Siivola Eero]
+
+* Merge remote-tracking branch &#x27;origin&#x27; into feature-multioutput. [Eero Siivola]
+
+* Merge pull request #592 from SheffieldML/sparsegp-normalization. [Zhenwen Dai]
+
+  fix: #590
+
+* Merge pull request #589 from apaleyes/devel. [Zhenwen Dai]
+
+  Implemented utility function to compute covariance between points in GP Model
+
+* Moved posterior_covariance to Posterior class. [Andrei Paleyes]
+
+* Implemented utility function to compute covariance between points in GP Model. [Andrei Paleyes]
+
+* Changed the structure of multioutput kernel so that it doesn&#x27;t change the API of Kernels + documented the class. [Eero Siivola]
+
+* Merge remote-tracking branch &#x27;origin/devel&#x27; into feature-multioutput. [Eero Siivola]
+
+* Merge pull request #585 from YoshikawaMasashi/devel. [Zhenwen Dai]
+
+  modify the MLP kernel equation
+
+* Modify the MLP kernel equation. [masashi yoshikawa]
+
+* Added multioutput kern and tests. [Eero Siivola]
+
+* Multioutput kernel + initial test. [Siivola Eero]
+
+* Multioutput kernel + initial test. [Siivola Eero]
+
+* Change dtype for Python 3 in robot_wirelss. [Neil Lawrence]
+
+* Bump the version: 1.8.4 -&gt; 1.8.5. [Zhenwen Dai]
+
+* Update changelog for 1.8.5. [Zhenwen Dai]
+
+* Merge pull request #579 from SheffieldML/multi_out_doc. [Zhenwen Dai]
+
+  Improve the documentation for LVMOGP
+
+* Add type into docstring. [Zhenwen Dai]
+
+* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into multi_out_doc. [Zhenwen Dai]
+
+* Remove non-ascii characters. [Zhenwen Dai]
+
+* Improve the documentation for LVMOGP. [Zhenwen Dai]
+
+* Merge pull request #580 from marpulli/devel. [Zhenwen Dai]
+
+  Small correction to doc
+
+* Small correction to doc. [Mark Pullin]
+
+* Merge pull request #578 from pgmoren/devel. [Zhenwen Dai]
+
+  Fix EP for non-zero mean GP priors (binary classification)
+
+* Fix EP for non-zero mean GP priors. [Moreno]
+
+* Merge pull request #572 from marpulli/devel. [Alan Saul]
+
+  Add mean function functionality to dtc inference method
+
+* Add mean function functionality to dtc inference method. [Mark Pullin]
+
+* Merge pull request #573 from pgmoren/devel. [Zhenwen Dai]
+
+  Fix DSYR function (See https://github.com/scipy/scipy/issues/8155)
+
+* Fix DSYR function (See https://github.com/scipy/scipy/issues/8155) [Moreno]
+
+* Merge pull request #574 from alansaul/lyapunov_fix. [Alan Saul]
+
+  Fixing scipy=1.0.0 incompatibility of lyapunov discovered in PR #573. Coverage issue should be resolved by PR #575.
+
+* Updated sde_kern to work with scipy=1.0.0. [Alan Saul]
+
+* Merge pull request #575 from SheffieldML/matplotlib_testing. [Alan Saul]
+
+  Fixing tests for Matplotlib plotting issue
+
+* Removed ImageComparisonFailure #575. [Alan Saul]
+
+  ImageComparisonFailure no longer exists which causes issues with travis testing using the most recent matplotlib
+
+* Figured it must be a matplotlib import error #575. [Alan Saul]
+
+  New import matplotlib must be missing a package
+
+* Testing Again #575. [Alan Saul]
+
+* Trying to fix tests for Matplotlib plotting issue. [Alan Saul]
+
+* Merge pull request #526 from msbauer/mlp_extended. [Zhenwen Dai]
+
+  added extended version of MLP function
+
+* Fix random seed for reproducible results in tests. [msbauer]
+
+* Updated mapping test to pass gradient checks. [msbauer]
+
+* Update mapping_tests.py. [msbauer]
+
+  Remove verbosity again after gradient checks passed without problem with verbosity
+
+* Update mapping_tests.py. [msbauer]
+
+  Make output of gradient check verbose to diagnose error
+
+* Added extended version of MLP function with multiple hidden layers and different activation functions. [Bauer]
+
+* Merge pull request #562 from SheffieldML/external-mo. [Zhenwen Dai]
+
+  Release the implementation of LVMOGP
+
+* Try to fix the issue with model_tests. [Zhenwen Dai]
+
+* Merge with new changes from devel. [Zhenwen Dai]
+
+* Merge pull request #561 from SheffieldML/deploy. [Max Zwiessele]
+
+  Deploy
+
+* Merge pull request #560 from SheffieldML/devel. [Max Zwiessele]
+
+  appveyor twine upload error fix
+
+* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+
+* Merge pull request #558 from SheffieldML/devel. [Max Zwiessele]
+
+  Uniform prior fix for other domains
+
+* Merge pull request #559 from SheffieldML/PS-upload-error. [Max Zwiessele]
+
+  Update appveyor.yml
+
+* The implementation of SVI-MOGP. [Zhenwen Dai]
+
 
 ## v1.8.4 (2017-10-06)
 

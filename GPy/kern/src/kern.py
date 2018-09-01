@@ -60,7 +60,7 @@ class Kern(Parameterized):
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()
 
-    def _to_dict(self):
+    def _save_to_input_dict(self):
         input_dict = {}
         input_dict["input_dim"] = self.input_dim
         if isinstance(self.active_dims, np.ndarray):
@@ -76,16 +76,28 @@ class Kern(Parameterized):
 
     @staticmethod
     def from_dict(input_dict):
+        """
+        Instantiate an object of a derived class using the information
+        in input_dict (built by the to_dict method of the derived class).
+        More specifically, after reading the derived class from input_dict,
+        it calls the method _build_from_input_dict of the derived class.
+        Note: This method should not be overrided in the derived class. In case
+        it is needed, please override _build_from_input_dict instate.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
+
         import copy
         input_dict = copy.deepcopy(input_dict)
         kernel_class = input_dict.pop('class')
         input_dict["name"] = str(input_dict["name"])
         import GPy
         kernel_class = eval(kernel_class)
-        return kernel_class._from_dict(kernel_class, input_dict)
+        return kernel_class._build_from_input_dict(kernel_class, input_dict)
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         return kernel_class(**input_dict)
 
 
@@ -184,6 +196,9 @@ class Kern(Parameterized):
 
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
+        raise NotImplementedError
+    
+    def reset_gradients(self):
         raise NotImplementedError
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
@@ -345,7 +360,7 @@ class CombinationKernel(Kern):
     A combination kernel combines (a list of) kernels and works on those.
     Examples are the HierarchicalKernel or Add and Prod kernels.
     """
-    def __init__(self, kernels, name, extra_dims=[]):
+    def __init__(self, kernels, name, extra_dims=[], link_parameters=True):
         """
         Abstract super class for combination kernels.
         A combination kernel combines (a list of) kernels and works on those.
@@ -369,17 +384,18 @@ class CombinationKernel(Kern):
         self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
 
         self.extra_dims = extra_dims
-        self.link_parameters(*kernels)
+        if link_parameters:
+            self.link_parameters(*kernels)
 
-    def _to_dict(self):
-        input_dict = super(CombinationKernel, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(CombinationKernel, self)._save_to_input_dict()
         input_dict["parts"]  = {}
         for ii in range(len(self.parts)):
             input_dict["parts"][ii] = self.parts[ii].to_dict()
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         parts = input_dict.pop('parts', None)
         subkerns = []
         for pp in parts:

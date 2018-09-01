@@ -79,8 +79,8 @@ class Stationary(Kern):
         assert self.variance.size==1
         self.link_parameters(self.variance, self.lengthscale)
 
-    def _to_dict(self):
-        input_dict = super(Stationary, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(Stationary, self)._save_to_input_dict()
         input_dict["variance"] =  self.variance.values.tolist()
         input_dict["lengthscale"] = self.lengthscale.values.tolist()
         input_dict["ARD"] = self.ARD
@@ -171,6 +171,13 @@ class Stationary(Kern):
         ret[:] = self.variance
         return ret
 
+    def reset_gradients(self):
+        self.variance.gradient = 0.
+        if not self.ARD:
+            self.lengthscale.gradient = 0.
+        else:
+            self.lengthscale.gradient = np.zeros(self.input_dim)
+
     def update_gradients_diag(self, dL_dKdiag, X):
         """
         Given the derivative of the objective with respect to the diagonal of
@@ -182,7 +189,7 @@ class Stationary(Kern):
         self.variance.gradient = np.sum(dL_dKdiag)
         self.lengthscale.gradient = 0.
 
-    def update_gradients_full(self, dL_dK, X, X2=None):
+    def update_gradients_full(self, dL_dK, X, X2=None, reset=True):
         """
         Given the derivative of the objective wrt the covariance matrix
         (dL_dK), compute the gradient wrt the parameters of this kernel,
@@ -359,12 +366,20 @@ class Exponential(Stationary):
         return -self.K_of_r(r)
 
     def to_dict(self):
-        input_dict = super(Exponential, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Exponential, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Exponential"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Exponential(**input_dict)
 
@@ -417,12 +432,20 @@ class Matern32(Stationary):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(Matern32, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Matern32, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Matern32"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Matern32(**input_dict)
 
@@ -506,12 +529,20 @@ class Matern52(Stationary):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(Matern52, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Matern52, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Matern52"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Matern52(**input_dict)
 
@@ -571,12 +602,20 @@ class ExpQuad(Stationary):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(ExpQuad, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(ExpQuad, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.ExpQuad"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return ExpQuad(**input_dict)
 
@@ -614,13 +653,21 @@ class RatQuad(Stationary):
         self.link_parameters(self.power)
 
     def to_dict(self):
-        input_dict = super(RatQuad, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RatQuad, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.RatQuad"
         input_dict["power"] = self.power.values.tolist()
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return RatQuad(**input_dict)
 
@@ -632,7 +679,7 @@ class RatQuad(Stationary):
     def dK_dr(self, r):
         r2 = np.square(r)
 #         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
-        return-self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
+        return -self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)

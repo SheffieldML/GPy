@@ -32,7 +32,15 @@ class RBF(Stationary):
             self.link_parameter(self.inv_l)
 
     def to_dict(self):
-        input_dict = super(RBF, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RBF, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.RBF"
         input_dict["inv_l"] = self.use_invLengthscale
         if input_dict["inv_l"] == True:

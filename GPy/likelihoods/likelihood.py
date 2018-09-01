@@ -49,7 +49,7 @@ class Likelihood(Parameterized):
     def to_dict(self):
         raise NotImplementedError
 
-    def _to_dict(self):
+    def _save_to_input_dict(self):
         input_dict = {}
         input_dict["name"] = self.name
         input_dict["gp_link_dict"] = self.gp_link.to_dict()
@@ -57,6 +57,18 @@ class Likelihood(Parameterized):
 
     @staticmethod
     def from_dict(input_dict):
+        """
+        Instantiate an object of a derived class using the information
+        in input_dict (built by the to_dict method of the derived class).
+        More specifically, after reading the derived class from input_dict,
+        it calls the method _build_from_input_dict of the derived class.
+        Note: This method should not be overrided in the derived class. In case
+        it is needed, please override _build_from_input_dict instate.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
+
         import copy
         input_dict = copy.deepcopy(input_dict)
         likelihood_class = input_dict.pop('class')
@@ -64,10 +76,10 @@ class Likelihood(Parameterized):
         name = input_dict.pop('name')
         import GPy
         likelihood_class = eval(likelihood_class)
-        return likelihood_class._from_dict(likelihood_class, input_dict)
+        return likelihood_class._build_from_input_dict(likelihood_class, input_dict)
 
     @staticmethod
-    def _from_dict(likelihood_class, input_dict):
+    def _build_from_input_dict(likelihood_class, input_dict):
         import copy
         input_dict = copy.deepcopy(input_dict)
         gp_link_dict = input_dict.pop('gp_link_dict')

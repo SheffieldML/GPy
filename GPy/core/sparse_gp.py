@@ -76,7 +76,7 @@ class SparseGP(GP):
     def parameters_changed(self):
         self.posterior, self._log_marginal_likelihood, self.grad_dict = \
         self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood,
-                                        self.Y, Y_metadata=self.Y_metadata,
+                                        self.Y_normalized, Y_metadata=self.Y_metadata,
                                         mean_function=self.mean_function)
         self._update_gradients()
 
@@ -117,3 +117,26 @@ class SparseGP(GP):
             self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
         self._Zgrad = self.Z.gradient.copy()
+
+    def to_dict(self, save_data=True):
+        """
+        Convert the object into a json serializable dictionary.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(SparseGP, self).to_dict(save_data)
+        input_dict["class"] = "GPy.core.SparseGP"
+        input_dict["Z"] = self.Z.tolist()
+        return input_dict
+
+    @staticmethod
+    def _format_input_dict(input_dict, data=None):
+        input_dict = GP._format_input_dict(input_dict, data)
+        input_dict["Z"] = np.array(input_dict["Z"])
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        input_dict = SparseGP._format_input_dict(input_dict, data)
+        return SparseGP(**input_dict)

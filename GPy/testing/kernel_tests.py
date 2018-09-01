@@ -483,6 +483,29 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_symmetric_even(self):
+        k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        k = GPy.kern.Symmetric(k_base, transform, 'even')
+        self.assertTrue(check_kernel_gradient_functions(k))
+
+    def test_symmetric_odd(self):
+        k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        k = GPy.kern.Symmetric(k_base, transform, 'odd')
+        self.assertTrue(check_kernel_gradient_functions(k))
+
+    def test_MultioutputKern(self):
+        k1 = GPy.kern.RBF(self.D, ARD=True)
+        k1.randomize()
+        k2 = GPy.kern.RBF(self.D, ARD=True)
+        k2.randomize()
+
+        k = GPy.kern.MultioutputKern([k1, k2])
+        Xt,_,_ = GPy.util.multioutput.build_XY([self.X, self.X])
+        X2t,_,_ = GPy.util.multioutput.build_XY([self.X2, self.X2])
+        self.assertTrue(check_kernel_gradient_functions(k, X=Xt, X2=X2t, verbose=verbose, fixed_X_dims=-1))
+
     def test_Precomputed(self):
         Xall = np.concatenate([self.X, self.X2])
         cov = np.dot(Xall, Xall.T)

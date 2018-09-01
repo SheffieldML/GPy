@@ -38,7 +38,6 @@ from __future__ import print_function
 import os
 import sys
 from setuptools import setup, Extension
-import numpy as np
 import codecs
 
 def read(fname):
@@ -80,29 +79,39 @@ else:
     compile_flags = [ '-fopenmp', '-O3']
     link_args = ['-lgomp' ]
 
-ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
-                      sources=['GPy/kern/src/stationary_cython.c',
-                               'GPy/kern/src/stationary_utils.c'],
-                      include_dirs=[np.get_include(),'.'],
-                      extra_compile_args=compile_flags,
-                      extra_link_args = link_args),
-            Extension(name='GPy.util.choleskies_cython',
-                      sources=['GPy/util/choleskies_cython.c'],
-                      include_dirs=[np.get_include(),'.'],
-                      extra_link_args = link_args,
-                      extra_compile_args=compile_flags),
-            Extension(name='GPy.util.linalg_cython',
-                      sources=['GPy/util/linalg_cython.c'],
-                      include_dirs=[np.get_include(),'.'],
-                      extra_compile_args=compile_flags),
-            Extension(name='GPy.kern.src.coregionalize_cython',
-                      sources=['GPy/kern/src/coregionalize_cython.c'],
-                      include_dirs=[np.get_include(),'.'],
-                      extra_compile_args=compile_flags),
-            Extension(name='GPy.models.state_space_cython',
-                      sources=['GPy/models/state_space_cython.c'],
-                      include_dirs=[np.get_include(),'.'],
-                      extra_compile_args=compile_flags)]
+try:
+    # So that we don't need numpy installed to determine it's a dependency.
+    import numpy as np
+
+    ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
+                          sources=['GPy/kern/src/stationary_cython.c',
+                                   'GPy/kern/src/stationary_utils.c'],
+                          include_dirs=[np.get_include(), '.'],
+                          extra_compile_args=compile_flags,
+                          extra_link_args=link_args),
+                Extension(name='GPy.util.choleskies_cython',
+                          sources=['GPy/util/choleskies_cython.c'],
+                          include_dirs=[np.get_include(), '.'],
+                          extra_link_args=link_args,
+                          extra_compile_args=compile_flags),
+                Extension(name='GPy.util.linalg_cython',
+                          sources=['GPy/util/linalg_cython.c'],
+                          include_dirs=[np.get_include(), '.'],
+                          extra_compile_args=compile_flags,
+                          extra_link_args=link_args),
+                Extension(name='GPy.kern.src.coregionalize_cython',
+                          sources=['GPy/kern/src/coregionalize_cython.c'],
+                          include_dirs=[np.get_include(), '.'],
+                          extra_compile_args=compile_flags,
+                          extra_link_args=link_args),
+                Extension(name='GPy.models.state_space_cython',
+                          sources=['GPy/models/state_space_cython.c'],
+                          include_dirs=[np.get_include(), '.'],
+                          extra_compile_args=compile_flags,
+                          extra_link_args=link_args)]
+except ModuleNotFoundError:
+    ext_mods = []
+
 
 setup(name = 'GPy',
       version = __version__,
@@ -150,7 +159,7 @@ setup(name = 'GPy',
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
       setup_requires = ['numpy>=1.7'],
-      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.8.5'],
+      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.9.0'],
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',

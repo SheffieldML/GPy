@@ -34,6 +34,7 @@ from .src.splitKern import DEtime as DiffGenomeKern
 from .src.spline import Spline
 from .src.basis_funcs import LogisticBasisFuncKernel, LinearSlopeBasisFuncKernel, BasisFuncKernel, ChangePointBasisFuncKernel, DomainKernel, PolynomialBasisFuncKernel
 from .src.grid_kerns import GridRBF
+from .src.symmetric import Symmetric
 
 from .src.sde_matern import sde_Matern32
 from .src.sde_matern import sde_Matern52
@@ -42,3 +43,4 @@ from .src.sde_standard_periodic import sde_StdPeriodic
 from .src.sde_static import sde_White, sde_Bias
 from .src.sde_stationary import sde_RBF,sde_Exponential,sde_RatQuad
 from .src.sde_brownian import sde_Brownian
+from .src.multioutput_kern import MultioutputKern

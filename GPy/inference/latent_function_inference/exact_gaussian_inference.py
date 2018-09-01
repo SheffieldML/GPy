@@ -22,7 +22,15 @@ class ExactGaussianInference(LatentFunctionInference):
         pass#self._YYTfactor_cache = caching.cache()
 
     def to_dict(self):
-        input_dict = super(ExactGaussianInference, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(ExactGaussianInference, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference"
         return input_dict
 

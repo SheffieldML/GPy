@@ -31,16 +31,27 @@ class Prod(CombinationKernel):
 
     """
     def __init__(self, kernels, name='mul'):
-        for i, kern in enumerate(kernels[:]):
+        _newkerns = []
+        for kern in kernels:
             if isinstance(kern, Prod):
-                del kernels[i]
-                for part in kern.parts[::-1]:
-                    kern.unlink_parameter(part)
-                    kernels.insert(i, part)
-        super(Prod, self).__init__(kernels, name)
+                for part in kern.parts:
+                    #kern.unlink_parameter(part)
+                    _newkerns.append(part.copy())
+            else:
+                _newkerns.append(kern.copy())
+
+        super(Prod, self).__init__(_newkerns, name)
 
     def to_dict(self):
-        input_dict = super(Prod, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Prod, self)._save_to_input_dict()
         input_dict["class"] = str("GPy.kern.Prod")
         return input_dict
 

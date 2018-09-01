@@ -655,7 +655,7 @@ class GP(Model):
 
         :param max_iters: maximum number of function evaluations
         :type max_iters: int
-        :messages: whether to display during optimisation
+        :param messages: whether to display during optimisation
         :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string

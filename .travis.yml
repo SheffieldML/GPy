@@ -52,7 +52,7 @@ after_success:
 before_deploy:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
     then
-      export DIST='sdist';
+      export DIST='sdist bdist_rpm bdist_dumb';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
     then
       export DIST='bdist_wheel';

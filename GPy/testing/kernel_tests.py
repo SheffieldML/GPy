@@ -14,10 +14,10 @@ from ..util.config import config
 verbose = 0
 
 try:
-    from ..util import linalg_cython
-    config.set('cython', 'working', 'True')
+    from ..kern.src import coregionalize_cython
+    cython_coregionalize_working = config.getboolean('cython', 'working')
 except ImportError:
-    config.set('cython', 'working', 'False')
+    cython_coregionalize_working = False
 
 
 class Kern_check_model(GPy.core.Model):
@@ -641,7 +641,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not cython_coregionalize_working,"Cython coregionalize module has not been built on this machine")
 class Coregionalize_cython_test(unittest.TestCase):
     """
     Make sure that the coregionalize kernel work with and without cython enabled
@@ -654,41 +654,43 @@ class Coregionalize_cython_test(unittest.TestCase):
 
     def test_sym(self):
         dL_dK = np.random.randn(self.N1, self.N1)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X)
+        K_cython = self.k._K_cython(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X)
+        K_numpy = self.k._K_numpy(self.X)
+        # Nasty hack to ensure the numpy version is used for update_gradients
+        # If this test is running, cython is working, so override the cython
+        # function with the numpy function
+        _gradient_reduce_cython = self.k._gradient_reduce_cython
+        self.k._gradient_reduce_cython = self.k._gradient_reduce_numpy
         self.k.update_gradients_full(dL_dK, self.X)
+        # Undo hack
+        self.k._gradient_reduce_cython = _gradient_reduce_cython
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
     def test_nonsym(self):
         dL_dK = np.random.randn(self.N1, self.N2)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X, self.X2)
+        K_cython = self.k._K_cython(self.X, self.X2)
         self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X, self.X2)
+        K_numpy = self.k._K_numpy(self.X, self.X2)
         self.k.gradient = 0.
+        # Same hack as in test_sym (Line 639)
+        _gradient_reduce_cython = self.k._gradient_reduce_cython
+        self.k._gradient_reduce_cython = self.k._gradient_reduce_numpy
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
+        # Undo hack
+        self.k._gradient_reduce_cython = _gradient_reduce_cython
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
 
 

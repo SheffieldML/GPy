@@ -1,6 +1,41 @@
 # Changelog
 
 
+## v1.9.5 (2018-09-02)
+
+### New
+
+* Student-t processes #525. [mzwiessele]
+
+### Fix
+
+* Merge #514. [mzwiessele]
+
+* Merge. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.4 → 1.9.5. [mzwiessele]
+
+* SDE: removed some unnecessary comments. [Alex Grigorievskiy]
+
+* SDE: Remove sde kernels from the _src folder. [Alex Grigorievskiy]
+
+* STATE-SPACE: Recent modifications to state-space inference, including bug fixes in state-space kernels. [Alex Grigorievskiy]
+
+* TEST: Correcting message for test skipping. This is normal that this test does not work and hence skipped. [Alex Grigorievskiy]
+
+* Solved incorrect parameter assignments (causing test faillure) [Joachim van der Herten]
+
+* Added some shifts to the degrees of freedom parameter. [Joachim van der Herten]
+
+* Removal of print statements. [Joachim van der Herten]
+
+* Implementation of student-t processes. [Joachim van der Herten]
+
+* Pkg: changelog. [mzwiessele]
+
+
 ## v1.9.4 (2018-09-02)
 
 ### Fix

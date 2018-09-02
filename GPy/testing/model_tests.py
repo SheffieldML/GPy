@@ -812,6 +812,45 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
+    def test_TPRegression_matern52_1D(self):
+        ''' Testing the TP regression with matern52 kernel on 1d data '''
+        matern52 = GPy.kern.Matern52(1) + GPy.kern.White(1)
+        self.check_model(matern52, model_type='TPRegression', dimension=1)
+
+    def test_TPRegression_rbf_2D(self):
+        ''' Testing the TP regression with rbf kernel on 2d data '''
+        rbf = GPy.kern.RBF(2)
+        self.check_model(rbf, model_type='TPRegression', dimension=2)
+
+    def test_TPRegression_rbf_ARD_2D(self):
+        ''' Testing the GP regression with rbf kernel on 2d data '''
+        k = GPy.kern.RBF(2, ARD=True)
+        self.check_model(k, model_type='TPRegression', dimension=2)
+
+    def test_TPRegression_matern52_2D(self):
+        ''' Testing the TP regression with matern52 kernel on 2d data '''
+        matern52 = GPy.kern.Matern52(2)
+        self.check_model(matern52, model_type='TPRegression', dimension=2)
+
+    def test_TPRegression_matern52_ARD_2D(self):
+        ''' Testing the TP regression with matern52 kernel on 2d data '''
+        matern52 = GPy.kern.Matern52(2, ARD=True)
+        self.check_model(matern52, model_type='TPRegression', dimension=2)
+
+    def test_TPRegression_matern32_1D(self):
+        ''' Testing the TP regression with matern32 kernel on 1d data '''
+        matern32 = GPy.kern.Matern32(1)
+        self.check_model(matern32, model_type='TPRegression', dimension=1)
+
+    def test_TPRegression_matern32_2D(self):
+        ''' Testing the TP regression with matern32 kernel on 2d data '''
+        matern32 = GPy.kern.Matern32(2)
+        self.check_model(matern32, model_type='TPRegression', dimension=2)
+
+    def test_TPRegression_matern32_ARD_2D(self):
+        ''' Testing the TP regression with matern32 kernel on 2d data '''
+        matern32 = GPy.kern.Matern32(2, ARD=True)
+        self.check_model(matern32, model_type='TPRegression', dimension=2)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias kernel """

@@ -94,6 +94,7 @@ class InferenceMethodList(LatentFunctionInference, list):
             self.append(inf)
 
 from .exact_gaussian_inference import ExactGaussianInference
+from .exact_studentt_inference import ExactStudentTInference
 from .laplace import Laplace,LaplaceBlock
 from GPy.inference.latent_function_inference.var_dtc import VarDTC
 from .expectation_propagation import EP, EPDTC

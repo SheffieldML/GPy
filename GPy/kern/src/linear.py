@@ -52,14 +52,14 @@ class Linear(Kern):
         self.psicomp = PSICOMP_Linear()
 
     def to_dict(self):
-        input_dict = super(Linear, self)._to_dict()
+        input_dict = super(Linear, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Linear"
         input_dict["variances"] = self.variances.values.tolist()
         input_dict["ARD"] = self.ARD
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Linear(**input_dict)
 

@@ -110,7 +110,14 @@ class GP(Model):
         self.posterior = None
 
     def to_dict(self, save_data=True):
-        input_dict = super(GP, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(GP, self)._save_to_input_dict()
         input_dict["class"] = "GPy.core.GP"
         if not save_data:
             input_dict["X"] = None
@@ -137,14 +144,14 @@ class GP(Model):
         return input_dict
 
     @staticmethod
-    def _from_dict(input_dict, data=None):
+    def _format_input_dict(input_dict, data=None):
         import GPy
         import numpy as np
         if (input_dict['X'] is None) or (input_dict['Y'] is None):
             assert(data is not None)
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         elif data is not None:
-            print("WARNING: The model has been saved with X,Y! The original values are being overriden!")
+            warnings.warn("WARNING: The model has been saved with X,Y! The original values are being overridden!")
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         else:
             input_dict["X"], input_dict["Y"] = np.array(input_dict['X']), np.array(input_dict['Y'])
@@ -166,6 +173,11 @@ class GP(Model):
             input_dict["normalizer"] = GPy.util.normalizer._Norm.from_dict(normalizer)
         else:
             input_dict["normalizer"] = normalizer
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        input_dict = GP._format_input_dict(input_dict, data)
         return GP(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):
@@ -282,7 +294,7 @@ class GP(Model):
             mu += self.mean_function.f(Xnew)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, 
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None,
                 likelihood=None, include_likelihood=True):
         """
         Predict the function(s) at the new point(s) Xnew. This includes the
@@ -566,7 +578,7 @@ class GP(Model):
                 mag[n] = np.sqrt(np.linalg.det(G[n, :, :]))
         return mag
 
-    def posterior_samples_f(self,X, size=10, full_cov=True, **predict_kwargs):
+    def posterior_samples_f(self,X, size=10, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -574,35 +586,29 @@ class GP(Model):
         :type X: np.ndarray (Nnew x self.input_dim)
         :param size: the number of a posteriori samples.
         :type size: int.
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal.
-        :type full_cov: bool.
-        :returns: fsim: set of simulations
-        :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
+        :returns: set of simulations
+        :rtype: np.ndarray (Nnew x D x samples) 
         """
-        m, v = self._raw_predict(X,  full_cov=full_cov, **predict_kwargs)
+        predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples. 
+        m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
 
         def sim_one_dim(m, v):
-            if not full_cov:
-                return np.random.multivariate_normal(m.flatten(), np.diag(v.flatten()), size).T
-            else:
-                return np.random.multivariate_normal(m.flatten(), v, size).T
+            return np.random.multivariate_normal(m, v, size).T
 
         if self.output_dim == 1:
-            return sim_one_dim(m, v)
+            return sim_one_dim(m.flatten(), v)[:, np.newaxis, :]
         else:
-            fsim = np.empty((self.output_dim, self.num_data, size))
+            fsim = np.empty((X.shape[0], self.output_dim, size))
             for d in range(self.output_dim):
-                if full_cov and v.ndim == 3:
-                    fsim[d] = sim_one_dim(m[:, d], v[:, :, d])
-                elif (not full_cov) and v.ndim == 2:
-                    fsim[d] = sim_one_dim(m[:, d], v[:, d])
+                if v.ndim == 3:
+                    fsim[:, d, :] = sim_one_dim(m[:, d], v[:, :, d])
                 else:
-                    fsim[d] = sim_one_dim(m[:, d], v)
+                    fsim[:, d, :] = sim_one_dim(m[:, d], v)
         return fsim
 
-    def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None, likelihood=None, **predict_kwargs):
+    def posterior_samples(self, X, size=10, Y_metadata=None, likelihood=None, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -610,19 +616,17 @@ class GP(Model):
         :type X: np.ndarray (Nnew x self.input_dim.)
         :param size: the number of a posteriori samples.
         :type size: int.
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal.
-        :type full_cov: bool.
         :param noise_model: for mixed noise likelihood, the noise model to use in the samples.
         :type noise_model: integer.
         :returns: Ysim: set of simulations,
         :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
         """
-        fsim = self.posterior_samples_f(X, size, full_cov=full_cov, **predict_kwargs)
+        fsim = self.posterior_samples_f(X, size, **predict_kwargs)
         if likelihood is None:
             likelihood = self.likelihood
         if fsim.ndim == 3:
-            for d in range(fsim.shape[0]):
-                fsim[d] = likelihood.samples(fsim[d], Y_metadata=Y_metadata)
+            for d in range(fsim.shape[1]):
+                fsim[:, d] = likelihood.samples(fsim[:, d], Y_metadata=Y_metadata)
         else:
             fsim = likelihood.samples(fsim, Y_metadata=Y_metadata)
         return fsim
@@ -643,7 +647,7 @@ class GP(Model):
 
         :param max_iters: maximum number of function evaluations
         :type max_iters: int
-        :messages: whether to display during optimisation
+        :param messages: whether to display during optimisation
         :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string

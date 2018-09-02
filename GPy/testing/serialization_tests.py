@@ -11,6 +11,7 @@ import tempfile
 import GPy
 from nose import SkipTest
 import numpy as np
+import os
 fixed_seed = 11
 
 
@@ -116,12 +117,38 @@ class Test(unittest.TestCase):
         np.testing.assert_array_equal(e1._ep_approximation[2].v[:], e1_r._ep_approximation[2].v[:])
         np.testing.assert_array_equal(e1._ep_approximation[3][:], e1_r._ep_approximation[3][:])
 
-        e2 = GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference()
+        e2 = GPy.inference.latent_function_inference.expectation_propagation.EPDTC(ep_mode="nested")
+        e2.ga_approx_old = GPy.inference.latent_function_inference.expectation_propagation.gaussianApproximation(np.random.rand(10),np.random.rand(10))
+        e2._ep_approximation = []
+        e2._ep_approximation.append(GPy.inference.latent_function_inference.expectation_propagation.posteriorParamsDTC(np.random.rand(10),np.random.rand(10)))
+        e2._ep_approximation.append(GPy.inference.latent_function_inference.expectation_propagation.gaussianApproximation(np.random.rand(10),np.random.rand(10)))
+        e2._ep_approximation.append(100.0)
         e2_r = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(e2.to_dict())
 
         assert type(e2) == type(e2_r)
+        assert e2.epsilon==e2_r.epsilon
+        assert e2.eta==e2_r.eta
+        assert e2.delta==e2_r.delta
+        assert e2.always_reset==e2_r.always_reset
+        assert e2.max_iters==e2_r.max_iters
+        assert e2.ep_mode==e2_r.ep_mode
+        assert e2.parallel_updates==e2_r.parallel_updates
 
-    def test_serialize_deserialize_model(self):
+        np.testing.assert_array_equal(e2.ga_approx_old.tau[:], e2_r.ga_approx_old.tau[:])
+        np.testing.assert_array_equal(e2.ga_approx_old.v[:], e2_r.ga_approx_old.v[:])
+        np.testing.assert_array_equal(e2._ep_approximation[0].mu[:], e2_r._ep_approximation[0].mu[:])
+        np.testing.assert_array_equal(e2._ep_approximation[0].Sigma_diag[:], e2_r._ep_approximation[0].Sigma_diag[:])
+        np.testing.assert_array_equal(e2._ep_approximation[1].tau[:], e2_r._ep_approximation[1].tau[:])
+        np.testing.assert_array_equal(e2._ep_approximation[1].v[:], e2_r._ep_approximation[1].v[:])
+        assert(e2._ep_approximation[2] == e2_r._ep_approximation[2])
+
+        e3 = GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference()
+        e3_r = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(e3.to_dict())
+
+        assert type(e3) == type(e3_r)
+
+
+    def test_serialize_deserialize_GP(self):
         np.random.seed(fixed_seed)
         N = 20
         Nhalf = int(N/2)
@@ -131,13 +158,13 @@ class Test(unittest.TestCase):
         likelihood = GPy.likelihoods.Bernoulli()
         inference_method=GPy.inference.latent_function_inference.expectation_propagation.EP(ep_mode="nested")
         mean_function=None
+
         m = GPy.core.GP(X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=inference_method, mean_function=mean_function, normalizer=True, name='gp_classification')
         m.optimize()
         m.save_model("temp_test_gp_with_data.json", compress=True, save_data=True)
         m.save_model("temp_test_gp_without_data.json", compress=True, save_data=False)
         m1_r = GPy.core.GP.load_model("temp_test_gp_with_data.json.zip")
         m2_r = GPy.core.GP.load_model("temp_test_gp_without_data.json.zip", (X,Y))
-        import os
         os.remove("temp_test_gp_with_data.json.zip")
         os.remove("temp_test_gp_without_data.json.zip")
         var = m.predict(X)[0]
@@ -146,7 +173,32 @@ class Test(unittest.TestCase):
         np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
         np.testing.assert_array_equal(np.array(var).flatten(), np.array(var2_r).flatten())
 
-    def test_serialize_deserialize_inference_GPRegressor(self):
+    def test_serialize_deserialize_SparseGP(self):
+        np.random.seed(fixed_seed)
+        N = 20
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
+        kernel = GPy.kern.RBF(1)
+        likelihood = GPy.likelihoods.Bernoulli()
+        inference_method=GPy.inference.latent_function_inference.expectation_propagation.EPDTC(ep_mode="nested")
+        mean_function=None
+
+        sm = GPy.core.SparseGP(X=X, Y=Y, Z=X[0:20,:], kernel=kernel, likelihood=likelihood, inference_method=inference_method, mean_function=mean_function, normalizer=True, name='sparse_gp_classification')
+        sm.optimize()
+        sm.save_model("temp_test_gp_with_data.json", compress=True, save_data=True)
+        sm.save_model("temp_test_gp_without_data.json", compress=True, save_data=False)
+        sm1_r = GPy.core.GP.load_model("temp_test_gp_with_data.json.zip")
+        sm2_r = GPy.core.GP.load_model("temp_test_gp_without_data.json.zip", (X,Y))
+        os.remove("temp_test_gp_with_data.json.zip")
+        os.remove("temp_test_gp_without_data.json.zip")
+        var = sm.predict(X)[0]
+        var1_r = sm1_r.predict(X)[0]
+        var2_r = sm2_r.predict(X)[0]
+        np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
+        np.testing.assert_array_equal(np.array(var).flatten(), np.array(var2_r).flatten())
+
+    def test_serialize_deserialize_GPRegressor(self):
         np.random.seed(fixed_seed)
         N = 50
         N_new = 50
@@ -161,7 +213,6 @@ class Test(unittest.TestCase):
         m.save_model("temp_test_gp_regressor_without_data.json", compress=True, save_data=False)
         m1_r = GPy.models.GPRegression.load_model("temp_test_gp_regressor_with_data.json.zip")
         m2_r = GPy.models.GPRegression.load_model("temp_test_gp_regressor_without_data.json.zip", (X,Y))
-        import os
         os.remove("temp_test_gp_regressor_with_data.json.zip")
         os.remove("temp_test_gp_regressor_without_data.json.zip")
 
@@ -174,7 +225,7 @@ class Test(unittest.TestCase):
         np.testing.assert_array_equal(var.flatten(), var1_r.flatten())
         np.testing.assert_array_equal(var.flatten(), var2_r.flatten())
 
-    def test_serialize_deserialize_inference_GPClassifier(self):
+    def test_serialize_deserialize_GPClassification(self):
         np.random.seed(fixed_seed)
         N = 50
         Nhalf = int(N/2)
@@ -186,10 +237,35 @@ class Test(unittest.TestCase):
         m.save_model("temp_test_gp_classifier_with_data.json", compress=True, save_data=True)
         m.save_model("temp_test_gp_classifier_without_data.json", compress=True, save_data=False)
         m1_r = GPy.models.GPClassification.load_model("temp_test_gp_classifier_with_data.json.zip")
+        self.assertTrue(type(m) == type(m1_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m1_r)))
         m2_r = GPy.models.GPClassification.load_model("temp_test_gp_classifier_without_data.json.zip", (X,Y))
-        import os
+        self.assertTrue(type(m) == type(m2_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m2_r)))
         os.remove("temp_test_gp_classifier_with_data.json.zip")
         os.remove("temp_test_gp_classifier_without_data.json.zip")
+
+        var = m.predict(X)[0]
+        var1_r = m1_r.predict(X)[0]
+        var2_r = m2_r.predict(X)[0]
+        np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
+        np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
+
+    def test_serialize_deserialize_SparseGPClassification(self):
+        np.random.seed(fixed_seed)
+        N = 50
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
+        kernel = GPy.kern.RBF(1)
+        m = GPy.models.SparseGPClassification(X, Y, num_inducing=3, kernel=kernel)
+        m.optimize()
+        m.save_model("temp_test_sparse_gp_classifier_with_data.json", compress=True, save_data=True)
+        m.save_model("temp_test_sparse_gp_classifier_without_data.json", compress=True, save_data=False)
+        m1_r = GPy.models.SparseGPClassification.load_model("temp_test_sparse_gp_classifier_with_data.json.zip")
+        self.assertTrue(type(m) == type(m1_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m1_r)))
+        m2_r = GPy.models.SparseGPClassification.load_model("temp_test_sparse_gp_classifier_without_data.json.zip", (X,Y))
+        self.assertTrue(type(m) == type(m2_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m2_r)))
+        os.remove("temp_test_sparse_gp_classifier_with_data.json.zip")
+        os.remove("temp_test_sparse_gp_classifier_without_data.json.zip")
 
         var = m.predict(X)[0]
         var1_r = m1_r.predict(X)[0]

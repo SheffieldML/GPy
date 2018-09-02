@@ -12,6 +12,8 @@ import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
 
+import warnings
+
 try:
     from . import state_space_setup
     setup_available = True
@@ -40,6 +42,10 @@ if print_verbose:
         print("state_space: cython is used")
     else:
         print("state_space: cython is NOT used")
+
+# When debugging external module can set some value to this variable (e.g.)
+# 'model' and in this module this variable can be seen.s
+tmp_buffer = None
 
 
 class Dynamic_Callables_Python(object):
@@ -227,7 +233,7 @@ class R_handling_Python(Measurement_Callables_Class):
         self.R_square_root = {}
 
     def Rk(self, k):
-        return self.R[:, :, self.index[self.R_time_var_index, k]]
+        return self.R[:, :, int(self.index[self.R_time_var_index, k])]
 
     def dRk(self, k):
         if self.dR is None:
@@ -305,7 +311,7 @@ class Std_Measurement_Callables_Python(R_handling_Class):
             P: parameter for Jacobian, usually covariance matrix.
         """
 
-        return self.H[:, :, self.index[self.H_time_var_index, k]]
+        return self.H[:, :, int(self.index[self.H_time_var_index, k])]
 
     def dHk(self, k):
         if self.dH is None:
@@ -2303,6 +2309,8 @@ class ContDescrStateSpace(DescreteStateSpace):
             self.v_dQk = None
 
             self.square_root_computed = False
+            self.Q_inverse_computed = False
+            self.Q_svd_computed = False
             # !!!Print statistics! Which object is created
 
         def f_a(self, k,m,A):
@@ -2337,7 +2345,10 @@ class ContDescrStateSpace(DescreteStateSpace):
                 self.v_Qk = v_Qk
                 self.v_dAk = v_dAk
                 self.v_dQk = v_dQk
+                
                 self.Q_square_root_computed = False
+                self.Q_inverse_computed = False
+                self.Q_svd_computed = False
             else:
                 v_Ak = self.v_Ak
                 v_Qk = self.v_Qk
@@ -2359,8 +2370,11 @@ class ContDescrStateSpace(DescreteStateSpace):
             self.last_k = 0
             self.last_k_computed = False
             self.compute_derivatives = compute_derivatives
+            
             self.Q_square_root_computed = False
-
+            self.Q_inverse_computed = False
+            self.Q_svd_computed = False
+            self.Q_eigen_computed = False
             return self
 
         def Ak(self,k,m,P):
@@ -2381,12 +2395,19 @@ class ContDescrStateSpace(DescreteStateSpace):
 
         def Q_srk(self,k):
             """
+            Check square root, maybe rewriting for Spectral decomposition is needed.
             Square root of the noise matrix Q
             """
 
             if ((self.last_k == k) and (self.last_k_computed == True)):
                 if not self.Q_square_root_computed:
-                    (U, S, Vh) = sp.linalg.svd( self.v_Qk, full_matrices=False, compute_uv=True, overwrite_a=False, check_finite=False)
+                    if not self.Q_svd_computed:
+                        (U, S, Vh) = sp.linalg.svd( self.v_Qk, full_matrices=False, compute_uv=True, overwrite_a=False, check_finite=False)
+                        self.Q_svd = (U, S, Vh)
+                        self.Q_svd_computed = True
+                    else:
+                        (U, S, Vh) = self.Q_svd
+                        
                     square_root = U * np.sqrt(S)
                     self.square_root_computed = True
                     self.Q_square_root = square_root
@@ -2396,7 +2417,56 @@ class ContDescrStateSpace(DescreteStateSpace):
                 raise ValueError("Square root of Q can not be computed")
 
             return square_root
+        
+        def Q_inverse(self, k, p_largest_cond_num, p_regularization_type):        
+            """
+            Function inverts Q matrix and regularizes the inverse.
+            Regularization is useful when original matrix is badly conditioned.
+            Function is currently used only in SparseGP code.
+            
+            Inputs:
+            ------------------------------
+            k: int
+            Iteration number.
+            
+            p_largest_cond_num: float
+            Largest condition value for the inverted matrix. If cond. number is smaller than that
+            no regularization happen.
+            
+            regularization_type: 1 or 2
+            Regularization type.
+            
+            regularization_type: int (1 or 2)
+            
+                type 1: 1/(S[k] + regularizer) regularizer is computed
+                type 2: S[k]/(S^2[k] + regularizer) regularizer is computed
+            """
+            
+            #import pdb; pdb.set_trace()
+                    
+            if ((self.last_k == k) and (self.last_k_computed == True)):
+                if not self.Q_inverse_computed:
+                    if not self.Q_svd_computed:
+                        (U, S, Vh) = sp.linalg.svd( self.v_Qk, full_matrices=False, compute_uv=True, overwrite_a=False, check_finite=False)
+                        self.Q_svd = (U, S, Vh)
+                        self.Q_svd_computed = True
+                    else:
+                        (U, S, Vh) = self.Q_svd
 
+                    Q_inverse_r = psd_matrix_inverse(k, 0.5*(self.v_Qk + self.v_Qk.T), U,S, p_largest_cond_num, p_regularization_type)
+                    
+                    self.Q_inverse_computed = True
+                    self.Q_inverse_r = Q_inverse_r
+                        
+                else:
+                    Q_inverse_r = self.Q_inverse_r
+            else:
+                raise ValueError("""Inverse of Q can not be computed, because Q has not been computed.
+                                     This requires some programming""")
+
+            return Q_inverse_r
+        
+        
         def return_last(self):
             """
             Function returns last computed matrices.
@@ -2463,6 +2533,9 @@ class ContDescrStateSpace(DescreteStateSpace):
                             (self.reconstruct_indices.nbytes if (self.reconstruct_indices is not None) else 0)
 
             self.Q_svd_dict = {}
+            self.Q_square_root_dict = {}
+            self.Q_inverse_dict = {}
+            
             self.last_k = None
              # !!!Print statistics! Which object is created
             # !!!Print statistics! Print sizes of matrices
@@ -2503,17 +2576,66 @@ class ContDescrStateSpace(DescreteStateSpace):
             Square root of the noise matrix Q
             """
             matrix_index = self.reconstruct_indices[k]
-            if matrix_index in self.Q_svd_dict:
-                square_root = self.Q_svd_dict[matrix_index]
+            if matrix_index in self.Q_square_root_dict:
+                square_root = self.Q_square_root_dict[matrix_index]
             else:
-                (U, S, Vh) = sp.linalg.svd( self.Qs[:,:, matrix_index],
+                if matrix_index in self.Q_svd_dict:
+                    (U, S, Vh) = self.Q_svd_dict[matrix_index]
+                else:
+                    (U, S, Vh) = sp.linalg.svd( self.Qs[:,:, matrix_index],
                                         full_matrices=False, compute_uv=True,
                                         overwrite_a=False, check_finite=False)
+                    self.Q_svd_dict[matrix_index] = (U,S,Vh)
+                    
                 square_root = U * np.sqrt(S)
-                self.Q_svd_dict[matrix_index] = square_root
+                self.Q_square_root_dict[matrix_index] = square_root
 
             return square_root
+        
+        def Q_inverse(self, k, p_largest_cond_num, p_regularization_type):
+            """
+            Function inverts Q matrix and regularizes the inverse.
+            Regularization is useful when original matrix is badly conditioned.
+            Function is currently used only in SparseGP code.
+            
+            Inputs:
+            ------------------------------
+            k: int
+            Iteration number.
+            
+            p_largest_cond_num: float
+            Largest condition value for the inverted matrix. If cond. number is smaller than that
+            no regularization happen.
+            
+            regularization_type: 1 or 2
+            Regularization type.
+            
+            regularization_type: int (1 or 2)
+            
+                type 1: 1/(S[k] + regularizer) regularizer is computed
+                type 2: S[k]/(S^2[k] + regularizer) regularizer is computed
+            """
+            #import pdb; pdb.set_trace()
+            
+            matrix_index = self.reconstruct_indices[k]
+            if matrix_index in self.Q_inverse_dict:
+                Q_inverse_r = self.Q_inverse_dict[matrix_index]
+            else:
+                
+                if matrix_index in self.Q_svd_dict:
+                    (U, S, Vh) = self.Q_svd_dict[matrix_index]
+                else:
+                    (U, S, Vh) = sp.linalg.svd( self.Qs[:,:, matrix_index],
+                                        full_matrices=False, compute_uv=True,
+                                        overwrite_a=False, check_finite=False)
+                    self.Q_svd_dict[matrix_index] = (U,S,Vh)
+                
+                Q_inverse_r = psd_matrix_inverse(k, 0.5*(self.Qs[:,:, matrix_index] + self.Qs[:,:, matrix_index].T), U,S, p_largest_cond_num, p_regularization_type)
+                self.Q_inverse_dict[matrix_index] = Q_inverse_r
 
+            return Q_inverse_r
+            
+        
         def return_last(self):
             """
             Function returns last available matrices.
@@ -3073,7 +3195,8 @@ class ContDescrStateSpace(DescreteStateSpace):
     @classmethod
     def _cont_to_discrete_object(cls, X, F, L, Qc, compute_derivatives=False,
                                  grad_params_no=None,
-                                 P_inf=None, dP_inf=None, dF = None, dQc=None):
+                                 P_inf=None, dP_inf=None, dF = None, dQc=None,
+                                 dt0=None):
         """
         Function return the object which is used in Kalman filter and/or
         smoother to obtain matrices A, Q and their derivatives for discrete model
@@ -3110,7 +3233,14 @@ class ContDescrStateSpace(DescreteStateSpace):
         threshold_number_of_unique_time_steps = 20 # above which matrices are separately each time
         dt = np.empty((X.shape[0],))
         dt[1:] = np.diff(X[:,0],axis=0)
-        dt[0]  = 0#dt[1]
+        if dt0 is None:
+            dt[0]  = 0#dt[1]
+        else:
+            if isinstance(dt0,str):
+                dt = dt[1:]
+            else:
+                dt[0] = dt0
+            
         unique_indices = np.unique(np.round(dt, decimals=unique_round_decimals))
         number_unique_indices = len(unique_indices)
 
@@ -3161,7 +3291,10 @@ class ContDescrStateSpace(DescreteStateSpace):
 
             x_{k} =  A_{k} * x_{k-1} + q_{k-1};       q_{k-1} ~ N(0, Q_{k-1})
 
-
+        TODO: this function can be redone to "preprocess dataset", when
+        close time points are handeled properly (with rounding parameter) and
+        values are averaged accordingly.
+        
         Input:
         --------------
         F,L: LTI SDE matrices of corresponding dimensions
@@ -3222,11 +3355,9 @@ class ContDescrStateSpace(DescreteStateSpace):
         n = F.shape[0]
 
         if not isinstance(dt, collections.Iterable): # not iterable, scalar
-
+            #import pdb; pdb.set_trace()
             # The dynamical model
             A  = matrix_exponent(F*dt)
-            if np.any( np.isnan(A)):
-                A  = linalg.expm3(F*dt)
 
             # The covariance matrix Q by matrix fraction decomposition ->
             Phi = np.zeros((2*n,2*n))
@@ -3265,15 +3396,17 @@ class ContDescrStateSpace(DescreteStateSpace):
                     # The discrete-time dynamical model*
                     if p==0:
                         A  = AA[:n,:n,p]
-                        Q_noise_2  = P_inf - A.dot(P_inf).dot(A.T)
-                        Q_noise = Q_noise_2
+                        Q_noise_3  = P_inf - A.dot(P_inf).dot(A.T)
+                        Q_noise = Q_noise_3
                         #PP = A.dot(P).dot(A.T) + Q_noise_2
 
                     # The derivatives of A and Q
                     dA[:,:,p] = AA[n:,:n,p]
-                    dQ[:,:,p] = dP_inf[:,:,p] - dA[:,:,p].dot(P_inf).dot(A.T) \
-                       - A.dot(dP_inf[:,:,p]).dot(A.T) - A.dot(P_inf).dot(dA[:,:,p].T) # Rewrite not ro multiply two times
-
+                    tmp = dA[:,:,p].dot(P_inf).dot(A.T)
+                    dQ[:,:,p] = dP_inf[:,:,p] - tmp \
+                       - A.dot(dP_inf[:,:,p]).dot(A.T) - tmp.T
+                    
+                    dQ[:,:,p] = 0.5*(dQ[:,:,p] + dQ[:,:,p].T) # Symmetrize
             else:
               dA = None
               dQ = None
@@ -3282,7 +3415,7 @@ class ContDescrStateSpace(DescreteStateSpace):
 	
             #Q_noise = Q_noise_1
 
-            # Return
+            Q_noise = 0.5*(Q_noise + Q_noise.T) # Symmetrize
             return A, Q_noise,None, dA, dQ
 
         else: # iterable, array
@@ -3486,4 +3619,4 @@ def balance_ss_model(F,L,Qc,H,Pinf,P0,dF=None,dQc=None,dPinf=None,dP0=None):
 
     # (F,L,Qc,H,Pinf,P0,dF,dQc,dPinf,dP0)
 
-    return bF, bL, bQc, bH, bPinf, bP0, bdF, bdQc, bdPinf, bdP0, T
+    return bF, bL, bQc, bH, bPinf, bP0, bdF, bdQc, bdPinf, bdP0

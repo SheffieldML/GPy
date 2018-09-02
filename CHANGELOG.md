@@ -1,5 +1,183 @@
 # Changelog
 
+
+## v1.9.5 (2018-09-02)
+
+### New
+
+* Student-t processes #525. [mzwiessele]
+
+### Fix
+
+* Merge #514. [mzwiessele]
+
+* Merge. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.4 → 1.9.5. [mzwiessele]
+
+* SDE: removed some unnecessary comments. [Alex Grigorievskiy]
+
+* SDE: Remove sde kernels from the _src folder. [Alex Grigorievskiy]
+
+* STATE-SPACE: Recent modifications to state-space inference, including bug fixes in state-space kernels. [Alex Grigorievskiy]
+
+* TEST: Correcting message for test skipping. This is normal that this test does not work and hence skipped. [Alex Grigorievskiy]
+
+* Solved incorrect parameter assignments (causing test faillure) [Joachim van der Herten]
+
+* Added some shifts to the degrees of freedom parameter. [Joachim van der Herten]
+
+* Removal of print statements. [Joachim van der Herten]
+
+* Implementation of student-t processes. [Joachim van der Herten]
+
+* Pkg: changelog. [mzwiessele]
+
+
+## v1.9.4 (2018-09-02)
+
+### Fix
+
+* Bdist_dumb and bdist_rpm. [mzwiessele]
+
+* Samples tests and plotting, multioutput. [mzwiessele]
+
+* Py37 cython not compatible. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.3 → 1.9.4. [mzwiessele]
+
+* Pkg: merged and tested, no py37. [mzwiessele]
+
+* Pkg: no py37 still does not work. [mzwiessele]
+
+* Add py37. [mzwiessele]
+
+* Add py37. [mzwiessele]
+
+* Merge branch 'cython-fix' of git://github.com/jayanthkoushik/GPy into jayanthkoushik-cython-fix. [mzwiessele]
+
+* Ensure numpy version is used in coregionalize cython test. [Jayanth Koushik]
+
+* Use explicity cython/numpy variants in coregionalize test. [Jayanth Koushik]
+
+* Fix cython check in linalg. [Jayanth Koushik]
+
+* Don't override global cython config in tests. [Jayanth Koushik]
+
+* Refactor checking for cython availability. [Jayanth Koushik]
+
+* Use correct cython check in kernel_tests.py. [Jayanth Koushik]
+
+* Merge branch 'devel' into esiivola-feature-multioutput. [mzwiessele]
+
+* Merge branch 'devel' into devel. [Neil Lawrence]
+
+* Rewrite poster_samples_f to return NxDxsize. [Neil Lawrence]
+
+* Testing for dims should be checking whether 2nd dim is greater than 1. [Neil Lawrence]
+
+* Update gp.py. [Neil Lawrence]
+
+  Sample return seemed to have been based on number of training data, not number of posterior samples requested.
+
+* Merge pull request #668 from RobRomijnders/devel. [Zhenwen Dai]
+
+  fix typo in docstring for GP.opimize()
+
+* Fix typo in docstring for GP.opimize() [robromijnders]
+
+* Merge pull request #648 from marpulli/symmetric_kernel. [Zhenwen Dai]
+
+  Add Symmetric kernel
+
+* Expand class description and some speed improvements. [Mark Pullin]
+
+* Make symmetric kernel work with python 2.7. [Mark Pullin]
+
+* Add param descriptions. [Mark Pullin]
+
+* Add symmetric kernel. [Mark Pullin]
+
+* Merge pull request #654 from palindromik/devel. [Zhenwen Dai]
+
+  Return deserialized models with actual type instead of base type
+
+* Return deserialized models with actual type instead of base type. [Keerthana Elango]
+
+* Merge branch 'feature-multioutput' of https://github.com/esiivola/GPy into esiivola-feature-multioutput. [mzwiessele]
+
+* Merge remote-tracking branch 'origin/devel' into feature-multioutput. [Eero Siivola]
+
+* Modified likelihoods test to better test multioutput likelihood. [Eero Siivola]
+
+* Added a notice of the correspondence of the likelihood structure to the one of GPstuff due to their request. [Eero Siivola]
+
+* Added a new class that enables using multiple likelihoods for multioutput case (previously, Mixed noise only allowed use of multiple gaussians) [Siivola Eero]
+
+* Pkg: CHANGELOG. [mzwiessele]
+
+
+## v1.9.3 (2018-07-27)
+
+### Fix
+
+* Python=3.7. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.2 → 1.9.3. [mzwiessele]
+
+* Merge pull request #655 from davidsmf/patch-2. [Zhenwen Dai]
+
+  Allow setup.py to be parsed without numpy
+
+* Allow setup.py to be parsed without numpy. [David Sheldon]
+
+  If numpy isn't available, don't define ext_mods, pip will then determine numpy is required, install it, then call us again.
+
+  Fixes #653
+
+* Merge pull request #640 from pgmoren/devel. [Zhenwen Dai]
+
+  Sparse GP serialization
+
+* Serialization: Add docstrings. [Moreno]
+
+* Sparse GP serialization. [Moreno]
+
+* Merge pull request #613 from dtorrejo/Multi_sample_bug. [Max Zwiessele]
+
+  Fixes the dimensions of the samples output
+
+* Maintains consistency with numpy arrays. [Diego Torrejon]
+
+* Fixes the dimensions of the samples output. [Diego Torrejon]
+
+* Merge pull request #607 from pgmoren/devel. [Zhenwen Dai]
+
+  Add serialization functions for EPDTC
+
+* Add serialization functions for EPDTC. [Moreno]
+
+* Merge pull request #604 from SheffieldML/deploy. [Max Zwiessele]
+
+  Deploy
+
+* Use old deploy pypi behavior. [Max Zwiessele]
+
+  Until skip_existing option exists, use the old travis dpl behaviour to not fail on existing files.
+
+* Don’t build docs anymore in travis. [Max Zwiessele]
+
+* Merge pull request #603 from SheffieldML/devel. [Max Zwiessele]
+
+  1.9.*
+
+
 ## v1.9.2 (2018-02-22)
 
 ### Fix
@@ -121,7 +299,7 @@
 
   * update changelog for 1.8.5
 
-  * bump the version: 1.8.4 -&gt; 1.8.5
+  * bump the version: 1.8.4 -> 1.8.5
 
 
 ## v1.8.6 (2018-02-22)
@@ -166,7 +344,7 @@
 
 * Changed two function names so that they follow the python naming convention. [Siivola Eero]
 
-* Merge remote-tracking branch &#x27;origin&#x27; into feature-multioutput. [Eero Siivola]
+* Merge remote-tracking branch 'origin' into feature-multioutput. [Eero Siivola]
 
 * Merge pull request #592 from SheffieldML/sparsegp-normalization. [Zhenwen Dai]
 
@@ -180,9 +358,9 @@
 
 * Implemented utility function to compute covariance between points in GP Model. [Andrei Paleyes]
 
-* Changed the structure of multioutput kernel so that it doesn&#x27;t change the API of Kernels + documented the class. [Eero Siivola]
+* Changed the structure of multioutput kernel so that it doesn't change the API of Kernels + documented the class. [Eero Siivola]
 
-* Merge remote-tracking branch &#x27;origin/devel&#x27; into feature-multioutput. [Eero Siivola]
+* Merge remote-tracking branch 'origin/devel' into feature-multioutput. [Eero Siivola]
 
 * Merge pull request #585 from YoshikawaMasashi/devel. [Zhenwen Dai]
 
@@ -198,7 +376,7 @@
 
 * Change dtype for Python 3 in robot_wirelss. [Neil Lawrence]
 
-* Bump the version: 1.8.4 -&gt; 1.8.5. [Zhenwen Dai]
+* Bump the version: 1.8.4 -> 1.8.5. [Zhenwen Dai]
 
 * Update changelog for 1.8.5. [Zhenwen Dai]
 
@@ -208,7 +386,7 @@
 
 * Add type into docstring. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into multi_out_doc. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into multi_out_doc. [Zhenwen Dai]
 
 * Remove non-ascii characters. [Zhenwen Dai]
 
@@ -294,7 +472,7 @@
 
   appveyor twine upload error fix
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
 * Merge pull request #558 from SheffieldML/devel. [Max Zwiessele]
 
@@ -315,9 +493,9 @@
 
 * Update appveyor.yml. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
 * Merge pull request #557 from SheffieldML/devel. [Max Zwiessele]
 
@@ -394,13 +572,13 @@
 
 * Input warping using Kumar warping. [Shen]
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into deploy. [mzwiessele]
+* Merge branch 'devel' into deploy. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into deploy. [mzwiessele]
+* Merge branch 'devel' into deploy. [mzwiessele]
 
-* Merge branch &#x27;deploy&#x27; of github.com:SheffieldML/GPy into deploy. [mzwiessele]
+* Merge branch 'deploy' of github.com:SheffieldML/GPy into deploy. [mzwiessele]
 
 * Merge pull request #497 from SheffieldML/devel. [Max Zwiessele]
 
@@ -682,7 +860,7 @@
 
 * Merge pull request #492 from pgmoren/devel. [Zhenwen Dai]
 
-  We did some benchmarking on classification. These changes should be fine. Let&#x27;s merge it in.
+  We did some benchmarking on classification. These changes should be fine. Let's merge it in.
 
 * Changes in EP/EPDTC to fix numerical issues and increase the flexibility of the inference. [Moreno]
 
@@ -745,11 +923,11 @@
 
 * Bump version: 1.5.9 → 1.6.0. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into alexfeld-offline_plotly. [mzwiessele]
+* Merge branch 'devel' into alexfeld-offline_plotly. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into alexfeld-offline_plotly. [mzwiessele]
+* Merge branch 'devel' into alexfeld-offline_plotly. [mzwiessele]
 
-* Merge branch &#x27;offline_plotly&#x27; of git://github.com/alexfeld/GPy into alexfeld-offline_plotly. [mzwiessele]
+* Merge branch 'offline_plotly' of git://github.com/alexfeld/GPy into alexfeld-offline_plotly. [mzwiessele]
 
 * Provide two classes for plotly plots to remove global variable. [Alex Feldstein]
 
@@ -762,7 +940,7 @@
 
 * Bump version: 1.5.8 → 1.5.9. [mzwiessele]
 
-* Merge remote-tracking branch &#x27;origin/deploy&#x27; into devel. [mzwiessele]
+* Merge remote-tracking branch 'origin/deploy' into devel. [mzwiessele]
 
 * Merge pull request #455 from SheffieldML/devel. [Max Zwiessele]
 
@@ -852,7 +1030,7 @@
 
 * Added pep.py -- Sparse Gaussian processes using Power Expectation Propagation. [Thang Bui]
 
-  This allows interpolation between FITC (EP or alpha = 1), and Titsias&#x27;s variational (VarDTC, VFE when alpha = 0).
+  This allows interpolation between FITC (EP or alpha = 1), and Titsias's variational (VarDTC, VFE when alpha = 0).
 
 * Merge pull request #452 from SheffieldML/setupreq. [Max Zwiessele]
 
@@ -862,7 +1040,7 @@
 
   Polynomial
 
-* Merge branch &#x27;devel&#x27; into polinomial. [mzwiessele]
+* Merge branch 'devel' into polinomial. [mzwiessele]
 
 * Merge pull request #449 from SheffieldML/deploy. [Max Zwiessele]
 
@@ -874,9 +1052,9 @@
 
   newest patch fixing some issues
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
 * Merge pull request #442 from SheffieldML/devel. [Max Zwiessele]
 
@@ -914,7 +1092,7 @@
 
   fix: Bug in datasets.py
 
-* Merge branch &#x27;kurtCutajar-devel&#x27; into devel. [mzwiessele]
+* Merge branch 'kurtCutajar-devel' into devel. [mzwiessele]
 
 
 ## v1.5.3 (2016-09-06)
@@ -923,7 +1101,7 @@
 
 * Bump version: 1.5.2 → 1.5.3. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into kurtCutajar-devel. [mzwiessele]
+* Merge branch 'devel' into kurtCutajar-devel. [mzwiessele]
 
 * [doc] cleanup. [mzwiessele]
 
@@ -975,7 +1153,7 @@
 
 ### Fix
 
-* What&#x27;s new update fix #425 in changelog. [mzwiessele]
+* What's new update fix #425 in changelog. [mzwiessele]
 
 ### Other
 
@@ -1010,7 +1188,7 @@
 
 * Bump version: 1.4.1 → 1.4.2. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * [kern] fix #440. [mzwiessele]
 
@@ -1029,17 +1207,17 @@
 
   Binomial laplace #352
 
-* Merge branch &#x27;devel&#x27; into binomial_laplace. [Max Zwiessele]
+* Merge branch 'devel' into binomial_laplace. [Max Zwiessele]
 
 * Added binomial derivative and test. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; into fixed_inputs. [Alan Saul]
+* Merge branch 'devel' into fixed_inputs. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
 * Update README.md. [Max Zwiessele]
 
-* Merge branch &#x27;bwengals-devel&#x27; into devel. [Max Zwiessele]
+* Merge branch 'bwengals-devel' into devel. [Max Zwiessele]
 
 * [basisfunc] kernel tests and model tests. [Max Zwiessele]
 
@@ -1051,7 +1229,7 @@
 
 * Removed Logsumexp() from LogisticBasisFuncKernel, allowing slope parameter to be negative.  Also removed unnecessary scipy import. [Bill]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Merge pull request #433 from SheffieldML/update_initialize_paramz. [Max Zwiessele]
 
@@ -1089,29 +1267,29 @@
 
 * Bump version: 1.2.1 → 1.3.0. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * Merge pull request #421 from SheffieldML/beckdaniel-wgps_improvements. [Max Zwiessele]
 
   Beckdaniel wgps improvements
 
-* Merge branch &#x27;devel&#x27; into beckdaniel-wgps_improvements. [mzwiessele]
+* Merge branch 'devel' into beckdaniel-wgps_improvements. [mzwiessele]
 
 * [merge] devel. [mzwiessele]
 
-* Revert &quot;Revert &quot;[kern] Add kernel was swallowing parts #fix #412&quot;&quot; [mzwiessele]
+* Revert "Revert "[kern] Add kernel was swallowing parts #fix #412"" [mzwiessele]
 
   This reverts commit 0abb9b835ffeb020410bdf9a1e0532139ffa5cfc.
 
-* Revert &quot;[kern] Add kernel was swallowing parts #fix #412&quot; [mzwiessele]
+* Revert "[kern] Add kernel was swallowing parts #fix #412" [mzwiessele]
 
   This reverts commit b8867f1552c05244dcd5ba38a7a57b6f1056312c.
 
 * [kern] Add kernel was swallowing parts #fix #412. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into beckdaniel-wgps_improvements. [mzwiessele]
+* Merge branch 'devel' into beckdaniel-wgps_improvements. [mzwiessele]
 
-* Merge branch &#x27;wgps_improvements&#x27; of https://github.com/beckdaniel/GPy into beckdaniel-wgps_improvements. [mzwiessele]
+* Merge branch 'wgps_improvements' of https://github.com/beckdaniel/GPy into beckdaniel-wgps_improvements. [mzwiessele]
 
 * Improving coverage and removing py2 print. [beckdaniel]
 
@@ -1135,7 +1313,7 @@
 
 * Moved cubic sine from tests to examples. [beckdaniel]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into wgps_improvements. [beckdaniel]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into wgps_improvements. [beckdaniel]
 
   Merging new devel
 
@@ -1165,7 +1343,7 @@
 
 * Stuff. [beckdaniel]
 
-* Skipping the wgps Snelson&#x27;s test (comment the skip line to see the plots) [beckdaniel]
+* Skipping the wgps Snelson's test (comment the skip line to see the plots) [beckdaniel]
 
 * (wpgs) fixing newton-raphson for f_inv and fixing plotting stuff. [beckdaniel]
 
@@ -1185,15 +1363,15 @@
 
   Offset and clustering: Utility to do clustering (greedy, pairs best clusters until likelihood stops increasing). Also includes a model that has an offset parameter to allow aligning of time series.
 
-* Removing &#x27;threaded&#x27; version. [Michael T Smith]
+* Removing 'threaded' version. [Michael T Smith]
 
 * Push just to rerun testing. [Michael T Smith]
 
-* Don&#x27;t use message added to cluster code. [Michael T Smith]
+* Don't use message added to cluster code. [Michael T Smith]
 
-* Added threaded option - but this doesn&#x27;t work due to the global interpreter lock. [Ubuntu]
+* Added threaded option - but this doesn't work due to the global interpreter lock. [Ubuntu]
 
-* Made initial lengthscale!=1 to ensure we&#x27;re properly testing gradients. [Michael T Smith]
+* Made initial lengthscale!=1 to ensure we're properly testing gradients. [Michael T Smith]
 
 * Modified set code in test to work with python 2 and python 3. [Michael T Smith]
 
@@ -1235,11 +1413,11 @@
 
 * Coveralls token in appveyor.yml. [mzwiessele]
 
-* Revert &quot;Revert &quot;[coverage reports] change to coveralls as test&quot;&quot; [mzwiessele]
+* Revert "Revert "[coverage reports] change to coveralls as test"" [mzwiessele]
 
   This reverts commit ee23da6dd9405120bec62402abf7aaa228a87a19.
 
-* Revert &quot;[coverage reports] change to coveralls as test&quot; [mzwiessele]
+* Revert "[coverage reports] change to coveralls as test" [mzwiessele]
 
   This reverts commit 040ac72b82b6aa39720abe9817619103892b27a1.
 
@@ -1257,7 +1435,7 @@
 
 * [mean_func] added parameters in additive mean func and tests for mean functions. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into plotting_tests. [mzwiessele]
+* Merge branch 'devel' into plotting_tests. [mzwiessele]
 
 * [datasets] rnaseq changed up. [Max Zwiessele]
 
@@ -1265,7 +1443,7 @@
 
 * [testsave] saved the testmodel for quicker and more robust plotting. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into plotting_tests. [Max Zwiessele]
+* Merge branch 'devel' into plotting_tests. [Max Zwiessele]
 
 * [plotting] adjusting tests for quicker plotting. [Max Zwiessele]
 
@@ -1291,9 +1469,9 @@
 
 * Bump version: 1.1.1 → 1.1.2. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
 * Merge pull request #402 from SheffieldML/devel. [Max Zwiessele]
 
@@ -1425,7 +1603,7 @@
 
 * Trying to be more specific. [Ricardo Andrade]
 
-* Merge branch &#x27;deploy&#x27; into devel. [Max Zwiessele]
+* Merge branch 'deploy' into devel. [Max Zwiessele]
 
 * [py3] iterator .next fixes. [Max Zwiessele]
 
@@ -1433,7 +1611,7 @@
 
 * [#403] fix of inconsistent config naming. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Merge pull request #398 from SheffieldML/integral. [lionfish0]
 
@@ -1443,11 +1621,11 @@
 
 * References integral kernel classes. [Michael T Smith]
 
-* Merge remote-tracking branch &#x27;origin/devel&#x27; into integral. [Michael T Smith]
+* Merge remote-tracking branch 'origin/devel' into integral. [Michael T Smith]
 
 * Merge pull request #397 from avehtari/dev-python3. [Alan Saul]
 
-  Python2-&gt;Python3
+  Python2->Python3
 
 * Merge pull request #4 from alansaul/dev-python3. [Aki Vehtari]
 
@@ -1457,7 +1635,7 @@
 
 * More Python 3 compatibility fixes. [Aki Vehtari]
 
-* Python2-&gt;Python3. [Aki Vehtari]
+* Python2->Python3. [Aki Vehtari]
 
 * Removed references to integral kernels from __init__ [Michael T Smith]
 
@@ -1487,7 +1665,7 @@
 
 * [gradsxx] putting tests in, not complete yet! [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into gradientsxx. [Max Zwiessele]
+* Merge branch 'devel' into gradientsxx. [Max Zwiessele]
 
 * Merged __init__ [Michael T Smith]
 
@@ -1495,7 +1673,7 @@
 
 * Add eq_ode1 kern and ibp_lfm model. [cdguarnizo]
 
-* Integral kernels added, these allow &#x27;histogram&#x27; or &#x27;binned&#x27; data to be modelled. [Michael T Smith]
+* Integral kernels added, these allow 'histogram' or 'binned' data to be modelled. [Michael T Smith]
 
 * Fixed bug, replaced for loops with einsum. [alessandratosi]
 
@@ -1505,7 +1683,7 @@
 
 * Fixed gradients_XX_diag. [alessandratosi]
 
-* Merge branch &#x27;gradientsxx&#x27; of github.com:SheffieldML/GPy into gradientsxx. [Max Zwiessele]
+* Merge branch 'gradientsxx' of github.com:SheffieldML/GPy into gradientsxx. [Max Zwiessele]
 
 * Fixed covariance computation in predict_jacobian. [alessandratosi]
 
@@ -1519,13 +1697,13 @@
 
 * [slicing] fixed slicing for second order derivatives. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into gradientsxx. [mzwiessele]
+* Merge branch 'devel' into gradientsxx. [mzwiessele]
 
 * Bug fix. [alessandratosi]
 
 * Syntax fix. [alessandratosi]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into gradientsxx. [alessandratosi]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into gradientsxx. [alessandratosi]
 
 * Modified kernel tests for gradients_XX. [alessandratosi]
 
@@ -1555,7 +1733,7 @@
 
 * [fix #380] reloading ep. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into kenokabe-devel. [mzwiessele]
+* Merge branch 'devel' into kenokabe-devel. [mzwiessele]
 
 * [statespace] omg. [mzwiessele]
 
@@ -1563,7 +1741,7 @@
 
 * [open] backwards compatibility. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of git://github.com/kenokabe/GPy into kenokabe-devel. [mzwiessele]
+* Merge branch 'devel' of git://github.com/kenokabe/GPy into kenokabe-devel. [mzwiessele]
 
 * Suppress UnicodeDecodeError: ascii codec - when import GPy. [kenokabe]
 
@@ -1575,15 +1753,15 @@
 
 * [static] added fixed tests. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of git://github.com/vsaase/GPy into vsaase-devel. [Max Zwiessele]
+* Merge branch 'devel' of git://github.com/vsaase/GPy into vsaase-devel. [Max Zwiessele]
 
 * Added precomputed kernel class. [vsaase]
 
 * [readme] added landscape for code cleanines. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;state_space&#x27; into devel. [mzwiessele]
+* Merge branch 'state_space' into devel. [mzwiessele]
 
 * [setup] pypi restrictions. [mzwiessele]
 
@@ -1612,7 +1790,7 @@
 
 * Bump version: 1.0.6 → 1.0.7. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [setup] readme in setup. [Max Zwiessele]
 
@@ -1682,13 +1860,13 @@
 
 * [exponential] fixed exponential *2 error. [mzwiessele]
 
-* Merge branch &#x27;AlexGrig-kalman_new&#x27; into state_space. [mzwiessele]
+* Merge branch 'AlexGrig-kalman_new' into state_space. [mzwiessele]
 
 * FIX: Fixing bugs and innacuracies in state-space inference. [Alexander Grigorievskiy]
 
-* Merge branch &#x27;devel&#x27; into state_space. [mzwiessele]
+* Merge branch 'devel' into state_space. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into deploy. [Max Zwiessele]
+* Merge branch 'devel' into deploy. [Max Zwiessele]
 
 * Bump version: 1.0.2 → 1.0.3. [Max Zwiessele]
 
@@ -1746,15 +1924,15 @@
 
 * Bump version: 0.9.8 → 1.0.0. [Max Zwiessele]
 
-* Revert &quot;Bump version: 0.9.8 → 1.0.0&quot; [Max Zwiessele]
+* Revert "Bump version: 0.9.8 → 1.0.0" [Max Zwiessele]
 
   This reverts commit b63af98f1fe86d9c065227e113c7da7f19163ad5.
 
-* Revert &quot;Revert &quot;[predict] added noiseless convenience function to gp, bc of whining about it...&quot;&quot; [Max Zwiessele]
+* Revert "Revert "[predict] added noiseless convenience function to gp, bc of whining about it..."" [Max Zwiessele]
 
   This reverts commit 7c95076b9fd8ad327ae46766b30cc9657883941e.
 
-* Revert &quot;[predict] added noiseless convenience function to gp, bc of whining about it...&quot; [Max Zwiessele]
+* Revert "[predict] added noiseless convenience function to gp, bc of whining about it..." [Max Zwiessele]
 
   This reverts commit 2001cd6dfd77300e1286245cf68897c17d3f0af0.
 
@@ -1768,7 +1946,7 @@
 
 * [release] calling release branch deploy. [Max Zwiessele]
 
-* Merge branch &#x27;jameshensman-master&#x27; into gpy_one_fixes. [Max Zwiessele]
+* Merge branch 'jameshensman-master' into gpy_one_fixes. [Max Zwiessele]
 
 * Independent outputs kernel now works correctly for symmetrical arguments. [James Hensman]
 
@@ -1780,9 +1958,9 @@
 
 * Bump version: 0.9.7 → 0.9.8. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into gpy_one_fixes. [Max Zwiessele]
+* Merge branch 'devel' into gpy_one_fixes. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Merge pull request #261 from AlexGrig/kalman_new. [Max Zwiessele]
 
@@ -1796,7 +1974,7 @@
 
 * TEST: Rename parameters is test function. [Alexander Grigorievskiy]
 
-* TEST: Tests use &#x27;lbfgsb&#x27; optimization function. Also some syntactic changes. [Alexander Grigorievskiy]
+* TEST: Tests use 'lbfgsb' optimization function. Also some syntactic changes. [Alexander Grigorievskiy]
 
 * FIX: Some fixes which prevented tests passing on python3.5. [Alexander Grigorievskiy]
 
@@ -1806,7 +1984,7 @@
 
 * FIX: Get rid of unused imports in state_space_model file. [Alexander Grigorievskiy]
 
-* ENH: Copying sde kernels to the &#x27;/src&#x27; directory. [Alexander Grigorievskiy]
+* ENH: Copying sde kernels to the '/src' directory. [Alexander Grigorievskiy]
 
 * TEST: Modifying tests so that their ruunig time is shorter. [Alexander Grigorievskiy]
 
@@ -1832,9 +2010,9 @@
 
 * ENH: Added templates for state-space kernels. [Alexander Grigorievskiy]
 
-  Those are childs of regular kernels with extra &quot;sde&quot; function.
+  Those are childs of regular kernels with extra "sde" function.
 
-* FIX: Fixe bug with &quot;expm&quot; function in &quot;state_space_new&quot;. Also some minor changes. [Alexander Grigorievskiy]
+* FIX: Fixe bug with "expm" function in "state_space_new". Also some minor changes. [Alexander Grigorievskiy]
 
   Test function has been modified also.
 
@@ -1917,9 +2095,9 @@
 
 * Merge pull request #324 from AlexGrig/std_periodic_kernel. [Max Zwiessele]
 
-  [kern] Standard periodic kernel. Changes parameter name from &#x27;waveleng…
+  [kern] Standard periodic kernel. Changes parameter name from 'waveleng…
 
-* [kern] Standard periodic kernel. Changes paramter name from &#x27;wavelenght&#x27; to &#x27;period&#x27;. This seems to be more clear. Also some minor modifications in the same file. [Alexander Grigorievskiy]
+* [kern] Standard periodic kernel. Changes paramter name from 'wavelenght' to 'period'. This seems to be more clear. Also some minor modifications in the same file. [Alexander Grigorievskiy]
 
 * Merge pull request #326 from SheffieldML/kern. [Max Zwiessele]
 
@@ -1963,7 +2141,7 @@
 
   [sparsegplvm] added sparsegplvm and tests for minibatch sparsegplvm
 
-* Merge branch &#x27;devel&#x27; into minibatch. [mzwiessele]
+* Merge branch 'devel' into minibatch. [mzwiessele]
 
 * Merge pull request #321 from SheffieldML/limit=3. [Max Zwiessele]
 
@@ -2015,13 +2193,13 @@
 
 * Get rid of mpi4py import. [Zhenwen Dai]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [Zhenwen Dai]
+* Merge remote-tracking branch 'upstream/devel' into devel. [Zhenwen Dai]
 
 * Fix the issue of negative prediction variance of normal GP. [Zhenwen Dai]
 
 * Slvm gamma mean-field. [Zhenwen Dai]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [Zhenwen Dai]
+* Merge remote-tracking branch 'upstream/devel' into devel. [Zhenwen Dai]
 
 * Implement slvm. [Zhenwen Dai]
 
@@ -2061,7 +2239,7 @@
 
 * [matplotlib_dep] added the baseplots utility for backcompatibility. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [plotting] limits added. [Max Zwiessele]
 
@@ -2073,13 +2251,13 @@
 
 * Bump version: 0.9.5 → 0.9.6. [Max Zwiessele]
 
-* [plotting&amp;kern] bugfixes in plotting and kernel size. [Max Zwiessele]
+* [plotting&kern] bugfixes in plotting and kernel size. [Max Zwiessele]
 
 * Apidoc in conf. [Alan Saul]
 
 * Added paramz to requirement file for docs. [Alan Saul]
 
-* [plotly] scatter plotting was defaulting to color=&#x27;white&#x27; [Max Zwiessele]
+* [plotly] scatter plotting was defaulting to color='white' [Max Zwiessele]
 
 * [vardtc] these two lines are overridden by the next two lines... [Max Zwiessele]
 
@@ -2153,13 +2331,13 @@
 
 * Documentation. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; into fixing_likelihoods. [Alan Saul]
+* Merge branch 'devel' into fixing_likelihoods. [Alan Saul]
 
 * Bump version: 0.8.30 → 0.8.31. [Max Zwiessele]
 
 * [travis] register failes.. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Update .travis.yml. [Max Zwiessele]
 
@@ -2173,7 +2351,7 @@
 
 * Allow EP to have a auto reset option. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; into fixing_likelihoods. [Alan Saul]
+* Merge branch 'devel' into fixing_likelihoods. [Alan Saul]
 
 * Bump version: 0.8.28 → 0.8.29. [mzwiessele]
 
@@ -2303,7 +2481,7 @@
 
 * [devel] pickling files... [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into paramz. [mzwiessele]
+* Merge branch 'devel' into paramz. [mzwiessele]
 
   Conflicts:
   	GPy/core/parameterization/parameter_core.py
@@ -2311,7 +2489,7 @@
 
 * [paramz] wrapping - todo: deprecation warnings. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into paramz. [mzwiessele]
+* Merge branch 'devel' into paramz. [mzwiessele]
 
 * [dir] structure preserved. [mzwiessele]
 
@@ -2363,11 +2541,11 @@
 
 * [pickling] have the pickling test against a model, which is now being shipped with the distro. [Max Zwiessele]
 
-* Revert &quot;[pickling] _src -&gt; src&quot; [Max Zwiessele]
+* Revert "[pickling] _src -> src" [Max Zwiessele]
 
   This reverts commit 4cd16a86b48b03d4a6edd56a969242296ab66f4d.
 
-* [pickling] _src -&gt; src. [Max Zwiessele]
+* [pickling] _src -> src. [Max Zwiessele]
 
 * [plotting] got the old way in again. [Max Zwiessele]
 
@@ -2375,11 +2553,11 @@
 
 * [travis] make more builds. [mzwiessele]
 
-* Merge branch &#x27;beckdaniel-warped_gps_fixes&#x27; into devel. [mzwiessele]
+* Merge branch 'beckdaniel-warped_gps_fixes' into devel. [mzwiessele]
 
 * [beckdaniel] merge in warped gp changes. [mzwiessele]
 
-* Merge remote-tracking branch &#x27;ShefML/devel&#x27; into warped_gps_fixes. [beckdaniel]
+* Merge remote-tracking branch 'ShefML/devel' into warped_gps_fixes. [beckdaniel]
 
 * Merged master. [beckdaniel]
 
@@ -2391,7 +2569,7 @@
 
 * Code cleaning on warping_functions. [beckdaniel]
 
-* Added a new test which tries to replicate Snelson&#x27;s toy 1D but NR seems to diverge... [beckdaniel]
+* Added a new test which tries to replicate Snelson's toy 1D but NR seems to diverge... [beckdaniel]
 
 * Added initial test for warped gps using identity function. [beckdaniel]
 
@@ -2599,19 +2777,19 @@
 
 * [devel] merged. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into plot_density. [mzwiessele]
+* Merge branch 'devel' into plot_density. [mzwiessele]
 
-* Revert &quot;change the inverse lengthscale of rbf&quot; [Zhenwen Dai]
+* Revert "change the inverse lengthscale of rbf" [Zhenwen Dai]
 
   This reverts commit 326ed31fbfff2907bc92d2d444c74d5a24b22691.
 
 * Change the inverse lengthscale of rbf. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * A more efficient implementation of prediction with uncertain inputs. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Add original bfgs optimizer and add rbf with inverse lengthscale. [Zhenwen Dai]
 
@@ -2721,7 +2899,7 @@
 
 * [plotly] starting plotly. [mzwiessele]
 
-* [&#x27;tests&#x27;] assert array equal. [mzwiessele]
+* ['tests'] assert array equal. [mzwiessele]
 
 * [tests] now working? [mzwiessele]
 
@@ -2861,15 +3039,15 @@
 
 * [density] plot added. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * Merge pull request #248 from SheffieldML/travis_testing. [Max Zwiessele]
 
-  Travis update to test Linux &amp; MacOSX
+  Travis update to test Linux & MacOSX
 
   Python 2.7, 3.5 on Ubuntu and MacOSX
 
-* Merge branch &#x27;devel&#x27; into travis_testing. [mzwiessele]
+* Merge branch 'devel' into travis_testing. [mzwiessele]
 
 * [copyrighting] and testing. [mzwiessele]
 
@@ -2881,7 +3059,7 @@
 
 * [codecov] added, trying to merge in readme from master. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; into travis_testing. [mzwiessele]
+* Merge branch 'devel' into travis_testing. [mzwiessele]
 
 * [travis] testing codecoverage. [mzwiessele]
 
@@ -3103,19 +3281,19 @@
 
 * Added factorize_space function which returns a segmentation to shared and private dims. [Andreas]
 
-* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import &lt;.&gt; [mzwiessele]
+* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import <.> [mzwiessele]
 
-* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import &lt;.&gt; [mzwiessele]
+* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import <.> [mzwiessele]
 
-* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import &lt;.&gt; [mzwiessele]
+* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import <.> [mzwiessele]
 
-* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import &lt;.&gt; [mzwiessele]
+* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import <.> [mzwiessele]
 
-* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import &lt;.&gt; [mzwiessele]
+* [plotting] py3 compatibility, is it right, that relative imports always have to be in the format from . import <.> [mzwiessele]
 
 * [newest patch updates, cleaned interfaces and mean_function addidtions] [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * Fix xrange. [Zhenwen Dai]
 
@@ -3123,7 +3301,7 @@
 
 * Fixed bias+linear and bias+rbf with psi statistics. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Implement Gaussian quadrature psi-statistics for additive kernel. [Zhenwen Dai]
 
@@ -3135,9 +3313,9 @@
 
 * Remove the automatic importing mpi4py. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Errobars_trainset -&gt; plot_errorbars_trainset. [Ricardo]
+* Errobars_trainset -> plot_errorbars_trainset. [Ricardo]
 
 * Bug fix for model_plots when specifying which_data_ycols. [Zhenwen Dai]
 
@@ -3171,7 +3349,7 @@
 
 * [scipy] deleted from mocking. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * More mocking for scipy, impossible to check without committing :( [Alan Saul]
 
@@ -3185,7 +3363,7 @@
 
 * Mocked scipy for docs. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Add adadelta as an optimizer. [Zhenwen Dai]
 
@@ -3197,7 +3375,7 @@
 
 * Merge pull request #246 from SheffieldML/travis2. [Max Zwiessele]
 
-  Dapid&#x27;s travis changes
+  Dapid's travis changes
 
 * Update rv_transformation_tests.py. [Max Zwiessele]
 
@@ -3227,7 +3405,7 @@
 
 * Update .travis.yml. [Max Zwiessele]
 
-* Dapid&#x27;s travis changes. [Max Zwiessele]
+* Dapid's travis changes. [Max Zwiessele]
 
   There was a conflict and I only had access to the web interface.
 
@@ -3245,19 +3423,19 @@
 
 * [classification] sparse gp classification and dtc update. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Bug fix for set_XY. [Zhenwen Dai]
 
@@ -3278,7 +3456,7 @@
 
 * Bump version: 0.8.5 → 0.8.6. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Max Zwiessele]
 
 * Apply bug fix for set_XY. [Zhenwen Dai]
 
@@ -3290,13 +3468,13 @@
 
   Devel
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Updated sampling and plots to be correct shape, and changed plotting of sampling to be posterior samples p(f*|f), like it used to be, and samples_y to plot samples of p(y*|y) [Alan Saul]
 
@@ -3316,7 +3494,7 @@
 
 * [plotting] no printing of warning unless you actually use plotting. [Max Zwiessele]
 
-* [matplotlib] pylab -&gt; pyplot. [Max Zwiessele]
+* [matplotlib] pylab -> pyplot. [Max Zwiessele]
 
 * Bump version: 0.8.3 → 0.8.4. [Max Zwiessele]
 
@@ -3342,7 +3520,7 @@
 
 * Update setup.py. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Max Zwiessele]
 
 * Added universal wheels. [Mike Croucher]
 
@@ -3372,7 +3550,7 @@
 
 * [linalg] testing suite update. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
 * Update setup.py with new version number. [mikecroucher]
 
@@ -3384,21 +3562,21 @@
 
 * Update AUTHORS.txt. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; [Max Zwiessele]
+* Merge branch 'devel' [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Bug fix for compilation on Mac. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Removed annoying print. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Allowed gpyified var gauss. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added full cov prediction. [Alan Saul]
 
@@ -3432,13 +3610,13 @@
 
 * Merge pull request #211 from PredictiveScienceLab/master. [Zhenwen Dai]
 
-  Fixes the PDF transformation bug by handpicking James Hensman&#x27;s code from the devel branch
+  Fixes the PDF transformation bug by handpicking James Hensman's code from the devel branch
 
 * Removed dir ib_tests. [Ilias Bilionis]
 
 * PDF Transformation bug patched. [Ilias Bilionis]
 
-* Handpicked James Hensman&#x27;s code that ensures that fixes the PDF of transformed variables. Fixed minor plotting bug. [Ilias Bilionis]
+* Handpicked James Hensman's code that ensures that fixes the PDF of transformed variables. Fixed minor plotting bug. [Ilias Bilionis]
 
 * Fixed MCMC sampler. [Ilias Bilionis]
 
@@ -3470,7 +3648,7 @@
 
 * [readthedocs] forcing readthedocs into not failing. [Max Zwiessele]
 
-* Git Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Update README.md. [Max Zwiessele]
 
@@ -3478,33 +3656,33 @@
 
 * [testing] [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Fixed for Python 3. [Mike Croucher]
 
 * [doc] some changes to the doc, using mathjax some additions in math. [Max Zwiessele]
 
-* Git pushMerge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git pushMerge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Optimize util for mpi. [Zhenwen Dai]
 
 * [licensing] replaced licensing with BSD, and erfcx. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Used scipy.log1p since it gives more consistent results cross-platform. [Mike Croucher]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Changed gpu interface for mpi. [Zhenwen Dai]
 
 * Switched to scipy.special.log1p@ [Mike Croucher]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
 
 * Used scipy.log1p since it gives more consistent results cross-platform. [Mike Croucher]
 
@@ -3514,11 +3692,11 @@
 
 * Python 3 fixes. [Mike Croucher]
 
-* Git pushMerge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git pushMerge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Mike Croucher]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Speed tuning for mlp kernel and gauss qudrature for psi-statistics. [Zhenwen Dai]
 
@@ -3538,7 +3716,7 @@
 
 * New implementation for mlp kernel (speed improvemd) [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Merge pull request #227 from Dapid/clean_imports. [mikecroucher]
 
@@ -3548,21 +3726,21 @@
 
 * Unify the interface of psicomp, but the psi2n of linear kernel and gaussian qradrature still needs to be done. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [MRD] fixed mrd for new structure. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [empty space] literally : ) [Max Zwiessele]
 
 * [pickling] pickle error. [Max Zwiessele]
 
-* Revert &quot;[core] visited as propery&quot; [Max Zwiessele]
+* Revert "[core] visited as propery" [Max Zwiessele]
 
   This reverts commit a4ce1d473c13fa5cb577e4ff3dbdf76aa6a1a57f.
 
-* Revert &quot;[caching] different error&quot; [Max Zwiessele]
+* Revert "[caching] different error" [Max Zwiessele]
 
   This reverts commit f7087ebc9003a6950b58533e0ce373c03c82a4a2.
 
@@ -3588,7 +3766,7 @@
 
 * [coverage] added normalizer tests. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [psi2] NxMxM fixes for the add kernel. [Max Zwiessele]
 
@@ -3608,11 +3786,11 @@
 
 * Reindented, did some profiling which looks promising. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; into missing_opt. [Alan Saul]
+* Merge branch 'devel' into missing_opt. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
 * Corrected caching for psi derivatives. [Alan Saul]
 
@@ -3632,7 +3810,7 @@
 
 * Optimizing missing data model, needs tidying but now much faster. [Alan Saul]
 
-* Fixed array2string bug for N &gt; 1000 default printing. [Alan Saul]
+* Fixed array2string bug for N > 1000 default printing. [Alan Saul]
 
 * Merge pull request #224 from Dapid/fix_print. [mikecroucher]
 
@@ -3640,17 +3818,17 @@
 
 * FIX: missing compatibility Py2/3. [David Menéndez Hurtado]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* [add] renamed&gt;sum. [Max Zwiessele]
+* [add] renamed>sum. [Max Zwiessele]
 
 * [magnification] static corrections. [Max Zwiessele]
 
 * [magnification] added static kernel support and faster derivative computations. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [magnification] plot_magnification expanded. [Max Zwiessele]
 
@@ -3662,7 +3840,7 @@
 
 * Shape of heteroscedastic variance corrected. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Merge pull request #219 from Dapid/fix_209. [mikecroucher]
 
@@ -3680,13 +3858,13 @@
 
 * [merge] [Max Zwiessele]
 
-* Merge branch &#x27;updates&#x27; into devel. [Max Zwiessele]
+* Merge branch 'updates' into devel. [Max Zwiessele]
 
 * [core] updating system, security branching. [Max Zwiessele]
 
 * New function to plot just the errorbars of the training data. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Ensuring the shape of the mean vector at predict time fixes bug in EP prediction. [James Hensman]
 
@@ -3698,13 +3876,13 @@
 
 * Model uses the new HeteroscedasticGaussian likelihood. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Add MRD for regression benchmark. [Zhenwen Dai]
 
 * Remove the old housing benchmark. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Fixed random seed for kronecker tests. [James Hensman]
 
@@ -3714,7 +3892,7 @@
 
 * Add missing file. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Gradients w.r.t. kappa corrected. [Ricardo Andrade]
 
@@ -3724,7 +3902,7 @@
 
 * Fixed laplace seed, added debugging for misc tests. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/gpy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/gpy into devel. [James Hensman]
 
 * Removed installation conflict. [Alan Saul]
 
@@ -3734,7 +3912,7 @@
 
 * Added variational expectation tests updates. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
 * Adding var_gauss.py. [James Hensman]
 
@@ -3750,7 +3928,7 @@
 
 * Improve the stability of parallel inference code. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Merge pull request #216 from Dapid/devel-cython_update. [James Hensman]
 
@@ -3760,7 +3938,7 @@
 
 * Tidied setup.py. [James Hensman]
 
-* Merge branch &#x27;Dapid-devel-cythonchol&#x27; into devel. [James Hensman]
+* Merge branch 'Dapid-devel-cythonchol' into devel. [James Hensman]
 
 * Running cython. [James Hensman]
 
@@ -3768,17 +3946,17 @@
 
 * Minor corrections :) [James Hensman]
 
-* Merge branch &#x27;devel&#x27; into Dapid-devel-cythonchol. [James Hensman]
+* Merge branch 'devel' into Dapid-devel-cythonchol. [James Hensman]
 
 * Adding new test for cholesky backprop. [James Hensman]
 
-* Merge branch &#x27;devel-cythonchol&#x27; of git://github.com/Dapid/GPy into Dapid-devel-cythonchol. [James Hensman]
+* Merge branch 'devel-cythonchol' of git://github.com/Dapid/GPy into Dapid-devel-cythonchol. [James Hensman]
 
 * FIX: ensuring contiguity of the buffers for BLAS call and returning a Numpy array. [David Menéndez Hurtado]
 
 * FIX: transforming the indexing to 2D. [David Menéndez Hurtado]
 
-* ENH: implementing the Cholesky backpropagation through Scipy&#x27;s BLAS. [David Menéndez Hurtado]
+* ENH: implementing the Cholesky backpropagation through Scipy's BLAS. [David Menéndez Hurtado]
 
 * ENH: fixed up BCGPLVM to work with new framework. [James Hensman]
 
@@ -3797,7 +3975,7 @@
 
 * Fixing qualtile code for some likelhoods. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Change the default name of sparse_gp_mpi class. [Zhenwen Dai]
 
@@ -3813,11 +3991,11 @@
 
 * Fixed conflict in plotting. [James Hensman]
 
-* Merge branch &#x27;tjhgit-devel&#x27; into devel. [James Hensman]
+* Merge branch 'tjhgit-devel' into devel. [James Hensman]
 
 * Merging. conflict in relative import styles. [James Hensman]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [tjhgit]
+* Merge remote-tracking branch 'upstream/devel' into devel. [tjhgit]
 
   Conflicts:
   	GPy/kern/__init__.py
@@ -3847,7 +4025,7 @@
 
 * The bug fix for the cblas.h problem in Mac os x. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
 * Merge the changes. [Fariba]
 
@@ -3855,11 +4033,11 @@
 
 * Improve the documentation of infer_newX. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Change crescent data to optimize with .optimize() [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Commit to pull. [Neil Lawrence]
 
@@ -3869,7 +4047,7 @@
 
 * Passing metadata. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Generalized the variatinoal Gaussian approximatino revisited code for any likelihood. [James Hensman]
 
@@ -3879,11 +4057,11 @@
 
 * [bgplvm] technical new stuff. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
 * Some correction for ibp ssgplvm. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Python 3 fixes. [Mike Croucher]
 
@@ -3899,15 +4077,15 @@
 
 * Parallelizing backprop of cholesky. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Jacobians should not be computed only for transforms. [James Hensman]
 
 * Jacobians should not be computed only for transforms. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Updated plotting. [Alan Saul]
 
@@ -3919,7 +4097,7 @@
 
 * [verbose opt] verbose needed clear after finish push through. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/gpy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/gpy into devel. [James Hensman]
 
 * Allow to set color for the skeleton visualization. [Zhenwen Dai]
 
@@ -3931,7 +4109,7 @@
 
 * Minor bugfix in raw_predict with full_cov for sparseGP. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
 * [ssmrd] implement with IBP prior. [Zhenwen Dai]
 
@@ -3941,11 +4119,11 @@
 
 * [ssgplvm] implement IBP prior. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [param] added multilevel indexing note to doc. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/gpy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/gpy into devel. [James Hensman]
 
 * Some cython improvments for stationary kerns. [James Hensman]
 
@@ -3961,13 +4139,13 @@
 
 * Small bug in cython tests. [James Hensman]
 
-* Merge branch &#x27;reorder_choleskies&#x27; into devel. [James Hensman]
+* Merge branch 'reorder_choleskies' into devel. [James Hensman]
 
 * Svgp working with reordered chols. [James Hensman]
 
 * Interim svgp commit. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; into reorder_choleskies. [James Hensman]
+* Merge branch 'devel' into reorder_choleskies. [James Hensman]
 
 * Svgp, more c-ordering. [James Hensman]
 
@@ -3975,9 +4153,9 @@
 
 * Preliminary reconfiguring or choleskies ordering. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Change the behavior the optimize_restarts to keep the original model parameters for the firt run. [Zhenwen Dai]
 
@@ -4005,11 +4183,11 @@
 
 * Addint constant mapping. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * [changepoint] cp is array. [mzwiessele]
 
@@ -4039,17 +4217,17 @@
 
 * Added backprop of cholesky grads. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Update .travis.yml. [James Hensman]
 
 * Update MANIFEST.in. [James Hensman]
 
-* Merge branch &#x27;cython2&#x27; into devel. [James Hensman]
+* Merge branch 'cython2' into devel. [James Hensman]
 
 * Changes to comments in compiled cython file. [James Hensman]
 
-* Merge branch &#x27;cython2&#x27; into devel. [James Hensman]
+* Merge branch 'cython2' into devel. [James Hensman]
 
 * All tests passing. [James Hensman]
 
@@ -4075,11 +4253,11 @@
 
 * Initial cython commit. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * [basis funcs] memory efficient posterior inference. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * [plotting] added predict_kw to plot function. [mzwiessele]
 
@@ -4091,11 +4269,11 @@
 
 * Added log predictive density, student t degrees of freedom gradients and plotting functionality. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * [basisfunckern] gradients for non ard adjusted. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * Merge with commit of dgplvm. [frb-yousefi]
 
@@ -4115,7 +4293,7 @@
 
 * Updated svgp kernel gradients. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
 * Manual merging with AS. [James Hensman]
 
@@ -4149,7 +4327,7 @@
 
   Python 3 Compatibility
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [Mike Croucher]
+* Merge remote-tracking branch 'upstream/devel' into devel. [Mike Croucher]
 
 * Fix printing error. [Mike Croucher]
 
@@ -4161,7 +4339,7 @@
 
 * Resolve merge conflicts. [Mike Croucher]
 
-* Used &#x27;six&#x27; to support Py3 and Py2 simultaneously. [Mike Croucher]
+* Used 'six' to support Py3 and Py2 simultaneously. [Mike Croucher]
 
 * Merge from upstream. [Mike Croucher]
 
@@ -4185,9 +4363,9 @@
 
 * Various Python 3 fixes. [Mike Croucher]
 
-* Types.TupleType -&gt; tuple fix for python 3. [Mike Croucher]
+* Types.TupleType -> tuple fix for python 3. [Mike Croucher]
 
-* Im_self-&gt;__self__ fix for python 3. [Mike Croucher]
+* Im_self->__self__ fix for python 3. [Mike Croucher]
 
 * Iterkeys fix for Python 3. [Mike Croucher]
 
@@ -4199,7 +4377,7 @@
 
 * Updated README now that dict issues are fixed. [Mike Croucher]
 
-* Fixed &#x27;dict changed size&#x27; errors. [Mike Croucher]
+* Fixed 'dict changed size' errors. [Mike Croucher]
 
 * Import fixes for Py3. [Mike Croucher]
 
@@ -4269,11 +4447,11 @@
 
 * Import fix for Py3. [Mike Croucher]
 
-* Changed &lt;&gt; to != for Py3 compatibility. [Mike Croucher]
+* Changed <> to != for Py3 compatibility. [Mike Croucher]
 
 * Updated Py3 work. [Mike Croucher]
 
-* Removed import urllib2 since it wasn&#x27;t being used. [Mike Croucher]
+* Removed import urllib2 since it wasn't being used. [Mike Croucher]
 
 * Urllib2 fixes for Py3 compatibility. [Mike Croucher]
 
@@ -4283,7 +4461,7 @@
 
 * Put weave import in a try block so it fails gracefullt in Py3. [Mike Croucher]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [Mike Croucher]
+* Merge remote-tracking branch 'upstream/devel' into devel. [Mike Croucher]
 
 * Fixed ConfigParser for Python 3 compat. [Mike Croucher]
 
@@ -4313,19 +4491,19 @@
 
 * Convert print to function for Python 3 compatibility. [Mike Croucher]
 
-* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python &lt; 2.6. [Mike Croucher]
+* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python < 2.6. [Mike Croucher]
 
 * Convert print to function for Python 3 compatibility. [Mike Croucher]
 
-* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python &lt; 2.6. [Mike Croucher]
+* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python < 2.6. [Mike Croucher]
 
 * Convert print to function for Python 3 compatibility. [Mike Croucher]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; into devel. [Mike Croucher]
+* Merge remote-tracking branch 'upstream/devel' into devel. [Mike Croucher]
 
 * Added details of Python 3 work. [Mike Croucher]
 
-* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python &lt; 2.6. [Mike Croucher]
+* Convert print to function for Python 3 compatibility. This breaks compatibility for versions of Python < 2.6. [Mike Croucher]
 
 * More relative import fixes for Python 3 compatibility. [Mike Croucher]
 
@@ -4335,7 +4513,7 @@
 
 * Speed ups for normal cdf. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added Y_metadata to log_predictive_density. [Alan Saul]
 
@@ -4343,13 +4521,13 @@
 
 * [basis func kernels] added support for simple basis function kernels, can be easily extended by implementing phi function in BasisFuncKern. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
 * Small bugfix in white kernel. [James Hensman]
 
 * Tests to probe the mean-function functionality. [James Hensman]
 
-* Merge branch &#x27;mean_functions&#x27; into devel. [James Hensman]
+* Merge branch 'mean_functions' into devel. [James Hensman]
 
 * Merges. [James Hensman]
 
@@ -4363,9 +4541,9 @@
 
 * Working mean function examples. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into mean_functions. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into mean_functions. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into mean_functions. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into mean_functions. [James Hensman]
 
 * Merged. ish. [James Hensman]
 
@@ -4401,9 +4579,9 @@
 
 * Bug in linalg jitchol!!! [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; [Max Zwiessele]
+* Merge branch 'devel' [Max Zwiessele]
 
 * Implement update_gradients_diag for MLP kernel. [Zhenwen Dai]
 
@@ -4419,7 +4597,7 @@
 
 * Mean functions in place. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Optimize sslinear kernel. [Zhenwen Dai]
 
@@ -4429,13 +4607,13 @@
 
 * More samples for predictive quantile. [Alan Saul]
 
-* Merge branch &#x27;saul_merge&#x27; into devel. [Alan Saul]
+* Merge branch 'saul_merge' into devel. [Alan Saul]
 
 * Added safe_exp and tests. [Alan Saul]
 
 * Small tidying up. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; into saul_merge. [Alan Saul]
+* Merge branch 'devel' into saul_merge. [Alan Saul]
 
 * Merging with private repo, mostly fixed. [Alan Saul]
 
@@ -4443,9 +4621,9 @@
 
 * Adding likelihoods and block matrices. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Relaxed inference test requirement. [Alan Saul]
 
@@ -4465,7 +4643,7 @@
 
 * Stupid bug. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Lots of changes to mappings. [James Hensman]
 
@@ -4475,7 +4653,7 @@
 
 * [verbose opt] ipython notebook new version widget changes. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
 * A little work on mappings. [James Hensman]
 
@@ -4493,9 +4671,9 @@
 
 * Fix the param renaming problem. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* [optimize] max_f_eval -&gt; max_iters. [mzwiessele]
+* [optimize] max_f_eval -> max_iters. [mzwiessele]
 
 * [optimize] added clear functionality for ipython notebook and kern input sensitivity error handling. [mzwiessele]
 
@@ -4512,13 +4690,13 @@
 
 * Messy merge. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [frb-yousefi]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [frb-yousefi]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Reconfigured svgp inference a little. [James Hensman]
 
@@ -4550,13 +4728,13 @@
 
 * Minor weave/numpy bug in coregionalize. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Added logging for jitter so we know how much has been added and how many tries have been taken. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [var dtc] added code for additional covariates, not affecting normal procedures. [Max Zwiessele]
 
@@ -4624,7 +4802,7 @@
 
 * [html print] more table based corrections for html printing. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Implement update_gradients_diag for MLP kernel. [Zhenwen Dai]
 
@@ -4652,9 +4830,9 @@
 
 * Huge merge correcting upstream master. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; [Max Zwiessele]
+* Merge branch 'devel' [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:/sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/sheffieldml/GPy into devel. [James Hensman]
 
 * Another attempt by installing a mini version of anaconda, should be easier to maintain. [Alan Saul]
 
@@ -4674,7 +4852,7 @@
 
   Removing set of numpy random seed
 
-  Great spot! We&#x27;re just about to relase the next iteratino of GPy, we&#x27;ll make sure it happens there too.
+  Great spot! We're just about to relase the next iteratino of GPy, we'll make sure it happens there too.
 
   Thanks.
 
@@ -4708,7 +4886,7 @@
 
 * Bgplvm steepest gradient map update. [mzwiessele]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [mzwiessele]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [mzwiessele]
 
 * Update README.md with funding acknowledgements. [Neil Lawrence]
 
@@ -4728,7 +4906,7 @@
 
 * Version update. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Max Zwiessele]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Max Zwiessele]
 
 * Pickling now allways binary as well as protocol -1. [Max Zwiessele]
 
@@ -4748,7 +4926,7 @@
 
 * Fixed Ctrl-C behaviour on Windows. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Fixed come path issues in sympykern. [James Hensman]
 
@@ -4760,9 +4938,9 @@
 
 * Change order of imports for RTD. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; [Alan Saul]
+* Merge branch 'devel' [Alan Saul]
 
-* Merge branch &#x27;master&#x27; into devel. [Alan Saul]
+* Merge branch 'master' into devel. [Alan Saul]
 
 * Removed variational.py. [Alan Saul]
 
@@ -4782,9 +4960,9 @@
 
 * Merge completed. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mu]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
 * Small changes in svigp. [Andreas]
 
@@ -4808,9 +4986,9 @@
 
 * Bug in ODE_UY fix. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Fixed the numerical quadrature, won&#x27;t work with large f unless normalized. [Alan Saul]
+* Fixed the numerical quadrature, won't work with large f unless normalized. [Alan Saul]
 
 * Fixed lots of breaking tests, reduced step size for checkgrad to 1e-4 in tests (perhaps this should be global), added some missing attributes to data_resources.json. [Alan Saul]
 
@@ -4830,9 +5008,9 @@
 
 * Removed print statements from config parser, commented out ODE kerns. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
+* Merge branch 'devel' [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mu]
 
 * Ode UY. [mu]
 
@@ -4840,11 +5018,11 @@
 
 * ODE_UY. [mu]
 
-* Merge branch &#x27;devel&#x27; [Nicolo Fusi]
+* Merge branch 'devel' [Nicolo Fusi]
 
 * Added some more error checking for downloading datasets. [Neil Lawrence]
 
-* Fixed some bugs in mocap.py where errors weren&#x27;t being raised when file format was incorrect and made datasets.py check for 404 errors which previously were occuring silently ... shhhhh. [Neil Lawrence]
+* Fixed some bugs in mocap.py where errors weren't being raised when file format was incorrect and made datasets.py check for 404 errors which previously were occuring silently ... shhhhh. [Neil Lawrence]
 
 * Fixed bugs in cmu_mocap loader where cmu_url was missing and loading in mocap data twice in same session led to incorrect url through copy error. [Neil Lawrence]
 
@@ -4854,21 +5032,21 @@
 
 * Changed more examples to accept optimize and plot. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added comments for models module and adjusted setup. [Max Zwiessele]
 
-* Merge branch &#x27;naniny&#x27; into devel. [Max Zwiessele]
+* Merge branch 'naniny' into devel. [Max Zwiessele]
 
 * Rename _models to models_modules to include in doc. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Some tidying in the regression examples. [James Hensman]
 
 * Added optimize and plot for classification, non_gaussian and stochastic examples. [Alan Saul]
 
-* Fixed gp_base and svigp for sampling (doesn&#x27;t use it but needs the arguments) [Alan Saul]
+* Fixed gp_base and svigp for sampling (doesn't use it but needs the arguments) [Alan Saul]
 
 * Added constant to Z_tilde, now log likelihoods are equal! [Alan Saul]
 
@@ -4876,9 +5054,9 @@
 
 * Dimensionality reduction examples updated with optimize, plot and verbose. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Changing the seed seems to fix Alan&#x27;s bug. [James Hensman]
+* Changing the seed seems to fix Alan's bug. [James Hensman]
 
 * Fixed symmetry in checkgrad issue. [James Hensman]
 
@@ -4888,7 +5066,7 @@
 
 * Improved detectino of sympy. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Fixed exception handling bug in GPy/util/linalg.py:29. [Teo de Campos]
 
@@ -4898,19 +5076,19 @@
 
 * Changeing models to _models in setup.py. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fixed step size for likelihood tests and allowed randomizing of laplace. [Alan Saul]
 
 * Fixed student_t approximation demo and changed convergence critera to difference of f. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added cfg file to manfiest and package_data. [Alan Saul]
 
 * Dimensionality reduction example (oil) updated. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Removed ipdb statement from kern, cleaned up some nasty whitespace. [James Hensman]
 
@@ -4920,7 +5098,7 @@
 
 * More readme edits. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Minor edits to the README. [James Hensman]
 
@@ -4928,9 +5106,9 @@
 
 * Gradientchecker added as a model. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Push minor fix to eq_sympy kernel test. [Neil Lawrence]
 
@@ -4942,7 +5120,7 @@
 
 * Modified to improve part of stability, gradient checks still passing. [Neil Lawrence]
 
-* Added gradient of sympy kernel, seems to pass tests, but know it&#x27;s not numerically stable. Checking in before making numerically stable. [Neil Lawrence]
+* Added gradient of sympy kernel, seems to pass tests, but know it's not numerically stable. Checking in before making numerically stable. [Neil Lawrence]
 
 * Fixed test in kern.py to request correct output dim for multioutput covariances. [Neil Lawrence]
 
@@ -4964,19 +5142,19 @@
 
 * Fixed bug in sympy kernel and added sympolic.py back into utils __init__.py. [Neil Lawrence]
 
-* Merge with James&#x27;s changes. [Neil Lawrence]
+* Merge with James's changes. [Neil Lawrence]
 
 * Merge. [James Hensman]
 
 * Removed some sympy stuff. [James Hensman]
 
-* Merge with James&#x27;s changes. [Neil Lawrence]
+* Merge with James's changes. [Neil Lawrence]
 
 * Committing change for master check out. [Neil Lawrence]
 
 * Skipping crossterm tests instead of expected failure. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Added a path for the data resources. not all users will be working in the GPy directory. [James Hensman]
 
@@ -4984,11 +5162,11 @@
 
 * Bug fix for single output sympy kernel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mu]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Fixed problem in warping. [Nicolo Fusi]
 
@@ -5006,11 +5184,11 @@
 
 * Updated crossterms, rbf x any not working yet (derivatives) [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Weird merge. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Part implementation of ode_eq functionality. Not yet numerically stable or efficient (some horrible use of cut and paste to get things working ...) [Neil Lawrence]
 
@@ -5028,17 +5206,17 @@
 
 * Changed how we search for config files on windows. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Fixed up symmetric kern. [James Hensman]
 
 * Half way through crossterm objective. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Added block matrix utility. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Added **likelihood_params to predictive_values. [Ricardo]
 
@@ -5046,11 +5224,11 @@
 
 * Adding docstring for symmetric kern. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Bug fixed in numerical approx. to the predictive variance. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Numerical predictions fixed, sampling predictions are not working. [Ricardo]
 
@@ -5062,13 +5240,13 @@
 
 * In the middle of crossterms. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * 2D plots fixed. [Ricardo]
 
 * Passing **noise_args into predictive_values. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Missing term in the likelihood. [Ricardo]
 
@@ -5078,7 +5256,7 @@
 
 * BGPLVM test for crossterms. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Even more data plotting. [James Hensman]
 
@@ -5092,7 +5270,7 @@
 
 * Sped up sampling a lot for student t, bernoulli and poisson, added sampling for gaussian and exponential (untested) [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' [Alan Saul]
 
 * Ignoring examples tests again. [Alan Saul]
 
@@ -5120,7 +5298,7 @@
 
 * Added log predictive density, ln p(y*|D) [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' [Alan Saul]
 
 * Updated boston tests (more folds, allow a bias as the datasets are not normalized once split) and more folds. Tweaked some laplace line search parameters, added basis tests for ep. [Alan Saul]
 
@@ -5132,7 +5310,7 @@
 
 * Added numerical mean and variance with quadrature, about to clean up. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; into merge_branch. [Alan Saul]
+* Merge branch 'master' into merge_branch. [Alan Saul]
 
 * Changed the gradients (perhaps for the worse) [Alan Saul]
 
@@ -5158,15 +5336,15 @@
 
 * Playing trying to find what makes it want to go so low. [Alan Saul]
 
-* Fixed bug where B wasn&#x27;t refering to current f location. [Alan Saul]
+* Fixed bug where B wasn't refering to current f location. [Alan Saul]
 
 * Everything seems to be gradchecking again. [Alan Saul]
 
-* Added minimizer for finding f, doesn&#x27;t help. [Alan Saul]
+* Added minimizer for finding f, doesn't help. [Alan Saul]
 
 * Now checkgrads a lot more of the time, but still fails in optimisation, seems also odd that when parameter is fixed kernel parameters go to infinity. [Alan Saul]
 
-* Added another optimisation which doesn&#x27;t use gradients. Seems like F is almost always found, but Y can be off, suggesting that Wi__Ki_W is wrong, maybe W? [Alan Saul]
+* Added another optimisation which doesn't use gradients. Seems like F is almost always found, but Y can be off, suggesting that Wi__Ki_W is wrong, maybe W? [Alan Saul]
 
 * Trying to fix optimisation problem, fixed a few bugs but still fails at very low noise. [Alan Saul]
 
@@ -5178,7 +5356,7 @@
 
 * Checkgrads with explicit and implicit components half the time. [Alan Saul]
 
-* About to input new derivations for Z&#x27;s... [Alan Saul]
+* About to input new derivations for Z's... [Alan Saul]
 
 * Took out all the asserts and using pure broadcasting method of diagonal now. [Alan Saul]
 
@@ -5228,17 +5406,17 @@
 
 * Adding gradients, shapes starting to make sense. [Alan Saul]
 
-* Attempted to introduce gradient methods, won&#x27;t work yet I doubt. [Alan Saul]
+* Attempted to introduce gradient methods, won't work yet I doubt. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;upstream/devel&#x27; [Alan Saul]
+* Merge remote-tracking branch 'upstream/devel' [Alan Saul]
 
 * Merged likelihood functions. [Alan Saul]
 
 * Should be working now, needed to change relative path names. [Alan Saul]
 
-* Merge branch &#x27;merge_trial&#x27; [Alan Saul]
+* Merge branch 'merge_trial' [Alan Saul]
 
-* Merge branch &#x27;old_repo&#x27; into merge_trial. [Alan Saul]
+* Merge branch 'old_repo' into merge_trial. [Alan Saul]
 
 * Make directory structure match that of GPy. [Alan Saul]
 
@@ -5248,7 +5426,7 @@
 
 * Merged in branch which had old_repo merged in. [Alan Saul]
 
-* Adding weibull likelihood, requires &#x27;extra_data&#x27; to be passed to likelihood, i.e. the censoring information. [Alan Saul]
+* Adding weibull likelihood, requires 'extra_data' to be passed to likelihood, i.e. the censoring information. [Alan Saul]
 
 * Fixed the z scalings. [Alan Saul]
 
@@ -5282,7 +5460,7 @@
 
 * Got an idea of how to implement! written in docs. [Alan Saul]
 
-* Trying to &#x27;debug&#x27; [Alan Saul]
+* Trying to 'debug' [Alan Saul]
 
 * Got most of laplace approximation working. [Alan Saul]
 
@@ -5312,7 +5490,7 @@
 
 * Rename Binomial to Bernoulli (maybe generalise it with the constant later, but tilted distribution may change) [Alan Saul]
 
-* Added pdf_link&#x27;s for gaussian and student t, added third derivatives for transformations and tests for them. [Alan Saul]
+* Added pdf_link's for gaussian and student t, added third derivatives for transformations and tests for them. [Alan Saul]
 
 * Renamed laplace_tests to likelihoods_tests. [Alan Saul]
 
@@ -5320,21 +5498,21 @@
 
 * Fixed some bugs, added third derivative for log transformation, and did some doccing. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
 * Still tidying up, laplace now working again, gaussian and student_t likelihoods now done. [Alan Saul]
 
 * Started on chaining, must remember to chain _laplace_gradients aswell! [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
 * Finished tearing gaussian noise down, time for student t. [Alan Saul]
 
@@ -5352,7 +5530,7 @@
 
 * Tidied up laplace. [Alan Saul]
 
-* Integrated Laplace and merged Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Integrated Laplace and merged Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
   Conflicts:
   	GPy/core/gp.py
@@ -5378,7 +5556,7 @@
 
 * All gradients now gradcheck. [Alan Saul]
 
-* Merge remote-tracking branch &#x27;gpy_real/devel&#x27; into merge_branch. [Alan Saul]
+* Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
 * Refactored tests. [Alan Saul]
 
@@ -5386,7 +5564,7 @@
 
 * Added tests and fixed some naming. [Alan Saul]
 
-* Modified gradient_checker to allow for variable &#x27;f&#x27; [Alan Saul]
+* Modified gradient_checker to allow for variable 'f' [Alan Saul]
 
 * Renamed some things, made some small (incorrect) gradient changes, generalised the gp regression for any likelihood, and added a place holder link function waiting for Richardos changes. [Alan Saul]
 
@@ -5422,7 +5600,7 @@
 
 * Turned omp off by default as discussed. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Added configuration file. [Nicolò Fusi]
 
@@ -5433,7 +5611,7 @@
 
 * Added xw_pen data. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Basic sim code functional. [Neil Lawrence]
 
@@ -5468,7 +5646,7 @@
 
 * More ]#copyrighting. [James Hensman]
 
-* Branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * [kernel plots] updates on bar plots. [Max Zwiessele]
 
@@ -5480,7 +5658,7 @@
 
 * Working One vs All sparse gp classification wrapper. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Added lengthscales for a standard GPLVM with ARD. [Andreas]
 
@@ -5494,12 +5672,12 @@
 
 * [inferenceX] with missing data. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
   Conflicts:
   	GPy/inference/latent_function_inference/inferenceX.py
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Bug fix for infer_newX. [Zhenwen Dai]
 
@@ -5511,9 +5689,9 @@
 
 * [priors] pickling priors (not working for Discriminative prior) [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Spike and slab binary variable numerical enhancement. [Zhenwen Dai]
 
@@ -5523,7 +5701,7 @@
 
 * [MRD] updates and nicer plotting. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Rename the save_params_H5 function to be a general function save which can potentially support other file format. [Zhenwen Dai]
 
@@ -5535,23 +5713,23 @@
 
 * New ssrbf implementation. [Zhenwen Dai]
 
-* Mergt push e branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Mergt push e branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Fixed or zero size models will now not raise an error when trying to optimize. [James Hensman]
 
 * Fixed or zero size models will now not raise an error when trying to optimize. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fixed lots of examples. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fixing examples. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Documenting the core GP class. [Alan Saul]
 
@@ -5565,13 +5743,13 @@
 
 * [dim red] cmu_mocap normalize. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Redundant models deleted. [Ricardo]
 
 * Update docstring for checkgrad. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Add test case for mpi. [Zhenwen Dai]
 
@@ -5583,13 +5761,13 @@
 
 * [mpi] deleted import. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
   for cleaning up of parallel
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Better handling of missing pods in examples. [James Hensman]
 
@@ -5597,11 +5775,11 @@
 
 * Model checkgrad enhancement. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Updated conf.py to work again rather than cause an infinite loop. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added verbose checks for likelihood. [Alan Saul]
 
@@ -5611,7 +5789,7 @@
 
 * Work on kernel plotting. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Improved kernel plotting. [James Hensman]
 
@@ -5627,19 +5805,19 @@
 
 * [examples] pods. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * A bug fix for set_XY. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fixed prior error. [Alan Saul]
 
 * Update the set_XY function. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Added homepage to main GPy project page. [Alan Saul]
 
@@ -5649,15 +5827,15 @@
 
 * [tests] for issue ##146 and #147, fixing parameters inside __init__ [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Minor doc changes, fixed MPI dependency and &#x27;stop&#x27; in var_dtc. [Alan Saul]
+* Minor doc changes, fixed MPI dependency and 'stop' in var_dtc. [Alan Saul]
 
 * Removed ordinal.py (to Symbolic). [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Add test cases for inference new X for bayesian GPLVM. [Zhenwen Dai]
 
@@ -5669,11 +5847,11 @@
 
 * [MRD] running again, using missing_data classes, more details needed for missing data though. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Refine the docstring for hmc. [Zhenwen Dai]
 
@@ -5681,15 +5859,15 @@
 
 * Tidied up laplace warnings. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Add __init__.py to mcmc. [Zhenwen Dai]
 
 * Add documentation for hmc. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Changed init for mcmc. [James Hensman]
 
@@ -5705,9 +5883,9 @@
 
 * [VarDTC] reverted SparseGP to previous state, updated BGPLVM accordingly. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Omp for dX. [James Hensman]
 
@@ -5737,7 +5915,7 @@
 
 * Indexing bugfix in weave. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * [ObsAr] added .values. [Max Zwiessele]
 
@@ -5757,11 +5935,11 @@
 
 * [classification] sparse gp inference for EPDTC. [Max Zwiessele]
 
-* [pca] pca -&gt; PCA. [Max Zwiessele]
+* [pca] pca -> PCA. [Max Zwiessele]
 
 * Weave ObsArray bugfix. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Merge the discriminative prior to devel. [Fariba]
 
@@ -5773,13 +5951,13 @@
 
 * Changed pylab for pyplot in classification examples. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Additions to week2 MLAI. [Neil Lawrence]
 
 * Added cloglog link fn. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Remove symbolic import. [Neil Lawrence]
 
@@ -5795,15 +5973,15 @@
 
 * More variational quadtrature code. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * More removal of references to broken files. [James Hensman]
 
 * [missingdata] file for missing data was missing O_o. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Fixing more issues cauesd by removal of symbolic.py. [James Hensman]
 
@@ -5815,19 +5993,19 @@
 
 * [vardtc] missing data handling and stochastic update in d. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
-
-* Removed reference to symbolic.py, which NDL deleted. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Removed reference to symbolic.py, which NDL deleted. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Removed reference to symbolic.py, which NDL deleted. [James Hensman]
+
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Attempt to align numbers to right. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Display of models and params for the notebook. [Neil Lawrence]
 
@@ -5835,7 +6013,7 @@
 
 * Weaved some slow functions in the stationary class. We now fall back (and latch) to numpy if weave fails. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:sheffieldml/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:sheffieldml/GPy into devel. [James Hensman]
 
 * Stopped rounding to int in priors printing. [Alan Saul]
 
@@ -5857,7 +6035,7 @@
 
 * [pca] missing data is now handled as mean. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [missing data] general implementation for subsetting data. [Max Zwiessele]
 
@@ -5879,7 +6057,7 @@
 
 * HalfT prior is working. [Ricardo]
 
-* Half_t prior (Martin&#x27;s contribution) [Ricardo]
+* Half_t prior (Martin's contribution) [Ricardo]
 
 * Edited coregionalize implementation. [James Hensman]
 
@@ -5891,7 +6069,7 @@
 
 * Add set_X and set_Y interface to gp model. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; for extending prod kernel. [Zhenwen Dai]
+* Merge branch 'devel' for extending prod kernel. [Zhenwen Dai]
 
 * Added notimplemented error to svigp. [James Hensman]
 
@@ -5933,13 +6111,13 @@
 
 * Bug fix: param object randomize. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Bug fixed in normalization. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Name can be modified. [Ricardo]
 
@@ -5979,7 +6157,7 @@
 
 * [updates] made updates a function, update_model(True|False|None) [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * Fix psicomp problem. [Zhenwen Dai]
 
@@ -5999,7 +6177,7 @@
 
 * Remove the print message in model.checkgrad. [Zhenwen Dai]
 
-* Allow the default constraint of a Param object to be &#x27;fixed&#x27; [Zhenwen Dai]
+* Allow the default constraint of a Param object to be 'fixed' [Zhenwen Dai]
 
 * More for debug. [Zhenwen Dai]
 
@@ -6007,7 +6185,7 @@
 
 * Some progress for parameter tie. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [dim red plots] plotting big models. [mzwiessele]
 
@@ -6034,9 +6212,9 @@
 
 * Further bug fix for sparsegp_mpi. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Noise parameters built depending on Y_metadata. [Ricardo]
 
@@ -6044,7 +6222,7 @@
 
 * Recover the ss_gplvm.py. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * [ard] enhanced ard handling and plotting. [mzwiessele]
 
@@ -6070,15 +6248,15 @@
 
 * Minor changes on SSGPLVM. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * [parameterization] Parameter adding more robust and better error handling. [mzwiessele]
 
-* Added kronecker and variational gaussian approximation gp&#x27;s, vargpapprox needs generalising to any factorizing likelihood. [Alan Saul]
+* Added kronecker and variational gaussian approximation gp's, vargpapprox needs generalising to any factorizing likelihood. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Gradients of predictions for Trevor. [James Hensman]
 
@@ -6096,7 +6274,7 @@
 
 * Merge the current devel into psi2. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * [setup] no import of os, nanana alan :) [mzwiessele]
 
@@ -6106,7 +6284,7 @@
 
 * [bgplvm] gradient settings. [mzwiessele]
 
-* Merge branch &#x27;hmc&#x27; into devel. [Zhenwen Dai]
+* Merge branch 'hmc' into devel. [Zhenwen Dai]
 
   A HMC sampler for GP parameters
 
@@ -6124,17 +6302,17 @@
 
 * Initial implementation of hmc. [Niu]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * [minor] minor changes. [mzwiessele]
 
 * Coregionalized 2D plotting fixed. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Bug fixed. [Ricardo]
 
@@ -6142,13 +6320,13 @@
 
 * Returned setup.py read to old version. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Changes to datasets.py. [Neil Lawrence]
 
-* Added forced extraction of eggs (as we have a fair few non-py files and use the directory structure) added some files to MANIFEST and setup.py&#x27;s package_data so its included upon distributing. [Alan Saul]
+* Added forced extraction of eggs (as we have a fair few non-py files and use the directory structure) added some files to MANIFEST and setup.py's package_data so its included upon distributing. [Alan Saul]
 
 * [inference] less constant jitter, and jitter adjustements. [mzwiessele]
 
@@ -6196,7 +6374,7 @@
 
 * [logging] [mzwiessele]
 
-* [gp] memory &gt; only one copy. [mzwiessele]
+* [gp] memory > only one copy. [mzwiessele]
 
 * [subbarray] logging. [mzwiessele]
 
@@ -6206,7 +6384,7 @@
 
 * [optmimize] bugfix. [mzwiessele]
 
-* [whitespaces] &amp; [opt] minor fix of optimizer, when Optimizer is provided (set model to self) [mzwiessele]
+* [whitespaces] & [opt] minor fix of optimizer, when Optimizer is provided (set model to self) [mzwiessele]
 
 * [model] optimizer can now be an optimizer instance, instead of a string. [mzwiessele]
 
@@ -6216,31 +6394,31 @@
 
 * [scg] minor adjustements based on original publication. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * [linalg] fixed scipy 0.14 bugfix. sciy.linalg.lapack.dpotri was fixed to work right with lower=1, thus, the hack is gone now from GPy.util.linalg.dpotri, when using scipy 0.14 and higher. [Max Zwiessele]
 
 * Re-doing the lee dataset. [James Hensman]
 
-* Revert &quot;Minor edits to reading Lee data in datasets.py&quot; [James Hensman]
+* Revert "Minor edits to reading Lee data in datasets.py" [James Hensman]
 
   This reverts commit 730e229238062fa22b726e8c30c891d0819b3c6e.
 
 * Fixed unnecessary warnings when using periodic kernels. [durrande]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Datasets.py updates should have been committed before. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Reverting Maxs linalg changes. [James Hensman]
 
 * Linalg had lowers missing for windows libraries to work correctly. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
-* Merge branc( &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branc( 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Editied whitespace. [James Hensman]
 
@@ -6258,14 +6436,14 @@
 
 * [splitkern] buf fix. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * Merging. [James Hensman]
 
 * Reverting the fixing behaviour. [James Hensman]
 
   two reasons: 1) the new behaviour is confusing for new users. Either
-  something is fixed, or it&#x27;s not. 2) the fixing didn&#x27;t work! things that
+  something is fixed, or it's not. 2) the fixing didn't work! things that
   should have been fixed were passed to the optimizer for optimization.
 
   If we really want to save keystrokes, consider this:
@@ -6295,7 +6473,7 @@
 
 * Added CIFAR-10 data to data sets. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Fixed an assertion, it was checking the dimensionality of the input data matrix, rather than that of the labels. [teodecampos]
 
@@ -6313,7 +6491,7 @@
 
 * [caching] catching key error, when individuum is already gone. [mzwiessele]
 
-* [optimizer&amp;fixing] optimizer has only one optimizer copy and fixing remembers old constraint. [mzwiessele]
+* [optimizer&fixing] optimizer has only one optimizer copy and fixing remembers old constraint. [mzwiessele]
 
 * [optimizer] one copy for the optimizer in optimizer_array, use this instead of _set|get_params_transformed. [mzwiessele]
 
@@ -6325,7 +6503,7 @@
 
 * [gp] output data is a copy now. [Max Zwiessele]
 
-* [bgplvm&amp;mrd] missing data greatly improved, still not there yet. [Max Zwiessele]
+* [bgplvm&mrd] missing data greatly improved, still not there yet. [Max Zwiessele]
 
 * New data sets. [Neil Lawrence]
 
@@ -6412,7 +6590,7 @@
 * Reverting the fixing behaviour. [James Hensman]
 
   two reasons: 1) the new behaviour is confusing for new users. Either
-  something is fixed, or it&#x27;s not. 2) the fixing didn&#x27;t work! things that
+  something is fixed, or it's not. 2) the fixing didn't work! things that
   should have been fixed were passed to the optimizer for optimization.
 
   If we really want to save keystrokes, consider this:
@@ -6436,7 +6614,7 @@
 
 * [fixing] fixing now saves the old constraint. [Max Zwiessele]
 
-* [index operations] added lookup for properties for a given index as dict &lt;properties, subindex&gt; for given index. [Max Zwiessele]
+* [index operations] added lookup for properties for a given index as dict <properties, subindex> for given index. [Max Zwiessele]
 
 * [mrd] more control for init, some missing data adjustements, init greatly improved. [Max Zwiessele]
 
@@ -6462,7 +6640,7 @@
 
 * [ploting] dim reduction. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
 * [examples] stick demo. [mzwiessele]
 
@@ -6480,13 +6658,13 @@
 
 * Merge chagnes from devel. [Zhenwen Dai]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
 * EP is back. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [latentfunctioninference] superclass LatentFunctionInference added, which contains a call just before and just after optimization. [Max Zwiessele]
 
@@ -6500,21 +6678,21 @@
 
 * [parameterized] restructered a lot and finalized some stuff. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * [caching] renaming of helper methods to make intention clear. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [mzwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [mzwiessele]
 
-* [indexing&amp;memory] in memory view more efficient, catching some indexing errors. [mzwiessele]
+* [indexing&memory] in memory view more efficient, catching some indexing errors. [mzwiessele]
 
 * Add Drosophila data. [Neil Lawrence]
 
-* Merge mu&#x27;s changes into devel. [mu]
+* Merge mu's changes into devel. [mu]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * [param] hierarchy traversal easier now. [mzwiessele]
 
@@ -6526,13 +6704,13 @@
 
 * Add ordinal and attempt to fix downloads. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * [paramcore] fix for traversal. [mzwiessele]
 
 * [pydot] build pydot with new observer list. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * [bgplvm] init lengthscale as 0./var. [mzwiessele]
 
@@ -6540,7 +6718,7 @@
 
 * Add ordinal and attempt to fix downloads. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Made openmp switch in only dependent on potion in rbf.py and linear.py. [Neil Lawrence]
 
@@ -6556,7 +6734,7 @@
 
 * [examples] stick man example corrected. [mzwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Working with OU kernel. [marahman]
 
@@ -6606,7 +6784,7 @@
 
 * [caching] done right. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:/SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:/SheffieldML/GPy into devel. [James Hensman]
 
 * Added citation to readme. [James Hensman]
 
@@ -6618,7 +6796,7 @@
 
 * [ssgplvm] linear kernel. [Zhenwen Dai]
 
-* Merge branch &#x27;psi2&#x27; of github.com:SheffieldML/GPy into psi2. [Zhenwen Dai]
+* Merge branch 'psi2' of github.com:SheffieldML/GPy into psi2. [Zhenwen Dai]
 
 * Proper whitespace. [James Hensman]
 
@@ -6636,13 +6814,13 @@
 
 * Removed import of non-added file (Mu) [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * St. [mu]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
 * Pre-devel-move check in. [Neil Lawrence]
 
@@ -6654,11 +6832,11 @@
 
 * Bugfix: slicing checks needed to be suspended for combination kernels, checks are done in inner kernels now. [mzwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [mzwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [mzwiessele]
 
 * Merged. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/kern/_src/kern.py
@@ -6673,13 +6851,13 @@
 
 * Bugfix: kern input_sens errir. [mzwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [mzwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [mzwiessele]
 
 * Merge kernel source. [Neil Lawrence]
 
 * Removed imports of files the are not added to the repo. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Removing Neils mid-atlantic commit because he failed to add the relevant files to the repo. [James Hensman]
 
@@ -6693,7 +6871,7 @@
 
 * Added documentation for parameterized objects, needs more detail and fleshing out with proper english. [mzwiessele]
 
-* Part working on symbolics. Replacing data_resources.json with the correct full file (-hapmap). Don&#x27;t know why we&#x27;ve gone for separate create file ... [Neil Lawrence]
+* Part working on symbolics. Replacing data_resources.json with the correct full file (-hapmap). Don't know why we've gone for separate create file ... [Neil Lawrence]
 
 * Need to fix missing data in likelihoods. [Neil Lawrence]
 
@@ -6701,13 +6879,13 @@
 
 * New test heteroscedastic noise model. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
 * Bugfix: mixed up global and local index in unfixing. [mzwiessele]
 
 * New file, special request. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/models/gp_classification.py
@@ -6729,9 +6907,9 @@
 
 * Just had to do a check in from midlantic (showing off). [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * [datasets] merged hapmap dataset into params. [Max Zwiessele]
 
@@ -6743,7 +6921,7 @@
 
 * Bugfix: fixing through regular expression matching. [Max Zwiessele]
 
-* Bugfix: couldn&#x27;t constrain single parameters, because of indexing of np. [Max Zwiessele]
+* Bugfix: couldn't constrain single parameters, because of indexing of np. [Max Zwiessele]
 
 * [Kern] added assertion for inputs X being matrix (ndim == 2) [Max Zwiessele]
 
@@ -6867,19 +7045,19 @@
 
 * Gradient can be zero and two parameter cancellation is caught. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Removed some dubuggnin. [James Hensman]
 
 * Delete dangling fixed attribute in constraints. [Max Zwiessele]
 
-* Copy had slight bug in id(_parent_index_) &gt; ids for ints are shared globally. [Max Zwiessele]
+* Copy had slight bug in id(_parent_index_) > ids for ints are shared globally. [Max Zwiessele]
 
 * Student t noise now called t_scale2. [Max Zwiessele]
 
 * Added kernel tests again. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Adding of symbolic likelihoods (not yet fully funcitonal). [Neil Lawrence]
 
@@ -6887,15 +7065,15 @@
 
 * Pickling and caching. [Max Zwiessele]
 
-* Exact inference for N&gt;D of Y. [Max Zwiessele]
+* Exact inference for N>D of Y. [Max Zwiessele]
 
 * Kernel slicer now asserts X dimension on first seeing X. [Max Zwiessele]
 
 * Assertion checks for all kernels. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Moved input_sensitivity to the gp class. [James Hensman]
 
@@ -6915,7 +7093,7 @@
 
 * Array list now working with index. [mzwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Full Linear kernel added, inc testing. [James Hensman]
 
@@ -6937,7 +7115,7 @@
 
 * GPclassification has to default inference method to EP. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Whoops! [Alan Saul]
 
@@ -6951,7 +7129,7 @@
 
 * Variational returns now the right raveled indices. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Merge changes. [Zhenwen Dai]
 
@@ -6965,9 +7143,9 @@
 
 * Caching now per instance, not at def time. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Added a couple of tests for model predictions. [Alan Saul]
 
@@ -6975,28 +7153,28 @@
 
 * Correct predictions in Gaussian. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * ODE_UY gradient checks now kernel unit. [Max Zwiessele]
 
 * Add kernel adding another add kernel. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [mzwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [mzwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
 * Missing docstrings. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/likelihoods/mixed_noise.py
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
 * 1D inducing inputs modified for coregionalized models. [Ricardo]
 
@@ -7038,7 +7216,7 @@
 
 * All the tests pass (though some are marked known-to-fail. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Known fail for EP tests in unit tests. [Max Zwiessele]
 
@@ -7052,7 +7230,7 @@
 
 * Fixes in likelihoods. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Very weird merge conflict, including in files that I did not change. [James Hensman]
 
@@ -7064,9 +7242,9 @@
 
 * All tests are now to check. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Merged. [James Hensman]
 
@@ -7074,14 +7252,14 @@
 
 * Fixes now hierarchical, maybe need to be restructured as lookup from constraints. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
   	GPy/likelihoods/gaussian.py
 
 * Bug fix w.r.t. var_dtc.py. [Zhenwen Dai]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/inference/latent_function_inference/var_dtc.py
@@ -7104,7 +7282,7 @@
 
 * Parameter missin in dL_dthetaL added. [Ricardo]
 
-* ObservableArray -&gt; ObsAr, because of pickling and ndarray printing. [Max Zwiessele]
+* ObservableArray -> ObsAr, because of pickling and ndarray printing. [Max Zwiessele]
 
 * Merge conflict. [Max Zwiessele]
 
@@ -7112,17 +7290,17 @@
 
 * Fix the bug regarding to the change of the name dL_dthetaL. [Zhenwen Dai]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
 * Fixed Y_metadata bug. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Added jitter to fitc. [James Hensman]
 
 * Added a hack fix as suggested by max, zeroing any negative values (should really be numerically negative values on diagonal) [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Stablised other quadrature (should speed things up also), added sampling ability to poisson. [Alan Saul]
 
@@ -7146,11 +7324,11 @@
 
 * Slicing now returns the right shape, when computing derivative wrt X or Z. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Plotting now seems to work for Bernouilli. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Fixes to EP. [James Hensman]
 
@@ -7180,7 +7358,7 @@
 
 * Merge for new kernel slice handling. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Bugfix for grad_dict. [James Hensman]
 
@@ -7192,7 +7370,7 @@
 
 * Manual merge of tests. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Plotting fix. [James Hensman]
 
@@ -7202,21 +7380,21 @@
 
 * Active_dims as extra parameter for kernels, it tells which input dimensions to work on. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
 * Testing a bit cleaned periodic is turned off, bc it need different tests, discontinuous still needed. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Coregionalization example. [Ricardo]
 
 * Fix needed. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
 * Temporal fix. [Ricardo]
 
@@ -7238,9 +7416,9 @@
 
 * Google trends and football data sets. [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
 * Part written addition to datasets for loading in google trends. [Neil Lawrence]
 
@@ -7269,9 +7447,9 @@
 
 * Missing bracket. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Q Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Q Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Fixing fitc. [James Hensman]
 
@@ -7279,9 +7457,9 @@
 
 * Fixing coreg kernel. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/core/gp.py
@@ -7315,7 +7493,7 @@
 
 * Kernel slicer. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into input_dims. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into input_dims. [Max Zwiessele]
 
 * Bugfix. [James Hensman]
 
@@ -7357,7 +7535,7 @@
 
 * Whitespaces. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * All parameters in memory. [Max Zwiessele]
 
@@ -7375,11 +7553,11 @@
 
 * [SSGPLVM] support linear kernel with ARD off. [Zhenwen Dai]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
 
 * Made sampling default for non-gaussian likelihoods as a quick fix to allow plotting again for likelihoods without predictive values. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Name added as a parameter of Prod. [Ricardo]
 
@@ -7403,13 +7581,13 @@
 
 * [SSGPLVM] implemented linear kernel. [Zhenwen Dai]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
 
 * Changed kernels in tests (lots still failing, but now mostly for good reason rather than silly naming problems) [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Fixed non_gaussian demo. [Alan Saul]
 
@@ -7427,9 +7605,9 @@
 
 * Minor changes to sympy kernel (removing un-needed comments). [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Sparse gp with uncertain inputs. [Max Zwiessele]
 
@@ -7439,17 +7617,17 @@
 
 * Bit more testing of observable patter. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
 
 * Weaving a faster rbf. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Stability in stationary) [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
 
 * Caching switched on. [Max Zwiessele]
 
@@ -7463,11 +7641,11 @@
 
 * Einsumming in stationary. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Prediction code need updating, started with woodbury vector, but how to predict variance in sparse gp with uncertain inputs? [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Fixed caching bug with args having Nones. [Max Zwiessele]
 
@@ -7479,11 +7657,11 @@
 
 * Plotting with uncertain inputs. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Observer pattern has a handle to trigger only &gt; min_priority observers. [Max Zwiessele]
+* Observer pattern has a handle to trigger only > min_priority observers. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Observer pattern now tested and fully operational. needed the good night rest : ) [Max Zwiessele]
 
@@ -7511,15 +7689,15 @@
 
 * Parent observer now static and always last. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Fixes in the plotting and in the dot graphing. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Pydot graphing half done. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Moved plot functionality from add to kern. [James Hensman]
 
@@ -7537,32 +7715,32 @@
 
 * Gradients. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Some work on ep, and some messing with wher ethe derivatives are computed (in the model, not the inference. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/kern/_src/constructors.py
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/kern/kern.py
   	GPy/kern/parts/prod.py
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/kern/parts/prod.py
@@ -7571,7 +7749,7 @@
 
 * Rbf with new parameter structure. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * BayesianGPLVM init with paramschanged. [Max Zwiessele]
 
@@ -7583,7 +7761,7 @@
 
 * Merged variational posterior changes. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Mucho changes to linear.py. [James Hensman]
 
@@ -7605,11 +7783,11 @@
 
 * Merge SSGPLVM into params branch. [Zhenwen Dai]
 
-* Removing testing code from kern.py (it&#x27;s now in kern_tests.py. [James Hensman]
+* Removing testing code from kern.py (it's now in kern_tests.py. [James Hensman]
 
 * More efficient computations in stationary. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Minor merges. [Neil Lawrence]
 
@@ -7617,11 +7795,11 @@
 
 * Started sorting out some tests. [James Hensman]
 
-* Renaming: posterior_variationa -&gt; variational_posterior. [James Hensman]
+* Renaming: posterior_variationa -> variational_posterior. [James Hensman]
 
 * Kernel tests in working order (not all implemented though. [James Hensman]
 
-* Hierarchical kern should be working. I&#x27;ll let you know then the tests are up... [James Hensman]
+* Hierarchical kern should be working. I'll let you know then the tests are up... [James Hensman]
 
 * Tidying in kern. [James Hensman]
 
@@ -7631,11 +7809,11 @@
 
 * More bugfixin. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Fixed stationary again. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Added initialization. [Max Zwiessele]
 
@@ -7643,15 +7821,15 @@
 
 * Stuf in rbf might be broken. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Merged static. [Max Zwiessele]
 
 * Input_sensitivity and ard plotting. [Max Zwiessele]
 
-* Revert &quot;changed to &#x27;update_gradients_q_variational&#x27;&quot; [Max Zwiessele]
+* Revert "changed to 'update_gradients_q_variational'" [Max Zwiessele]
 
   This reverts commit f311bfdf17c78bc4f56f03514d4e28b26e2e5057.
 
@@ -7663,19 +7841,19 @@
 
 * Fixed likelihood tests. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Changed to &#x27;update_gradients_q_variational&#x27; [Zhenwen Dai]
+* Changed to 'update_gradients_q_variational' [Zhenwen Dai]
 
 * 2d plotting. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Variational posterior and prior added, linear updated. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Got rid of debugging and failing ep tests. [Alan Saul]
 
@@ -7685,17 +7863,17 @@
 
 * Ratquad working. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Some work pon EP (uninished) [James Hensman]
 
 * Unfinished work on ratinoal quadratic kern. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
+* Merge branch 'params' of https://github.com/SheffieldML/GPy into params. [Neil Lawrence]
 
 * Changes to sympykern.py. [Neil Lawrence]
 
@@ -7707,9 +7885,9 @@
 
 * Minor fixes in kerns. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Zhenwen Dai]
 
 * Parameterized now supports deleting of parameters. [Max Zwiessele]
 
@@ -7719,7 +7897,7 @@
 
 * Tidying. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Plot merge. [Max Zwiessele]
 
@@ -7741,7 +7919,7 @@
 
 * Linear without caching, derivatives done. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Spellings. [James Hensman]
 
@@ -7753,7 +7931,7 @@
 
 * Empty init file. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Posterior with one covariance per dimension and param gradient fix. [Max Zwiessele]
 
@@ -7787,11 +7965,11 @@
 
 * Bad git merge. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Rbf andl inear fixes. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Missing sys. [James Hensman]
 
@@ -7815,9 +7993,9 @@
 
 * Priors added. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; into c_oredered. [James Hensman]
+* Merge branch 'params' into c_oredered. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Non verbose checkgrad adjusted to new system. [Max Zwiessele]
 
@@ -7837,15 +8015,15 @@
 
 * Variouschanges. [James Hensman]
 
-* An ugly hack to work around the &#x27;stickiness&#x27; of ObservableArray. TODO: remove this hack. [James Hensman]
+* An ugly hack to work around the 'stickiness' of ObservableArray. TODO: remove this hack. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Fixed some examples and tests, and stated that Y metadata doesnt need to be the same size as Y. [Alan Saul]
 
 * Fixed gradchecker and fixes for paramterized. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Fixed bernoulli likelihood divide by 0 and log of 0. [Alan Saul]
 
@@ -7857,13 +8035,13 @@
 
 * Fixed plotting bug. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Here&#x27;s fitc. [James Hensman]
+* Here's fitc. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Derivatives working in DTC. [James Hensman]
 
@@ -7873,7 +8051,7 @@
 
 * Fixed merge conflict. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Changes to DTC. [James Hensman]
 
@@ -7881,31 +8059,31 @@
 
 * Renaming dtc. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Fixed copy bug of observable array. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Minor reorganising. [Alan Saul]
 
 * Deleted listarray. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * First draft of DTC. [James Hensman]
 
-* Array core and bgplvm working &gt; changes due to __i&lt;op&gt;__ will now be reported. [Max Zwiessele]
+* Array core and bgplvm working > changes due to __i<op>__ will now be reported. [Max Zwiessele]
 
 * Kernel adding now takes over constraints. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Dumb merge conflict in a comment. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Some messing with fitc. [James Hensman]
 
@@ -7913,7 +8091,7 @@
 
 * Parameter handling with default constraints. [Max Zwiessele]
 
-* Rename dK_dtheta &gt; gradients_X. [Max Zwiessele]
+* Rename dK_dtheta > gradients_X. [Max Zwiessele]
 
 * Psi stat and kernel tests new parameterization. [Max Zwiessele]
 
@@ -7925,7 +8103,7 @@
 
 * Fixes added for gradchecking. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
   	GPy/core/parameterization/param.py
@@ -7940,30 +8118,30 @@
 
 * Checkgrad now global and callable from any parameter. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
   	GPy/core/parameterization/param.py
   	GPy/core/parameterization/parameter_core.py
   	GPy/core/parameterization/parameterized.py
 
-* Stupid error, needed to actually USE the gradients in student t... Looks like s2 of rasm&#x27;s may have an extra -? dW_df == -d2logpdf_df not just d2logpdf_df? [Alan Saul]
+* Stupid error, needed to actually USE the gradients in student t... Looks like s2 of rasm's may have an extra -? dW_df == -d2logpdf_df not just d2logpdf_df? [Alan Saul]
 
 * Have most of the likelihood testing working, laplace likelihood parameters need fixing, some of the signs are wrong I believe. [Alan Saul]
 
 * Have most of the likelihood testing working, laplace likelihood parameters need fixing, some of the signs are wrong I believe. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Fixed likelihood tests for new parameters structure. [Alan Saul]
 
 * Fixed parameter bugs. [Alan Saul]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Alan Saul]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Alan Saul]
 
 * Fixed parameterized oddity where it was updating all constrained parameters as soon as any were constrained rather than after all are constrained@ @ [Alan Saul]
 
-* _highest_parent_ now follows the tree, dK_dX &gt; gradient_X, added update_grads_variational to linear, bgplvm for new framework. [Max Zwiessele]
+* _highest_parent_ now follows the tree, dK_dX > gradient_X, added update_grads_variational to linear, bgplvm for new framework. [Max Zwiessele]
 
 * Adjusted periodic exponential to the new parameterization. [Max Zwiessele]
 
@@ -7973,7 +8151,7 @@
 
 * Added caching framework. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Highest parent fix. [Max Zwiessele]
 
@@ -7991,9 +8169,9 @@
 
 * Add spike-and-slab gplvm kernel [unfinished].] [Zhenwen Dai]
 
-* Not calling self.parameters_changed explicitly anymore -&gt; not needed. [Max Zwiessele]
+* Not calling self.parameters_changed explicitly anymore -> not needed. [Max Zwiessele]
 
-* An afternoon&#x27;s work on the laplace approximation. [James Hensman]
+* An afternoon's work on the laplace approximation. [James Hensman]
 
 * More owrk on the Laplace approx. [James Hensman]
 
@@ -8003,7 +8181,7 @@
 
 * Sparse GP now checkgrads, optimises sensibly. Predicitno still not working. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Adapter laplace inference into the param framework. [Zhenwen Dai]
 
@@ -8015,19 +8193,19 @@
 
 * Wrapping docstrings. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* &quot;Missing file?&quot; [Ricardo]
+* "Missing file?" [Ricardo]
 
 * Changed gradient interface to gp and sparse GP. [James Hensman]
 
 * Fixed syntax bug in sparse GP. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Pylab library not needed. [Ricardo]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Ricardo]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
   	GPy/core/sparse_gp.py
@@ -8092,23 +8270,23 @@
 
 * Fixing scg on this branch. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Plot_latent: added param_to_array to model.X and model.Z for matplotlib plotting. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Some gplvm related fixes. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Beginnings of gplvm. [James Hensman]
 
 * Changed priority of observable array to 0. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Foo. [James Hensman]
 
@@ -8116,11 +8294,11 @@
 
 * Bug in setting _highest_parent_ fixed. [Max Zwiessele]
 
-* Getstate &gt; _getstate and setstate &gt; _setstate. [Max Zwiessele]
+* Getstate > _getstate and setstate > _setstate. [Max Zwiessele]
 
 * New gradient handling way nicer. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
 * Gradient field added to param. [Max Zwiessele]
 
@@ -8128,9 +8306,9 @@
 
 * Changes to rbf and white to allow new parameter gradient structure. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [James Hensman]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [James Hensman]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Merged posterior changes. [Max Zwiessele]
 
@@ -8184,7 +8362,7 @@
 
 * Fixed up the Gaussian likelihood a little. [James Hensman]
 
-* All parameterization stuff now in seperate module -&gt; GPy.core.parameterization. [Max Zwiessele]
+* All parameterization stuff now in seperate module -> GPy.core.parameterization. [Max Zwiessele]
 
 * Fixed unsized param bug. [Max Zwiessele]
 
@@ -8250,7 +8428,7 @@
 
 * Simple tieing now working, still buggy though, progress with care. [Max Zwiessele]
 
-* Biiig changes in tieing, and printing -&gt; hirarchy now always shown. [Max Zwiessele]
+* Biiig changes in tieing, and printing -> hirarchy now always shown. [Max Zwiessele]
 
 * Minor edits, like spacing, spelling. [James Hensman]
 
@@ -8262,7 +8440,7 @@
 
 * Added gplbm and sparse gp to new parameterized structure. [Max Zwiessele]
 
-* Merge branch &#x27;params&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Adjusted parameters to report their changes. [Max Zwiessele]
 
@@ -8282,7 +8460,7 @@
 
 * GPRegression working, gradients still todo. [Max Zwiessele]
 
-* First adjustments to the model and gps -&gt; updates and gradient transforms. [Max Zwiessele]
+* First adjustments to the model and gps -> updates and gradient transforms. [Max Zwiessele]
 
 * Parameters have a update hirarchy, in which updates to parameters are hirarchically pursuit. [Max Zwiessele]
 
@@ -8324,27 +8502,27 @@
 
 * Updated sympy code, multioutput grad checks pass apart from wrt X. Similar problems with prediction as to sinc covariance, needs investigation. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Seems to work on windows now. [Nicolò Fusi]
 
-  not everything works yet, but I&#x27;ve identified the main issues. Still
+  not everything works yet, but I've identified the main issues. Still
 
-* Added olivetti faces data set. It required adding netpbmfile.py a bsd licensed pgm file reader from Christoph Gohlke, which doesn&#x27;t seem to have a spearate installer. Also modified image_show to assume by default that array ordering is python instead of fortran. Modified brendan_faces demo to explicilty force fortran ordering. Notified Teo of change. [Neil Lawrence]
+* Added olivetti faces data set. It required adding netpbmfile.py a bsd licensed pgm file reader from Christoph Gohlke, which doesn't seem to have a spearate installer. Also modified image_show to assume by default that array ordering is python instead of fortran. Modified brendan_faces demo to explicilty force fortran ordering. Notified Teo of change. [Neil Lawrence]
 
 * Domain and trtansformations namespace prettyfying. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into params. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
 * Some fixes and changes to the sympykern. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Nparam changes to num_params. [James Hensman]
 
 * Changes Nparts for num_parts in kern. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
 * Minor changes. [Andreas]
 
@@ -8352,7 +8530,7 @@
 
 * Fixed stick datasets bug ... but sympykern is currently in a rewrite so will be broken. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Plots tidied up. [Ricardo]
 
@@ -8366,7 +8544,7 @@
 
 * Tests updated. [Max Zwiessele]
 
-* Dim reduction examples Q= &gt; input_dim= [Max Zwiessele]
+* Dim reduction examples Q= > input_dim= [Max Zwiessele]
 
 * Numpy non hashable AHHHHHH. [Max Zwiessele]
 
@@ -8374,13 +8552,13 @@
 
 * Parameterized first beta test. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
+* Merge branch 'devel' into params. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [mu]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [mu]
 
 * Testing ODE. [mu]
 
@@ -8392,22 +8570,22 @@
 
 * Change to criterion on positive definite check (epsilon*10 instead of epsilon). [Neil Lawrence]
 
-* Remove coregionalization test as it&#x27;s causing a core dump! Need to chase this up. [Neil Lawrence]
+* Remove coregionalization test as it's causing a core dump! Need to chase this up. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Some tidying in the EP likelihood. [James Hensman]
 
   Changes self.N to self.num_data for consistency with everywhere else
   added the factor of 2pi to Z.
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Allowed passing of factr to bfgs algorithm. [James Hensman]
 
-* Updates to sympykern including bug fixes and ability to name covariance. Include test for rbf_sympy in kernel tests. Remove coregionalization test as it&#x27;s causing a core dump! Need to chase this up. [Neil Lawrence]
+* Updates to sympykern including bug fixes and ability to name covariance. Include test for rbf_sympy in kernel tests. Remove coregionalization test as it's causing a core dump! Need to chase this up. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Fixing W_columns and num_outputs nomenclature. [Ricardo]
 
@@ -8419,7 +8597,7 @@
 
 * Merging changed files. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Merge pull request #82 from jamesmcm/devel. [James McMurray]
 
@@ -8441,20 +8619,20 @@
 
 * Removing unnecessary stuff... [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
   	GPy/examples/classification.py
 
-* Fixed a bug in Neil&#x27;s otherwise tidy hetero kernel. [James Hensman]
+* Fixed a bug in Neil's otherwise tidy hetero kernel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Merge pull request #80 from jamesmcm/devel. [James McMurray]
 
   Devel
 
-* Merge branch &#x27;devel&#x27; of git://github.com/SheffieldML/GPy into devel. [James McMurray]
+* Merge branch 'devel' of git://github.com/SheffieldML/GPy into devel. [James McMurray]
 
 * Fixed docstring warnings - could still be mistakes. [James McMurray]
 
@@ -8466,7 +8644,7 @@
 
 * Please stop breaking this module. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Do_test_latents appears to be working now. [James Hensman]
 
@@ -8510,7 +8688,7 @@
 
 * Transformations singleton. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into params. [Max Zwiessele]
+* Merge branch 'devel' into params. [Max Zwiessele]
 
   Conflicts:
   	GPy/core/transformations.py
@@ -8520,7 +8698,7 @@
 
   Devel
 
-* Merge branch &#x27;devel&#x27; of git://github.com/SheffieldML/GPy into devel. [James McMurray]
+* Merge branch 'devel' of git://github.com/SheffieldML/GPy into devel. [James McMurray]
 
 * Bug in prod-coreg kernels fixed, not in the most elegant way though. [Ricardo]
 
@@ -8556,9 +8734,9 @@
 
 * Heaviside transformation fixed. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Likelihoods are now Parameterized objects. [Ricardo]
 
@@ -8570,7 +8748,7 @@
 
 * Fixed Zsolts bug in prod.py. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
   	GPy/examples/regression.py
@@ -8598,7 +8776,7 @@
 
 * LinK2_functions2 merged. [Ricardo]
 
-* Merge branch &#x27;linK_functions2&#x27; into devel. [Ricardo]
+* Merge branch 'linK_functions2' into devel. [Ricardo]
 
   Conflicts:
   	GPy/core/gp.py
@@ -8615,7 +8793,7 @@
 
 * Moved to (sparse_)gp_multioutput_regression. [Ricardo]
 
-* Doesn&#x27;t matter I&#x27;ll erase this file. [Ricardo]
+* Doesn't matter I'll erase this file. [Ricardo]
 
 * Duplicated line erased. [Ricardo]
 
@@ -8671,7 +8849,7 @@
 
 * Random changes. [Ricardo]
 
-* The next step is to optimize the noise models&#x27; parameters. [Ricardo]
+* The next step is to optimize the noise models' parameters. [Ricardo]
 
 * Files re-organized. [Ricardo]
 
@@ -8693,15 +8871,15 @@
 
 * Some cool stuff for EP. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Fixed args to bfgs. [James Hensman]
 
 * Fixed Alans checkgrad bug. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Working on the Poisson likelihood. [Ricardo]
 
@@ -8709,7 +8887,7 @@
 
 * Correcterd minor errors (imports etc) [Max Zwiessele]
 
-* Pep8&#x27;ed transformations module. [Max Zwiessele]
+* Pep8'ed transformations module. [Max Zwiessele]
 
 * Mrd_sim stable and deprecated. [Max Zwiessele]
 
@@ -8717,9 +8895,9 @@
 
 * Only compare Z cache once. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Added gibbs.py, although test is still failing. [Neil Lawrence]
 
@@ -8733,9 +8911,9 @@
 
 * Added print m and print m.all differentiation. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of git@github.com:SheffieldML/GPy.git into devel. [Max Zwiessele]
+* Merge branch 'devel' of git@github.com:SheffieldML/GPy.git into devel. [Max Zwiessele]
 
 * Merge dim reduction. [Max Zwiessele]
 
@@ -8755,9 +8933,9 @@
 
 * Changed default values of W and kappa for coregionalisation kernel. Changed names of keyword arguments from Nout and R to output_dim and rank. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Fixed target slicing bug in prod kernel. [James Hensman]
 
@@ -8789,7 +8967,7 @@
 
 * Added mlp covariance (x gradient not working) [Neil Lawrence]
 
-* Modifications to transformations ... not sure which tests to run to make sure I haven&#x27;t messed things up. New code avoids exponentiating values greater than -log(eps) or less than log(eps). Also changed negative code to call the positive code (I think they should inherit the positive code ... but maybe not. [Neil Lawrence]
+* Modifications to transformations ... not sure which tests to run to make sure I haven't messed things up. New code avoids exponentiating values greater than -log(eps) or less than log(eps). Also changed negative code to call the positive code (I think they should inherit the positive code ... but maybe not. [Neil Lawrence]
 
 * Mocking matplotlib pyplot as readthedocs is failing to import it (again...) [Alan Saul]
 
@@ -8805,7 +8983,7 @@
 
 * Constant jitter to Kmm, deleted some white kernels in models and examples. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Added connections.txt. [Neil Lawrence]
 
@@ -8815,7 +8993,7 @@
 
 * Added jacobian and magnification factor. [Alessandra Tosi]
 
-* Oops, that was silly bug. Don&#x27;t code tired, kids. [James Hensman]
+* Oops, that was silly bug. Don't code tired, kids. [James Hensman]
 
   problem summing psi2 in sparse_GP
 
@@ -8849,11 +9027,11 @@
 
 * Gradient checker implemented. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Changes to psi2 in linear. [James Hensman]
 
@@ -8861,7 +9039,7 @@
 
 * Gradient checker implemented. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Fixed asarray in example toy_ARD. [Andreas]
 
@@ -8869,7 +9047,7 @@
 
 * Merge rbf_inv changes. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Small changes to rbf and rbf_inv. [James Hensman]
 
@@ -8887,15 +9065,15 @@
 
 * Input sensitivity for rbf_inv. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
 * Plot_ARD greatly improved, crossterm plotting enabled. [Max Zwiessele]
 
 * Plot_ARD greatly improved, crossterm plotting enabled. [Max Zwiessele]
 
-* Git pushMerge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git pushMerge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Fast_array_equals now handles 3d matrices. [Nicolo Fusi]
 
@@ -8905,13 +9083,13 @@
 
 * Stick_bgplvm to original version with rbf. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Fixed logic for fast_array_equal. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * (much) faster comparison between arrays. Useful for kernel caching. [Nicolo Fusi]
 
@@ -8937,7 +9115,7 @@
 
 * Rbf inv now working. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
 * Removed abomnibal matrix class. [James Hensman]
 
@@ -8985,7 +9163,7 @@
 
 * Created a hierarchical kernel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Fixed a bug in constructor of periodic_matern52. [James Hensman]
 
@@ -9007,11 +9185,11 @@
 
 * More robust gradient clippinggit stat. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Fixed bug in constructors. [Nicolas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * New constrain_negative negative_logexp (selected by default) [Nicolas]
 
@@ -9033,11 +9211,11 @@
 
 * Pickling unified with __getstate__ and __setstate__ [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into pickle. [Max Zwiessele]
+* Merge branch 'devel' into pickle. [Max Zwiessele]
 
 * Fixed an import. [Teo de Campos]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Added anopther simple subplotting function. [James Hensman]
 
@@ -9045,13 +9223,13 @@
 
 * Added missing import in util.linalg. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge remote-tracking branch &#x27;origin/devel&#x27; into devel. [Ricardo]
+* Merge remote-tracking branch 'origin/devel' into devel. [Ricardo]
 
 * Bug fix in the confusion matrix. [Ricardo]
 
@@ -9061,7 +9239,7 @@
 
 * Removed unnecessary gitignore line. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Kernels are now consistent with pep8 and common reason. [Nicolo Fusi]
 
@@ -9069,15 +9247,15 @@
 
 * Merging by hand... [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo]
 
 * New version number. [Ricardo]
 
 * Ensure_default_constraints is on by default. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Bug fix in the confusion matrix. [Ricardo]
 
@@ -9087,9 +9265,9 @@
 
 * Changed manifest from docs to doc. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Corrected minor bug in Brownian kernel. [Nicolas]
 
@@ -9105,7 +9283,7 @@
 
 * Pypi release update. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; into devel. [Max Zwiessele]
+* Merge branch 'master' into devel. [Max Zwiessele]
 
 * Removed sympy dependency, incremented version. [James Hensman]
 
@@ -9113,9 +9291,9 @@
 
 * Incremented version. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; [James Hensman]
+* Merge branch 'devel' [James Hensman]
 
-* Merge branch &#x27;devel&#x27; [Alan Saul]
+* Merge branch 'devel' [Alan Saul]
 
 * Changed version. [Alan Saul]
 
@@ -9123,7 +9301,7 @@
 
 * Robust failure handling in model objective and gradient. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Fixed blaslib bug, I hope. [James Hensman]
 
@@ -9141,11 +9319,11 @@
 
 * Commented out a buggy ax.set_aspect line. [Teo de Campos]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Removed the unnecessary test skip. [Nicolas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Un-commented out visualize.py. [Teo de Campos]
 
@@ -9155,7 +9333,7 @@
 
 * Removed overwriting_b in lapack. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fixed lapack importing for old scipy version. [James Hensman]
 
@@ -9165,17 +9343,17 @@
 
 * Merged. [Alan Saul]
 
-* Merge branch &#x27;psi1_transpose_fix&#x27; into devel. [James Hensman]
+* Merge branch 'psi1_transpose_fix' into devel. [James Hensman]
 
 * Psi1 is now the right way around. [James Hensman]
 
 * Fixing lapacks. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Removing unused link_functions. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Modified lengthscale gradients - demo works now. [James Hensman]
 
@@ -9183,7 +9361,7 @@
 
 * Factored out lapack into utils so we can check version and give deprecation warnings. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Making sure GPy imports. [Neil Lawrence]
 
@@ -9191,57 +9369,57 @@
 
 * Placed back in examples for motion capture! Added spheres to visualization of figure. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Added visualization for motion capture data using python visual module. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * _Xmean is now Xoffset and _Xstd is now _Xscale. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Removed examples with non public datasets. [Nicolas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Removed examples with non public datasets. [Nicolas]
 
 * FITC example: bound for lengthscale. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Fixed tuto example. [Nicolas]
 
 * Non_Gaussian exampless deleted. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Fitc and generalized_fitc models deleted. [Ricardo]
 
 * Reduced number of iterations for a couple of things. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Poisson likelihood implementations needs to be thought carefully. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Dimensionality reduction mrd example less interations. [Max Zwiessele]
 
 * Link_function class renamed as LinkFunction. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Minor changes. [Ricardo]
 
@@ -9257,19 +9435,19 @@
 
 * Refactored example tests. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Kern constructors now have input_dim instead of D. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merged conflict in tutorial&#x27;s tests (again) [Nicolas]
+* Merged conflict in tutorial's tests (again) [Nicolas]
 
-* Merged conflict in tutorial&#x27;s tests. [Nicolas]
+* Merged conflict in tutorial's tests. [Nicolas]
 
-* Bugs fixed in tutorial&#x27;s tests. [Nicolas]
+* Bugs fixed in tutorial's tests. [Nicolas]
 
 * Dim reduction adaption. [Max Zwiessele]
 
@@ -9277,9 +9455,9 @@
 
 * Fixed merge conflict in examples_tests. [Alan Saul]
 
-* Git pushMerge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git pushMerge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
   	GPy/core/fitc.py
@@ -9294,31 +9472,31 @@
 
 * Merge kern conflicts in examples. [Max Zwiessele]
 
-* Kern params adapted: Nparams &gt; num_params and fixes of input_dim. [Max Zwiessele]
+* Kern params adapted: Nparams > num_params and fixes of input_dim. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Nparams &gt; num_params and Nparam_tranformed &gt; num_params_transformed. [Max Zwiessele]
+* Nparams > num_params and Nparam_tranformed > num_params_transformed. [Max Zwiessele]
 
-* Made examples possible to run all examples and throw out a dictionary of problems at the end (and whilst it&#x27;s running, tried to ignore deprecation warnings. [Alan Saul]
+* Made examples possible to run all examples and throw out a dictionary of problems at the end (and whilst it's running, tried to ignore deprecation warnings. [Alan Saul]
 
 * Lots of bugfixes after refactoring. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * New file. [Ricardo]
 
 * Fixed merge conflicts, M now num_inducing. [Alan Saul]
 
-* Refactoring: self.D &gt; self.input_dim in kernels. [Max Zwiessele]
+* Refactoring: self.D > self.input_dim in kernels. [Max Zwiessele]
 
 * Output_dim instead of input_dim. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * An assortment of fixes. [James Hensman]
 
@@ -9330,7 +9508,7 @@
 
 * New file. [Ricardo]
 
-* Changed all M&#x27;s for num_inducing. [Alan Saul]
+* Changed all M's for num_inducing. [Alan Saul]
 
 * Fixed naming to standardized PEP8. [Ricardo]
 
@@ -9350,13 +9528,13 @@
 
 * New FITC model and other stuff. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * How did that happen? [James Hensman]
 
 * Merged an emty line... [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Dim reduc plotting. [Max Zwiessele]
 
@@ -9377,7 +9555,7 @@
 
   We now match against _get_param_names_transformed().
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Replaced Q by input_dim. [Alan Saul]
 
@@ -9393,13 +9571,13 @@
 
 * Correction to some tests. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Plotting in the model behaves better. [James Hensman]
 
@@ -9419,11 +9597,11 @@
 
 * Examples corrected. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Fixed printing, some example. [James Hensman]
 
@@ -9435,42 +9613,42 @@
 
 * Unit_tests corrected. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Re-merged. only RA&#x27;s errors (probit?) remain. [James Hensman]
+* Re-merged. only RA's errors (probit?) remain. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * MERGE. [Max Zwiessele]
 
 * Domains added and class names in priors capitalized. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
   Conflicts:
   	GPy/models/GPLVM.py
 
 * Remove copies (they are now in visualize code ...). [Neil Lawrence]
 
-* Neil&#x27;s flailing attempts to update the flailing stick man. [Neil Lawrence]
+* Neil's flailing attempts to update the flailing stick man. [Neil Lawrence]
 
 * Match_moments function passes transformed values. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Added domain matching in set_prior. [Max Zwiessele]
 
 * Added domains to priors. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Examples changed to use new link_functions. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; into link_functions. [Ricardo]
+* Merge branch 'devel' into link_functions. [Ricardo]
 
 * Link functions defined. [Ricardo]
 
@@ -9480,17 +9658,17 @@
 
 * Fixing some examples. [James Hensman]
 
-* Fixed Alan&#x27;s dependency nightmare. [James Hensman]
+* Fixed Alan's dependency nightmare. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Scg optimizer enhancments and mrd demo fix. [Max Zwiessele]
 
-* Removed NL&#x27;s notes, they are now integrated in the issue tracker. [Nicolo Fusi]
+* Removed NL's notes, they are now integrated in the issue tracker. [Nicolo Fusi]
 
-* Git branchMerge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Git branchMerge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Mrd and bgplvm simulation examples working. [Max Zwiessele]
 
@@ -9508,11 +9686,11 @@
 
 * Cleaning up setup.py. [Alan Saul]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Test fixed. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Alan Saul]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Alan Saul]
 
 * Added oil test and validation. [Neil Lawrence]
 
@@ -9526,15 +9704,15 @@
 
 * Bugfix: sparseGP.likelihood.Z not added to log_ll. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * DeprecationWarning: Substituded all (\!) flapack occ. with lapack (scipy said so) [Max Zwiessele]
 
 * Modified EP code, should be more stable I hope. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Fixed symmetrify for when C/F compiler doesn&#x27;t work. [Andreas]
+* Fixed symmetrify for when C/F compiler doesn't work. [Andreas]
 
 * Used scipy.weave to improve the speed of rbf grads. [James Hensman]
 
@@ -9543,15 +9721,15 @@
 
 * Sparse_GP now has a separate predict function. [James Hensman]
 
-  GP and sparse_GP used t share a predict fumction. Since we&#x27;d like to
+  GP and sparse_GP used t share a predict fumction. Since we'd like to
   propagate uncertainty in predictions, sparse_GP.predict needs to accept
   X_new_variance.
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Added max to authors. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Handling printouts without messages. [Max Zwiessele]
 
@@ -9559,15 +9737,15 @@
 
 * Mocap dataset automatic download. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Logexp_clipped adjust &amp; mrd error messages. [Max Zwiessele]
+* Logexp_clipped adjust & mrd error messages. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Bug fix (kernel copy) in mrd. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Merged GPLVM, used Andreas changes. [Max Zwiessele]
 
@@ -9577,15 +9755,15 @@
 
 * Changed likelihood and kernel handling. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Fixed bug in BGPLVM plot. [Teo de Campos]
 
 * Implemented plot_latents as an external function in util. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Teo de Campos]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Teo de Campos]
 
 * Minor changes to make the demo run faster. [Teo de Campos]
 
@@ -9595,7 +9773,7 @@
 
 * Classification added. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
   	GPy/models/GP.py
@@ -9610,21 +9788,21 @@
 
 * Nosetests do not test expextation of psi_statistics. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Removed the useless print y line. [Teo de Campos]
 
 * Fixed bug in sparse GP plotting. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Sgd. [Nicolo Fusi]
 
 * Modified mrd with MZ. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Changes to MRD test. [Ricardo]
 
@@ -9632,9 +9810,9 @@
 
 * Bayesian GPLVM can now take either a likelihood or data matrix as first argument. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Allowing EP in BGPLVM and MRD. [Ricardo]
 
@@ -9650,9 +9828,9 @@
 
 * Structural changes for printing. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Teo de Campos]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Teo de Campos]
 
 * Changed optimization constraints in GPy/examples/dimensionality_reduction.py. [Teo de Campos]
 
@@ -9660,17 +9838,17 @@
 
 * Removed fisrt prints if display is off. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Automatically fetch datasets and first init. attempt for mocap. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Last stability changes. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Some likelihood.flatten somewhere. [Ricardo]
 
@@ -9684,9 +9862,9 @@
 
   i.e. where numpy is compiled without proper blas linkage
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Cross-terms. [Nicolo Fusi]
 
@@ -9694,29 +9872,29 @@
 
 * Minor SGD changes. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Changes in SGD. [Nicolo Fusi]
 
 * SCG printing prettyfied. [Max Zwiessele]
 
-* Merge branch &#x27;mrd&#x27; into devel. [Max Zwiessele]
+* Merge branch 'mrd' into devel. [Max Zwiessele]
 
 * Last changes on BGPLVM stable version. [Max Zwiessele]
 
 * Newline only on display. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Andreas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Andreas]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Teo de Campos]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Teo de Campos]
 
 * Readded float variance. [Max Zwiessele]
 
@@ -9724,7 +9902,7 @@
 
 * Swiss_roll example changes. [Max Zwiessele]
 
-* Catch beta &gt; 0 not needed anymore. [Max Zwiessele]
+* Catch beta > 0 not needed anymore. [Max Zwiessele]
 
 * Swiss_roll adjustments. [Max Zwiessele]
 
@@ -9734,7 +9912,7 @@
 
 * Added proper linebeak for SCG printing. [Max Zwiessele]
 
-* Merge branch &#x27;mrd&#x27; into devel. [Max Zwiessele]
+* Merge branch 'mrd' into devel. [Max Zwiessele]
 
 * Swiss_roll example added, BGPLVM_oil now working. [Max Zwiessele]
 
@@ -9750,7 +9928,7 @@
 
 * Printing improved. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Swiss_roll example. [Max Zwiessele]
 
@@ -9758,7 +9936,7 @@
 
 * Making clipping adjustable. [Max Zwiessele]
 
-* Modified:   GPy/models/GPLVM.py Using the following kernel by default: kernel = kern.rbf(Q, ARD=Q&gt;1) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) [Teo de Campos]
+* Modified:   GPy/models/GPLVM.py Using the following kernel by default: kernel = kern.rbf(Q, ARD=Q>1) + kern.bias(Q, np.exp(-2)) + kern.white(Q, np.exp(-2)) [Teo de Campos]
 
 * Modified:   GPy/util/visualize.py Added the functionality of showing a mosaic of NxN reconstructed images when the size of the number of elements in the feature vector greater than dimensions[0]*dimensions[1]. [Teo de Campos]
 
@@ -9766,7 +9944,7 @@
 
 * Need to commit to resolve a conflict ... [Neil Lawrence]
 
-* Overwrite my changes with James&#x27;s. [Neil Lawrence]
+* Overwrite my changes with James's. [Neil Lawrence]
 
 * Merge changes. [Neil Lawrence]
 
@@ -9782,11 +9960,11 @@
 
 * Convenient but not important changes. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Changed prod_orthogonal in tests. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Allowed GP models to plot multiple outputs (in 1D at least) [James Hensman]
 
@@ -9800,9 +9978,9 @@
 
 * Some changes. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Teo de Campos]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Teo de Campos]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Speeding up FITC. [Ricardo]
 
@@ -9810,31 +9988,31 @@
 
 * Ricardo told me to do this. [Teo de Campos]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Removed RA&#x27;s profile deco. [James Hensman]
+* Removed RA's profile deco. [James Hensman]
 
 * Generalised backsub_both_sides. [James Hensman]
 
 * Remove profile. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Moved linalg function to GPy.linalg. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
 
 * Trying to follow changes in likelihood. [Nicolò Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
 
 * Small changes. [Nicolò Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolò Fusi]
 
 * Better f_inv. [Nicolò Fusi]
 
@@ -9846,13 +10024,13 @@
 
 * Gradients are working now. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Added DSYR for ricardo. [James Hensman]
 
 * Gradietns check :) [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
 * Using weaved symmetrify in pdinv now. [James Hensman]
 
@@ -9864,9 +10042,9 @@
 
 * Change in gradients computation. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolas]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolas]
 
 * Fixed transformations (Sorry Andreas) [James Hensman]
 
@@ -9917,7 +10095,7 @@
 
 * Added logexp_clipped transformation. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * New termination rule for scg. [Max Zwiessele]
 
@@ -9937,7 +10115,7 @@
 
 * Much tidy9ing in sparse_GP. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
   Conflicts:
   	GPy/examples/dimensionality_reduction.py
@@ -9948,11 +10126,11 @@
 
 * Reverted EP procedure (removed cholupdate) [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * BGPLVM example MATLAB compare. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Last opt updates and tests. [Max Zwiessele]
 
@@ -9960,7 +10138,7 @@
 
 * Various stability working on sparse GP (with MZ) [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Added @testing.deepTest property for skipping tests for deep scan only. [Max Zwiessele]
 
@@ -9974,7 +10152,7 @@
 
 * Mu to go. [Max Zwiessele]
 
-* Merge devel into mrd &gt; transformations added. [Max Zwiessele]
+* Merge devel into mrd > transformations added. [Max Zwiessele]
 
 * Error bars fixed. [Ricardo]
 
@@ -9990,7 +10168,7 @@
 
 * Async optimize working. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Added conjugate gradient descent asunc. [Max Zwiessele]
 
@@ -9998,7 +10176,7 @@
 
 * Fixed a bug in all_constrained_indices. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * Typo corrected for negative constrains. [Nicolas]
 
@@ -10008,17 +10186,17 @@
 
 * Eigenvalue decomposition of psi2. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; into new_constraints. [James Hensman]
+* Merge branch 'devel' into new_constraints. [James Hensman]
 
   Conflicts:
   	GPy/core/model.py
   	GPy/core/parameterised.py
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * Minor tidy up of names in visualize (replace histogram with bar chart in lvm_dimselect). [Neil Lawrence]
 
-* Merge branch &#x27;devel&#x27; of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
+* Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
 * Trying to upgrade numpy version to 1.7.1 as there was an error introduced for weave on 1.7.0 causing tests to fail. [Alan Saul]
 
@@ -10030,7 +10208,7 @@
 
 * Whitespace. [James Hensman]
 
-* Fixed bug in constrain_fixed where soem values weren&#x27;t deleted. [James Hensman]
+* Fixed bug in constrain_fixed where soem values weren't deleted. [James Hensman]
 
 * Fixed has_uncertain_inputs weirdness. [James Hensman]
 
@@ -10087,9 +10265,9 @@
 
 * BGPLVM updates and debug helper. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into mrd. [Max Zwiessele]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into mrd. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * One more instance of dpotrs instead of dot in sparse GP. [James Hensman]
 
@@ -10097,11 +10275,11 @@
 
 * Rewritten dim_reduction demo to match new style of getters and setters. [Max Zwiessele]
 
-* New getters and setters for self.params, added m[&#x27;var&#x27;] getter and setter. [Max Zwiessele]
+* New getters and setters for self.params, added m['var'] getter and setter. [Max Zwiessele]
 
 * Merge devel into mrd. [Max Zwiessele]
 
-* Pull branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
+* Pull branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
 * More re-enstating of some preiov commits. [James Hensman]
 
@@ -10109,7 +10287,7 @@
 
 * Re-added indepenent_output kern. [James Hensman]
 
-* Added m[&#x27;ard&#x27;] gives all parameters matching &#x27;ard&#x27;, as well as setting m[&#x27;ard&#x27;] = x to set all mrd parameters. [Max Zwiessele]
+* Added m['ard'] gives all parameters matching 'ard', as well as setting m['ard'] = x to set all mrd parameters. [Max Zwiessele]
 
 * Stupid kern stash merge. [Max Zwiessele]
 
@@ -10119,7 +10297,7 @@
 
 * Psi_stat_test stash. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Bugfix: cross term psi1   bias + linear. [Max Zwiessele]
 
@@ -10127,11 +10305,11 @@
 
 * Moved *2. of psi2 statistics into kern and corrected bias+linear cross term. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Psi stat tests done and failing gracefully. [Max Zwiessele]
 
-* Revert &quot;merge devel mrd&quot; [Max Zwiessele]
+* Revert "merge devel mrd" [Max Zwiessele]
 
   This reverts commit 3f625a9347fde47625f14898c0a3a6ed4f49b55a, reversing
   changes made to dc6faeb30355bf9c6f0f3694e8546bcdf26372a8.
@@ -10157,37 +10335,37 @@
 
 * Made the basic GP class use dtrtrs where possible. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [James Hensman]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [James Hensman]
 
 * A litle more stability in svigp. [James Hensman]
 
   Another instance of dpotrs instead of dot
 
-* Merge branch &#x27;mrd&#x27; of github.com:SheffieldML/GPy into mrd. [Max Zwiessele]
+* Merge branch 'mrd' of github.com:SheffieldML/GPy into mrd. [Max Zwiessele]
 
 * Xticklabels improved. [Max Zwiessele]
 
 * Psi stat tests. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Pdinv passes extra args to jitchol. [andreas]
 
 * Demo changed, bgplvm still broken. [Max Zwiessele]
 
-* BGPLVM still failing, doesn&#x27;t seem to be numerical : ( [Max Zwiessele]
+* BGPLVM still failing, doesn't seem to be numerical : ( [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Small changes. [Nicolo Fusi]
 
-* Merge branch &#x27;mrd&#x27; into devel. [Nicolo Fusi]
+* Merge branch 'mrd' into devel. [Nicolo Fusi]
 
 * Removed useless _set_params() [Nicolo Fusi]
 
-* Merge branch &#x27;mrd&#x27; into devel. [Nicolo Fusi]
+* Merge branch 'mrd' into devel. [Nicolo Fusi]
 
 * Small changes. [Nicolo Fusi]
 
@@ -10195,9 +10373,9 @@
 
 * Added bgplvm_simulation on same simulation. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
-* Merge branch &#x27;mrd&#x27; into devel. [Max Zwiessele]
+* Merge branch 'mrd' into devel. [Max Zwiessele]
 
 * Comments only. [James Hensman]
 
@@ -10205,7 +10383,7 @@
 
   Specifically in computing dL_dKmm
 
-* Rbf computation of psi2 now works if there&#x27;s only one datum. [James Hensman]
+* Rbf computation of psi2 now works if there's only one datum. [James Hensman]
 
 * Reverting last change. [Ricardo]
 
@@ -10237,7 +10415,7 @@
 
 * New functions mrd init_X update. [Max Zwiessele]
 
-* Merge branch &#x27;devel&#x27; into mrd. [Max Zwiessele]
+* Merge branch 'devel' into mrd. [Max Zwiessele]
 
 * Fixed merge conflict on BPGLVM. [Nicolo Fusi]
 
@@ -10265,9 +10443,9 @@
 
 * Merged master back into devel (to sync bugfixes) [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into devel. [Nicolo Fusi]
+* Merge branch 'master' into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Nicolo Fusi]
 
 * Pdinv now uses dpotri instead of dtrtri and dot. [James Hensman]
 
@@ -10285,17 +10463,17 @@
 
 * Merged local branch. [Nicolo Fusi]
 
-* Merge branch &#x27;new_warping&#x27; [Nicolo Fusi]
+* Merge branch 'new_warping' [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into new_warping. [Nicolo Fusi]
+* Merge branch 'master' into new_warping. [Nicolo Fusi]
 
 * Changed prediction code. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; into new_warping. [Nicolo Fusi]
+* Merge branch 'devel' into new_warping. [Nicolo Fusi]
 
-* Merge branch &#x27;devel&#x27; into new_warping. [Nicolo Fusi]
+* Merge branch 'devel' into new_warping. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into new_warping. [Nicolo Fusi]
+* Merge branch 'master' into new_warping. [Nicolo Fusi]
 
 * Changed version. [Nicolo Fusi]
 
@@ -10311,7 +10489,7 @@
 
 * Minor. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into new_warping. [Nicolo Fusi]
+* Merge branch 'master' into new_warping. [Nicolo Fusi]
 
 * Added a term to warping function. [Nicolo Fusi]
 
@@ -10321,9 +10499,9 @@
 
 * Changed version number in setup.py. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; [James Hensman]
+* Merge branch 'devel' [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Added (optional) iter param dump. [Nicolo Fusi]
 
@@ -10339,9 +10517,9 @@
 
 * Mrd touches. [Max Zwiessele]
 
-* Merge remote-tracking branch &#x27;origin&#x27; into mrd. [Max Zwiessele]
+* Merge remote-tracking branch 'origin' into mrd. [Max Zwiessele]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Bug fixed in periodic kernels: Warning were not handled properly. [Nicolas]
 
@@ -10357,7 +10535,7 @@
 
 * Added simple BGPLVM_oil demo. [James Hensman]
 
-* Merge branch &#x27;devel&#x27; of github.com:SheffieldML/GPy into devel. [Ricardo Andrade]
+* Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo Andrade]
 
 * Yak shaving. [James Hensman]
 
@@ -10379,19 +10557,19 @@
 
 * Changes in FITC approximation computation. [Ricardo Andrade]
 
-* Merge branch &#x27;fitc&#x27; into devel. [Ricardo Andrade]
+* Merge branch 'fitc' into devel. [Ricardo Andrade]
 
 * Not needed. [Ricardo Andrade]
 
 * Small changes. [Ricardo Andrade]
 
-* Merge branch &#x27;em_fix&#x27; into fitc. [Ricardo Andrade]
+* Merge branch 'em_fix' into fitc. [Ricardo Andrade]
 
 * Print iteration number. [Ricardo Andrade]
 
 * Minor changes. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; into fitc. [Ricardo Andrade]
+* Merge branch 'master' into fitc. [Ricardo Andrade]
 
 * Generalized fitc + examples. [Ricardo Andrade]
 
@@ -10401,19 +10579,19 @@
 
 * Rbf now works in a more memory friendly fashion. [James Hensman]
 
-* Merge branch &#x27;master&#x27; into devel. [James Hensman]
+* Merge branch 'master' into devel. [James Hensman]
 
 * Insignificant but annoying bug corrected. [Ricardo Andrade]
 
 * Pseudo EM algorithm for EP and maybe Laplace. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; into devel. [Nicolo Fusi]
+* Merge branch 'master' into devel. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * More fixing of the predictive variance (correct for full_cov now) [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Corrected the predictive variance for Gaussian likelihoods. [James Hensman]
 
@@ -10421,17 +10599,17 @@
 
 * Added fixed effect kernel. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;debug&#x27; [James Hensman]
+* Merge branch 'debug' [James Hensman]
 
 * Increased stability of _compuations in sparse_GP. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * The warnings are now handeled properly in the periodic kernels. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Errors handled in Mat32. [Nicolas]
 
@@ -10453,19 +10631,19 @@
 
 * Fixed trace_dot to be a litle faster... [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Non working integratino of SCG into GPy. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Fixed bug in dK_dX for the quadratic kernel. [Nicolas]
 
 * Added SCG code. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Updated list of implemented kernels in the documentation. [Nicolas]
 
@@ -10473,25 +10651,25 @@
 
 * Typo in comments. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * More messing with the linear algebra in sparse_GP. [James Hensman]
 
-* Some messing with the linear algebra in sparse_GP. This should be more efficient... let&#x27;s hope nothing breaks. [James Hensman]
+* Some messing with the linear algebra in sparse_GP. This should be more efficient... let's hope nothing breaks. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Added trace_sum for efficiency. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [andreas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [andreas]
 
 * Tie_param changed to tie_params in tutorials. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Few bugs fixed in the documentation. [Nicolas]
 
@@ -10501,17 +10679,17 @@
 
 * Deactivated test_models() [Nicolo Fusi]
 
-* T push :qMerge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* T push :qMerge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Fixed checkgrad test to randomize before checking. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Got rid of foo. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Trying to shuffle. [Alan Saul]
 
@@ -10521,27 +10699,27 @@
 
 * Added test generator (not quite finished yet) [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Changed example tests. [Alan Saul]
 
 * Fixed bug in RBF, added inducing inputs to BGPLVM plots. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
 * Example fixed. [Ricardo Andrade]
 
 * Update in the rational quadratic kernel and new the tutorial on writting kernels. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * New rational quadratic kernel. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Small changes. [Nicolas]
 
@@ -10551,7 +10729,7 @@
 
 * Changes tie_param to tie_params. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
 * Setup.py requires nose now. [James Hensman]
 
@@ -10559,11 +10737,11 @@
 
 * Temporarily removed a test (linear X bias) [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Implemented psi2 &#x27;cross terms&#x27; for rbfXbias. [James Hensman]
+* Implemented psi2 'cross terms' for rbfXbias. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * A small demo for model tutorial. [James Hensman]
 
@@ -10571,7 +10749,7 @@
 
 * Examples working. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
   Conflicts:
   	GPy/examples/__init__.py
@@ -10582,29 +10760,29 @@
 
 * Adding testing file for examples. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Example files for tutorials are now in Neil&#x27;s format. [Nicolas]
+* Example files for tutorials are now in Neil's format. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Added init. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Removed unused partial1. [Alan Saul]
 
 * Update in the documentation on kernel implementation. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Now running nosetest doesn&#x27;t run unittests twice. [Nicolo Fusi]
+* Now running nosetest doesn't run unittests twice. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Added GPy.tests(), removed some useless tests. [Nicolo Fusi]
 
@@ -10614,9 +10792,9 @@
 
 * Fixed merge conflicts. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Added the outline of a tutorial on &#x27;interacting with models&#x27; [James Hensman]
+* Added the outline of a tutorial on 'interacting with models' [James Hensman]
 
 * Skipping a test known to fail (linear sparse) [James Hensman]
 
@@ -10632,7 +10810,7 @@
 
 * Examples directory organized. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
 * Draft of documentation for implemented kernels. [Nicolas]
 
@@ -10640,11 +10818,11 @@
 
 * Draft of documentation for implemented kernels. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Sometidying of the psi statistic  cross terms. [James Hensman]
 
@@ -10654,7 +10832,7 @@
 
 * All the product_orthogonal have been changed to prod_orthogonal for consistency. [Nicolas]
 
-* Merge branch &#x27;fixEP&#x27; [Ricardo Andrade]
+* Merge branch 'fixEP' [Ricardo Andrade]
 
 * Generalized_FITC removed. [Ricardo Andrade]
 
@@ -10670,9 +10848,9 @@
 
 * Some small changes. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy into genFITC. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy into genFITC. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy into genFITC. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy into genFITC. [Ricardo Andrade]
 
 * Sparse GP with EP is working now. [Ricardo Andrade]
 
@@ -10688,7 +10866,7 @@
 
 * JH bugfix for slices. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Using setuptools instead of distutils. [Max Zwiessele]
 
@@ -10704,7 +10882,7 @@
 
 * Added symmtrical covariance functions. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Added dKdiag_dtheta for linear. [James Hensman]
 
@@ -10722,7 +10900,7 @@
 
 * Added optional number of contour levels to the 2D plotting in GP.plot. [James Hensman]
 
-* Some commentary on Neil&#x27;s notes.txt. [James Hensman]
+* Some commentary on Neil's notes.txt. [James Hensman]
 
 * Effiiency improvements in sparse_GP. [James Hensman]
 
@@ -10741,7 +10919,7 @@
 
 * Some bugfixes that have affected GPLVM/sparseGPLVM since the hetero noise change. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Tutorial improved (and finished) [Nicolas]
 
@@ -10769,19 +10947,19 @@
 
 * Small changes to the lengthscales such that the periodic kernels can be called as the non-periodic ones. [Nicolas]
 
-* Fixed the bug where we couldn&#x27;t tie parameters at the kern level. [James Hensman]
+* Fixed the bug where we couldn't tie parameters at the kern level. [James Hensman]
 
 * Added target_param option to checkgrad(), removed unused function parameter. [Nicolò Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolò Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolò Fusi]
 
 * Made the name of the Gaussian noise variance noise_variance, for consistency. [James Hensman]
 
 * Changes to the uncollapsed GP. [James Hensman]
 
-* Bugfixin&#x27; [James Hensman]
+* Bugfixin' [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Added a set_data method to the Gaussian likelihood. [James Hensman]
 
@@ -10789,11 +10967,11 @@
 
 * Added contribution from the prior to marginal LL printed in the model __str__ [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Fixed a bug in sparse GP relating to the psi representation. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Reinsert the plot function for kernel that diserpered at one point... [Nicolas]
 
@@ -10805,9 +10983,9 @@
 
 * All kernels working fine with the psi statistics now. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;debug_bias&#x27; [James Hensman]
+* Merge branch 'debug_bias' [James Hensman]
 
 * Fixed bug with the bias kernel. [James Hensman]
 
@@ -10847,23 +11025,23 @@
 
 * Try installing with pip? eek... [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Few changes to tutorial bis. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Few changes to tutorial. [Nicolas]
 
-* New tutorial draft called &#x27;A kernel overview&#x27; [Nicolas]
+* New tutorial draft called 'A kernel overview' [Nicolas]
 
 * Trying to get plotting working. [Alan Saul]
 
 * About to exchange sphinxext. [Alan Saul]
 
-* Added matplotlib test, probably won&#x27;t work. [Alan Saul]
+* Added matplotlib test, probably won't work. [Alan Saul]
 
 * Fixed typo. [Alan Saul]
 
@@ -10893,7 +11071,7 @@
 
 * With insert. [Alan Saul]
 
-* Changed path back, think we&#x27;re closer when its in. [Alan Saul]
+* Changed path back, think we're closer when its in. [Alan Saul]
 
 * Appended path. [Alan Saul]
 
@@ -10915,9 +11093,9 @@
 
 * Again playing with relative to absolute paths, test. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
 * Broken file removed until new notice. [Ricardo Andrade]
 
@@ -10929,11 +11107,11 @@
 
 * Adding more paths...: [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Ricardo Andrade]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
 * Bug found and fixed in plots for normalized X. [Ricardo Andrade]
 
@@ -11011,7 +11189,7 @@
 
 * Various merge conflicts from the newGP branch. [James Hensman]
 
-* Merge branch &#x27;newGP&#x27; [James Hensman]
+* Merge branch 'newGP' [James Hensman]
 
   Conflicts:
   	GPy/models/GP_regression.py
@@ -11026,34 +11204,34 @@
 
 * Partial derivatives for the new likelihood framework. [James Hensman]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
 
 * Made the BGPLVM work in the new world order. [James Hensman]
 
 * Changes in plotting functions. [Ricardo Andrade]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [James Hensman]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [James Hensman]
 
 * Classification examples corrected (2/3) [Ricardo Andrade]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
 
 * EPEM is running. [Ricardo Andrade]
 
 * Assorted work on combining the EP and sparse methods. [James Hensman]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [James Hensman]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [James Hensman]
 
   Conflicts:
   	GPy/likelihoods/EP.py
 
-* James&#x27; debugging of the EP/GP interface. [Ricardo Andrade]
+* James' debugging of the EP/GP interface. [Ricardo Andrade]
 
   It seems that the GP-EP algorithm works now.
 
 * Merged changes in likelihood_functions (James) [Ricardo Andrade]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
 
   Conflicts:
   	GPy/likelihoods/EP.py
@@ -11061,11 +11239,11 @@
 
 * So many changes. [Ricardo Andrade]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
 
 * Predictive_values implemented in EP. [Ricardo Andrade]
 
-* Beginning of work to make sparse GP ork with RA&#x27;s EP methods. [James Hensman]
+* Beginning of work to make sparse GP ork with RA's EP methods. [James Hensman]
 
 * Added a likelihood atom class. [James Hensman]
 
@@ -11083,11 +11261,11 @@
 
 * Added a Gaussian likelihood class. [James Hensman]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [James Hensman]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [James Hensman]
 
 * Changed docs back for newGP. [Alan Saul]
 
-* Merge branch &#x27;newGP&#x27; of github.com:SheffieldML/GPy into newGP. [Alan Saul]
+* Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Alan Saul]
 
 * Trying to fix docs, might break them. [Alan Saul]
 
@@ -11097,7 +11275,7 @@
 
 * Merged conflicts after merging in master to newGP branch. [James Hensman]
 
-* Merge remote-tracking branch &#x27;Falkor/newGP&#x27; into newGP. [Ricardo Andrade]
+* Merge remote-tracking branch 'Falkor/newGP' into newGP. [Ricardo Andrade]
 
 * Working for regression, still some bugs for EP. [Ricardo Andrade]
 
@@ -11107,7 +11285,7 @@
 
 * More changes. [Ricardo Andrade]
 
-* Merge remote-tracking branch &#x27;Falkor/newGP&#x27; into newGP. [Ricardo Andrade]
+* Merge remote-tracking branch 'Falkor/newGP' into newGP. [Ricardo Andrade]
 
 * Minor changes. [Ricardo Andrade]
 
@@ -11117,13 +11295,13 @@
 
 * Now it works. [Ricardo Andrade]
 
-* Merge remote-tracking branch &#x27;Falkor/newGP&#x27; into newGP. [Ricardo Andrade]
+* Merge remote-tracking branch 'Falkor/newGP' into newGP. [Ricardo Andrade]
 
 * Minor change in EM explanation. [Ricardo Andrade]
 
-* Merge branch &#x27;newGP&#x27; [Ricardo Andrade]
+* Merge branch 'newGP' [Ricardo Andrade]
 
-* Merge remote-tracking branch &#x27;Falkor/newGP&#x27; into newGP. [Ricardo Andrade]
+* Merge remote-tracking branch 'Falkor/newGP' into newGP. [Ricardo Andrade]
 
 * Other change. [Ricardo Andrade]
 
@@ -11137,11 +11315,11 @@
 
 * Other changes. [Ricardo Andrade]
 
-* Merge remote-tracking branch &#x27;Falkor/newGP&#x27; into newGP. [Ricardo Andrade]
+* Merge remote-tracking branch 'Falkor/newGP' into newGP. [Ricardo Andrade]
 
 * Sparse EP. [Ricardo]
 
-* Merge branch &#x27;master&#x27; into newGP. [Ricardo Andrade]
+* Merge branch 'master' into newGP. [Ricardo Andrade]
 
 * No more GP_EP stuff. [Ricardo Andrade]
 
@@ -11161,13 +11339,13 @@
 
 * Small fixes in the kernel documentation. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Small changes in the way covariance functions handle lengthscale as input. [Nicolas]
 
 * Working on linear kernel. [Nicolò Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Reverted back to working docs. [Alan Saul]
 
@@ -11201,7 +11379,7 @@
 
 * Added plot_directive and mathmpl extensions. [Alan Saul]
 
-* Got rid of some extensions we&#x27;re not sure we&#x27;re using. [Alan Saul]
+* Got rid of some extensions we're not sure we're using. [Alan Saul]
 
 * Added extensions for inline doc plotting. [Alan Saul]
 
@@ -11225,7 +11403,7 @@
 
 * Changed default ARD setting in linear. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Added path higher. [Alan Saul]
 
@@ -11233,19 +11411,19 @@
 
 * Moved mock into docs. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Added mock file. [Alan Saul]
 
 * Added mock to dependencies for docs. [Alan Saul]
 
-* &quot;fixed&quot; Tango imports. [Nicolo Fusi]
+* "fixed" Tango imports. [Nicolo Fusi]
 
 * Changed travis conf. [Nicolo Fusi]
 
 * Useless commit to get travis-ci started. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * More. [Alan Saul]
 
@@ -11287,7 +11465,7 @@
 
 * Removed matplotlib mock. [Alan Saul]
 
-* Adding extra mock... hopefully this won&#x27;t carry on. [Alan Saul]
+* Adding extra mock... hopefully this won't carry on. [Alan Saul]
 
 * Forgot exceptions import. [Alan Saul]
 
@@ -11325,21 +11503,21 @@
 
 * Minor changes. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into SGD. [Nicolo Fusi]
+* Merge branch 'master' into SGD. [Nicolo Fusi]
 
 * Convenience change in linear.py. [Nicolo Fusi]
 
 * Made SGD work with new get/set param. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into SGD. [Nicolo Fusi]
+* Merge branch 'master' into SGD. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Robustified the assertion re lengthscales in rbf. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Fixed bug in rbf.py, removed the ARD moniker from the name variable. [James Hensman]
 
@@ -11349,9 +11527,9 @@
 
 * Improved tutorial for GP_regression. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Added missing dataset from mlprojects. [James Hensman]
 
@@ -11363,7 +11541,7 @@
 
   ... and removed a nasty hard link in the examples file
 
-* New operator: the kernels can be multiplied directly with the &#x27;*&#x27; character. [Nicolas]
+* New operator: the kernels can be multiplied directly with the '*' character. [Nicolas]
 
 * Some more documentation documentation on the index page. [Nicolas]
 
@@ -11399,7 +11577,7 @@
 
 * Untabified priors.py. [Nicolò Fusi]
 
-* Merge branch &#x27;periodic&#x27; [Nicolas]
+* Merge branch 'periodic' [Nicolas]
 
 * Few bugs fixed in periodic kernels. [Nicolas]
 
@@ -11409,7 +11587,7 @@
 
 * Missing scale and location arguments. [Ricardo]
 
-* Golden serach and Simpson&#x27;s rule explained. [Ricardo]
+* Golden serach and Simpson's rule explained. [Ricardo]
 
 * Test. [Ricardo Andrade]
 
@@ -11417,7 +11595,7 @@
 
 * TODO added. [Ricardo Andrade]
 
-* Merge remote-tracking branch &#x27;rick70x7/master&#x27; [Ricardo Andrade]
+* Merge remote-tracking branch 'rick70x7/master' [Ricardo Andrade]
 
 * Poisson and Gaussian likelihood. [Ricardo Andrade]
 
@@ -11429,19 +11607,19 @@
 
 * Added some documentation and example files. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Added path for RTD. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Updated index.rst. [Alan Saul]
 
 * Restored examples folder. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Merged trivial conflict. [James Hensman]
 
@@ -11449,13 +11627,13 @@
 
 * Delete unnecessary rbf_ARD.py. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Added sympy dependency and scipy version dependency again. [Alan Saul]
 
 * Trying to give pylab dependency. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Added unsupervised.py examples file and datasets.py@ [Neil Lawrence]
 
@@ -11465,33 +11643,33 @@
 
 * Tried fixing build call. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Tried changing the location of the apidoc compilation. [Alan Saul]
 
 * Bug fixed in example (in regression.py) [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Adding old command I read on the internet for own build. [Alan Saul]
 
 * Adding fake kernel to test docs. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Testing docs more. [Alan Saul]
 
 * More tests in unit_tests. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Trying to get ReadTheDocs to recompile for us. [Alan Saul]
 
 * Last ARD flag changes to kernels. [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * Mods to regression.py now that we have get to get parameters. Moved Youter to YYT. [Neil Lawrence]
 
@@ -11507,19 +11685,19 @@
 
 * Fix error introduced into GP_regression when doing name changes. [Neil Lawrence]
 
-* Merge branch &#x27;master&#x27; of https://github.com/SheffieldML/GPy. [Neil Lawrence]
+* Merge branch 'master' of https://github.com/SheffieldML/GPy. [Neil Lawrence]
 
 * Removed version specification of scipy. [Alan Saul]
 
 * Removed latent force model fortran code from setup.py from github code. [Alan Saul]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Alan Saul]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Alan Saul]
 
 * Added apt-get scipy installation for travis, need to ensure version. [Alan Saul]
 
 * Expand_param and extract_param replaced with set_params_transformed and get_params_transformed. [Neil Lawrence]
 
-* Merge branch &#x27;master&#x27; of https://github.com/SheffieldML/GPy. [Neil Lawrence]
+* Merge branch 'master' of https://github.com/SheffieldML/GPy. [Neil Lawrence]
 
 * Fixed version setting for numpy scipy installatioN. [Alan Saul]
 
@@ -11535,7 +11713,7 @@
 
 * Minor changes. [Nicolo Fusi]
 
-* Merge branch &#x27;bgplvm&#x27; into SGD. [Nicolo Fusi]
+* Merge branch 'bgplvm' into SGD. [Nicolo Fusi]
 
 * Working on cross terms. [Nicolo Fusi]
 
@@ -11575,13 +11753,13 @@
 
 * Some code to debug the sprase GP gradients with. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy into debug. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy into debug. [James Hensman]
 
 * Parameters gridding with checkgrad to aid debugging. [James Hensman]
 
 * Fixed index. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into SGD. [Nicolo Fusi]
+* Merge branch 'master' into SGD. [Nicolo Fusi]
 
 * Pretty printing of gradchecks. [Nicolo Fusi]
 
@@ -11589,11 +11767,11 @@
 
 * Removed unused posix import. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Fixed a NF induced bug in the guts of GPy. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Sphinx configuratino for readthedocs.org. [James Hensman]
 
@@ -11615,19 +11793,19 @@
 
 * Added a constructor for a generic sympy kernel. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Made sympykern truly work in place. [James Hensman]
 
 * Removed dL_dZ from sympykern. [James Hensman]
 
-  (it&#x27;s not needed, we can always use dK_dX)
+  (it's not needed, we can always use dK_dX)
 
 * Added demo for uncollapsed GP. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
-* Added Alan&#x27;s bugfix to this version of GPy: [James Hensman]
+* Added Alan's bugfix to this version of GPy: [James Hensman]
 
   sympykern is now forced to recompile if the function changes.
 
@@ -11637,9 +11815,9 @@
 
 * Tidied upt he kwargs in sympykern. [James Hensman]
 
-* Merge branch &#x27;sympykern&#x27; [James Hensman]
+* Merge branch 'sympykern' [James Hensman]
 
-* Added sympykern as a &#x27;kernpart&#x27; object. [James Hensman]
+* Added sympykern as a 'kernpart' object. [James Hensman]
 
   now we can add sympykerns to any other kern
 
@@ -11675,11 +11853,11 @@
 
 * Fixed interface change in optimization.py. [Nicolo Fusi]
 
-* Added autodection of Rasmussen&#x27;s minimize. [Nicolo Fusi]
+* Added autodection of Rasmussen's minimize. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; into SGD. [Nicolo Fusi]
+* Merge branch 'master' into SGD. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Added notes on issues found. [Neil Lawrence]
 
@@ -11703,7 +11881,7 @@
 
 * Some tidying in the EP code. [James Hensman]
 
-* Removed uncertain gp regression from the model __init__, since it&#x27;s now just a switch in the sparse GP. [James Hensman]
+* Removed uncertain gp regression from the model __init__, since it's now just a switch in the sparse GP. [James Hensman]
 
 * Fixed SGD to work with new interface. [Nicolo Fusi]
 
@@ -11713,7 +11891,7 @@
 
 * Working implementation of SGD. [Nicolo Fusi]
 
-* GPLVM accepts an initial value for X (in case you don&#x27;t want to use the default random/PCA init) [Nicolo Fusi]
+* GPLVM accepts an initial value for X (in case you don't want to use the default random/PCA init) [Nicolo Fusi]
 
 * Now passing a reference of the model to the optimizer (used in SGD) [Nicolo Fusi]
 
@@ -11721,7 +11899,7 @@
 
 * Fixed import error for examples and import error for uncertain inputs GP. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Merge changes for model.py and optimization.py on comments. [Neil Lawrence]
 
@@ -11733,11 +11911,11 @@
 
 * Made uncertain inputs a simple swith in the sparse GP class.  This simplifies the inherritance structure. [James Hensman]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [James Hensman]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [James Hensman]
 
 * Rbf_ARD now in the updated format for the computation of the derivatives (included for the psi-statistics, but not tested) [Nicolas]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolas]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolas]
 
 * GPy: Some rewriting for the exponential and Matern kernels. They now pass the unit test. [Nicolas]
 
@@ -11758,7 +11936,7 @@
 
 * Fixed bug in GP_regression. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
 * Derivatives of the exponential kernel in the right format. [Nicolas]
 
@@ -11766,9 +11944,9 @@
 
 * Fixed bug in linear_ARD. [Nicolo Fusi]
 
-* Merge branch &#x27;master&#x27; of github.com:SheffieldML/GPy. [Nicolo Fusi]
+* Merge branch 'master' of github.com:SheffieldML/GPy. [Nicolo Fusi]
 
-* Added vim&#x27;s swp files to gitignore. [James Hensman]
+* Added vim's swp files to gitignore. [James Hensman]
 
 * Demo for GP regressio with uncertain inputs. [James Hensman]
 

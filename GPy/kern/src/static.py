@@ -14,8 +14,8 @@ class Static(Kern):
         self.variance = Param('variance', variance, Logexp())
         self.link_parameters(self.variance)
 
-    def _to_dict(self):
-        input_dict = super(Static, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(Static, self)._save_to_input_dict()
         input_dict["variance"] =  self.variance.values.tolist()
         return input_dict
 
@@ -139,12 +139,12 @@ class Bias(Static):
         super(Bias, self).__init__(input_dim, variance, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(Bias, self)._to_dict()
+        input_dict = super(Bias, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Bias"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Bias(**input_dict)
 

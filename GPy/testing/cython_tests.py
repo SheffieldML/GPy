@@ -2,21 +2,27 @@ import numpy as np
 import scipy as sp
 from GPy.util import choleskies
 import GPy
-from ..util.config import config
 import unittest
 
+from ..util.config import config
+
 try:
-    from ..util import linalg_cython
     from ..util import choleskies_cython
-    config.set('cython', 'working', 'True')
+    choleskies_cython_working = config.getboolean('cython', 'working')
 except ImportError:
-    config.set('cython', 'working', 'False')
+    choleskies_cython_working = False
+
+try:
+    from ..kern.src import stationary_cython
+    stationary_cython_working = config.getboolean('cython', 'working')
+except ImportError:
+    stationary_cython_working = False
 
 """
 These tests make sure that the pure python and cython codes work the same
 """
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not choleskies_cython_working,"Cython cholesky module has not been built on this machine")
 class CythonTestChols(np.testing.TestCase):
     def setUp(self):
         self.flat = np.random.randn(45,5)
@@ -30,7 +36,7 @@ class CythonTestChols(np.testing.TestCase):
         A2 = choleskies._triang_to_flat_cython(self.triang)
         np.testing.assert_allclose(A1, A2)
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not stationary_cython_working,"Cython stationary module has not been built on this machine")
 class test_stationary(np.testing.TestCase):
     def setUp(self):
         self.k = GPy.kern.RBF(10)
@@ -60,7 +66,7 @@ class test_stationary(np.testing.TestCase):
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
         np.testing.assert_allclose(g1, g2)
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not choleskies_cython_working,"Cython cholesky module has not been built on this machine")
 class test_choleskies_backprop(np.testing.TestCase):
     def setUp(self):
         a =np.random.randn(10,12)

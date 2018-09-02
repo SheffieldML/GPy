@@ -81,8 +81,8 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
     else: percentiles = []
 
     if samples > 0:
-        fsamples = self.posterior_samples(Xgrid, full_cov=True, size=samples, **predict_kw)
-        fsamples = fsamples[which_data_ycols] if fsamples.ndim == 3 else fsamples
+        fsamples = self.posterior_samples(Xgrid, size=samples, **predict_kw)
+        fsamples = fsamples[:, which_data_ycols, :]
     else:
         fsamples = None
 
@@ -95,12 +95,9 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
             retmu[:, [i]] = self.likelihood.gp_link.transf(mu[:, [i]])
             for perc in percs:
                 perc[:, [i]] = self.likelihood.gp_link.transf(perc[:, [i]])
-            if fsamples is not None and fsamples.ndim == 3:
+            if fsamples is not None:
                 for s in range(fsamples.shape[-1]):
-                    fsamples[i, :, s] = self.likelihood.gp_link.transf(fsamples[i, :, s])
-            elif fsamples is not None:
-                for s in range(fsamples.shape[-1]):
-                    fsamples[:, s] = self.likelihood.gp_link.transf(fsamples[:, s])
+                    fsamples[:, i, s] = self.likelihood.gp_link.transf(fsamples[:, i, s])
     return retmu, percs, fsamples
 
 def helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resolution):

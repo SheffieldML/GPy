@@ -19,6 +19,7 @@ env:
   #- PYTHON_VERSION=3.4
   - PYTHON_VERSION=3.5
   - PYTHON_VERSION=3.6
+  #- PYTHON_VERSION=3.7
 
 before_install:
 - wget https://github.com/mzwiessele/travis_scripts/raw/master/download_miniconda.sh
@@ -51,7 +52,7 @@ after_success:
 before_deploy:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]];
     then
-      export DIST='sdist';
+      export DIST='sdist bdist_rpm bdist_dumb';
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]];
     then
       export DIST='bdist_wheel';

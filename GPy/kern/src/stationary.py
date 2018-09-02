@@ -14,9 +14,10 @@ from paramz.transformations import Logexp
 
 try:
     from . import stationary_cython
+    use_stationary_cython = config.getboolean('cython', 'working')
 except ImportError:
     print('warning in stationary: failed to import cython module: falling back to numpy')
-    config.set('cython', 'working', 'false')
+    use_stationary_cython = False
 
 
 class Stationary(Kern):
@@ -79,8 +80,8 @@ class Stationary(Kern):
         assert self.variance.size==1
         self.link_parameters(self.variance, self.lengthscale)
 
-    def _to_dict(self):
-        input_dict = super(Stationary, self)._to_dict()
+    def _save_to_input_dict(self):
+        input_dict = super(Stationary, self)._save_to_input_dict()
         input_dict["variance"] =  self.variance.values.tolist()
         input_dict["lengthscale"] = self.lengthscale.values.tolist()
         input_dict["ARD"] = self.ARD
@@ -203,7 +204,7 @@ class Stationary(Kern):
 
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            if config.getboolean('cython', 'working'):
+            if use_stationary_cython:
                 self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
                 self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
@@ -246,7 +247,7 @@ class Stationary(Kern):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
-        if config.getboolean('cython', 'working'):
+        if use_stationary_cython:
             return self._gradients_X_cython(dL_dK, X, X2)
         else:
             return self._gradients_X_pure(dL_dK, X, X2)
@@ -366,12 +367,20 @@ class Exponential(Stationary):
         return -self.K_of_r(r)
 
     def to_dict(self):
-        input_dict = super(Exponential, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Exponential, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Exponential"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Exponential(**input_dict)
 
@@ -424,12 +433,20 @@ class Matern32(Stationary):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(Matern32, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Matern32, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Matern32"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Matern32(**input_dict)
 
@@ -513,12 +530,20 @@ class Matern52(Stationary):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(Matern52, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Matern52, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Matern52"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return Matern52(**input_dict)
 
@@ -578,12 +603,20 @@ class ExpQuad(Stationary):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
-        input_dict = super(ExpQuad, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(ExpQuad, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.ExpQuad"
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return ExpQuad(**input_dict)
 
@@ -621,13 +654,21 @@ class RatQuad(Stationary):
         self.link_parameters(self.power)
 
     def to_dict(self):
-        input_dict = super(RatQuad, self)._to_dict()
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RatQuad, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.RatQuad"
         input_dict["power"] = self.power.values.tolist()
         return input_dict
 
     @staticmethod
-    def _from_dict(kernel_class, input_dict):
+    def _build_from_input_dict(kernel_class, input_dict):
         useGPU = input_dict.pop('useGPU', None)
         return RatQuad(**input_dict)
 

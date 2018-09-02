@@ -208,10 +208,10 @@ def _plot_samples(self, canvas, helper_data, helper_prediction, projection,
         if len(free_dims)==1:
             # 1D plotting:
             update_not_existing_kwargs(kwargs, pl().defaults.samples_1d)  # @UndefinedVariable
-            plots = [pl().plot(canvas, Xgrid[:, free_dims], samples[:, s], label=label if s==0 else None, **kwargs) for s in range(samples.shape[-1])]
+            plots = [pl().plot(canvas, Xgrid[:, free_dims], samples[:, :, s], label=label if s==0 else None, **kwargs) for s in range(samples.shape[-1])]
         elif len(free_dims)==2 and projection=='3d':
             update_not_existing_kwargs(kwargs, pl().defaults.samples_3d)  # @UndefinedVariable
-            plots = [pl().surface(canvas, x, y, samples[:, s].reshape(resolution, resolution), **kwargs) for s in range(samples.shape[-1])]
+            plots = [pl().surface(canvas, x, y, samples[:, :, s].reshape(resolution, resolution), **kwargs) for s in range(samples.shape[-1])]
         else:
             pass # Nothing to plot!
         return dict(gpmean=plots)

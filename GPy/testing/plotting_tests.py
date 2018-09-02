@@ -38,7 +38,7 @@ from nose import SkipTest
 
 try:
     import matplotlib
-    matplotlib.use('agg')
+    # matplotlib.use('agg')
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest
@@ -367,13 +367,13 @@ def test_classification():
     m = GPy.models.GPClassification(X, Y>Y.mean())
     #m.optimize()
     _, ax = plt.subplots()
-    m.plot(plot_raw=False, apply_link=False, ax=ax)
+    m.plot(plot_raw=False, apply_link=False, ax=ax, samples=3)
     m.plot_errorbars_trainset(plot_raw=False, apply_link=False, ax=ax)
     _, ax = plt.subplots()
-    m.plot(plot_raw=True, apply_link=False, ax=ax)
+    m.plot(plot_raw=True, apply_link=False, ax=ax, samples=3)
     m.plot_errorbars_trainset(plot_raw=True, apply_link=False, ax=ax)
     _, ax = plt.subplots()
-    m.plot(plot_raw=True, apply_link=True, ax=ax)
+    m.plot(plot_raw=True, apply_link=True, ax=ax, samples=3)
     m.plot_errorbars_trainset(plot_raw=True, apply_link=True, ax=ax)
     for do_test in _image_comparison(baseline_images=['gp_class_{}'.format(sub) for sub in ["likelihood", "raw", 'raw_link']], extensions=extensions):
         yield (do_test, )

@@ -578,7 +578,7 @@ class GP(Model):
                 mag[n] = np.sqrt(np.linalg.det(G[n, :, :]))
         return mag
 
-      def posterior_samples_f(self,X, size=10, **predict_kwargs):
+    def posterior_samples_f(self,X, size=10, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -589,7 +589,8 @@ class GP(Model):
         :returns: set of simulations
         :rtype: np.ndarray (Nnew x D x samples) 
         """
-        m, v = self._raw_predict(X,  full_cov=True, **predict_kwargs)
+        predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples. 
+        m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
 

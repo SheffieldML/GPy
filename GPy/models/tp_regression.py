@@ -11,7 +11,7 @@ from ..util.normalizer import Standardize
 import numpy as np
 from scipy import stats
 from paramz import ObsAr
-from paramz.transformations import Logistic, Logexp, LogexpClipped
+from paramz.transformations import Logexp
 
 import warnings
 

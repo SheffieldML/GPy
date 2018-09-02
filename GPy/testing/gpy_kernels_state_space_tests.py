@@ -91,12 +91,14 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                            mean_compare_decimal=5, var_compare_decimal=5)
 
     def test_RBF_kernel(self,):
+        #import pdb;pdb.set_trace()
+        
         np.random.seed(234) # seed the random number generator
         (X,Y) = generate_sine_data(x_points=None, sin_period=5.0, sin_ampl=10.0, noise_var=2.0,
                         plot = False, points_num=50, x_interval = (0, 20), random=True)
         X.shape = (X.shape[0],1); Y.shape = (Y.shape[0],1)
 
-        ss_kernel = GPy.kern.sde_RBF(1, 110., 1.5, active_dims=[0,])
+        ss_kernel = GPy.kern.sde_RBF(1, 110., 1.5, active_dims=[0,], balance=True, approx_order=10)
         gp_kernel = GPy.kern.RBF(1, 110., 1.5, active_dims=[0,])
 
         self.run_for_model(X, Y, ss_kernel, check_gradients=True,
@@ -267,7 +269,7 @@ class StateSpaceKernelsTests(np.testing.TestCase):
                                gp_kernel=gp_kernel,
                                mean_compare_decimal=2, var_compare_decimal=2)
         except AssertionError:
-            raise SkipTest("Skipping Regular kalman filter for kernel addition, as it seems to be bugged for some python versions")
+            raise SkipTest("Skipping Regular kalman filter for kernel addition, because it is not stable (normal situation) for this data.")
 
 
     def test_kernel_multiplication(self,):
@@ -436,7 +438,7 @@ if __name__ == "__main__":
     print("Running state-space inference tests...")
     unittest.main()
 
-    #tt = StateSpaceKernelsTests('test_periodic_kernel')
+    #tt = StateSpaceKernelsTests('test_RBF_kernel')
     #import pdb; pdb.set_trace()
     #tt.test_Matern32_kernel()
     #tt.test_Matern52_kernel()

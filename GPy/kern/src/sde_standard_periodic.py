@@ -9,6 +9,7 @@ from .standard_periodic import StdPeriodic
 
 import numpy as np
 import scipy as sp
+import warnings
 
 from scipy import special as special
 
@@ -26,6 +27,38 @@ class sde_StdPeriodic(StdPeriodic):
        \left( \frac{\sin(\frac{\pi}{\lambda_i} (x_i - y_i) )}{l_i} \right)^2 \right] }
 
     """
+    # TODO: write comment to the constructor arguments
+    def __init__(self, *args, **kwargs):
+        """
+        Init constructior.
+        
+        Two optinal extra parameters are added in addition to the ones in 
+        StdPeriodic kernel.
+        
+        :param approx_order: approximation order for the RBF covariance. (Default 7)
+        :type approx_order: int
+        
+        :param balance: Whether to balance this kernel separately. (Defaulf False). Model has a separate parameter for balancing.
+        :type balance: bool
+        """
+        
+        #import pdb; pdb.set_trace()
+        
+        if 'approx_order' in kwargs:
+            self.approx_order = kwargs.get('approx_order')
+            del kwargs['approx_order']
+        else:
+            self.approx_order = 7
+        
+        
+        if 'balance' in kwargs:
+            self.balance = bool( kwargs.get('balance') )
+            del kwargs['balance']
+        else:
+            self.balance = False
+        
+        super(sde_StdPeriodic, self).__init__(*args, **kwargs)
+        
     def sde_update_gradient_full(self, gradients):
         """
         Update gradient in the order in which parameters are represented in the
@@ -38,41 +71,48 @@ class sde_StdPeriodic(StdPeriodic):
         
     def sde(self): 
         """ 
-        Return the state space representation of the covariance.
+        Return the state space representation of the standard periodic covariance.
         
         
-        ! Note: one must constrain lengthscale not to drop below 0.25.
-        After this bessel functions of the first kind grows to very high.
+        ! Note: one must constrain lengthscale not to drop below 0.2. (independently of approximation order)
+        After this Bessel functions of the first becomes NaN. Rescaling
+        time variable might help.
         
-        ! Note: one must keep wevelength also not very low. Because then
+        ! Note: one must keep period also not very low. Because then
         the gradients wrt wavelength become ustable. 
         However this might depend on the data. For test example with
-        300 data points the low limit is 0.15.
+        300 data points the low limit is 0.15. 
         """ 
         
+        #import pdb; pdb.set_trace()
         # Params to use: (in that order)
         #self.variance
         #self.period
         #self.lengthscale
-        N = 7 # approximation order        
+        if self.approx_order is not None:
+            N = int(self.approx_order)
+        else:
+            N = 7 # approximation order        
         
+        p_period = float(self.period)        
+        p_lengthscale = 2*float(self.lengthscale)
+        p_variance = float(self.variance)        
         
-        w0 = 2*np.pi/self.period # frequency
-        lengthscale = 2*self.lengthscale         
+        w0 = 2*np.pi/p_period # frequency
+        # lengthscale is multiplied by 2 because of different definition of lengthscale
         
-        [q2,dq2l] = seriescoeff(N,lengthscale,self.variance)        
-        # lengthscale is multiplied by 2 because of slightly different
-        # formula for periodic covariance function.
-        # For the same reason:
+        [q2,dq2l] = seriescoeff(N, p_lengthscale, p_variance)        
         
-        dq2l = 2*dq2l
+        dq2l = 2*dq2l  # This is because the lengthscale if multiplied by 2.
         
-        if np.any( np.isfinite(q2) == False):
-            raise ValueError("SDE periodic covariance error 1")
-        
-        if np.any( np.isfinite(dq2l) == False):
-            raise ValueError("SDE periodic covariance error 2")
-        
+        eps = 1e-12
+        if np.any( np.isfinite(q2) == False) or np.any( np.abs(q2) > 1.0/eps) or np.any( np.abs(q2) < eps):
+            warnings.warn("sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in q2 :".format(eps) + q2.__format__("") )
+                                
+        if np.any( np.isfinite(dq2l) == False) or np.any( np.abs(dq2l) > 1.0/eps) or np.any( np.abs(dq2l) < eps):
+            warnings.warn("sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in dq2l :".format(eps) + q2.__format__("") )
+                 
+                 
         F    = np.kron(np.diag(range(0,N+1)),np.array( ((0, -w0), (w0, 0)) ) )
         L    = np.eye(2*(N+1))
         Qc   = np.zeros((2*(N+1), 2*(N+1)))
@@ -88,10 +128,10 @@ class sde_StdPeriodic(StdPeriodic):
         # Derivatives wrt self.variance
         dF[:,:,0] = np.zeros(F.shape)
         dQc[:,:,0] = np.zeros(Qc.shape)
-        dP_inf[:,:,0] = P_inf / self.variance
+        dP_inf[:,:,0] = P_inf / p_variance
 
         # Derivatives self.period
-        dF[:,:,1] = np.kron(np.diag(range(0,N+1)),np.array( ((0,  w0), (-w0, 0)) ) / self.period );
+        dF[:,:,1] = np.kron(np.diag(range(0,N+1)),np.array( ((0,  w0), (-w0, 0)) ) / p_period );
         dQc[:,:,1] = np.zeros(Qc.shape)
         dP_inf[:,:,1] = np.zeros(P_inf.shape)      
         
@@ -100,7 +140,12 @@ class sde_StdPeriodic(StdPeriodic):
         dQc[:,:,2] = np.zeros(Qc.shape)
         dP_inf[:,:,2] = np.kron(np.diag(dq2l),np.eye(2))
         dP0 = dP_inf.copy()
-
+        
+        if self.balance:
+            # Benefits of this are not very sound.
+            import GPy.models.state_space_main as ssm
+            (F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf,dP0) = ssm.balance_ss_model(F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf, dP0 )
+            
         return (F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf, dP0)
         
         
@@ -164,9 +209,9 @@ def seriescoeff(m=6,lengthScale=1.0,magnSigma2=1.0, true_covariance=False):
         coeffs = 2*magnSigma2*sp.exp( -lengthScale**(-2) ) * special.iv(range(0,m+1),1.0/lengthScale**(2))
         if np.any( np.isfinite(coeffs) == False):
             raise ValueError("sde_standard_periodic: Coefficients are not finite!")
-            #import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         coeffs[0] = 0.5*coeffs[0]
-        
+        #print(coeffs)
         # Derivatives wrt (lengthScale)
         coeffs_dl = np.zeros(m+1)
         coeffs_dl[1:] = magnSigma2*lengthScale**(-3) * sp.exp(-lengthScale**(-2))*\
@@ -177,4 +222,4 @@ def seriescoeff(m=6,lengthScale=1.0,magnSigma2=1.0, true_covariance=False):
             (2*special.iv(0,lengthScale**(-2)) - 2*special.iv(1,lengthScale**(-2)) )     
         
 
-    return coeffs, coeffs_dl
+    return coeffs.squeeze(), coeffs_dl.squeeze()

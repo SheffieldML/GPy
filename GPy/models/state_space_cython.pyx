@@ -432,6 +432,8 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
                             (self.reconstruct_indices.nbytes if (self.reconstruct_indices is not None) else 0)
                             
             self.Q_svd_dict = {}
+            self.Q_square_root_dict = {}
+            self.Q_inverse_dict = {}
             self.last_k = 0
              # !!!Print statistics! Which object is created
             # !!!Print statistics! Print sizes of matrices
@@ -477,19 +479,54 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
             cdef np.ndarray[DTYPE_t, ndim=2] U
             cdef np.ndarray[DTYPE_t, ndim=1] S           
             cdef np.ndarray[DTYPE_t, ndim=2] Vh
+            
         
-            if matrix_index in self.Q_svd_dict:
-                square_root = self.Q_svd_dict[matrix_index]
+            if matrix_index in self.Q_square_root_dict:
+                square_root = self.Q_square_root_dict[matrix_index]
             else:
-                U,S,Vh = sp.linalg.svd( self.Qs[:,:, matrix_index], 
+                if matrix_index not in self.Q_svd_dict
+                    U,S,Vh = sp.linalg.svd( self.Qs[:,:, matrix_index], 
                                         full_matrices=False, compute_uv=True, 
-                                        overwrite_a=False, check_finite=False)                     
-                                        
+                                        overwrite_a=False, check_finite=False)
+                    self.Q_svd_dict[matrix_index] = (U,S,Vh)
+                else:
+                    U,S,Vh = self.Q_svd_dict[matrix_index]
+                       
                 square_root = U * np.sqrt(S)
-                self.Q_svd_dict[matrix_index] = square_root
+                self.Q_suqare_root_dict[matrix_index] = square_root
             
             return square_root
-
+            
+            
+        cpdef Q_inverse(self, int k, float jitter=0.0):
+            """
+            Square root of the noise matrix Q
+            """
+            
+            cdef int matrix_index = <int>self.reconstruct_indices[k]
+            cdef np.ndarray[DTYPE_t, ndim=2] square_root
+            
+            cdef np.ndarray[DTYPE_t, ndim=2] U
+            cdef np.ndarray[DTYPE_t, ndim=1] S           
+            cdef np.ndarray[DTYPE_t, ndim=2] Vh
+            
+        
+            if matrix_index in self.Q_inverse_dict:
+                Q_inverse = self.Q_inverse_dict[matrix_index]
+            else:
+                if matrix_index not in self.Q_svd_dict
+                    U,S,Vh = sp.linalg.svd( self.Qs[:,:, matrix_index], 
+                                        full_matrices=False, compute_uv=True, 
+                                        overwrite_a=False, check_finite=False)
+                    self.Q_svd_dict[matrix_index] = (U,S,Vh)
+                else:
+                    U,S,Vh = self.Q_svd_dict[matrix_index]
+                       
+               Q_inverse = Q_inverse = np.dot( Vh.T * ( 1.0/(S + jitter)) , U.T )
+                self.Q_inverse_dict[matrix_index] = Q_inverse
+            
+            return Q_inverse
+            
 #        def return_last(self):
 #            """
 #            Function returns last available matrices.

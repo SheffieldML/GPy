@@ -1,6 +1,6 @@
 # Copyright (c) 2013, Arno Solin.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-#
+# 
 # This implementation of converting GPs to state space models is based on the article:
 #
 #  @article{Sarkka+Solin+Hartikainen:2013,
@@ -23,7 +23,16 @@ from . import state_space_main as ssm
 from . import state_space_setup as ss_setup
 
 class StateSpace(Model):
-    def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', use_cython = False, name='StateSpace'):
+    def __init__(self, X, Y, kernel=None, noise_var=1.0, kalman_filter_type = 'regular', use_cython = False, balance=False, name='StateSpace'):
+        """
+        Inputs:
+        ------------------
+        
+        balance: bool
+        Whether to balance or not the model as a whole
+        
+        """
+        
         super(StateSpace, self).__init__(name=name)
 
         if len(X.shape) == 1:
@@ -51,15 +60,16 @@ class StateSpace(Model):
         ss_setup.use_cython = use_cython
 
         #import pdb; pdb.set_trace()
-
+        self.balance = balance
+        
         global ssm
         #from . import state_space_main as ssm
         if (ssm.cython_code_available) and (ssm.use_cython != ss_setup.use_cython):
             reload(ssm)
         # Make sure the observations are ordered in time
         sort_index = np.argsort(X[:,0])
-        self.X = X[sort_index]
-        self.Y = Y[sort_index]
+        self.X = X[sort_index,:]
+        self.Y = Y[sort_index,:]
 
         # Noise variance
         self.likelihood = likelihoods.Gaussian(variance=noise_var)
@@ -86,11 +96,12 @@ class StateSpace(Model):
 
         #np.set_printoptions(16)
         #print(self.param_array)
-        #import pdb; pdb.set_trace()
+        
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dFt,dQct,dP_inft, dP0t) = self.kern.sde()
-
+        
+        
         # necessary parameters
         measurement_dim = self.output_dim
         grad_params_no = dFt.shape[2]+1 # we also add measurement noise as a parameter
@@ -112,8 +123,9 @@ class StateSpace(Model):
         dR[:,:,-1] = np.eye(measurement_dim)
 
         # Balancing
-        #(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf,dP0) = ssm.balance_ss_model(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf, dP0)
-
+        if self.balance:
+            (F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf,dP0) = ssm.balance_ss_model(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf, dP0)
+            print("SSM parameters_changed balancing!")
         # Use the Kalman filter to evaluate the likelihood
         grad_calc_params = {}
         grad_calc_params['dP_inf'] = dP_inf
@@ -125,7 +137,7 @@ class StateSpace(Model):
         kalman_filter_type = self.kalman_filter_type
 
         # The following code is required because sometimes the shapes of self.Y
-        # becomes 3D even though is must be 2D. The reason is undescovered.
+        # becomes 3D even though is must be 2D. The reason is undiscovered.
         Y = self.Y
         if self.ts_number is None:
             Y.shape = (self.num_data,1)
@@ -146,7 +158,7 @@ class StateSpace(Model):
 
         if np.any( np.isfinite(grad_log_likelihood) == False):
             #import pdb; pdb.set_trace()
-            print("State-Space: NaN valkues in the grad_log_likelihood")
+            print("State-Space: NaN values in the grad_log_likelihood")
         #print(grad_log_likelihood)
 
         grad_log_likelihood_sum = np.sum(grad_log_likelihood,axis=1)
@@ -159,7 +171,7 @@ class StateSpace(Model):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _raw_predict(self, Xnew=None, Ynew=None, filteronly=False, **kw):
+    def _raw_predict(self, Xnew=None, Ynew=None, filteronly=False, p_balance=False, **kw):
         """
         Performs the actual prediction for new X points.
         Inner function. It is called only from inside this class.
@@ -177,7 +189,10 @@ class StateSpace(Model):
         filteronly: bool
             Use only Kalman Filter for prediction. In this case the output does
             not coincide with corresponding Gaussian process.
-
+        
+        balance: bool
+            Whether to balance or not the model as a whole
+        
         Output:
         --------------------
 
@@ -210,7 +225,12 @@ class StateSpace(Model):
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dF,dQc,dP_inf,dP0) = self.kern.sde()
         state_dim = F.shape[0]
-
+        
+        # Balancing
+        if (p_balance==True):
+            (F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf,dP0) = ssm.balance_ss_model(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf, dP0)
+            print("SSM _raw_predict balancing!")
+            
         #Y = self.Y[:, 0,0]
         # Run the Kalman filter
         #import pdb; pdb.set_trace()
@@ -261,10 +281,23 @@ class StateSpace(Model):
         # Return the posterior of the state
         return (m, V)
 
-    def predict(self, Xnew=None, filteronly=False, include_likelihood=True, **kw):
-
+    def predict(self, Xnew=None, filteronly=False, include_likelihood=True, balance=None, **kw):
+        """
+        Inputs:
+        ------------------
+        
+        balance: bool
+        Whether to balance or not the model as a whole
+        
+        """
+        
+        if balance is None:
+            p_balance = self.balance
+        else:
+            p_balance = balance
+            
         # Run the Kalman filter to get the state
-        (m, V) = self._raw_predict(Xnew,filteronly=filteronly)
+        (m, V) = self._raw_predict(Xnew,filteronly=filteronly, p_balance=p_balance)
 
         # Add the noise variance to the state variance
         if include_likelihood:
@@ -277,8 +310,22 @@ class StateSpace(Model):
         # Return mean and variance
         return m, V
 
-    def predict_quantiles(self, Xnew=None, quantiles=(2.5, 97.5), **kw):
-        mu, var = self._raw_predict(Xnew)
+    def predict_quantiles(self, Xnew=None, quantiles=(2.5, 97.5), balance=None, **kw):
+        """
+        Inputs:
+        ------------------
+        
+        balance: bool
+        Whether to balance or not the model as a whole
+        
+        """
+        if balance is None:
+            p_balance = self.balance
+        else:
+            p_balance = balance
+        
+        
+        mu, var = self._raw_predict(Xnew, p_balance=p_balance)
         #import pdb; pdb.set_trace()
         return  [stats.norm.ppf(q/100.)*np.sqrt(var + float(self.Gaussian_noise.variance)) + mu for q in quantiles]
 

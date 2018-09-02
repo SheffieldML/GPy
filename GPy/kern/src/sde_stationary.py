@@ -15,6 +15,7 @@ try:
     from scipy.linalg import solve_continuous_lyapunov as lyap
 except ImportError:
     from scipy.linalg import solve_lyapunov as lyap
+import warnings
 
 class sde_RBF(RBF):
     """
@@ -29,6 +30,37 @@ class sde_RBF(RBF):
         k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg) \\ \\ \\ \\  \text{ where  } r = \sqrt{\sum_{i=1}^{input dim} \frac{(x_i-y_i)^2}{\ell_i^2} }
 
     """
+    def __init__(self, *args, **kwargs):
+        """
+        Init constructior.
+        
+        Two optinal extra parameters are added in addition to the ones in 
+        RBF kernel.
+        
+        :param approx_order: approximation order for the RBF covariance. (Default 10)
+        :type approx_order: int
+        
+        :param balance: Whether to balance this kernel separately. (Defaulf True). Model has a separate parameter for balancing.
+        :type balance: bool
+        """
+        
+        if 'balance' in kwargs:
+            self.balance = bool( kwargs.get('balance') )
+            del kwargs['balance']
+        else:
+            self.balance = True
+        
+        
+        if 'approx_order' in kwargs:
+            self.approx_order = kwargs.get('approx_order')
+            del kwargs['approx_order']
+        else:
+            self.approx_order = 6
+        
+        
+        
+        super(sde_RBF, self).__init__(*args, **kwargs)
+        
     def sde_update_gradient_full(self, gradients):
         """
         Update gradient in the order in which parameters are represented in the
@@ -41,23 +73,43 @@ class sde_RBF(RBF):
     def sde(self):
         """
         Return the state space representation of the covariance.
+        
+        Note! For Sparse GP inference too small or two high values of lengthscale
+        lead to instabilities. This is because Qc are too high or too low
+        and P_inf are not full rank. This effect depends on approximatio order.
+        For N = 10. lengthscale must be in (0.8,8). For other N tests must be conducted.
+        N=6: (0.06,31)
+        Variance should be within reasonable bounds as well, but its dependence is linear.
+        
+        The above facts do not take into accout regularization.
         """
-
-        N = 10# approximation order ( number of terms in exponent series expansion)
+        #import pdb; pdb.set_trace()
+        if self.approx_order is not None:
+            N = self.approx_order
+        else:
+            N = 10# approximation order ( number of terms in exponent series expansion)
+            
         roots_rounding_decimals = 6
 
         fn = np.math.factorial(N)
 
-        kappa = 1.0/2.0/self.lengthscale**2
+        p_lengthscale = float( self.lengthscale )
+        p_variance = float(self.variance)
+        kappa = 1.0/2.0/p_lengthscale**2
 
-        Qc = np.array((self.variance*np.sqrt(np.pi/kappa)*fn*(4*kappa)**N,),)
+        Qc = np.array( ((p_variance*np.sqrt(np.pi/kappa)*fn*(4*kappa)**N,),) )
+        
+        eps = 1e-12
+        if (float(Qc) > 1.0/eps) or (float(Qc) < eps):
+            warnings.warn("""sde_RBF kernel: the noise variance Qc is either very large or very small. 
+                                It influece conditioning of P_inf: {0:e}""".format(float(Qc)) )
 
-        pp = np.zeros((2*N+1,)) # array of polynomial coefficients from higher power to lower
+        pp1 = np.zeros((2*N+1,)) # array of polynomial coefficients from higher power to lower
 
         for n in range(0, N+1): # (2N+1) - number of polynomial coefficients
-            pp[2*(N-n)] = fn*(4.0*kappa)**(N-n)/np.math.factorial(n)*(-1)**n
-
-        pp = sp.poly1d(pp)
+            pp1[2*(N-n)] = fn*(4.0*kappa)**(N-n)/np.math.factorial(n)*(-1)**n
+            
+        pp = sp.poly1d(pp1)
         roots = sp.roots(pp)
 
         neg_real_part_roots = roots[np.round(np.real(roots) ,roots_rounding_decimals) < 0]
@@ -83,17 +135,17 @@ class sde_RBF(RBF):
         # Derivatives:
         dFvariance = np.zeros(F.shape)
         dFlengthscale = np.zeros(F.shape)
-        dFlengthscale[-1,:] = -aa[-1:0:-1]/self.lengthscale * np.arange(-N,0,1)
+        dFlengthscale[-1,:] = -aa[-1:0:-1]/p_lengthscale * np.arange(-N,0,1)
 
-        dQcvariance = Qc/self.variance
-        dQclengthscale = np.array(((self.variance*np.sqrt(2*np.pi)*fn*2**N*self.lengthscale**(-2*N)*(1-2*N,),)))
-
-        dPinf_variance = Pinf/self.variance
+        dQcvariance = Qc/p_variance
+        dQclengthscale = np.array(( (p_variance*np.sqrt(2*np.pi)*fn*2**N*p_lengthscale**(-2*N)*(1-2*N),),))
+        
+        dPinf_variance = Pinf/p_variance
 
         lp = Pinf.shape[0]
         coeff = np.arange(1,lp+1).reshape(lp,1) + np.arange(1,lp+1).reshape(1,lp) - 2
         coeff[np.mod(coeff,2) != 0] = 0
-        dPinf_lengthscale = -1/self.lengthscale*Pinf*coeff
+        dPinf_lengthscale = -1/p_lengthscale*Pinf*coeff
 
         dF[:,:,0]    = dFvariance
         dF[:,:,1]    = dFlengthscale
@@ -105,10 +157,11 @@ class sde_RBF(RBF):
         P0 = Pinf.copy()
         dP0 = dPinf.copy()
 
-        # Benefits of this are not very sound. Helps only in one case:
-        # SVD Kalman + RBF kernel
-        import GPy.models.state_space_main as ssm
-        (F, L, Qc, H, Pinf, P0, dF, dQc, dPinf,dP0, T) = ssm.balance_ss_model(F, L, Qc, H, Pinf, P0, dF, dQc, dPinf, dP0 )
+        if self.balance:
+            # Benefits of this are not very sound. Helps only in one case:
+            # SVD Kalman + RBF kernel
+            import GPy.models.state_space_main as ssm
+            (F, L, Qc, H, Pinf, P0, dF, dQc, dPinf,dP0) = ssm.balance_ss_model(F, L, Qc, H, Pinf, P0, dF, dQc, dPinf, dP0 )
 
         return (F, L, Qc, H, Pinf, P0, dF, dQc, dPinf, dP0)
 

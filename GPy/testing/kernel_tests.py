@@ -482,7 +482,19 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
-    
+
+    def test_symmetric_even(self):
+        k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        k = GPy.kern.Symmetric(k_base, transform, 'even')
+        self.assertTrue(check_kernel_gradient_functions(k))
+
+    def test_symmetric_odd(self):
+        k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        k = GPy.kern.Symmetric(k_base, transform, 'odd')
+        self.assertTrue(check_kernel_gradient_functions(k))
+
     def test_MultioutputKern(self):
         k1 = GPy.kern.RBF(self.D, ARD=True)
         k1.randomize()

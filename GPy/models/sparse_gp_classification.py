@@ -17,8 +17,10 @@ class SparseGPClassification(SparseGP):
 
     :param X: input observations
     :param Y: observed values
-    :param likelihood: a GPy likelihood, defaults to Binomial with probit link_function
+    :param likelihood: a GPy likelihood, defaults to Bernoulli
     :param kernel: a GPy kernel, defaults to rbf+white
+    :param inference_method: Latent function inference to use, defaults to EPDTC
+    :type inference_method: :class:`GPy.inference.latent_function_inference.LatentFunctionInference`
     :param normalize_X:  whether to normalize the input data before computing (predictions will be in original scales)
     :type normalize_X: False|True
     :param normalize_Y:  whether to normalize the input data before computing (predictions will be in original scales)
@@ -27,11 +29,13 @@ class SparseGPClassification(SparseGP):
 
     """
 
-    def __init__(self, X, Y=None, likelihood=None, kernel=None, Z=None, num_inducing=10, Y_metadata=None):
+    def __init__(self, X, Y=None, likelihood=None, kernel=None, Z=None, num_inducing=10, Y_metadata=None,
+                 mean_function=None, inference_method=None, normalizer=False):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
-        likelihood = likelihoods.Bernoulli()
+        if likelihood is None:
+            likelihood = likelihoods.Bernoulli()
 
         if Z is None:
             i = np.random.permutation(X.shape[0])[:num_inducing]
@@ -39,7 +43,11 @@ class SparseGPClassification(SparseGP):
         else:
             assert Z.shape[1] == X.shape[1]
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, inference_method=EPDTC(), name='SparseGPClassification',Y_metadata=Y_metadata)
+        if inference_method is None:
+            inference_method = EPDTC()
+
+        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, mean_function=mean_function, inference_method=inference_method,
+                          normalizer=normalizer, name='SparseGPClassification', Y_metadata=Y_metadata)
 
     @staticmethod
     def from_sparse_gp(sparse_gp):
@@ -57,6 +65,12 @@ class SparseGPClassification(SparseGP):
         model_dict = super(SparseGPClassification,self).to_dict(save_data)
         model_dict["class"] = "GPy.models.SparseGPClassification"
         return model_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        input_dict = SparseGPClassification._format_input_dict(input_dict, data)
+        input_dict.pop('name', None)  # Name parameter not required by SparseGPClassification
+        return SparseGPClassification(**input_dict)
 
     @staticmethod
     def from_dict(input_dict, data=None):

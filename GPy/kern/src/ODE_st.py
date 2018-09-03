@@ -4,7 +4,7 @@ from .kern import Kern
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 import numpy as np
-from .independent_outputs import index_to_slices
+from GPy.util.multioutput import index_to_slices
 
 
 class ODE_st(Kern):

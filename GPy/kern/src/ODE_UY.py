@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .kern import Kern
-from .independent_outputs import index_to_slices
+from GPy.util.multioutput import index_to_slices
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 import numpy as np

@@ -5,7 +5,7 @@ from .kern import Kern
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 import numpy as np
-from .independent_outputs import index_to_slices
+from GPy.util.multioutput import index_to_slices
 
 class ODE_UYC(Kern):
     def __init__(self, input_dim, variance_U=3., variance_Y=1., lengthscale_U=1., lengthscale_Y=1., ubias =1. ,active_dims=None, name='ode_uyc'):

@@ -7,7 +7,7 @@ from unittest.case import skip
 import GPy
 from GPy.core.parameterization.param import Param
 import numpy as np
-
+import random
 from ..util.config import config
 
 
@@ -482,6 +482,12 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+    
+    def test_diff(self):
+        k = GPy.kern.RBF(self.D, ARD=True)
+        k.randomize()
+        kd = GPy.kern.DiffKern(k, 0 )
+        self.assertTrue(check_kernel_gradient_functions(kd, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_symmetric_even(self):
         k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)

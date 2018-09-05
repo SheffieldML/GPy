@@ -22,19 +22,13 @@ logger = logging.getLogger("GP")
 
 class MultioutputGP(GP):
     """
-    General purpose Gaussian process model
-    :param X: input observations
-    :param Y: output observations
-    :param kernel: a GPy kernel, defaults to rbf+white
-    :param likelihood: a GPy likelihood
+    Gaussian process model for using observations from multiple likelihoods and different kernels
+    :param X_list: input observations in a list for each likelihood
+    :param Y: output observations in a list for each likelihood
+    :param kernel_list: kernels in a list for each likelihood
+    :param likelihood_list: likelihoods in a list
+    :param kernel_cross_covariances: Cross covariances between different likelihoods. See class MultioutputKern for more
     :param inference_method: The :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference method to use for this GP
-    :rtype: model object
-    :param Norm normalizer:
-        normalize the outputs Y.
-        Prediction will be un-normalized using this normalizer.
-        If normalizer is None, we will normalize using Standardize.
-        If normalizer is False, no normalization will be done.
-    .. Note:: Multiple independent outputs are allowed using columns of Y
     """
     def __init__(self, X_list, Y_list, kernel_list, likelihood_list, name='multioutputgp', kernel_cross_covariances={}, inference_method=None):
         #Input and Output

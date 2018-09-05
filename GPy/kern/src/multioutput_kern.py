@@ -1,3 +1,6 @@
+# Copyright (c) 2018, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
 from .kern import Kern, CombinationKernel
 import numpy as np
 from functools import reduce, partial

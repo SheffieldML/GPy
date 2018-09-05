@@ -1,9 +1,19 @@
+# Copyright (c) 2018, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .kern import CombinationKernel
 import numpy as np
 from paramz.caching import Cache_this
 
-# A thin wrapper around the base kernel to tell that we are dealing with a partial derivative of a Kernel
 class DiffKern(CombinationKernel):
+    """
+    Diff kernel is a thin wrapper for using partial derivatives of kernels as kernels. Eg. in combination with
+    Multioutput kernel this allows the user to train GPs with observations of latent function and latent
+    function derivatives
+    
+    The parameters the kernel needs are:
+    -'base_kern': a member of Kernel class that is used for observations
+    -'dimension': integer that indigates in which dimensions the partial derivative observations are
+    """
     def __init__(self, base_kern, dimension):
         super(DiffKern, self).__init__([base_kern], 'DiffKern')
         self.base_kern = base_kern

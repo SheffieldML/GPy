@@ -44,4 +44,5 @@ from .src.sde_static import sde_White, sde_Bias
 from .src.sde_stationary import sde_RBF,sde_Exponential,sde_RatQuad
 from .src.sde_brownian import sde_Brownian
 from .src.multioutput_kern import MultioutputKern
+from .src.multioutput_derivative_kern import MultioutputDerivativeKern
 from .src.diff_kern import DiffKern

@@ -42,7 +42,7 @@ class MultioutputGP(GP):
         Ny = len(Y_list)
         
         assert isinstance(kernel_list, list)
-        kernel = kern.MultioutputKern(kernels=kernel_list, cross_covariances=kernel_cross_covariances)
+        kernel = kern.MultioutputDerivativeKern(kernels=kernel_list, cross_covariances=kernel_cross_covariances)
 
         assert isinstance(likelihood_list, list)
         likelihood = likelihoods.MultioutputLikelihood(likelihood_list)
@@ -53,8 +53,7 @@ class MultioutputGP(GP):
             else:
                 inference_method = expectation_propagation.EP() 
         
-        super(MultioutputGP, self).__init__(X,Y,kernel,likelihood, Y_metadata={'output_index':self.output_index, 'trials':np.ones(self.output_index.shape)}, inference_method = inference_method)# expectation_propagation.MultioutputEP()) # expectation_propagation.EP())                             
-                                            #expectation_propagation.MultioutputEP())
+        super(MultioutputGP, self).__init__(X,Y,kernel,likelihood, Y_metadata={'output_index':self.output_index, 'trials':np.ones(self.output_index.shape)}, inference_method = inference_method)
 
     def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
         if isinstance(Xnew, list):

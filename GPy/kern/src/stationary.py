@@ -212,7 +212,6 @@ class Stationary(Kern):
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
-
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """
         Specially intended for the Grid regression case.
@@ -222,6 +221,10 @@ class Stationary(Kern):
         """
         self.variance.gradient = dL_dVar
         self.lengthscale.gradient = dL_dLen
+    
+    def append_gradients_direct(self, dL_dVar, dL_dLen):
+        self.variance.gradient += dL_dVar
+        self.lengthscale.gradient += dL_dLen
 
     def _inv_dist(self, X, X2=None):
         """
@@ -307,6 +310,21 @@ class Stationary(Kern):
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
+    
+    def dgradients_dX(self, X, X2, dimX):
+        g1 = self.dK2_dvariancedX(X, X2, dimX)
+        g2 = self.dK2_dlengthscaledX(X, X2, dimX)
+        return [g1, g2]
+
+    def dgradients_dX2(self, X, X2, dimX2):
+        g1 = self.dK2_dvariancedX2(X, X2, dimX2)
+        g2 = self.dK2_dlengthscaledX2(X, X2, dimX2)
+        return [g1, g2]
+
+    def dgradients2_dXdX2(self, X, X2, dimX, dimX2):
+        g1 = self.dK3_dvariancedXdX2(X, X2, dimX, dimX2)
+        g2 = self.dK3_dlengthscaledXdX2(X, X2, dimX, dimX2)
+        return [g1, g2]
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)

@@ -94,14 +94,14 @@ class MultioutputKern(CombinationKernel):
         return target
     
     def _update_gradients_full_wrapper(self, cov_struct, dL_dK, X, X2):
-        gradient = cov_struct['kern'].gradient.copy()
+        gradient = cov_struct['kern'].get_gradient()
         cov_struct['update_gradients_full'](dL_dK, X, X2)
-        cov_struct['kern'].gradient += gradient
+        cov_struct['kern'].append_gradient(gradient)
     
     def _update_gradients_diag_wrapper(self, kern, dL_dKdiag, X):
-        gradient = kern.gradient.copy()
+        gradient = kern.get_gradient()
         kern.update_gradients_diag(dL_dKdiag, X)
-        kern.gradient += gradient
+        kern.append_gradient(gradient)
         
     def reset_gradients(self):
         for kern in self.kern: kern.reset_gradients()

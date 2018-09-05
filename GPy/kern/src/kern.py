@@ -200,6 +200,12 @@ class Kern(Parameterized):
     
     def reset_gradients(self):
         raise NotImplementedError
+    
+    def get_gradient(self):
+        return self.gradient.copy()
+    
+    def append_gradient(self,gradient):
+        self.gradient += gradient
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """

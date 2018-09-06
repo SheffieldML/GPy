@@ -18,8 +18,6 @@ class DiffKern(CombinationKernel):
         super(DiffKern, self).__init__([base_kern], 'DiffKern')
         self.base_kern = base_kern
         self.dimension = dimension
-        self._gradient_array_ = self.base_kern._gradient_array_
-        self.gradient = self.base_kern.gradient
 
     def parameters_changed(self):
         self.base_kern.parameters_changed()

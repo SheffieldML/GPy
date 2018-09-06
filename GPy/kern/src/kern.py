@@ -202,7 +202,7 @@ class Kern(Parameterized):
         raise NotImplementedError
     
     def get_gradient(self):
-        return self.gradient.copy()
+        return self.gradient
     
     def append_gradient(self,gradient):
         self.gradient += gradient

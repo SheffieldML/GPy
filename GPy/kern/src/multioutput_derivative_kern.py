@@ -23,7 +23,7 @@ class KernWrapper(Kern):
         return self.fg(dL_dK, X, X2=X2)
 
     def get_gradient(self):
-        return self.base_kern.gradient.copy()
+        return self.base_kern.gradient
 
     def append_gradient(self, gradient):
         self.base_kern.gradient += gradient

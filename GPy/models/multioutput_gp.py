@@ -15,7 +15,7 @@ from .. import util
 from paramz import ObsAr
 from ..core.gp import GP
 
-from GPy.util.multioutput import index_to_slices
+from ..util.multioutput import index_to_slices
 import logging
 import warnings
 logger = logging.getLogger("GP")

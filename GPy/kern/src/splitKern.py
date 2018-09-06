@@ -4,7 +4,7 @@ A new kernel
 
 import numpy as np
 from .kern import Kern, CombinationKernel
-from GPy.util.multioutput import index_to_slices
+from ...util.multioutput import index_to_slices
 import itertools
 
 class DEtime(Kern):

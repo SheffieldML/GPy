@@ -4,7 +4,7 @@
 from .kern import Kern, CombinationKernel
 import numpy as np
 from functools import reduce, partial
-from GPy.util.multioutput import index_to_slices
+from ...util.multioutput import index_to_slices
 from paramz.caching import Cache_this
 
 class ZeroKern(Kern):

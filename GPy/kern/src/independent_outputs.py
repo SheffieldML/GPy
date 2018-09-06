@@ -5,7 +5,7 @@
 from .kern import CombinationKernel
 import numpy as np
 import itertools
-from GPy.util.multioutput import index_to_slices
+from ...util.multioutput import index_to_slices
 
 
 class IndependentOutputs(CombinationKernel):

@@ -1,21 +1,21 @@
 # Copyright (c) 2018, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from .kern import CombinationKernel
+from .kern import Kern
 import numpy as np
 from paramz.caching import Cache_this
 
-class DiffKern(CombinationKernel):
+class DiffKern(Kern):
     """
     Diff kernel is a thin wrapper for using partial derivatives of kernels as kernels. Eg. in combination with
     Multioutput kernel this allows the user to train GPs with observations of latent function and latent
-    function derivatives
+    function derivatives. NOTE: DiffKern only works when used with Multioutput kernel. Do not use the kernel as standalone
     
     The parameters the kernel needs are:
     -'base_kern': a member of Kernel class that is used for observations
     -'dimension': integer that indigates in which dimensions the partial derivative observations are
     """
     def __init__(self, base_kern, dimension):
-        super(DiffKern, self).__init__([base_kern], 'DiffKern')
+        super(DiffKern, self).__init__(base_kern.active_dims.size, base_kern.active_dims, name='DiffKern')
         self.base_kern = base_kern
         self.dimension = dimension
 
@@ -45,11 +45,13 @@ class DiffKern(CombinationKernel):
     def reset_gradients(self):
         self.base_kern.reset_gradients()
 
-    def get_gradient(self):
+    @property
+    def gradient(self):
         return self.base_kern.gradient
 
-    def append_gradient(self, gradient):
-        self.base_kern.gradient += gradient
+    @gradient.setter
+    def gradient(self, gradient):
+        self.base_kern.gradient = gradient
 
     def update_gradients_full(self, dL_dK, X, X2=None, dimX2=None):
         if dimX2 is None:
@@ -65,11 +67,19 @@ class DiffKern(CombinationKernel):
         if X2 is None:
             X2 = X
         gradients = self.base_kern.dgradients_dX(X,X2, self.dimension)
-        self.base_kern.append_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
+        self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
 
     def update_gradients_dK_dX2(self, dL_dK, X, X2=None):
         gradients = self.base_kern.dgradients_dX2(X,X2, self.dimension)
-        self.base_kern.append_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
+        self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
+
+    def gradients_X(self, dL_dK, X, X2):
+        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:,:,:, self.dimension]
+        return np.sum(tmp, axis=1)
+    
+    def gradients_X2(self, dL_dK, X, X2):
+        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:, :, self.dimension, :]
+        return np.sum(tmp, axis=1)
 
     def _convert_gradients(self, l,g, f = lambda x:x):
         if type(g) is np.ndarray:

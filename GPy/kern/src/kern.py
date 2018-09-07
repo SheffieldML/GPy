@@ -116,6 +116,12 @@ class Kern(Parameterized):
         except:
             return X[:, self._all_dims_active]
 
+    def _project_dim(self, dim):
+        try:
+            return np.where(self._all_dims_active == dim)[0][0]
+        except:
+            return None
+
     def K(self, X, X2):
         """
         Compute the kernel function.
@@ -200,12 +206,6 @@ class Kern(Parameterized):
     
     def reset_gradients(self):
         raise NotImplementedError
-    
-    def get_gradient(self):
-        return self.gradient
-    
-    def append_gradient(self,gradient):
-        self.gradient += gradient
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """

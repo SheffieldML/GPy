@@ -4,29 +4,32 @@
 from .kern import Kern, CombinationKernel
 from .multioutput_kern import MultioutputKern, ZeroKern
 import numpy as np
+from functools import partial
 
 class KernWrapper(Kern):
     def __init__(self, fk, fug, fg, base_kern):
         self.fk = fk
         self.fug = fug
         self.fg = fg
-        self.base_kern
-        super(KernWrapper, self).__init__(1, None, name='KernWrapper',useGPU=False)
+        self.base_kern = base_kern
+        super(KernWrapper, self).__init__(base_kern.active_dims.size, base_kern.active_dims, name='KernWrapper',useGPU=False)
 
     def K(self, X, X2=None):
         return self.fk(X,X2=X2)
     
     def update_gradients_full(self,dL_dK, X, X2=None):
-        return self.fug(dK_dK, X, X2=X2)
+        return self.fug(dL_dK, X, X2=X2)
     
     def gradients_X(self,dL_dK, X, X2=None):
         return self.fg(dL_dK, X, X2=X2)
 
-    def get_gradient(self):
+    @property
+    def gradient(self):
         return self.base_kern.gradient
 
-    def append_gradient(self, gradient):
-        self.base_kern.gradient += gradient
+    @gradient.setter
+    def gradient(self, gradient):
+        self.base_kern.gradient = gradient
 
 class MultioutputDerivativeKern(MultioutputKern):
     """
@@ -58,26 +61,23 @@ class MultioutputDerivativeKern(MultioutputKern):
             unique=True
             for j in range(0,nl):
                 if i==j or (kernels[i] is kernels[j]):
-                    covariance[i][j] = {'kern': kernels[i],'K':kernels[i].K, 'update_gradients_full': kernels[i].update_gradients_full, 'gradients_X': kernels[i].gradients_X}
+                    kern = kernels[i]
                     if i>j:
                         unique=False
                 elif cross_covariances.get((i,j)) is not None: #cross covariance is given
-                    covariance[i][j] = cross_covariances.get((i,j))
-                elif kernels[i].name == 'diffKern' and kernels[i].base_kern == kernels[j]: # one is derivative of other
+                    kern = cross_covariances.get((i,j))
+                elif kernels[i].name == 'DiffKern' and kernels[i].base_kern == kernels[j]: # one is derivative of other
                     kern = KernWrapper(kernels[i].dK_dX_wrap,kernels[i].update_gradients_dK_dX,kernels[i].gradients_X, kernels[j])
-                    covariance[i][j] = {'kern':kern, 'K': kern.K, 'update_gradients_full': kern.update_gradients_full, 'gradients_X': kern.gradients_X}
                     unique=False
-                elif kernels[j].name == 'diffKern' and kernels[j].base_kern == kernels[i]: # one is derivative of other
+                elif kernels[j].name == 'DiffKern' and kernels[j].base_kern == kernels[i]: # one is derivative of other
                     kern = KernWrapper(kernels[j].dK_dX2_wrap,kernels[j].update_gradients_dK_dX2,kernels[j].gradients_X2, kernels[i])
-                    covariance[i][j] = {'kern':kern, 'K': kern.K, 'update_gradients_full': kern.update_gradients_full, 'gradients_X': kern.gradients_X}
-                elif kernels[i].name == 'diffKern' and kernels[j].name == 'diffKern' and kernels[i].base_kern == kernels[j].base_kern: #both are partial derivatives
+                elif kernels[i].name == 'DiffKern' and kernels[j].name == 'DiffKern' and kernels[i].base_kern == kernels[j].base_kern: #both are partial derivatives
                     kern = KernWrapper(partial(kernels[i].K, dimX2=kernels[j].dimension), partial(kernels[i].update_gradients_full, dimX2=kernels[j].dimension),None, kernels[i].base_kern)
-                    covariance[i][j] = {'kern':kern, 'K': kern.K, 'update_gradients_full': kern.update_gradients_full, 'gradients_X': kern.gradients_X}
                     if i>j:
                         unique=False
                 else:
                     kern = ZeroKern()
-                    covariance[i][j] = {'kern': kern, 'K': kern.K, 'update_gradients_full': kern.update_gradients_full, 'gradients_X': kern.gradients_X}   
+                covariance[i][j] = kern
             if unique is True:
                 linked.append(i)
         self.covariance = covariance

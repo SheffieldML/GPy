@@ -221,10 +221,6 @@ class Stationary(Kern):
         """
         self.variance.gradient = dL_dVar
         self.lengthscale.gradient = dL_dLen
-    
-    def append_gradients_direct(self, dL_dVar, dL_dLen):
-        self.variance.gradient += dL_dVar
-        self.lengthscale.gradient += dL_dLen
 
     def _inv_dist(self, X, X2=None):
         """

@@ -236,7 +236,10 @@ class MatplotlibPlots(AbstractPlottingLibrary):
 
         polycol = []
         for y1, y2 in pairwise(percentiles):
-            import matplotlib.mlab as mlab
+            try:
+                from matplotlib.cbook import contiguous_regions
+            except ImportError:
+                from matplotlib.mlab import contiguous_regions
             # Handle united data, such as dates
             ax._process_unit_info(xdata=X, ydata=y1)
             ax._process_unit_info(ydata=y2)
@@ -265,7 +268,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                 where &= ~mask
 
             polys = []
-            for ind0, ind1 in mlab.contiguous_regions(where):
+            for ind0, ind1 in contiguous_regions(where):
                 xslice = x[ind0:ind1]
                 y1slice = y1[ind0:ind1]
                 y2slice = y2[ind0:ind1]

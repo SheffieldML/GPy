@@ -90,7 +90,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if title is not None: ax.figure.suptitle(title)
-        return ax
+        return plots
 
     def show_canvas(self, ax, **kwargs):
         ax.figure.canvas.draw()
@@ -298,7 +298,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         from matplotlib.collections import PolyCollection
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 0
-        plots.append(PolyCollection(polycol, **kwargs))
+        plots.append(PolyCollection(polycol, label=label, **kwargs))
         ax.add_collection(plots[-1], autolim=True)
         ax.autoscale_view()
         return plots

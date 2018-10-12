@@ -8,14 +8,15 @@ from paramz.caching import Cache_this
 from ...util.linalg import tdot, mdot
 
 class BasisFuncKernel(Kern):
-    def __init__(self, input_dim, variance=1., active_dims=None, ARD=False, name='basis func kernel'):
+    def __init__(self, input_dim, variance=1., active_dims=None, ARD=False, name='basis func kernel', _warn_input_dim=True):
         """
         Abstract superclass for kernels with explicit basis functions for use in GPy.
 
         This class does NOT automatically add an offset to the design matrix phi!
         """
         super(BasisFuncKernel, self).__init__(input_dim, active_dims, name)
-        assert self.input_dim==1, "Basis Function Kernel only implemented for one dimension. Use one kernel per dimension (and add them together) for more dimensions"
+        if _warn_input_dim:
+            assert self.input_dim==1, "Basis Function Kernel only implemented for one dimension. Use one kernel per dimension (and add them together) for more dimensions"
         self.ARD = ARD
         if self.ARD:
             phi_test = self._phi(np.random.normal(0, 1, (1, self.input_dim)))
@@ -41,6 +42,27 @@ class BasisFuncKernel(Kern):
 
     def Kdiag(self, X, X2=None):
         return np.diag(self._K(X, X2))
+
+    def d_K_d_theta_through_K(self, phi1, dL_dK, dphi1_d_theta, phi2=None, dphi2_d_theta=None, ARD=True):
+        """
+        Helper to push inner parameter gradients through to K.
+        
+        Give phi(X) and the gradient of phi(X) wrt the parameter theta.
+        
+        Remember to set the gradient of the respective theta yourself! 
+        """
+        if phi2 is None or phi2 is phi1:
+            if ARD:
+                gradient = self.variance * 2 * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi1_d_theta)
+            else:
+                gradient = np.sum(self.variance * 2 * (dL_dK * phi1.dot(dphi1_d_theta.T)).sum())
+        else:
+            if ARD:
+                gradient = (self.variance * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi2_d_theta) + np.einsum('ij,iq,jq->q', dL_dK, phi2, dphi1_d_theta))
+            else:
+                gradient = np.sum(self.variance * (dL_dK * phi1.dot(dphi2_d_theta.T)).sum() + (dL_dK * phi2.dot(dphi1_d_theta.T)).sum())
+        return np.where(np.isnan(gradient), 0, gradient)
+    
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if self.ARD:
@@ -162,7 +184,7 @@ class ChangePointBasisFuncKernel(BasisFuncKernel):
 
 class DomainKernel(LinearSlopeBasisFuncKernel):
     """
-    Create a constant plateou of correlation between start and stop and zero
+    Create a constant plateau of correlation between start and stop and zero
     elsewhere. This is a constant shift of the outputs along the yaxis
     in the range from start to stop.
     """
@@ -202,25 +224,17 @@ class LogisticBasisFuncKernel(BasisFuncKernel):
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(LogisticBasisFuncKernel, self).update_gradients_full(dL_dK, X, X2)
-        if X2 is None or X is X2:
-            phi1 = self.phi(X)
-            if phi1.ndim != 2:
-                phi1 = phi1[:, None]
-            dphi1_dl = (phi1**2) * (np.exp(-((X-self.centers)*self.slope)) * (X-self.centers))
-            if self.ARD_slope:
-                self.slope.gradient = self.variance * 2 * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi1_dl)
-            else:
-                self.slope.gradient = np.sum(self.variance * 2 * (dL_dK * phi1.dot(dphi1_dl.T)).sum())
-        else:
-            phi1 = self.phi(X)
+        
+        phi1 = self.phi(X)
+        if phi1.ndim != 2:
+            phi1 = phi1[:, None]
+        dphi1_dl = (phi1**2) * (np.exp(-((X-self.centers)*self.slope)) * (X-self.centers))
+        
+        phi2 = dphi2_dl = None
+        if not(X2 is None or X is X2):
             phi2 = self.phi(X2)
-            if phi1.ndim != 2:
-                phi1 = phi1[:, None]
+            if phi2.ndim != 2:
                 phi2 = phi2[:, None]
-            dphi1_dl = (phi1**2) * (np.exp(-((X-self.centers)*self.slope)) * (X-self.centers))
             dphi2_dl = (phi2**2) * (np.exp(-((X2-self.centers)*self.slope)) * (X2-self.centers))
-            if self.ARD_slope:
-                self.slope.gradient = (self.variance * np.einsum('ij,iq,jq->q', dL_dK, phi1, dphi2_dl) + np.einsum('ij,iq,jq->q', dL_dK, phi2, dphi1_dl))
-            else:
-                self.slope.gradient = np.sum(self.variance * (dL_dK * phi1.dot(dphi2_dl.T)).sum() + (dL_dK * phi2.dot(dphi1_dl.T)).sum())
-        self.slope.gradient = np.where(np.isnan(self.slope.gradient), 0, self.slope.gradient)
+            
+        self.slope.gradient = self.d_K_d_theta_through_K(phi1, dL_dK, dphi1_dl, phi2, dphi2_dl, ARD=self.ARD_slope)

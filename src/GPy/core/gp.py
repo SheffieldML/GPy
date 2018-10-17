@@ -587,9 +587,9 @@ class GP(Model):
         :param size: the number of a posteriori samples.
         :type size: int.
         :returns: set of simulations
-        :rtype: np.ndarray (Nnew x D x samples) 
+        :rtype: np.ndarray (Nnew x D x samples)
         """
-        predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples. 
+        predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples.
         m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)

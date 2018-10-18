@@ -35,10 +35,15 @@
 #===============================================================================
 
 from __future__ import print_function
+
+import codecs
 import os
 import sys
-from setuptools import setup, Extension
-import codecs
+from glob import glob
+
+from setuptools import find_packages, setup
+from setuptools.extension import Extension
+
 
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
@@ -63,7 +68,7 @@ Please refer to the github homepage for detailed instructions on installation an
 """
 
 version_dummy = {}
-exec(read('GPy/__version__.py'), version_dummy)
+exec(read('src/GPy/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
@@ -80,118 +85,139 @@ else:
     link_args = ['-lgomp' ]
 
 try:
-    # So that we don't need numpy installed to determine it's a dependency.
-    import numpy as np
+    from Cython.Build import build_ext as _build_ext
 
-    ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
-                          sources=['GPy/kern/src/stationary_cython.c',
-                                   'GPy/kern/src/stationary_utils.c'],
-                          include_dirs=[np.get_include(), '.'],
-                          extra_compile_args=compile_flags,
-                          extra_link_args=link_args),
-                Extension(name='GPy.util.choleskies_cython',
-                          sources=['GPy/util/choleskies_cython.c'],
-                          include_dirs=[np.get_include(), '.'],
-                          extra_link_args=link_args,
-                          extra_compile_args=compile_flags),
-                Extension(name='GPy.util.linalg_cython',
-                          sources=['GPy/util/linalg_cython.c'],
-                          include_dirs=[np.get_include(), '.'],
-                          extra_compile_args=compile_flags,
-                          extra_link_args=link_args),
-                Extension(name='GPy.kern.src.coregionalize_cython',
-                          sources=['GPy/kern/src/coregionalize_cython.c'],
-                          include_dirs=[np.get_include(), '.'],
-                          extra_compile_args=compile_flags,
-                          extra_link_args=link_args),
-                Extension(name='GPy.models.state_space_cython',
-                          sources=['GPy/models/state_space_cython.c'],
-                          include_dirs=[np.get_include(), '.'],
-                          extra_compile_args=compile_flags,
-                          extra_link_args=link_args)]
-except ModuleNotFoundError:
-    ext_mods = []
+    USE_CYTHON = True
+except ImportError:
+    from setuptools.command.build_ext import build_ext as _build_ext
+
+    USE_CYTHON = False
 
 
-setup(name = 'GPy',
-      version = __version__,
-      author = read_to_rst('AUTHORS.txt'),
-      author_email = "gpy.authors@gmail.com",
-      description = ("The Gaussian Process Toolbox"),
-      long_description = desc,
-      license = "BSD 3-clause",
-      keywords = "machine-learning gaussian-processes kernels",
-      url = "http://sheffieldml.github.com/GPy/",
-      download_url='https://github.com/SheffieldML/GPy/',
-      ext_modules = ext_mods,
-      packages = ["GPy",
-                  "GPy.core",
-                  "GPy.core.parameterization",
-                  "GPy.kern",
-                  "GPy.kern.src",
-                  "GPy.kern.src.psi_comp",
-                  "GPy.models",
-                  "GPy.inference",
-                  "GPy.inference.optimization",
-                  "GPy.inference.mcmc",
-                  "GPy.inference.latent_function_inference",
-                  "GPy.likelihoods",
-                  "GPy.mappings",
-                  "GPy.examples",
-                  "GPy.testing",
-                  "GPy.util",
-                  "GPy.plotting",
-                  "GPy.plotting.gpy_plot",
-                  "GPy.plotting.matplot_dep",
-                  "GPy.plotting.matplot_dep.controllers",
-                  "GPy.plotting.plotly_dep",
-                  ],
-      package_dir={'GPy': 'GPy'},
-      #package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
-      #                        'util/data_resources.json',
-      #                        'util/football_teams.json',
-      #                        'testing/plotting_tests/baseline/*.png'
-      #                        ]},
-      #data_files=[('GPy/testing/plotting_tests/baseline', 'testing/plotting_tests/baseline/*.png'),
-      #            ('GPy/testing/', 'GPy/testing/pickle_test.pickle'),
-      #             ],
-      include_package_data = True,
-      py_modules = ['GPy.__init__'],
-      test_suite = 'GPy.testing',
-      setup_requires = ['numpy>=1.7'],
-      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.9.0'],
-      extras_require = {'docs':['sphinx'],
-                        'optional':['mpi4py',
-                                    'ipython>=4.0.0',
-                                    ],
-                        'plotting':['matplotlib >= 1.3',
-                                    'plotly >= 1.8.6'],
-                        'notebook':['jupyter_client >= 4.0.6',
-                                    'ipywidgets >= 4.0.3',
-                                    'ipykernel >= 4.1.0',
-                                    'notebook >= 4.0.5',
-                                    ],
-                        },
-      classifiers=['License :: OSI Approved :: BSD License',
-                   'Natural Language :: English',
-                   'Operating System :: MacOS :: MacOS X',
-                   'Operating System :: Microsoft :: Windows',
-                   'Operating System :: POSIX :: Linux',
-                   'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6',
-                   'Framework :: IPython',
-                   'Intended Audience :: Science/Research',
-                   'Intended Audience :: Developers',
-                   'Topic :: Software Development',
-                   'Topic :: Software Development :: Libraries :: Python Modules',
-                   
-                   ]
-      )
+# See https://stackoverflow.com/a/21621689/3622042
+class build_ext(_build_ext):
+    def finalize_options(self):
+        _build_ext.finalize_options(self)
 
+        # Prevent numpy from thinking it is still in its setup process:
+        __builtins__.__NUMPY_SETUP__ = False
+
+        import numpy
+        self.include_dirs.append(numpy.get_include())
+
+
+ext = '.pyx' if USE_CYTHON else '.c'
+
+ext_modules = [
+    Extension('GPy.kern.src.stationary_cython',
+              sources=['src/GPy/kern/src/stationary_cython' + ext,
+                       'src/GPy/kern/src/stationary_utils.c'],
+              include_dirs=['.'],
+              extra_compile_args=compile_flags,
+              extra_link_args=link_args),
+    Extension('GPy.util.choleskies_cython',
+              sources=['src/GPy/util/choleskies_cython' + ext],
+              include_dirs=['.'],
+              extra_compile_args=compile_flags,
+              extra_link_args=link_args),
+    Extension('GPy.util.linalg_cython',
+              sources=['src/GPy/util/linalg_cython' + ext],
+              include_dirs=['.'],
+              extra_compile_args=compile_flags,
+              extra_link_args=link_args),
+    Extension('GPy.kern.src.coregionalize_cython',
+              sources=['src/GPy/kern/src/coregionalize_cython' + ext],
+              include_dirs=['.'],
+              extra_compile_args=compile_flags,
+              extra_link_args=link_args),
+    Extension('GPy.models.state_space_cython',
+              sources=['src/GPy/models/state_space_cython' + ext],
+              include_dirs=['.'],
+              extra_compile_args=compile_flags,
+              extra_link_args=link_args)
+]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+
+    ext_modules = cythonize(ext_modules)
+
+
+def find_py_modules(pattern):
+    return [os.path.splitext(os.path.basename(p))[0] for p in glob(pattern)]
+
+
+setup(
+        name='GPy',
+        version=__version__,
+        author=read_to_rst('AUTHORS.txt'),
+        author_email="gpy.authors@gmail.com",
+        description="The Gaussian Process Toolbox",
+        long_description=desc,
+        license="BSD 3-clause",
+        keywords="machine-learning gaussian-processes kernels",
+        url="http://sheffieldml.github.com/GPy/",
+        download_url='https://github.com/SheffieldML/GPy/',
+        cmdclass={
+            'build_ext': build_ext
+        },
+        ext_modules=ext_modules,
+        packages=find_packages('src'),
+        package_dir={'': 'src'},
+        include_package_data=True,
+        py_modules=find_py_modules('src/*.py'),
+        test_suite='GPy.testing',
+        setup_requires=[
+            # Setuptools 18.0 properly handles Cython extensions.
+            'setuptools>=18.0',
+            'numpy>=1.7'
+        ],
+        install_requires=[
+            'numpy>=1.7',
+            'scipy>=0.16',
+            'six',
+            'paramz>=0.9.0'
+        ],
+        extras_require={
+            'docs': [
+                'sphinx'
+            ],
+            'optional': [
+                'mpi4py',
+                'ipython>=4.0.0',
+            ],
+            'plotting': [
+                'matplotlib >= 1.3',
+                'plotly >= 1.8.6'
+            ],
+            'notebook': [
+                'jupyter_client >= 4.0.6',
+                'ipywidgets >= 4.0.3',
+                'ipykernel >= 4.1.0',
+                'notebook >= 4.0.5',
+            ]
+        },
+        classifiers=[
+            'License :: OSI Approved :: BSD License',
+            'Natural Language :: English',
+            'Operating System :: MacOS :: MacOS X',
+            'Operating System :: Microsoft :: Windows',
+            'Operating System :: POSIX :: Linux',
+            'Programming Language :: Python :: 2.7',
+            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Framework :: IPython',
+            'Intended Audience :: Science/Research',
+            'Intended Audience :: Developers',
+            'Topic :: Software Development',
+            'Topic :: Software Development :: Libraries :: Python Modules'
+        ],
+        zip_safe=False
+)
 
 # Check config files and settings:
-local_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'GPy', 'installation.cfg'))
+local_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                          'src', 'GPy', 'installation.cfg'))
 home = os.getenv('HOME') or os.getenv('USERPROFILE')
 user_file = os.path.join(home,'.config', 'GPy', 'user.cfg')
 

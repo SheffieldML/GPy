@@ -7,18 +7,18 @@ include README.rst
 include AUTHORS.txt
 
 # Data and config
-recursive-include GPy *.json
-include GPy/defaults.cfg
-include GPy/installation.cfg
+recursive-include src/GPy *.json
+include src/GPy/defaults.cfg
+include src/GPy/installation.cfg
 
 # Cython
-recursive-include GPy *.c
-recursive-include GPy *.h
-recursive-include GPy *.pyx
+recursive-include src/GPy *.c
+recursive-include src/GPy *.h
+recursive-include src/GPy *.pyx
 
 # LICENSE
 include LICENSE.txt
 
 # Testing
-#include GPy/testing/baseline/*.png
-#include GPy/testing/pickle_test.pickle
+#include src/GPy/testing/baseline/*.png
+#include src/GPy/testing/pickle_test.pickle

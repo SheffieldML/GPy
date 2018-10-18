@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#===============================================================================
+# ==============================================================================
 # Copyright (c) 2012 - 2014, GPy authors (see AUTHORS.txt).
 # Copyright (c) 2014, James Hensman, Max Zwiessele
 # Copyright (c) 2015, Max Zwiessele
@@ -32,7 +32,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ==============================================================================
 
 from __future__ import print_function
 
@@ -49,6 +49,7 @@ def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
         return f.read()
 
+
 def read_to_rst(fname):
     try:
         import pypandoc
@@ -57,13 +58,15 @@ def read_to_rst(fname):
         with open(rstname, 'r') as f:
             rststr = f.read()
         return rststr
-        #return read(rstname)
+        # return read(rstname)
     except ImportError:
         return read(fname)
 
+
 desc = """
 
-Please refer to the github homepage for detailed instructions on installation and usage.
+Please refer to the github homepage for detailed instructions on installation 
+and usage.
 
 """
 
@@ -72,17 +75,19 @@ exec(read('src/GPy/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
-#Mac OS X Clang doesn't support OpenMP at the current time.
-#This detects if we are building on a Mac
+
+# Mac OS X Clang doesn't support OpenMP at the current time.
+# This detects if we are building on a Mac
 def ismac():
     return sys.platform[:6] == 'darwin'
 
+
 if ismac():
-    compile_flags = [ '-O3', ]
+    compile_flags = ['-O3']
     link_args = []
 else:
-    compile_flags = [ '-fopenmp', '-O3']
-    link_args = ['-lgomp' ]
+    compile_flags = ['-fopenmp', '-O3']
+    link_args = ['-lgomp']
 
 try:
     from Cython.Build import build_ext as _build_ext
@@ -219,21 +224,23 @@ setup(
 local_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                           'src', 'GPy', 'installation.cfg'))
 home = os.getenv('HOME') or os.getenv('USERPROFILE')
-user_file = os.path.join(home,'.config', 'GPy', 'user.cfg')
+user_file = os.path.join(home, '.config', 'GPy', 'user.cfg')
 
 print("")
 try:
     if not os.path.exists(user_file):
         # Does an old config exist?
-        old_user_file = os.path.join(home,'.gpy_user.cfg')
+        old_user_file = os.path.join(home, '.gpy_user.cfg')
         if os.path.exists(old_user_file):
             # Move it to new location:
-            print("GPy: Found old config file, moving to new location {}".format(user_file))
+            print("GPy: Found old config file, moving to new location "
+                  "{}".format(user_file))
             if not os.path.exists(os.path.dirname(user_file)):
                 os.makedirs(os.path.dirname(user_file))
             os.rename(old_user_file, user_file)
         else:
-            # No config file exists, save informative stub to user config folder:
+            # No config file exists, save informative stub to user config
+            # folder:
             print("GPy: Saving user configuration file to {}".format(user_file))
             if not os.path.exists(os.path.dirname(user_file)):
                 os.makedirs(os.path.dirname(user_file))

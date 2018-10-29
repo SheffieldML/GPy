@@ -245,6 +245,7 @@ class Posterior(object):
                     for i in range(var.shape[1]):
                         var[:, i] = (Kxx - (np.sum(np.dot(woodbury_inv[:, :, i].T, Kx) * Kx, 0)))
                 var = var
+                var = np.clip(var, 1e-15, np.inf)
         else:
             psi0_star = kern.psi0(pred_var, Xnew)
             psi1_star = kern.psi1(pred_var, Xnew)
@@ -265,7 +266,7 @@ class Posterior(object):
                     var += -psi2_star.reshape(N, -1).dot(woodbury_inv.flat)[:, None]
                 else:
                     var += -psi2_star.reshape(N, -1).dot(woodbury_inv.reshape(-1, D))
-        var = np.clip(var, 1e-15, np.inf)
+                var = np.clip(var, 1e-15, np.inf)
         return mu, var
 
 

@@ -164,7 +164,7 @@ setup(name = 'GPy',
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',
                                     ],
-                        'plotting':['matplotlib >= 1.3',
+                        'plotting':['matplotlib >= 3.0',
                                     'plotly >= 1.8.6'],
                         'notebook':['jupyter_client >= 4.0.6',
                                     'ipywidgets >= 4.0.3',
@@ -185,7 +185,7 @@ setup(name = 'GPy',
                    'Intended Audience :: Developers',
                    'Topic :: Software Development',
                    'Topic :: Software Development :: Libraries :: Python Modules',
-                   
+
                    ]
       )
 

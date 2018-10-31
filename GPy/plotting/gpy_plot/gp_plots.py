@@ -268,7 +268,10 @@ def _plot_density(self, canvas, helper_data, helper_prediction, label, **kwargs)
             # 1D plotting:
             fills = []
             for d in range(mu.shape[1]):
-                fills.append(pl().fill_gradient(canvas, Xgrid[:, free_dims[0]], [p[:,d] for p in percs], label=label, **kwargs))
+                fills.append(pl().fill_gradient(
+                    canvas, Xgrid[:, free_dims[0]], [p[:,d] for p in percs], 
+                    label=label, **kwargs)
+                )
             return dict(gpdensity=fills)
         else:
             pass # Nothing to plot!

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.9.6 (2018-10-30)
+
+## New
+
+* Added a new class that enables using multiple likelihoods [@esiivola]
+
+* Alex grig kalman new [@AlexGrig, @mzwiessele]
+
+## Fix
+
+* fix typo in docstring for GP.opimize() [@RobRomijnders]
+
+* Updates to posterior sampling [@lawrennd]
+
+* Jayanthkoushik cython fix [@jayanthkoushik, @mzwiessele]
+
+* Added missing columns (:), fixed indentation [@vlavorini]
+
+* Fix the bug in the prediction of full covariance matrix [@zhenwendai]
 
 ## v1.9.5 (2018-09-02)
 
@@ -2484,8 +2503,8 @@
 * Merge branch 'devel' into paramz. [mzwiessele]
 
   Conflicts:
-  	GPy/core/parameterization/parameter_core.py
-  	GPy/testing/pickle_tests.py
+    GPy/core/parameterization/parameter_core.py
+    GPy/testing/pickle_tests.py
 
 * [paramz] wrapping - todo: deprecation warnings. [mzwiessele]
 
@@ -3998,7 +4017,7 @@
 * Merge remote-tracking branch 'upstream/devel' into devel. [tjhgit]
 
   Conflicts:
-  	GPy/kern/__init__.py
+    GPy/kern/__init__.py
 
 * Added spline kernel (from P. Hennig) to GPy. [tjhgit]
 
@@ -5533,10 +5552,10 @@
 * Integrated Laplace and merged Merge remote-tracking branch 'gpy_real/devel' into merge_branch. [Alan Saul]
 
   Conflicts:
-  	GPy/core/gp.py
-  	GPy/likelihoods/__init__.py
-  	GPy/likelihoods/likelihood_functions.py
-  	GPy/likelihoods/link_functions.py
+    GPy/core/gp.py
+    GPy/likelihoods/__init__.py
+    GPy/likelihoods/likelihood_functions.py
+    GPy/likelihoods/link_functions.py
 
 * Fixed white variance. [Alan Saul]
 
@@ -5675,7 +5694,7 @@
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
   Conflicts:
-  	GPy/inference/latent_function_inference/inferenceX.py
+    GPy/inference/latent_function_inference/inferenceX.py
 
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Zhenwen Dai]
 
@@ -6190,7 +6209,7 @@
 * [dim red plots] plotting big models. [mzwiessele]
 
   Conflicts:
-  	GPy/plotting/matplot_dep/dim_reduction_plots.py
+    GPy/plotting/matplot_dep/dim_reduction_plots.py
 
 * Add debug util module and try to debug sparsegp_mpi. [Zhenwen Dai]
 
@@ -6207,8 +6226,8 @@
 * [normalizer] first commit for normalizer in GPy. [mzwiessele]
 
   Conflicts:
-  	GPy/core/sparse_gp.py
-  	GPy/models/bayesian_gplvm.py
+    GPy/core/sparse_gp.py
+    GPy/models/bayesian_gplvm.py
 
 * Further bug fix for sparsegp_mpi. [Zhenwen Dai]
 
@@ -6227,8 +6246,8 @@
 * [ard] enhanced ard handling and plotting. [mzwiessele]
 
   Conflicts:
-  	GPy/kern/_src/linear.py
-  	GPy/models/ss_gplvm.py
+    GPy/kern/_src/linear.py
+    GPy/models/ss_gplvm.py
 
 * [linear] einsums. [mzwiessele]
 
@@ -6331,14 +6350,14 @@
 * [inference] less constant jitter, and jitter adjustements. [mzwiessele]
 
   Conflicts:
-  	GPy/util/linalg.py
+    GPy/util/linalg.py
 
 * Fixed a bug in optimize restarts: it now used optimizer_array. [James Hensman]
 
 * [vardtc missing] logging. [maxz]
 
   Conflicts:
-  	GPy/inference/latent_function_inference/var_dtc.py
+    GPy/inference/latent_function_inference/var_dtc.py
 
 * [init] normalization bugfix. [mzwiessele]
 
@@ -6839,7 +6858,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/kern/_src/kern.py
+    GPy/kern/_src/kern.py
 
 * Missing file, import line commented. [Ricardo]
 
@@ -6888,8 +6907,8 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/models/gp_classification.py
-  	GPy/models/sparse_gp_classification.py
+    GPy/models/gp_classification.py
+    GPy/models/sparse_gp_classification.py
 
 * New file. [Ricardo]
 
@@ -7170,7 +7189,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/likelihoods/mixed_noise.py
+    GPy/likelihoods/mixed_noise.py
 
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
@@ -7255,14 +7274,14 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
-  	GPy/likelihoods/gaussian.py
+    GPy/likelihoods/gaussian.py
 
 * Bug fix w.r.t. var_dtc.py. [Zhenwen Dai]
 
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/inference/latent_function_inference/var_dtc.py
+    GPy/inference/latent_function_inference/var_dtc.py
 
 * New model SparseGPCoregionalizedRegression. [Ricardo]
 
@@ -7462,8 +7481,8 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/core/gp.py
-  	GPy/plotting/matplot_dep/models_plots.py
+    GPy/core/gp.py
+    GPy/plotting/matplot_dep/models_plots.py
 
 * GPCoregionalizedRegresssion added. [Ricardo]
 
@@ -7724,7 +7743,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/kern/_src/constructors.py
+    GPy/kern/_src/constructors.py
 
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
@@ -7733,8 +7752,8 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/kern/kern.py
-  	GPy/kern/parts/prod.py
+    GPy/kern/kern.py
+    GPy/kern/parts/prod.py
 
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
@@ -7743,7 +7762,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/kern/parts/prod.py
+    GPy/kern/parts/prod.py
 
 * Minor changes. [Ricardo]
 
@@ -8106,7 +8125,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
-  	GPy/core/parameterization/param.py
+    GPy/core/parameterization/param.py
 
 * Fixed a couple of small params bugs. [Alan Saul]
 
@@ -8121,9 +8140,9 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Max Zwiessele]
 
   Conflicts:
-  	GPy/core/parameterization/param.py
-  	GPy/core/parameterization/parameter_core.py
-  	GPy/core/parameterization/parameterized.py
+    GPy/core/parameterization/param.py
+    GPy/core/parameterization/parameter_core.py
+    GPy/core/parameterization/parameterized.py
 
 * Stupid error, needed to actually USE the gradients in student t... Looks like s2 of rasm's may have an extra -? dW_df == -d2logpdf_df not just d2logpdf_df? [Alan Saul]
 
@@ -8208,7 +8227,7 @@
 * Merge branch 'params' of github.com:SheffieldML/GPy into params. [Ricardo]
 
   Conflicts:
-  	GPy/core/sparse_gp.py
+    GPy/core/sparse_gp.py
 
 * Typo corrected. [Ricardo]
 
@@ -8622,7 +8641,7 @@
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
-  	GPy/examples/classification.py
+    GPy/examples/classification.py
 
 * Fixed a bug in Neil's otherwise tidy hetero kernel. [James Hensman]
 
@@ -8691,8 +8710,8 @@
 * Merge branch 'devel' into params. [Max Zwiessele]
 
   Conflicts:
-  	GPy/core/transformations.py
-  	GPy/kern/parts/kernpart.py
+    GPy/core/transformations.py
+    GPy/kern/parts/kernpart.py
 
 * Merge pull request #77 from jamesmcm/devel. [James McMurray]
 
@@ -8751,10 +8770,10 @@
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
-  	GPy/examples/regression.py
-  	GPy/kern/constructors.py
-  	GPy/testing/kernel_tests.py
-  	GPy/util/multioutput.py
+    GPy/examples/regression.py
+    GPy/kern/constructors.py
+    GPy/testing/kernel_tests.py
+    GPy/util/multioutput.py
 
 * Other local changes. [Neil Lawrence]
 
@@ -8779,15 +8798,15 @@
 * Merge branch 'linK_functions2' into devel. [Ricardo]
 
   Conflicts:
-  	GPy/core/gp.py
-  	GPy/core/gp_base.py
-  	GPy/core/sparse_gp.py
-  	GPy/examples/regression.py
-  	GPy/kern/constructors.py
-  	GPy/kern/parts/coregionalise.py
-  	GPy/models/__init__.py
-  	GPy/models/sparse_gp_classification.py
-  	GPy/util/__init__.py
+    GPy/core/gp.py
+    GPy/core/gp_base.py
+    GPy/core/sparse_gp.py
+    GPy/examples/regression.py
+    GPy/kern/constructors.py
+    GPy/kern/parts/coregionalise.py
+    GPy/models/__init__.py
+    GPy/models/sparse_gp_classification.py
+    GPy/util/__init__.py
 
 * Useless files deleted. [Ricardo]
 
@@ -9460,7 +9479,7 @@
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
-  	GPy/core/fitc.py
+    GPy/core/fitc.py
 
 * FITC example added. [Ricardo]
 
@@ -9628,7 +9647,7 @@
 * Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
   Conflicts:
-  	GPy/models/GPLVM.py
+    GPy/models/GPLVM.py
 
 * Remove copies (they are now in visualize code ...). [Neil Lawrence]
 
@@ -9776,7 +9795,7 @@
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Ricardo]
 
   Conflicts:
-  	GPy/models/GP.py
+    GPy/models/GP.py
 
 * Plot function got broken with last commit, this fixes it. [Ricardo]
 
@@ -10118,7 +10137,7 @@
 * Merge branch 'devel' of https://github.com/SheffieldML/GPy into devel. [Neil Lawrence]
 
   Conflicts:
-  	GPy/examples/dimensionality_reduction.py
+    GPy/examples/dimensionality_reduction.py
 
 * Minor changes. [Neil Lawrence]
 
@@ -10189,8 +10208,8 @@
 * Merge branch 'devel' into new_constraints. [James Hensman]
 
   Conflicts:
-  	GPy/core/model.py
-  	GPy/core/parameterised.py
+    GPy/core/model.py
+    GPy/core/parameterised.py
 
 * Merge branch 'devel' of github.com:SheffieldML/GPy into devel. [Max Zwiessele]
 
@@ -10752,7 +10771,7 @@
 * Merge branch 'master' of github.com:SheffieldML/GPy. [Ricardo Andrade]
 
   Conflicts:
-  	GPy/examples/__init__.py
+    GPy/examples/__init__.py
 
 * Working on psi cross terms. [Nicolo Fusi]
 
@@ -11192,7 +11211,7 @@
 * Merge branch 'newGP' [James Hensman]
 
   Conflicts:
-  	GPy/models/GP_regression.py
+    GPy/models/GP_regression.py
 
 * Simplified the checkgrad logic somewhat. [James Hensman]
 
@@ -11223,7 +11242,7 @@
 * Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [James Hensman]
 
   Conflicts:
-  	GPy/likelihoods/EP.py
+    GPy/likelihoods/EP.py
 
 * James' debugging of the EP/GP interface. [Ricardo Andrade]
 
@@ -11234,8 +11253,8 @@
 * Merge branch 'newGP' of github.com:SheffieldML/GPy into newGP. [Ricardo Andrade]
 
   Conflicts:
-  	GPy/likelihoods/EP.py
-  	GPy/likelihoods/likelihood_functions.py
+    GPy/likelihoods/EP.py
+    GPy/likelihoods/likelihood_functions.py
 
 * So many changes. [Ricardo Andrade]
 
@@ -11999,5 +12018,3 @@
 * Core file. [Nicolo Fusi]
 
 * Initial commit. [Nicolò Fusi]
-
-

@@ -12,7 +12,7 @@ cimport scipy.linalg.cython_blas as cblas
 def flat_to_triang(double[:, :] flat, int M):
     """take a matrix N x D and return a D X M x M array where
 
-    N = M(M+1)/2
+    N = M(M+1)//2
 
     the lower triangluar portion of the d'th slice of the result is filled by the d'th column of flat.
     """
@@ -33,7 +33,7 @@ def flat_to_triang(double[:, :] flat, int M):
 def triang_to_flat(double[:, :, :] L):
     cdef int D = L.shape[0]
     cdef int M = L.shape[1]
-    cdef int N = M*(M+1)/2
+    cdef int N = M*(M+1)//2
     cdef int count = 0
     cdef double[:, ::1] flat = np.empty((N, D))
     cdef int d, m, mm

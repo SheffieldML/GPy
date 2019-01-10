@@ -122,7 +122,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     def barplot(self, ax, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if 'align' not in kwargs:
             kwargs['align'] = 'center'
-        return ax.bar(left=x, height=height, width=width,
+        return ax.bar(x=x, height=height, width=width,
                bottom=bottom, label=label, color=color,
                **kwargs)
 

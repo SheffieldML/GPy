@@ -493,7 +493,7 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
                     U,S,Vh = self.Q_svd_dict[matrix_index]
                        
                 square_root = U * np.sqrt(S)
-                self.Q_suqare_root_dict[matrix_index] = square_root
+                self.Q_square_root_dict[matrix_index] = square_root
             
             return square_root
             

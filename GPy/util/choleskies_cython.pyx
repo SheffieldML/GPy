@@ -9,6 +9,8 @@ from cython.parallel import prange, parallel
 cimport numpy as np
 cimport scipy.linalg.cython_blas as cblas
 
+np.import_array()
+
 def flat_to_triang(double[:, :] flat, int M):
     """take a matrix N x D and return a D X M x M array where
 

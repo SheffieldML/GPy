@@ -60,6 +60,10 @@ class GPMultioutRegressionMD(SparseGP):
             kernel = kern.RBF(X.shape[1])
         if kernel_row is None:
             kernel_row = kern.RBF(Xr_dim,name='kern_row')
+            
+        if num_inducing[1] > self.output_dim:
+            msg = 'Number of inducing points ({}) in latent space must be <= output dim ({})'
+            raise ValueError(msg.format(num_inducing[1], self.output_dim))
 
         if init=='GP':
             from . import SparseGPRegression, BayesianGPLVM

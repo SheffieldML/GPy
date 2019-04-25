@@ -64,6 +64,11 @@ class White(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
         super(White, self).__init__(input_dim, variance, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(White, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.White"
+        return input_dict
+    
     def K(self, X, X2=None):
         if X2 is None:
             return np.eye(X.shape[0])*self.variance
@@ -102,6 +107,10 @@ class WhiteHeteroscedastic(Static):
         super(Static, self).__init__(input_dim, active_dims, name)
         self.variance = Param('variance', np.ones(num_data) * variance, Logexp())
         self.link_parameters(self.variance)
+    def to_dict(self):
+        input_dict = super(WhiteHeteroscedastic, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.WhiteHeteroscedastic"
+        return input_dict
 
     def Kdiag(self, X):
         if X.shape[0] == self.variance.shape[0]:

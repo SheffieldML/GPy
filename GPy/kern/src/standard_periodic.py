@@ -2,10 +2,10 @@
 # Copyright (c) 2015, Alex Grigorevskiy
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
-The standard periodic kernel which mentioned in:
+The standard periodic kernel which is mentioned in:
 
 [1] Gaussian Processes for Machine Learning, C. E. Rasmussen, C. K. I. Williams.
-The MIT Press, 2005.
+The MIT Press, 2005, pp92.
 
 
 [2] Introduction to Gaussian processes. D. J. C. MacKay. In C. M. Bishop, editor,
@@ -24,7 +24,7 @@ class StdPeriodic(Kern):
 
     .. math::
 
-       k(x,y) = \theta_1 \exp \left[  - \frac{1}{2} \sum_{i=1}^{input\_dim}
+       k(x,y) = \theta_1 \exp \left[  - 2 \sum_{i=1}^{input\_dim}
        \left( \frac{\sin(\frac{\pi}{T_i} (x_i - y_i) )}{l_i} \right)^2 \right] }
 
     :param input_dim: the number of input dimensions
@@ -129,7 +129,7 @@ class StdPeriodic(Kern):
             X2 = X
 
         base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale ), axis = -1 ) )
+        exp_dist = np.exp( -2* np.sum( np.square(  np.sin( base ) / self.lengthscale ), axis = -1 ) )
 
         return self.variance * exp_dist
 
@@ -148,7 +148,7 @@ class StdPeriodic(Kern):
         base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
 
         sin_base = np.sin( base )
-        exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscale ), axis = -1 ) )
+        exp_dist = np.exp( -2* np.sum( np.square(  sin_base / self.lengthscale ), axis = -1 ) )
 
         dwl = self.variance * (1.0/np.square(self.lengthscale)) * sin_base*np.cos(base) * (base / self.period)
 

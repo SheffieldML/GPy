@@ -102,8 +102,8 @@ With anaconda you can install GPy by the following:
     
 Then potentially try,
 
-    sudo apt-get install python3-dev
     sudo apt-get update
+    sudo apt-get install python3-dev
     sudo apt-get install build-essential   
     conda update anaconda
     

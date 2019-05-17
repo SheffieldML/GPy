@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v1.9.8 (2019-05-17)
+
+### Fix
+
+* Also run on 3.5. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.7 → 1.9.8. [mzwiessele]
+
+* Pkg: changelog. [mzwiessele]
+
+
 ## v1.9.7 (2019-05-17)
 
 ### Fix

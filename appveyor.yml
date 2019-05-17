@@ -3,7 +3,7 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   COVERALLS_REPO_TOKEN:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
-  gpy_version: 1.9.7
+  gpy_version: 1.9.8
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda-x64

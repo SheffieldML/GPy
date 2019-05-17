@@ -1,6 +1,7 @@
 *.py[cod]
 
 # C extensions
+*_cython.c
 *.so
 
 # Packages

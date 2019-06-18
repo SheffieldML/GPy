@@ -118,7 +118,7 @@ def helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resol
         resolution = resolution or 200
         Xnew, xmin, xmax = x_frame1D(X[:,free_dims], plot_limits=plot_limits, resolution=resolution)
         Xgrid = np.zeros((Xnew.shape[0],self.input_dim))
-        Xgrid[:,free_dims] = Xnew
+        Xgrid[:,free_dims[0]] = Xnew.squeeze()
         for i,v in fixed_inputs:
             Xgrid[:,i] = v
         x = Xgrid

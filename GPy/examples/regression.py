@@ -581,6 +581,7 @@ def warped_gp_cubic_sine(max_iters=100):
     m.plot(title="Standard GP")
     warp_m.plot_warping()
     pb.show()
+    return warp_m
 
 
 
@@ -598,7 +599,7 @@ def multioutput_gp_with_derivative_observations():
     Npred=100 # Number of prediction points
     sigma = 0.05 # Noise of observations
     sigma_der = 0.05 # Noise of derivative observations
-    x = np.array([np.linspace(1,10,N)]).T 
+    x = np.array([np.linspace(1,10,N)]).T
     y = f(x) + np.array(sigma*np.random.normal(0,1,(N,1)))
 
     xd = np.array([np.linspace(2,8,M)]).T
@@ -613,7 +614,7 @@ def multioutput_gp_with_derivative_observations():
     # We need to generate separate kernel for the derivative observations and give the created kernel as an input:
     se_der = GPy.kern.DiffKern(se, 0)
 
-    #Then 
+    #Then
     gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
     gauss_der = GPy.likelihoods.Gaussian(variance=sigma_der**2)
 
@@ -621,7 +622,7 @@ def multioutput_gp_with_derivative_observations():
     # Now we have the regular observations first and derivative observations second, meaning that the kernels and
     # the likelihoods must follow the same order. Crosscovariances are automatically taken car of
     m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, gauss])
-    
+
     # Optimize the model
     m.optimize(messages=0, ipython_notebook=False)
 
@@ -631,3 +632,5 @@ def multioutput_gp_with_derivative_observations():
 
     #making predictions for the values:
     mu, var = m.predict_noiseless(Xnew=[xpred, np.empty((0,1))])
+
+    return m

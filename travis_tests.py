@@ -31,7 +31,7 @@
 
 #!/usr/bin/env python
 import matplotlib
-matplotlib.use('agg')
+matplotlib.use('agg', warn=False)
 
 import nose, warnings
 with warnings.catch_warnings():

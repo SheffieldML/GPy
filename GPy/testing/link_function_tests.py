@@ -2,11 +2,12 @@ import numpy as np
 import scipy
 from scipy.special import cbrt
 from GPy.models import GradientChecker
+import random
 _lim_val = np.finfo(np.float64).max
 _lim_val_exp = np.log(_lim_val)
 _lim_val_square = np.sqrt(_lim_val)
 _lim_val_cube = cbrt(_lim_val)
-from GPy.likelihoods.link_functions import Identity, Probit, Cloglog, Log, Log_ex_1, Reciprocal, Heaviside
+from GPy.likelihoods.link_functions import Identity, Probit, Cloglog, Log, Log_ex_1, Reciprocal, Heaviside, ScaledProbit
 
 class LinkFunctionTests(np.testing.TestCase):
     def setUp(self):
@@ -121,6 +122,11 @@ class LinkFunctionTests(np.testing.TestCase):
 
     def test_probit_gradients(self):
         link = Probit()
+        lim_of_inf = _lim_val
+        self.check_gradient(link, lim_of_inf, test_lim=True)
+        
+    def test_scaledprobit_gradients(self):
+        link = ScaledProbit(nu=random.random())
         lim_of_inf = _lim_val
         self.check_gradient(link, lim_of_inf, test_lim=True)
 

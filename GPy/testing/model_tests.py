@@ -1180,6 +1180,67 @@ class GradientTests(np.testing.TestCase):
 
         with self.assertRaises(RuntimeError):
             m.posterior_covariance_between_points(np.array([[1], [2]]), np.array([[3], [4]]))
+    
+    def test_multioutput_model_with_derivative_observations(self):
+        f = lambda x: np.sin(x)+0.1*(x-2.)**2-0.005*x**3
+        fd = lambda x: np.cos(x)+0.2*(x-2.)-0.015*x**2
+        N=10
+        M=10
+        sigma=0.05
+        sigmader=0.05
+        x = np.array([np.linspace(1,10,N)]).T
+        y = f(x) + np.array(sigma*np.random.normal(0,1,(N,1)))
+
+        xd = np.array([np.linspace(2,8,M)]).T
+        yd = fd(xd) + np.array(sigmader*np.random.normal(0,1,(M,1)))
+
+        # squared exponential kernel:
+        se = GPy.kern.RBF(input_dim = 1, lengthscale=1.5, variance=0.2)
+        # We need to generate separate kernel for the derivative observations and give the created kernel as an input:
+        se_der = GPy.kern.DiffKern(se, 0)
+
+        #Then 
+        gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
+        gauss = GPy.likelihoods.Gaussian(variance=0.1)
+        gauss_der = GPy.likelihoods.Gaussian(variance=sigma**2)
+
+        # Then create the model, we give everything in lists, the order of the inputs indicates the order of the outputs
+        # Now we have the regular observations first and derivative observations second, meaning that the kernels and
+        # the likelihoods must follow the same order
+        m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, gauss])
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m.optimize(messages=0, ipython_notebook=False)
+
+        self.assertTrue(m.checkgrad())
+
+    def test_multioutput_model_with_ep(self):
+        f = lambda x: np.sin(x)+0.1*(x-2.)**2-0.005*x**3
+        fd = lambda x: np.cos(x)+0.2*(x-2.)-0.015*x**2
+        N=10
+        sigma=0.05
+        sigmader=0.05
+        x = np.array([np.linspace(1,10,N)]).T
+        y = f(x) + np.array(sigma*np.random.normal(0,1,(N,1)))
+
+        M=7
+        xd = np.array([np.linspace(2,8,M)]).T
+        yd = 2*(fd(xd)>0) -1
+
+        # squared exponential kernel:
+        se = GPy.kern.RBF(input_dim = 1, lengthscale=1.5, variance=0.2)
+        # We need to generate separate kernel for the derivative observations and give the created kernel as an input:
+        se_der = GPy.kern.DiffKern(se, 0)
+
+        #Then 
+        gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
+        probit = GPy.likelihoods.Binomial(gp_link = GPy.likelihoods.link_functions.ScaledProbit(nu=100))
+
+        # Then create the model, we give everything in lists
+        m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, probit], inference_method=GPy.inference.latent_function_inference.EP(ep_mode="nested"))
+        
+        self.assertTrue(m.checkgrad())       
 
 def _create_missing_data_model(kernel, Q):
     D1, D2, D3, N, num_inducing = 13, 5, 8, 400, 3

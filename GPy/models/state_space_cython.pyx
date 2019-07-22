@@ -484,7 +484,7 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
             if matrix_index in self.Q_square_root_dict:
                 square_root = self.Q_square_root_dict[matrix_index]
             else:
-                if matrix_index not in self.Q_svd_dict
+                if matrix_index not in self.Q_svd_dict:
                     U,S,Vh = sp.linalg.svd( self.Qs[:,:, matrix_index], 
                                         full_matrices=False, compute_uv=True, 
                                         overwrite_a=False, check_finite=False)
@@ -493,7 +493,7 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
                     U,S,Vh = self.Q_svd_dict[matrix_index]
                        
                 square_root = U * np.sqrt(S)
-                self.Q_suqare_root_dict[matrix_index] = square_root
+                self.Q_square_root_dict[matrix_index] = square_root
             
             return square_root
             
@@ -514,7 +514,7 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
             if matrix_index in self.Q_inverse_dict:
                 Q_inverse = self.Q_inverse_dict[matrix_index]
             else:
-                if matrix_index not in self.Q_svd_dict
+                if matrix_index not in self.Q_svd_dict:
                     U,S,Vh = sp.linalg.svd( self.Qs[:,:, matrix_index], 
                                         full_matrices=False, compute_uv=True, 
                                         overwrite_a=False, check_finite=False)
@@ -522,7 +522,7 @@ cdef class AQcompute_batch_Cython(Q_handling_Cython):
                 else:
                     U,S,Vh = self.Q_svd_dict[matrix_index]
                        
-               Q_inverse = Q_inverse = np.dot( Vh.T * ( 1.0/(S + jitter)) , U.T )
+                Q_inverse = Q_inverse = np.dot( Vh.T * ( 1.0/(S + jitter)) , U.T )
                 self.Q_inverse_dict[matrix_index] = Q_inverse
             
             return Q_inverse

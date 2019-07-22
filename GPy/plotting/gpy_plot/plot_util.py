@@ -356,7 +356,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     else:
         raise ValueError("Bad limits for plotting")
 
-    Xnew = np.linspace(xmin,xmax,resolution or 200)[:,None]
+    Xnew = np.linspace(float(xmin),float(xmax),int(resolution) or 200)[:,None]
     return Xnew, xmin, xmax
 
 def x_frame2D(X,plot_limits=None,resolution=None):

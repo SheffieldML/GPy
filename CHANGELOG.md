@@ -1,6 +1,147 @@
 # Changelog
 
 
+## v1.9.8 (2019-05-17)
+
+### Fix
+
+* Also run on 3.5. [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.7 → 1.9.8. [mzwiessele]
+
+* Pkg: changelog. [mzwiessele]
+
+
+## v1.9.7 (2019-05-17)
+
+### Fix
+
+* Version. [mzwiessele]
+
+* Plotting. [mzwiessele]
+
+* Matplotlib 2.0 mlba -> cbook: [mzwiessele]
+
+### Other
+
+* Bump version: 1.9.6 → 1.9.7. [mzwiessele]
+
+* Merge branch 'deploy' into devel. [mzwiessele]
+
+* Merge pull request #703 from SheffieldML/devel. [Zhenwen Dai]
+
+  Deploy the version 1.9.6
+
+* Merge pull request #709 from KOLANICH/ignoring_cython-generated_C_sources. [Zhenwen Dai]
+
+  Cython-generated files should be regenerated
+
+* Cython-generated files should be regenerated. [KOLANICH]
+
+* Merge pull request #758 from marpulli/py37_travis. [Zhenwen Dai]
+
+  Add travis build for 3.7, remove for 3.5, bump version to 1.9.7
+
+* Bump version to 1.9.7. [Mark Pullin]
+
+* Move python 3.5 build to 3.7. [Mark Pullin]
+
+* Update README.md. [Mike Smith]
+
+* I've added these steps to install necessary libraries. [Mike Smith]
+
+  Lots of people seem to have this problem with an "error: command 'gcc' failed with exit status 1" on installing.
+  E.g. this can be reproduced on a clean AWS Ubuntu install.
+
+  Feel free to revert, but this issue comes up regularly.
+
+* Merge pull request #722 from jopago/devel. [Zhenwen Dai]
+
+  Add to_dict methods to White and Brownian kernels
+
+* Update static.py. [Joan Gonzalvez]
+
+* Update brownian.py. [Joan Gonzalvez]
+
+  added to_dict method
+
+* Merge pull request #718 from KOLANICH/patch-1. [Zhenwen Dai]
+
+  Don't import `datasets` by default since it is almost never needed
+
+* Don't import datasets by default since it is almost never needed. [KOLANICH]
+
+* Merge pull request #708 from KOLANICH/cython_code_fix. [Zhenwen Dai]
+
+  Integer division is needed here.
+
+* Integer division is needed here. [KOLANICH]
+
+* Fix the bug due to changes in Numpy (#744) [Zhenwen Dai]
+
+* Merge pull request #719 from ajgpitch/install_fixes. [Max Zwiessele]
+
+  FIXES - for installing under Python 3.7
+
+* Recythonised c files. [Alexander Pitchford]
+
+* Merge branch 'fix-state_space_cython-misc' into install_fixes. [Alexander Pitchford]
+
+* Type fixed - Q_square_root_dict. [Alexander Pitchford]
+
+* Merge branch 'fix-state_space_cython-misc' into install_fixes. [Alexander Pitchford]
+
+* Merge branch 'devel' into fix-state_space_cython-misc. [Alexander Pitchford]
+
+* Merge branch 'build_ext-source_pyx' into install_fixes. [Alexander Pitchford]
+
+* Merge branch 'devel' into build_ext-source_pyx. [Alexander Pitchford]
+
+* Merge branch 'fix-cython-import_array' into install_fixes. [Alexander Pitchford]
+
+* Merge branch 'devel' into fix-cython-import_array. [Alexander Pitchford]
+
+* Fix the version number in appveyor.yml. [Zhenwen Dai]
+
+* Fix the version number in setup.cfg. [Dai]
+
+* Merge branch 'deploy' into devel. [Zhenwen Dai]
+
+* Merge pull request #656 from SheffieldML/devel. [Max Zwiessele]
+
+  push PR to deploy
+
+* Bump the version: 1.9.5 -> 1.9.6. [Zhenwen Dai]
+
+* Merge pull request #691 from vlavorini/devel. [Zhenwen Dai]
+
+  Added missing columns (:), fixed indentation
+
+* Added missing columns (:), fixed indentation. [Vincenzo Lavorini]
+
+* Fix the bug in the prediction of full covariance matrix (#702) [Zhenwen Dai]
+
+  * fix the bug in the prediction of full covariance matrix
+
+  * Fix the test cases.
+
+  * update the version requirement for matplotlib
+
+* Merge branch 'build_ext-source_pyx' into install_fixes. [Alexander Pitchford]
+
+* Ext sources changed to pyx. [Alexander Pitchford]
+
+* Merge branch 'fix-cython-import_array' into install_fixes. [Alexander Pitchford]
+
+* Np.import_array() added to files where cimport numpy used. [Alexander Pitchford]
+
+* Add missing colons and fix indentation. [Alexander Pitchford]
+
+* Pkg: changelog. [mzwiessele]
+
+
 ## v1.9.5 (2018-09-02)
 
 ### New

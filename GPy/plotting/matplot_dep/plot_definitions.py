@@ -90,7 +90,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if title is not None: ax.figure.suptitle(title)
-        return ax
+        return plots
 
     def show_canvas(self, ax, **kwargs):
         ax.figure.canvas.draw()
@@ -122,7 +122,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
     def barplot(self, ax, x, height, width=0.8, bottom=0, color=Tango.colorsHex['mediumBlue'], label=None, **kwargs):
         if 'align' not in kwargs:
             kwargs['align'] = 'center'
-        return ax.bar(left=x, height=height, width=width,
+        return ax.bar(x=x, height=height, width=width,
                bottom=bottom, label=label, color=color,
                **kwargs)
 
@@ -236,7 +236,10 @@ class MatplotlibPlots(AbstractPlottingLibrary):
 
         polycol = []
         for y1, y2 in pairwise(percentiles):
-            import matplotlib.mlab as mlab
+            try:
+                from matplotlib.cbook import contiguous_regions
+            except ImportError:
+                from matplotlib.mlab import contiguous_regions
             # Handle united data, such as dates
             ax._process_unit_info(xdata=X, ydata=y1)
             ax._process_unit_info(ydata=y2)
@@ -265,7 +268,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                 where &= ~mask
 
             polys = []
-            for ind0, ind1 in mlab.contiguous_regions(where):
+            for ind0, ind1 in contiguous_regions(where):
                 xslice = x[ind0:ind1]
                 y1slice = y1[ind0:ind1]
                 y2slice = y2[ind0:ind1]
@@ -295,7 +298,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         from matplotlib.collections import PolyCollection
         if 'zorder' not in kwargs:
             kwargs['zorder'] = 0
-        plots.append(PolyCollection(polycol, **kwargs))
+        plots.append(PolyCollection(polycol, label=label, **kwargs))
         ax.add_collection(plots[-1], autolim=True)
         ax.autoscale_view()
         return plots

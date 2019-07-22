@@ -6,7 +6,6 @@ from . import linalg
 from . import misc
 from . import squashers
 from . import warping_functions
-from . import datasets
 from . import mocap
 from . import decorators
 from . import classification

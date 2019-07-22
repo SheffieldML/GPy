@@ -581,3 +581,53 @@ def warped_gp_cubic_sine(max_iters=100):
     m.plot(title="Standard GP")
     warp_m.plot_warping()
     pb.show()
+
+
+
+def multioutput_gp_with_derivative_observations():
+    def plot_gp_vs_real(m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0,11], ylim=[-1.5,3]):
+        fig, ax = pb.subplots()
+        ax.set_title(title)
+        pb.plot(x, yreal, "r", label='Real function')
+        rows = slice(0, size_inputs[0]) if fixed_input == 0 else slice(size_inputs[0], size_inputs[0]+size_inputs[1])
+        m.plot(fixed_inputs=[(1, fixed_input)], which_data_rows=rows, xlim=xlim, ylim=ylim, ax=ax)
+    f = lambda x: np.sin(x)+0.1*(x-2.)**2-0.005*x**3
+    fd = lambda x: np.cos(x)+0.2*(x-2.)-0.015*x**2
+    N=10 # Number of observations
+    M=10 # Number of derivative observations
+    Npred=100 # Number of prediction points
+    sigma = 0.05 # Noise of observations
+    sigma_der = 0.05 # Noise of derivative observations
+    x = np.array([np.linspace(1,10,N)]).T 
+    y = f(x) + np.array(sigma*np.random.normal(0,1,(N,1)))
+
+    xd = np.array([np.linspace(2,8,M)]).T
+    yd = fd(xd) + np.array(sigma_der*np.random.normal(0,1,(M,1)))
+
+    xpred = np.array([np.linspace(0,11,Npred)]).T
+    ypred_true = f(xpred)
+    ydpred_true = fd(xpred)
+
+    # squared exponential kernel:
+    se = GPy.kern.RBF(input_dim = 1, lengthscale=1.5, variance=0.2)
+    # We need to generate separate kernel for the derivative observations and give the created kernel as an input:
+    se_der = GPy.kern.DiffKern(se, 0)
+
+    #Then 
+    gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
+    gauss_der = GPy.likelihoods.Gaussian(variance=sigma_der**2)
+
+    # Then create the model, we give everything in lists, the order of the inputs indicates the order of the outputs
+    # Now we have the regular observations first and derivative observations second, meaning that the kernels and
+    # the likelihoods must follow the same order. Crosscovariances are automatically taken car of
+    m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, gauss])
+    
+    # Optimize the model
+    m.optimize(messages=0, ipython_notebook=False)
+
+    #Plot the model, the syntax is same as for multioutput models:
+    plot_gp_vs_real(m, xpred, ydpred_true, [x.shape[0], xd.shape[0]], title='Latent function derivatives', fixed_input=1, xlim=[0,11], ylim=[-1.5,3])
+    plot_gp_vs_real(m, xpred, ypred_true, [x.shape[0], xd.shape[0]], title='Latent function', fixed_input=0, xlim=[0,11], ylim=[-1.5,3])
+
+    #making predictions for the values:
+    mu, var = m.predict_noiseless(Xnew=[xpred, np.empty((0,1))])

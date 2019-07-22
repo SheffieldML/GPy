@@ -7,7 +7,7 @@ from unittest.case import skip
 import GPy
 from GPy.core.parameterization.param import Param
 import numpy as np
-
+import random
 from ..util.config import config
 
 

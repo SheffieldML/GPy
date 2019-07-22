@@ -6,6 +6,7 @@ import numpy as np
 from .stationary import Stationary
 from .psi_comp import PSICOMP_RBF, PSICOMP_RBF_GPU
 from ...core import Param
+from paramz.caching import Cache_this
 from paramz.transformations import Logexp
 from .grid_kerns import GridRBF
 
@@ -50,6 +51,27 @@ class RBF(Stationary):
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dX(self, X, X2, dimX):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        dist = X[:,None,dimX]-X2[None,:,dimX]
+        lengthscale2inv = (np.ones((X.shape[1]))/(self.lengthscale**2))[dimX]
+        return -1.*K*dist*lengthscale2inv
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dX2(self, X, X2, dimX2):
+        return -self.dK_dX(X,X2, dimX2)
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdX2(self, X, X2, dimX, dimX2):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        if X2 is None:
+            X2=X
+        dist = X[:,None,:]-X2[None,:,:]
+        lengthscale2inv = np.ones((X.shape[1]))/(self.lengthscale**2)
+        return -1.*K*dist[:,:,dimX]*dist[:,:,dimX2]*lengthscale2inv[dimX]*lengthscale2inv[dimX2] + (dimX==dimX2)*K*lengthscale2inv[dimX]
+
     def dK_dr(self, r):
         return -r*self.K_of_r(r)
 
@@ -58,6 +80,74 @@ class RBF(Stationary):
 
     def dK2_drdr_diag(self):
         return -self.variance # as the diagonal of r is always filled with zeros
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dvariance(self,X,X2):
+        return self.K(X,X2)/self.variance
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dvariancedX(self, X, X2, dim):
+        return self.dK_dX(X,X2, dim)/self.variance
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dvariancedX2(self, X, X2, dim):
+        return self.dK_dX2(X,X2, dim)/self.variance
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dvariancedXdX2(self, X, X2, dim, dimX2):
+        return self.dK2_dXdX2(X, X2, dim, dimX2)/self.variance
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dlengthscaledX(self, X, X2, dimX):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        if X2 is None:
+            X2=X
+        dist = X[:,None,:]-X2[None,:,:]
+        lengthscaleinv = np.ones((X.shape[1]))/(self.lengthscale)
+        if self.ARD:
+            g = []
+            for diml in range(X.shape[1]):
+                g += [-1.*K*dist[:,:,dimX]*(dist[:,:,diml]**2)*(lengthscaleinv[dimX]**2)*(lengthscaleinv[diml]**3) + 2.*dist[:,:,dimX]*(lengthscaleinv[diml]**3)*K*(dimX == diml)]
+        else:
+            g = -1.*K*dist[:,:,dimX]*np.sum(dist**2, axis=2)*(lengthscaleinv[dimX]**5) + 2.*dist[:,:,dimX]*(lengthscaleinv[dimX]**3)*K
+        return g
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dlengthscaledX2(self, X, X2, dimX2):
+        tmp = self.dK2_dlengthscaledX(X, X2, dimX2)
+        if self.ARD:
+            return [-1.*g for g in tmp]
+        else:
+            return -1*tmp
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dlengthscaledXdX2(self, X, X2, dimX, dimX2):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        if X2 is None:
+            X2=X
+        dist = X[:,None,:]-X2[None,:,:]
+        lengthscaleinv = np.ones((X.shape[1]))/(self.lengthscale)
+        lengthscale2inv = lengthscaleinv**2
+        if self.ARD:
+            g = []
+            for diml in range(X.shape[1]):
+                tmp = -1.*K*dist[:,:,dimX]*dist[:,:,dimX2]*(dist[:,:,diml]**2)*lengthscale2inv[dimX]*lengthscale2inv[dimX2]*(lengthscaleinv[diml]**3)
+                if dimX == dimX2:
+                    tmp += K*lengthscale2inv[dimX]*(lengthscaleinv[diml]**3)*(dist[:,:,diml]**2)
+                if diml == dimX:
+                    tmp += 2.*K*dist[:,:,dimX]*dist[:,:,dimX2]*lengthscale2inv[dimX2]*(lengthscaleinv[dimX]**3)
+                if diml == dimX2:
+                    tmp += 2.*K*dist[:,:,dimX]*dist[:,:,dimX2]*lengthscale2inv[dimX]*(lengthscaleinv[dimX2]**3)
+                    if dimX == dimX2:
+                        tmp += -2.*K*(lengthscaleinv[dimX]**3)
+                g += [tmp]
+        else:
+            g = -1.*K*dist[:,:,dimX]*dist[:,:,dimX2]*np.sum(dist**2, axis=2)*(lengthscaleinv[dimX]**7) +4*K*dist[:,:,dimX]*dist[:,:,dimX2]*(lengthscaleinv[dimX]**5)
+            if dimX == dimX2:
+                g += -2.*K*(lengthscaleinv[dimX]**3) + K*(lengthscaleinv[dimX]**5)*np.sum(dist**2, axis=2)
+        return g
 
     def __getstate__(self):
         dc = super(RBF, self).__getstate__()

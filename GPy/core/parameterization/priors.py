@@ -204,7 +204,11 @@ class MultivariateGaussian(Prior):
             for instance in cls._instances:
                 if np.all(instance().mu == mu) and np.all(instance().var == var):
                     return instance()
-        o = super(Prior, cls).__new__(cls, mu, var)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)  
+        else:
+            o = newfunc(cls, mu, var)         
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -215,8 +219,11 @@ class MultivariateGaussian(Prior):
         assert self.var.shape[0] == self.var.shape[1]
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
-        self.inv, self.hld = pdinv(self.var)
-        self.constant = -0.5 * self.input_dim * np.log(2 * np.pi) - self.hld
+        self.inv, _, self.hld, _ = pdinv(self.var)
+        self.constant = -0.5 * (self.input_dim * np.log(2 * np.pi) + self.hld)
+
+    def __str__(self):
+        return 'MultiN(' + str(self.mu) + ', ' + str(np.diag(self.var)) + ')'
 
     def summary(self):
         raise NotImplementedError
@@ -226,11 +233,11 @@ class MultivariateGaussian(Prior):
 
     def lnpdf(self, x):
         d = x - self.mu
-        return self.constant - 0.5 * np.sum(d * np.dot(d, self.inv), 1)
+        return self.constant - 0.5 * np.dot(d.T, np.dot(self.inv, d))
 
     def lnpdf_grad(self, x):
         d = x - self.mu
-        return -np.dot(self.inv, d)
+        return - np.dot(self.inv, d)
 
     def rvs(self, n):
         return np.random.multivariate_normal(self.mu, self.var, n)
@@ -253,8 +260,8 @@ class MultivariateGaussian(Prior):
         assert self.var.shape[0] == self.var.shape[1]
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
-        self.inv, self.hld = pdinv(self.var)
-        self.constant = -0.5 * self.input_dim * np.log(2 * np.pi) - self.hld
+        self.inv, _, self.hld, _ = pdinv(self.var)
+        self.constant = -0.5 * (self.input_dim * np.log(2 * np.pi) + self.hld)
 
 def gamma_from_EV(E, V):
     warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)

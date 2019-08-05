@@ -39,7 +39,7 @@ from plotly.graph_objs import Scatter, Scatter3d, Line,\
 from plotly.exceptions import PlotlyDictKeyError
 
 SYMBOL_MAP = {
-    'o': 'dot',
+    'o': 'circle-dot',
     'v': 'triangle-down',
     '^': 'triangle-up',
     '<': 'triangle-left',
@@ -47,7 +47,7 @@ SYMBOL_MAP = {
     's': 'square',
     '+': 'cross',
     'x': 'x',
-    '*': 'x',  # no star yet in plotly!!
+    '*': 'star',
     'D': 'diamond',
     'd': 'diamond',
 }

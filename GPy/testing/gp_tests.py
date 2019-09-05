@@ -28,11 +28,14 @@ class Test(unittest.TestCase):
         Xnew = NormalPosterior(m.X.mean[:10].copy(), m.X.variance[:10].copy())
         m.set_XY(Xnew, m.Y[:10].copy())
         assert(m.checkgrad())
+
+        assert(m.num_data == m.X.shape[0])
+        assert(m.input_dim == m.X.shape[1])
+
         m.set_XY(X, self.Y)
         mu2, var2 = m.predict(m.X)
         np.testing.assert_allclose(mu, mu2)
         np.testing.assert_allclose(var, var2)
-        
 
     def test_setxy_gplvm(self):
         k = GPy.kern.RBF(1)
@@ -42,6 +45,10 @@ class Test(unittest.TestCase):
         Xnew = X[:10].copy()
         m.set_XY(Xnew, m.Y[:10].copy())
         assert(m.checkgrad())
+
+        assert(m.num_data == m.X.shape[0])
+        assert(m.input_dim == m.X.shape[1])
+
         m.set_XY(X, self.Y)
         mu2, var2 = m.predict(m.X)
         np.testing.assert_allclose(mu, mu2)
@@ -54,6 +61,10 @@ class Test(unittest.TestCase):
         X = m.X.copy()
         m.set_XY(m.X[:10], m.Y[:10])
         assert(m.checkgrad())
+
+        assert(m.num_data == m.X.shape[0])
+        assert(m.input_dim == m.X.shape[1])
+
         m.set_XY(X, self.Y)
         mu2, var2 = m.predict(m.X)
         np.testing.assert_allclose(mu, mu2)

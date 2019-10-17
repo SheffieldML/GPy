@@ -40,6 +40,11 @@ import sys
 from setuptools import setup, Extension
 import codecs
 
+try:
+    ModuleNotFoundError
+except NameError:
+    ModuleNotFoundError = ImportError
+
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
         return f.read()

@@ -14,7 +14,7 @@ from .gaussian import Gaussian
 from ..core.parameterization import Param
 from paramz.transformations import Logexp
 from ..core.parameterization import Parameterized
-from ..kern.src.independent_outputs import index_to_slices
+from ..util.multioutput import index_to_slices
 import itertools
 
 class MultioutputLikelihood(MixedNoise):

@@ -296,7 +296,7 @@ class Likelihood(Parameterized):
             elif quad_mode == 'gh':
                 f = partial(self.integrate_gh)
                 quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
-                quads = np.hstack(quads)
+                quads = np.hstack(list(quads))
                 quads = quads.T
             else:
                 raise Exception("no other quadrature mode available")

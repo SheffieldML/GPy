@@ -61,7 +61,7 @@ arguments::
         self.variance = Param('variance', variance)
         self.lengthscale = Param('lengtscale', lengthscale)
         self.power = Param('power', power)
-	self.add_parameters(self.variance, self.lengthscale, self.power)
+	self.link_parameters(self.variance, self.lengthscale, self.power)
 
 From now on you can use the parameters ``self.variance,
 self.lengthscale, self.power`` as normal numpy ``array-like`` s in your

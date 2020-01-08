@@ -53,6 +53,8 @@ your code. The parameters have to be added by calling
 :py:class:`~GPy.core.parameterization.param.Param` objects as
 arguments::
 
+    from .core.parameterization import Param
+
     def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.,active_dims=None):
         super(RationalQuadratic, self).__init__(input_dim, active_dims, 'rat_quad')
 	assert input_dim == 1, "For this kernel we assume input_dim=1"

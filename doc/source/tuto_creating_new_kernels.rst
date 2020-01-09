@@ -179,9 +179,7 @@ Computes the derivative of the likelihood with respect to the inputs
 
    \frac{\partial L}{\partial K} \frac{\partial K}{\partial X}
 
-The partial derivative matrix is, in this case, comes out as an :math:`n \times q` np.array.
-Were the number of parameters to be larger than 1 or the number of dimensions likewise any larger
-than 1, the calculated partial derivitive would be a 3- or 4-tensor.  ::
+The partial derivative matrix is, in this case, comes out as an :math:`n \times q` np.array.  ::
 
     def gradients_X(self,dL_dK,X,X2):
         """derivative of the likelihood matrix with respect to X, calculated using dK_dX"""
@@ -190,6 +188,9 @@ than 1, the calculated partial derivitive would be a 3- or 4-tensor.  ::
 
         dK_dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
         return np.sum(dL_dK*dK_dX,1)[:,None]
+
+Were the number of parameters to be larger than 1 or the number of dimensions likewise any larger
+than 1, the calculated partial derivitive would be a 3- or 4-tensor.
 
 :py:func:`~GPy.kern.src.kern.Kern.gradients_X_diag` ``(self,dL_dKdiag,X)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

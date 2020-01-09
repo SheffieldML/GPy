@@ -173,16 +173,23 @@ is set to each ``param``. ::
 This function is required for GPLVM, BGPLVM, sparse models and uncertain inputs.
 
 Computes the derivative of the likelihood with respect to the inputs
-``X`` (a :math:`n \times q` np.array). The result is returned by the
-function which is a :math:`n \times q` np.array. ::
+``X`` (a :math:`n \times q` np.array), that is, it calculates the quantity:
+
+.. math::
+
+   \frac{\partial L}{\partial K} \frac{\partial K}{\partial X}
+
+The partial derivative matrix is, in this case, comes out as an :math:`n \times q` np.array.
+Were the number of parameters to be larger than 1 or the number of dimensions likewise any larger
+than 1, the calculated partial derivitive would be a 3- or 4-tensor.  ::
 
     def gradients_X(self,dL_dK,X,X2):
-        """derivative of the covariance matrix with respect to X."""
+        """derivative of the likelihood matrix with respect to X, calculated using dK_dX"""
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 
-        dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
-        return np.sum(dL_dK*dX,1)[:,None]
+        dK_dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
+        return np.sum(dL_dK*dK_dX,1)[:,None]
 
 :py:func:`~GPy.kern.src.kern.Kern.gradients_X_diag` ``(self,dL_dKdiag,X)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

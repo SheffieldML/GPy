@@ -63,7 +63,6 @@ class MRD(BayesianGPLVMMiniBatch):
                  Ynames=None, normalizer=False, stochastic=False, batchsize=10):
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.input_dim = input_dim
         self.num_inducing = num_inducing
 
         if isinstance(Ylist, dict):
@@ -87,11 +86,11 @@ class MRD(BayesianGPLVMMiniBatch):
             self.inference_method = inference_method
 
         if X is None:
-            X, fracs = self._init_X(initx, Ylist)
+            X, fracs = self._init_X(input_dim, initx, Ylist)
         else:
             fracs = [X.var(0)]*len(Ylist)
 
-        Z = self._init_Z(initz, X)
+        Z = self._init_Z(initz, X, input_dim)
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
 
@@ -128,7 +127,6 @@ class MRD(BayesianGPLVMMiniBatch):
         self.unlink_parameter(self.likelihood)
         self.unlink_parameter(self.kern)
 
-        self.num_data = Ylist[0].shape[0]
         if isinstance(batchsize, int):
             batchsize = itertools.repeat(batchsize)
 
@@ -187,32 +185,32 @@ class MRD(BayesianGPLVMMiniBatch):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _init_X(self, init='PCA', Ylist=None):
+    def _init_X(self, input_dim, init='PCA', Ylist=None):
         if Ylist is None:
             Ylist = self.Ylist
         if init in "PCA_concat":
-            X, fracs = initialize_latent('PCA', self.input_dim, np.hstack(Ylist))
+            X, fracs = initialize_latent('PCA', input_dim, np.hstack(Ylist))
             fracs = [fracs]*len(Ylist)
         elif init in "PCA_single":
-            X = np.zeros((Ylist[0].shape[0], self.input_dim))
-            fracs = np.empty((len(Ylist), self.input_dim))
-            for qs, Y in zip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
+            X = np.zeros((Ylist[0].shape[0], input_dim))
+            fracs = np.empty((len(Ylist), input_dim))
+            for qs, Y in zip(np.array_split(np.arange(input_dim), len(Ylist)), Ylist):
                 x, frcs = initialize_latent('PCA', len(qs), Y)
                 X[:, qs] = x
                 fracs[:, qs] = frcs
         else: # init == 'random':
-            X = np.random.randn(Ylist[0].shape[0], self.input_dim)
+            X = np.random.randn(Ylist[0].shape[0], input_dim)
             fracs = X.var(0)
             fracs = [fracs]*len(Ylist)
         X -= X.mean()
         X /= X.std()
         return X, fracs
 
-    def _init_Z(self, init, X):
+    def _init_Z(self, init, X, input_dim):
         if init in "permute":
             Z = np.random.permutation(X.copy())[:self.num_inducing]
         elif init in "random":
-            Z = np.random.randn(self.num_inducing, self.input_dim) * X.var()
+            Z = np.random.randn(self.num_inducing, input_dim) * X.var()
         return Z
 
     def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, Yindex=0):
@@ -350,5 +348,3 @@ class MRD(BayesianGPLVMMiniBatch):
                 print('# Private dimensions model ' + str(i) + ':' + str(privateDims[i]))
 
         return sharedDims, privateDims
-
-

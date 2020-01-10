@@ -43,8 +43,6 @@ class GP(Model):
             self.X = X.copy()
         else: self.X = ObsAr(X)
 
-        self.num_data, self.input_dim = self.X.shape
-
         assert Y.ndim == 2
         logger.info("initializing Y")
 
@@ -199,6 +197,14 @@ class GP(Model):
     def _predictive_variable(self):
         return self.X
 
+    @property
+    def num_data(self):
+        return self.X.shape[0]
+
+    @property
+    def input_dim(self):
+        return self.X.shape[1]
+
     def set_XY(self, X=None, Y=None):
         """
         Set the input / output data of the model
@@ -236,7 +242,6 @@ class GP(Model):
             else:
                 self.X = ObsAr(X)
 
-            self.num_data, self.input_dim = self.X.shape
         self.update_model(True)
 
     def set_X(self,X):

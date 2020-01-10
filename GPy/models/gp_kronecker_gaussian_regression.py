@@ -28,52 +28,69 @@ class GPKroneckerGaussianRegression(Model):
     }
 
     """
-    def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
+    def __init__(self, Xs, Y, kerns, noise_var=1., name='KGPR'):
         Model.__init__(self, name=name)
 
         # accept the construction arguments
-        self.X1 = ObsAr(X1)
-        self.X2 = ObsAr(X2)
+        for i, (X, kern) in enumerate(zip(Xs, kerns)):
+            assert X.shape[1] == Y.shape[i], "Invalid shape in dimension %d of Y"%i
+            assert kern.input_dim == X.shape[1], "Invalid shape dimension %d of kernel"%i
+
+            setattr(self, "num_data%d"%i, X.shape[0])
+            setattr(self, "input_dim%d"%i, X.shape[1])
+
+            setattr(self, "X%d"%i, ObsAr(X))
+            setattr(self, "kern%d"%i, kern)
+
+            self.link_parameter(kern)
+
         self.Y = Y
-        self.kern1, self.kern2 = kern1, kern2
-        self.link_parameter(self.kern1)
-        self.link_parameter(self.kern2)
 
         self.likelihood = likelihoods.Gaussian()
         self.likelihood.variance = noise_var
         self.link_parameter(self.likelihood)
 
-        self.num_data1, self.input_dim1 = self.X1.shape
-        self.num_data2, self.input_dim2 = self.X2.shape
-
-        assert kern1.input_dim == self.input_dim1
-        assert kern2.input_dim == self.input_dim2
-        assert Y.shape == (self.num_data1, self.num_data2)
-
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
     def parameters_changed(self):
-        (N1, D1), (N2, D2) = self.X1.shape, self.X2.shape
-        K1, K2 = self.kern1.K(self.X1), self.kern2.K(self.X2)
 
-        # eigendecompositon
-        S1, U1 = np.linalg.eigh(K1)
-        S2, U2 = np.linalg.eigh(K2)
-        W = np.kron(S2, S1) + self.likelihood.variance
+        Ss, Us = [], []
 
-        Y_ = U1.T.dot(self.Y).dot(U2)
+        for i in xrange(len(self.Y.shape)):
+            X = getattr(self, "X%d"%i)
+            kern = getattr(self, "kern%d"%i)
+            K = kern(X)
+            S, U = np.linalg.eigh(K)
+
+            Ss.append(S)
+            Us.append(U)
+
+        W = np.kron(Ss[1], Ss[0])
+
+        for s in Ss[2:]:
+            W = np.kron(s, W)
+
+        W+=self.likelihood.variance
+
+        Y_ =np.tensordot(Us[0], self.Y, axes = [[-1], [-1]])
+
+        # TODO reversed order?
+        for u in Us[1:]:
+            Y_ = np.tensordot(u, Y_, axes  = [[-1], [-1]])
 
         # store these quantities: needed for prediction
         Wi = 1./W
         Ytilde = Y_.flatten(order='F')*Wi
 
-        self._log_marginal_likelihood = -0.5*self.num_data1*self.num_data2*np.log(2*np.pi)\
+        num_data_prod = np.prod([getattr(self, "num_data%d"%i) for i in xrange(len(self.Y.shape))])
+
+        self._log_marginal_likelihood = -0.5*num_data_prod*np.log(2*np.pi)\
                                         -0.5*np.sum(np.log(W))\
                                         -0.5*np.dot(Y_.flatten(order='F'), Ytilde)
 
         # gradients for data fit part
-        Yt_reshaped = Ytilde.reshape(N1, N2, order='F')
+        Yt_reshaped = np.reshape(Ytilde, self.Y.shape, order='F')
         tmp = U1.dot(Yt_reshaped)
         dL_dK1 = .5*(tmp*S2).dot(tmp.T)
         tmp = U2.dot(Yt_reshaped.T)

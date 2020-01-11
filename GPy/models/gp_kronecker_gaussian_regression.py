@@ -55,9 +55,11 @@ class GPKroneckerGaussianRegression(Model):
 
     def parameters_changed(self):
 
+
+        dims = len(self.Y.shape)
         Ss, Us = [], []
 
-        for i in xrange(len(self.Y.shape)):
+        for i in xrange(dims):
             X = getattr(self, "X%d"%i)
             kern = getattr(self, "kern%d"%i)
             K = kern(X)
@@ -66,18 +68,12 @@ class GPKroneckerGaussianRegression(Model):
             Ss.append(S)
             Us.append(U)
 
-        W = np.kron(Ss[1], Ss[0])
-
-        for s in Ss[2:]:
-            W = np.kron(s, W)
-
+        W = reduce(np.kron, reversed(Ss))
         W+=self.likelihood.variance
 
-        Y_ =np.tensordot(Us[0], self.Y, axes = [[-1], [-1]])
+        Y_list = [self.Y].extend(Us)
+        Y_ = reduce(lambda x,y: np.tensordot(y,x, axes = [[1], [-1]]), Y_list)
 
-        # TODO reversed order?
-        for u in Us[1:]:
-            Y_ = np.tensordot(u, Y_, axes  = [[-1], [-1]])
 
         # store these quantities: needed for prediction
         Wi = 1./W
@@ -91,29 +87,35 @@ class GPKroneckerGaussianRegression(Model):
 
         # gradients for data fit part
         Yt_reshaped = np.reshape(Ytilde, self.Y.shape, order='F')
-        tmp = U1.dot(Yt_reshaped)
-        dL_dK1 = .5*(tmp*S2).dot(tmp.T)
-        tmp = U2.dot(Yt_reshaped.T)
-        dL_dK2 = .5*(tmp*S1).dot(tmp.T)
+        Wi_reshaped = np.reshape(Wi, self.Y.shape, order='F')
 
-        # gradients for logdet
-        Wi_reshaped = Wi.reshape(N1, N2, order='F')
-        tmp = np.dot(Wi_reshaped, S2)
-        dL_dK1 += -0.5*(U1*tmp).dot(U1.T)
-        tmp = np.dot(Wi_reshaped.T, S1)
-        dL_dK2 += -0.5*(U2*tmp).dot(U2.T)
+        for i in xrange(dims):
+            U = Us[i]
+            tmp =np.tensordot(U, Yt_reshaped.T, axes = [[1], [i]])
+            S = reduce(np.multiply.outer, [s for j,s in enumerate(Ss) if i!=j])
 
-        self.kern1.update_gradients_full(dL_dK1, self.X1)
-        self.kern2.update_gradients_full(dL_dK2, self.X2)
+            tmps = tmp*S
+            dL_dK = .5 * (np.tensordot(tmps, tmp.T, axes = dims-1))
+
+            axes = [[k for k in xrange(dims - 1, 0, -1)], [j for j in xrange(dims - 1)]]
+            tmp = np.tensordot(Wi_reshaped, S.T, axes=axes)
+
+            dL_dK+=-0.5*np.dot(U*tmp, U.T)
+
+            getattr(self, "kern%d"%i).update_gradients_full(dL_dK, getattr(self, "X%d"%i))
+
 
         # gradients for noise variance
         dL_dsigma2 = -0.5*Wi.sum() + 0.5*np.sum(np.square(Ytilde))
         self.likelihood.variance.gradient = dL_dsigma2
 
         # store these quantities for prediction:
-        self.Wi, self.Ytilde, self.U1, self.U2 = Wi, Ytilde, U1, U2
+        self.Wi, self.Ytilde = Wi, Ytilde
 
-    def predict(self, X1new, X2new):
+        for i,u in enumerate(Us):
+            setattr(self, "U%d"%i, u)
+
+    def predict(self, Xnews):
         """
         Return the predictive mean and variance at a series of new points X1new, X2new
         Only returns the diagonal of the predictive variance, for now.
@@ -124,14 +126,24 @@ class GPKroneckerGaussianRegression(Model):
         :type X2new: np.ndarray, Nnew x self.input_dim2
 
         """
-        k1xf = self.kern1.K(X1new, self.X1)
-        k2xf = self.kern2.K(X2new, self.X2)
-        A = k1xf.dot(self.U1)
-        B = k2xf.dot(self.U2)
-        mu = A.dot(self.Ytilde.reshape(self.num_data1, self.num_data2, order='F')).dot(B.T).flatten(order='F')
-        k1xx = self.kern1.Kdiag(X1new)
-        k2xx = self.kern2.Kdiag(X2new)
-        BA = np.kron(B, A)
-        var = np.kron(k2xx, k1xx) - np.sum(BA**2*self.Wi, 1) + self.likelihood.variance
+
+        embeds = []
+        kxxs = []
+        dims = len(self.Y.shape)
+        for i in xrange(dims):
+            kxf = getattr(self, "kern%d"%i)(Xnews[i], getattr(self, "X%d"%i))
+
+            embeds.append(kxf.dot(getattr(self, "U%d"%i)))
+            kxxs.append(kxf.Kdiag(Xnews[i]))
+
+
+
+
+        Y_list = [self.Y].extend(embeds)
+        mu = reduce(lambda x, y: np.tensordot(y, x, axes=[[1], [-1]]), Y_list).flatten(order='F')
+        #mu = A.dot(self.Ytilde.reshape(self.num_data1, self.num_data2, order='F')).dot(B.T).flatten(order='F')
+
+        kron_embeds = reduce(np.kron, reversed(embeds))
+        var = reduce(np.kron, reversed(kxxs))- np.sum(kron_embeds**2*self.Wi, 1) + self.likelihood.variance
 
         return mu[:, None], var[:, None]

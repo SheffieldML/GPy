@@ -10,10 +10,10 @@ class GPKroneckerGaussianRegression(Model):
     """
     Kronecker GP regression
 
-    Take two kernels computed on separate spaces K1(X1), K2(X2), and a data
-    matrix Y which is f size (N1, N2).
+    Take kernels computed on separate spaces K1(X1), K2(X2), ... KN(XN) and a data
+    matrix Y which is of size (N1, N2, ... NN).
 
-    The effective covaraince is np.kron(K2, K1)
+    The effective covaraince is np.kron(KN, ..., K2, K1)
     The effective data is vec(Y) = Y.flatten(order='F')
 
     The noise must be iid Gaussian.
@@ -33,7 +33,10 @@ class GPKroneckerGaussianRegression(Model):
         Model.__init__(self, name=name)
 
         # accept the construction arguments
+
         for i, (X, kern) in enumerate(zip(Xs, kerns)):
+
+            assert len(X.shape) > 1, "Invalid X shape, need at least two dimensions"
             assert X.shape[0] == Y.shape[i], "Invalid shape in dimension %d of Y"%i
             assert kern.input_dim == X.shape[1], "Invalid shape dimension %d of kernel"%i
 
@@ -55,8 +58,6 @@ class GPKroneckerGaussianRegression(Model):
         return self._log_marginal_likelihood
 
     def parameters_changed(self):
-
-
         dims = len(self.Y.shape)
         Ss, Us = [], []
 
@@ -71,14 +72,12 @@ class GPKroneckerGaussianRegression(Model):
 
         W = reduce(np.kron, reversed(Ss))
         W+=self.likelihood.variance
-        #W = np.kron(Ss[1], Ss[0]) + self.likelihood.variance
 
         Y_list = [self.Y]
         Y_list.extend(Us)
 
         Y_ = reduce(lambda x,y: np.tensordot(x, y.T, axes=[[0],[1]]), Y_list)
-        #Y_ = Us[0].T.dot(self.Y).dot(Us[1])
-        # store these quantities: needed for prediction
+
         Wi = 1./W
         Ytilde = Y_.flatten(order='F')*Wi
 
@@ -98,39 +97,19 @@ class GPKroneckerGaussianRegression(Model):
             S = reduce(np.multiply.outer, [s for j,s in enumerate(Ss) if i!=j])
 
             tmps = tmp*S
-            dL_dK = .5 * (np.tensordot(tmps, tmp.T, axes = dims-1))
-            #print dL_dK
+            # NOTE not pleased about the construction of these axes. Should be able to use a simpler 
+            # integer input to axes, but in practice it didn't seem to work.
+
+            axes = [[k for k in xrange(dims-1, 0, -1)], [j for j in xrange(dims-1)]]
+            dL_dK = .5 * (np.tensordot(tmps, tmp.T, axes = axes))
 
             axes = [[k for k in xrange(dims-1, -1, -1) if k!=i], [j for j in xrange(dims - 1)]]
             tmp = np.tensordot(Wi_reshaped, S.T, axes=axes)
 
             dL_dK+=-0.5*np.dot(U*tmp, U.T)
-            #print dL_dK
-            #print
+
             getattr(self, "kern%d"%i).update_gradients_full(dL_dK, getattr(self, "X%d"%i))
 
-        '''
-        U1, U2 = Us[0], Us[1]
-        S1, S2 = Ss[0], Ss[1]
-        N1, N2 = self.Y.shape
-        tmp = U1.dot(Yt_reshaped)
-        dL_dK1 = .5*(tmp*S2).dot(tmp.T)
-        tmp = U2.dot(Yt_reshaped.T)
-        dL_dK2 = .5*(tmp*S1).dot(tmp.T)
-
-        print dL_dK1
-
-        # gradients for logdet
-        Wi_reshaped = Wi.reshape(N1, N2, order='F')
-        tmp = np.dot(Wi_reshaped, S2)
-        dL_dK1 += -0.5*(U1*tmp).dot(U1.T)
-        print dL_dK1
-        print 
-        print dL_dK2
-        tmp = np.dot(Wi_reshaped.T, S1)
-        dL_dK2 += -0.5*(U2*tmp).dot(U2.T)
-        print dL_dK2
-        '''
         # gradients for noise variance
         dL_dsigma2 = -0.5*Wi.sum() + 0.5*np.sum(np.square(Ytilde))
         self.likelihood.variance.gradient = dL_dsigma2
@@ -141,32 +120,16 @@ class GPKroneckerGaussianRegression(Model):
         for i,u in enumerate(Us):
             setattr(self, "U%d"%i, u)
 
-    def predict(self, Xnews):
+    def predict(self, Xnews, mean_only= False):
         """
         Return the predictive mean and variance at a series of new points X1new, X2new
         Only returns the diagonal of the predictive variance, for now.
 
-        :param X1new: The points at which to make a prediction
-        :type X1new: np.ndarray, Nnew x self.input_dim1
-        :param X2new: The points at which to make a prediction
-        :type X2new: np.ndarray, Nnew x self.input_dim2
-
+        :param Xnews: A list of len(dims), with points at which to make a prediction
+        :type Xnew: iterable, len(dims) where each element is Nxself.input_dim_i
+        :param mean_only: Flag to only predict the mean. The variance is generally much slower to compute than the mean.
+        :type mean_only: Bool
         """
-
-        #X1new, X2new = Xnews
-
-        #k1xf = self.kern0.K(X1new, self.X0)
-        #k2xf = self.kern1.K(X2new, self.X1)
-        #A = k1xf.dot(self.U0)
-        #B = k2xf.dot(self.U1)
-        #mu = A.dot(self.Ytilde.reshape(self.Y.shape, order='F')).dot(B.T).flatten(order='F')
-        #print mu
-        #k1xx = self.kern0.Kdiag(X1new)
-        #k2xx = self.kern1.Kdiag(X2new)
-        #BA = np.kron(B, A)
-        #var = np.kron(k2xx, k1xx) - np.sum(BA**2*self.Wi, 1) + self.likelihood.variance
-
-        #return mu[:, None], var[:, None]
 
         embeds = []
         kxxs = []
@@ -181,7 +144,10 @@ class GPKroneckerGaussianRegression(Model):
         Y_list = [self.Ytilde.reshape(self.Y.shape, order = 'F')]
         Y_list.extend(embeds)
 
-        mu = reduce(lambda x,y: np.tensordot(x,y, axes=[[0],[1]]), Y_list).flatten(order ='F')
+        mu = reduce(lambda x,y: np.tensordot(x,y, axes=[[0],[1]]), Y_list)
+
+        if mean_only:
+            return mu[:,None], None
 
         kron_embeds = reduce(np.kron, reversed(embeds))
         var = reduce(np.kron, reversed(kxxs))- np.sum(kron_embeds**2*self.Wi, 1) + self.likelihood.variance

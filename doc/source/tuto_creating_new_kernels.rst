@@ -182,7 +182,7 @@ Computes the derivative of the likelihood with respect to the inputs
 The partial derivative matrix is, in this case, comes out as an :math:`n \times q` np.array.  ::
 
     def gradients_X(self,dL_dK,X,X2):
-        """derivative of the likelihood matrix with respect to X, calculated using dK_dX"""
+        """derivative of the likelihood with respect to X, calculated using dL_dK*dK_dX"""
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 

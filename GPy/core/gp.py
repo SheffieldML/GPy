@@ -451,6 +451,15 @@ class GP(Model):
             alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
                                self.posterior.woodbury_inv)
             var_jac += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+
+        if self.normalizer is not None:
+            mean_jac = self.normalizer.inverse_mean(mean_jac) \
+                       - self.normalizer.inverse_mean(0.)
+            if self.output_dim > 1:
+                var_jac = self.normalizer.inverse_covariance(var_jac)
+            else:
+                var_jac = self.normalizer.inverse_variance(var_jac)
+
         return mean_jac, var_jac
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=False):
@@ -711,11 +720,59 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
-    def posterior_covariance_between_points(self, X1, X2):
+
+    def _raw_posterior_covariance_between_points(self, X1, X2):
         """
-        Computes the posterior covariance between points.
+        Computes the posterior covariance between points. Does not account for 
+        normalization or likelihood
 
         :param X1: some input observations
         :param X2: other input observations
+
+        :returns: 
+            cov: raw posterior covariance: k(X1,X2) - k(X1,X) G^{-1} K(X,X2)
         """
         return self.posterior.covariance_between_points(self.kern, self.X, X1, X2)
+
+
+    def posterior_covariance_between_points(self, X1, X2, Y_metadata=None, 
+                                            likelihood=None, 
+                                            include_likelihood=True):
+        """
+        Computes the posterior covariance between points. Includes likelihood 
+        variance as well as normalization so that evaluation at (x,x) is consistent 
+        with model.predict
+
+        :param X1: some input observations
+        :param X2: other input observations
+        :param Y_metadata: metadata about the predicting point to pass to the
+                           likelihood
+        :param include_likelihood: Whether or not to add likelihood noise to
+                                   the predicted underlying latent function f.
+        :type include_likelihood: bool
+
+        :returns: 
+            cov: posterior covariance, a Numpy array, Nnew x Nnew if 
+            self.output_dim == 1, and Nnew x Nnew x self.output_dim otherwise.
+        """
+
+        cov = self._raw_posterior_covariance_between_points(X1, X2)
+
+        if include_likelihood:
+            # Predict latent mean and push through likelihood
+            mean, _ = self._raw_predict(X1, full_cov=True)
+            if likelihood is None:
+                likelihood = self.likelihood
+            _, cov = likelihood.predictive_values(mean, cov, full_cov=True, 
+                                                  Y_metadata=Y_metadata)
+
+        if self.normalizer is not None:
+            if self.output_dim > 1:
+                cov = self.normalizer.inverse_covariance(cov)
+            else:
+                cov = self.normalizer.inverse_variance(cov)
+
+        return cov
+
+
+

@@ -73,13 +73,13 @@ automatically.
 
 The implementation of this function is optional.
 
-This functions deals as a callback for each optimization iteration. If
-one optimization step was successfull and the parameters (added by
+This functions is called as a callback upon each successful change to the parameters. If
+one optimization step was successfull and the parameters (linked by
 :py:func:`~GPy.core.parameterization.parameterized.Parameterized.link_parameters`
-``(*parameters)``) this callback function will be called to be able to
-update any precomputations for the kernel. Do not implement the
-gradient updates here, as those are being done by the model enclosing
-the kernel::
+``(*parameters)``) are changed, this callback function will be called. This callback may be used to
+update precomputations for the kernel. Do not implement the
+gradient updates here, as gradient updates are performed by the model enclosing
+the kernel. In this example, we issue a no-op::
 
     def parameters_changed(self):
         # nothing todo here
@@ -92,8 +92,9 @@ the kernel::
 The implementation of this function in mandatory.
 
 This function is used to compute the covariance matrix associated with
-the inputs X, X2 (np.arrays with arbitrary number of line (say
-:math:`n_1`, :math:`n_2`) and ``self.input_dim`` columns). ::
+the inputs X, X2 (np.arrays with arbitrary number of lines,
+:math:`n_1`, :math:`n_2`, corresponding to the number of samples over which to calculate covariance)
+and ``self.input_dim`` columns. ::
 
     def K(self,X,X2):
         if X2 is None: X2 = X

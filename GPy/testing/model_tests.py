@@ -985,7 +985,7 @@ class GradientTests(np.testing.TestCase):
         Y = np.random.randn(N1, N2)
         Y = Y - Y.mean(0)
         Y = Y / Y.std(0)
-        m = GPy.models.GPKroneckerGaussianRegression(X1, X2, Y, k1, k2)
+        m = GPy.models.GPKroneckerGaussianRegression([X1, X2], Y, [k1, k2])
 
         # build the model the dumb way
         assert (N1 * N2 < 1000), "too much data for standard GPs!"
@@ -1000,7 +1000,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)
         X2test = np.random.randn(100, 1)
-        mean1, var1 = m.predict(X1test, X2test)
+        mean1, var1 = m.predict([X1test, X2test])
         yy, xx = np.meshgrid(X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
         mean2, var2 = mm.predict(Xgrid)

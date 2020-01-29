@@ -144,12 +144,12 @@ class GPKroneckerGaussianRegression(Model):
         Y_list = [self.Ytilde.reshape(self.Y.shape, order = 'F')]
         Y_list.extend(embeds)
 
-        mu = reduce(lambda x,y: np.tensordot(x,y, axes=[[0],[1]]), Y_list)
-
+        mu = reduce(lambda x,y: np.tensordot(x,y, axes=[[0],[1]]), Y_list).flatten(order='F')
+        #print mu.shape
         if mean_only:
             return mu[:,None], None
 
         kron_embeds = reduce(np.kron, reversed(embeds))
         var = reduce(np.kron, reversed(kxxs))- np.sum(kron_embeds**2*self.Wi, 1) + self.likelihood.variance
-
+        #print var.shape
         return mu[:, None], var[:, None]

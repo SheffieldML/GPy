@@ -1004,6 +1004,9 @@ class GradientTests(np.testing.TestCase):
         yy, xx = np.meshgrid(X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'))).T
         mean2, var2 = mm.predict(Xgrid)
+        #print mean1.shape, mean2.shape
+        #print mean1, mean2
+        # print var1.shape, var2.shape
         self.assertTrue( np.allclose(mean1, mean2) )
         self.assertTrue( np.allclose(var1, var2) )
 

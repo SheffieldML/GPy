@@ -5,6 +5,7 @@ import numpy as np
 from ..core import Model
 from paramz import ObsAr
 from .. import likelihoods
+from functools import reduct
 
 class GPKroneckerGaussianRegression(Model):
     """

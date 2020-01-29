@@ -61,7 +61,7 @@ class GPKroneckerGaussianRegression(Model):
         dims = len(self.Y.shape)
         Ss, Us = [], []
 
-        for i in xrange(dims):
+        for i in range(dims):
             X = getattr(self, "X%d"%i)
             kern = getattr(self, "kern%d"%i)
             K = kern.K(X)
@@ -81,7 +81,7 @@ class GPKroneckerGaussianRegression(Model):
         Wi = 1./W
         Ytilde = Y_.flatten(order='F')*Wi
 
-        num_data_prod = np.prod([getattr(self, "num_data%d"%i) for i in xrange(len(self.Y.shape))])
+        num_data_prod = np.prod([getattr(self, "num_data%d"%i) for i in range(len(self.Y.shape))])
 
         self._log_marginal_likelihood = -0.5*num_data_prod*np.log(2*np.pi)\
                                         -0.5*np.sum(np.log(W))\
@@ -91,7 +91,7 @@ class GPKroneckerGaussianRegression(Model):
         Yt_reshaped = np.reshape(Ytilde, self.Y.shape, order='F')
         Wi_reshaped = np.reshape(Wi, self.Y.shape, order='F')
 
-        for i in xrange(dims):
+        for i in range(dims):
             U = Us[i]
             tmp =np.tensordot(U.T, Yt_reshaped, axes = [[0], [i]])
             S = reduce(np.multiply.outer, [s for j,s in enumerate(Ss) if i!=j])
@@ -100,10 +100,10 @@ class GPKroneckerGaussianRegression(Model):
             # NOTE not pleased about the construction of these axes. Should be able to use a simpler 
             # integer input to axes, but in practice it didn't seem to work.
 
-            axes = [[k for k in xrange(dims-1, 0, -1)], [j for j in xrange(dims-1)]]
+            axes = [[k for k in range(dims-1, 0, -1)], [j for j in range(dims-1)]]
             dL_dK = .5 * (np.tensordot(tmps, tmp.T, axes = axes))
 
-            axes = [[k for k in xrange(dims-1, -1, -1) if k!=i], [j for j in xrange(dims - 1)]]
+            axes = [[k for k in range(dims-1, -1, -1) if k!=i], [j for j in range(dims - 1)]]
             tmp = np.tensordot(Wi_reshaped, S.T, axes=axes)
 
             dL_dK+=-0.5*np.dot(U*tmp, U.T)
@@ -134,7 +134,7 @@ class GPKroneckerGaussianRegression(Model):
         embeds = []
         kxxs = []
         dims = len(self.Y.shape)
-        for i in xrange(dims):
+        for i in range(dims):
             kern = getattr(self, "kern%d"%i)
             kxf = kern.K(Xnews[i], getattr(self, "X%d"%i))
 

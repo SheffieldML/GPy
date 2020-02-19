@@ -29,12 +29,18 @@ class GPKroneckerGaussianRegression(Model):
     }
 
     """
-    def __init__(self, Xs, Y, kerns, noise_var=1., name='KGPR'):
+    def __init__(self, X1, X2,  Y, kern1, kern2, noise_var=1., name='KGPR', additional_Xs = [], additional_kerns = []):
 
         Model.__init__(self, name=name)
 
-        # accept the construction arguments
+        Xs = [X1, X2]
+        Xs.extend(additional_Xs)
 
+        kerns = [kern1, kern2]
+        kerns.extend(additional_kerns)
+        assert len(Xs) == len(kerns), "Xs and Kernels must have the same length"
+
+        # accept the construction arguments
         for i, (X, kern) in enumerate(zip(Xs, kerns)):
 
             assert len(X.shape) > 1, "Invalid X shape, need at least two dimensions"
@@ -121,7 +127,8 @@ class GPKroneckerGaussianRegression(Model):
         for i,u in enumerate(Us):
             setattr(self, "U%d"%i, u)
 
-    def predict(self, Xnews, mean_only= False):
+    def predict(self, X1new, X2new, mean_only= False, additional_Xnews = []):
+
         """
         Return the predictive mean and variance at a series of new points X1new, X2new
         Only returns the diagonal of the predictive variance, for now.
@@ -131,10 +138,14 @@ class GPKroneckerGaussianRegression(Model):
         :param mean_only: Flag to only predict the mean. The variance is generally much slower to compute than the mean.
         :type mean_only: Bool
         """
+        Xnews = [X1new, X2new]
+        Xnews.extend(additional_Xnews)
 
         embeds = []
         kxxs = []
         dims = len(self.Y.shape)
+        assert len(Xnews) == dims, "Invalid number of Xnews"
+
         for i in range(dims):
             kern = getattr(self, "kern%d"%i)
             kxf = kern.K(Xnews[i], getattr(self, "X%d"%i))

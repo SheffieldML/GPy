@@ -1031,11 +1031,12 @@ class GradientTests(np.testing.TestCase):
         zz, yy, xx = np.meshgrid(X3, X2, X1)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
         kg = GPy.kern.RBF(1, active_dims=[0]) * GPy.kern.RBF(1, active_dims=[1])  * GPy.kern.RBF(1, active_dims=[2])
-
         mm = GPy.models.GPRegression(Xgrid, Y.reshape(-1, 1, order='F'), kernel=kg)
 
         m.randomize()
         mm[:] = m[:]
+        print Xgrid.shape, Y.shape
+        print m.log_likelihood(), mm.log_loglikelihood()
         self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)

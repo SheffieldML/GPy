@@ -1019,7 +1019,7 @@ class GradientTests(np.testing.TestCase):
 
         k1 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
         k2 = GPy.kern.RBF(1)  # + GPy.kern.White(1)
-        k3 = Gpy.kern.RBF(1)
+        k3 = GPy.kern.RBF(1)
 
         Y = np.random.randn(N1, N2, N3)
         Y = Y - Y.mean(0)

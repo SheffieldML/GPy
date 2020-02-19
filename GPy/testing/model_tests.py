@@ -1036,7 +1036,7 @@ class GradientTests(np.testing.TestCase):
         m.randomize()
         mm[:] = m[:]
         print Xgrid.shape, Y.shape
-        print m.log_likelihood(), mm.log_loglikelihood()
+        print m.log_likelihood(), mm.log_likelihood()
         self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)

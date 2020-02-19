@@ -1011,7 +1011,7 @@ class GradientTests(np.testing.TestCase):
     def test_gp_kronecker_gaussian_extenstion(self):
         # test with additional kernels
         np.random.seed(0)
-        N1, N2 = 10, 10, 5 
+        N1, N2, N3 = 10, 10, 5 
         X1 = np.random.randn(N1, 1)
         X2 = np.random.randn(N2, 1)
         X3 = np.random.randn(N3, 1)

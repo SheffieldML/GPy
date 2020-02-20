@@ -48,20 +48,14 @@ class ExactGaussianInference(LatentFunctionInference):
             variance = likelihood.gaussian_variance(Y_metadata)
 
         YYT_factor = Y-m
-        print 'X',X
         if K is None:
             K = kern.K(X)
 
-        print K.shape
-        print 'K',K[0]
         Ky = K.copy()
         diag.add(Ky, variance+1e-8)
         Wi, LW, LWi, W_logdet = pdinv(Ky)
-        #print 'Wi',Wi
-        print W_logdet
         alpha, _ = dpotrs(LW, YYT_factor, lower=1)
 
-        print -0.5*Y.shape[1]*W_logdet, -0.5*np.sum(alpha*YYT_factor)
         log_marginal =  0.5*(-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
 
         if Z_tilde is not None:

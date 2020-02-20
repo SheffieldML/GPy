@@ -1030,13 +1030,14 @@ class GradientTests(np.testing.TestCase):
 
         # build the model the dumb way
         assert (N1 * N2 * N3 < 1000), "too much data for standard GPs!"
-        zz, yy, xx = np.meshgrid(X3, X2, X1)
+        zz, yy, xx = np.meshgrid(X2, X1, X3)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
-        kg = GPy.kern.RBF(3)
+        kg = GPy.kern.RBF(1,active_dims=[0])*GPy.kern.RBF(1,active_dims=[1])*GPy.kern.RBF(1,active_dims=[2])
         mm = GPy.models.GPRegression(Xgrid, Y.reshape(-1, 1, order='F'), kernel=kg)
 
         m.randomize()
         mm[:] = m[:]
+
         self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(50, 1)
@@ -1045,9 +1046,9 @@ class GradientTests(np.testing.TestCase):
 
         mean1, var1 = m.predict(X1test, X2test, additional_Xnews=[X3test])
 
-        zz, yy, xx = np.meshgrid(X3test, X2test, X1test)
-        Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
-        mean2, var2 = mm.predict(X1test, Xgrid)
+        zz, yy, xx = np.meshgrid(X2test, X1test, X3test)
+        Xtest = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
+        mean2, var2 = mm.predict(Xtest)
 
         self.assertTrue( np.allclose(mean1, mean2) )
         self.assertTrue( np.allclose(var1, var2) )

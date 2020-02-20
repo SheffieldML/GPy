@@ -5,7 +5,6 @@ from __future__ import division
 import unittest
 import numpy as np
 import GPy
-
 class MiscTests(unittest.TestCase):
     def setUp(self):
         self.N = 20
@@ -975,6 +974,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue(m.checkgrad())
 
     def test_gp_kronecker_gaussian(self):
+
         np.random.seed(0)
         N1, N2 = 30, 20
         X1 = np.random.randn(N1, 1)
@@ -996,6 +996,7 @@ class GradientTests(np.testing.TestCase):
 
         m.randomize()
         mm[:] = m[:]
+
         self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
         X1test = np.random.randn(100, 1)
@@ -1011,7 +1012,7 @@ class GradientTests(np.testing.TestCase):
     def test_gp_kronecker_gaussian_extenstion(self):
         # test with additional kernels
         np.random.seed(0)
-        N1, N2, N3 = 10, 10, 5 
+        N1, N2, N3 = 10, 5, 5 
         X1 = np.random.randn(N1, 1)
         X2 = np.random.randn(N2, 1)
         X3 = np.random.randn(N3, 1)
@@ -1022,30 +1023,31 @@ class GradientTests(np.testing.TestCase):
         k3 = GPy.kern.RBF(1)
 
         Y = np.random.randn(N1, N2, N3)
-        Y = Y - Y.mean(0)
-        Y = Y / Y.std(0)
+        Y = Y - Y.mean((0,1))
+        Y = Y / Y.std((0,1))
+
         m = GPy.models.GPKroneckerGaussianRegression(X1, X2, Y, k1, k2, additional_Xs = [X3], additional_kerns = [k3])
 
         # build the model the dumb way
         assert (N1 * N2 * N3 < 1000), "too much data for standard GPs!"
         zz, yy, xx = np.meshgrid(X3, X2, X1)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
-        kg = GPy.kern.RBF(1, active_dims=[0]) * GPy.kern.RBF(1, active_dims=[1])  * GPy.kern.RBF(1, active_dims=[2])
+        kg = GPy.kern.RBF(3)
         mm = GPy.models.GPRegression(Xgrid, Y.reshape(-1, 1, order='F'), kernel=kg)
 
         m.randomize()
         mm[:] = m[:]
-        print Xgrid.shape, Y.shape
-        print m.log_likelihood(), mm.log_likelihood()
         self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
         self.assertTrue(np.allclose(m.gradient, mm.gradient))
-        X1test = np.random.randn(100, 1)
-        X2test = np.random.randn(100, 1)
-        X3test = np.random.randn(100, 1)
+        X1test = np.random.randn(50, 1)
+        X2test = np.random.randn(50, 1)
+        X3test = np.random.randn(50, 1)
+
         mean1, var1 = m.predict(X1test, X2test, additional_Xnews=[X3test])
+
         zz, yy, xx = np.meshgrid(X3test, X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order='F'), yy.flatten(order='F'), zz.flatten(order='F'))).T
-        mean2, var2 = mm.predict(Xgrid)
+        mean2, var2 = mm.predict(X1test, Xgrid)
 
         self.assertTrue( np.allclose(mean1, mean2) )
         self.assertTrue( np.allclose(var1, var2) )

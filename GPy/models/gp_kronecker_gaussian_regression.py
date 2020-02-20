@@ -67,27 +67,34 @@ class GPKroneckerGaussianRegression(Model):
     def parameters_changed(self):
         dims = len(self.Y.shape)
         Ss, Us = [], []
-
         for i in range(dims):
             X = getattr(self, "X%d"%i)
             kern = getattr(self, "kern%d"%i)
+
             K = kern.K(X)
             S, U = np.linalg.eigh(K)
 
-            Ss.append(S)
-            Us.append(U)
+            if i==1:
+                Ss.insert(0, S)
+                Us.insert(0, U)
+            else:
+                Ss.append(S)
+                Us.append(U)
+
+        # ^^^ swap the orders of the first and second elements
+        # this is only necessary to make sure things are consistent with non-kronecker kernels
+        # mathematically theyr're the same.
 
         W = reduce(np.kron, reversed(Ss))
+
         W+=self.likelihood.variance
 
         Y_list = [self.Y]
         Y_list.extend(Us)
 
         Y_ = reduce(lambda x,y: np.tensordot(x, y.T, axes=[[0],[1]]), Y_list)
-
         Wi = 1./W
         Ytilde = Y_.flatten(order='F')*Wi
-
         num_data_prod = np.prod([getattr(self, "num_data%d"%i) for i in range(len(self.Y.shape))])
 
         self._log_marginal_likelihood = -0.5*num_data_prod*np.log(2*np.pi)\
@@ -150,8 +157,13 @@ class GPKroneckerGaussianRegression(Model):
             kern = getattr(self, "kern%d"%i)
             kxf = kern.K(Xnews[i], getattr(self, "X%d"%i))
 
-            embeds.append(kxf.dot(getattr(self, "U%d"%i)))
-            kxxs.append(kern.Kdiag(Xnews[i]))
+            # same as above swap orders for consistancy
+            if i == 1:
+                embeds.insert(0,kcf.dot(getattr(self, "U%d"%i)))
+                kxxs.insert(0, kern.Kdiag(Xnews[i]))
+            else:
+                embeds.append(kxf.dot(getattr(self, "U%d"%i)))
+                kxxs.append(kern.Kdiag(Xnews[i]))
 
         Y_list = [self.Ytilde.reshape(self.Y.shape, order = 'F')]
         Y_list.extend(embeds)

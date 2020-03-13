@@ -51,7 +51,7 @@ test_script:
 
 after_test:
   # This step builds your wheels.
-  - "python setup.py bdist_wheel bdist_wininst"
+  - "python setup.py bdist_wheel"
   - codecov
 
 artifacts:

@@ -53,3 +53,6 @@ iterate.dat
 
 # docs
 GPy*.rst
+
+# vscode
+settings.json

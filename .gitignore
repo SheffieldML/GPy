@@ -50,3 +50,6 @@ iterate.dat
 
 # pycharm IDE stuff
 .idea/
+
+# docs
+GPy*.rst

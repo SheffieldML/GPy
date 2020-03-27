@@ -200,23 +200,26 @@ class MultivariateGaussian(Prior):
 
     def __new__(cls, mu=0, var=1):  # Singleton:
         if cls._instances:
-            cls._instances[:] = [instance for instance in cls._instances if instance()]
+            cls._instances[:] = [instance for instance in cls._instances if
+                                 instance()]
             for instance in cls._instances:
-                if np.all(instance().mu == mu) and np.all(instance().var == var):
+                if np.all(instance().mu == mu) and np.all(
+                        instance().var == var):
                     return instance()
         newfunc = super(Prior, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)  
+            o = newfunc(cls)
         else:
-            o = newfunc(cls, mu, var)         
+            o = newfunc(cls, mu, var)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
     def __init__(self, mu, var):
         self.mu = np.array(mu).flatten()
         self.var = np.array(var)
-        assert len(self.var.shape) == 2
-        assert self.var.shape[0] == self.var.shape[1]
+        assert len(self.var.shape) == 2, 'Covariance must be a matrix'
+        assert self.var.shape[0] == self.var.shape[1], \
+            'Covariance must be a square matrix'
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
         self.inv, _, self.hld, _ = pdinv(self.var)
@@ -229,13 +232,19 @@ class MultivariateGaussian(Prior):
         raise NotImplementedError
 
     def pdf(self, x):
+        x = np.array(x).flatten()
+        assert x.shape == self.mu.shape
         return np.exp(self.lnpdf(x))
 
     def lnpdf(self, x):
+        x = np.array(x).flatten()
+        assert x.shape == self.mu.shape
         d = x - self.mu
         return self.constant - 0.5 * np.dot(d.T, np.dot(self.inv, d))
 
     def lnpdf_grad(self, x):
+        x = np.array(x).flatten()
+        assert x.shape == self.mu.shape
         d = x - self.mu
         return - np.dot(self.inv, d)
 
@@ -254,10 +263,11 @@ class MultivariateGaussian(Prior):
         return self.mu, self.var
 
     def __setstate__(self, state):
-        self.mu = state[0]
+        self.mu = np.array(state[0]).flatten()
         self.var = state[1]
-        assert len(self.var.shape) == 2
-        assert self.var.shape[0] == self.var.shape[1]
+        assert len(self.var.shape) == 2, 'Covariance must be a matrix'
+        assert self.var.shape[0] == self.var.shape[1], \
+            'Covariance must be a square matrix'
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
         self.inv, _, self.hld, _ = pdinv(self.var)

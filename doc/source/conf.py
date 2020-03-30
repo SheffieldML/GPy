@@ -134,7 +134,7 @@ master_doc = 'index'
 project = u'GPy'
 #author = u'`Humans <https://github.com/SheffieldML/GPy/graphs/contributors>`_'
 author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors'
-copyright = u'2015, '+author
+copyright = u'2020, '+author
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

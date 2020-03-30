@@ -1,10 +1,8 @@
-.. GPy documentation master file, created by
-   sphinx-quickstart on Fri Sep 18 18:16:28 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+GPy - A Gaussian Process (GP) framework in Python
+=================================================
 
-Welcome to GPy's documentation!
-===============================
+Introduction
+------------
 
 `GPy <http://sheffieldml.github.io/GPy/>`_ is a Gaussian Process (GP) framework written in Python, from the Sheffield machine learning group.
 
@@ -13,14 +11,19 @@ This documentation is mostly aimed at developers interacting closely with the co
 
 The code can be found on our `Github project page <https://github.com/SheffieldML/GPy>`_. It is open source and provided under the BSD license.
 
-For developers:
+Installation
+------------
+
+For developers
+--------------
 
 - `Writing new models <tuto_creating_new_models.html>`_
 - `Writing new kernels <tuto_creating_new_kernels.html>`_
 - `Write a new plotting routine using gpy_plot <tuto_plotting.html>`_
 - `Parameterization handles <tuto_parameterized.html>`_
 
-Contents:
+API Documentation
+-----------------
 
 .. toctree::
    :maxdepth: 1
@@ -40,7 +43,7 @@ Contents:
    GPy.inference.mcmc
 	      
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -4,29 +4,39 @@ GPy - A Gaussian Process (GP) framework in Python
 Introduction
 ------------
 
-`GPy <http://sheffieldml.github.io/GPy/>`_ is a Gaussian Process (GP) framework written in Python, from the Sheffield machine learning group.
+`GPy <http://sheffieldml.github.io/GPy/>`_ is a Gaussian Process (GP) framework written in Python, from the Sheffield machine learning group. It includes support for basic GP regression, multiple output GPs (using coregionalization), various noise models, sparse GPs, non-parametric regression and latent variables.
 
 The `GPy homepage <http://sheffieldml.github.io/GPy/>`_ contains tutorials for users and further information on the project, including installation instructions.
-This documentation is mostly aimed at developers interacting closely with the code-base.
+
+The documentation hosted here is mostly aimed at developers interacting closely with the code-base.
+
+Source Code
+-----------
 
 The code can be found on our `Github project page <https://github.com/SheffieldML/GPy>`_. It is open source and provided under the BSD license.
 
 Installation
 ------------
 
-For developers
---------------
+Installation instructions can currently be found on our `Github project page <https://github.com/SheffieldML/GPy>`_.
 
-- `Writing new models <tuto_creating_new_models.html>`_
-- `Writing new kernels <tuto_creating_new_kernels.html>`_
-- `Write a new plotting routine using gpy_plot <tuto_plotting.html>`_
-- `Parameterization handles <tuto_parameterized.html>`_
+Tutorials
+---------
 
-API Documentation
------------------
+Several tutorials have been developed in the form of `Jupyter Notebooks <https://nbviewer.jupyter.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb>`_. 
 
 .. toctree::
    :maxdepth: 1
+   :caption: For developers
+
+   tuto_creating_new_models
+   tuto_creating_new_kernels
+   tuto_plotting
+   tuto_parameterized
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API Documentation
 
    GPy.models
    GPy.kern

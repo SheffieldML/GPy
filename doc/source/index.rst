@@ -51,11 +51,4 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
    GPy.inference.optimization
    GPy.inference.latent_function_inference
    GPy.inference.mcmc
-	      
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

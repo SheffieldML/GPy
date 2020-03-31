@@ -233,18 +233,15 @@ class MultivariateGaussian(Prior):
 
     def pdf(self, x):
         x = np.array(x).flatten()
-        assert x.shape == self.mu.shape
         return np.exp(self.lnpdf(x))
 
     def lnpdf(self, x):
         x = np.array(x).flatten()
-        assert x.shape == self.mu.shape
         d = x - self.mu
         return self.constant - 0.5 * np.dot(d.T, np.dot(self.inv, d))
 
     def lnpdf_grad(self, x):
         x = np.array(x).flatten()
-        assert x.shape == self.mu.shape
         d = x - self.mu
         return - np.dot(self.inv, d)
 

@@ -64,7 +64,7 @@ if on_rtd:
     print(out)
 
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
-    proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("sphinx-apidoc -M -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print("$ Apidoc:")
     print(out)

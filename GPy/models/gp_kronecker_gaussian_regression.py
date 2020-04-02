@@ -18,14 +18,11 @@ class GPKroneckerGaussianRegression(Model):
 
     The noise must be iid Gaussian.
 
-    See Stegle et al.
-    @inproceedings{stegle2011efficient,
-      title={Efficient inference in matrix-variate gaussian models with $\\backslash$ iid observation noise},
-      author={Stegle, Oliver and Lippert, Christoph and Mooij, Joris M and Lawrence, Neil D and Borgwardt, Karsten M},
-      booktitle={Advances in Neural Information Processing Systems},
-      pages={630--638},
-      year={2011}
-    }
+    See [stegle_et_al_2011]_.
+
+    .. rubric:: References
+
+    .. [stegle_et_al_2011] Stegle, O.; Lippert, C.; Mooij, J.M.; Lawrence, N.D.; Borgwardt, K.:Efficient inference in matrix-variate Gaussian models with \iid observation noise. In: Advances in Neural Information Processing Systems, 2011, Pages 630-638
 
     """
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):

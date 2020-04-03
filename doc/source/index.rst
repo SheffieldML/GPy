@@ -27,6 +27,12 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
 
 .. toctree::
    :maxdepth: 1
+   :caption: Architecture
+
+   architecture
+
+.. toctree::
+   :maxdepth: 1
    :caption: For developers
 
    tuto_creating_new_models

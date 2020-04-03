@@ -83,7 +83,12 @@ extensions = [
     #'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.graphviz',
+    'sphinx.ext.inheritance_diagram',
 ]
+
+#---sphinx.ext.inheritance_diagram config
+inheritance_graph_attrs = dict(rankdir="TB")
 
 #----- Autodoc
 #import sys

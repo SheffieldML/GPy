@@ -38,6 +38,8 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
    :maxdepth: 1
    :caption: API Documentation
 
+   GPy.core
+   GPy.core.parameterization
    GPy.models
    GPy.kern
    GPy.likelihoods
@@ -46,8 +48,6 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
    GPy.util
    GPy.plotting.gpy_plot
    GPy.plotting.matplot_dep
-   GPy.core
-   GPy.core.parameterization
    GPy.inference.optimization
    GPy.inference.latent_function_inference
    GPy.inference.mcmc

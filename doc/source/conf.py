@@ -88,7 +88,7 @@ extensions = [
 ]
 
 #---sphinx.ext.inheritance_diagram config
-inheritance_graph_attrs = dict(rankdir="TB")
+inheritance_graph_attrs = dict(rankdir="TB", dpi=1200)
 
 #----- Autodoc
 #import sys

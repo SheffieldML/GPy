@@ -2,6 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 """
+Introduction
+^^^^^^^^^^^^
+
 This module contains the fundamental classes of GPy - classes that are inherited by objects in other parts of GPy in order to provide a consistent interface to major functionality. 
 
 .. inheritance-diagram:: GPy.core.gp.GP
@@ -15,8 +18,10 @@ This module contains the fundamental classes of GPy - classes that are inherited
 
 Various plotting functions can be called against :py:class:`GPy.core.gp.GP`.
 
-:py:class:`GPy.core.gp.GP` is inherited by :py:class:`GPy.core.gp_grid`, :py:class:`GPy.core.sparse_gp`, different types of GP model.
+.. inheritance-diagram:: GPy.core.gp_grid.GpGrid GPy.core.sparse_gp.SparseGP GPy.core.sparse_gp_mpi.SparseGP_MPI GPy.core.svgp.SVGP 
+    :top-classes: GPy.core.gp.GP
 
+:py:class:`GPy.core.gp.GP` is used as the basis for classes supporting more specialized types of Gaussian Process model. These are however generally still not specific enough to be called by the user and are inhereted by members of the :py:class:`GPy.models` package.
 
 """
 

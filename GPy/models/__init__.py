@@ -4,9 +4,7 @@
 """
 This module does...
 
-.. automodule:: .src
-   :members:
-   :private-members:
+
 """
 
 from .gp_regression import GPRegression

@@ -2,7 +2,10 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 """
-This module does...
+Introduction
+^^^^^^^^^^^^
+
+This package principally contains classes ultimately inherited from :py:class:`GPy.core.gp.GP` intended as models for end user consuption - much of :py:class:`GPy.core.gp.GP` is not intended to be called directly. Some of these fall into conceptually related groups of models (e.g. :py:class:`GPy.core.sparse_gp`,  :py:class:`GPy.core.sparse_gp_mpi`).
 
 
 """

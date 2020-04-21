@@ -5,8 +5,20 @@
 Introduction
 ^^^^^^^^^^^^
 
-This package principally contains classes ultimately inherited from :py:class:`GPy.core.gp.GP` intended as models for end user consuption - much of :py:class:`GPy.core.gp.GP` is not intended to be called directly. Some of these fall into conceptually related groups of models (e.g. :py:class:`GPy.core.sparse_gp`,  :py:class:`GPy.core.sparse_gp_mpi`).
+This package principally contains classes ultimately inherited from :py:class:`GPy.core.gp.GP` intended as models for end user consuption - much of :py:class:`GPy.core.gp.GP` is not intended to be called directly. Several models directly inherit :py:class:`GPy.core.gp.GP`:
 
+.. inheritance-diagram:: GPy.models.gp_classification GPy.models.gp_coregionalized_regression GPy.models.gp_heteroscedastic_regression GPy.models.gp_offset_regression GPy.models.gp_regression GPy.models.gp_var_gauss GPy.models.gplvm GPy.models.input_warped_gp GPy.models.multioutput_gp
+    :top-classes: GPy.core.gp.GP
+
+Some models fall into conceptually related groups of models (e.g. :py:class:`GPy.core.sparse_gp`, :py:class:`GPy.core.sparse_gp_mpi`):
+
+.. inheritance-diagram:: GPy.models.bayesian_gplvm GPy.models.bayesian_gplvm_minibatch GPy.models.gp_multiout_regression GPy.models.gp_multiout_regression_md GPy.models.ibp_lfm.IBPLFM GPy.models.sparse_gp_coregionalized_regression GPy.models.sparse_gp_minibatch GPy.models.sparse_gp_regression GPy.models.sparse_gp_regression_md GPy.models.sparse_gplvm
+    :top-classes: GPy.core.gp.GP
+
+In some cases one end-user model inherits another e.g.
+
+.. inheritance-diagram:: GPy.models.bayesian_gplvm_minibatch
+    :top-classes: GPy.models.sparse_gp_minibatch.SparseGPMiniBatch
 
 """
 

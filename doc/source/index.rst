@@ -47,7 +47,7 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
    GPy.core
    GPy.core.parameterization
    GPy.models
-   GPy.kern.src
+   GPy.kern
    GPy.likelihoods
    GPy.mappings
    GPy.examples

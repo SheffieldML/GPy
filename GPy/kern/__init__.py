@@ -1,4 +1,15 @@
 
+"""
+
+In terms of Gaussian Processes, a kernel is a function that specifies the degree of similarity between variables given their relative positions in parameter space. If known variables *x* and *x'* are close together then observed variables *y* and *y'* may also be similar, depending on the kernel function and its parameters.
+
+:py:class:`GPy.kern.src.kern.Kern` is a generic kernel object inherited by more specific, end-user kernels used in models. It provides methods that specific kernels should generally have such as :py:class:`GPy.kern.src.kern.Kern.K` to compute the value of the kernel, :py:class:`GPy.kern.src.kern.Kern.add` to combine kernels and numerous functions providing information on kernel gradients.
+
+.. inheritance-diagram:: GPy.kern.src.kern.Kern
+   :top-classes: GPy.core.parameterization.parameterized.Parameterized
+
+"""
+
 from .src.kern import Kern
 from .src.add import Add
 from .src.prod import Prod

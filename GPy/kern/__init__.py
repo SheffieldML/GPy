@@ -1,10 +1,4 @@
-"""
-Kernel module the kernels to sit in.
 
-.. automodule:: .src
-   :members:
-   :private-members:
-"""
 from .src.kern import Kern
 from .src.add import Add
 from .src.prod import Prod

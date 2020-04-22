@@ -5,7 +5,9 @@
 Introduction
 ^^^^^^^^^^^^
 
-This package principally contains classes ultimately inherited from :py:class:`GPy.core.gp.GP` intended as models for end user consuption - much of :py:class:`GPy.core.gp.GP` is not intended to be called directly. Several models directly inherit :py:class:`GPy.core.gp.GP`:
+This package principally contains classes ultimately inherited from :py:class:`GPy.core.gp.GP` intended as models for end user consuption - much of :py:class:`GPy.core.gp.GP` is not intended to be called directly. The general form of a "model" is a function that takes some data, a kernel (see :py:class:`GPy.kern`) and other parameters, returning an object representation.
+
+Several models directly inherit :py:class:`GPy.core.gp.GP`:
 
 .. inheritance-diagram:: GPy.models.gp_classification GPy.models.gp_coregionalized_regression GPy.models.gp_heteroscedastic_regression GPy.models.gp_offset_regression GPy.models.gp_regression GPy.models.gp_var_gauss GPy.models.gplvm GPy.models.input_warped_gp GPy.models.multioutput_gp
     :top-classes: GPy.core.gp.GP

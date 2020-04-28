@@ -1,4 +1,0 @@
-GPy Project Architecture
-========================
-
-

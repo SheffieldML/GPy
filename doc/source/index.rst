@@ -25,11 +25,42 @@ Tutorials
 
 Several tutorials have been developed in the form of `Jupyter Notebooks <https://nbviewer.jupyter.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb>`_. 
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Architecture
+Architecture
+------------
 
-   architecture
+GPy is a big, powerful package, with many features. The concept of how to use GPy in general terms is roughly as follows. A model (:py:class:`GPy.models`) is created - this is at the heart of GPy from a user perspective. A kernel (:py:class:`GPy.kern`), data and, usually, a representation of noise are assigned to the model. Specific models require, or can make use of, additional information. The kernel and noise are controlled by hyperparameters - calling the optimize (:py:class:`GPy.core.gp.GP.optimize`) method against the model invokes an iterative process which seeks optimal hyperparameter values. The model object can be used to make plots and predictions (:py:class:`GPy.core.gp.GP.predict`).
+
+.. graphviz::
+
+   digraph GPy_Arch {
+      
+      rankdir=LR
+      node[shape="rectangle" style="rounded,filled" fontname="Arial"]
+      edge [color="#006699" len=2.5]
+
+      Data->Model
+      Hyperparameters->Kernel
+      Hyperparameters->Noise
+      Kernel->Model
+      Noise->Model
+      
+      Model->Optimize
+      Optimize->Hyperparameters
+      
+      Model->Predict
+      Model->Plot
+      
+      Optimize [shape="ellipse"]
+      Predict [shape="ellipse"]
+      Plot [shape="ellipse"]
+      
+      subgraph cluster_0 {
+         Data
+         Kernel
+         Noise
+      }
+
+   }
 
 .. toctree::
    :maxdepth: 1

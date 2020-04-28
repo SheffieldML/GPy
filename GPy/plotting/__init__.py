@@ -2,7 +2,7 @@
 Introduction
 ^^^^^^^^^^^^
 
-:py:class:`GPy.plotting` extends models based on :py:class:`GPy.core.gp.GP` by adding methods to plot useful charts. 'matplotlib', 'plotly' (online) and 'plotly' (offline) are supported. The methods in :py:class:`GPy.plotting` (and child classes :py:class:`GPy.plotting.gpy_plot` and :py:class:`GPy.plotting.matplot_dep`) are not intended to be called directly, but rather are 'injected' into other classes (notably :py:class:`GPy.core.gp.GP`). Documentation describing plots is best found associated with the model being plotted e.g. :py:class:`GPy.core.gp.GP.plot_confidence`.
+:py:class:`GPy.plotting` effectively extends models based on :py:class:`GPy.core.gp.GP` (and other classes) by adding methods to plot useful charts. 'matplotlib', 'plotly' (online) and 'plotly' (offline) are supported. The methods in :py:class:`GPy.plotting` (and child classes :py:class:`GPy.plotting.gpy_plot` and :py:class:`GPy.plotting.matplot_dep`) are not intended to be called directly, but rather are 'injected' into other classes (notably :py:class:`GPy.core.gp.GP`). Documentation describing plots is best found associated with the model being plotted e.g. :py:class:`GPy.core.gp.GP.plot_confidence`.
 
 """
 

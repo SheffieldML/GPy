@@ -53,8 +53,6 @@ Several tutorials have been developed in the form of `Jupyter Notebooks <https:/
    GPy.examples
    GPy.util
    GPy.plotting
-   GPy.plotting.gpy_plot
-   GPy.plotting.matplot_dep
    GPy.inference.optimization
    GPy.inference.latent_function_inference
    GPy.inference.mcmc

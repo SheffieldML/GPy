@@ -9,7 +9,12 @@ The Gaussian processes framework in Python.
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
 
-[![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy) [![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) [![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
+[![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy)
+[![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy)
+[![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel)
+[![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel)
+[![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
+[![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
 
 ## What's new:
 

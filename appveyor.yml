@@ -5,8 +5,6 @@ environment:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
   gpy_version: 1.9.9
   matrix:
-    - PYTHON_VERSION: 2.7
-      MINICONDA: C:\Miniconda-x64
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
     - PYTHON_VERSION: 3.6

@@ -222,6 +222,13 @@ The documentation can be compiled as follows:
     sphinx-apidoc -o source/ ../GPy/
     make html
 
+alternatively:
+
+```{shell}
+cd doc
+sphinx-build -b html -d build/doctrees -D graphviz_dot='<path to dot>' source build/html
+```
+
 The HTML files are then stored in doc/build/html
 
 ### Commit new patch to devel

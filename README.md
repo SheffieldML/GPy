@@ -93,7 +93,7 @@ We like to pronounce it 'g-pie'.
 
 ## Getting started: installing with pip
 
-We are now requiring the newest version (0.16) of
+We are requiring a recent version (1.3.0 or later) of
 [scipy](http://www.scipy.org/) and thus, we strongly recommend using
 the  [anaconda python distribution](http://continuum.io/downloads).
 With anaconda you can install GPy by the following:
@@ -111,7 +111,7 @@ And finally,
 
     pip install gpy
 
-We've also had luck with [enthought](http://www.enthought.com). Install scipy 0.16 (or later)
+We've also had luck with [enthought](http://www.enthought.com). Install scipy 1.3.0 (or later)
  and then pip install GPy:
 
     pip install gpy

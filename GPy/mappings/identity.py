@@ -8,7 +8,7 @@ class Identity(Mapping):
     A mapping that does nothing!
     """
     def __init__(self, input_dim, output_dim, name='identity'):
-        Mapping.__init__(self, input_dim, output_dim, name)
+        super(Identity, self).__init__(input_dim, output_dim, name)
 
     def f(self, X):
         return X

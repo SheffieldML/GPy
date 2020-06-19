@@ -26,7 +26,7 @@ class GPKroneckerGaussianRegression(Model):
 
     """
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
-        Model.__init__(self, name=name)
+        super(GPKroneckerGaussianRegression, self).__init__(name=name)
 
         # accept the construction arguments
         self.X1 = ObsAr(X1)

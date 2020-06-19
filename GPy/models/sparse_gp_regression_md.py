@@ -58,7 +58,7 @@ class SparseGPRegressionMD(SparseGP_MPI):
 
         infr = VarDTC_MD()
 
-        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
+        super(SparseGPRegressionMD, self).__init__(X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
         self.output_dim = output_dim
 
     def parameters_changed(self):

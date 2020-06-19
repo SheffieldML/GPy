@@ -335,7 +335,7 @@ class GP(Model):
             of the output dimensions.
 
         Note: If you want the predictive quantiles (e.g. 95% confidence
-        interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        interval) use :py:func:`~GPy.core.gp.GP.predict_quantiles`.
         """
 
         # Predict the latent function values
@@ -384,7 +384,7 @@ class GP(Model):
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:`~GPy.core.gp.GP.predict_quantiles`.
         """
         return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
 

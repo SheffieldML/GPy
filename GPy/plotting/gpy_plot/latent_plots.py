@@ -89,7 +89,8 @@ def plot_latent_scatter(self, labels=None,
     Plot a scatter plot of the latent space.
 
     :param array-like labels: a label for each data point (row) of the inputs
-    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param which_indices: which input dimensions to plot against each other
+    :type which_indices: (int, int)
     :param bool legend: whether to plot the legend on the figure
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
@@ -174,7 +175,8 @@ def plot_magnification(self, labels=None, which_indices=None,
     density of the GP as a gray scale.
 
     :param array-like labels: a label for each data point (row) of the inputs
-    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param which_indices: which input dimensions to plot against each other
+    :type which_indices: (int, int)
     :param int resolution: the resolution at which we predict the magnification factor
     :param str marker: markers to use - cycle if more labels then markers are given
     :param bool legend: whether to plot the legend on the figure
@@ -183,7 +185,8 @@ def plot_magnification(self, labels=None, which_indices=None,
     :param bool updates: if possible, make interactive updates using the specific library you are using
     :param bool mean: use the mean of the Wishart embedding for the magnification factor
     :param bool covariance: use the covariance of the Wishart embedding for the magnification factor
-    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param kern: the kernel to use for prediction
+    :type kern: :py:class:`~GPy.kern.Kern`
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples.
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
     :param kwargs: the kwargs for the scatter plots
@@ -248,13 +251,15 @@ def plot_latent(self, labels=None, which_indices=None,
     scatter plot of the input dimemsions selected by which_indices.
 
     :param array-like labels: a label for each data point (row) of the inputs
-    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param which_indices: which input dimensions to plot against each other
+    :type which_indices: (int, int)
     :param int resolution: the resolution at which we predict the magnification factor
     :param bool legend: whether to plot the legend on the figure
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
     :param bool updates: if possible, make interactive updates using the specific library you are using
-    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param kern: the kernel to use for prediction
+    :type kern: :py:class:`~GPy.kern.Kern`
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples.
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
@@ -316,13 +321,15 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     scatter plot of the input dimemsions selected by which_indices.
 
     :param array-like labels: a label for each data point (row) of the inputs
-    :param (int, int) which_indices: which input dimensions to plot against each other
+    :param which_indices: which input dimensions to plot against each other
+    :type which_indices: (int, int)
     :param int resolution: the resolution at which we predict the magnification factor
     :param bool legend: whether to plot the legend on the figure, if int plot legend columns on legend
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
     :param bool updates: if possible, make interactive updates using the specific library you are using
-    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param kern: the kernel to use for prediction
+    :type kern: :py:class:`~GPy.kern.Kern`
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples.
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)

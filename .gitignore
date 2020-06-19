@@ -50,3 +50,9 @@ iterate.dat
 
 # pycharm IDE stuff
 .idea/
+
+# docs
+GPy*.rst
+
+# vscode
+settings.json

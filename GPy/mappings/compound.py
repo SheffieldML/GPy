@@ -21,7 +21,7 @@ class Compound(Mapping):
     def __init__(self, mapping1, mapping2):
         assert(mapping1.output_dim==mapping2.input_dim)
         input_dim, output_dim = mapping1.input_dim, mapping2.output_dim
-        Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim)
+        super(Compound, self).__init__(input_dim=input_dim, output_dim=output_dim)
         self.mapping1 = mapping1
         self.mapping2 = mapping2
         self.link_parameters(self.mapping1, self.mapping2)

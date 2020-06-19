@@ -87,7 +87,7 @@ def _image_directories():
     result_dir = os.path.join(basedir, 'testresult','.')
     baseline_dir = os.path.join(basedir, 'baseline','.')
     if not os.path.exists(result_dir):
-        cbook.mkdirs(result_dir)
+        os.makedirs(result_dir)
     return baseline_dir, result_dir
 
 baseline_dir, result_dir = _image_directories()

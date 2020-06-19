@@ -23,7 +23,7 @@ class SparseGPLVM(SparseGPRegression):
             from ..util.initialization import initialize_latent
             X, fracs = initialize_latent(init, input_dim, Y)
         X = Param('latent space', X)
-        SparseGPRegression.__init__(self, X, Y, kernel=kernel, num_inducing=num_inducing)
+        super(SparseGPLVM, self).__init__(X, Y, kernel=kernel, num_inducing=num_inducing)
         self.link_parameter(self.X, 0)
 
     def parameters_changed(self):

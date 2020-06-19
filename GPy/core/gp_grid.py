@@ -46,7 +46,7 @@ class GpGrid(GP):
 
         inference_method = gaussian_grid_inference.GaussianGridInference()
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        super(GpGrid, self).__init__(X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         self.posterior = None
 
     def parameters_changed(self):

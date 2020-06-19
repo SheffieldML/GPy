@@ -64,7 +64,7 @@ if on_rtd:
     print(out)
 
     #Lets regenerate our rst files from the source, -P adds private modules (i.e kern._src)
-    proc = subprocess.Popen("sphinx-apidoc -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("sphinx-apidoc -M -P -f -o . ../../GPy", stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     print("$ Apidoc:")
     print(out)
@@ -83,7 +83,12 @@ extensions = [
     #'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.graphviz',
+    'sphinx.ext.inheritance_diagram',
 ]
+
+#---sphinx.ext.inheritance_diagram config
+inheritance_graph_attrs = dict(rankdir="LR", dpi=1200)
 
 #----- Autodoc
 #import sys
@@ -134,7 +139,7 @@ master_doc = 'index'
 project = u'GPy'
 #author = u'`Humans <https://github.com/SheffieldML/GPy/graphs/contributors>`_'
 author = 'GPy Authors, see https://github.com/SheffieldML/GPy/graphs/contributors'
-copyright = u'2015, '+author
+copyright = u'2020, '+author
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -244,6 +249,10 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_css_files = [
+    'wide.css',
+]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

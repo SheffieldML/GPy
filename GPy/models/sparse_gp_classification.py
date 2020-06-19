@@ -46,8 +46,8 @@ class SparseGPClassification(SparseGP):
         if inference_method is None:
             inference_method = EPDTC()
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood, mean_function=mean_function, inference_method=inference_method,
-                          normalizer=normalizer, name='SparseGPClassification', Y_metadata=Y_metadata)
+        super(SparseGPClassification, self).__init__(X, Y, Z, kernel, likelihood, mean_function=mean_function, inference_method=inference_method,
+                                                     normalizer=normalizer, name='SparseGPClassification', Y_metadata=Y_metadata)
 
     @staticmethod
     def from_sparse_gp(sparse_gp):
@@ -136,9 +136,9 @@ class SparseGPClassificationUncertainInput(SparseGP):
 
         X = NormalPosterior(X, X_variance)
 
-        SparseGP.__init__(self, X, Y, Z, kernel, likelihood,
-                          inference_method=EPDTC(),
-                          name='SparseGPClassification', Y_metadata=Y_metadata, normalizer=normalizer)
+        super(SparseGPClassificationUncertainInput, self).__init__(X, Y, Z, kernel, likelihood,
+                                                                   inference_method=EPDTC(), name='SparseGPClassification',
+                                                                   Y_metadata=Y_metadata, normalizer=normalizer)
 
     def parameters_changed(self):
         #Compute the psi statistics for N once, but don't sum out N in psi2

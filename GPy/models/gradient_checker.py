@@ -39,28 +39,30 @@ class GradientChecker(Model):
             a list of names with the same length is expected.
         :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
 
-        Examples:
-        ---------
+        .. rubric:: Examples
+        
+        Initialisation::
+
             from GPy.models import GradientChecker
             N, M, Q = 10, 5, 3
 
-            Sinusoid:
+        Sinusoid::
 
-                X = numpy.random.rand(N, Q)
-                grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
-                grad.checkgrad(verbose=1)
+            X = numpy.random.rand(N, Q)
+            grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
+            grad.checkgrad(verbose=1)
 
-            Using GPy:
+        Using GPy::
 
-                X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
-                kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
-                grad = GradientChecker(kern.K,
-                                       lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
-                                       x0 = X.copy(),
-                                       names='X')
-                grad.checkgrad(verbose=1)
-                grad.randomize()
-                grad.checkgrad(verbose=1)
+            X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
+            kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
+            grad = GradientChecker(kern.K,
+                                    lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
+                                    x0 = X.copy(),
+                                    names='X')
+            grad.checkgrad(verbose=1)
+            grad.randomize()
+            grad.checkgrad(verbose=1)
         """
         super(GradientChecker, self).__init__(name='GradientChecker')
         if isinstance(x0, (list, tuple)) and names is None:

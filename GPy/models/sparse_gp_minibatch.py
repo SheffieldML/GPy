@@ -43,6 +43,10 @@ class SparseGPMiniBatch(SparseGP):
                  missing_data=False, stochastic=False, batchsize=1):
         self._update_stochastics = False
 
+        # FIXME(?): Half of this function seems to be copy-pasted from
+        #           SparseGP.__init, any particular reason why SparseGP.__init
+        #           is not called (instead of calling GP.__init__ directly)?
+
         # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
@@ -56,7 +60,8 @@ class SparseGPMiniBatch(SparseGP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        # Skip SparseGP.__init (see remark above)
+        super(SparseGP, self).__init__(X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
         self.missing_data = missing_data
 
         if stochastic and missing_data:

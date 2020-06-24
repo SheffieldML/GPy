@@ -3,9 +3,20 @@
 Introduction
 ^^^^^^^^^^^^
 
-In terms of Gaussian Processes, a kernel is a function that specifies the degree of similarity between variables given their relative positions in parameter space. If known variables *x* and *x'* are close together then observed variables *y* and *y'* may also be similar, depending on the kernel function and its parameters. *Note: this may be too simple a definition for the broad range of kernels available in :py:class:`GPy`.*
+In terms of Gaussian Processes, a kernel is a function that specifies
+the degree of similarity between variables given their relative
+positions in parameter space. If known variables *x* and *x'* are
+close together then observed variables *y* and *y'* may also be
+similar, depending on the kernel function and its parameters. *Note:
+this may be too simple a definition for the broad range of kernels
+available in :py:class:`GPy`.*
 
-:py:class:`GPy.kern.src.kern.Kern` is a generic kernel object inherited by more specific, end-user kernels used in models. It provides methods that specific kernels should generally have such as :py:class:`GPy.kern.src.kern.Kern.K` to compute the value of the kernel, :py:class:`GPy.kern.src.kern.Kern.add` to combine kernels and numerous functions providing information on kernel gradients.
+:py:class:`GPy.kern.src.kern.Kern` is a generic kernel object
+inherited by more specific, end-user kernels used in models. It
+provides methods that specific kernels should generally have such as
+:py:class:`GPy.kern.src.kern.Kern.K` to compute the value of the
+kernel, :py:class:`GPy.kern.src.kern.Kern.add` to combine kernels and
+numerous functions providing information on kernel gradients.
 
 There are several inherited types of kernel that provide a basis for specific end user kernels:
 
@@ -18,7 +29,6 @@ e.g. the archetype :py:class:`GPy.kern.RBF` does not inherit directly from :py:c
    :top-classes: GPy.core.parameterization.parameterized.Parameterized
 
 """
-
 
 
 from .src.kern import Kern

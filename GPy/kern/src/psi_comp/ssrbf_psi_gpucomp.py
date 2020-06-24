@@ -448,12 +448,34 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
             dL_dpsi0_sum = dL_dpsi0.sum()
 
         self.reset_derivative()
-        # t=self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # t=self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu,
+        #                      np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N),
+        #                      np.int32(M), np.int32(Q), block=(self.threadnum,1,1),
+        #                      grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi1compDer '+str(t)
-        # t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu,
+        #                      np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N),
+        #                      np.int32(M), np.int32(Q), block=(self.threadnum,1,1),
+        #                      grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2compDer '+str(t)
-        self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dgamma_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, log_denom1_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata,gamma_gpu.gpudata,np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dgamma_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, log_denom2_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata,gamma_gpu.gpudata,np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi1compDer.prepared_call((self.blocknum,1), (self.threadnum,1,1),
+                                         dvar_gpu.gpudata, dl_gpu.gpudata, dZ_gpu.gpudata,
+                                         dmu_gpu.gpudata, dS_gpu.gpudata, dgamma_gpu.gpudata,
+                                         dL_dpsi1_gpu.gpudata, psi1_gpu.gpudata,
+                                         log_denom1_gpu.gpudata, log_gamma_gpu.gpudata,
+                                         log_gamma1_gpu.gpudata, np.float64(variance),
+                                         l_gpu.gpudata, Z_gpu.gpudata, mu_gpu.gpudata,
+                                         S_gpu.gpudata, gamma_gpu.gpudata, np.int32(N),
+                                         np.int32(M), np.int32(Q))
+        self.g_psi2compDer.prepared_call((self.blocknum,1), (self.threadnum,1,1),
+                                         dvar_gpu.gpudata, dl_gpu.gpudata, dZ_gpu.gpudata,
+                                         dmu_gpu.gpudata, dS_gpu.gpudata, dgamma_gpu.gpudata,
+                                         dL_dpsi2_gpu.gpudata, psi2n_gpu.gpudata,
+                                         log_denom2_gpu.gpudata, log_gamma_gpu.gpudata,
+                                         log_gamma1_gpu.gpudata, np.float64(variance),
+                                         l_gpu.gpudata, Z_gpu.gpudata, mu_gpu.gpudata,
+                                         S_gpu.gpudata, gamma_gpu.gpudata, np.int32(N),
+                                         np.int32(M), np.int32(Q))
 
         dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
         sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
@@ -468,7 +490,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
             dL_dlengscale = grad_l_gpu.get()
         else:
             dL_dlengscale = gpuarray.sum(dl_gpu).get()
-            
+
         return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS, dL_dgamma
-    
 

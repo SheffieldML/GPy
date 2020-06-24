@@ -1,13 +1,24 @@
-"""
-Introduction
+"""Introduction
 ^^^^^^^^^^^^
 
-The likelihood is :math:`p(y|f,X)` which is how well we will predict target values given inputs :math:`X` and our latent function :math:`f` (:math:`y` without noise). Marginal likelihood :math:`p(y|X)`, is the same as likelihood except we marginalize out the model :math:`f`. The importance of likelihoods in Gaussian Processes is in determining the 'best' values of kernel and noise hyperparamters to relate known, observed and unobserved data. The purpose of optimizing a model (e.g. :py:class:`GPy.models.GPRegression`) is to determine the 'best' hyperparameters i.e. those that minimize negative log marginal likelihood.
+The likelihood is :math:`p(y|f,X)` which is how well we will predict
+target values given inputs :math:`X` and our latent function :math:`f`
+(:math:`y` without noise). Marginal likelihood :math:`p(y|X)`, is the
+same as likelihood except we marginalize out the model :math:`f`. The
+importance of likelihoods in Gaussian Processes is in determining the
+'best' values of kernel and noise hyperparamters to relate known,
+observed and unobserved data. The purpose of optimizing a model
+(e.g. :py:class:`GPy.models.GPRegression`) is to determine the 'best'
+hyperparameters i.e. those that minimize negative log marginal
+likelihood.
 
 .. inheritance-diagram:: GPy.likelihoods.likelihood GPy.likelihoods.mixed_noise.MixedNoise
    :top-classes: GPy.core.parameterization.parameterized.Parameterized
 
-Most likelihood classes inherit directly from :py:class:`GPy.likelihoods.likelihood`, although an intermediary class :py:class:`GPy.likelihoods.mixed_noise.MixedNoise` is used by :py:class:`GPy.likelihoods.multioutput_likelihood`.
+Most likelihood classes inherit directly from
+:py:class:`GPy.likelihoods.likelihood`, although an intermediary class
+:py:class:`GPy.likelihoods.mixed_noise.MixedNoise` is used by
+:py:class:`GPy.likelihoods.multioutput_likelihood`.
 
 """
 

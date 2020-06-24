@@ -13,10 +13,18 @@ from ..util.linalg import tdot
 from .sparse_gp_regression_md import SparseGPRegressionMD
 
 class GPMultioutRegressionMD(SparseGP):
-    """
-    Gaussian Process model for multi-output regression with missing data
+    """Gaussian Process model for multi-output regression with missing data
 
-    This is an implementation of Latent Variable Multiple Output Gaussian Processes (LVMOGP) in [Dai_et_al_2017]_. This model targets at the use case, in which each output dimension is observed at a different set of inputs. The model takes a different data format: the inputs and outputs observations of all the output dimensions are stacked together correspondingly into two matrices. An extra array is used to indicate the index of output dimension for each data point. The output dimensions are indexed using integers from 0 to D-1 assuming there are D output dimensions.
+    This is an implementation of Latent Variable Multiple Output
+    Gaussian Processes (LVMOGP) in [Dai_et_al_2017]_. This model
+    targets at the use case, in which each output dimension is
+    observed at a different set of inputs. The model takes a different
+    data format: the inputs and outputs observations of all the output
+    dimensions are stacked together correspondingly into two
+    matrices. An extra array is used to indicate the index of output
+    dimension for each data point. The output dimensions are indexed
+    using integers from 0 to D-1 assuming there are D output
+    dimensions.
 
     .. rubric:: References
 

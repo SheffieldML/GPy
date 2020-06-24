@@ -10,10 +10,18 @@ from ..inference.latent_function_inference.vardtc_md import VarDTC_MD
 from GPy.core.parameterization.variational import NormalPosterior
 
 class SparseGPRegressionMD(SparseGP_MPI):
-    """
-    Sparse Gaussian Process Regression with Missing Data
+    """Sparse Gaussian Process Regression with Missing Data
 
-    This model targets at the use case, in which there are multiple output dimensions (different dimensions are assumed to be independent following the same GP prior) and each output dimension is observed at a different set of inputs. The model takes a different data format: the inputs and outputs observations of all the output dimensions are stacked together correspondingly into two matrices. An extra array is used to indicate the index of output dimension for each data point. The output dimensions are indexed using integers from 0 to D-1 assuming there are D output dimensions.
+    This model targets at the use case, in which there are multiple
+    output dimensions (different dimensions are assumed to be
+    independent following the same GP prior) and each output dimension
+    is observed at a different set of inputs. The model takes a
+    different data format: the inputs and outputs observations of all
+    the output dimensions are stacked together correspondingly into
+    two matrices. An extra array is used to indicate the index of
+    output dimension for each data point. The output dimensions are
+    indexed using integers from 0 to D-1 assuming there are D output
+    dimensions.
 
     :param X: input observations.
     :type X: numpy.ndarray
@@ -29,6 +37,7 @@ class SparseGPRegressionMD(SparseGP_MPI):
     :type num_inducing: (int, int)
     :param boolean individual_Y_noise: whether individual output dimensions have their own noise variance or not, boolean
     :param str name: the name of the model
+
     """
 
     def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10,  normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):

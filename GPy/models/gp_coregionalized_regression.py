@@ -8,6 +8,7 @@ from .. import kern
 from .. import util
 from paramz import ObsAr
 
+
 class GPCoregionalizedRegression(GP):
     """
     Gaussian Process model for heteroscedastic multioutput regression
@@ -35,6 +36,7 @@ class GPCoregionalizedRegression(GP):
         X_list,
         Y_list,
         kernel=None,
+        normalizer=None,
         likelihoods_list=None,
         name="GPCR",
         W_rank=1,
@@ -63,7 +65,12 @@ class GPCoregionalizedRegression(GP):
         )
 
         super(GPCoregionalizedRegression, self).__init__(
-            X, Y, kernel, likelihood, Y_metadata={"output_index": self.output_index}
+            X,
+            Y,
+            kernel,
+            likelihood,
+            Y_metadata={"output_index": self.output_index},
+            normalizer=normalizer,
         )
 
     def set_XY(self, X=None, Y=None):
@@ -74,8 +81,13 @@ class GPCoregionalizedRegression(GP):
 
         self.update_model(False)
         if Y is not None:
-            self.Y = ObsAr(Y)
-            self.Y_normalized = self.Y
+            if self.normalizer is not None:
+                self.normalizer.scale_by(Y)
+                self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
+                self.Y = Y
+            else:
+                self.Y = ObsAr(Y)
+                self.Y_normalized = self.Y
         if X is not None:
             self.X = ObsAr(X)
 

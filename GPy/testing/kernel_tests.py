@@ -176,8 +176,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Positive definite check failed for " + kern.name + " covariance function."))
         pass_checks = False
-        #assert(result)
-        #return False
+
 
     if verbose:
         print("Checking gradients of K(X, X) wrt theta.")
@@ -188,8 +187,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         print(("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:"))
         Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
         pass_checks = False
-        #assert(result)
-        #return False
+
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt theta.")
@@ -205,8 +203,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         print(("Gradient of K(X, X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:"))
         Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
         pass_checks = False
-        #assert(result)
-        #return False
+
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt theta.")
@@ -222,8 +219,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         print(("Gradient of Kdiag(X) wrt theta failed for " + kern.name + " covariance function. Gradient values as follows:"))
         Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
-        #assert(result)
-        #return False
+
 
     if verbose:
         print("Checking gradients of K(X, X) wrt X.")
@@ -241,9 +237,8 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        #assert(result)
+
         pass_checks = False
-        #return False
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt X.")
@@ -261,9 +256,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of K(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        #assert(result)
         pass_checks = False
-        #return False
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt X.")
@@ -282,8 +275,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         print(("Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"))
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
-        #assert(result)
-        #return False
+
 
     if verbose:
         print("Checking gradients of dK(X, X2) wrt X2 with full cov in dimensions")
@@ -301,9 +293,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of dK(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        #assert(result)
         pass_checks = False
-        #return False
 
     if verbose:
         print("Checking gradients of dK(X, X) wrt X with full cov in dimensions")
@@ -321,9 +311,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of dK(X, X) wrt X with full cov in dimensions failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        #assert(result)
         pass_checks = False
-        #return False
 
     if verbose:
         print("Checking gradients of dKdiag(X, X) wrt X with cov in dimensions")
@@ -341,9 +329,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if not result:
         print(("Gradient of dKdiag(X, X) wrt X with cov in dimensions failed for " + kern.name + " covariance function. Gradient values as follows:"))
         testmodel.checkgrad(verbose=True)
-        #assert(result)
         pass_checks = False
-        #return False
 
     return pass_checks
 

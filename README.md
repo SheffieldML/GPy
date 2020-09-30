@@ -3,7 +3,7 @@
 The Gaussian processes framework in Python.
 
 * GPy [homepage](http://sheffieldml.github.io/GPy/)
-* Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
+* Tutorial's [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * Developer [documentation](http://gpy.readthedocs.io/) [documentation (devel branch)](https://gpy.readthedocs.io/en/devel/)
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
@@ -19,7 +19,7 @@ The Gaussian processes framework in Python.
 
 ## What's new:
 
-From now on we keep track of changes in the CHANGELOG.md.
+From now on we will keep track of changes in the CHANGELOG.md.
 If you want your changes to show up there follow the [guidelines](#gl).
 In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 

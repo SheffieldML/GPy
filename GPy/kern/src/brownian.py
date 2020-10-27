@@ -23,6 +23,17 @@ class Brownian(Kern):
 
         self.variance = Param('variance', variance, Logexp())
         self.link_parameters(self.variance)
+        
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+        Note: It uses the private method _save_to_input_dict of the parent.
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RBF, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.Brownian"
+        return input_dict
 
     def K(self,X,X2=None):
         if X2 is None:

@@ -40,6 +40,11 @@ import sys
 from setuptools import setup, Extension
 import codecs
 
+try:
+    ModuleNotFoundError
+except NameError:
+    ModuleNotFoundError = ImportError
+
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
         return f.read()
@@ -84,34 +89,39 @@ try:
     import numpy as np
 
     ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
-                          sources=['GPy/kern/src/stationary_cython.c',
+                          sources=['GPy/kern/src/stationary_cython.pyx',
                                    'GPy/kern/src/stationary_utils.c'],
                           include_dirs=[np.get_include(), '.'],
                           extra_compile_args=compile_flags,
                           extra_link_args=link_args),
                 Extension(name='GPy.util.choleskies_cython',
-                          sources=['GPy/util/choleskies_cython.c'],
+                          sources=['GPy/util/choleskies_cython.pyx'],
                           include_dirs=[np.get_include(), '.'],
                           extra_link_args=link_args,
                           extra_compile_args=compile_flags),
                 Extension(name='GPy.util.linalg_cython',
-                          sources=['GPy/util/linalg_cython.c'],
+                          sources=['GPy/util/linalg_cython.pyx'],
                           include_dirs=[np.get_include(), '.'],
                           extra_compile_args=compile_flags,
                           extra_link_args=link_args),
                 Extension(name='GPy.kern.src.coregionalize_cython',
-                          sources=['GPy/kern/src/coregionalize_cython.c'],
+                          sources=['GPy/kern/src/coregionalize_cython.pyx'],
                           include_dirs=[np.get_include(), '.'],
                           extra_compile_args=compile_flags,
                           extra_link_args=link_args),
                 Extension(name='GPy.models.state_space_cython',
-                          sources=['GPy/models/state_space_cython.c'],
+                          sources=['GPy/models/state_space_cython.pyx'],
                           include_dirs=[np.get_include(), '.'],
                           extra_compile_args=compile_flags,
                           extra_link_args=link_args)]
 except ModuleNotFoundError:
     ext_mods = []
 
+install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
+if sys.version_info < (3, 6):
+    install_requirements += ['scipy>=1.3.0,<1.5.0']
+else:
+    install_requirements += ['scipy>=1.3.0']
 
 setup(name = 'GPy',
       version = __version__,
@@ -159,12 +169,12 @@ setup(name = 'GPy',
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
       setup_requires = ['numpy>=1.7'],
-      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.9.0'],
+      install_requires = install_requirements,
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',
                                     ],
-                        'plotting':['matplotlib >= 1.3',
+                        'plotting':['matplotlib >= 3.0',
                                     'plotly >= 1.8.6'],
                         'notebook':['jupyter_client >= 4.0.6',
                                     'ipywidgets >= 4.0.3',
@@ -177,15 +187,16 @@ setup(name = 'GPy',
                    'Operating System :: MacOS :: MacOS X',
                    'Operating System :: Microsoft :: Windows',
                    'Operating System :: POSIX :: Linux',
-                   'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6',
+                   'Programming Language :: Python :: 3.7',
+                   'Programming Language :: Python :: 3.8',
                    'Framework :: IPython',
                    'Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
                    'Topic :: Software Development',
                    'Topic :: Software Development :: Libraries :: Python Modules',
-                   
+
                    ]
       )
 

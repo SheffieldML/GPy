@@ -43,8 +43,6 @@ class GP(Model):
             self.X = X.copy()
         else: self.X = ObsAr(X)
 
-        self.num_data, self.input_dim = self.X.shape
-
         assert Y.ndim == 2
         logger.info("initializing Y")
 
@@ -199,6 +197,14 @@ class GP(Model):
     def _predictive_variable(self):
         return self.X
 
+    @property
+    def num_data(self):
+        return self.X.shape[0]
+
+    @property
+    def input_dim(self):
+        return self.X.shape[1]
+
     def set_XY(self, X=None, Y=None):
         """
         Set the input / output data of the model
@@ -235,6 +241,7 @@ class GP(Model):
                     self.link_parameter(self.X, index=index)
             else:
                 self.X = ObsAr(X)
+
         self.update_model(True)
 
     def set_X(self,X):
@@ -328,7 +335,7 @@ class GP(Model):
             of the output dimensions.
 
         Note: If you want the predictive quantiles (e.g. 95% confidence
-        interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        interval) use :py:func:`~GPy.core.gp.GP.predict_quantiles`.
         """
 
         # Predict the latent function values
@@ -377,7 +384,7 @@ class GP(Model):
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:`~GPy.core.gp.GP.predict_quantiles`.
         """
         return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
 
@@ -451,6 +458,15 @@ class GP(Model):
             alpha = -2.*np.dot(kern.K(Xnew, self._predictive_variable),
                                self.posterior.woodbury_inv)
             var_jac += kern.gradients_X(alpha, Xnew, self._predictive_variable)
+
+        if self.normalizer is not None:
+            mean_jac = self.normalizer.inverse_mean(mean_jac) \
+                       - self.normalizer.inverse_mean(0.)
+            if self.output_dim > 1:
+                var_jac = self.normalizer.inverse_covariance(var_jac)
+            else:
+                var_jac = self.normalizer.inverse_variance(var_jac)
+
         return mean_jac, var_jac
 
     def predict_jacobian(self, Xnew, kern=None, full_cov=False):
@@ -578,7 +594,7 @@ class GP(Model):
                 mag[n] = np.sqrt(np.linalg.det(G[n, :, :]))
         return mag
 
-      def posterior_samples_f(self,X, size=10, **predict_kwargs):
+    def posterior_samples_f(self,X, size=10, **predict_kwargs):
         """
         Samples the posterior GP at the points X.
 
@@ -587,9 +603,10 @@ class GP(Model):
         :param size: the number of a posteriori samples.
         :type size: int.
         :returns: set of simulations
-        :rtype: np.ndarray (Nnew x D x samples) 
+        :rtype: np.ndarray (Nnew x D x samples)
         """
-        m, v = self._raw_predict(X,  full_cov=True, **predict_kwargs)
+        predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples.
+        m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
 
@@ -710,11 +727,59 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
-    def posterior_covariance_between_points(self, X1, X2):
+
+    def _raw_posterior_covariance_between_points(self, X1, X2):
         """
-        Computes the posterior covariance between points.
+        Computes the posterior covariance between points. Does not account for 
+        normalization or likelihood
 
         :param X1: some input observations
         :param X2: other input observations
+
+        :returns: 
+            cov: raw posterior covariance: k(X1,X2) - k(X1,X) G^{-1} K(X,X2)
         """
         return self.posterior.covariance_between_points(self.kern, self.X, X1, X2)
+
+
+    def posterior_covariance_between_points(self, X1, X2, Y_metadata=None, 
+                                            likelihood=None, 
+                                            include_likelihood=True):
+        """
+        Computes the posterior covariance between points. Includes likelihood 
+        variance as well as normalization so that evaluation at (x,x) is consistent 
+        with model.predict
+
+        :param X1: some input observations
+        :param X2: other input observations
+        :param Y_metadata: metadata about the predicting point to pass to the
+                           likelihood
+        :param include_likelihood: Whether or not to add likelihood noise to
+                                   the predicted underlying latent function f.
+        :type include_likelihood: bool
+
+        :returns: 
+            cov: posterior covariance, a Numpy array, Nnew x Nnew if 
+            self.output_dim == 1, and Nnew x Nnew x self.output_dim otherwise.
+        """
+
+        cov = self._raw_posterior_covariance_between_points(X1, X2)
+
+        if include_likelihood:
+            # Predict latent mean and push through likelihood
+            mean, _ = self._raw_predict(X1, full_cov=True)
+            if likelihood is None:
+                likelihood = self.likelihood
+            _, cov = likelihood.predictive_values(mean, cov, full_cov=True, 
+                                                  Y_metadata=Y_metadata)
+
+        if self.normalizer is not None:
+            if self.output_dim > 1:
+                cov = self.normalizer.inverse_covariance(cov)
+            else:
+                cov = self.normalizer.inverse_variance(cov)
+
+        return cov
+
+
+

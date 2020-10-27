@@ -7,17 +7,17 @@ from unittest.case import skip
 import GPy
 from GPy.core.parameterization.param import Param
 import numpy as np
-
+import random
 from ..util.config import config
 
 
 verbose = 0
 
 try:
-    from ..util import linalg_cython
-    config.set('cython', 'working', 'True')
+    from ..kern.src import coregionalize_cython
+    cython_coregionalize_working = config.getboolean('cython', 'working')
 except ImportError:
-    config.set('cython', 'working', 'False')
+    cython_coregionalize_working = False
 
 
 class Kern_check_model(GPy.core.Model):
@@ -61,7 +61,7 @@ class Kern_check_dK_dtheta(Kern_check_model):
     respect to parameters.
     """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+        super(Kern_check_dK_dtheta, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
         self.link_parameter(self.kernel)
 
     def parameters_changed(self):
@@ -74,7 +74,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
     kernel with respect to the parameters.
     """
     def __init__(self, kernel=None, dL_dK=None, X=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        super(Kern_check_dKdiag_dtheta, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
         self.link_parameter(self.kernel)
 
     def log_likelihood(self):
@@ -86,7 +86,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
 class Kern_check_dK_dX(Kern_check_model):
     """This class allows gradient checks for the gradient of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+        super(Kern_check_dK_dX, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
         self.X = Param('X',X)
         self.link_parameter(self.X)
 
@@ -96,7 +96,7 @@ class Kern_check_dK_dX(Kern_check_model):
 class Kern_check_dKdiag_dX(Kern_check_dK_dX):
     """This class allows gradient checks for the gradient of a kernel diagonal with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_dK_dX.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
+        super(Kern_check_dKdiag_dX, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X, X2=None)
 
     def log_likelihood(self):
         return (np.diag(self.dL_dK)*self.kernel.Kdiag(self.X)).sum()
@@ -107,7 +107,7 @@ class Kern_check_dKdiag_dX(Kern_check_dK_dX):
 class Kern_check_d2K_dXdX(Kern_check_model):
     """This class allows gradient checks for the secondderivative of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
+        super(Kern_check_d2K_dXdX, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X, X2=X2)
         self.X = Param('X',X.copy())
         self.link_parameter(self.X)
         self.Xc = X.copy()
@@ -129,7 +129,7 @@ class Kern_check_d2K_dXdX(Kern_check_model):
 class Kern_check_d2Kdiag_dXdX(Kern_check_model):
     """This class allows gradient checks for the second derivative of a kernel with respect to X. """
     def __init__(self, kernel=None, dL_dK=None, X=None):
-        Kern_check_model.__init__(self,kernel=kernel,dL_dK=dL_dK, X=X)
+        super(Kern_check_d2Kdiag_dXdX, self).__init__(kernel=kernel,dL_dK=dL_dK, X=X)
         self.X = Param('X',X)
         self.link_parameter(self.X)
         self.Xc = X.copy()
@@ -641,7 +641,7 @@ class KernelTestsNonContinuous(unittest.TestCase):
         kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
         self.assertTrue(check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1))
 
-@unittest.skipIf(not config.getboolean('cython', 'working'),"Cython modules have not been built on this machine")
+@unittest.skipIf(not cython_coregionalize_working,"Cython coregionalize module has not been built on this machine")
 class Coregionalize_cython_test(unittest.TestCase):
     """
     Make sure that the coregionalize kernel work with and without cython enabled
@@ -654,41 +654,43 @@ class Coregionalize_cython_test(unittest.TestCase):
 
     def test_sym(self):
         dL_dK = np.random.randn(self.N1, self.N1)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X)
+        K_cython = self.k._K_cython(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X)
+        K_numpy = self.k._K_numpy(self.X)
+        # Nasty hack to ensure the numpy version is used for update_gradients
+        # If this test is running, cython is working, so override the cython
+        # function with the numpy function
+        _gradient_reduce_cython = self.k._gradient_reduce_cython
+        self.k._gradient_reduce_cython = self.k._gradient_reduce_numpy
         self.k.update_gradients_full(dL_dK, self.X)
+        # Undo hack
+        self.k._gradient_reduce_cython = _gradient_reduce_cython
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
     def test_nonsym(self):
         dL_dK = np.random.randn(self.N1, self.N2)
-        GPy.util.config.config.set('cython', 'working', 'True')
-        K_cython = self.k.K(self.X, self.X2)
+        K_cython = self.k._K_cython(self.X, self.X2)
         self.k.gradient = 0.
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
         grads_cython = self.k.gradient.copy()
 
-        GPy.util.config.config.set('cython', 'working', 'False')
-        K_numpy = self.k.K(self.X, self.X2)
+        K_numpy = self.k._K_numpy(self.X, self.X2)
         self.k.gradient = 0.
+        # Same hack as in test_sym (Line 639)
+        _gradient_reduce_cython = self.k._gradient_reduce_cython
+        self.k._gradient_reduce_cython = self.k._gradient_reduce_numpy
         self.k.update_gradients_full(dL_dK, self.X, self.X2)
+        # Undo hack
+        self.k._gradient_reduce_cython = _gradient_reduce_cython
         grads_numpy = self.k.gradient.copy()
 
         self.assertTrue(np.allclose(K_numpy, K_cython))
         self.assertTrue(np.allclose(grads_numpy, grads_cython))
-
-        #reset the cython state for any other tests
-        GPy.util.config.config.set('cython', 'working', 'true')
 
 
 

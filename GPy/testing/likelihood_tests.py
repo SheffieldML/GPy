@@ -128,7 +128,16 @@ class TestNoiseModels(object):
         censored[random_inds] = 1
         self.Y_metadata = dict()
         self.Y_metadata['censored'] = censored
-
+        self.Y_metadata['output_index'] = np.zeros((self.N,1), dtype=int)
+        self.Y_metadata2 = dict()
+        self.Y_metadata2['censored'] = censored
+        inds = np.zeros((self.N,1), dtype=int)
+        inds[5:10] = 1
+        inds[10:] = 2
+        self.Y_metadata2['output_index'] = inds
+        self.combY = self.Y
+        self.combY[10:] = np.where(self.binary_Y[10:] >0, self.binary_Y[10:], 0)
+        print(self.combY)
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-4
 
@@ -292,6 +301,15 @@ class TestNoiseModels(object):
                 "Y": self.positive_Y,
                 "Y_metadata": self.Y_metadata,
                 "laplace": True
+            },
+            "multioutput_default": {
+                "model": GPy.likelihoods.MultioutputLikelihood([GPy.likelihoods.Gaussian(), GPy.likelihoods.Poisson(), GPy.likelihoods.Bernoulli()]),
+                "link_f_constraints": [partial(self.constrain_bounded, lower=0, upper=1)],
+                "laplace": True,
+                "Y": self.combY,
+                "Y_metadata": self.Y_metadata2,
+                "ep": True,
+                "variational_expectations": True,
             }
             #,
             #GAMMA needs some work!"Gamma_default": {
@@ -618,7 +636,7 @@ class TestNoiseModels(object):
         # Y = Y/Y.max()
         white_var = 1e-4
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
-        ep_inf = GPy.inference.latent_function_inference.EP()
+        ep_inf = GPy.inference.latent_function_inference.EP(always_reset=True)
 
         m = GPy.core.GP(X.copy(), Y.copy(), kernel=kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=ep_inf)
         m['.*white'].constrain_fixed(white_var)

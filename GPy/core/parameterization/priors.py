@@ -17,7 +17,7 @@ class Prior(object):
         if not cls._instance or cls._instance.__class__ is not cls:
                 newfunc = super(Prior, cls).__new__
                 if newfunc is object.__new__:
-                    cls._instance = newfunc(cls)  
+                    cls._instance = newfunc(cls)
                 else:
                     cls._instance = newfunc(cls, *args, **kwargs)
                 return cls._instance
@@ -58,9 +58,9 @@ class Gaussian(Prior):
                     return instance()
         newfunc = super(Prior, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)  
+            o = newfunc(cls)
         else:
-            o = newfunc(cls, mu, sigma)            
+            o = newfunc(cls, mu, sigma)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -102,9 +102,9 @@ class Uniform(Prior):
                     return instance()
         newfunc = super(Prior, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)  
+            o = newfunc(cls)
         else:
-            o = newfunc(cls, lower, upper)     
+            o = newfunc(cls, lower, upper)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -282,7 +282,7 @@ class Gamma(Prior):
                     return instance()
         newfunc = super(Prior, cls).__new__
         if newfunc is object.__new__:
-            o = newfunc(cls)  
+            o = newfunc(cls)
         else:
             o = newfunc(cls, a, b)
         cls._instances.append(weakref.ref(o))
@@ -542,8 +542,8 @@ class DGPLVM(Prior):
 
     """
     domain = _REAL
-    
-    def __new__(cls, sigma2, lbl, x_shape): 
+
+    def __new__(cls, sigma2, lbl, x_shape):
         return super(Prior, cls).__new__(cls, sigma2, lbl, x_shape)
 
     def __init__(self, sigma2, lbl, x_shape):
@@ -909,13 +909,13 @@ class DGPLVM_Lamda(Prior, Parameterized):
     # This function calculates log of our prior
     def lnpdf(self, x):
         x = x.reshape(self.x_shape)
-	
-	#!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	#self.lamda.values[:] = self.lamda.values/self.lamda.values.sum()	
+
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #self.lamda.values[:] = self.lamda.values/self.lamda.values.sum()
 
         xprime = x.dot(np.diagflat(self.lamda))
         x = xprime
-	# print x
+        # print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
         M_i = self.compute_Mi(cls)
@@ -932,7 +932,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
         x = x.reshape(self.x_shape)
         xprime = x.dot(np.diagflat(self.lamda))
         x = xprime
-	# print x
+        # print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
         M_i = self.compute_Mi(cls)
@@ -964,14 +964,14 @@ class DGPLVM_Lamda(Prior, Parameterized):
 
         # Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
         DPxprim_Dx = DPxprim_Dx.T
-    
+
         DPxprim_Dlamda = DPx_Dx.dot(x)
 
-    	# Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
+        # Because of the GPy we need to transpose our matrix so that it gets the same shape as out matrix (denominator layout!!!)
         DPxprim_Dlamda = DPxprim_Dlamda.T
 
         self.lamda.gradient = np.diag(DPxprim_Dlamda)
-	# print DPxprim_Dx
+        # print DPxprim_Dx
         return DPxprim_Dx
 
 
@@ -1046,7 +1046,7 @@ class DGPLVM_T(Prior):
         M_i = np.zeros((self.classnum, self.dim))
         for i in cls:
             # Mean of each class
-	    # class_i = np.multiply(cls[i],vec)
+            # class_i = np.multiply(cls[i],vec)
             class_i = cls[i]
             M_i[i] = np.mean(class_i, axis=0)
         return M_i
@@ -1155,7 +1155,7 @@ class DGPLVM_T(Prior):
         x = x.reshape(self.x_shape)
         xprim = x.dot(self.vec)
         x = xprim
-	# print x  
+        # print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
         M_i = self.compute_Mi(cls)
@@ -1163,7 +1163,7 @@ class DGPLVM_T(Prior):
         Sw = self.compute_Sw(cls, M_i)
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-	#print 'SB_inv: ', Sb_inv_N
+        #print 'SB_inv: ', Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
         Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         return (-1 / self.sigma2) * np.trace(Sb_inv_N.dot(Sw))
@@ -1172,8 +1172,8 @@ class DGPLVM_T(Prior):
     def lnpdf_grad(self, x):
         x = x.reshape(self.x_shape)
         xprim = x.dot(self.vec)
-        x = xprim 
-	# print x       
+        x = xprim
+        # print x
         cls = self.compute_cls(x)
         M_0 = np.mean(x, axis=0)
         M_i = self.compute_Mi(cls)
@@ -1188,7 +1188,7 @@ class DGPLVM_T(Prior):
         # Calculating inverse of Sb and its transpose and minus
         # Sb_inv_N = np.linalg.inv(Sb + np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))
         #Sb_inv_N = np.linalg.inv(Sb+np.eye(Sb.shape[0])*0.1)
-	#print 'SB_inv: ',Sb_inv_N
+        #print 'SB_inv: ',Sb_inv_N
         #Sb_inv_N = pdinv(Sb+ np.eye(Sb.shape[0]) * (np.diag(Sb).min() * 0.1))[0]
         Sb_inv_N = pdinv(Sb+np.eye(Sb.shape[0])*0.1)[0]
         Sb_inv_N_trans = np.transpose(Sb_inv_N)
@@ -1375,4 +1375,5 @@ class StudentT(Prior):
     def rvs(self, n):
         from scipy.stats import t
         ret = t.rvs(self.nu, loc=self.mu, scale=self.sigma, size=n)
-        return ret    
+        return ret
+

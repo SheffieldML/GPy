@@ -1,3 +1,19 @@
+"""Introduction
+^^^^^^^^^^^^
+
+:py:class:`GPy.plotting` effectively extends models based on
+:py:class:`GPy.core.gp.GP` (and other classes) by adding methods to
+plot useful charts. 'matplotlib', 'plotly' (online) and 'plotly'
+(offline) are supported. The methods in :py:class:`GPy.plotting` (and
+child classes :py:class:`GPy.plotting.gpy_plot` and
+:py:class:`GPy.plotting.matplot_dep`) are not intended to be called
+directly, but rather are 'injected' into other classes (notably
+:py:class:`GPy.core.gp.GP`). Documentation describing plots is best
+found associated with the model being plotted
+e.g. :py:class:`GPy.core.gp.GP.plot_confidence`.
+
+"""
+
 # Copyright (c) 2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 current_lib = [None]
@@ -91,6 +107,19 @@ def inject_plotting():
         SSGPLVM.plot_scatter = gpy_plot.latent_plots.plot_latent_scatter
         SSGPLVM.plot_inducing = gpy_plot.latent_plots.plot_latent_inducing
         SSGPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
+
+        from ..models import TPRegression
+        TPRegression.plot_data = gpy_plot.data_plots.plot_data
+        TPRegression.plot = gpy_plot.gp_plots.plot
+        TPRegression.plot_data_error = gpy_plot.data_plots.plot_data_error
+        TPRegression.plot_errorbars_trainset = gpy_plot.data_plots.plot_errorbars_trainset
+        TPRegression.plot_mean = gpy_plot.gp_plots.plot_mean
+        TPRegression.plot_confidence = gpy_plot.gp_plots.plot_confidence
+        TPRegression.plot_density = gpy_plot.gp_plots.plot_density
+        TPRegression.plot_samples = gpy_plot.gp_plots.plot_samples
+        TPRegression.plot_f = gpy_plot.gp_plots.plot_f
+        TPRegression.plot_latent = gpy_plot.gp_plots.plot_f
+        TPRegression.plot_noiseless = gpy_plot.gp_plots.plot_f
 
         from ..kern import Kern
         Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance

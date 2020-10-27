@@ -116,6 +116,12 @@ class Kern(Parameterized):
         except:
             return X[:, self._all_dims_active]
 
+    def _project_dim(self, dim):
+        try:
+            return np.where(self._all_dims_active == dim)[0][0]
+        except:
+            return None
+
     def K(self, X, X2):
         """
         Compute the kernel function.
@@ -428,7 +434,14 @@ class CombinationKernel(Kern):
             [setitem(i_s, (i, k._all_dims_active), k.input_sensitivity(summarize)) for i, k in enumerate(parts)]
             return i_s
         else:
-            raise NotImplementedError("Choose the kernel you want to get the sensitivity for. You need to override the default behaviour for getting the input sensitivity to be able to get the input sensitivity. For sum kernel it is the sum of all sensitivities, TODO: product kernel? Other kernels?, also TODO: shall we return all the sensitivities here in the combination kernel? So we can combine them however we want? This could lead to just plot all the sensitivities here...")
+            raise NotImplementedError("Choose the kernel you want to get the sensitivity for. "
+                                      "You need to override the default behaviour for getting "
+                                      "the input sensitivity to be able to get the input sensitivity. "
+                                      "For sum kernel it is the sum of all sensitivities, "
+                                      "TODO: product kernel? Other kernels?, also "
+                                      "TODO: shall we return all the sensitivities here in the combination "
+                                      "kernel? So we can combine them however we want? "
+                                      "This could lead to just plot all the sensitivities here...")
 
     def _check_active_dims(self, X):
         return

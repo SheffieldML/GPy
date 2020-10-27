@@ -35,8 +35,8 @@ class GPClassification(GP):
         if inference_method is None:
             inference_method = EP()
 
-        GP.__init__(self, X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=inference_method,
-                    mean_function=mean_function, name='gp_classification', normalizer=normalizer)
+        super(GPClassification, self).__init__(X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=inference_method,
+                                               mean_function=mean_function, name='gp_classification', normalizer=normalizer)
 
     @staticmethod
     def from_gp(gp):

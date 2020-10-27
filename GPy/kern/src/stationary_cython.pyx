@@ -6,6 +6,8 @@ cimport numpy as np
 from cython.parallel import prange
 cimport cython
 
+np.import_array()
+
 ctypedef np.float64_t DTYPE_t
  
 cdef extern from "stationary_utils.h":

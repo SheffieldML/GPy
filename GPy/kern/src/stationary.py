@@ -14,9 +14,10 @@ from paramz.transformations import Logexp
 
 try:
     from . import stationary_cython
+    use_stationary_cython = config.getboolean('cython', 'working')
 except ImportError:
     print('warning in stationary: failed to import cython module: falling back to numpy')
-    config.set('cython', 'working', 'false')
+    use_stationary_cython = False
 
 
 class Stationary(Kern):
@@ -203,14 +204,13 @@ class Stationary(Kern):
 
             tmp = dL_dr*self._inv_dist(X, X2)
             if X2 is None: X2 = X
-            if config.getboolean('cython', 'working'):
+            if use_stationary_cython:
                 self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
                 self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
-
 
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """
@@ -246,7 +246,7 @@ class Stationary(Kern):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
-        if config.getboolean('cython', 'working'):
+        if use_stationary_cython:
             return self._gradients_X_cython(dL_dK, X, X2)
         else:
             return self._gradients_X_pure(dL_dK, X, X2)
@@ -306,6 +306,21 @@ class Stationary(Kern):
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
+    
+    def dgradients_dX(self, X, X2, dimX):
+        g1 = self.dK2_dvariancedX(X, X2, dimX)
+        g2 = self.dK2_dlengthscaledX(X, X2, dimX)
+        return [g1, g2]
+
+    def dgradients_dX2(self, X, X2, dimX2):
+        g1 = self.dK2_dvariancedX2(X, X2, dimX2)
+        g2 = self.dK2_dlengthscaledX2(X, X2, dimX2)
+        return [g1, g2]
+
+    def dgradients2_dXdX2(self, X, X2, dimX, dimX2):
+        g1 = self.dK3_dvariancedXdX2(X, X2, dimX, dimX2)
+        g2 = self.dK3_dlengthscaledXdX2(X, X2, dimX, dimX2)
+        return [g1, g2]
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)

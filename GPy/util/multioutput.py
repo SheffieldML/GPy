@@ -2,6 +2,33 @@ import numpy as np
 import warnings
 import GPy
 
+def index_to_slices(index):
+    """
+    take a numpy array of integers (index) and return a  nested list of slices such that the slices describe the start, stop points for each integer in the index.
+
+    e.g.
+    >>> index = np.asarray([0,0,0,1,1,1,2,2,2])
+    returns
+    >>> [[slice(0,3,None)],[slice(3,6,None)],[slice(6,9,None)]]
+
+    or, a more complicated example
+    >>> index = np.asarray([0,0,1,1,0,2,2,2,1,1])
+    returns
+    >>> [[slice(0,2,None),slice(4,5,None)],[slice(2,4,None),slice(8,10,None)],[slice(5,8,None)]]
+    """
+    if len(index)==0:
+        return[]
+
+    #contruct the return structure
+    ind = np.asarray(index,dtype=np.int)
+    ret = [[] for i in range(ind.max()+1)]
+
+    #find the switchpoints
+    ind_ = np.hstack((ind,ind[0]+ind[-1]+1))
+    switchpoints = np.nonzero(ind_ - np.roll(ind_,+1))[0]
+
+    [ret[ind_i].append(slice(*indexes_i)) for ind_i,indexes_i in zip(ind[switchpoints[:-1]],zip(switchpoints,switchpoints[1:]))]
+    return ret
 
 def get_slices(input_list):
     num_outputs = len(input_list)

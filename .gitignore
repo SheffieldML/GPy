@@ -1,6 +1,7 @@
 *.py[cod]
 
 # C extensions
+*_cython.c
 *.so
 
 # Packages
@@ -49,3 +50,9 @@ iterate.dat
 
 # pycharm IDE stuff
 .idea/
+
+# docs
+GPy*.rst
+
+# vscode
+settings.json

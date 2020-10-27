@@ -218,7 +218,7 @@ class Likelihood(Parameterized):
         #fi_samples = np.random.randn(num_samples)*np.sqrt(var_star) + mu_star
         fi_samples = np.random.normal(mu_star, np.sqrt(var_star), size=(mu_star.shape[0], num_samples))
 
-        from scipy.misc import logsumexp
+        from scipy.special import logsumexp
         log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
         log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
@@ -296,7 +296,7 @@ class Likelihood(Parameterized):
             elif quad_mode == 'gh':
                 f = partial(self.integrate_gh)
                 quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
-                quads = np.hstack(quads)
+                quads = np.hstack(list(quads))
                 quads = quads.T
             else:
                 raise Exception("no other quadrature mode available")

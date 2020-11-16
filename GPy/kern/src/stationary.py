@@ -675,6 +675,40 @@ class Cosine(Stationary):
 
     def dK_dr(self, r):
         return -self.variance * np.sin(r)
+
+class ExpQuadCosine(Stationary):
+    """
+    Exponentiated quadratic multiplied by cosine covariance function (spectral mixture kernel).
+    
+    .. math::
+
+        k(r) = \sigma^2 \exp(-2\pi^2r^2)\cos(2\pi r/T)
+
+    """
+    
+    def __init__(self, input_dim, variance=1., lengthscale=None, period=1., ARD=False, active_dims=None, name='ExpQuadCosine'):
+        super(ExpQuadCosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+        self.period = Param('period', period, Logexp())
+        self.link_parameters(self.period)
+        
+    def K_of_r(self, r):
+        return self.variance * np.exp(-2*np.pi**2*r**2)*np.cos(2*np.pi*r/self.period)
+
+    def dK_dr(self, r):
+        return -4*np.pi**2*r*self.K_of_r(r) - self.variance * 2*np.pi/self.period*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(ExpQuadCosine, self).update_gradients_full(dL_dK, X, X2)
+        r = self._scaled_dist(X, X2)
+        r2 = np.square(r)
+        dK_dperiod = self.variance * 2*np.pi*r/self.period**2*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
+        grad = np.sum(dL_dK*dK_dperiod)
+        self.period.gradient = grad
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        super(ExpQuadCosine, self).update_gradients_diag(dL_dKdiag, X)
+        self.period.gradient = 0.
+
     
     
 class Sinc(Stationary):

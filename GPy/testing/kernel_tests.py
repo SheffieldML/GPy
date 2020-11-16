@@ -432,6 +432,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_ExpQuadCosine(self):
+        k = GPy.kern.ExpQuadCosine(self.D-1, ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_Sinc(self):
         k = GPy.kern.Sinc(self.D-1, ARD=True)
         k.randomize()

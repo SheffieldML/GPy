@@ -641,6 +641,14 @@ class ExpQuad(Stationary):
         return -r*self.K_of_r(r)
 
 class Cosine(Stationary):
+    """
+    Cosine Covariance function
+    
+    .. math::
+
+        k(r) = \sigma^2 \cos(r)
+
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
         super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
@@ -650,6 +658,46 @@ class Cosine(Stationary):
     def dK_dr(self, r):
         return -self.variance * np.sin(r)
 
+class Cosine(Stationary):
+    """
+    Cosine Covariance function
+    
+    .. math::
+
+        k(r) = \sigma^2 \cos(r)
+
+    """
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
+        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def K_of_r(self, r):
+        return self.variance * np.cos(r)
+
+    def dK_dr(self, r):
+        return -self.variance * np.sin(r)
+    
+    
+class Sinc(Stationary):
+    """
+    Sinc Covariance function
+    
+    .. math::
+
+        k(r) = \sigma^2 \sinc(\pi r)
+
+    """
+    
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Sinc'):
+        super(Sinc, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def K_of_r(self, r):
+        return self.variance * np.sinc(2*r)
+
+    def dK_dr(self, r):
+        # small angle approximation to avoid divide by zero errors.
+        return np.where(r<1e-5, -self.variance*4/3*np.pi*np.pi*r, self.variance/r * (np.cos(2*np.pi*r)-np.sinc(2*r)))
+
+    
 
 class RatQuad(Stationary):
     """
@@ -660,7 +708,6 @@ class RatQuad(Stationary):
        k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
 
     """
-
 
     def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)

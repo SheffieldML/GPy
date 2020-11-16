@@ -722,9 +722,9 @@ class StateSpaceKernelsTests(np.testing.TestCase):
             # plotting <-
         # 2D measurement, 3 ts_no <-
             
-    def test_continuos_ss(self,plot=False):
+    def test_continuous_ss(self,plot=False):
         """
-        This function tests the continuos state-space model.
+        This function tests the continuous state-space model.
         """                    
                 
         # 1D measurements, 1 ts_no ->

@@ -51,11 +51,7 @@ For any further questions/suggestions head over to the issues section in GPy.
 
 ## Support and questions to the community
 
-We have set up a mailing list for any questions you might have or problems you feel others have encountered:
-
-gpy-users@lists.shef.ac.uk
-
-Feel free to join the discussions on the issues section, too.
+Ask questions using the issues section.
 
 ## Updated Structure
 

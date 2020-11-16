@@ -605,10 +605,10 @@ class ExpQuad(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+       k(r) = \sigma^2 \exp(- 0.5 r^2)
 
     notes::
-     - Yes, this is exactly the same as the RBF covariance function, but the
+     - This is exactly the same as the RBF covariance function, but the
        RBF implementation also has some features for doing variational kernels
        (the psi-statistics).
 

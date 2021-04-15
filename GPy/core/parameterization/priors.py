@@ -358,13 +358,15 @@ class InverseGamma(Gamma):
     domain = _POSITIVE
     _instances = []
 
-    def __init__(self, a, b):
-        self._a = float(a)
-        self._b = float(b)
-        self.constant = -gammaln(self.a) + a * np.log(b)
-
     def __str__(self):
         return "iGa({:.2g}, {:.2g})".format(self.a, self.b)
+
+    def summary(self):
+        return {}
+
+    @staticmethod
+    def from_EV(E, V):
+        raise NotImplementedError
 
     def lnpdf(self, x):
         return self.constant - (self.a + 1) * np.log(x) - self.b / x
@@ -374,7 +376,6 @@ class InverseGamma(Gamma):
 
     def rvs(self, n):
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
-
 
 class DGPLVM_KFDA(Prior):
     """

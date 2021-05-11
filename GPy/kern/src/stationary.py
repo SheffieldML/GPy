@@ -658,24 +658,6 @@ class Cosine(Stationary):
     def dK_dr(self, r):
         return -self.variance * np.sin(r)
 
-class Cosine(Stationary):
-    """
-    Cosine Covariance function
-    
-    .. math::
-
-        k(r) = \sigma^2 \cos(r)
-
-    """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
-        super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
-
-    def K_of_r(self, r):
-        return self.variance * np.cos(r)
-
-    def dK_dr(self, r):
-        return -self.variance * np.sin(r)
-
 class ExpQuadCosine(Stationary):
     """
     Exponentiated quadratic multiplied by cosine covariance function (spectral mixture kernel).

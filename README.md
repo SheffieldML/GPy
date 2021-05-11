@@ -29,15 +29,16 @@ We welcome any contributions to GPy, after all it is an open source project. We 
 
 For an in depth description of pull requests, please visit https://help.github.com/articles/using-pull-requests/ .
 
-### Steps to a successfull contribution:
+### Steps to a successful contribution:
 
  1. Fork GPy: https://help.github.com/articles/fork-a-repo/
  2. Make your changes to the source in your fork.
  3. Make sure the [guidelines](#gl) are met.
- 4. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
+ 4. Set up tests to test your code. We are using unittests in the testing subfolder of GPy. There is a good chance 
+    that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
  5. Create a pull request to the devel branch in GPy, see above.
  6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
- 7. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
+ 7. The pull request gets accepted and your awesome new feature will be in the next GPy release :)
 
 For any further questions/suggestions head over to the issues section in GPy.
 
@@ -51,11 +52,7 @@ For any further questions/suggestions head over to the issues section in GPy.
 
 ## Support and questions to the community
 
-We have set up a mailing list for any questions you might have or problems you feel others have encountered:
-
-gpy-users@lists.shef.ac.uk
-
-Feel free to join the discussions on the issues section, too.
+Ask questions using the issues section.
 
 ## Updated Structure
 

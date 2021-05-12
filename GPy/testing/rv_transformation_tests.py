@@ -15,7 +15,7 @@ class TestModel(GPy.core.Model):
     A simple GPy model with one parameter.
     """
     def __init__(self, theta=1.):
-        GPy.core.Model.__init__(self, 'test_model')
+        super(TestModel, self).__init__('test_model')
         theta = GPy.core.Param('theta', theta)
         self.link_parameter(theta)
 

@@ -55,7 +55,7 @@ class SparseGPRegression(SparseGP_MPI):
         else:
             infr = VarDTC()
 
-        SparseGP_MPI.__init__(self, X, Y, Z, kernel, likelihood, mean_function=mean_function,
+        super(SparseGPRegression, self).__init__(X, Y, Z, kernel, likelihood, mean_function=mean_function,
         inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
 
     def parameters_changed(self):

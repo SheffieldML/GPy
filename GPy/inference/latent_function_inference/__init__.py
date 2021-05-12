@@ -1,23 +1,30 @@
 # Copyright (c) 2012-2014, Max Zwiessele, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-__doc__ = """
+"""
+Introduction
+^^^^^^^^^^^^
+
+Certain :py:class:`GPy.models` can be instanciated with an `inference_method`. This submodule contains objects that can be assigned to `inference_method`.
+
 Inference over Gaussian process latent functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In all our GP models, the consistency propery means that we have a Gaussian
-prior over a finite set of points f. This prior is
+In all our GP models, the consistency property means that we have a Gaussian
+prior over a finite set of points f. This prior is:
 
-  math:: N(f | 0, K)
+.. math:: 
+    N(f | 0, K)
 
-where K is the kernel matrix.
+where :math:`K` is the kernel matrix.
 
-We also have a likelihood (see GPy.likelihoods) which defines how the data are
-related to the latent function: p(y | f).  If the likelihood is also a Gaussian,
-the inference over f is tractable (see exact_gaussian_inference.py).
+We also have a likelihood (see :py:class:`GPy.likelihoods`) which defines how the data are
+related to the latent function: :math:`p(y | f)`.  If the likelihood is also a Gaussian,
+the inference over :math:`f` is tractable (see :py:class:`GPy.inference.latent_function_inference.exact_gaussian_inference`).
 
 If the likelihood object is something other than Gaussian, then exact inference
-is not tractable. We then resort to a Laplace approximation (laplace.py) or
-expectation propagation (ep.py).
+is not tractable. We then resort to a Laplace approximation (:py:class:`GPy.inference.latent_function_inference.laplace`) or
+expectation propagation (:py:class:`GPy.inference.latent_function_inference.expectation_propagation`).
 
 The inference methods return a
 :class:`~GPy.inference.latent_function_inference.posterior.Posterior`

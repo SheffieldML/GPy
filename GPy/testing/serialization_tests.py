@@ -26,14 +26,15 @@ class Test(unittest.TestCase):
         k7 = GPy.kern.Matern32(2, variance=1.0, lengthscale=[1.0,3.0], ARD=True, active_dims = [1,1])
         k8 = GPy.kern.Matern52(2, variance=2.0, lengthscale=[2.0,1.0], ARD=True, active_dims = [1,0])
         k9 = GPy.kern.ExpQuad(2, variance=3.0, lengthscale=[1.0,2.0], ARD=True, active_dims = [0,1])
-        k10 = k1 + k1.copy() + k2 + k3 + k4 + k5 + k6
-        k11 = k1 * k2 * k2.copy() * k3 * k4 * k5
-        k12 = (k1 + k2) * (k3 + k4 + k5)
-        k13 = ((k1 + k2) * k3) + k4 + k5 * k7
-        k14 = ((k1 + k2) * k3) + k4 * k5 + k8
-        k15 = ((k1 * k2) * k3) + k4 * k5 + k8 + k9
+        k10 = GPy.kern.OU(2, variance=2.0, lengthscale=[2.0, 1.0], ARD=True, active_dims=[1, 0])
+        k11 = k1 + k1.copy() + k2 + k3 + k4 + k5 + k6
+        k12 = k1 * k2 * k2.copy() * k3 * k4 * k5
+        k13 = (k1 + k2) * (k3 + k4 + k5)
+        k14 = ((k1 + k2) * k3) + k4 + k5 * k7
+        k15 = ((k1 + k2) * k3) + k4 * k5 + k8 * k10
+        k16 = ((k1 * k2) * k3) + k4 * k5 + k8 + k9
 
-        k_list = [k1,k2,k3,k4,k5,k6,k7,k8,k9,k10,k11,k12,k13,k14,k15]
+        k_list = [k1,k2,k3,k4,k5,k6,k7,k8,k9,k10,k11,k12,k13,k14,k15,k16]
 
         for kk in k_list:
             kk_dict = kk.to_dict()

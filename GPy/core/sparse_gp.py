@@ -53,7 +53,7 @@ class SparseGP(GP):
         self.Z = Param('inducing inputs', Z)
         self.num_inducing = Z.shape[0]
 
-        GP.__init__(self, X, Y, kernel, likelihood, mean_function, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        super(SparseGP, self).__init__(X, Y, kernel, likelihood, mean_function, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
 
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)

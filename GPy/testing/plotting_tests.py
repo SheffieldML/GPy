@@ -38,7 +38,7 @@ from nose import SkipTest
 
 try:
     import matplotlib
-    matplotlib.use('agg', warn=False)
+    matplotlib.use('agg')
 except ImportError:
     # matplotlib not installed
     from nose import SkipTest
@@ -87,7 +87,7 @@ def _image_directories():
     result_dir = os.path.join(basedir, 'testresult','.')
     baseline_dir = os.path.join(basedir, 'baseline','.')
     if not os.path.exists(result_dir):
-        cbook.mkdirs(result_dir)
+        os.makedirs(result_dir)
     return baseline_dir, result_dir
 
 baseline_dir, result_dir = _image_directories()

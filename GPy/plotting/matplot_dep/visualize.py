@@ -36,7 +36,7 @@ class vpython_show(data_show):
     """
 
     def __init__(self, vals, scene=None):
-        data_show.__init__(self, vals)
+        super(vpython_show, self).__init__(vals)
         # If no axes are defined, create some.
 
         if scene==None:
@@ -54,7 +54,7 @@ class matplotlib_show(data_show):
     the matplotlib_show class is a base class for all visualization methods that use matplotlib. It is initialized with an axis. If the axis is set to None it creates a figure window.
     """
     def __init__(self, vals, axes=None):
-        data_show.__init__(self, vals)
+        super(matplotlib_show, self).__init__(vals)
         # If no axes are defined, create some.
 
         if axes==None:
@@ -72,7 +72,7 @@ class vector_show(matplotlib_show):
     vector elements alongside their indices.
     """
     def __init__(self, vals, axes=None):
-        matplotlib_show.__init__(self, vals, axes)
+        super(vector_show, self).__init__(vals, axes)
         #assert vals.ndim == 2, "Please give a vector in [n x 1] to plot"
         #assert vals.shape[1] == 1, "only showing a vector in one dimension"
         self.size = vals.size
@@ -102,7 +102,7 @@ class lvm(matplotlib_show):
                 vals = model.X.values
         if len(vals.shape)==1:
             vals = vals[None,:]
-        matplotlib_show.__init__(self, vals, axes=latent_axes)
+        super(lvm, self).__init__(vals, axes=latent_axes)
 
         if isinstance(latent_axes,mpl.axes.Axes):
             self.cid = latent_axes.figure.canvas.mpl_connect('button_press_event', self.on_click)
@@ -198,10 +198,10 @@ class lvm_subplots(lvm):
             if i == self.nplots-1:
                 if self.nplots*2!=Model.input_dim:
                     latent_index = [i*2, i*2]
-                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, sense_axes, latent_index=latent_index)
+                super(lvm_subplots, self).__init__(self.latent_vals, Model, data_visualize, axis, sense_axes, latent_index=latent_index)
             else:
                 latent_index = [i*2, i*2+1]
-                lvm.__init__(self, self.latent_vals, Model, data_visualize, axis, latent_index=latent_index)
+                super(lvm_subplots, self).__init__(self.latent_vals, Model, data_visualize, axis, latent_index=latent_index)
 
 
 
@@ -223,7 +223,7 @@ class lvm_dimselect(lvm):
         else:
             self.sense_axes = sense_axes
         self.labels = labels
-        lvm.__init__(self,vals,model,data_visualize,latent_axes,sense_axes,latent_index)
+        super(lvm_dimselect, self).__init__(vals,model,data_visualize,latent_axes,sense_axes,latent_index)
         self.show_sensitivities()
         print(self.latent_values)
         print("use left and right mouse buttons to select dimensions")
@@ -286,7 +286,7 @@ class image_show(matplotlib_show):
     :type cmap: matplotlib.cm"""
 
     def __init__(self, vals, axes=None, dimensions=(16,16), transpose=False, order='C', invert=False, scale=False, palette=[], preset_mean=0., preset_std=1., select_image=0, cmap=None):
-        matplotlib_show.__init__(self, vals, axes)
+        super(image_show, self).__init__(vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose
         self.order = order
@@ -352,7 +352,7 @@ class mocap_data_show_vpython(vpython_show):
     """Base class for visualizing motion capture data using visual module."""
 
     def __init__(self, vals, scene=None, connect=None, radius=0.1):
-        vpython_show.__init__(self, vals, scene)
+        super(mocap_data_show_vpython, self).__init__(vals, scene)
         self.radius = radius
         self.connect = connect
         self.process_values()
@@ -412,7 +412,7 @@ class mocap_data_show(matplotlib_show):
         if axes==None:
             fig = plt.figure()
             axes = fig.add_subplot(111, projection='3d', aspect='equal')
-        matplotlib_show.__init__(self, vals, axes)
+        super(mocap_data_show, self).__init__(vals, axes)
 
         self.color = color
         self.connect = connect
@@ -496,7 +496,7 @@ class stick_show(mocap_data_show):
     def __init__(self, vals, connect=None, axes=None):
         if len(vals.shape)==1:
             vals = vals[None,:]
-        mocap_data_show.__init__(self, vals, axes=axes, connect=connect)
+        super(stick_show, self).__init__(vals, axes=axes, connect=connect)
 
     def process_values(self):
         self.vals = self.vals.reshape((3, self.vals.shape[1]/3)).T
@@ -515,7 +515,7 @@ class skeleton_show(mocap_data_show):
         self.skel = skel
         self.padding = padding
         connect = skel.connection_matrix()
-        mocap_data_show.__init__(self, vals, axes=axes, connect=connect, color=color)
+        super(skeleton_show, self).__init__(vals, axes=axes, connect=connect, color=color)
     def process_values(self):
         """Takes a set of angles and converts them to the x,y,z coordinates in the internal prepresentation of the class, ready for plotting.
 

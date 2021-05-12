@@ -5,11 +5,17 @@ The Gaussian processes framework in Python.
 * GPy [homepage](http://sheffieldml.github.io/GPy/)
 * Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
-* Developer [documentation](http://gpy.readthedocs.io/)
+* Developer [documentation](http://gpy.readthedocs.io/) [documentation (devel branch)](https://gpy.readthedocs.io/en/devel/)
 * Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
+  [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
 
-[![deploystat](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy) [![appveyor](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) [![coverallsdevel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) [![covdevel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy) [![Code Health](https://landscape.io/github/SheffieldML/GPy/devel/landscape.svg?style=flat)](https://landscape.io/github/SheffieldML/GPy/devel)
+## Status
+
+| Branch | travis-ci.org | ci.appveyor.com | coveralls.io | codecov.io |
+| --- | --- | --- | --- | --- |
+| Default branch (`devel`) | [![travis-devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy/branches) | [![appveyor-devel](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/devel?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/devel) | [![coveralls-devel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) | [![codecov-devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) |
+| Deployment branch (`deploy`) | [![travis-deploy](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy/branches) | [![appveyor-deploy](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) | [![coveralls-deploy](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=deploy)](https://coveralls.io/github/SheffieldML/GPy?branch=deploy) | [![codecov-deploy](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=deploy)](http://codecov.io/github/SheffieldML/GPy?branch=deploy) |
 
 ## What's new:
 
@@ -23,15 +29,16 @@ We welcome any contributions to GPy, after all it is an open source project. We 
 
 For an in depth description of pull requests, please visit https://help.github.com/articles/using-pull-requests/ .
 
-### Steps to a successfull contribution:
+### Steps to a successful contribution:
 
  1. Fork GPy: https://help.github.com/articles/fork-a-repo/
  2. Make your changes to the source in your fork.
  3. Make sure the [guidelines](#gl) are met.
- 4. Set up tests to test your code. We are using unttests in the testing subfolder of GPy. There is a good chance that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
+ 4. Set up tests to test your code. We are using unittests in the testing subfolder of GPy. There is a good chance 
+    that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
  5. Create a pull request to the devel branch in GPy, see above.
  6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
- 7. The pull request gets accepted and your awsome new feature will be in the next GPy release :)
+ 7. The pull request gets accepted and your awesome new feature will be in the next GPy release :)
 
 For any further questions/suggestions head over to the issues section in GPy.
 
@@ -45,11 +52,7 @@ For any further questions/suggestions head over to the issues section in GPy.
 
 ## Support and questions to the community
 
-We have set up a mailing list for any questions you might have or problems you feel others have encountered:
-
-gpy-users@lists.shef.ac.uk
-
-Feel free to join the discussions on the issues section, too.
+Ask questions using the issues section.
 
 ## Updated Structure
 
@@ -76,7 +79,7 @@ If that is the case, it is best to clean the repo and reinstall.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
-Python 2.7, 3.5 and higher
+Python 3.5 and higher
 
 ## Citation
 
@@ -93,7 +96,7 @@ We like to pronounce it 'g-pie'.
 
 ## Getting started: installing with pip
 
-We are now requiring the newest version (0.16) of
+We are requiring a recent version (1.3.0 or later) of
 [scipy](http://www.scipy.org/) and thus, we strongly recommend using
 the  [anaconda python distribution](http://continuum.io/downloads).
 With anaconda you can install GPy by the following:
@@ -111,7 +114,7 @@ And finally,
 
     pip install gpy
 
-We've also had luck with [enthought](http://www.enthought.com). Install scipy 0.16 (or later)
+We've also had luck with [enthought](http://www.enthought.com). Install scipy 1.3.0 (or later)
  and then pip install GPy:
 
     pip install gpy
@@ -221,6 +224,13 @@ The documentation can be compiled as follows:
     cd doc
     sphinx-apidoc -o source/ ../GPy/
     make html
+
+alternatively:
+
+```{shell}
+cd doc
+sphinx-build -b html -d build/doctrees -D graphviz_dot='<path to dot>' source build/html
+```
 
 The HTML files are then stored in doc/build/html
 

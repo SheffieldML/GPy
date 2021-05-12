@@ -38,7 +38,7 @@ class GPCoregionalizedRegression(GP):
         if kernel is None:
             kernel = kern.RBF(X.shape[1]-1)
             
-            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=kernel, W_rank=1,name=kernel_name)
+            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=kernel, W_rank=W_rank,name=kernel_name)
 
         #Likelihood
         likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)

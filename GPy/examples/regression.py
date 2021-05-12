@@ -620,8 +620,10 @@ def multioutput_gp_with_derivative_observations():
 
     # Then create the model, we give everything in lists, the order of the inputs indicates the order of the outputs
     # Now we have the regular observations first and derivative observations second, meaning that the kernels and
-    # the likelihoods must follow the same order. Crosscovariances are automatically taken car of
-    m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, gauss])
+    # the likelihoods must follow the same order. Crosscovariances are automatically taken care of
+    m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd],
+                                 kernel_list=[se, se_der],
+                                 likelihood_list=[gauss, gauss_der])
 
     # Optimize the model
     m.optimize(messages=0, ipython_notebook=False)

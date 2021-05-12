@@ -500,7 +500,15 @@ def drosophila_knirps(data_set='drosophila_protein'):
 
 # This will be for downloading google trends data.
 def google_trends(query_terms=['big data', 'machine learning', 'data science'], data_set='google_trends', refresh_data=False):
-    """Data downloaded from Google trends for given query terms. Warning, if you use this function multiple times in a row you get blocked due to terms of service violations. The function will cache the result of your query, if you wish to refresh an old query set refresh_data to True. The function is inspired by this notebook: http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb"""
+    """Data downloaded from Google trends for given query terms.
+
+Warning, if you use this function multiple times in a row you get
+blocked due to terms of service violations. The function will cache
+the result of your query, if you wish to refresh an old query set
+refresh_data to True.
+
+The function is inspired by this notebook:
+http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb"""
     query_terms.sort()
     import pandas
 

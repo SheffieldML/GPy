@@ -33,7 +33,7 @@ class Kernel(Mapping):
     """
 
     def __init__(self, input_dim, output_dim, Z, kernel, name='kernmap'):
-        Mapping.__init__(self, input_dim=input_dim, output_dim=output_dim, name=name)
+        super(Kernel, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         self.kern = kernel
         self.Z = Z
         self.num_bases, Zdim = Z.shape

@@ -412,7 +412,6 @@ class Exponential(Stationary):
 #        return (F, L, Qc, H, Pinf)
 
 
-
 class OU(Stationary):
     """
     OU kernel:
@@ -425,6 +424,23 @@ class OU(Stationary):
 
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='OU'):
         super(OU, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(OU, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.OU"
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return OU(**input_dict)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-r)

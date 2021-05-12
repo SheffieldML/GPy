@@ -1,3 +1,11 @@
+"""
+Introduction
+^^^^^^^^^^^^
+
+
+
+"""
+
 from . import optimization
 from . import latent_function_inference
 from . import mcmc

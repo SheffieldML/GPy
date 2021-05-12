@@ -432,6 +432,22 @@ class MiscTests(unittest.TestCase):
         m = GPy.models.GPRegression(X, Y)
         m.optimize()
         print(m)
+        
+    def test_simple_model_MultivariateGaussian_prior(self):
+        X = np.random.multivariate_normal(
+            [1, 5], np.diag([0.5, 0.3]), (100, 1)).reshape(100, 2)
+        Y = X + np.random.randn(100, 2) * 0.05
+        kernel = GPy.kern.RBF(input_dim=2, variance=1,
+                              lengthscale=1,
+                              ARD=True)
+        kernel.unconstrain()
+        kernel.variance.set_prior(GPy.priors.Gaussian(150, 5))
+        kernel.lengthscale.set_prior(GPy.priors.MultivariateGaussian(
+            np.array([20, 20]), np.diag([5, 5])))
+        m = GPy.models.GPRegression(X, Y, kernel=kernel)
+        m.optimize()
+        print(m.kern.variance)
+        print(m.kern.lengthscale)
 
     def test_input_warped_gp_identity(self):
         """

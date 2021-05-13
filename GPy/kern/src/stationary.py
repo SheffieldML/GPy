@@ -621,10 +621,10 @@ class ExpQuad(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+       k(r) = \sigma^2 \exp(- 0.5 r^2)
 
     notes::
-     - Yes, this is exactly the same as the RBF covariance function, but the
+     - This is exactly the same as the RBF covariance function, but the
        RBF implementation also has some features for doing variational kernels
        (the psi-statistics).
 
@@ -657,6 +657,14 @@ class ExpQuad(Stationary):
         return -r*self.K_of_r(r)
 
 class Cosine(Stationary):
+    """
+    Cosine Covariance function
+    
+    .. math::
+
+        k(r) = \sigma^2 \cos(r)
+
+    """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
         super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
@@ -666,6 +674,62 @@ class Cosine(Stationary):
     def dK_dr(self, r):
         return -self.variance * np.sin(r)
 
+class ExpQuadCosine(Stationary):
+    """
+    Exponentiated quadratic multiplied by cosine covariance function (spectral mixture kernel).
+    
+    .. math::
+
+        k(r) = \sigma^2 \exp(-2\pi^2r^2)\cos(2\pi r/T)
+
+    """
+    
+    def __init__(self, input_dim, variance=1., lengthscale=None, period=1., ARD=False, active_dims=None, name='ExpQuadCosine'):
+        super(ExpQuadCosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+        self.period = Param('period', period, Logexp())
+        self.link_parameters(self.period)
+        
+    def K_of_r(self, r):
+        return self.variance * np.exp(-2*np.pi**2*r**2)*np.cos(2*np.pi*r/self.period)
+
+    def dK_dr(self, r):
+        return -4*np.pi**2*r*self.K_of_r(r) - self.variance * 2*np.pi/self.period*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(ExpQuadCosine, self).update_gradients_full(dL_dK, X, X2)
+        r = self._scaled_dist(X, X2)
+        r2 = np.square(r)
+        dK_dperiod = self.variance * 2*np.pi*r/self.period**2*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
+        grad = np.sum(dL_dK*dK_dperiod)
+        self.period.gradient = grad
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        super(ExpQuadCosine, self).update_gradients_diag(dL_dKdiag, X)
+        self.period.gradient = 0.
+
+    
+    
+class Sinc(Stationary):
+    """
+    Sinc Covariance function
+    
+    .. math::
+
+        k(r) = \sigma^2 \sinc(\pi r)
+
+    """
+    
+    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Sinc'):
+        super(Sinc, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def K_of_r(self, r):
+        return self.variance * np.sinc(2*r)
+
+    def dK_dr(self, r):
+        # small angle approximation to avoid divide by zero errors.
+        return np.where(r<1e-5, -self.variance*4/3*np.pi*np.pi*r, self.variance/r * (np.cos(2*np.pi*r)-np.sinc(2*r)))
+
+    
 
 class RatQuad(Stationary):
     """
@@ -676,7 +740,6 @@ class RatQuad(Stationary):
        k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
 
     """
-
 
     def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)

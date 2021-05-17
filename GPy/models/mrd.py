@@ -304,7 +304,7 @@ class MRD(BayesianGPLVMMiniBatch):
         if views is None:
             # There are some small modifications needed to make this work for M > 2 (currently the code
             # takes account of this, but it's not right there)
-            if M is not 2:
+            if M > 2:
                 raise NotImplementedError("Not implemented for M > 2")
             obsMod = [0]
             infMod = 1

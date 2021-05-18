@@ -411,7 +411,7 @@ class mocap_data_show(matplotlib_show):
     def __init__(self, vals, axes=None, connect=None, color='b'):
         if axes==None:
             fig = plt.figure()
-            axes = fig.add_subplot(111, projection='3d', aspect='equal')
+            axes = fig.add_subplot(111, projection='3d') #, aspect='equal') aspect equal not implemented in 3D plots currently see this issue: https://github.com/matplotlib/matplotlib/issues/17172
         super(mocap_data_show, self).__init__(vals, axes)
 
         self.color = color

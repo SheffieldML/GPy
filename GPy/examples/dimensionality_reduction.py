@@ -676,6 +676,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
 
 
 def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose=True, plot=True):
+    import matplotlib.pyplot as plt
     import GPy
     import pods
 

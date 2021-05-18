@@ -111,11 +111,11 @@ class lvm(matplotlib_show):
             self.cid = latent_axes.figure.canvas.mpl_connect('axes_leave_event', self.on_leave)
             self.cid = latent_axes.figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
         else:
-            self.cid = latent_axes['scatter'].figure.canvas.mpl_connect('button_press_event', self.on_click)
+            self.cid = latent_axes[0].figure.canvas.mpl_connect('button_press_event', self.on_click)
             if not disable_drag:
-                self.cid = latent_axes['scatter'].figure.canvas.mpl_connect('motion_notify_event', self.on_move)
-            self.cid = latent_axes['scatter'].figure.canvas.mpl_connect('axes_leave_event', self.on_leave)
-            self.cid = latent_axes['scatter'].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
+                self.cid = latent_axes[0].figure.canvas.mpl_connect('motion_notify_event', self.on_move)
+            self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_leave_event', self.on_leave)
+            self.cid = latent_axes[0].figure.canvas.mpl_connect('axes_enter_event', self.on_enter)
 
         self.data_visualize = data_visualize
         self.model = model

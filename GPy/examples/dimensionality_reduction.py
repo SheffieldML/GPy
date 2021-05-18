@@ -78,7 +78,8 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     m = GPy.models.GPLVM(Y, 6, kernel=kernel)
     m.data_labels = data['Y'].argmax(axis=1)
     if optimize: m.optimize('scg', messages=verbose)
-    if plot: m.plot_latent(labels=m.data_labels)
+    if plot:
+        m.plot_latent(labels=m.data_labels)
     return m
 
 def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_inducing=15, max_iters=50):
@@ -689,7 +690,9 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
 
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
-        ax = m.plot_latent()
+        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        m.plot_latent(ax=latent_axes)
+        ax = gca
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=ax)

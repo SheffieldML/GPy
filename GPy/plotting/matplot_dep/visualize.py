@@ -39,7 +39,7 @@ class vpython_show(data_show):
         super(vpython_show, self).__init__(vals)
         # If no axes are defined, create some.
 
-        if scene==None:
+        if scene is None:
             self.scene = visual.display(title='Data Visualization')
         else:
             self.scene = scene
@@ -57,7 +57,7 @@ class matplotlib_show(data_show):
         super(matplotlib_show, self).__init__(vals)
         # If no axes are defined, create some.
 
-        if axes==None:
+        if axes is None:
             fig = plt.figure()
             self.axes = fig.add_subplot(111)
         else:
@@ -190,7 +190,7 @@ class lvm_subplots(lvm):
     def __init__(self, vals, Model, data_visualize, latent_axes=None, sense_axes=None):
         self.nplots = int(np.ceil(Model.input_dim/2.))+1
         assert len(latent_axes)==self.nplots
-        if vals==None:
+        if vals is None:
             vals = Model.X[0, :]
         self.latent_values = vals
 
@@ -215,9 +215,9 @@ class lvm_dimselect(lvm):
 
     """
     def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None):
-        if latent_axes==None and sense_axes==None:
+        if latent_axes is None and sense_axes is None:
             self.fig,(latent_axes,self.sense_axes) = plt.subplots(1,2)
-        elif sense_axes==None:
+        elif sense_axes is None:
             fig=plt.figure()
             self.sense_axes = fig.add_subplot(111)
         else:
@@ -300,7 +300,7 @@ class image_show(matplotlib_show):
         self.set_image(self.vals)
         if not self.palette == []: # Can just show the image (self.set_image() took care of setting the palette)
             self.handle = self.axes.imshow(self.vals, interpolation='nearest')
-        elif cmap==None: # Use a jet map.
+        elif cmap is None: # Use a jet map.
             self.handle = self.axes.imshow(self.vals, cmap=plt.cm.jet, interpolation='nearest') # @UndefinedVariable
         else: # Use the selected map.
             self.handle = self.axes.imshow(self.vals, cmap=cmap, interpolation='nearest') # @UndefinedVariable
@@ -368,7 +368,7 @@ class mocap_data_show_vpython(vpython_show):
     def draw_edges(self):
         self.rods = []
         self.line_handle = []
-        if not self.connect==None:
+        if self.connect is not None:
             self.I, self.J = np.nonzero(self.connect)
             for i, j in zip(self.I, self.J):
                 pos, axis = self.pos_axis(i, j)
@@ -380,7 +380,7 @@ class mocap_data_show_vpython(vpython_show):
 
     def modify_edges(self):
         self.line_handle = []
-        if not self.connect==None:
+        if self.connect is not None:
             self.I, self.J = np.nonzero(self.connect)
             for rod, i, j in zip(self.rods, self.I, self.J):
                 rod.pos, rod.axis = self.pos_axis(i, j)
@@ -409,7 +409,7 @@ class mocap_data_show(matplotlib_show):
     """Base class for visualizing motion capture data."""
 
     def __init__(self, vals, axes=None, connect=None, color='b'):
-        if axes==None:
+        if axes is None:
             fig = plt.figure()
             axes = fig.add_subplot(111, projection='3d') #, aspect='equal') aspect equal not implemented in 3D plots currently see this issue: https://github.com/matplotlib/matplotlib/issues/17172
         super(mocap_data_show, self).__init__(vals, axes)
@@ -428,7 +428,7 @@ class mocap_data_show(matplotlib_show):
 
     def draw_edges(self):
         self.line_handle = []
-        if not self.connect==None:
+        if self.connect is not None:
             x = []
             y = []
             z = []

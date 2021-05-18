@@ -695,7 +695,7 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         m.plot_latent(ax=latent_axes)
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=ax)
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=latent_axes)
         input('Press enter to finish')
         lvm_visualizer.close()
         data_show.close()

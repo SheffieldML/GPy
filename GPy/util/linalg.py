@@ -13,29 +13,33 @@ import logging
 
 try:
     from . import linalg_cython
-    use_linalg_cython = config.getboolean('cython', 'working')
+
+    use_linalg_cython = config.getboolean("cython", "working")
 except ImportError:
     use_linalg_cython = False
+
 
 def force_F_ordered_symmetric(A):
     """
     return a F ordered version of A, assuming A is symmetric
     """
-    if A.flags['F_CONTIGUOUS']:
+    if A.flags["F_CONTIGUOUS"]:
         return A
-    if A.flags['C_CONTIGUOUS']:
+    if A.flags["C_CONTIGUOUS"]:
         return A.T
     else:
         return np.asfortranarray(A)
+
 
 def force_F_ordered(A):
     """
     return a F ordered version of A, assuming A is triangular
     """
-    if A.flags['F_CONTIGUOUS']:
+    if A.flags["F_CONTIGUOUS"]:
         return A
     print("why are your arrays not F order?")
     return np.asfortranarray(A)
+
 
 # def jitchol(A, maxtries=5):
 #     A = force_F_ordered_symmetric(A)
@@ -60,7 +64,7 @@ def jitchol(A, maxtries=5):
         return L
     else:
         diagA = np.diag(A)
-        if np.any(diagA <= 0.):
+        if np.any(diagA <= 0.0):
             raise linalg.LinAlgError("not pd: non-positive diagonal elements")
         jitter = diagA.mean() * 1e-6
         num_tries = 1
@@ -74,11 +78,23 @@ def jitchol(A, maxtries=5):
                 num_tries += 1
         raise linalg.LinAlgError("not positive definite, even with jitter.")
     import traceback
-    try: raise
+
+    try:
+        raise
     except:
-        logging.warning('\n'.join(['Added jitter of {:.10e}'.format(jitter),
-            '  in '+traceback.format_list(traceback.extract_stack(limit=3)[-2:-1])[0][2:]]))
+        logging.warning(
+            "\n".join(
+                [
+                    "Added jitter of {:.10e}".format(jitter),
+                    "  in "
+                    + traceback.format_list(traceback.extract_stack(limit=3)[-2:-1])[0][
+                        2:
+                    ],
+                ]
+            )
+        )
     return L
+
 
 # def dtrtri(L, lower=1):
 #     """
@@ -91,6 +107,7 @@ def jitchol(A, maxtries=5):
 #     """
 #     L = force_F_ordered(L)
 #     return lapack.dtrtri(L, lower=lower)
+
 
 def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
     """
@@ -110,8 +127,9 @@ def dtrtrs(A, B, lower=1, trans=0, unitdiag=0):
 
     """
     A = np.asfortranarray(A)
-    #Note: B does not seem to need to be F ordered!
+    # Note: B does not seem to need to be F ordered!
     return lapack.dtrtrs(A, B, lower=lower, trans=trans, unitdiag=unitdiag)
+
 
 def dpotrs(A, B, lower=1):
     """
@@ -123,6 +141,7 @@ def dpotrs(A, B, lower=1):
     """
     A = force_F_ordered(A)
     return lapack.dpotrs(A, B, lower=lower)
+
 
 def dpotri(A, lower=1):
     """
@@ -139,24 +158,29 @@ def dpotri(A, lower=1):
     """
 
     A = force_F_ordered(A)
-    R, info = lapack.dpotri(A, lower=lower) #needs to be zero here, seems to be a scipy bug
+    R, info = lapack.dpotri(
+        A, lower=lower
+    )  # needs to be zero here, seems to be a scipy bug
 
     symmetrify(R)
     return R, info
+
 
 def pddet(A):
     """
     Determinant of a positive definite matrix, only symmetric matricies though
     """
     L = jitchol(A)
-    logdetA = 2*sum(np.log(np.diag(L)))
+    logdetA = 2 * sum(np.log(np.diag(L)))
     return logdetA
+
 
 def trace_dot(a, b):
     """
     Efficiently compute the trace of the matrix product of a and b
     """
-    return np.einsum('ij,ji->', a, b)
+    return np.einsum("ij,ji->", a, b)
+
 
 def mdot(*args):
     """
@@ -176,6 +200,7 @@ def mdot(*args):
     else:
         return _mdot_r(args[:-1], args[-1])
 
+
 def _mdot_r(a, b):
     """Recursive helper for mdot"""
     if type(a) == tuple:
@@ -189,6 +214,7 @@ def _mdot_r(a, b):
         else:
             b = b[0]
     return np.dot(a, b)
+
 
 def pdinv(A, *args):
     """
@@ -205,7 +231,7 @@ def pdinv(A, *args):
 
     """
     L = jitchol(A, *args)
-    logdet = 2.*np.sum(np.log(np.diag(L)))
+    logdet = 2.0 * np.sum(np.log(np.diag(L)))
     Li = dtrtri(L)
     Ai, _ = dpotri(L, lower=1)
     # Ai = np.tril(Ai) + np.tril(Ai,-1).T
@@ -241,7 +267,7 @@ def multiple_pdinv(A):
     chols = [jitchol(A[:, :, i]) for i in range(N)]
     halflogdets = [np.sum(np.log(np.diag(L[0]))) for L in chols]
     invs = [dpotri(L[0], True)[0] for L in chols]
-    invs = [np.triu(I) + np.triu(I, 1).T for I in invs]
+    invs = [np.triu(inv) + np.triu(inv, 1).T for inv in invs]
     return np.dstack(invs), np.array(halflogdets)
 
 
@@ -269,6 +295,7 @@ def pca(Y, input_dim):
     W *= v
     return X, W.T
 
+
 def ppca(Y, Q, iterations=100):
     """
     EM implementation for probabilistic pca.
@@ -278,6 +305,7 @@ def ppca(Y, Q, iterations=100):
     :param int iterations: number of iterations for EM
     """
     from numpy.ma import dot as madot
+
     N, D = Y.shape
     # Initialise W randomly
     W = np.random.randn(D, Q) * 1e-3
@@ -286,43 +314,50 @@ def ppca(Y, Q, iterations=100):
     Ycentered = Y - mu
     try:
         for _ in range(iterations):
-            exp_x = np.asarray_chkfinite(np.linalg.solve(W.T.dot(W), madot(W.T, Ycentered.T))).T
-            W = np.asarray_chkfinite(np.linalg.solve(exp_x.T.dot(exp_x), madot(exp_x.T, Ycentered))).T
+            exp_x = np.asarray_chkfinite(
+                np.linalg.solve(W.T.dot(W), madot(W.T, Ycentered.T))
+            ).T
+            W = np.asarray_chkfinite(
+                np.linalg.solve(exp_x.T.dot(exp_x), madot(exp_x.T, Ycentered))
+            ).T
     except np.linalg.linalg.LinAlgError:
-        #"converged"
+        # "converged"
         pass
     return np.asarray_chkfinite(exp_x), np.asarray_chkfinite(W)
+
 
 def tdot_numpy(mat, out=None):
     return np.dot(mat, mat.T, out)
 
+
 def tdot_blas(mat, out=None):
     """returns np.dot(mat, mat.T), but faster for large 2D arrays of doubles."""
-    if (mat.dtype != 'float64') or (len(mat.shape) != 2):
+    if (mat.dtype != "float64") or (len(mat.shape) != 2):
         return np.dot(mat, mat.T)
     nn = mat.shape[0]
     if out is None:
         out = np.zeros((nn, nn))
     else:
-        assert(out.dtype == 'float64')
-        assert(out.shape == (nn, nn))
+        assert out.dtype == "float64"
+        assert out.shape == (nn, nn)
         # FIXME: should allow non-contiguous out, and copy output into it:
-        assert(8 in out.strides)
+        assert 8 in out.strides
         # zeroing needed because of dumb way I copy across triangular answer
         out[:] = 0.0
 
     # # Call to DSYRK from BLAS
     mat = np.asfortranarray(mat)
-    out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1,
-                     trans=0, lower=0)
+    out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1, trans=0, lower=0)
 
     symmetrify(out, upper=True)
     return np.ascontiguousarray(out)
 
+
 def tdot(*args, **kwargs):
     return tdot_blas(*args, **kwargs)
 
-def DSYR_blas(A, x, alpha=1.):
+
+def DSYR_blas(A, x, alpha=1.0):
     """
     Performs a symmetric rank-1 update operation:
     A <- A + alpha * np.dot(x,x.T)
@@ -332,11 +367,14 @@ def DSYR_blas(A, x, alpha=1.):
     :param alpha: scalar
 
     """
-    At = blas.dsyr(lower=0, x=x, a=A, alpha=alpha, overwrite_a=False) #See https://github.com/scipy/scipy/issues/8155
+    At = blas.dsyr(
+        lower=0, x=x, a=A, alpha=alpha, overwrite_a=False
+    )  # See https://github.com/scipy/scipy/issues/8155
     A[:] = At
     symmetrify(A, upper=True)
 
-def DSYR_numpy(A, x, alpha=1.):
+
+def DSYR_numpy(A, x, alpha=1.0):
     """
     Performs a symmetric rank-1 update operation:
     A <- A + alpha * np.dot(x,x.T)
@@ -371,23 +409,26 @@ def symmetrify(A, upper=False):
 def _symmetrify_cython(A, upper=False):
     return linalg_cython.symmetrify(A, upper)
 
+
 def _symmetrify_numpy(A, upper=False):
-    triu = np.triu_indices_from(A,k=1)
+    triu = np.triu_indices_from(A, k=1)
     if upper:
         A.T[triu] = A[triu]
     else:
         A[triu] = A.T[triu]
 
-def backsub_both_sides(L, X, transpose='left'):
+
+def backsub_both_sides(L, X, transpose="left"):
     """
     Return L^-T * X * L^-1, assumuing X is symmetrical and L is lower cholesky
     """
-    if transpose == 'left':
+    if transpose == "left":
         tmp, _ = dtrtrs(L, X, lower=1, trans=1)
         return dtrtrs(L, tmp.T, lower=1, trans=1)[0].T
     else:
         tmp, _ = dtrtrs(L, X, lower=1, trans=0)
         return dtrtrs(L, tmp.T, lower=1, trans=0)[0].T
+
 
 def ij_jlk_to_ilk(A, B):
     """
@@ -395,13 +436,15 @@ def ij_jlk_to_ilk(A, B):
     """
     return A.dot(B.reshape(B.shape[0], -1)).reshape(A.shape[0], B.shape[1], B.shape[2])
 
+
 def ijk_jlk_to_il(A, B):
     """
     Faster version of einsum einsum('ijk,jlk->il', A,B)
     """
     res = np.zeros((A.shape[0], B.shape[1]))
-    [np.add(np.dot(A[:,:,k], B[:,:,k]), res, out=res) for k in range(B.shape[-1])]
+    [np.add(np.dot(A[:, :, k], B[:, :, k]), res, out=res) for k in range(B.shape[-1])]
     return res
+
 
 def ijk_ljk_to_ilk(A, B):
     """
@@ -410,6 +453,6 @@ def ijk_ljk_to_ilk(A, B):
     I.e A.dot(B.T) for every dimension
     """
     res = np.zeros((A.shape[-1], A.shape[0], B.shape[0]))
-    [np.dot(A[:,:,i], B[:,:,i].T, out=res[i,:,:]) for i in range(A.shape[-1])]
-    res = res.swapaxes(0, 2).swapaxes(0,1)
+    [np.dot(A[:, :, i], B[:, :, i].T, out=res[i, :, :]) for i in range(A.shape[-1])]
+    res = res.swapaxes(0, 2).swapaxes(0, 1)
     return res

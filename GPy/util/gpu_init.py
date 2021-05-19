@@ -11,9 +11,10 @@ gpu_context = None
 MPI_enabled = False
 
 try:
-    import pycuda.autoinit
+    import pycuda.autoinit  # noqa F401
+
     gpu_initialized = True
-except:
+except Exception:
     pass
 
 # def initGPU():
@@ -39,7 +40,8 @@ except:
 #             gpu_initialized = True
 #     except:
 #         pass
-    
+
+
 def closeGPU():
     if gpu_context is not None:
         gpu_context.detach()

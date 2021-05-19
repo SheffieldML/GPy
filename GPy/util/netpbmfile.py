@@ -71,9 +71,9 @@ from copy import deepcopy
 
 import numpy
 
-__version__ = '2013.01.18'
-__docformat__ = 'restructuredtext en'
-__all__ = ['imread', 'imsave', 'NetpbmFile']
+__version__ = "2013.01.18"
+__docformat__ = "restructuredtext en"
+__all__ = ["imread", "imsave", "NetpbmFile"]
 
 
 def imread(filename, *args, **kwargs):
@@ -113,22 +113,39 @@ def imsave(filename, data, maxval=None, pam=False):
 class NetpbmFile(object):
     """Read and write Netpbm PAM, PBM, PGM, PPM, files."""
 
-    _types = {b'P1': b'BLACKANDWHITE', b'P2': b'GRAYSCALE', b'P3': b'RGB',
-              b'P4': b'BLACKANDWHITE', b'P5': b'GRAYSCALE', b'P6': b'RGB',
-              b'P7 332': b'RGB', b'P7': b'RGB_ALPHA'}
+    _types = {
+        b"P1": b"BLACKANDWHITE",
+        b"P2": b"GRAYSCALE",
+        b"P3": b"RGB",
+        b"P4": b"BLACKANDWHITE",
+        b"P5": b"GRAYSCALE",
+        b"P6": b"RGB",
+        b"P7 332": b"RGB",
+        b"P7": b"RGB_ALPHA",
+    }
 
     def __init__(self, arg=None, **kwargs):
         """Initialize instance from filename, open file, or numpy array."""
-        for attr in ('header', 'magicnum', 'width', 'height', 'maxval',
-                     'depth', 'tupltypes', '_filename', '_fh', '_data'):
+        for attr in (
+            "header",
+            "magicnum",
+            "width",
+            "height",
+            "maxval",
+            "depth",
+            "tupltypes",
+            "_filename",
+            "_fh",
+            "_data",
+        ):
             setattr(self, attr, None)
         if arg is None:
             self._fromdata([], **kwargs)
         elif isinstance(arg, basestring):
-            self._fh = open(arg, 'rb')
+            self._fh = open(arg, "rb")
             self._filename = arg
             self._fromfile(self._fh, **kwargs)
-        elif hasattr(arg, 'seek'):
+        elif hasattr(arg, "seek"):
             self._fromfile(arg, **kwargs)
             self._fh = arg
         else:
@@ -147,10 +164,10 @@ class NetpbmFile(object):
 
     def write(self, arg, **kwargs):
         """Write instance to file."""
-        if hasattr(arg, 'seek'):
+        if hasattr(arg, "seek"):
             self._tofile(arg, **kwargs)
         else:
-            with open(arg, 'wb') as fid:
+            with open(arg, "wb") as fid:
                 self._tofile(fid, **kwargs)
 
     def close(self):
@@ -166,7 +183,7 @@ class NetpbmFile(object):
         """Initialize instance from open file."""
         fh.seek(0)
         data = fh.read(4096)
-        if (len(data) < 7) or not (b'0' < data[1:2] < b'8'):
+        if (len(data) < 7) or not (b"0" < data[1:2] < b"8"):
             raise ValueError("Not a Netpbm file:\n%s" % data[:32])
         try:
             self._read_pam_header(data)
@@ -179,25 +196,36 @@ class NetpbmFile(object):
     def _read_pam_header(self, data):
         """Read PAM header and initialize instance."""
         regroups = re.search(
-            b"(^P7[\n\r]+(?:(?:[\n\r]+)|(?:#.*)|"
-            b"(HEIGHT\s+\d+)|(WIDTH\s+\d+)|(DEPTH\s+\d+)|(MAXVAL\s+\d+)|"
-            b"(?:TUPLTYPE\s+\w+))*ENDHDR\n)", data).groups()
+            rb"(^P7[\n\r]+(?:(?:[\n\r]+)|(?:#.*)|"
+            rb"(HEIGHT\s+\d+)|(WIDTH\s+\d+)|(DEPTH\s+\d+)|(MAXVAL\s+\d+)|"
+            rb"(?:TUPLTYPE\s+\w+))*ENDHDR\n)",
+            data,
+        ).groups()
         self.header = regroups[0]
-        self.magicnum = b'P7'
+        self.magicnum = b"P7"
         for group in regroups[1:]:
             key, value = group.split()
             setattr(self, unicode(key).lower(), int(value))
-        matches = re.findall(b"(TUPLTYPE\s+\w+)", self.header)
+        matches = re.findall(rb"(TUPLTYPE\s+\w+)", self.header)
         self.tupltypes = [s.split(None, 1)[1] for s in matches]
 
     def _read_pnm_header(self, data):
         """Read PNM header and initialize instance."""
         bpm = data[1:2] in b"14"
-        regroups = re.search(b"".join((
-            b"(^(P[123456]|P7 332)\s+(?:#.*[\r\n])*",
-            b"\s*(\d+)\s+(?:#.*[\r\n])*",
-            b"\s*(\d+)\s+(?:#.*[\r\n])*" * (not bpm),
-            b"\s*(\d+)\s(?:\s*#.*[\r\n]\s)*)")), data).groups() + (1, ) * bpm
+        regroups = (
+            re.search(
+                b"".join(
+                    (
+                        rb"(^(P[123456]|P7 332)\s+(?:#.*[\r\n])*",
+                        rb"\s*(\d+)\s+(?:#.*[\r\n])*",
+                        rb"\s*(\d+)\s+(?:#.*[\r\n])*" * (not bpm),
+                        rb"\s*(\d+)\s(?:\s*#.*[\r\n]\s)*)",
+                    )
+                ),
+                data,
+            ).groups()
+            + (1,) * bpm
+        )
         self.header = regroups[0]
         self.magicnum = regroups[1]
         self.width = int(regroups[2])
@@ -206,11 +234,11 @@ class NetpbmFile(object):
         self.depth = 3 if self.magicnum in b"P3P6P7 332" else 1
         self.tupltypes = [self._types[self.magicnum]]
 
-    def _read_data(self, fh, byteorder='>'):
+    def _read_data(self, fh, byteorder=">"):
         """Return image data from open file as numpy array."""
         fh.seek(len(self.header))
         data = fh.read()
-        dtype = 'u1' if self.maxval < 256 else byteorder + 'u2'
+        dtype = "u1" if self.maxval < 256 else byteorder + "u2"
         depth = 1 if self.magicnum == b"P7 332" else self.depth
         shape = [-1, self.height, self.width, depth]
         size = numpy.prod(shape[1:])
@@ -220,10 +248,10 @@ class NetpbmFile(object):
         elif self.maxval == 1:
             shape[2] = int(math.ceil(self.width / 8))
             data = numpy.frombuffer(data, dtype).reshape(shape)
-            data = numpy.unpackbits(data, axis=-2)[:, :, :self.width, :]
+            data = numpy.unpackbits(data, axis=-2)[:, :, : self.width, :]
         else:
             data = numpy.frombuffer(data, dtype)
-            data = data[:size * (data.size // size)].reshape(shape)
+            data = data[: size * (data.size // size)].reshape(shape)
         if data.shape[0] < 2:
             data = data.reshape(data.shape[1:])
         if data.shape[-1] < 2:
@@ -239,25 +267,25 @@ class NetpbmFile(object):
         data = numpy.array(data, ndmin=2, copy=True)
         if data.dtype.kind not in "uib":
             raise ValueError("not an integer type: %s" % data.dtype)
-        if data.dtype.kind == 'i' and numpy.min(data) < 0:
+        if data.dtype.kind == "i" and numpy.min(data) < 0:
             raise ValueError("data out of range: %i" % numpy.min(data))
         if maxval is None:
             maxval = numpy.max(data)
             maxval = 255 if maxval < 256 else 65535
         if maxval < 0 or maxval > 65535:
             raise ValueError("data out of range: %i" % maxval)
-        data = data.astype('u1' if maxval < 256 else '>u2')
+        data = data.astype("u1" if maxval < 256 else ">u2")
         self._data = data
         if data.ndim > 2 and data.shape[-1] in (3, 4):
             self.depth = data.shape[-1]
             self.width = data.shape[-2]
             self.height = data.shape[-3]
-            self.magicnum = b'P7' if self.depth == 4 else b'P6'
+            self.magicnum = b"P7" if self.depth == 4 else b"P6"
         else:
             self.depth = 1
             self.width = data.shape[-1]
             self.height = data.shape[-2]
-            self.magicnum = b'P5' if maxval > 1 else b'P4'
+            self.magicnum = b"P5" if maxval > 1 else b"P4"
         self.maxval = maxval
         self.tupltypes = [self._types[self.magicnum]]
         self.header = self._header()
@@ -273,15 +301,18 @@ class NetpbmFile(object):
 
     def _header(self, pam=False):
         """Return file header as byte string."""
-        if pam or self.magicnum == b'P7':
-            header = "\n".join((
-                "P7",
-                "HEIGHT %i" % self.height,
-                "WIDTH %i" % self.width,
-                "DEPTH %i" % self.depth,
-                "MAXVAL %i" % self.maxval,
-                "\n".join("TUPLTYPE %s" % unicode(i) for i in self.tupltypes),
-                "ENDHDR\n"))
+        if pam or self.magicnum == b"P7":
+            header = "\n".join(
+                (
+                    "P7",
+                    "HEIGHT %i" % self.height,
+                    "WIDTH %i" % self.width,
+                    "DEPTH %i" % self.depth,
+                    "MAXVAL %i" % self.maxval,
+                    "\n".join("TUPLTYPE %s" % unicode(i) for i in self.tupltypes),
+                    "ENDHDR\n",
+                )
+            )
         elif self.maxval == 1:
             header = "P4 %i %i\n" % (self.width, self.height)
         elif self.depth == 1:
@@ -289,7 +320,7 @@ class NetpbmFile(object):
         else:
             header = "P6 %i %i %i\n" % (self.width, self.height, self.maxval)
         if sys.version_info[0] > 2:
-            header = bytes(header, 'ascii')
+            header = bytes(header, "ascii")
         return header
 
     def __str__(self):
@@ -299,23 +330,27 @@ class NetpbmFile(object):
 
 if sys.version_info[0] > 2:
     basestring = str
-    unicode = lambda x: str(x, 'ascii')
+
+    def unicode(x) -> str:
+        return str(x, "ascii")
+
 
 if __name__ == "__main__":
     # Show images specified on command line or all images in current directory
     from glob import glob
     from matplotlib import pyplot
-    files = sys.argv[1:] if len(sys.argv) > 1 else glob('*.p*m')
+
+    files = sys.argv[1:] if len(sys.argv) > 1 else glob("*.p*m")
     for fname in files:
         try:
             pam = NetpbmFile(fname)
             img = pam.asarray(copy=False)
             if False:
-                pam.write('_tmp.pgm.out', pam=True)
-                img2 = imread('_tmp.pgm.out')
+                pam.write("_tmp.pgm.out", pam=True)
+                img2 = imread("_tmp.pgm.out")
                 assert numpy.all(img == img2)
-                imsave('_tmp.pgm.out', img)
-                img2 = imread('_tmp.pgm.out')
+                imsave("_tmp.pgm.out", img)
+                img2 = imread("_tmp.pgm.out")
                 assert numpy.all(img == img2)
             pam.close()
         except ValueError as e:
@@ -324,8 +359,7 @@ if __name__ == "__main__":
         _shape = img.shape
         if img.ndim > 3 or (img.ndim > 2 and img.shape[-1] not in (3, 4)):
             img = img[0]
-        cmap = 'gray' if pam.maxval > 1 else 'binary'
-        pyplot.imshow(img, cmap, interpolation='nearest')
-        pyplot.title("%s %s %s %s" % (fname, unicode(pam.magicnum),
-                                      _shape, img.dtype))
+        cmap = "gray" if pam.maxval > 1 else "binary"
+        pyplot.imshow(img, cmap, interpolation="nearest")
+        pyplot.title("%s %s %s %s" % (fname, unicode(pam.magicnum), _shape, img.dtype))
         pyplot.show()

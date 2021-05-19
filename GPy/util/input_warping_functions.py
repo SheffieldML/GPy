@@ -7,8 +7,7 @@ from ..core.parameterization.priors import LogGaussian
 
 
 class InputWarpingFunction(Parameterized):
-    """Abstract class for input warping functions
-    """
+    """Abstract class for input warping functions"""
 
     def __init__(self, name):
         super(InputWarpingFunction, self).__init__(name=name)
@@ -26,8 +25,9 @@ class InputWarpingFunction(Parameterized):
 
 class IdentifyWarping(InputWarpingFunction):
     """The identity warping function, for testing"""
+
     def __init__(self):
-        super(IdentifyWarping, self).__init__(name='input_warp_identity')
+        super(IdentifyWarping, self).__init__(name="input_warp_identity")
 
     def f(self, X, test_data=False):
         return X
@@ -41,9 +41,10 @@ class IdentifyWarping(InputWarpingFunction):
 
 class InputWarpingTest(InputWarpingFunction):
     """The identity warping function, for testing"""
+
     def __init__(self):
-        super(InputWarpingTest, self).__init__(name='input_warp_test')
-        self.a = Param('a', 1.0)
+        super(InputWarpingTest, self).__init__(name="input_warp_test")
+        self.a = Param("a", 1.0)
         self.set_prior(LogGaussian(0.0, 0.75))
         self.link_parameter(self.a)
 
@@ -117,15 +118,17 @@ class KumarWarping(InputWarpingFunction):
 
     def __init__(self, X, warping_indices=None, epsilon=None, Xmin=None, Xmax=None):
 
-        super(KumarWarping, self).__init__(name='input_warp_kumar')
+        super(KumarWarping, self).__init__(name="input_warp_kumar")
 
-        if warping_indices is not None and np.max(warping_indices) > X.shape[1] -1:
+        if warping_indices is not None and np.max(warping_indices) > X.shape[1] - 1:
             raise ValueError("Kumar warping indices exceed feature dimension")
 
         if warping_indices is not None and np.min(warping_indices) < 0:
             raise ValueError("Kumar warping indices should be larger than 0")
 
-        if warping_indices is not None and np.any(list(map(lambda x: not isinstance(x, int), warping_indices))):
+        if warping_indices is not None and np.any(
+            list(map(lambda x: not isinstance(x, int), warping_indices))
+        ):
             raise ValueError("Kumar warping indices should be integer")
 
         if Xmin is None and Xmax is None:
@@ -154,7 +157,10 @@ class KumarWarping(InputWarpingFunction):
         self.num_parameters = 2 * self.warping_dim
 
         # create parameters
-        self.params = [[Param('a%d' % i, 1.0), Param('b%d' % i, 1.0)] for i in range(self.warping_dim)]
+        self.params = [
+            [Param("a%d" % i, 1.0), Param("b%d" % i, 1.0)]
+            for i in range(self.warping_dim)
+        ]
 
         # add constraints
         for i in range(self.warping_dim):
@@ -195,7 +201,9 @@ class KumarWarping(InputWarpingFunction):
 
         for i_seq, i_fea in enumerate(self.warping_indices):
             a, b = self.params[i_seq][0], self.params[i_seq][1]
-            X_warped[:, i_fea] = 1 - np.power(1 - np.power(X_normalized[:, i_fea], a), b)
+            X_warped[:, i_fea] = 1 - np.power(
+                1 - np.power(X_normalized[:, i_fea], a), b
+            )
         return X_warped
 
     def fgrad_X(self, X):
@@ -218,8 +226,13 @@ class KumarWarping(InputWarpingFunction):
         grad = np.zeros(X.shape)
         for i_seq, i_fea in enumerate(self.warping_indices):
             a, b = self.params[i_seq][0], self.params[i_seq][1]
-            grad[:, i_fea] = a * b * np.power(self.X_normalized[:, i_fea], a-1) *  \
-                             np.power(1 - np.power(self.X_normalized[:, i_fea], a), b-1) * self.scaling[i_fea]
+            grad[:, i_fea] = (
+                a
+                * b
+                * np.power(self.X_normalized[:, i_fea], a - 1)
+                * np.power(1 - np.power(self.X_normalized[:, i_fea], a), b - 1)
+                * self.scaling[i_fea]
+            )
         return grad
 
     def update_grads(self, X, dL_dW):
@@ -248,15 +261,16 @@ class KumarWarping(InputWarpingFunction):
             x_pow_a = np.power(self.X_normalized[:, i_fea], ai)
 
             # compute gradient for ai, bi on all X
-            dz_dai = bi * np.power(1 - x_pow_a, bi-1) * x_pow_a * np.log(self.X_normalized[:, i_fea])
-            dz_dbi = - np.power(1 - x_pow_a, bi) * np.log(1 - x_pow_a)
+            dz_dai = (
+                bi
+                * np.power(1 - x_pow_a, bi - 1)
+                * x_pow_a
+                * np.log(self.X_normalized[:, i_fea])
+            )
+            dz_dbi = -np.power(1 - x_pow_a, bi) * np.log(1 - x_pow_a)
 
             # sum gradients on all the data
             dL_dai = np.sum(dL_dW[:, i_fea] * dz_dai)
             dL_dbi = np.sum(dL_dW[:, i_fea] * dz_dbi)
             self.params[i_seq][0].gradient[:] = dL_dai
             self.params[i_seq][1].gradient[:] = dL_dbi
-
-
-
-

@@ -90,7 +90,7 @@ class Standardize(_Norm):
         Y = np.ma.masked_invalid(Y, copy=False)
         self.mean = Y.mean(0).view(np.ndarray)
         self.std = Y.std(0).view(np.ndarray)
-        if np.any(self.std) == 0:
+        if np.any(self.std == 0):
             self.std[np.where(Y_std==0)]=1.
             warnings.warn("Some values of Y have standard deviation of zero. Resetting to 1.0 to avoid divide by zero errors.")
 

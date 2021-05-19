@@ -4,7 +4,7 @@ Created on Aug 27, 2014
 @author: Max Zwiessele
 '''
 import numpy as np
-
+import warnings
 
 class _Norm(object):
     def __init__(self):

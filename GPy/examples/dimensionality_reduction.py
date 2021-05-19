@@ -685,17 +685,23 @@ def cmu_mocap(subject='35', motion=['01'], in_place=True, optimize=True, verbose
         # Make figure move in place.
         data['Y'][:, 0:3] = 0.0
     Y = data['Y']
-    Y_mean = Y.mean(0)
-    Y_std = Y.std(0)
-    m = GPy.models.GPLVM((Y - Y_mean) / Y_std, 2)
+    m = GPy.models.GPLVM(Y, 2, normalizer=True)
 
     if optimize: m.optimize(messages=verbose, max_f_eval=10000)
     if plot:
-        fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
+        fig, _ = plt.subplots(figsize=(8, 5))
+        latent_axes = fig.add_subplot(131)
+        sense_axes = fig.add_subplot(132)
+        viz_axes = fig.add_subplot(133, projection='3d')
+
+
         m.plot_latent(ax=latent_axes)
+        latent_axes.set_aspect('equal')
+
         y = m.Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'])
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=latent_axes)
+        data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data['skel'], viz_axes)
+
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[0].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes)        
         input('Press enter to finish')
         lvm_visualizer.close()
         data_show.close()

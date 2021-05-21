@@ -499,7 +499,7 @@ class stick_show(mocap_data_show):
         super(stick_show, self).__init__(vals, axes=axes, connect=connect)
 
     def process_values(self):
-        self.vals = self.vals.reshape((3, self.vals.shape[1]/3)).T
+        self.vals = self.vals.reshape((3, self.vals.shape[1]//3)).T
 
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""

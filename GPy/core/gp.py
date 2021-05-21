@@ -21,7 +21,7 @@ class GP(Model):
 
     :param X: input observations
     :param Y: output observations
-    :param kernel: a GPy kernel, defaults to rbf+white
+    :param kernel: a GPy kernel
     :param likelihood: a GPy likelihood
     :param inference_method: The :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference method to use for this GP
     :rtype: model object

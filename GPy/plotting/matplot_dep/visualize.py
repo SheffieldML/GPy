@@ -503,7 +503,9 @@ class stick_show(mocap_data_show):
         try:
             self.vals = self.vals.reshape((3, self.vals.shape[1]//3)).T
         except ValueError as e:
-            print('Passed values to data_show need to have a dimension which is divisible by 3 for display as they should be a point cloud of 3-D points.')
+            print('Passed values to stick_show need to have a
+            dimension which is divisible by 3 for display as they
+            should be a point cloud of 3-D points.')
             raise(e)    
             
 

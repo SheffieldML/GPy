@@ -5,9 +5,10 @@
 Gaussian Processes regression examples
 """
 try:
-    from matplotlib import pyplot as pb
-except:
-    pass
+    import matplotlib.pyplot as plt
+except ImportError:
+    MPL_AVAILABLE = False
+
 import numpy as np
 import GPy
 
@@ -29,7 +30,7 @@ def olympic_marathon_men(optimize=True, plot=True):
 
     if optimize:
         m.optimize("bfgs", max_iters=200)
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot(plot_limits=(1850, 2050))
 
     return m
@@ -52,7 +53,7 @@ def coregionalization_toy(optimize=True, plot=True):
     if optimize:
         m.optimize("bfgs", max_iters=100)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         slices = GPy.util.multioutput.get_slices([X1, X2])
         m.plot(
             fixed_inputs=[(1, 0)],
@@ -63,15 +64,14 @@ def coregionalization_toy(optimize=True, plot=True):
             fixed_inputs=[(1, 1)],
             which_data_rows=slices[1],
             Y_metadata={"output_index": 1},
-            ax=pb.gca(),
+            ax=plt.gca(),
         )
     return m
 
 
 def coregionalization_sparse(optimize=True, plot=True):
-    """
-    A simple demonstration of coregionalization on two sinusoidal functions using sparse approximations.
-    """
+    """A simple demonstration of coregionalization on two sinusoidal
+    functions using sparse approximations. """
     # build a design matrix with a column of integers indicating the output
     X1 = np.random.rand(50, 1) * 8
     X2 = np.random.rand(30, 1) * 5
@@ -85,7 +85,7 @@ def coregionalization_sparse(optimize=True, plot=True):
     if optimize:
         m.optimize("bfgs", max_iters=100)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         slices = GPy.util.multioutput.get_slices([X1, X2])
         m.plot(
             fixed_inputs=[(1, 0)],
@@ -96,9 +96,9 @@ def coregionalization_sparse(optimize=True, plot=True):
             fixed_inputs=[(1, 1)],
             which_data_rows=slices[1],
             Y_metadata={"output_index": 1},
-            ax=pb.gca(),
+            ax=plt.gca(),
         )
-        pb.ylim(-3,)
+        plt.ylim(-3,)
 
     return m
 
@@ -187,11 +187,11 @@ def multiple_optima(
     lls = GPy.examples.regression._contour_data(
         data, length_scales, log_SNRs, GPy.kern.RBF
     )
-    if plot:
-        pb.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=pb.cm.jet)
-        ax = pb.gca()
-        pb.xlabel("length scale")
-        pb.ylabel("log_10 SNR")
+    if MPL_AVAILABLE and plot:
+        plt.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=plt.cm.jet)
+        ax = plt.gca()
+        plt.xlabel("length scale")
+        plt.ylabel("log_10 SNR")
 
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
@@ -202,7 +202,9 @@ def multiple_optima(
     optim_point_y = np.empty(2)
     np.random.seed(seed=seed)
     for i in range(0, model_restarts):
-        # kern = GPy.kern.RBF(1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.))
+        # kern = GPy.kern.RBF(
+        #     1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.)
+        # )
         kern = GPy.kern.RBF(
             1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50)
         )
@@ -219,8 +221,8 @@ def multiple_optima(
         optim_point_x[1] = m.rbf.lengthscale
         optim_point_y[1] = np.log10(m.rbf.variance) - np.log10(m.likelihood.variance)
 
-        if plot:
-            pb.arrow(
+        if MPL_AVAILABLE and plot:
+            plt.arrow(
                 optim_point_x[0],
                 optim_point_y[0],
                 optim_point_x[1] - optim_point_x[0],
@@ -233,7 +235,7 @@ def multiple_optima(
             )
         models.append(m)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
     return m  # (models, lls)
@@ -289,7 +291,7 @@ def olympic_100m_men(optimize=True, plot=True):
     if optimize:
         m.optimize("bfgs", max_iters=200)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot(plot_limits=(1850, 2050))
     return m
 
@@ -308,14 +310,16 @@ def toy_rbf_1d(optimize=True, plot=True):
 
     if optimize:
         m.optimize("bfgs")
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
 
     return m
 
 
 def toy_rbf_1d_50(optimize=True, plot=True):
-    """Run a simple demonstration of a standard Gaussian process fitting it to data sampled from an RBF covariance."""
+    """Run a simple demonstration of a standard Gaussian process fitting
+it to data sampled from an RBF covariance."""
+
     try:
         import pods
     except ImportError:
@@ -328,7 +332,7 @@ def toy_rbf_1d_50(optimize=True, plot=True):
 
     if optimize:
         m.optimize("bfgs")
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
 
     return m
@@ -353,10 +357,10 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
 
     if optimize:
         m.optimize(optimizer)
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
         # plot the real underlying rate function
-        pb.plot(X, np.exp(f_true), "--k", linewidth=2)
+        plt.plot(X, np.exp(f_true), "--k", linewidth=2)
 
     return m
 
@@ -396,7 +400,7 @@ def toy_ARD(
     if optimize:
         m.optimize(optimizer="scg", max_iters=max_iters)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.kern.plot_ARD()
 
     return m
@@ -438,7 +442,7 @@ def toy_ARD_sparse(
     if optimize:
         m.optimize(optimizer="scg", max_iters=max_iters)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.kern.plot_ARD()
 
     return m
@@ -461,12 +465,12 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
         m.optimize(max_iters=max_iters)
 
     Xpredict = m.predict(data["Ytest"])[0]
-    if plot:
-        pb.plot(data["Xtest"][:, 0], data["Xtest"][:, 1], "r-")
-        pb.plot(Xpredict[:, 0], Xpredict[:, 1], "b-")
-        pb.axis("equal")
-        pb.title("WiFi Localization with Gaussian Processes")
-        pb.legend(("True Location", "Predicted Location"))
+    if MPL_AVAILABLE and plot:
+        plt.plot(data["Xtest"][:, 0], data["Xtest"][:, 1], "r-")
+        plt.plot(Xpredict[:, 0], Xpredict[:, 1], "b-")
+        plt.axis("equal")
+        plt.title("WiFi Localization with Gaussian Processes")
+        plt.legend(("True Location", "Predicted Location"))
 
     sse = ((data["Xtest"] - Xpredict) ** 2).sum()
 
@@ -517,7 +521,7 @@ def sparse_GP_regression_1D(
     if optimize:
         m.optimize("tnc", max_iters=max_iters)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
 
     return m
@@ -550,7 +554,7 @@ def sparse_GP_regression_2D(
         m.optimize("tnc", messages=1, max_iters=max_iters)
 
     # plot
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
 
     print(m)
@@ -559,7 +563,8 @@ def sparse_GP_regression_2D(
 
 def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     """Run a 1D example of a sparse GP regression with uncertain inputs."""
-    fig, axes = pb.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+    if MPL_AVAILABLE and plot:
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
     # sample inputs and outputs
     S = np.ones((20, 1))
@@ -575,7 +580,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     if optimize:
         m.optimize("scg", messages=1, max_iters=max_iters)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot(ax=axes[0])
         axes[0].set_title("no input uncertainty")
     print(m)
@@ -584,7 +589,7 @@ def uncertain_inputs_sparse_regression(max_iters=200, optimize=True, plot=True):
     m = GPy.models.SparseGPRegression(X, Y, kernel=GPy.kern.RBF(1), Z=Z, X_variance=S)
     if optimize:
         m.optimize("scg", messages=1, max_iters=max_iters)
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot(ax=axes[1])
         axes[1].set_title("with input uncertainty")
         fig.canvas.draw()
@@ -610,7 +615,7 @@ def simple_mean_function(max_iters=100, optimize=True, plot=True):
     m = GPy.core.GP(X, Y, kernel=k, likelihood=lik, mean_function=mf)
     if optimize:
         m.optimize(max_iters=max_iters)
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot(plot_limits=(-10, 15))
     return m
 
@@ -633,12 +638,12 @@ def parametric_mean_function(max_iters=100, optimize=True, plot=True):
     m = GPy.core.GP(X, Y, kernel=k, likelihood=lik, mean_function=mf)
     if optimize:
         m.optimize(max_iters=max_iters)
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
     return m
 
 
-def warped_gp_cubic_sine(max_iters=100):
+def warped_gp_cubic_sine(max_iters=100, plot=True):
     """
     A test replicating the cubic sine regression problem from
     Snelson's paper.
@@ -652,7 +657,7 @@ def warped_gp_cubic_sine(max_iters=100):
     warp_k = GPy.kern.RBF(1)
     warp_f = GPy.util.warping_functions.TanhFunction(n_terms=2)
     warp_m = GPy.models.WarpedGP(X, Y, kernel=warp_k, warping_function=warp_f)
-    warp_m[".*\.d"].constrain_fixed(1.0)
+    warp_m[".*\\.d"].constrain_fixed(1.0)
     m = GPy.models.GPRegression(X, Y)
     m.optimize_restarts(
         parallel=False, robust=True, num_restarts=5, max_iters=max_iters
@@ -666,35 +671,18 @@ def warped_gp_cubic_sine(max_iters=100):
     print(warp_m)
     print(warp_m[".*warp.*"])
 
-    warp_m.predict_in_warped_space = False
-    warp_m.plot(title="Warped GP - Latent space")
-    warp_m.predict_in_warped_space = True
-    warp_m.plot(title="Warped GP - Warped space")
-    m.plot(title="Standard GP")
-    warp_m.plot_warping()
-    pb.show()
+    if MPL_AVAILABLE and plot:
+        warp_m.predict_in_warped_space = False
+        warp_m.plot(title="Warped GP - Latent space")
+        warp_m.predict_in_warped_space = True
+        warp_m.plot(title="Warped GP - Warped space")
+        m.plot(title="Standard GP")
+        warp_m.plot_warping()
+        plt.show()
     return warp_m
 
 
-def multioutput_gp_with_derivative_observations():
-    def plot_gp_vs_real(
-        m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0, 11], ylim=[-1.5, 3]
-    ):
-        fig, ax = pb.subplots()
-        ax.set_title(title)
-        pb.plot(x, yreal, "r", label="Real function")
-        rows = (
-            slice(0, size_inputs[0])
-            if fixed_input == 0
-            else slice(size_inputs[0], size_inputs[0] + size_inputs[1])
-        )
-        m.plot(
-            fixed_inputs=[(1, fixed_input)],
-            which_data_rows=rows,
-            xlim=xlim,
-            ylim=ylim,
-            ax=ax,
-        )
+def multioutput_gp_with_derivative_observations(plot=True):
 
     f = lambda x: np.sin(x) + 0.1 * (x - 2.0) ** 2 - 0.005 * x ** 3
     fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x ** 2
@@ -735,27 +723,47 @@ def multioutput_gp_with_derivative_observations():
     # Optimize the model
     m.optimize(messages=0, ipython_notebook=False)
 
-    # Plot the model, the syntax is same as for multioutput models:
-    plot_gp_vs_real(
-        m,
-        xpred,
-        ydpred_true,
-        [x.shape[0], xd.shape[0]],
-        title="Latent function derivatives",
-        fixed_input=1,
-        xlim=[0, 11],
-        ylim=[-1.5, 3],
-    )
-    plot_gp_vs_real(
-        m,
-        xpred,
-        ypred_true,
-        [x.shape[0], xd.shape[0]],
-        title="Latent function",
-        fixed_input=0,
-        xlim=[0, 11],
-        ylim=[-1.5, 3],
-    )
+    if MPL_AVAILABLE and plot:
+        def plot_gp_vs_real(
+            m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0, 11], ylim=[-1.5, 3]
+        ):
+            fig, ax = plt.subplots()
+            ax.set_title(title)
+            plt.plot(x, yreal, "r", label="Real function")
+            rows = (
+                slice(0, size_inputs[0])
+                if fixed_input == 0
+                else slice(size_inputs[0], size_inputs[0] + size_inputs[1])
+            )
+            m.plot(
+                fixed_inputs=[(1, fixed_input)],
+                which_data_rows=rows,
+                xlim=xlim,
+                ylim=ylim,
+                ax=ax,
+            )
+        
+        # Plot the model, the syntax is same as for multioutput models:
+        plot_gp_vs_real(
+            m,
+            xpred,
+            ydpred_true,
+            [x.shape[0], xd.shape[0]],
+            title="Latent function derivatives",
+            fixed_input=1,
+            xlim=[0, 11],
+            ylim=[-1.5, 3],
+        )
+        plot_gp_vs_real(
+            m,
+            xpred,
+            ypred_true,
+            [x.shape[0], xd.shape[0]],
+            title="Latent function",
+            fixed_input=0,
+            xlim=[0, 11],
+            ylim=[-1.5, 3],
+        )
 
     # making predictions for the values:
     mu, var = m.predict_noiseless(Xnew=[xpred, np.empty((0, 1))])

@@ -3,6 +3,11 @@
 """
 Gaussian Processes classification examples
 """
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    MPL_AVAILABLE = False
+
 import GPy
 
 default_seed = 10000
@@ -78,9 +83,7 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
         # m.pseudo_EM()
 
     # Plot
-    if plot:
-        from matplotlib import pyplot as plt
-
+    if MPL_AVAILABLE and plot:
         fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
@@ -117,15 +120,12 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
 
     # Optimize
     if optimize:
-        try:
-            m.optimize("scg", messages=1)
-        except Exception as e:
-            return m
+        m.optimize("scg", messages=True)
+
+    return m
 
     # Plot
-    if plot:
-        from matplotlib import pyplot as plt
-
+    if MPL_AVAILABLE and plot:
         fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
@@ -162,9 +162,7 @@ def sparse_toy_linear_1d_classification(
         m.optimize()
 
     # Plot
-    if plot:
-        from matplotlib import pyplot as plt
-
+    if MPL_AVAILABLE and plot:
         fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
@@ -207,9 +205,7 @@ def sparse_toy_linear_1d_classification_uncertain_input(
         m.optimize()
 
     # Plot
-    if plot:
-        from matplotlib import pyplot as plt
-
+    if MPL_AVAILABLE and plot:
         fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
@@ -259,9 +255,7 @@ def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
         print(m)
 
     # Plot
-    if plot:
-        from matplotlib import pyplot as plt
-
+    if MPL_AVAILABLE and plot:
         fig, axes = plt.subplots(2, 1)
         m.plot_f(ax=axes[0])
         m.plot(ax=axes[1])
@@ -314,7 +308,7 @@ def crescent_data(
     if optimize:
         m.optimize(messages=1)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         m.plot()
 
     print(m)

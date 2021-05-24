@@ -7,8 +7,8 @@ from GPy.util import datasets
 
 try:
     import matplotlib.pyplot as plt
-except:
-    pass
+except ImportError:
+    MPL_AVAILABLE = False
 
 
 def student_t_approx(optimize=True, plot=True):
@@ -102,7 +102,7 @@ def student_t_approx(optimize=True, plot=True):
         print("Corrupt student t")
         m4.optimize(optimizer, messages=1)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         plt.figure(1)
         plt.suptitle("Gaussian likelihood")
         ax = plt.subplot(211)
@@ -251,7 +251,7 @@ def boston_example(optimize=True, plot=True):
             print(pred_density)
             print(mstu_t)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         plt.figure()
         plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
         plt.scatter(X_test[:, data_axis_plot], Y_test, c="r", marker="x")
@@ -270,7 +270,7 @@ def boston_example(optimize=True, plot=True):
     print("Average scores: {}".format(np.mean(score_folds, 1)))
     print("Average pred density: {}".format(np.mean(pred_density, 1)))
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         # Plotting
         stu_t_legends = ["Student T, df={}".format(df) for df in degrees_freedoms]
         legends = ["Baseline", "Gaussian", "Laplace Approx Gaussian"] + stu_t_legends

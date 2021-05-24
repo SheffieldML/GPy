@@ -3,6 +3,7 @@
 """
 Gaussian Processes classification examples
 """
+MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
 except ImportError:

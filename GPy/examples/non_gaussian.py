@@ -3,8 +3,8 @@
 
 import GPy
 import numpy as np
-from GPy.util import datasets
 
+MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -141,7 +141,12 @@ def boston_example(optimize=True, plot=True):
 
     optimizer = "bfgs"
     messages = 0
-    data = datasets.boston_housing()
+    try:
+        import pods
+    except ImportError:
+        print("pods unavailable, see https://github.com/sods/ods for example datasets")
+        return
+    data = pods.datasets.boston_housing()
     degrees_freedoms = [3, 5, 8, 10]
     X = data["X"].copy()
     Y = data["Y"].copy()

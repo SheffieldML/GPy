@@ -4,6 +4,7 @@
 """
 Gaussian Processes regression examples
 """
+MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
 except ImportError:

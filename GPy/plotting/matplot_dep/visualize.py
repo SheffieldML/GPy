@@ -499,7 +499,12 @@ class stick_show(mocap_data_show):
         super(stick_show, self).__init__(vals, axes=axes, connect=connect)
 
     def process_values(self):
-        self.vals = self.vals.reshape((3, self.vals.shape[1]/3)).T
+        """Convert vector of values into a matrix for use as a 3-D point cloud."""
+        try:
+            self.vals = self.vals.reshape((3, self.vals.shape[1]//3)).T
+        except ValueError as e:
+            raise ValueError("Passed values to stick_show need to have a dimension which is divisible by 3 for display as they should be a point cloud of 3-D points.") from e
+            
 
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""

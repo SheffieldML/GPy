@@ -55,6 +55,21 @@ class PriorTests(unittest.TestCase):
         m.randomize()
         self.assertTrue(m.checkgrad())
 
+    def test_InverseGamma(self):
+        # Test that this prior object can be instantiated and performs its basic functions
+        # in integration.
+        xmin, xmax = 1, 2.5*np.pi
+        b, C, SNR = 1, 0, 0.1
+        X = np.linspace(xmin, xmax, 500)
+        y  = b*X + C + 1*np.sin(X)
+        y += 0.05*np.random.randn(len(X))
+        X, y = X[:, None], y[:, None]
+        m = GPy.models.GPRegression(X, y)
+        InverseGamma = GPy.priors.InverseGamma(1, 1)
+        m.rbf.set_prior(InverseGamma)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
     def test_incompatibility(self):
         xmin, xmax = 1, 2.5*np.pi
         b, C, SNR = 1, 0, 0.1

@@ -3,6 +3,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+# The following std_norm_cdf is imported here to be available to other modules that import it
+from scipy.special import ndtr as std_norm_cdf  # noqa: F401
 
 # define a standard normal pdf
 _sqrt_2pi = np.sqrt(2 * np.pi)

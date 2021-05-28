@@ -7,7 +7,7 @@ We will see in this tutorial how to create new kernels in GPy. We will also give
 Structure of a kernel in GPy
 ============================
 
-In GPy a kernel object is made of a list of kernpart objects, which correspond to symetric positive definite functions. More precisely, the kernel should be understood as the sum of the kernparts. In order to implement a new covariance, the following steps must be followed
+In GPy a kernel object is made of a list of kernpart objects, which correspond to symmetric positive definite functions. More precisely, the kernel should be understood as the sum of the kernparts. In order to implement a new covariance, the following steps must be followed
 
     1. implement the new covariance as a :py:class:`GPy.kern.src.kern.Kern` object
     2. update the :py:mod:`GPy.kern.src` file

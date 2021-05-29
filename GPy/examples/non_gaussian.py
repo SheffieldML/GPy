@@ -3,12 +3,12 @@
 
 import GPy
 import numpy as np
-from GPy.util import datasets
 
+MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
-except:
-    pass
+except ImportError:
+    MPL_AVAILABLE = False
 
 
 def student_t_approx(optimize=True, plot=True):
@@ -102,7 +102,7 @@ def student_t_approx(optimize=True, plot=True):
         print("Corrupt student t")
         m4.optimize(optimizer, messages=1)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         plt.figure(1)
         plt.suptitle("Gaussian likelihood")
         ax = plt.subplot(211)
@@ -141,7 +141,12 @@ def boston_example(optimize=True, plot=True):
 
     optimizer = "bfgs"
     messages = 0
-    data = datasets.boston_housing()
+    try:
+        import pods
+    except ImportError:
+        print("pods unavailable, see https://github.com/sods/ods for example datasets")
+        return
+    data = pods.datasets.boston_housing()
     degrees_freedoms = [3, 5, 8, 10]
     X = data["X"].copy()
     Y = data["Y"].copy()
@@ -251,7 +256,7 @@ def boston_example(optimize=True, plot=True):
             print(pred_density)
             print(mstu_t)
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         plt.figure()
         plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
         plt.scatter(X_test[:, data_axis_plot], Y_test, c="r", marker="x")
@@ -270,7 +275,7 @@ def boston_example(optimize=True, plot=True):
     print("Average scores: {}".format(np.mean(score_folds, 1)))
     print("Average pred density: {}".format(np.mean(pred_density, 1)))
 
-    if plot:
+    if MPL_AVAILABLE and plot:
         # Plotting
         stu_t_legends = ["Student T, df={}".format(df) for df in degrees_freedoms]
         legends = ["Baseline", "Gaussian", "Laplace Approx Gaussian"] + stu_t_legends

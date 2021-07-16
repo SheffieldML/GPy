@@ -56,7 +56,7 @@ class GPClassification(GP):
         return GPClassification.from_gp(m)
 
     def save_model(self, output_filename, compress=True, save_data=True):
-        self._save_model(output_filename, compress=True, save_data=True)
+        self._save_model(output_filename, compress=compress, save_data=save_data)
 
     @staticmethod
     def _build_from_input_dict(input_dict, data=None):

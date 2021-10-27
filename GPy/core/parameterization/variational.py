@@ -106,7 +106,7 @@ class VariationalPosterior(Parameterized):
         self.link_parameters(self.mean, self.variance)
         self.num_data, self.input_dim = self.mean.shape
         if self.has_uncertain_inputs():
-            assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
+            assert self.variance.shape == self.mean.shape, "need one variance per sample and dimension"
 
     def set_gradients(self, grad):
         self.mean.gradient, self.variance.gradient = grad

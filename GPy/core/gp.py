@@ -134,9 +134,10 @@ class GP(Model):
         if self.mean_function is not None:
             input_dict["mean_function"] = self.mean_function.to_dict()
         input_dict["inference_method"] = self.inference_method.to_dict()
-        #FIXME: Assumes the Y_metadata is serializable. We should create a Metadata class
+        # TODO: We should create a Metadata class
         if self.Y_metadata is not None:
-            input_dict["Y_metadata"] = self.Y_metadata
+            # make Y_metadata serializable
+            input_dict["Y_metadata"] = {k: self.Y_metadata[k].tolist() for k in self.Y_metadata.keys()}
         if self.normalizer is not None:
             input_dict["normalizer"] = self.normalizer.to_dict()
         return input_dict

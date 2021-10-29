@@ -146,6 +146,16 @@ class Coregionalize(Kern):
 
         input_dict = super(Coregionalize, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Coregionalize"
+        # W and kappa must be serializable
         input_dict["W"] = self.W.values.tolist()
         input_dict["kappa"] = self.kappa.values.tolist()
+        input_dict["output_dim"] = self.output_dim
         return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        # W and kappa must be converted back to numpy arrays
+        input_dict['W'] = np.array(input_dict['W'])
+        input_dict['kappa'] = np.array(input_dict['kappa'])
+        return Coregionalize(**input_dict)

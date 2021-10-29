@@ -164,9 +164,11 @@ class GP(Model):
         input_dict["inference_method"] = GPy.inference.latent_function_inference.LatentFunctionInference.from_dict(input_dict["inference_method"])
 
         # converts Y_metadata from serializable to array. We should create a Metadata class
-        # Y_metadata = input_dict.get("Y_metadata")
-        # input_dict["Y_metadata"] = Y_metadata
-        input_dict["Y_metadata"] = {k: np.array(input_dict['Y_metadata'][k]) for k in input_dict['Y_metadata'].keys()}
+        Y_metadata = input_dict.get("Y_metadata")
+        if isinstance(Y_metadata, dict):
+            input_dict["Y_metadata"] = {k: np.array(Y_metadata[k]) for k in Y_metadata.keys()}
+        else:
+            input_dict["Y_metadata"] = Y_metadata
 
         normalizer = input_dict.get("normalizer")
         if normalizer is not None:

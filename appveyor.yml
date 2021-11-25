@@ -22,9 +22,9 @@ environment:
 
 install:
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
- - conda config --set always_yes yes --set changeps1 no
- - conda update anaconda
-# - conda update -q conda
+ - conda config --set always_yes yes --set changeps1 no --add pinned_packages defaults::conda
+ - conda clean --all
+ - conda update -q conda
  - conda info -a
  - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
  - activate build-environment

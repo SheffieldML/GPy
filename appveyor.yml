@@ -22,7 +22,8 @@ environment:
 
 install:
  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
- - conda config --set always_yes yes --set changeps1 no --add pinned_packages defaults::conda
+ - conda config --set always_yes yes --set changeps1 no
+ - conda config --add pinned_packages defaults::conda
  - conda clean --all
  - conda update -q conda
  - conda info -a

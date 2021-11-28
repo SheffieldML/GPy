@@ -25,7 +25,8 @@ install:
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
  - conda info -a
- - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+# github issue #955: freez build versions of numpy, scipy and matplotlib
+ - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy=1.19.2 scipy=1.5.2 matplotlib=3.3.4"
  - activate build-environment
  # We need wheel installed to build wheels
  - python -m pip install wheel

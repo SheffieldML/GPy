@@ -117,11 +117,13 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
-install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
+# #955
+install_requirements = ['numpy==1.19.2', 'six', 'paramz>=0.9.0', 'cython>=0.29']
 if sys.version_info < (3, 6):
     install_requirements += ['scipy>=1.3.0,<1.5.0']
 else:
-    install_requirements += ['scipy>=1.3.0']
+    # #955
+    install_requirements += ['scipy==1.5.2']
 
 setup(name = 'GPy',
       version = __version__,
@@ -168,13 +170,15 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      setup_requires = ['numpy>=1.7'],
+      # #955
+      setup_requires = ['numpy == 1.19.2'],
       install_requires = install_requirements,
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',
                                     ],
-                        'plotting':['matplotlib >= 3.0',
+                        #matplotlib Version see github issue #955
+                        'plotting':['matplotlib == 3.3.4',
                                     'plotly >= 1.8.6'],
                         'notebook':['jupyter_client >= 4.0.6',
                                     'ipywidgets >= 4.0.3',

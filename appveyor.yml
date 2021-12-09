@@ -3,18 +3,23 @@ environment:
     secure: 8/ZjXFwtd1S7ixd7PJOpptupKKEDhm2da/q3unabJ00=
   COVERALLS_REPO_TOKEN:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
-  gpy_version: 1.9.9
+  gpy_version: 1.10.0
   matrix:
     - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
+      MPL_VERSION: 3.0.0
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda36-x64
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
     - PYTHON_VERSION: 3.7
-      MINICONDA: C:\Miniconda36-x64
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
     - PYTHON_VERSION: 3.8
-      MINICONDA: C:\Miniconda36-x64
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
     - PYTHON_VERSION: 3.9
-      MINICONDA: C:\Miniconda36-x64
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
 
 #configuration:
 #  - Debug
@@ -25,7 +30,8 @@ install:
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
  - conda info -a
- - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib"
+# github issue #955: freeze build version of matplotlib
+ - "conda create -q -n build-environment python=%PYTHON_VERSION% numpy scipy matplotlib=%MPL_VERSION%"
  - activate build-environment
  # We need wheel installed to build wheels
  - python -m pip install wheel

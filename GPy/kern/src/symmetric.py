@@ -53,12 +53,12 @@ class Symmetric(Kern):
     def __init__(self, base_kernel, transform, symmetry_type='even'):
         n_dims = max(base_kernel.active_dims) + 1
         super(Symmetric, self).__init__(n_dims, list(range(n_dims)), name='symmetric_kernel')
-        if symmetry_type is 'odd':
+        if symmetry_type == 'odd':
             self.symmetry_sign = -1.
-        elif symmetry_type is 'even':
+        elif symmetry_type == 'even':
             self.symmetry_sign = 1.
         else:
-            raise ValueError('symmetry_type input must be ''odd'' or ''even''')
+            raise ValueError(f'symmetry_type must be "odd" or "even", found: {symmetry_type}')
         self.transform = transform
         self.base_kernel = base_kernel
         self.param_names = base_kernel.parameter_names()

@@ -1,12 +1,11 @@
-'''
+"""
 .. module:: GPy.util.subarray_and_sorting
 
 .. moduleauthor:: Max Zwiessele <ibinbei@gmail.com>
 
-'''
-__updated__ = '2014-05-21'
+"""
+__updated__ = "2014-05-21"
 
-import numpy as np, logging
 
 def common_subarrays(X, axis=0):
     """
@@ -45,18 +44,25 @@ def common_subarrays(X, axis=0):
     from collections import defaultdict
     from itertools import count
     from operator import iadd
-    assert X.ndim == 2 and axis in (0,1), "Only implemented for 2D arrays"
+
+    assert X.ndim == 2 and axis in (0, 1), "Only implemented for 2D arrays"
     subarrays = defaultdict(list)
     cnt = count()
+
     def accumulate(x, s, c):
         t = tuple(x)
         col = next(c)
         iadd(s[t], [col])
         return None
-    if axis == 0: [accumulate(x, subarrays, cnt) for x in X]
-    else: [accumulate(x, subarrays, cnt) for x in X.T]
+
+    if axis == 0:
+        [accumulate(x, subarrays, cnt) for x in X]
+    else:
+        [accumulate(x, subarrays, cnt) for x in X.T]
     return subarrays
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

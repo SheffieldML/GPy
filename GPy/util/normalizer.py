@@ -1,8 +1,8 @@
-'''
+"""
 Created on Aug 27, 2014
 
 @author: Max Zwiessele
-'''
+"""
 import numpy as np
 import warnings
 
@@ -21,7 +21,9 @@ class _Norm(object):
         Project Y into normalized space
         """
         if not self.scaled():
-            raise AttributeError("Norm object not initialized yet, try calling scale_by(data) first.")
+            raise AttributeError(
+                "Norm object not initialized yet, try calling scale_by(data) first."
+            )
 
     def inverse_mean(self, X):
         """
@@ -71,9 +73,10 @@ class _Norm(object):
         """
 
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        normalizer_class = input_dict.pop('class')
-        import GPy
+        normalizer_class = input_dict.pop("class")
+
         normalizer_class = eval(normalizer_class)
         return normalizer_class._build_from_input_dict(normalizer_class, input_dict)
 
@@ -97,16 +100,16 @@ class Standardize(_Norm):
 
     def normalize(self, Y):
         super(Standardize, self).normalize(Y)
-        return (Y-self.mean)/self.std
+        return (Y - self.mean) / self.std
 
     def inverse_mean(self, X):
-        return (X*self.std)+self.mean
+        return (X * self.std) + self.mean
 
     def inverse_variance(self, var):
-        return (var*(self.std**2))
+        return var * (self.std ** 2)
 
     def inverse_covariance(self, covariance):
-        return (covariance[..., np.newaxis]*(self.std**2))
+        return covariance[..., np.newaxis] * (self.std ** 2)
 
     def scaled(self):
         return self.mean is not None

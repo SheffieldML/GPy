@@ -40,6 +40,13 @@ class Periodic(Kern):
             return alpha*np.cos(omega*x + phase)
         return f
 
+    def _save_to_input_dict(self):
+        input_dict = super(Periodic, self)._save_to_input_dict()
+        input_dict["variance"] = self.variance.values.tolist()
+        input_dict["lengthscale"] = self.lengthscale.values.tolist()
+        input_dict["period"] = self.period.values.tolist()
+        return input_dict
+
     @silence_errors
     def _cos_factorization(self, alpha, omega, phase):
         r1 = np.sum(alpha*np.cos(phase),axis=1)[:,None]
@@ -199,6 +206,24 @@ class PeriodicMatern32(Periodic):
 
         self.G = self.Gram_matrix()
         self.Gi = np.linalg.inv(self.G)
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(PeriodicMatern32, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.PeriodicMatern32"
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return kernel_class(**input_dict)
 
     def Gram_matrix(self):
         La = np.column_stack((self.a[0]*np.ones((self.n_basis,1)),self.a[1]*self.basis_omega,self.a[2]*self.basis_omega**2))

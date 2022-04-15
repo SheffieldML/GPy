@@ -14,15 +14,15 @@ class DEtime(Kern):
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
         super(DEtime, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
-        self.add_parameter(self.kern)
-    
+        self.link_parameter(self.kern)
+
     def K(self, X, X2=None):
         assert X2==None
         K = self.kern.K(X,X2)
-        
+
         if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
             return K
-        
+
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
@@ -30,9 +30,9 @@ class DEtime(Kern):
         K[idx_start:idx_end,:] = K[:self.idx_p,:]
         K[:,idx_start:idx_end] = K[:,:self.idx_p]
         K[idx_start:idx_end,idx_start:idx_end] = K_c
-        
+
         return K
-    
+
     def Kdiag(self,X):
         Kdiag = self.kern.Kdiag(X)
 
@@ -43,19 +43,19 @@ class DEtime(Kern):
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
         Kdiag[idx_start:idx_end] = Kdiag[:self.idx_p]
-        
+
         return Kdiag
-    
+
     def update_gradients_full(self,dL_dK,X,X2=None):
         assert X2==None
         if self.idx_p<=0 or self.idx_p>X.shape[0]/2:
             self.kern.update_gradients_full(dL_dK, X)
             return
-        
+
         slices = index_to_slices(X[:,self.index_dim])
         idx_start = slices[1][0].start
         idx_end = idx_start+self.idx_p
-        
+
         self.kern.update_gradients_full(dL_dK[idx_start:idx_end,:], X[:self.idx_p],X)
         grad_p1 = self.kern.gradient.copy()
         self.kern.update_gradients_full(dL_dK[:,idx_start:idx_end], X, X[:self.idx_p])
@@ -108,7 +108,7 @@ class SplitKern(CombinationKernel):
             if len(slices)>1:
                 [target.__setitem__((s,s2), self.kern_cross.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[1], slices2[0])]
             if len(slices2)>1:
-                [target.__setitem__((s,s2), self.kern_cross.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[0], slices2[1])]                
+                [target.__setitem__((s,s2), self.kern_cross.K(X[s,:],X2[s2,:])) for s,s2 in itertools.product(slices[0], slices2[1])]
         return target
 
     def Kdiag(self,X):
@@ -125,7 +125,7 @@ class SplitKern(CombinationKernel):
             else:
                 self.kern.update_gradients_full(dL,X,X2)
                 target[:] += self.kern.gradient
-    
+
         if X2 is None:
             assert dL_dK.shape==(X.shape[0],X.shape[0])
             [[collate_grads(dL_dK[s,ss], X[s], X[ss]) for s,ss in itertools.product(slices_i, slices_i)] for slices_i in slices]
@@ -154,20 +154,20 @@ class SplitKern_cross(Kern):
             Xp = np.array([[Xp]])
         self.Xp = Xp
         super(SplitKern_cross, self).__init__(input_dim=kernel.input_dim, active_dims=None, name=name)
-        
+
     def K(self, X, X2=None):
         if X2 is None:
             return np.dot(self.kern.K(X,self.Xp),self.kern.K(self.Xp,X))/self.kern.K(self.Xp,self.Xp)
         else:
             return np.dot(self.kern.K(X,self.Xp),self.kern.K(self.Xp,X2))/self.kern.K(self.Xp,self.Xp)
-        
+
     def Kdiag(self, X):
         return np.inner(self.kern.K(X,self.Xp),self.kern.K(self.Xp,X).T)/self.kern.K(self.Xp,self.Xp)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:
             X2 = X
-                        
+
         k1 = self.kern.K(X,self.Xp)
         k2 = self.kern.K(self.Xp,X2)
         k3 = self.kern.K(self.Xp,self.Xp)
@@ -181,7 +181,7 @@ class SplitKern_cross(Kern):
         grad += self.kern.gradient.copy()
         self.kern.update_gradients_full(np.array([[dL_dk3]]),self.Xp,self.Xp)
         grad += self.kern.gradient.copy()
-        
+
         self.kern.gradient = grad
 
     def update_gradients_diag(self, dL_dKdiag, X):
@@ -191,14 +191,14 @@ class SplitKern_cross(Kern):
         dL_dk1 = dL_dKdiag*k2[0]/k3
         dL_dk2 = dL_dKdiag*k1[:,0]/k3
         dL_dk3 = -dL_dKdiag*(k1[:,0]*k2[0]).sum()/(k3*k3)
-        
+
         self.kern.update_gradients_full(dL_dk1[:,None],X,self.Xp)
         grad1 = self.kern.gradient.copy()
         self.kern.update_gradients_full(dL_dk2[None,:],self.Xp,X)
         grad2 = self.kern.gradient.copy()
         self.kern.update_gradients_full(np.array([[dL_dk3]]),self.Xp,self.Xp)
         grad3 = self.kern.gradient.copy()
-        
+
         self.kern.gradient = grad1+grad2+grad3
-        
+
 

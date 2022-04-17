@@ -49,6 +49,8 @@ your code. The parameters have to be added by calling
 :py:class:`~GPy.core.parameterization.param.Param` objects as
 arguments::
 
+    from .core.parameterization import Param
+
     def __init__(self,input_dim,variance=1.,lengthscale=1.,power=1.,active_dims=None):
         super(RationalQuadratic, self).__init__(input_dim, active_dims, 'rat_quad')
 	assert input_dim == 1, "For this kernel we assume input_dim=1"
@@ -67,13 +69,13 @@ automatically.
 
 The implementation of this function is optional.
 
-This functions deals as a callback for each optimization iteration. If
-one optimization step was successfull and the parameters (added by
+This functions is called as a callback upon each successful change to the parameters. If
+one optimization step was successfull and the parameters (linked by
 :py:func:`~GPy.core.parameterization.parameterized.Parameterized.link_parameters`
-``(*parameters)``) this callback function will be called to be able to
-update any precomputations for the kernel. Do not implement the
-gradient updates here, as those are being done by the model enclosing
-the kernel::
+``(*parameters)``) are changed, this callback function will be called. This callback may be used to
+update precomputations for the kernel. Do not implement the
+gradient updates here, as gradient updates are performed by the model enclosing
+the kernel. In this example, we issue a no-op::
 
     def parameters_changed(self):
         # nothing todo here
@@ -86,8 +88,9 @@ the kernel::
 The implementation of this function in mandatory.
 
 This function is used to compute the covariance matrix associated with
-the inputs X, X2 (np.arrays with arbitrary number of line (say
-:math:`n_1`, :math:`n_2`) and ``self.input_dim`` columns). ::
+the inputs X, X2 (np.arrays with arbitrary number of lines,
+:math:`n_1`, :math:`n_2`, corresponding to the number of samples over which to calculate covariance)
+and ``self.input_dim`` columns. ::
 
     def K(self,X,X2):
         if X2 is None: X2 = X
@@ -167,16 +170,24 @@ is set to each ``param``. ::
 This function is required for GPLVM, BGPLVM, sparse models and uncertain inputs.
 
 Computes the derivative of the likelihood with respect to the inputs
-``X`` (a :math:`n \times q` np.array). The result is returned by the
-function which is a :math:`n \times q` np.array. ::
+``X`` (a :math:`n \times q` np.array), that is, it calculates the quantity:
+
+.. math::
+
+   \frac{\partial L}{\partial K} \frac{\partial K}{\partial X}
+
+The partial derivative matrix is, in this case, comes out as an :math:`n \times q` np.array.  ::
 
     def gradients_X(self,dL_dK,X,X2):
-        """derivative of the covariance matrix with respect to X."""
+        """derivative of the likelihood with respect to X, calculated using dL_dK*dK_dX"""
         if X2 is None: X2 = X
         dist2 = np.square((X-X2.T)/self.lengthscale)
 
-        dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
-        return np.sum(dL_dK*dX,1)[:,None]
+        dK_dX = -self.variance*self.power * (X-X2.T)/self.lengthscale**2 *  (1 + dist2/2./self.lengthscale)**(-self.power-1)
+        return np.sum(dL_dK*dK_dX,1)[:,None]
+
+Were the number of parameters to be larger than 1 or the number of dimensions likewise any larger
+than 1, the calculated partial derivitive would be a 3- or 4-tensor.
 
 :py:func:`~GPy.kern.src.kern.Kern.gradients_X_diag` ``(self,dL_dKdiag,X)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

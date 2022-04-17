@@ -212,7 +212,6 @@ class Stationary(Kern):
             r = self._scaled_dist(X, X2)
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
-
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """
         Specially intended for the Grid regression case.
@@ -307,6 +306,21 @@ class Stationary(Kern):
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
+    
+    def dgradients_dX(self, X, X2, dimX):
+        g1 = self.dK2_dvariancedX(X, X2, dimX)
+        g2 = self.dK2_dlengthscaledX(X, X2, dimX)
+        return [g1, g2]
+
+    def dgradients_dX2(self, X, X2, dimX2):
+        g1 = self.dK2_dvariancedX2(X, X2, dimX2)
+        g2 = self.dK2_dlengthscaledX2(X, X2, dimX2)
+        return [g1, g2]
+
+    def dgradients2_dXdX2(self, X, X2, dimX, dimX2):
+        g1 = self.dK3_dvariancedXdX2(X, X2, dimX, dimX2)
+        g2 = self.dK3_dlengthscaledXdX2(X, X2, dimX, dimX2)
+        return [g1, g2]
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
@@ -398,7 +412,6 @@ class Exponential(Stationary):
 #        return (F, L, Qc, H, Pinf)
 
 
-
 class OU(Stationary):
     """
     OU kernel:
@@ -411,6 +424,23 @@ class OU(Stationary):
 
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='OU'):
         super(OU, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(OU, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.OU"
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return OU(**input_dict)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-r)

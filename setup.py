@@ -40,6 +40,11 @@ import sys
 from setuptools import setup, Extension
 import codecs
 
+try:
+    ModuleNotFoundError
+except NameError:
+    ModuleNotFoundError = ImportError
+
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
         return f.read()
@@ -112,6 +117,11 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
+install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
+if sys.version_info < (3, 6):
+    install_requirements += ['scipy>=1.3.0,<1.5.0']
+else:
+    install_requirements += ['scipy>=1.3.0']
 
 setup(name = 'GPy',
       version = __version__,
@@ -159,7 +169,7 @@ setup(name = 'GPy',
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
       setup_requires = ['numpy>=1.7'],
-      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.9.0'],
+      install_requires = install_requirements,
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',
@@ -177,9 +187,11 @@ setup(name = 'GPy',
                    'Operating System :: MacOS :: MacOS X',
                    'Operating System :: Microsoft :: Windows',
                    'Operating System :: POSIX :: Linux',
-                   'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6',
+                   'Programming Language :: Python :: 3.7',
+                   'Programming Language :: Python :: 3.8',
+                   'Programming Language :: Python :: 3.9',
                    'Framework :: IPython',
                    'Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',

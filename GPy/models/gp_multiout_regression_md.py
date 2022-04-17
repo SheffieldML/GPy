@@ -13,12 +13,22 @@ from ..util.linalg import tdot
 from .sparse_gp_regression_md import SparseGPRegressionMD
 
 class GPMultioutRegressionMD(SparseGP):
-    """
-    Gaussian Process model for multi-output regression with missing data
+    """Gaussian Process model for multi-output regression with missing data
 
-    This is an implementation of Latent Variable Multiple Output Gaussian Processes (LVMOGP) in [Dai et al. 2017]. This model targets at the use case, in which each output dimension is observed at a different set of inputs. The model takes a different data format: the inputs and outputs observations of all the output dimensions are stacked together correspondingly into two matrices. An extra array is used to indicate the index of output dimension for each data point. The output dimensions are indexed using integers from 0 to D-1 assuming there are D output dimensions.
+    This is an implementation of Latent Variable Multiple Output
+    Gaussian Processes (LVMOGP) in [Dai_et_al_2017]_. This model
+    targets at the use case, in which each output dimension is
+    observed at a different set of inputs. The model takes a different
+    data format: the inputs and outputs observations of all the output
+    dimensions are stacked together correspondingly into two
+    matrices. An extra array is used to indicate the index of output
+    dimension for each data point. The output dimensions are indexed
+    using integers from 0 to D-1 assuming there are D output
+    dimensions.
 
-    Zhenwen Dai, Mauricio A. Alvarez and Neil D. Lawrence. Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
+    .. rubric:: References
+
+    .. [Dai_et_al_2017] Dai, Z.; Alvarez, M.A.; Lawrence, N.D: Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes. In NIPS, 2017.
 
     :param X: input observations.
     :type X: numpy.ndarray
@@ -46,6 +56,8 @@ class GPMultioutRegressionMD(SparseGP):
     :param str init: the choice of initialization: 'GP' or 'rand'. With 'rand', the model is initialized randomly. With 'GP', the model is initialized through a protocol as follows: (1) fits a sparse GP (2) fits a BGPLVM based on the outcome of sparse GP (3) initialize the model based on the outcome of the BGPLVM.
     :param boolean heter_noise: whether assuming heteroscedastic noise in the model, boolean
     :param str name: the name of the model
+
+
     """
     def __init__(self, X, Y, indexD, Xr_dim, kernel=None, kernel_row=None,  Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', heter_noise=False, name='GPMRMD'):
 

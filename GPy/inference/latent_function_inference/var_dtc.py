@@ -142,8 +142,7 @@ class VarDTC(LatentFunctionInference):
         Cpsi1Vf, _ = dtrtrs(Lm, tmp, lower=1, trans=1)
 
         # data fit and derivative of L w.r.t. Kmm
-        dL_dm = -np.dot((_LBi_Lmi_psi1.T.dot(_LBi_Lmi_psi1))
-                        - np.eye(Y.shape[0]), VVT_factor)
+        dL_dm = -_LBi_Lmi_psi1.T.dot(_LBi_Lmi_psi1.dot(VVT_factor)) + VVT_factor
 
         delit = tdot(_LBi_Lmi_psi1Vf)
         data_fit = np.trace(delit)

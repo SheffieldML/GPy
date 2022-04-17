@@ -13,13 +13,9 @@ class GPVariationalGaussianApproximation(GP):
     """
     The Variational Gaussian Approximation revisited
 
-    @article{Opper:2009,
-        title = {The Variational Gaussian Approximation Revisited},
-        author = {Opper, Manfred and Archambeau, C{\'e}dric},
-        journal = {Neural Comput.},
-        year = {2009},
-        pages = {786--792},
-    }
+    .. rubric:: References
+
+    .. [opper_archambeau_2009] Opper, M.; Archambeau, C.; The Variational Gaussian Approximation Revisited. Neural Comput. 2009, pages 786-792.
     """
     def __init__(self, X, Y, kernel, likelihood, Y_metadata=None):
 

@@ -138,6 +138,38 @@ class Probit(GPTransformation):
         input_dict["class"] = "GPy.likelihoods.link_functions.Probit"
         return input_dict
 
+class ScaledProbit(Probit):
+    """
+    .. math::
+        g(f) = \\Phi^{-1} (nu*mu)
+    """
+    def __init__(self, nu=1.):
+        self.nu = float(nu)
+        
+    def transf(self,f):
+        return std_norm_cdf(f*self.nu)
+
+    def dtransf_df(self,f):
+        return std_norm_pdf(f*self.nu)*self.nu
+
+    def d2transf_df2(self,f):
+        return -(f*self.nu) * std_norm_pdf(f*self.nu)*(self.nu**2)
+
+    def d3transf_df3(self,f):
+        return (safe_square(f*self.nu)-1.)*std_norm_pdf(f*self.nu)*(self.nu**3)
+    
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(ScaledProbit, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.likelihoods.link_functions.ScaledProbit"
+        return input_dict
 
 class Cloglog(GPTransformation):
     """

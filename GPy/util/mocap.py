@@ -163,7 +163,7 @@ def rotation_matrix(xangle, yangle, zangle, order='zxy', degrees=False):
 # Motion capture data routines.
 class skeleton(tree):
     def __init__(self):
-        tree.__init__(self)
+        super(skeleton, self).__init__()
 
     def connection_matrix(self):
         connection = np.zeros((len(self.vertices), len(self.vertices)), dtype=bool)
@@ -197,13 +197,13 @@ class skeleton(tree):
 
 # class bvh_skeleton(skeleton):
 #     def __init__(self):
-#         skeleton.__init__(self)
+#         super(bvh_skeleton, self).__init__()
 
 #     def to_xyz(self, channels):
         
 class acclaim_skeleton(skeleton):
     def __init__(self, file_name=None):
-        skeleton.__init__(self)
+        super(acclaim_skeleton, self).__init__()
         self.documentation = []
         self.angle = 'deg'
         self.length = 1.0

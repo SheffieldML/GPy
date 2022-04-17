@@ -1,6 +1,47 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+"""
+Introduction
+^^^^^^^^^^^^
+
+This module contains the fundamental classes of GPy - classes that are
+inherited by objects in other parts of GPy in order to provide a
+consistent interface to major functionality.
+
+.. inheritance-diagram:: GPy.core.gp.GP
+    :top-classes: paramz.core.parameter_core.Parameterizable
+
+:py:class:`GPy.core.model` is inherited by
+:py:class:`GPy.core.gp.GP`. And :py:class:`GPy.core.model` itself
+inherits :py:class:`paramz.model.Model` from the `paramz`
+package. `paramz` essentially provides an inherited set of properties
+and functions used to manage state (and state changes) of the model.
+
+:py:class:`GPy.core.gp.GP` represents a GP model. Such an entity is
+typically passed variables representing known (x) and observed (y)
+data, along with a kernel and other information needed to create the
+specific model. It exposes functions which return information derived
+from the inputs to the model, for example predicting unobserved
+variables based on new known variables, or the log marginal likelihood
+of the current state of the model.
+
+:py:func:`~GPy.core.gp.GP.optimize` is called to optimize
+hyperparameters of the model. The optimizer argument takes a string
+which is used to specify non-default optimization schemes.
+
+Various plotting functions can be called against :py:class:`GPy.core.gp.GP`.
+
+.. inheritance-diagram:: GPy.core.gp_grid.GpGrid GPy.core.sparse_gp.SparseGP GPy.core.sparse_gp_mpi.SparseGP_MPI GPy.core.svgp.SVGP 
+    :top-classes: GPy.core.gp.GP
+
+:py:class:`GPy.core.gp.GP` is used as the basis for classes supporting
+more specialized types of Gaussian Process model. These are however
+generally still not specific enough to be called by the user and are
+inhereted by members of the :py:class:`GPy.models` package.
+
+"""
+
 from GPy.core.model import Model
 from .parameterization import Param, Parameterized
 from . import parameterization

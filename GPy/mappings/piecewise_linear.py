@@ -15,7 +15,7 @@ class PiecewiseLinear(Mapping):
         assert input_dim==1
         assert output_dim==1
 
-        Mapping.__init__(self, input_dim, output_dim, name)
+        super(PiecewiseLinear, self).__init__(input_dim, output_dim, name)
 
         values, breaks = np.array(values).flatten(), np.array(breaks).flatten()
         assert values.size == breaks.size

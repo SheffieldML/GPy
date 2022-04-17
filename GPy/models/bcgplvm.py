@@ -30,7 +30,7 @@ class BCGPLVM(GPLVM):
         else:
             assert mapping.input_dim==Y.shape[1], "mapping input dim does not work for Y dimension"
             assert mapping.output_dim==input_dim, "mapping output dim does not work for self.input_dim"
-        GPLVM.__init__(self, Y, input_dim, X=mapping.f(Y), kernel=kernel, name="bcgplvm")
+        super(BCGPLVM, self).__init__(Y, input_dim, X=mapping.f(Y), kernel=kernel, name="bcgplvm")
         self.unlink_parameter(self.X)
         self.mapping = mapping
         self.link_parameter(self.mapping)

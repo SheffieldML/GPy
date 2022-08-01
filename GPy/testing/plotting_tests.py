@@ -362,7 +362,6 @@ def test_threed():
     ]], extensions=extensions):
         yield (do_test, )
 
-
 def test_sparse():
     np.random.seed(11111)
     import matplotlib

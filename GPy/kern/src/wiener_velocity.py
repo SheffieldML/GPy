@@ -1,0 +1,61 @@
+# Copyright (c) 2012, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
+
+from .kern import Kern
+from ...core.parameterization import Param
+from paramz.transformations import Logexp
+import numpy as np
+
+class WienerVelocity(Kern):
+    """
+    Wiener Velocity in 1D only.
+
+    Negative times are treated as a separate (backwards!) motion.
+
+    :param input_dim: the number of input dimensions
+    :type input_dim: int
+    :param variance:
+    :type variance: float
+    """
+    def __init__(self, input_dim=1, variance=1., active_dims=None, name='WienerVelocity'):
+        assert input_dim==1, "Wiener velocity in 1D only"
+        super(WienerVelocity, self).__init__(input_dim, active_dims, name)
+
+        self.variance = Param('variance', variance, Logexp())
+        self.link_parameters(self.variance)
+        
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+        Note: It uses the private method _save_to_input_dict of the parent.
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RBF, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.WienerVelocity"
+        return input_dict
+
+    def K(self,X,X2=None):
+        if X2 is None:
+            X2 = X
+        return self.variance*np.where(np.sign(X)==np.sign(X2.T),(np.fmin(np.abs(X),np.abs(X2.T))**3) / 3 + np.abs(X - X2.T) * (np.fmin(np.abs(X),np.abs(X2.T))**2) / 2, 0.)
+
+    def Kdiag(self,X):
+        return self.variance*np.divide(np.abs(X.flatten())**3,3)
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None:
+            X2 = X
+        self.variance.gradient = np.sum(dL_dK * np.where(np.sign(X)==np.sign(X2.T),np.fmin(np.abs(X),np.abs(X2.T)), 0.))
+
+    #def update_gradients_diag(self, dL_dKdiag, X):
+        #self.variance.gradient = np.dot(np.abs(X.flatten()), dL_dKdiag)
+
+    #def gradients_X(self, dL_dK, X, X2=None):
+        #if X2 is None:
+            #return np.sum(self.variance*dL_dK*np.abs(X),1)[:,None]
+        #else:
+            #return np.sum(np.where(np.logical_and(np.abs(X)<np.abs(X2.T), np.sign(X)==np.sign(X2)), self.variance*dL_dK,0.),1)[:,None]
+
+
+

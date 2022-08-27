@@ -38,6 +38,7 @@ from .src.rbf import RBF
 from .src.linear import Linear, LinearFull
 from .src.static import Bias, White, Fixed, WhiteHeteroscedastic, Precomputed
 from .src.brownian import Brownian
+from .src.wiener_velocity import WienerVelocity
 from .src.stationary import Exponential, OU, Matern32, Matern52, ExpQuad, RatQuad, Cosine, Sinc, ExpQuadCosine
 from .src.mlp import MLP
 from .src.periodic import PeriodicExponential, PeriodicMatern32, PeriodicMatern52

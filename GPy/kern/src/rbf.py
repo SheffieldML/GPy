@@ -62,6 +62,14 @@ class RBF(Stationary):
     @Cache_this(limit=3, ignore_args=())
     def dK_dX2(self, X, X2, dimX2):
         return -self._clean_dK_dX(X, X2, dimX2)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dXdiag(self, X, dimX):
+        return np.zeros(X.shape[0])
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dX2diag(self, X, dimX2):
+        return np.zeros(X.shape[0])
     
     @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2(self, X, X2, dimX, dimX2):
@@ -72,6 +80,38 @@ class RBF(Stationary):
         dist = X[:,None,:]-X2[None,:,:]
         lengthscale2inv = np.ones((X.shape[1]))/(self.lengthscale**2)
         return -1.*K*dist[:,:,dimX]*dist[:,:,dimX2]*lengthscale2inv[dimX]*lengthscale2inv[dimX2] + (dimX==dimX2)*K*lengthscale2inv[dimX]
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdX(self, X, X2, dim_pred_grads, dimX):
+        return -self._clean_dK2_dXdX2(X, X2, dim_pred_grads, dimX)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdX2diag(self, X, dimX, dimX2):
+        lengthscale2inv = np.ones((X.shape[1]))/(self.lengthscale**2)
+        return np.ones(X.shape[0])*self.variance*lengthscale2inv[dimX]*(dimX==dimX2)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdXdiag(self, X, dimX, dimX2):
+        return -self._clean_dK2_dXdX2diag(X, dimX, dimX2)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dXdXdX2(self, X, X2, dim_pred_grads, dimX, dimX2):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        if X2 is None:
+            X2=X
+        dist = X[:,None,:]-X2[None,:,:]
+        lengthscale2inv = np.ones((X.shape[1]))/(self.lengthscale**2)
+        return K*(dist[:,:,dim_pred_grads]*lengthscale2inv[dim_pred_grads]*\
+                  dist[:,:,dimX]*lengthscale2inv[dimX]*\
+                  dist[:,:,dimX2]*lengthscale2inv[dimX2]-\
+                  (dim_pred_grads==dimX)*dist[:,:,dimX2]*lengthscale2inv[dimX2]*lengthscale2inv[dim_pred_grads]-\
+                  (dimX==dimX2)*dist[:,:,dim_pred_grads]*lengthscale2inv[dim_pred_grads]*lengthscale2inv[dimX] -\
+                  (dimX2==dim_pred_grads)*dist[:,:,dimX]*lengthscale2inv[dimX]*lengthscale2inv[dimX2] )
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dXdXdX2diag(self, X, dim_pred_grads, dimX):
+        return np.zeros(X.shape[0])
 
     def dK_dr(self, r):
         return -r*self.K_of_r(r)

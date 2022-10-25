@@ -22,7 +22,11 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'dK_dX', _slice_dK_dX)
         put_clean(dct, 'dK_dX2', _slice_dK_dX)
         put_clean(dct, 'dK2_dXdX2', _slice_dK2_dXdX2)
+        put_clean(dct, 'dK2_dXdX', _slice_dK2_dXdX2)
+        put_clean(dct, 'dK3_dXdXdX2', _slice_dK3_dXdXdX2)
         put_clean(dct, 'Kdiag', _slice_Kdiag)
+        put_clean(dct, 'dK2_dXdX2diag', _slice_dK2_dXdX2diag)
+        put_clean(dct, 'dK2_dXdXdiag', _slice_dK2_dXdX2diag)
         put_clean(dct, 'phi', _slice_Kdiag)
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
@@ -166,6 +170,33 @@ def _slice_dK2_dXdX2(f):
                 ret = np.zeros((X.shape[0], X2.shape[0]))
             else:
                 ret = f(self, s.X, s.X2, d, d2, *a, **kw)
+        return ret
+    return wrap
+
+def _slice_dK2_dXdX2diag(f):
+    @wraps(f)
+    def wrap(self, X, dimX, dimX2, *a, **kw):
+        with _Slice_wrap(self, X, None) as s:
+            d = s.k._project_dim(dimX)
+            d2 = s.k._project_dim(dimX2)
+            if (d is None) or (d2 is None):
+                ret = np.zeros(X.shape[0])
+            else:
+                ret = f(self, s.X, d, d2, *a, **kw)
+        return ret
+    return wrap
+
+def _slice_dK3_dXdXdX2(f):
+    @wraps(f)
+    def wrap(self, X, X2, dim, dimX, dimX2, *a, **kw):
+        with _Slice_wrap(self, X, X2) as s:
+            D = s.k._project_dim(dim)
+            d = s.k._project_dim(dimX)
+            d2 = s.k._project_dim(dimX2)
+            if (D is None) or (d is None) or (d2 is None):
+                ret = np.zeros((X.shape[0], X2.shape[0]))
+            else:
+                ret = f(self, s.X, s.X2, D, d, d2, *a, **kw)
         return ret
     return wrap
 

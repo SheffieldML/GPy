@@ -69,39 +69,55 @@ class MultioutputGP(GP):
             if Y_metadata is None:
                 Y_metadata={'output_index': ind, 'trials': np.ones(ind.shape)}
         return super(MultioutputGP, self).predict_quantiles(X, quantiles, Y_metadata, kern, likelihood)
-    
-    def predictive_gradients(self, Xnew, kern=None):
-        if isinstance(Xnew, list):
-            Xnew, _, ind  = util.multioutput.build_XY(Xnew, None)
-            #if Y_metadata is None:
-                #Y_metadata={'output_index': ind}
-        return super(MultioutputGP, self).predictive_gradients(Xnew, kern)
 
-    def predictive_gradients(self, Xnew, kern=None): #XNEW IS NOT A LIST!!
+    def predictive_gradients(self, Xnew, kern=None):
         """
-        Compute the derivatives of the predicted latent function with respect to X*
+        Compute the derivatives of the predicted latent function with respect
+        to X*
+        
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
-         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
-        Note that this is not the same as computing the mean and variance of the derivative of the function!
+            dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP
+            (usually one).
+        
+        Note that this is not the same as computing the mean and variance of
+        the derivative of the function!
+
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
         :param X: The points at which to get the predictive gradients
         :type X: np.ndarray (Xnew x self.input_dim)
         :returns: dmu_dX, dv_dX
         :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q) ]
+
         """
         
         if isinstance(Xnew, list):
             Xnew, _, ind  = util.multioutput.build_XY(Xnew, None)
         
         slices = index_to_slices(Xnew[:,-1])
-        
-        for i in range(len(slices)):
-            if ((self.kern.kern[i].name == 'diffKern' ) and len(slices[i])>0):
-                assert 0, "It is not (yet) possible to predict gradients of gradient observations, sorry :)"
- 
+
         if kern is None:
             kern = self.kern
+
+        if all([(k.name == 'DiffKern') for k in self.kern.kern[1:]]):
+            """
+            Predictive gradients for models that observe gradients.
+            """
+
+            dims = Xnew.shape[1]-1
+
+            mean_jac = np.empty((Xnew.shape[0], dims))
+            var_jac = np.empty((Xnew.shape[0], dims))
+
+            X = self._predictive_variable
+            alpha = self.posterior.woodbury_vector
+            Wi = self.posterior.woodbury_inv
+
+            for dim_pred_grads in range(dims):
+                mean_jac[:,dim_pred_grads] = np.dot(kern.dK_dX(Xnew, X, dim_pred_grads), alpha).flatten()
+                var_jac[:,dim_pred_grads] = kern.dK_dXdiag(Xnew, dim_pred_grads) - 2 * (np.dot(kern.K(Xnew, X), Wi) * kern.dK_dX(Xnew, X, dim_pred_grads)).sum(-1)
+            return mean_jac, var_jac
+
         mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1]-1,self.output_dim))
         for i in range(self.output_dim):
             mean_jac[:,:,i] = kern.gradients_X(self.posterior.woodbury_vector[:,i:i+1].T, Xnew, self._predictive_variable)[:,0:-1]

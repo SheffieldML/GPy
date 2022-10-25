@@ -70,6 +70,98 @@ class Prod(CombinationKernel):
             which_parts = self.parts
         return reduce(np.multiply, (p.Kdiag(X) for p in which_parts))
 
+    def reset_gradients(self):
+        for part in self.parts:
+            part.reset_gradients()
+
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
+    def dK_dX(self, X, X2, dimX, which_parts=None):
+        prod_sum = np.zeros((X.shape[0], X2.shape[0]))
+        for combination in itertools.combinations(self.parts, len(self.parts) - 1):
+            prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
+            to_update = list(set(self.parts) - set(combination))[0]
+            prod_sum += prod*to_update.dK_dX(X, X2, dimX)
+        return prod_sum
+
+    @Cache_this(limit=3, force_kwargs=['which_parts'])
+    def dK_dX2(self, X, X2, dimX2, which_parts=None):
+        prod_sum = np.zeros((X.shape[0], X2.shape[0]))
+        for combination in itertools.combinations(self.parts, len(self.parts) - 1):
+            prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
+            to_update = list(set(self.parts) - set(combination))[0]
+            prod_sum += prod*to_update.dK_dX2(X, X2, dimX2)
+        return prod_sum
+
+    @Cache_this(limit=3, force_kwargs=['which_parts'])    
+    def dK2_dXdX2(self, X, X2, dimX, dimX2, which_parts=None):
+        prod_sum = np.zeros((X.shape[0], X2.shape[0]))
+        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
+            prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
+            to_update1 = list(set(self.parts) - set(combination1))[0]
+            prod_sum += prod*to_update1.dK2_dXdX2(X, X2, dimX, dimX2)
+            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination2]) if len(combination2) > 0 else np.ones(prod_sum.shape)
+                to_update2 = list(set(combination1)-set(combination2))[0]
+                prod_sum += prod*to_update1.dK_dX(X, X2, dimX)*to_update2.dK_dX2(X, X2, dimX2)
+        return prod_sum
+
+    def update_gradients_direct(self, *args):
+        for i, (g,p) in enumerate(zip(args, self.parts)):
+            p.update_gradients_direct(*g)
+
+    def dgradients_dX(self, X, X2, dimX, parts=None):
+        if parts is None:
+            parts=self.parts
+        gradients = []
+        for part in parts:
+            dgradients_i = part.dgradients(X, X2)
+            dgradients_dX_i = part.dgradients_dX(X, X2, dimX)
+            neq_parts = [p for p in parts if p is not part]
+            if len(neq_parts)>0:
+                K_rest = self.K(X,X2, which_parts = neq_parts)
+                K_rest_dX = self.dK_dX(X,X2,dimX, which_parts=neq_parts)
+            else:
+                K_rest = np.ones((X.shape[0], X2.shape[0]))
+                K_res_dX = np.zeros((X.shape[0], X2.shape[0]))
+            gradients += [ [ g_dX*K_rest + g*K_rest_dX   for i, (g,g_dX) in enumerate(zip(dgradients_i, dgradients_dX_i))] ]
+            
+        return gradients
+
+    def dgradients_dX2(self, X, X2, dimX2, parts=None):
+        if parts is None:
+            parts=self.parts
+        gradients = []
+        for part in parts:
+            dgradients_i = part.dgradients(X, X2)
+            dgradients_dX_i = part.dgradients_dX2(X, X2, dimX2)
+            neq_parts = [p for p in parts if p is not part]
+            if len(neq_parts)>0:
+                K_rest = self.K(X,X2, which_parts = neq_parts)
+                K_rest_dX = self.dK_dX(X,X2,dimX2, which_parts=neq_parts)
+            else:
+                K_rest = np.ones((X.shape[0], X2.shape[0]))
+                K_res_dX = np.zeros((X.shape[0], X2.shape[0]))
+            gradients += [ [ g_dX*K_rest + g*K_rest_dX   for g, g_dX in zip(dgradients_i, dgradients_dX_i)] ]
+            
+        return gradients
+
+    def dgradients2_dXdX2(self, X, X2, dimX, dimX2, parts=None):
+        if parts is None:
+            parts=self.parts
+        gradients = []
+        for part in parts:
+            g_dxdx2 = part.dgradients2_dXdX2(X,X2,dimX,dimX2)
+            g_dx = part.dgradients_dX(X,X2,dimX)
+            g_dx2 = part.dgradients_dX2(X,X2,dimX2)
+            g = part.dgradients(X, X2)
+            neq_parts = [p for p in self.parts if p is not part]
+            K_dxdx2 = self.dK2_dXdX2(X, X2, dimX, dimX2, which_parts=neq_parts)
+            K_dx = self.dK_dX(X,X2,dimX, which_parts=neq_parts)
+            K_dx2 = self.dK_dX2(X,X2,dimX2, which_parts=neq_parts)
+            K = self.K(X, X2)
+            gradients += [[ g_i*K_dxdx2 + g_dx_i*K_dx2 + g_dx2_i*K_dx + g_dxdx2_i*K for g_i, g_dx_i, g_dx2_i, g_dxdx2_i in zip(g, g_dx, g_dx2, g_dxdx2)]]
+        return gradients
+
     def update_gradients_full(self, dL_dK, X, X2=None):
         if len(self.parts)==2:
             self.parts[0].update_gradients_full(dL_dK*self.parts[1].K(X,X2), X, X2)

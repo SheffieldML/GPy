@@ -35,6 +35,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'gradients_XX_diag', _slice_gradients_XX_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)
 
+        put_clean(dct, 'dgradients',_slice_K)
         put_clean(dct, 'dgradients_dX',_slice_partial_gradients_list_X)
         put_clean(dct, 'dgradients_dX2',_slice_partial_gradients_list_X)
         put_clean(dct, 'dgradients2_dXdX2',_slice_partial_gradients_list_XX)

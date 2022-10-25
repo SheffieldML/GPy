@@ -58,9 +58,10 @@ class RBF(Stationary):
         dist = X[:,None,dimX]-X2[None,:,dimX]
         lengthscale2inv = (np.ones((X.shape[1]))/(self.lengthscale**2))[dimX]
         return -1.*K*dist*lengthscale2inv
+
     @Cache_this(limit=3, ignore_args=())
     def dK_dX2(self, X, X2, dimX2):
-        return -self.dK_dX(X,X2, dimX2)
+        return -self._clean_dK_dX(X, X2, dimX2)
     
     @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2(self, X, X2, dimX, dimX2):
@@ -83,19 +84,35 @@ class RBF(Stationary):
     
     @Cache_this(limit=3, ignore_args=())
     def dK_dvariance(self,X,X2):
-        return self.K(X,X2)/self.variance
+        return self._clean_K(X,X2)/self.variance
+    
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dlengthscale(self,X,X2):
+        r = self._scaled_dist(X, X2)
+        K = self.K_of_r(r)
+        if X2 is None:
+            X2=X
+        dist = X[:,None,:]-X2[None,:,:]
+        lengthscaleinv = np.ones((X.shape[1]))/(self.lengthscale)
+        if self.ARD:
+            g = []
+            for diml in range(X.shape[1]):
+                g += [ (dist[:,:,diml]**2)*(lengthscaleinv[diml]**3)*K]
+        else:
+            g = np.sum(dist**2, axis=2)*(lengthscaleinv[0]**3)*K
+        return g
     
     @Cache_this(limit=3, ignore_args=())
     def dK2_dvariancedX(self, X, X2, dim):
-        return self.dK_dX(X,X2, dim)/self.variance
+        return self._clean_dK_dX(X,X2, dim)/self.variance
     
     @Cache_this(limit=3, ignore_args=())
     def dK2_dvariancedX2(self, X, X2, dim):
-        return self.dK_dX2(X,X2, dim)/self.variance
+        return self._clean_dK_dX2(X,X2, dim)/self.variance
     
     @Cache_this(limit=3, ignore_args=())
     def dK3_dvariancedXdX2(self, X, X2, dim, dimX2):
-        return self.dK2_dXdX2(X, X2, dim, dimX2)/self.variance
+        return self._clean_dK2_dXdX2(X, X2, dim, dimX2)/self.variance
 
     @Cache_this(limit=3, ignore_args=())
     def dK2_dlengthscaledX(self, X, X2, dimX):

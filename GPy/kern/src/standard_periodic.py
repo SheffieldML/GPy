@@ -14,6 +14,7 @@ Neural Networks and Machine Learning, pages 133-165. Springer, 1998.
 
 from .kern import Kern
 from ...core.parameterization import Param
+from paramz.caching import Cache_this
 from paramz.transformations import Logexp
 
 import numpy as np
@@ -122,7 +123,7 @@ class StdPeriodic(Kern):
 
         pass
 
-
+    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """Compute the covariance matrix between X and X2."""
         if X2 is None:
@@ -133,234 +134,393 @@ class StdPeriodic(Kern):
 
         return self.variance * exp_dist
 
-
     def Kdiag(self, X):
         """Compute the diagonal of the covariance matrix associated to X."""
         ret = np.empty(X.shape[0])
         ret[:] = self.variance
         return ret
 
+    @Cache_this(limit=3, ignore_args=())
     def dK_dX(self, X, X2, dimX):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        k = self.variance*exp_dist[None,:,:]
-        full = -k*np.pi/2.*np.sin(2.*base)*lengthscale2inv[:,None,None]*periodinv[:,None,None]
-        return full[dimX,:,:]
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX of set X.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
 
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+
+        dist = X[:,None,dimX] - X2[None,:,dimX]
+        base = np.pi*periodinv*dist
+
+        return -F*np.sin(2*base)*self._clean_K(X, X2)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dXdiag(self, X, dimX):
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX of set X.
+
+        Returns only diagonal elements.
+        """
+        return np.zeros(X.shape[0])
+
+    @Cache_this(limit=3, ignore_args=())
     def dK_dX2(self, X, X2, dimX2):
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX2 of set X2.
+        """
         return -self._clean_dK_dX(X, X2, dimX2)
 
-    def dK_dXdiag(self, X, dimX):
-        return np.zeros(X.shape[0])
-
+    @Cache_this(limit=3, ignore_args=())
     def dK_dX2diag(self, X, dimX2):
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX2 of set X2.
+
+        Returns only diagonal elements.
+        """
         return np.zeros(X.shape[0])
     
+    @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2(self, X, X2, dimX, dimX2):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv  = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        k = self.variance*exp_dist
-        dk_dx2 = self._clean_dK_dX2( X, X2, dimX2)
-        ret = -dk_dx2*np.pi/2.*lengthscale2inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-        if dimX == dimX2:
-            ret += k*(np.pi**2)*period2inv[dimX]*lengthscale2inv[dimX]*np.cos(2.*base[dimX,:,:])
-        return ret
+        """
+        Compute the second derivative of K with respect to:
+            dimension dimX of set X, and
+            dimension dimX2 of set X2.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
 
-    def dK2_dXdX(self, X, X2, dim_pred_grads, dimX):
-        return -self._clean_dK2_dXdX2(X, X2, dim_pred_grads, dimX)
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
 
-    def dK2_dXdX2diag(self, X, dimX, dimX2):
-        lengthscale2inv = np.ones((X.shape[1]))/(self.lengthscale**2)
-        period2inv = np.ones((X.shape[1]))/(self.period**2)
-        return np.ones(X.shape[0])*np.pi**2*self.variance*lengthscale2inv[dimX]*period2inv[dimX]*(dimX==dimX2)
-
-    def dK2_dXdXdiag(self, X, dimX, dimX2):
-        return -self._clean_dK2_dXdX2diag(X, dimX, dimX2)
-
-    def dK3_dXdXdX2(self, X, X2, dim_pred_grads, dimX, dimX2):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
         dist = X[:,None,dimX2] - X2[None,:,dimX2]
-        base = np.pi * periodinv[dimX2] * dist
-        return 0.5*np.pi*lengthscale2inv[dimX2]*periodinv[dimX2]*(\
-               np.sin(2*base)*self._clean_dK2_dXdX(X, X2, dim_pred_grads, dimX)+\
-               (dim_pred_grads==dimX2)*2*np.pi*periodinv[dimX2]*np.cos(2*base)*self._clean_dK_dX(X, X2, dimX)+\
-               (dimX==dimX2)*2*np.pi*periodinv[dimX2]*np.cos(2*base)*self._clean_dK_dX(X, X2, dim_pred_grads)-\
-               (dim_pred_grads==dimX==dimX2)*4*np.pi**2*period2inv[dimX2]*np.sin(2*base)*self._clean_K(X, X2))
+        base = np.pi*periodinv*dist
 
-    def dK3_dXdXdX2diag(self, X, dim_pred_grads, dimX):
+        term = np.sin(2*base)*self._clean_dK_dX(X, X2, dimX)
+        if dimX == dimX2:
+            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_K(X, X2)
+        return F*term
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdX2diag(self, X, dimX, dimX2):
+        """
+        Compute the second derivative of K with respect to:
+            dimension dimX of set X, and
+            dimension dimX2 of set X2.
+
+        Returns only diagonal elements.
+        """
+        if dimX == dimX2:
+            lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
+            periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+            return (np.pi**2)*(lengthscaleinv**2)*(periodinv**2)*self.variance*np.ones(X.shape[0])
+        else:
+            return np.zeros(X.shape[0])
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdX(self, X, X2, dimX_0, dimX_1):
+        """
+        Compute the second derivative of K with respect to:
+            dimension dimX_0 of set X, and
+            dimension dimX_1 of set X.
+        """
+        return -self._clean_dK2_dXdX2(X, X2, dimX_0, dimX_1)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dXdXdiag(self, X, dimX_0, dimX_1):
+        """
+        Compute the second derivative of K with respect to:
+            dimension dimX_0 of set X, and
+            dimension dimX_1 of set X.
+
+        Returns only diagonal elements.
+        """
+        return -self._clean_dK2_dXdX2diag(X, dimX_0, dimX_1)
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dXdXdX2(self, X, X2, dimX_0, dimX_1, dimX2):
+        """
+        Compute the third derivative of K with respect to:
+            dimension dimX_0 of set X,
+            dimension dimX_1 of set X, and
+            dimension dimX2 of set X2.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+
+        dist = X[:,None,dimX2] - X2[None,:,dimX2]
+        base = np.pi*periodinv*dist
+
+        term = np.sin(2*base)*self._clean_dK2_dXdX(X, X2, dimX_0, dimX_1)
+        if dimX_0 == dimX2:
+            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_dK_dX(X, X2, dimX_1)
+        if dimX_1 == dimX2:
+            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_dK_dX(X, X2, dimX_0)
+        if dimX_0 == dimX_1 == dimX2:
+            term -= 4*(np.pi**2)*(periodinv**2)*np.sin(2*base)*self._clean_K(X, X2)
+        return F*term
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1):
+        """
+        Compute the third derivative of K with respect to:
+            dimension dimX_0 of set X,
+            dimension dimX_1 of set X, and
+            dimension dimX_1 of set X2.
+
+        Returns only diagonal elements of the covariance matrix.
+        """
         return np.zeros(X.shape[0])
 
-    def dK_dvariance(self, X, X2=None):
-        if X2 is None:
-            X2 = X
-        base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
-        return np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale ), axis = -1 ) )
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dvariance(self, X, X2):
+        """
+        Compute the derivative of K with respect to variance.
+        """
+        return self._clean_K(X, X2)/self.variance
 
-    def dK_dlengthscale(self, X, X2=None):
-        if X2 is None:
-            X2=X
-        lengthscale3inv = np.ones(X.shape[1])/(self.lengthscale**3)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist *periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        return self.variance*np.sum((np.sin(base))**2, axis=0)*exp_dist/(self.lengthscale**3) if not self.ARD2 else self.variance*exp_dist[None,:,:]*(np.sin(base))**2*lengthscale3inv[:,None,None]
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dlengthscale(self, X, X2):
+        """
+        Compute the derivative(s) of K with respect to lengthscale(s).
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))
+        periodinv = (np.ones(X.shape[1])/(self.period))
 
-    def dK_dperiod(self, X, X2=None):
-        if X2 is None:
-            X2=X
-        periodinv = 1/self.period
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist *periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        return self.variance*exp_dist*np.sum(np.sin(base)*np.cos(base)*base/self.period[:,None,None]/(self.lengthscale[:,None,None]**2), axis=0) if not self.ARD1 else self.variance*exp_dist[None,:,:]*np.sin(base)*np.cos(base)*base/self.period[:,None,None]/(self.lengthscale[:,None,None]**2);
+        dist = np.rollaxis(X[:,None,:] - X2[None,:,:], 2, 0)
+        base = np.pi*periodinv[:,None,None]*dist
 
-    def dK2_dvariancedX(self, X, X2, dimX):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        ret = -exp_dist*np.pi/2.*np.sin(2.*base)*lengthscale2inv[:,None,None]*periodinv[:,None,None]
-        return ret[dimX,:,:]
+        K = self._clean_K(X, X2)
 
-    def dK2_dlengthscaledX(self, X, X2, dimX):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        lengthscale3inv = np.ones(X.shape[1])/(self.lengthscale**3)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist *periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        if not self.ARD2:
-            ret = np.pi*self.variance*lengthscale3inv[dimX]*periodinv[dimX]*np.sin(2.*base)*exp_dist*(1 - 0.5*self.lengthscale*np.sum(lengthscale3inv[dimX]*np.sin(base)**2, axis=0)) 
+        if self.ARD2:
+            g = []
+            for diml in range(self.input_dim):
+                g += [(lengthscaleinv[diml]**3)*np.square(np.sin(base[diml]))*K]
         else:
-            tmp = np.pi*self.variance*lengthscale3inv[:,None,None]*periodinv[dimX]*np.sin(2.*base[dimX, :, :])*exp_dist
-            ret = -0.5*(np.sin(base)**2)*lengthscale2inv[dimX]*tmp
-            ret[dimX,:,:] += tmp[dimX,:,:]
-        return ret
+            g = (lengthscaleinv[0]**3)*np.sum(np.square(np.sin(base)), axis=0)*K
+        return g
 
-    def dK2_dperioddX(self, X, X2, dimX):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
-        period3inv = np.ones(X.shape[1])/(self.period**3)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist *periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        k = self._clean_K(X,X2)
-        dk_dperiod = self.dK_dperiod(X,X2)
+    @Cache_this(limit=3, ignore_args=())
+    def dK_dperiod(self, X, X2):
+        """
+        Compute the derivative(s) of K with respect to period(s).
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))
+        periodinv = (np.ones(X.shape[1])/(self.period))
+
+        dist = np.rollaxis(X[:,None,:] - X2[None,:,:], 2, 0)
+        base = np.pi*periodinv[:,None,None]*dist
+
+        K = self._clean_K(X, X2)
+
         if self.ARD1:
-            ret = -dk_dperiod*np.pi*np.sin(2.*base[dimX,:,:])*lengthscale2inv[dimX]*periodinv[dimX]/2.
-            ret[dimX,:,:] += k*np.pi*lengthscale2inv[dimX]*period2inv[dimX]*(np.pi*np.cos(2.*base[dimX,:,:])*dist[dimX,:,:]*periodinv[dimX] + np.sin(2.*base[dimX,:,:])/2.)
-            return ret
+            g = []
+            for diml in range(self.input_dim):
+                g += [0.5*base[diml]*(lengthscaleinv[diml]**2)*periodinv[diml]*np.sin(2*base[diml])*K]
         else:
-            ret = self.variance*exp_dist[None,:,:]*np.pi*lengthscale2inv[:,None,None]*(np.pi*period3inv[:,None,None]*np.cos(2.*base)*dist - 0.25*np.pi*period3inv[:,None,None]*np.sin(2.*base)*np.sum(dist*np.sin(2.*base)*lengthscale2inv[:,None,None], axis=0) +0.5*np.sin(2.*base)*period2inv[:,None,None])
-            return ret[dimX,:,:]
+            g = 0.5*periodinv[0]*np.sum(base*(lengthscaleinv**2)[:,None,None]*np.sin(2*base), axis=0)*K
+        return g
 
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dvariancedX(self, X, X2, dimX):
+        """
+        Compute the second derivative of K with respect to:
+            variance, and
+            dimension dimX of set X.
+        """
+        return self._clean_dK_dX(X, X2, dimX)/self.variance
+
+    @Cache_this(limit=3, ignore_args=())
     def dK2_dvariancedX2(self, X, X2, dimX2):
+        """
+        Compute the second derivative of K with respect to:
+            variance, and
+            dimension dimX2 of set X2.
+        """
         return -self.dK2_dvariancedX(X, X2, dimX2)
 
-    def dK2_dlengthscaledX2(self, X, X2, dimX2):
-        return -self.dK2_dlengthscaledX(X, X2, dimX2)
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dlengthscaledX(self, X, X2, dimX):
+        """
+        Compute the second derivative(s) of K with respect to:
+            lengthscale(s), and
+            dimension dimX of set X.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
 
-    def dK2_dperioddX2(self, X, X2, dimX2):
-        return -self.dK2_dperioddX(X, X2, dimX2)
+        dist = X[:,None,dimX] - X2[None,:,dimX]
+        base = np.pi*periodinv*dist
 
-    def dK3_dvariancedXdX2(self, X, X2, dimX, dimX2):
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        periodinv  = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        I = np.eye((X.shape[1]))
-        dk2_dvariancedx2 = self.dK2_dvariancedX2(X, X2, dimX2)
-        dk_dvariance = self.dK_dvariance(X, X2)
-        ret = -dk2_dvariancedx2*np.pi/2.*lengthscale2inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-        ret[dimX,dimX2] += (dk_dvariance*(np.pi**2)*period2inv[dimX]*lengthscale2inv[dimX]*np.cos(2.*base[dimX,:,:]))[dimX, dimX2]
-        return ret
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
 
-    def dK3_dlengthscaledXdX2(self, X, X2, dimX, dimX2):
-        lengthscaleinv = np.ones(X.shape[1])/(self.lengthscale)
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        lengthscale3inv = np.ones(X.shape[1])/(self.lengthscale**3)
-        lengthscale4inv = np.ones(X.shape[1])/(self.lengthscale**4)
-        lengthscale5inv = np.ones(X.shape[1])/(self.lengthscale**5)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        k = self.variance*exp_dist;
-        dk2_dlengthgthscaledx2 = self.dK2_dlengthscaledX2(X, X2, dimX2)
-        dk_dx2 = self._clean_dK_dX2(X,X2,dimX2)
-        dk_dlengthscale = self.dK_dlengthscale(X, X2)
-        I = np.eye((X.shape[1]))
+        K = self._clean_K(X, X2)
+        dK_dl = self.dK_dlengthscale(X, X2)
+
         if self.ARD2:
-            tmp1 =-dk2_dlengthgthscaledx2*np.pi/2.*lengthscale2inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-            tmp2 = np.zeros_like(tmp1)
-            tmp3 = np.zeros_like(tmp1)
-            tmp4 = np.zeros_like(tmp1)
-            # i = j
-            tmp2 = np.zeros_like(tmp1)
-            tmp2[dimX,:,:] = dk_dx2*np.pi*lengthscale3inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-            if dimX == dimX2: # j = k
-                tmp3 = dk_dlengthscale*(np.pi**2)*lengthscale2inv[dimX]*period2inv[dimX]*np.cos(2.*base[dimX,:,:])
-                # i = j = k
-                tmp4 = np.zeros_like(tmp1)
-                tmp4[dimX,:,:] = -2.*k[:,:]*(np.pi**2)*lengthscale3inv[dimX]*period2inv[dimX]*np.cos(2.*base[dimX,:,:])
-            return tmp1+tmp2+tmp3+tmp4 
+            g = []
+            for diml in range(self.input_dim):
+                term = dK_dl[diml]
+                if diml == dimX:
+                    term -= 2*lengthscaleinv*K
+                g += [-F*np.sin(2*base)*term]
         else:
-            tmp1 = -dk2_dlengthgthscaledx2[dimX2,:,:]*np.pi/2.*lengthscale2inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:]) + dk_dx2*np.pi*lengthscale3inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-            tmp2 = np.zeros_like(tmp1)
-            if dimX == dimX2:
-                tmp2[:,:] = (dk_dlengthscale*(np.pi**2)*lengthscale2inv[dimX]*period2inv[dimX]*np.cos(2.*base[dimX]) -2.*k*(np.pi**2)*lengthscale3inv[dimX]*period2inv[dimX]*np.cos(2.*base[dimX,:,:]))
-            return tmp1+tmp2 
+            g = -F*np.sin(2*base)*(dK_dl - 2*lengthscaleinv*K)
+        return g
 
-    def dK3_dperioddXdX2(self, X, X2, dimX, dimX2):
-        lengthscaleinv = np.ones(X.shape[1])/(self.lengthscale)
-        lengthscale2inv = np.ones(X.shape[1])/(self.lengthscale**2)
-        lengthscale3inv = np.ones(X.shape[1])/(self.lengthscale**3)
-        lengthscale4inv = np.ones(X.shape[1])/(self.lengthscale**4)
-        lengthscale5inv = np.ones(X.shape[1])/(self.lengthscale**5)
-        periodinv = np.ones(X.shape[1])/(self.period)
-        period2inv = np.ones(X.shape[1])/(self.period**2)
-        period3inv = np.ones(X.shape[1])/(self.period**3)
-        period4inv = np.ones(X.shape[1])/(self.period**4)
-        dist = np.rollaxis(X[:, None, :] - X2[None, :, :],2,0)
-        base = np.pi * dist * periodinv[:,None,None]
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale[:,None,None] ), axis = 0 ) )
-        k = self.variance*exp_dist
-        dk2_dperioddx2 = self.dK2_dperioddX2(X, X2, dimX2)
-        dk_dx2 = self._clean_dK_dX2(X, X2, dimX2)
-        dk_dperiod = self.dK_dperiod(X, X2)
-        if self.ARD1:
-            tmp1 = -dk2_dperioddx2*np.pi/2.*lengthscale2inv[dimX]*periodinv[dimX]*np.sin(2.*base[dimX,:,:])
-            tmp2 = np.zeros_like(tmp1)
-            tmp3 = np.zeros_like(tmp1)
-            tmp4 = np.zeros_like(tmp1)
-            # i = j
-            tmp2[dimX,:,:] = dk_dx2[:,:]*(np.pi*lengthscale2inv[dimX]*period2inv[dimX]*np.sin(2.*base[dimX,:,:])/2. + (np.pi**2)*lengthscale2inv[dimX]*period3inv[dimX]*np.cos(2.*base[dimX,:,:])*dist[dimX,:,:])
-            if dimX == dimX2: # j = k
-                tmp3 = dk_dperiod[:,:,:]*(np.pi**2)*period2inv[dimX]*lengthscale2inv[dimX]*np.cos(2.*base[dimX,:,:])
-                # i = j = k
-                tmp4[dimX,:,:] = -2.*k*(np.pi**2)*lengthscale2inv[dimX]*(period3inv[dimX]*np.cos(2.*base[dimX,:,:])-np.pi*period4inv[dimX]*np.sin(2.*base[dimX,:,:])*dist[dimX,:,:])
-            return tmp1+tmp2+tmp3+tmp4
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dlengthscaledX2(self, X, X2, dimX2):
+        """
+        Compute the second derivative(s) of K with respect to:
+            lengthscale(s), and
+            dimension dimX2 of set X2.
+        """
+        dK2_dldX = self.dK2_dlengthscaledX(X, X2, dimX2)
+        if self.ARD2:
+            return [-1*g for g in dK2_dldX]
         else:
-            tmp1 = np.pi*lengthscale2inv[dimX]/2.*(-dk2_dperioddx2*periodinv[dimX]*np.sin(2.*base[dimX,:,:]) + dk_dx2*period2inv[dimX]*np.sin(2.*base[dimX,:,:]) + np.pi*dk_dx2*2.*period3inv[dimX]*np.cos(2.*base[dimX,:,:])*dist[dimX,:,:] )
-            tmp2 = np.zeros_like(tmp1)
-            if dimX == dimX2:            
-                tmp2 = (np.pi**2)*lengthscale2inv[dimX]*period2inv[dimX]*(dk_dperiod*np.cos(2.*base[dimX,:,:]) -2.*k*periodinv[dimX]*np.cos(2.*base[dimX,:,:]) +2.*k*np.sin(2.*base[dimX,:,:])*np.pi*period2inv[dimX]*dist[dimX,:,:] )
-            return tmp1+tmp2
+            return -1*dK2_dldX
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dperioddX(self, X, X2, dimX):
+        """
+        Compute the second derivative(s) of K with respect to:
+            period(s), and
+            dimension dimX of set X.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
+
+        dist = X[:,None,dimX] - X2[None,:,dimX]
+        base = np.pi*periodinv*dist
+
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+
+        K = self._clean_K(X, X2)
+        dK_dT = self.dK_dperiod(X, X2)
+
+        if self.ARD1:
+            g = []
+            for dimT in range(self.input_dim):
+                term = np.sin(2*base)*dK_dT[dimT]
+                if dimT == dimX:
+                    term -= periodinv*(np.sin(2*base)+2*base*np.cos(2*base))*K
+                g += [-F*term]
+        else:
+            term = np.sin(2*base)*dK_dT
+            term -= periodinv*(np.sin(2*base)+2*base*np.cos(2*base))*K
+            g = -F*term
+        return g
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_dperioddX2(self, X, X2, dimX2):
+        """
+        Compute the second derivative(s) of K with respect to:
+            period(s), and
+            dimension dimX2 of set X2.
+        """
+        dK2_dperioddX = self.dK2_dperioddX(X, X2, dimX2)
+        if self.ARD1:
+            return [-1*g for g in dK2_dperioddX]
+        else:
+            return -1*dK2_dperioddX
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dvariancedXdX2(self, X, X2, dimX, dimX2):
+        """
+        Compute the third derivative of K with respect to:
+            variance,
+            dimension dimX of set X, and
+            dimension dimX2 of set X2.
+        """
+        return self._clean_dK2_dXdX2(X, X2, dimX, dimX2)/self.variance
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dlengthscaledXdX2(self, X, X2, dimX, dimX2):
+        """
+        Compute the third derivative(s) of K with respect to:
+            lengthscale(s),
+            dimension dimX of set X, and
+            dimension dimX2 of set X2.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+
+        dist = X[:,None,dimX2] - X2[None,:,dimX2]
+        base = np.pi*periodinv*dist
+
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+
+        dK2_dXdX2 = self._clean_dK2_dXdX2(X, X2, dimX, dimX2)
+        dK_dl = self.dK_dlengthscale(X, X2)
+        dK2_dldX = self.dK2_dlengthscaledX(X, X2, dimX)
+
+        if self.ARD2:
+            g = []
+            for diml in range(self.input_dim):
+                term = np.sin(2*base)*dK2_dldX[diml]
+                if dimX == dimX2:
+                    term += 2*np.pi*periodinv*np.cos(2*base)*dK_dl[diml]
+                term *= F
+                if diml == dimX2:
+                    term -= 2*lengthscaleinv*dK2_dXdX2
+                g += [term]
+        else:
+            term = np.sin(2*base)*dK2_dldX
+            if dimX == dimX2:
+                term += 2*np.pi*periodinv*np.cos(2*base)*dK_dl
+            term *= F
+            term -= 2*lengthscaleinv*dK2_dXdX2
+            g = term
+        return g
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK3_dperioddXdX2(self, X, X2, dimX, dimX2):
+        """
+        Compute the third derivative(s) of K with respect to:
+            period(s),
+            dimension dimX of set X, and
+            dimension dimX2 of set X2.
+        """
+        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+
+        dist = X[:,None,dimX2] - X2[None,:,dimX2]
+        base = np.pi*periodinv*dist
+
+        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+
+        K = self._clean_K(X, X2)
+        dK_dX = self._clean_dK_dX(X, X2, dimX)
+        dK2_dXdX2 = self._clean_dK2_dXdX2(X, X2, dimX, dimX2)
+        dK_dT = self.dK_dperiod(X, X2)
+        dK2_dTdX = self.dK2_dperioddX(X, X2, dimX)
+
+        if self.ARD1:
+            g = []
+            for dimT in range(self.input_dim):
+                term = np.sin(2*base)*dK2_dTdX[dimT]
+                if dimT == dimX2:
+                    term -= 2*periodinv*np.cos(2*base)*base*dK_dX
+                if dimX == dimX2:
+                    term += 2*np.pi*periodinv*np.cos(2*base)*dK_dT[dimT]
+                if dimX == dimX2 == dimT:
+                    term += 2*np.pi*(periodinv**2)*(2*base*np.sin(2*base)-np.cos(2*base))*K
+                term *= F
+                if dimT == dimX2:
+                    term -= periodinv*dK2_dXdX2
+                g += [term]
+        else:
+            term = np.sin(2*base)*dK2_dTdX-2*periodinv*base*np.cos(2*base)*dK_dX
+            if dimX == dimX2:
+                term += 2*np.pi*periodinv*(np.cos(2*base)*dK_dT+periodinv*(2*base*np.sin(2*base)-np.cos(2*base))*K)
+            g = F*term-periodinv*dK2_dXdX2
+        return g
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         """derivative of the covariance matrix with respect to the parameters."""

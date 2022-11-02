@@ -25,8 +25,11 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'dK2_dXdX', _slice_dK2_dXdX2)
         put_clean(dct, 'dK3_dXdXdX2', _slice_dK3_dXdXdX2)
         put_clean(dct, 'Kdiag', _slice_Kdiag)
+        put_clean(dct, 'dK_dXdiag', _slice_dK_dXdiag)
+        put_clean(dct, 'dK_dX2diag', _slice_dK_dXdiag)
         put_clean(dct, 'dK2_dXdX2diag', _slice_dK2_dXdX2diag)
         put_clean(dct, 'dK2_dXdXdiag', _slice_dK2_dXdX2diag)
+        put_clean(dct, 'dK3_dXdXdX2diag', _slice_dK3_dXdXdX2diag)
         put_clean(dct, 'phi', _slice_Kdiag)
         put_clean(dct, 'update_gradients_full', _slice_update_gradients_full)
         put_clean(dct, 'update_gradients_diag', _slice_update_gradients_diag)
@@ -39,10 +42,10 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         put_clean(dct, 'gradients_XX_diag', _slice_gradients_XX_diag)
         put_clean(dct, 'gradients_X_diag', _slice_gradients_X_diag)
 
-        put_clean(dct, 'dgradients',_slice_K)
-        put_clean(dct, 'dgradients_dX',_slice_partial_gradients_list_X)
-        put_clean(dct, 'dgradients_dX2',_slice_partial_gradients_list_X)
-        put_clean(dct, 'dgradients2_dXdX2',_slice_partial_gradients_list_XX)
+        put_clean(dct, 'dgradients', _slice_partial_gradients_list)
+        put_clean(dct, 'dgradients_dX', _slice_partial_gradients_list_X)
+        put_clean(dct, 'dgradients_dX2', _slice_partial_gradients_list_X)
+        put_clean(dct, 'dgradients2_dXdX2', _slice_partial_gradients_list_XX)
 
         put_clean(dct, 'psi0', _slice_psi)
         put_clean(dct, 'psi1', _slice_psi)
@@ -160,6 +163,18 @@ def _slice_dK_dX(f):
         return ret
     return wrap
 
+def _slice_dK_dXdiag(f):
+    @wraps(f)
+    def wrap(self, X, dim, *a, **kw):
+        with _Slice_wrap(self, X, None) as s:
+            d = s.k._project_dim(dim)
+            if d is None:
+                ret = np.zeros(X.shape[0])
+            else:
+                ret = f(self, s.X, dim, *a, **kw)
+        return ret
+    return wrap
+
 def _slice_dK2_dXdX2(f):
     @wraps(f)
     def wrap(self, X, X2, dimX, dimX2, *a, **kw):
@@ -197,6 +212,32 @@ def _slice_dK3_dXdXdX2(f):
                 ret = np.zeros((X.shape[0], X2.shape[0]))
             else:
                 ret = f(self, s.X, s.X2, D, d, d2, *a, **kw)
+        return ret
+    return wrap
+
+def _slice_dK3_dXdXdX2diag(f):
+    @wraps(f)
+    def wrap(self, X, dim, dimX, dimX2, *a, **kw):
+        with _Slice_wrap(self, X, None) as s:
+            D = s.k._project_dim(dim)
+            d = s.k._project_dim(dimX)
+            d2 = s.k._project_dim(dimX2)
+            if (D is None) or (d is None) or (d2 is None):
+                ret = np.zeros(X.shape[0])
+            else:
+                ret = f(self, s.X, D, d, d2, *a, **kw)
+        return ret
+    return wrap
+
+def _slice_partial_gradients_list(f):
+    @wraps(f)
+    def wrap(self, X, X2):
+        if X2 is None:
+            N, M = X.shape[0], X.shape[0]
+        else:
+            N, M = X.shape[0], X2.shape[0]
+        with _Slice_wrap(self, X, X2, ret_shape=(N, M)) as s:
+            ret = f(self, s.X, s.X2)
         return ret
     return wrap
 

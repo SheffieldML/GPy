@@ -18,8 +18,8 @@ class KernWrapper(Kern):
     def K(self, X, X2=None):
         return self.fk(X,X2=X2)
 
-    def dK_dX(self, X, X2, dim_pred_grads):
-        return self.fkdx(X, X2, dim_pred_grads)
+    def dK_dX(self, X, X2, dimX):
+        return self.fkdx(X, X2, dimX)
     
     def update_gradients_full(self,dL_dK, X, X2=None):
         return self.fug(dL_dK, X, X2=X2)

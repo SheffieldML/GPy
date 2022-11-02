@@ -31,18 +31,18 @@ class DiffKern(Kern):
         return self.base_kern.dK2_dXdX2(X,X2, self.dimension, dimX2)
 
     @Cache_this(limit=3, ignore_args=())
-    def dK_dX(self, X, X2, dim_pred_grads, dimX2=None):
+    def dK_dX(self, X, X2, dimX, dimX2=None):
         if dimX2 is None:
             dimX2 = self.dimension
-        return self.base_kern.dK3_dXdXdX2(X, X2, dim_pred_grads, self.dimension, dimX2)
+        return self.base_kern.dK3_dXdXdX2(X, X2, dimX, self.dimension, dimX2)
 
     @Cache_this(limit=3, ignore_args=())
     def Kdiag(self, X):
         return self.base_kern.dK2_dXdX2diag(X, self.dimension, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
-    def dK_dXdiag(self, X, dim_pred_grads):
-        return self.base_kern.dK3_dXdXdX2diag(X, dim_pred_grads, self.dimension)
+    def dK_dXdiag(self, X, dimX):
+        return self.base_kern.dK3_dXdXdX2diag(X, dimX, self.dimension, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX_wrap(self, X, X2): #X in dimension self.dimension
@@ -53,12 +53,12 @@ class DiffKern(Kern):
         return self.base_kern.dK_dX2(X,X2, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
-    def dK2_dXdX2_wrap(self, X, X2, dim_pred_grads):
-        return self.base_kern.dK2_dXdX2(X, X2, dim_pred_grads, self.dimension)
+    def dK2_dXdX2_wrap(self, X, X2, dimX):
+        return self.base_kern.dK2_dXdX2(X, X2, dimX, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
-    def dK2_dXdX_wrap(self, X, X2, dim_pred_grads):
-        return self.base_kern.dK2_dXdX(X, X2, dim_pred_grads, self.dimension)
+    def dK2_dXdX_wrap(self, X, X2, dimX):
+        return self.base_kern.dK2_dXdX(X, X2, dimX, self.dimension)
 
     def reset_gradients(self):
         self.base_kern.reset_gradients()

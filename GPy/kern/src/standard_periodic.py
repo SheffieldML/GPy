@@ -266,12 +266,12 @@ class StdPeriodic(Kern):
         return F*term
 
     @Cache_this(limit=3, ignore_args=())
-    def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1):
+    def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1, dimX2):
         """
         Compute the third derivative of K with respect to:
             dimension dimX_0 of set X,
             dimension dimX_1 of set X, and
-            dimension dimX_1 of set X2.
+            dimension dimX2 of set X2.
 
         Returns only diagonal elements of the covariance matrix.
         """

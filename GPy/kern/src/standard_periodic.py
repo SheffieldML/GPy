@@ -14,7 +14,6 @@ Neural Networks and Machine Learning, pages 133-165. Springer, 1998.
 
 from .kern import Kern
 from ...core.parameterization import Param
-from paramz.caching import Cache_this
 from paramz.transformations import Logexp
 
 import numpy as np
@@ -123,7 +122,6 @@ class StdPeriodic(Kern):
 
         pass
 
-    @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
         """Compute the covariance matrix between X and X2."""
         if X2 is None:
@@ -140,7 +138,6 @@ class StdPeriodic(Kern):
         ret[:] = self.variance
         return ret
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dX(self, X, X2, dimX):
         """
         Compute the derivative of K with respect to:
@@ -156,7 +153,6 @@ class StdPeriodic(Kern):
 
         return -F*np.sin(2*base)*self._clean_K(X, X2)
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dXdiag(self, X, dimX):
         """
         Compute the derivative of K with respect to:
@@ -166,7 +162,6 @@ class StdPeriodic(Kern):
         """
         return np.zeros(X.shape[0])
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dX2(self, X, X2, dimX2):
         """
         Compute the derivative of K with respect to:
@@ -174,7 +169,6 @@ class StdPeriodic(Kern):
         """
         return -self._clean_dK_dX(X, X2, dimX2)
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dX2diag(self, X, dimX2):
         """
         Compute the derivative of K with respect to:
@@ -184,7 +178,6 @@ class StdPeriodic(Kern):
         """
         return np.zeros(X.shape[0])
     
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2(self, X, X2, dimX, dimX2):
         """
         Compute the second derivative of K with respect to:
@@ -204,7 +197,6 @@ class StdPeriodic(Kern):
             term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_K(X, X2)
         return F*term
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2diag(self, X, dimX, dimX2):
         """
         Compute the second derivative of K with respect to:
@@ -220,7 +212,6 @@ class StdPeriodic(Kern):
         else:
             return np.zeros(X.shape[0])
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX(self, X, X2, dimX_0, dimX_1):
         """
         Compute the second derivative of K with respect to:
@@ -229,7 +220,6 @@ class StdPeriodic(Kern):
         """
         return -self._clean_dK2_dXdX2(X, X2, dimX_0, dimX_1)
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dXdXdiag(self, X, dimX_0, dimX_1):
         """
         Compute the second derivative of K with respect to:
@@ -240,7 +230,6 @@ class StdPeriodic(Kern):
         """
         return -self._clean_dK2_dXdX2diag(X, dimX_0, dimX_1)
 
-    @Cache_this(limit=3, ignore_args=())
     def dK3_dXdXdX2(self, X, X2, dimX_0, dimX_1, dimX2):
         """
         Compute the third derivative of K with respect to:
@@ -265,7 +254,6 @@ class StdPeriodic(Kern):
             term -= 4*(np.pi**2)*(periodinv**2)*np.sin(2*base)*self._clean_K(X, X2)
         return F*term
 
-    @Cache_this(limit=3, ignore_args=())
     def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1, dimX2):
         """
         Compute the third derivative of K with respect to:
@@ -277,14 +265,12 @@ class StdPeriodic(Kern):
         """
         return np.zeros(X.shape[0])
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dvariance(self, X, X2):
         """
         Compute the derivative of K with respect to variance.
         """
         return self._clean_K(X, X2)/self.variance
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dlengthscale(self, X, X2):
         """
         Compute the derivative(s) of K with respect to lengthscale(s).
@@ -305,7 +291,6 @@ class StdPeriodic(Kern):
             g = (lengthscaleinv[0]**3)*np.sum(np.square(np.sin(base)), axis=0)*K
         return g
 
-    @Cache_this(limit=3, ignore_args=())
     def dK_dperiod(self, X, X2):
         """
         Compute the derivative(s) of K with respect to period(s).
@@ -326,7 +311,6 @@ class StdPeriodic(Kern):
             g = 0.5*periodinv[0]*np.sum(base*(lengthscaleinv**2)[:,None,None]*np.sin(2*base), axis=0)*K
         return g
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dvariancedX(self, X, X2, dimX):
         """
         Compute the second derivative of K with respect to:
@@ -335,7 +319,6 @@ class StdPeriodic(Kern):
         """
         return self._clean_dK_dX(X, X2, dimX)/self.variance
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dvariancedX2(self, X, X2, dimX2):
         """
         Compute the second derivative of K with respect to:
@@ -344,7 +327,6 @@ class StdPeriodic(Kern):
         """
         return -self.dK2_dvariancedX(X, X2, dimX2)
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dlengthscaledX(self, X, X2, dimX):
         """
         Compute the second derivative(s) of K with respect to:
@@ -373,7 +355,6 @@ class StdPeriodic(Kern):
             g = -F*np.sin(2*base)*(dK_dl - 2*lengthscaleinv*K)
         return g
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dlengthscaledX2(self, X, X2, dimX2):
         """
         Compute the second derivative(s) of K with respect to:
@@ -386,7 +367,6 @@ class StdPeriodic(Kern):
         else:
             return -1*dK2_dldX
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dperioddX(self, X, X2, dimX):
         """
         Compute the second derivative(s) of K with respect to:
@@ -417,7 +397,6 @@ class StdPeriodic(Kern):
             g = -F*term
         return g
 
-    @Cache_this(limit=3, ignore_args=())
     def dK2_dperioddX2(self, X, X2, dimX2):
         """
         Compute the second derivative(s) of K with respect to:
@@ -430,7 +409,6 @@ class StdPeriodic(Kern):
         else:
             return -1*dK2_dperioddX
 
-    @Cache_this(limit=3, ignore_args=())
     def dK3_dvariancedXdX2(self, X, X2, dimX, dimX2):
         """
         Compute the third derivative of K with respect to:
@@ -440,7 +418,6 @@ class StdPeriodic(Kern):
         """
         return self._clean_dK2_dXdX2(X, X2, dimX, dimX2)/self.variance
 
-    @Cache_this(limit=3, ignore_args=())
     def dK3_dlengthscaledXdX2(self, X, X2, dimX, dimX2):
         """
         Compute the third derivative(s) of K with respect to:
@@ -479,7 +456,6 @@ class StdPeriodic(Kern):
             g = term
         return g
 
-    @Cache_this(limit=3, ignore_args=())
     def dK3_dperioddXdX2(self, X, X2, dimX, dimX2):
         """
         Compute the third derivative(s) of K with respect to:

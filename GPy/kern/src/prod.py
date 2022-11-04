@@ -80,10 +80,15 @@ class Prod(CombinationKernel):
         Compute the derivative of K with respect to:
             dimension dimX of set X.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros((X.shape[0], X2.shape[0]))
-        for combination in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
-            to_update = list(set(self.parts) - set(combination))[0]
+        for combination in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination) > 0:
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update = list(set(which_parts) - set(combination))[0]
             prod_sum += prod*to_update.dK_dX(X, X2, dimX)
         return prod_sum
 
@@ -95,10 +100,15 @@ class Prod(CombinationKernel):
 
         Returns only diagonal elements.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros(X.shape[0])
-        for combination in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.Kdiag(X) for p in combination])
-            to_update = list(set(self.parts) - set(combination))[0]
+        for combination in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination) > 0:
+                prod = reduce(np.multiply, [p.Kdiag(X) for p in combination])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update = list(set(which_parts) - set(combination))[0]
             prod_sum += prod*to_update.dK_dXdiag(X, dimX)
         return prod_sum
 
@@ -108,10 +118,15 @@ class Prod(CombinationKernel):
         Compute the derivative of K with respect to:
             dimension dimX2 of set X2.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros((X.shape[0], X2.shape[0]))
-        for combination in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
-            to_update = list(set(self.parts) - set(combination))[0]
+        for combination in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination) > 0:
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update = list(set(which_parts) - set(combination))[0]
             prod_sum += prod*to_update.dK_dX2(X, X2, dimX2)
         return prod_sum
 
@@ -122,18 +137,24 @@ class Prod(CombinationKernel):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros((X.shape[0], X2.shape[0]))
-        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
-            to_update1 = list(set(self.parts) - set(combination1))[0]
+        for combination1 in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination1) > 0:
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update1 = list(set(which_parts) - set(combination1))[0]
             prod_sum += prod*to_update1.dK2_dXdX2(X, X2, dimX, dimX2)
-            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
-                if len(combination2) > 0:
-                    prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
-                else:
-                    prod = np.ones(prod_sum.shape)
-                to_update2 = list(set(combination1) - set(combination2))[0]
-                prod_sum += prod*to_update1.dK_dX(X, X2, dimX)*to_update2.dK_dX2(X, X2, dimX2)
+            if len(which_parts) > 1:
+                for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                    if len(combination2) > 0:
+                        prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
+                    else:
+                        prod = np.ones(prod_sum.shape)
+                    to_update2 = list(set(combination1) - set(combination2))[0]
+                    prod_sum += prod*to_update1.dK_dX(X, X2, dimX)*to_update2.dK_dX2(X, X2, dimX2)
         return prod_sum
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])
@@ -145,18 +166,24 @@ class Prod(CombinationKernel):
 
         Returns only diagonal elements.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros(X.shape[0])
-        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.Kdiag(X) for p in combination1])
-            to_update1 = list(set(self.parts) - set(combination1))[0]
+        for combination1 in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination1) > 0:
+                prod = reduce(np.multiply, [p.Kdiag(X) for p in combination1])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update1 = list(set(which_parts) - set(combination1))[0]
             prod_sum += prod*to_update1.dK2_dXdX2diag(X, dimX, dimX2)
-            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
-                if len(combination2) > 0:
-                    prod = reduce(np.multiply, [p.Kdiag(X) for p in combination2])
-                else:
-                    prod = np.ones(prod_sum.shape)
-                to_update2 = list(set(combination1) - set(combination2))[0]
-                prod_sum += prod*to_update1.dK_dXdiag(X, dimX)*to_update2.dK_dX2diag(X, dimX)
+            if len(which_parts) > 1:
+                for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                    if len(combination2) > 0:
+                        prod = reduce(np.multiply, [p.Kdiag(X) for p in combination2])
+                    else:
+                        prod = np.ones(prod_sum.shape)
+                    to_update2 = list(set(combination1) - set(combination2))[0]
+                    prod_sum += prod*to_update1.dK_dXdiag(X, dimX)*to_update2.dK_dX2diag(X, dimX)
         return prod_sum
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])
@@ -166,18 +193,24 @@ class Prod(CombinationKernel):
             dimension dimX_0 of set X, and
             dimension dimX_1 of set X.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros((X.shape[0], X2.shape[0]))
-        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
-            to_update1 = list(set(self.parts) - set(combination1))[0]
+        for combination1 in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination1) > 0:
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update1 = list(set(which_parts) - set(combination1))[0]
             prod_sum += prod*to_update1.dK2_dXdX(X, X2, dimX_0, dimX_1)
-            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
-                if len(combination2) > 0:
-                    prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
-                else:
-                    prod = np.ones(prod_sum.shape)
-                to_update2 = list(set(combination1) - set(combination2))[0]
-                prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK_dX(X, X2, dimX_1)
+            if len(which_parts) > 1:
+                for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                    if len(combination2) > 0:
+                        prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
+                    else:
+                        prod = np.ones(prod_sum.shape)
+                    to_update2 = list(set(combination1) - set(combination2))[0]
+                    prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK_dX(X, X2, dimX_1)
         return prod_sum
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])
@@ -188,28 +221,34 @@ class Prod(CombinationKernel):
             dimension dimX_1 of set X, and
             dimension dimX2 of set X2.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros((X.shape[0], X2.shape[0]))
-        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
-            to_update1 = list(set(self.parts) - set(combination1))[0]
+        for combination1 in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination1) > 0:
+                prod = reduce(np.multiply, [p.K(X, X2) for p in combination1])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update1 = list(set(which_parts) - set(combination1))[0]
             prod_sum += prod*to_update1.dK3_dXdXdX2(X, X2, dimX_0, dimX_1, dimX2)
-            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
-                if len(combination2) > 0:
-                    prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
-                else:
-                    prod = np.ones(prod_sum.shape)
-                to_update2 = list(set(combination1) - set(combination2))[0]
-                prod_sum += prod*to_update1.dK2_dXdX2(X, X2, dimX_0, dimX2)*to_update2.dK_dX(X, X2, dimX_1)
-                prod_sum += prod*to_update1.dK2_dXdX(X, X2, dimX_0, dimX_1)*to_update2.dK_dX2(X, X2, dimX2)
-                prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK2_dXdX2(X, X2, dimX_1, dimX2)
-                if len(self.parts) > 2:
-                    for combination3 in itertools.combinations(combination2, len(combination2) - 1):
-                        if len(combination3) > 0:
-                            prod = reduce(np.multiply, [p.K(X, X2) for p in combination3])
-                        else:
-                            prod = np.ones(prod_sum.shape)
-                        to_update3 = list(set(combination2) - set(combination3))[0]
-                        prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK_dX2(X, X2, dimX2)*to_update3.dK_dX(X, X2, dimX_1)
+            if len(which_parts) > 1:
+                for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                    if len(combination2) > 0:
+                        prod = reduce(np.multiply, [p.K(X, X2) for p in combination2])
+                    else:
+                        prod = np.ones(prod_sum.shape)
+                    to_update2 = list(set(combination1) - set(combination2))[0]
+                    prod_sum += prod*to_update1.dK2_dXdX2(X, X2, dimX_0, dimX2)*to_update2.dK_dX(X, X2, dimX_1)
+                    prod_sum += prod*to_update1.dK2_dXdX(X, X2, dimX_0, dimX_1)*to_update2.dK_dX2(X, X2, dimX2)
+                    prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK2_dXdX2(X, X2, dimX_1, dimX2)
+                    if len(which_parts) > 2:
+                        for combination3 in itertools.combinations(combination2, len(combination2) - 1):
+                            if len(combination3) > 0:
+                                prod = reduce(np.multiply, [p.K(X, X2) for p in combination3])
+                            else:
+                                prod = np.ones(prod_sum.shape)
+                            to_update3 = list(set(combination2) - set(combination3))[0]
+                            prod_sum += prod*to_update1.dK_dX(X, X2, dimX_0)*to_update2.dK_dX2(X, X2, dimX2)*to_update3.dK_dX(X, X2, dimX_1)
         return prod_sum
 
     @Cache_this(limit=3, force_kwargs=['which_parts'])
@@ -222,28 +261,34 @@ class Prod(CombinationKernel):
 
         Returns only diagonal elements of the covariance matrix.
         """
+        if which_parts is None:
+            which_parts = self.parts
         prod_sum = np.zeros(X.shape[0])
-        for combination1 in itertools.combinations(self.parts, len(self.parts) - 1):
-            prod = reduce(np.multiply, [p.Kdiag(X) for p in combination1])
-            to_update1 = list(set(self.parts) - set(combination1))[0]
+        for combination1 in itertools.combinations(which_parts, len(which_parts) - 1):
+            if len(combination1) > 0:
+                prod = reduce(np.multiply, [p.Kdiag(X) for p in combination1])
+            else:
+                prod = np.ones(prod_sum.shape)
+            to_update1 = list(set(which_parts) - set(combination1))[0]
             prod_sum += prod*to_update1.dK3_dXdXdX2diag(X, dimX_0, dimX_1, dimX2)
-            for combination2 in itertools.combinations(combination1, len(combination1) - 1):
-                if len(combination2) > 0:
-                    prod = reduce(np.multiply, [p.Kdiag(X) for p in combination2])
-                else:
-                    prod = np.ones(prod_sum.shape)
-                to_update2 = list(set(combination1) - set(combination2))[0]
-                prod_sum += prod*to_update1.dK2_dXdX2diag(X, dimX_0, dimX2)*to_update2.dK_dXdiag(X, dimX_1)
-                prod_sum += prod*to_update1.dK2_dXdXdiag(X, dimX_0, dimX_1)*to_update2.dK_dX2diag(X, dimX2)
-                prod_sum += prod*to_update1.dK_dXdiag(X, dimX_0)*to_update2.dK2_dXdX2diag(X, dimX_1, dimX2)
-                if len(self.parts) > 2:
-                    for combination3 in itertools.combinations(combination2, len(combination2) - 1):
-                        if len(combination3) > 0:
-                            prod = reduce(np.multiply, [p.Kdiag(X) for p in combination3])
-                        else:
-                            prod = np.ones(prod_sum.shape)
-                        to_update3 = list(set(combination2) - set(combination3))[0]
-                        prod_sum += prod*to_update1.dK_dXdiag(X, dimX_0)*to_update2.dK_dX2diag(X, dimX2)*to_update3.dK_dXdiag(X, dimX_1)
+            if len(which_parts) > 1:
+                for combination2 in itertools.combinations(combination1, len(combination1) - 1):
+                    if len(combination2) > 0:
+                        prod = reduce(np.multiply, [p.Kdiag(X) for p in combination2])
+                    else:
+                        prod = np.ones(prod_sum.shape)
+                    to_update2 = list(set(combination1) - set(combination2))[0]
+                    prod_sum += prod*to_update1.dK2_dXdX2diag(X, dimX_0, dimX2)*to_update2.dK_dXdiag(X, dimX_1)
+                    prod_sum += prod*to_update1.dK2_dXdXdiag(X, dimX_0, dimX_1)*to_update2.dK_dX2diag(X, dimX2)
+                    prod_sum += prod*to_update1.dK_dXdiag(X, dimX_0)*to_update2.dK2_dXdX2diag(X, dimX_1, dimX2)
+                    if len(which_parts) > 2:
+                        for combination3 in itertools.combinations(combination2, len(combination2) - 1):
+                            if len(combination3) > 0:
+                                prod = reduce(np.multiply, [p.Kdiag(X) for p in combination3])
+                            else:
+                                prod = np.ones(prod_sum.shape)
+                            to_update3 = list(set(combination2) - set(combination3))[0]
+                            prod_sum += prod*to_update1.dK_dXdiag(X, dimX_0)*to_update2.dK_dX2diag(X, dimX2)*to_update3.dK_dXdiag(X, dimX_1)
         return prod_sum
 
     def update_gradients_direct(self, *args):
@@ -251,56 +296,82 @@ class Prod(CombinationKernel):
             p.update_gradients_direct(*g)
 
     def dgradients_dX(self, X, X2, dimX, parts=None):
+        """
+        Compute the hyperparameter gradients of:
+            the derivative of K with respect to dimension dimX of set X
+            ("dK_dX").
+        """
         if parts is None:
-            parts=self.parts
+            parts = self.parts
         gradients = []
         for part in parts:
-            dgradients_i = part.dgradients(X, X2)
-            dgradients_dX_i = part.dgradients_dX(X, X2, dimX)
             neq_parts = [p for p in parts if p is not part]
-            if len(neq_parts)>0:
-                K_rest = self.K(X,X2, which_parts = neq_parts)
-                K_rest_dX = self.dK_dX(X,X2,dimX, which_parts=neq_parts)
+
+            if len(neq_parts) > 0:
+                K = self.K(X, X2, which_parts=neq_parts)
+                K_dx = self.dK_dX(X, X2, dimX, which_parts=neq_parts)
             else:
-                K_rest = np.ones((X.shape[0], X2.shape[0]))
-                K_res_dX = np.zeros((X.shape[0], X2.shape[0]))
-            gradients += [ [ g_dX*K_rest + g*K_rest_dX   for i, (g,g_dX) in enumerate(zip(dgradients_i, dgradients_dX_i))] ]
+                K = np.ones((X.shape[0], X2.shape[0]))
+                K_dx = np.zeros((X.shape[0], X2.shape[0]))
+
+            g = part.dgradients(X, X2)
+            g_dx = part.dgradients_dX(X, X2, dimX)
+
+            gradients += [[(g_i*K_dx + g_dx_i*K) for (g_i, g_dx_i) in zip(g, g_dx)]]
             
         return gradients
 
     def dgradients_dX2(self, X, X2, dimX2, parts=None):
+        """
+        Compute the hyperparameter gradients of:
+            the derivative of K with respect to dimension dimX2 of set X2
+            ("dK_dX2").
+        """
         if parts is None:
-            parts=self.parts
+            parts = self.parts
         gradients = []
         for part in parts:
-            dgradients_i = part.dgradients(X, X2)
-            dgradients_dX_i = part.dgradients_dX2(X, X2, dimX2)
             neq_parts = [p for p in parts if p is not part]
-            if len(neq_parts)>0:
-                K_rest = self.K(X,X2, which_parts = neq_parts)
-                K_rest_dX = self.dK_dX(X,X2,dimX2, which_parts=neq_parts)
+
+            if len(neq_parts) > 0:
+                K = self.K(X, X2, which_parts=neq_parts)
+                K_dx2 = self.dK_dX2(X, X2, dimX2, which_parts=neq_parts)
             else:
-                K_rest = np.ones((X.shape[0], X2.shape[0]))
-                K_res_dX = np.zeros((X.shape[0], X2.shape[0]))
-            gradients += [ [ g_dX*K_rest + g*K_rest_dX   for g, g_dX in zip(dgradients_i, dgradients_dX_i)] ]
+                K = np.ones((X.shape[0], X2.shape[0]))
+                K_dx2 = np.zeros((X.shape[0], X2.shape[0]))
+
+            g = part.dgradients(X, X2)
+            g_dx2 = part.dgradients_dX2(X, X2, dimX2)
+
+            gradients += [[(g_i*K_dx2 + g_dx2_i*K) for (g_i, g_dx2_i) in zip(g, g_dx2)]]
             
         return gradients
 
     def dgradients2_dXdX2(self, X, X2, dimX, dimX2, parts=None):
+        """
+        Compute the hyperparameter gradients of:
+            the second derivative of K with respect to:
+                dimension dimX of set X, and
+                dimension dimX2 of set X2
+            ("dK2_dXdX2").
+        """
         if parts is None:
-            parts=self.parts
+            parts = self.parts
         gradients = []
         for part in parts:
-            g_dxdx2 = part.dgradients2_dXdX2(X,X2,dimX,dimX2)
-            g_dx = part.dgradients_dX(X,X2,dimX)
-            g_dx2 = part.dgradients_dX2(X,X2,dimX2)
-            g = part.dgradients(X, X2)
-            neq_parts = [p for p in self.parts if p is not part]
+            neq_parts = [p for p in parts if p is not part]
+
+            K = self.K(X, X2, which_parts=neq_parts)
+            K_dx = self.dK_dX(X, X2, dimX, which_parts=neq_parts)
+            K_dx2 = self.dK_dX2(X, X2, dimX2, which_parts=neq_parts)
             K_dxdx2 = self.dK2_dXdX2(X, X2, dimX, dimX2, which_parts=neq_parts)
-            K_dx = self.dK_dX(X,X2,dimX, which_parts=neq_parts)
-            K_dx2 = self.dK_dX2(X,X2,dimX2, which_parts=neq_parts)
-            K = self.K(X, X2)
-            gradients += [[ g_i*K_dxdx2 + g_dx_i*K_dx2 + g_dx2_i*K_dx + g_dxdx2_i*K for g_i, g_dx_i, g_dx2_i, g_dxdx2_i in zip(g, g_dx, g_dx2, g_dxdx2)]]
+
+            g = part.dgradients(X, X2)
+            g_dx = part.dgradients_dX(X, X2, dimX)
+            g_dx2 = part.dgradients_dX2(X, X2, dimX2)
+            g_dxdx2 = part.dgradients2_dXdX2(X, X2, dimX, dimX2)
+
+            gradients += [[(g_i*K_dxdx2 + g_dx_i*K_dx2 + g_dx2_i*K_dx + g_dxdx2_i*K) for (g_i, g_dx_i, g_dx2_i, g_dxdx2_i) in zip(g, g_dx, g_dx2, g_dxdx2)]]
         return gradients
 
     def update_gradients_full(self, dL_dK, X, X2=None):

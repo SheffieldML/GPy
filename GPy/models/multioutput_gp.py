@@ -9,6 +9,7 @@ from ..core.mapping import Mapping
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
 from .. import kern
+from ..kern import DiffKern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from ..util.normalizer import Standardize
 from .. import util
@@ -99,12 +100,33 @@ class MultioutputGP(GP):
         if kern is None:
             kern = self.kern
 
-        if all([(k.name == 'DiffKern') for k in self.kern.kern[1:]]):
+        if all([(isinstance(k, DiffKern)) for k in self.kern.kern[1:]]):
             """
-            Predictive gradients for models that observe gradients.
+            Compute the gradients of the predicted latent function and predicted
+            partial derivatives with respect to X*.
+
+            This works only for models that observe the gradient of the latent function.
+
+            Xnew is given as a list of arrays, where each array X*_i (size [N_i*, Q])
+            contains points at which to compute gradients for each predicted latent
+            function or partial derivative.
+
+            Resulting arrays are sized [sum_i^D : N_i*, Q]
+
+            Passing a list of only one array [X*] returns only gradients of
+            the predicted latent function and does not compute gradients of
+            predicted partial derivatives.
+
+            In this case the resulting arrays are sized [N*, Q].
+            
+            :param Xnew: points at which to compute predictive gradients
+            :type Xnew: list
+            :type Xnew[i]: np.darray (sum_i^D : N_i*, Q)
+            :returns: dmu_dX, dv_dX
+            :rtype: (np.ndarray (sum_i^D : N_i*, Q), np.ndarray (sum_i^D : N_i*, Q))
             """
 
-            dims = Xnew.shape[1]-1
+            dims = Xnew.shape[1] - 1
 
             mean_jac = np.empty((Xnew.shape[0], dims))
             var_jac = np.empty((Xnew.shape[0], dims))
@@ -113,9 +135,13 @@ class MultioutputGP(GP):
             alpha = self.posterior.woodbury_vector
             Wi = self.posterior.woodbury_inv
 
-            for dim_pred_grads in range(dims):
-                mean_jac[:,dim_pred_grads] = np.dot(kern.dK_dX(Xnew, X, dim_pred_grads), alpha).flatten()
-                var_jac[:,dim_pred_grads] = kern.dK_dXdiag(Xnew, dim_pred_grads) - 2 * (np.dot(kern.K(Xnew, X), Wi) * kern.dK_dX(Xnew, X, dim_pred_grads)).sum(-1)
+            k = kern.K(Xnew, X)
+            for dimX in range(dims):
+                dk_dx = kern.dK_dX(Xnew, X, dimX)
+                dk_dxdiag = kern.dK_dXdiag(Xnew, dimX)
+
+                mean_jac[:,dimX] = np.dot(dk_dx, alpha).flatten()
+                var_jac[:,dimX] = dk_dxdiag - 2*(np.dot(k, Wi)*dk_dx).sum(-1)
             return mean_jac, var_jac
 
         mean_jac = np.empty((Xnew.shape[0],Xnew.shape[1]-1,self.output_dim))

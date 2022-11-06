@@ -23,12 +23,12 @@ class DiffKern(Kern):
         self.base_kern.parameters_changed()
 
     @Cache_this(limit=3, ignore_args=())
-    def K(self, X, X2=None, dimX2 = None): #X in dimension self.dimension
+    def K(self, X, X2=None, dimX2=None): #X in dimension self.dimension
         if X2 is None:
             X2 = X
         if dimX2 is None:
             dimX2 = self.dimension
-        return self.base_kern.dK2_dXdX2(X,X2, self.dimension, dimX2)
+        return self.base_kern.dK2_dXdX2(X, X2, self.dimension, dimX2)
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX(self, X, X2, dimX, dimX2=None):
@@ -46,11 +46,11 @@ class DiffKern(Kern):
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX_wrap(self, X, X2): #X in dimension self.dimension
-        return self.base_kern.dK_dX(X,X2, self.dimension)
+        return self.base_kern.dK_dX(X, X2, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX2_wrap(self, X, X2): #X in dimension self.dimension
-        return self.base_kern.dK_dX2(X,X2, self.dimension)
+        return self.base_kern.dK_dX2(X, X2, self.dimension)
 
     @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2_wrap(self, X, X2, dimX):
@@ -74,32 +74,32 @@ class DiffKern(Kern):
     def update_gradients_full(self, dL_dK, X, X2=None, dimX2=None):
         if dimX2 is None:
             dimX2 = self.dimension
-        gradients = self.base_kern.dgradients2_dXdX2(X,X2,self.dimension,dimX2)
+        gradients = self.base_kern.dgradients2_dXdX2(X, X2, self.dimension, dimX2)
         self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
 
     def update_gradients_diag(self, dL_dK_diag, X):
-        gradients = self.base_kern.dgradients2_dXdX2(X,X, self.dimension, self.dimension)
+        gradients = self.base_kern.dgradients2_dXdX2(X, X, self.dimension, self.dimension)
         self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK_diag, gradient, f=np.diag) for gradient in gradients])
 
     def update_gradients_dK_dX(self, dL_dK, X, X2=None):
         if X2 is None:
             X2 = X
-        gradients = self.base_kern.dgradients_dX(X,X2, self.dimension)
+        gradients = self.base_kern.dgradients_dX(X, X2, self.dimension)
         self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
 
     def update_gradients_dK_dX2(self, dL_dK, X, X2=None):
-        gradients = self.base_kern.dgradients_dX2(X,X2, self.dimension)
+        gradients = self.base_kern.dgradients_dX2(X, X2, self.dimension)
         self.base_kern.update_gradients_direct(*[self._convert_gradients(dL_dK, gradient) for gradient in gradients])
 
     def gradients_X(self, dL_dK, X, X2):
-        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:,:,:, self.dimension]
+        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:,:,:,self.dimension]
         return np.sum(tmp, axis=1)
     
     def gradients_X2(self, dL_dK, X, X2):
-        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:, :, self.dimension, :]
+        tmp = self.base_kern.gradients_XX(dL_dK, X, X2)[:,:,self.dimension,:]
         return np.sum(tmp, axis=1)
 
-    def _convert_gradients(self, l,g, f = lambda x:x):
+    def _convert_gradients(self, l, g, f=lambda x:x):
         if type(g) is np.ndarray:
             return np.sum(f(l)*f(g))
         else:

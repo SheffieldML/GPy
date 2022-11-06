@@ -7,24 +7,24 @@ import numpy as np
 from functools import partial
 
 class KernWrapper(Kern):
-    def __init__(self, fk, fug, fg, fkdx, base_kern):
+    def __init__(self, fk, fdk, fug, fg, base_kern):
         self.fk = fk
+        self.fdk = fdk
         self.fug = fug
         self.fg = fg
-        self.fkdx = fkdx
         self.base_kern = base_kern
-        super(KernWrapper, self).__init__(base_kern.active_dims.size, base_kern.active_dims, name='KernWrapper',useGPU=False)
+        super(KernWrapper, self).__init__(base_kern.active_dims.size, base_kern.active_dims, name='KernWrapper', useGPU=False)
 
     def K(self, X, X2=None):
-        return self.fk(X,X2=X2)
+        return self.fk(X, X2=X2)
 
     def dK_dX(self, X, X2, dimX):
-        return self.fkdx(X, X2, dimX)
+        return self.fdk(X, X2, dimX)
     
-    def update_gradients_full(self,dL_dK, X, X2=None):
+    def update_gradients_full(self, dL_dK, X, X2=None):
         return self.fug(dL_dK, X, X2=X2)
     
-    def gradients_X(self,dL_dK, X, X2=None):
+    def gradients_X(self, dL_dK, X, X2=None):
         return self.fg(dL_dK, X, X2=X2)
 
     @property
@@ -61,24 +61,42 @@ class MultioutputDerivativeKern(MultioutputKern):
         #build covariance structure
         covariance = [[None for i in range(nl)] for j in range(nl)]
         linked = []
-        for i in range(0,nl):
-            unique=True
-            for j in range(0,nl):
-                if i==j or (kernels[i] is kernels[j]):
+        for i in range(0, nl):
+            unique = True
+            for j in range(0, nl):
+                if (i == j) or (kernels[i] is kernels[j]):
                     kern = kernels[i]
-                    if i>j:
-                        unique=False
+                    if i > j:
+                        unique = False
                 elif cross_covariances.get((i,j)) is not None: #cross covariance is given
                     kern = cross_covariances.get((i,j))
-                elif kernels[i].name == 'DiffKern' and kernels[i].base_kern == kernels[j]: # one is derivative of other
-                    kern = KernWrapper(kernels[i].dK_dX_wrap,kernels[i].update_gradients_dK_dX,kernels[i].gradients_X,kernels[i].dK2_dXdX_wrap, kernels[j])
+                elif (kernels[i].name == 'DiffKern') and (kernels[i].base_kern == kernels[j]): # one is derivative of other
+                    kern = KernWrapper(
+                        kernels[i].dK_dX_wrap,
+                        kernels[i].dK2_dXdX_wrap,
+                        kernels[i].update_gradients_dK_dX,
+                        kernels[i].gradients_X,
+                        kernels[j]
+                        )
                     unique=False
-                elif kernels[j].name == 'DiffKern' and kernels[j].base_kern == kernels[i]: # one is derivative of other
-                    kern = KernWrapper(kernels[j].dK_dX2_wrap,kernels[j].update_gradients_dK_dX2,kernels[j].gradients_X2,kernels[j].dK2_dXdX2_wrap, kernels[i])
-                elif kernels[i].name == 'DiffKern' and kernels[j].name == 'DiffKern' and kernels[i].base_kern == kernels[j].base_kern: #both are partial derivatives
-                    kern = KernWrapper(partial(kernels[i].K, dimX2=kernels[j].dimension), partial(kernels[i].update_gradients_full, dimX2=kernels[j].dimension),None, partial(kernels[i].dK_dX, dimX2=kernels[j].dimension), kernels[i].base_kern)
-                    if i>j:
-                        unique=False
+                elif (kernels[j].name == 'DiffKern') and (kernels[j].base_kern == kernels[i]): # one is derivative of other
+                    kern = KernWrapper(
+                        kernels[j].dK_dX2_wrap,
+                        kernels[j].dK2_dXdX2_wrap,
+                        kernels[j].update_gradients_dK_dX2,
+                        kernels[j].gradients_X2,
+                        kernels[i]
+                        )
+                elif (kernels[i].name == 'DiffKern') and (kernels[j].name == 'DiffKern') and (kernels[i].base_kern == kernels[j].base_kern): #both are partial derivatives
+                    kern = KernWrapper(
+                        partial(kernels[i].K, dimX2=kernels[j].dimension),
+                        partial(kernels[i].dK_dX, dimX2=kernels[j].dimension),
+                        partial(kernels[i].update_gradients_full, dimX2=kernels[j].dimension),
+                        None,
+                        kernels[i].base_kern
+                        )
+                    if i > j:
+                        unique = False
                 else:
                     kern = ZeroKern()
                 covariance[i][j] = kern

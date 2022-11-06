@@ -90,34 +90,58 @@ class MultioutputKern(CombinationKernel):
             X2 = X
         slices = index_to_slices(X[:,self.index_dim])
         slices2 = index_to_slices(X2[:,self.index_dim])
+
         target =  np.zeros((X.shape[0], X2.shape[0]))
-        [[[[ target.__setitem__((slices[i][k],slices2[j][l]), self.covariance[i][j].K(X[slices[i][k],:],X2[slices2[j][l],:])) for k in range( len(slices[i]))] for l in range(len(slices2[j])) ] for i in range(len(slices))] for j in range(len(slices2))]
+        for j in range(len(slices2)):
+            for i in range(len(slices)):
+                for l in range(len(slices2[j])):
+                    for k in range(len(slices[i])):
+                        cov_K = self.covariance[i][j].K(X[slices[i][k],:], X2[slices2[j][l],:])
+                        target.__setitem__((slices[i][k], slices2[j][l]), cov_K)
+        return target
+
+    @Cache_this(limit=3, ignore_args=())
+    def Kdiag(self, X):
+        slices = index_to_slices(X[:,self.index_dim])
+        kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
+        target = np.zeros(X.shape[0])
+        for kern, slices_i in zip(kerns, slices):
+            for s in slices_i:
+                np.copyto(target[s], kern.Kdiag(X[s]))
         return target
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX(self, X, X2, dimX):
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX of set X.
+        """
         if X2 is None:
             X2 = X
         slices = index_to_slices(X[:,self.index_dim])
         slices2 = index_to_slices(X2[:,self.index_dim])
-        target =  np.zeros((X.shape[0], X2.shape[0]))
-        [[[[ target.__setitem__((slices[i][k],slices2[j][l]), self.covariance[i][j].dK_dX(X[slices[i][k],:],X2[slices2[j][l],:],dimX)) for k in range( len(slices[i]))] for l in range(len(slices2[j])) ] for i in range(len(slices))] for j in range(len(slices2))]
-        return target
 
-    @Cache_this(limit=3, ignore_args=())
-    def Kdiag(self,X):
-        slices = index_to_slices(X[:,self.index_dim])
-        kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
-        target = np.zeros(X.shape[0])
-        [[np.copyto(target[s], kern.Kdiag(X[s])) for s in slices_i] for kern, slices_i in zip(kerns, slices)]
+        target =  np.zeros((X.shape[0], X2.shape[0]))
+        for j in range(len(slices2)):
+            for i in range(len(slices)):
+                for l in range(len(slices2[j])):
+                    for k in range(len(slices[i])):
+                        cov_dK_dX = self.covariance[i][j].dK_dX(X[slices[i][k],:], X2[slices2[j][l],:], dimX)
+                        target.__setitem__((slices[i][k], slices2[j][l]), cov_dK_dX)
         return target
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dXdiag(self, X, dimX):
+        """
+        Compute the derivative of K with respect to:
+            dimension dimX of set X.
+        """
         slices = index_to_slices(X[:,self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         target = np.zeros(X.shape[0])
-        [[np.copyto(target[s], kern.dK_dXdiag(X[s], dimX)) for s in slices_i] for kern, slices_i in zip(kerns, slices)]
+        for kern, slices_i in zip(kerns, slices):
+            for s in slices_i:
+                np.copyto(target[s], kern.dK_dXdiag(X[s], dimX))
         return target
     
     def _update_gradients_full_wrapper(self, kern, dL_dK, X, X2):
@@ -133,19 +157,38 @@ class MultioutputKern(CombinationKernel):
     def reset_gradients(self):
         for kern in self.kern: kern.reset_gradients()
 
-    def update_gradients_full(self,dL_dK, X, X2=None):
-        self.reset_gradients()
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        if X2 is None:
+            X2 = X
         slices = index_to_slices(X[:,self.index_dim])
-        if X2 is not None:
-            slices2 = index_to_slices(X2[:,self.index_dim])
-            [[[[ self._update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices2[j][l]], X[slices[i][k],:], X2[slices2[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices2[j]))] for i in range(len(slices))] for j in range(len(slices2))]
-        else:
-            [[[[ self._update_gradients_full_wrapper(self.covariance[i][j], dL_dK[slices[i][k],slices[j][l]], X[slices[i][k],:], X[slices[j][l],:]) for k in range(len(slices[i]))] for l in range(len(slices[j]))] for i in range(len(slices))] for j in range(len(slices))]
-            
+        slices2 = index_to_slices(X2[:,self.index_dim])
+
+        self.reset_gradients()
+        for j in range(len(slices2)):
+            for i in range(len(slices)):
+                for l in range(len(slices2[j])):
+                    for k in range(len(slices[i])):
+                        self._update_gradients_full_wrapper(
+                            self.covariance[i][j],
+                            dL_dK[slices[i][k],slices2[j][l]],
+                            X[slices[i][k],:],
+                            X2[slices2[j][l],:]
+                            )
+
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.reset_gradients()
+        if X2 is None:
+            X2 = X
         slices = index_to_slices(X[:,self.index_dim])
-        [[ self._update_gradients_diag_wrapper(self.covariance[i][i], dL_dKdiag[slices[i][k]], X[slices[i][k],:]) for k in range(len(slices[i]))] for i in range(len(slices))]
+        slices2 = index_to_slices(X2[:,self.index_dim])
+
+        self.reset_gradients()
+        for i in range(len(slices)):
+            for k in range(len(slices[i])):
+                self._update_gradients_diag_wrapper(
+                    self.covariance[i][i],
+                    dL_dKdiag[slices[i][k]],
+                    X[slices[i][k],:]
+                    )
     
     def gradients_X(self,dL_dK, X, X2=None):
         slices = index_to_slices(X[:,self.index_dim])

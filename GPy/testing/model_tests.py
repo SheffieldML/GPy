@@ -5,6 +5,8 @@ from __future__ import division
 import unittest
 import numpy as np
 import GPy
+from GPy.models import GradientChecker
+from functools import reduce
 
 class MiscTests(unittest.TestCase):
     def setUp(self):
@@ -1208,40 +1210,6 @@ class GradientTests(np.testing.TestCase):
 
         with self.assertRaises(RuntimeError):
             m._raw_posterior_covariance_between_points(np.array([[1], [2]]), np.array([[3], [4]]))
-    
-    def test_multioutput_model_with_derivative_observations(self):
-        f = lambda x: np.sin(x)+0.1*(x-2.)**2-0.005*x**3
-        fd = lambda x: np.cos(x)+0.2*(x-2.)-0.015*x**2
-        N=10
-        M=10
-        sigma=0.05
-        sigmader=0.05
-        x = np.array([np.linspace(1,10,N)]).T
-        y = f(x) + np.array(sigma*np.random.normal(0,1,(N,1)))
-
-        xd = np.array([np.linspace(2,8,M)]).T
-        yd = fd(xd) + np.array(sigmader*np.random.normal(0,1,(M,1)))
-
-        # squared exponential kernel:
-        se = GPy.kern.RBF(input_dim = 1, lengthscale=1.5, variance=0.2)
-        # We need to generate separate kernel for the derivative observations and give the created kernel as an input:
-        se_der = GPy.kern.DiffKern(se, 0)
-
-        #Then 
-        gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
-        gauss = GPy.likelihoods.Gaussian(variance=0.1)
-        gauss_der = GPy.likelihoods.Gaussian(variance=sigma**2)
-
-        # Then create the model, we give everything in lists, the order of the inputs indicates the order of the outputs
-        # Now we have the regular observations first and derivative observations second, meaning that the kernels and
-        # the likelihoods must follow the same order
-        m = GPy.models.MultioutputGP(X_list=[x, xd], Y_list=[y, yd], kernel_list=[se, se_der], likelihood_list = [gauss, gauss])
-        m.randomize()
-        self.assertTrue(m.checkgrad())
-
-        m.optimize(messages=0, ipython_notebook=False)
-
-        self.assertTrue(m.checkgrad())
 
     def test_multioutput_model_with_ep(self):
         f = lambda x: np.sin(x)+0.1*(x-2.)**2-0.005*x**3
@@ -1308,6 +1276,148 @@ class GradientTests(np.testing.TestCase):
         c2 = model.predict(x, full_cov=True)[1]
         np.testing.assert_allclose(c1,c2)
 
+class GradientObservingModelTests(np.testing.TestCase):
+    def setUp(self):
+
+        # standard test function
+        self.period = 2
+        self.bounds = (-3, 3)
+        self.f = lambda x: np.sum(np.sin((2*np.pi/self.period)*x), axis=1)
+        self.df = lambda x: (2*np.pi/self.period)*np.cos(x)
+        self.noise_std = 1e-3
+
+        self.train_points = 5
+        self.test_points = 100
+
+    def check_model(self, kern):
+        '''
+        Checks hyperparameter, predicted mean, and predicted variance gradients
+        of a model that observes gradient of the latent function.
+        '''
+
+        D = kern.input_dim
+
+        X_list = []
+        Y_list = []
+        for i in range(D + 1):
+            # sample inputs for either latent function or partial derivatives
+            X_i = np.random.uniform(*self.bounds, size=(self.train_points, D))
+            # output of latent function or partial derivatives
+            Y_i = (self.f(X_i) if (i == 0) else self.df(X_i)[:,i - 1])[:,None]
+            # noisy observations
+            Y_i += np.random.normal(scale=self.noise_std, size=Y_i.shape)
+
+            X_list.append(X_i)
+            Y_list.append(Y_i)
+
+        # the kernel is accompanied with derivative kernels, one for each dimension
+        kernel_list = [kern] + [GPy.kern.DiffKern(kern, d) for d in range(D)]
+
+        # create model and check its hyperparameter gradient
+        likelihood_list = [GPy.likelihoods.Gaussian(variance=self.noise_std**2)]*(D + 1)
+        model = GPy.models.MultioutputGP(X_list, Y_list, kernel_list, likelihood_list)
+        self.assertTrue(model.checkgrad())
+
+        # optimize the model, and check its hyperparameter gradient again
+        model.optimize()
+        self.assertTrue(model.checkgrad())
+
+        # test input for checking predictive gradients
+        ppa = int(np.round(np.power(self.test_points, 1/D))) # points per axis
+        grid = np.meshgrid(*[np.linspace(*self.bounds, ppa) for d in range(D)])
+        x_test = np.vstack(tuple([grid[i].ravel() for i in range(len(grid))])).T
+
+        # checker for gradient of posterior mean
+        post_mean_grad_checker = GradientChecker(
+            lambda x: model.predict([x])[0],
+            lambda x: model.predictive_gradients([x])[0],
+            x_test
+        )
+        self.assertTrue(post_mean_grad_checker.checkgrad())
+
+        # checker for gradient of posterior variance
+        post_var_grad_checker = GradientChecker(
+            lambda x: model.predict([x])[1],
+            lambda x: model.predictive_gradients([x])[1],
+            x_test
+        )
+        self.assertTrue(post_var_grad_checker.checkgrad())
+
+    def test_MultioutputGP_gradobs_RBF(self):
+        '''
+        Testing gradient observing MultioutputGP model with an RBF kernel.
+        '''
+        for D in range(1, 4):
+            kern = GPy.kern.RBF(input_dim=D)
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_RBF_ARD(self):
+        '''
+        Testing gradient observing MultioutputGP model with an RBF (ARD) kernel.
+        '''
+        for D in range(1, 4):
+            kern = GPy.kern.RBF(input_dim=D, ARD=True)
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_StdP(self):
+        '''
+        Testing gradient observing MultioutputGP model with a StdP kernel.
+        '''
+        for D in range(1, 4):
+            kern = GPy.kern.StdPeriodic(input_dim=D, period=self.period)
+            kern.period.constrain_fixed()
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_StdP_ARD(self):
+        '''
+        Testing gradient observing MultioutputGP model with a StdP (ARD) kernel.
+        '''
+        for D in range(1, 4):
+            kern = GPy.kern.StdPeriodic(input_dim=D, period=[self.period]*D, ARD1=True, ARD2=True)
+            kern.period.constrain_fixed()
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_prod_RBF(self):
+        '''
+        Testing gradient observing MultioutputGP model with several RBF kernels.
+        '''
+        for D in range(2, 5):
+            kerns = [GPy.kern.RBF(input_dim=1) for d in range(D)]
+            kern = reduce(lambda k0, k1: k0 * k1, kerns)
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_prod_StdP(self):
+        '''
+        Testing gradient observing MultioutputGP model with several StdP kernels.
+        '''
+        for D in range(2, 5):
+            kerns = [GPy.kern.StdPeriodic(input_dim=1, period=self.period) for d in range(D)]
+            kern = reduce(lambda k0, k1: k0 * k1, kerns)
+            [k.period.constrain_fixed() for k in kern.parts]
+            kern.randomize()
+            self.check_model(kern)
+
+    def test_MultioutputGP_gradobs_prod_mix(self):
+        '''
+        Testing gradient observing MultioutputGP model with a mix of kernel types.
+        '''
+        for D in range(2, 5):
+            kerns = []
+            for d in range(D):
+                if d % 2 == 0:
+                    k = GPy.kern.RBF(input_dim=1)
+                else:
+                    k = GPy.kern.StdPeriodic(input_dim=1, period=self.period)
+                    k.period.constrain_fixed()
+                kerns.append(k)
+            kern = reduce(lambda k0, k1: k0 * k1, kerns)
+            kern.randomize()
+            self.check_model(kern)
 
 def _create_missing_data_model(kernel, Q):
     D1, D2, D3, N, num_inducing = 13, 5, 8, 400, 3

@@ -1276,7 +1276,7 @@ class GradientTests(np.testing.TestCase):
         c2 = model.predict(x, full_cov=True)[1]
         np.testing.assert_allclose(c1,c2)
 
-class GradientObservingModelTests(np.testing.TestCase):
+class GradientMultioutputGPTests(np.testing.TestCase):
     def setUp(self):
 
         # standard test function
@@ -1287,12 +1287,40 @@ class GradientObservingModelTests(np.testing.TestCase):
         self.noise_std = 1e-3
 
         self.train_points = 5
-        self.test_points = 100
+        self.test_points = 25
+
+    def approximate_predictive_gradients(self, model, x_test, D, epsilon=1e-6):
+        '''
+        Approximates gradients of predicted posterior means and variances.
+
+        This function is used as the frameworks for GradientChecker and
+        MultioutputGP do not easily combine when checking gradients of predicted
+        partial derivative posteriors.
+        '''
+
+        dmdx_aprx = np.zeros((x_test.shape[0]*(D + 1), D))
+        dvdx_aprx = np.zeros((x_test.shape[0]*(D + 1), D))
+
+        for d in range(D):
+
+            x_over = x_test.copy()
+            x_over[:,d] += epsilon
+            x_undr = x_test.copy()
+            x_undr[:,d] -= epsilon
+
+            m_over, v_over = model.predict([x_over]*(D + 1))
+            m_undr, v_undr = model.predict([x_undr]*(D + 1))
+
+            dmdx_aprx[:,d,None] = (m_over - m_undr)/(2*epsilon)
+            dvdx_aprx[:,d,None] = (v_over - v_undr)/(2*epsilon)
+
+        return dmdx_aprx, dvdx_aprx
 
     def check_model(self, kern):
         '''
-        Checks hyperparameter, predicted mean, and predicted variance gradients
-        of a model that observes gradient of the latent function.
+        Checks predictions, hyperparameter gradients, and gradients of predicted
+        posterior means and variances for MultioutputGP models that incorporate
+        observed latent function gradient information.
         '''
 
         D = kern.input_dim
@@ -1326,26 +1354,16 @@ class GradientObservingModelTests(np.testing.TestCase):
         # check predictions
         np.testing.assert_allclose(model.predict(X_list)[0], model.Y, atol=self.noise_std)
 
-        # test input for checking predictive gradients
-        ppa = int(np.round(np.power(self.test_points, 1/D))) # points per axis
-        grid = np.meshgrid(*[np.linspace(*self.bounds, ppa) for d in range(D)])
-        x_test = np.vstack(tuple([grid[i].ravel() for i in range(len(grid))])).T
+        # test inputs for checking predictive gradients
+        x_test = np.random.uniform(*self.bounds, size=(self.test_points, D))
 
-        # checker for gradient of posterior mean
-        post_mean_grad_checker = GradientChecker(
-            lambda x: model.predict([x])[0],
-            lambda x: model.predictive_gradients([x])[0],
-            x_test
-        )
-        self.assertTrue(post_mean_grad_checker.checkgrad())
-
-        # checker for gradient of posterior variance
-        post_var_grad_checker = GradientChecker(
-            lambda x: model.predict([x])[1],
-            lambda x: model.predictive_gradients([x])[1],
-            x_test
-        )
-        self.assertTrue(post_var_grad_checker.checkgrad())
+        # predictive gradients
+        dmdx, dvdx = model.predictive_gradients([x_test]*(D + 1))
+        # approximated predictive gradients
+        dmdx_aprx, dvdx_aprx = self.approximate_predictive_gradients(model, x_test, D)
+        # check predictive gradients
+        np.testing.assert_allclose(dmdx, dmdx_aprx, atol=1e-5)
+        np.testing.assert_allclose(dvdx, dvdx_aprx, atol=1e-5)
 
     def test_MultioutputGP_gradobs_RBF(self):
         '''

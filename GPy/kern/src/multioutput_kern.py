@@ -176,10 +176,7 @@ class MultioutputKern(CombinationKernel):
                             )
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        if X2 is None:
-            X2 = X
         slices = index_to_slices(X[:,self.index_dim])
-        slices2 = index_to_slices(X2[:,self.index_dim])
 
         self.reset_gradients()
         for i in range(len(slices)):

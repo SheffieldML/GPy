@@ -1316,11 +1316,15 @@ class GradientObservingModelTests(np.testing.TestCase):
         # create model and check its hyperparameter gradient
         likelihood_list = [GPy.likelihoods.Gaussian(variance=self.noise_std**2)]*(D + 1)
         model = GPy.models.MultioutputGP(X_list, Y_list, kernel_list, likelihood_list)
+        model.likelihood.constrain_fixed()
         self.assertTrue(model.checkgrad())
 
         # optimize the model, and check its hyperparameter gradient again
         model.optimize()
         self.assertTrue(model.checkgrad())
+
+        # check predictions
+        np.testing.assert_allclose(model.predict(X_list)[0], model.Y, atol=self.noise_std)
 
         # test input for checking predictive gradients
         ppa = int(np.round(np.power(self.test_points, 1/D))) # points per axis

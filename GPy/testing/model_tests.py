@@ -1407,7 +1407,7 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         '''
         Testing gradient observing MultioutputGP model with several RBF kernels.
         '''
-        for D in range(2, 5):
+        for D in range(2, 4):
             kerns = [GPy.kern.RBF(input_dim=1) for d in range(D)]
             kern = reduce(lambda k0, k1: k0 * k1, kerns)
             kern.randomize()
@@ -1417,7 +1417,7 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         '''
         Testing gradient observing MultioutputGP model with several StdP kernels.
         '''
-        for D in range(2, 5):
+        for D in range(2, 4):
             kerns = [GPy.kern.StdPeriodic(input_dim=1, period=self.period) for d in range(D)]
             kern = reduce(lambda k0, k1: k0 * k1, kerns)
             [k.period.constrain_fixed() for k in kern.parts]
@@ -1428,7 +1428,7 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         '''
         Testing gradient observing MultioutputGP model with a mix of kernel types.
         '''
-        for D in range(2, 5):
+        for D in range(2, 4):
             kerns = []
             for d in range(D):
                 if d % 2 == 0:

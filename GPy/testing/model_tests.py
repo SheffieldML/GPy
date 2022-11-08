@@ -1276,20 +1276,23 @@ class GradientTests(np.testing.TestCase):
         c2 = model.predict(x, full_cov=True)[1]
         np.testing.assert_allclose(c1,c2)
 
-class GradientMultioutputGPTests(np.testing.TestCase):
+class GradientMultioutputGPModelTests(np.testing.TestCase):
     def setUp(self):
 
         # standard test function
-        self.period = 2
-        self.bounds = (-3, 3)
-        self.f = lambda x: np.sum(np.sin((2*np.pi/self.period)*x), axis=1)
-        self.df = lambda x: (2*np.pi/self.period)*np.cos(x)
-        self.noise_std = 1e-3
+        self.period = 3
+        self.w = 2*np.pi/self.period
+        self.f = lambda x: np.sum(np.square(np.sin(self.w*x)), axis=1)
+        self.df = lambda x: self.w*np.sin(2*self.w*x)
+
+        self.noise_std = 1e-2
+
+        self.bounds = (-self.period, self.period)
 
         self.train_points = 5
         self.test_points = 25
 
-    def approximate_predictive_gradients(self, model, x_test, D, epsilon=1e-6):
+    def approximate_predictive_gradients(self, model, x_test, D, step=1e-6):
         '''
         Approximates gradients of predicted posterior means and variances.
 
@@ -1304,15 +1307,15 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         for d in range(D):
 
             x_over = x_test.copy()
-            x_over[:,d] += epsilon
+            x_over[:,d] += step
             x_undr = x_test.copy()
-            x_undr[:,d] -= epsilon
+            x_undr[:,d] -= step
 
             m_over, v_over = model.predict([x_over]*(D + 1))
             m_undr, v_undr = model.predict([x_undr]*(D + 1))
 
-            dmdx_aprx[:,d,None] = (m_over - m_undr)/(2*epsilon)
-            dvdx_aprx[:,d,None] = (v_over - v_undr)/(2*epsilon)
+            dmdx_aprx[:,d,None] = (m_over - m_undr)/(2*step)
+            dvdx_aprx[:,d,None] = (v_over - v_undr)/(2*step)
 
         return dmdx_aprx, dvdx_aprx
 
@@ -1345,14 +1348,14 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         likelihood_list = [GPy.likelihoods.Gaussian(variance=self.noise_std**2)]*(D + 1)
         model = GPy.models.MultioutputGP(X_list, Y_list, kernel_list, likelihood_list)
         model.likelihood.constrain_fixed()
-        self.assertTrue(model.checkgrad())
+        self.assertTrue(model.checkgrad(step=1e-3))
 
         # optimize the model, and check its hyperparameter gradient again
         model.optimize()
-        self.assertTrue(model.checkgrad())
+        self.assertTrue(model.checkgrad(step=1e-3))
 
         # check predictions
-        np.testing.assert_allclose(model.predict(X_list)[0], model.Y, atol=self.noise_std)
+        np.testing.assert_allclose(model.predict(X_list)[0], model.Y, atol=3*self.noise_std)
 
         # test inputs for checking predictive gradients
         x_test = np.random.uniform(*self.bounds, size=(self.test_points, D))
@@ -1360,10 +1363,10 @@ class GradientMultioutputGPTests(np.testing.TestCase):
         # predictive gradients
         dmdx, dvdx = model.predictive_gradients([x_test]*(D + 1))
         # approximated predictive gradients
-        dmdx_aprx, dvdx_aprx = self.approximate_predictive_gradients(model, x_test, D)
+        dmdx_aprx, dvdx_aprx = self.approximate_predictive_gradients(model, x_test, D, step=1e-3)
         # check predictive gradients
-        np.testing.assert_allclose(dmdx, dmdx_aprx, atol=1e-5)
-        np.testing.assert_allclose(dvdx, dvdx_aprx, atol=1e-5)
+        np.testing.assert_allclose(dmdx, dmdx_aprx, atol=3*self.noise_std)
+        np.testing.assert_allclose(dvdx, dvdx_aprx, atol=3*self.noise_std)
 
     def test_MultioutputGP_gradobs_RBF(self):
         '''

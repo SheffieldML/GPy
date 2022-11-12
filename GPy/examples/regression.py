@@ -771,7 +771,7 @@ def multioutput_gp_with_derivative_observations(plot=True):
 
     return m
 
-def multioutput_gp_with_derivative_observations_2D():
+def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
     '''
     This in an example on how to use a MultioutputGP model with gradient
     observations and multiple single-dimensional kernels of differing types.
@@ -846,7 +846,8 @@ def multioutput_gp_with_derivative_observations_2D():
     # create the MultioutputGP model and optimize
     model = GPy.models.MultioutputGP(X_list, Y_list, kern_list, likelihood_list)
     model.likelihood.constrain_fixed()
-    model.optimize()
+    if optimize:
+        model.optimize()
 
     # make function predictions
     Xnew, _, ind = GPy.util.multioutput.build_XY([grid], index=[0])
@@ -860,7 +861,26 @@ def multioutput_gp_with_derivative_observations_2D():
 
     mu_d, var_d = model.predict(Xnew, Y_metadata=Y_metadata)
 
-    mu_d = np.array([mu_d[:len(grid)], mu_d[len(grid):]]).T
-    var_d = np.array([var_d[:len(grid)], var_d[len(grid):]]).T
+    mu_d = np.array([mu_d[:len(grid)], mu_d[len(grid):]]).T[0]
+    var_d = np.array([var_d[:len(grid)], var_d[len(grid):]]).T[0]
+
+    if plot and MPL_AVAILABLE:
+        fig, axs = plt.subplots(1, 3)
+        for ax in axs: ax.set_box_aspect(1)
+        axs[0].set_title('true f')
+        axs[0].contourf(xx, yy, fgrid.reshape(ppa, ppa), levels=25)
+        axs[1].set_title('true df1')
+        axs[1].contourf(xx, yy, dfgrid[:,0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title('true df2')
+        axs[2].contourf(xx, yy, dfgrid[:,1].reshape(ppa, ppa), levels=25)
+
+        fig, axs = plt.subplots(1, 3)
+        for ax in axs: ax.set_box_aspect(1)
+        axs[0].set_title('pred f')
+        axs[0].contourf(xx, yy, mu.reshape(ppa, ppa), levels=25)
+        axs[1].set_title('pred df1')
+        axs[1].contourf(xx, yy, mu_d[:,0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title('pred df2')
+        axs[2].contourf(xx, yy, mu_d[:,1].reshape(ppa, ppa), levels=25)
 
     return model

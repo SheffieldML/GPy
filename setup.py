@@ -35,10 +35,12 @@
 #===============================================================================
 
 from __future__ import print_function
+
+import codecs
 import os
 import sys
-from setuptools import setup, Extension
-import codecs
+
+from setuptools import Extension, setup
 
 try:
     ModuleNotFoundError
@@ -117,13 +119,22 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
-install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
-matplotlib_version = 'matplotlib==3.3.4'
-if sys.version_info < (3, 6):
-    install_requirements += ['scipy>=1.3.0,<1.5.0']
-    matplotlib_version = 'matplotlib==3.0.0'
-else:
-    install_requirements += ['scipy>=1.3.0']
+install_requirements = [
+    "numpy>=1.7",
+    "six",
+    "paramz>=0.9.0",
+    "cython>=0.29",
+    'scipy>=1.3.0,<1.5.0;python_version<"3.6"',
+    'scipy>=1.3.0;python_version>="3.6"',
+]
+
+matplotlib_version = [
+    'matplotlib==3.0.0;python_version<"3.6"',
+    'matplotlib==3.3.4;python_version>="3.6"',
+]
+
+install_requirements += matplotlib_version
+
 
 setup(name = 'GPy',
       version = __version__,
@@ -177,7 +188,7 @@ setup(name = 'GPy',
                                     'ipython>=4.0.0',
                                     ],
                         #matplotlib Version see github issue #955
-                        'plotting':[matplotlib_version,
+                        'plotting':[*matplotlib_version,
                                     'plotly >= 1.8.6'],
                         'notebook':['jupyter_client >= 4.0.6',
                                     'ipywidgets >= 4.0.3',

@@ -126,8 +126,6 @@ install_requirements = [
     "cython>=0.29",
     'scipy>=1.3.0,<1.5.0;python_version<"3.6"',
     'scipy>=1.3.0;python_version>="3.6"',
-    'matplotlib==3.0.0;python_version<"3.6"',
-    'matplotlib==3.3.4;python_version>="3.6"',
 ]
 
 

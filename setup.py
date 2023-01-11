@@ -126,14 +126,10 @@ install_requirements = [
     "cython>=0.29",
     'scipy>=1.3.0,<1.5.0;python_version<"3.6"',
     'scipy>=1.3.0;python_version>="3.6"',
-]
-
-matplotlib_version = [
     'matplotlib==3.0.0;python_version<"3.6"',
     'matplotlib==3.3.4;python_version>="3.6"',
 ]
 
-install_requirements += matplotlib_version
 
 
 setup(name = 'GPy',
@@ -188,7 +184,8 @@ setup(name = 'GPy',
                                     'ipython>=4.0.0',
                                     ],
                         #matplotlib Version see github issue #955
-                        'plotting':[*matplotlib_version,
+                        'plotting':['matplotlib==3.0.0;python_version<"3.6"',
+                                    'matplotlib==3.3.4;python_version>="3.6"',
                                     'plotly >= 1.8.6'],
                         'notebook':['jupyter_client >= 4.0.6',
                                     'ipywidgets >= 4.0.3',

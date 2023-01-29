@@ -647,6 +647,12 @@ class TestKernelGradientContinuous:
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
+    def test_WienerVelocity(self):
+        self.setup_method()
+        k = GPy.kern.WienerVelocity(1)
+        k.randomize()
+        assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
+
     def test_symmetric_even(self):
         self.setup_method()
         k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)

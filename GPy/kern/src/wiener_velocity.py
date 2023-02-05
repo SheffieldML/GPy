@@ -53,18 +53,3 @@ class WienerVelocity(Kern):
             X2 = X
         self.variance.gradient = (np.sum(dL_dK * np.where(np.sign(X) == np.sign(X2.T), (np.fmin(np.abs(X), np.abs(X2.T))**3) /
                                                           3 + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T))**2) / 2, 0.)))
-
-    def update_gradients_diag(self, dL_dKdiag, X, X2=None):
-        if X2 is None:
-            X2 = X
-        self.variance.gradient = (np.sum(dL_dKdiag * np.where(np.sign(X) == np.sign(X2.T), (np.fmin(np.abs(X), np.abs(X2.T))**3) /
-                                                              3 + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T))**2) / 2, 0.)))
-
-    # def update_gradients_diag(self, dL_dKdiag, X):
-        # self.variance.gradient = np.dot(np.abs(X.flatten()), dL_dKdiag)
-
-    # def gradients_X(self, dL_dK, X, X2=None):
-        # if X2 is None:
-        # return np.sum(self.variance*dL_dK*np.abs(X),1)[:,None]
-        # else:
-        # return np.sum(np.where(np.logical_and(np.abs(X)<np.abs(X2.T), np.sign(X)==np.sign(X2)), self.variance*dL_dK,0.),1)[:,None]

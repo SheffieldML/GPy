@@ -133,8 +133,8 @@ setup(name = 'GPy',
       long_description = desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "http://sheffieldml.github.com/GPy/",
-      download_url='https://github.com/SheffieldML/GPy/',
+      url = "https://sheffieldml.github.io/GPy/",
+      download_url='https://github.com/SheffieldML/GPy/archive/refs/heads/devel.zip',
       ext_modules = ext_mods,
       packages = ["GPy",
                   "GPy.core",
@@ -201,7 +201,10 @@ setup(name = 'GPy',
                    'Topic :: Software Development',
                    'Topic :: Software Development :: Libraries :: Python Modules',
 
-                   ]
+                   ],
+      project_urls = {"Source Code": "https://github.com/SheffieldML/GPy",
+                      "Bug Tracker": "https://github.com/SheffieldML/GPy/issues",
+                     }
       )
 
 

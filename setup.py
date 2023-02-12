@@ -117,91 +117,10 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
-install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
-matplotlib_version = 'matplotlib==3.3.4'
-if sys.version_info < (3, 6):
-    install_requirements += ['scipy>=1.3.0,<1.5.0']
-    matplotlib_version = 'matplotlib==3.0.0'
-else:
-    install_requirements += ['scipy>=1.3.0']
-
-setup(name = 'GPy',
+setup(
       version = __version__,
       author = read_to_rst('AUTHORS.txt'),
-      author_email = "gpy.authors@gmail.com",
-      description = ("The Gaussian Process Toolbox"),
-      long_description = desc,
-      license = "BSD 3-clause",
-      keywords = "machine-learning gaussian-processes kernels",
-      url = "http://sheffieldml.github.com/GPy/",
-      download_url='https://github.com/SheffieldML/GPy/',
       ext_modules = ext_mods,
-      packages = ["GPy",
-                  "GPy.core",
-                  "GPy.core.parameterization",
-                  "GPy.kern",
-                  "GPy.kern.src",
-                  "GPy.kern.src.psi_comp",
-                  "GPy.models",
-                  "GPy.inference",
-                  "GPy.inference.optimization",
-                  "GPy.inference.mcmc",
-                  "GPy.inference.latent_function_inference",
-                  "GPy.likelihoods",
-                  "GPy.mappings",
-                  "GPy.examples",
-                  "GPy.testing",
-                  "GPy.util",
-                  "GPy.plotting",
-                  "GPy.plotting.gpy_plot",
-                  "GPy.plotting.matplot_dep",
-                  "GPy.plotting.matplot_dep.controllers",
-                  "GPy.plotting.plotly_dep",
-                  ],
-      package_dir={'GPy': 'GPy'},
-      #package_data = {'GPy': ['defaults.cfg', 'installation.cfg',
-      #                        'util/data_resources.json',
-      #                        'util/football_teams.json',
-      #                        'testing/plotting_tests/baseline/*.png'
-      #                        ]},
-      #data_files=[('GPy/testing/plotting_tests/baseline', 'testing/plotting_tests/baseline/*.png'),
-      #            ('GPy/testing/', 'GPy/testing/pickle_test.pickle'),
-      #             ],
-      include_package_data = True,
-      py_modules = ['GPy.__init__'],
-      test_suite = 'GPy.testing',
-      setup_requires = ['numpy>=1.7'],
-      install_requires = install_requirements,
-      extras_require = {'docs':['sphinx'],
-                        'optional':['mpi4py',
-                                    'ipython>=4.0.0',
-                                    ],
-                        #matplotlib Version see github issue #955
-                        'plotting':[matplotlib_version,
-                                    'plotly >= 1.8.6'],
-                        'notebook':['jupyter_client >= 4.0.6',
-                                    'ipywidgets >= 4.0.3',
-                                    'ipykernel >= 4.1.0',
-                                    'notebook >= 4.0.5',
-                                    ],
-                        },
-      classifiers=['License :: OSI Approved :: BSD License',
-                   'Natural Language :: English',
-                   'Operating System :: MacOS :: MacOS X',
-                   'Operating System :: Microsoft :: Windows',
-                   'Operating System :: POSIX :: Linux',
-                   'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6',
-                   'Programming Language :: Python :: 3.7',
-                   'Programming Language :: Python :: 3.8',
-                   'Programming Language :: Python :: 3.9',
-                   'Framework :: IPython',
-                   'Intended Audience :: Science/Research',
-                   'Intended Audience :: Developers',
-                   'Topic :: Software Development',
-                   'Topic :: Software Development :: Libraries :: Python Modules',
-
-                   ]
       )
 
 

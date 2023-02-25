@@ -21,7 +21,7 @@ class WienerVelocity(Kern):
     :type variance: float
     """
 
-    def __init__(self, input_dim=1, variance=1., active_dims=None, name='WienerVelocity'):
+    def __init__(self, input_dim=1, variance=1., active_dims=None, name='WienerVelocity', useGPU=False):
         assert input_dim == 1, "Wiener velocity in 1D only"
         super(WienerVelocity, self).__init__(input_dim, active_dims, name)
 
@@ -36,7 +36,6 @@ class WienerVelocity(Kern):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
         return WienerVelocity(**input_dict)
 
     def K(self, X, X2=None):

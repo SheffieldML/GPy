@@ -721,6 +721,7 @@ def multioutput_gp_with_derivative_observations(plot=True):
         likelihood_list=[gauss, gauss_der],
     )
 
+
     # Optimize the model
     m.optimize(messages=0, ipython_notebook=False)
 

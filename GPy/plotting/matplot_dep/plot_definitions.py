@@ -255,9 +255,9 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                 y2 = np.ones_like(x) * y2
 
             if where is None:
-                where = np.ones(len(x), np.bool)
+                where = np.ones(len(x), bool)
             else:
-                where = np.asarray(where, np.bool)
+                where = np.asarray(where, bool)
 
             if not (x.shape == y1.shape == y2.shape == where.shape):
                 raise ValueError("Argument dimensions are incompatible")

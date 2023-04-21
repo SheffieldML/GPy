@@ -119,11 +119,7 @@ except ModuleNotFoundError:
 
 install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
 matplotlib_version = 'matplotlib==3.3.4'
-if sys.version_info < (3, 6):
-    install_requirements += ['scipy>=1.3.0,<1.5.0']
-    matplotlib_version = 'matplotlib==3.0.0'
-else:
-    install_requirements += ['scipy>=1.3.0']
+install_requirements += ['scipy>=1.3.0']
 
 setup(name = 'GPy',
       version = __version__,

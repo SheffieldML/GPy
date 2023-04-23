@@ -2,7 +2,7 @@
 
 ### Fix
 
-* Replace np.float and np.float64 with float following deprecation in (numpy==1.20.0)[https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations]
+* Replace np.float and np.float64 with float following deprecation in [numpy==1.20.0](https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations)
 
 ## v1.9.8 (2019-05-17)
 

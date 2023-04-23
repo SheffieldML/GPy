@@ -1268,7 +1268,7 @@ class HalfT(Prior):
         # lnpdfs[above_zero] = (+ gammaln((v + 1) * 0.5)
         #     - gammaln(v * 0.5)
         #     - 0.5*np.log(sigma2 * v * np.pi)
-        #     - 0.5*(v + 1)*np.log(1 + (1/np.float(v))*((theta[above_zero][0]**2)/sigma2))
+        #     - 0.5*(v + 1)*np.log(1 + (1/float(v))*((theta[above_zero][0]**2)/sigma2))
         # )
         # return lnpdfs
 

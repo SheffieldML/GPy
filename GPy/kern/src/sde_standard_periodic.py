@@ -192,9 +192,9 @@ def seriescoeff(m=6,lengthScale=1.0,magnSigma2=1.0, true_covariance=False):
     
     if true_covariance:
         
-        bb = lambda j,m: (1.0 + np.array((j != 0), dtype=np.float64) ) / (2**(j)) *\
-            sp.special.binom(j, sp.floor( (j-m)/2.0 * np.array(m<=j, dtype=np.float64) ))*\
-            np.array(m<=j, dtype=np.float64) *np.array(sp.mod(j-m,2)==0, dtype=np.float64)
+        bb = lambda j,m: (1.0 + np.array((j != 0), dtype=float) ) / (2**(j)) *\
+            sp.special.binom(j, sp.floor( (j-m)/2.0 * np.array(m<=j, dtype=float) ))*\
+            np.array(m<=j, dtype=float) *np.array(sp.mod(j-m,2)==0, dtype=float)
                 
         M,J = np.meshgrid(range(0,m+1),range(0,m+1))
         

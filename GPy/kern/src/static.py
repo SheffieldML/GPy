@@ -20,7 +20,7 @@ class Static(Kern):
         return input_dict
 
     def Kdiag(self, X):
-        ret = np.empty((X.shape[0],), dtype=np.float64)
+        ret = np.empty((X.shape[0],), dtype=float)
         ret[:] = self.variance
         return ret
 
@@ -33,10 +33,10 @@ class Static(Kern):
     def gradients_XX(self, dL_dK, X, X2=None):
         if X2 is None:
             X2 = X
-        return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
+        return np.zeros((X.shape[0], X2.shape[0], X.shape[1], X.shape[1]), dtype=float)
 
     def gradients_XX_diag(self, dL_dKdiag, X, cov=False):
-        return np.zeros((X.shape[0], X.shape[1], X.shape[1]), dtype=np.float64)
+        return np.zeros((X.shape[0], X.shape[1], X.shape[1]), dtype=float)
 
     def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         return np.zeros(Z.shape)
@@ -81,10 +81,10 @@ class White(Static):
             return np.zeros((X.shape[0], X2.shape[0]))
 
     def psi2(self, Z, variational_posterior):
-        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=float)
 
     def psi2n(self, Z, variational_posterior):
-        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=float)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:
@@ -131,10 +131,10 @@ class WhiteHeteroscedastic(Static):
             return 0.
 
     def psi2(self, Z, variational_posterior):
-        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=float)
 
     def psi2n(self, Z, variational_posterior):
-        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=float)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:
@@ -164,7 +164,7 @@ class Bias(Static):
 
     def K(self, X, X2=None):
         shape = (X.shape[0], X.shape[0] if X2 is None else X2.shape[0])
-        return np.full(shape, self.variance, dtype=np.float64)
+        return np.full(shape, self.variance, dtype=float)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         self.variance.gradient = dL_dK.sum()
@@ -173,10 +173,10 @@ class Bias(Static):
         self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        return np.full((Z.shape[0], Z.shape[0]), self.variance*self.variance*variational_posterior.shape[0], dtype=np.float64)
+        return np.full((Z.shape[0], Z.shape[0]), self.variance*self.variance*variational_posterior.shape[0], dtype=float)
 
     def psi2n(self, Z, variational_posterior):
-        ret = np.empty((variational_posterior.mean.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
+        ret = np.empty((variational_posterior.mean.shape[0], Z.shape[0], Z.shape[0]), dtype=float)
         ret[:] = self.variance*self.variance
         return ret
 
@@ -217,10 +217,10 @@ class Fixed(Static):
         self.variance.gradient = np.einsum('i,i', dL_dKdiag, np.diagonal(self.fixed_K))
 
     def psi2(self, Z, variational_posterior):
-        return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((Z.shape[0], Z.shape[0]), dtype=float)
 
     def psi2n(self, Z, variational_posterior):
-        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
+        return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=float)
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()

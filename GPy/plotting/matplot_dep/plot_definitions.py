@@ -277,7 +277,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                     continue
 
                 N = len(xslice)
-                p = np.zeros((2 * N + 2, 2), np.float)
+                p = np.zeros((2 * N + 2, 2), float)
 
                 # the purpose of the next two lines is for when y2 is a
                 # scalar like 0 and we want the fill to go all the way

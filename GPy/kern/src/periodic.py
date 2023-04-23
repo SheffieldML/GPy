@@ -30,9 +30,9 @@ class Periodic(Kern):
         self.lower,self.upper = lower, upper
         self.n_freq = n_freq
         self.n_basis = 2*n_freq
-        self.variance = Param('variance', np.float64(variance), Logexp())
-        self.lengthscale = Param('lengthscale', np.float64(lengthscale), Logexp())
-        self.period = Param('period', np.float64(period), Logexp())
+        self.variance = Param('variance', float(variance), Logexp())
+        self.lengthscale = Param('lengthscale', float(lengthscale), Logexp())
+        self.period = Param('period', float(period), Logexp())
         self.link_parameters(self.variance, self.lengthscale, self.period)
 
     def _cos(self, alpha, omega, phase):

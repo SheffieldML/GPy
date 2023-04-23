@@ -282,7 +282,7 @@ class Stationary(Kern):
         else:
             tmp1[invdist2==0.] -= self.variance
 
-        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=float)
         dist = X[:,None,:] - X2[None,:,:]
         dist = (dist[:,:,:,None]*dist[:,:,None,:])
         I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
@@ -335,7 +335,7 @@ class Stationary(Kern):
         #grad = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
 
         #the lower memory way with a loop
-        grad = np.empty(X.shape, dtype=np.float64)
+        grad = np.empty(X.shape, dtype=float)
         for q in range(self.input_dim):
             np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=grad[:,q])
         return grad/self.lengthscale**2

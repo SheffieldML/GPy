@@ -9,7 +9,7 @@ class MiscTests(np.testing.TestCase):
     Testing some utilities of misc
     """
     def setUp(self):
-        self._lim_val = np.finfo(np.float64).max
+        self._lim_val = np.finfo(float).max
         self._lim_val_exp = np.log(self._lim_val)
 
     def test_safe_exp_upper(self):

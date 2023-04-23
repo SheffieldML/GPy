@@ -15,12 +15,12 @@ try:
     
     # log|A| for A is a low triangle matrix
     # logDiagSum(A, A.shape[0]+1)
-    logDiagSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?log(x[i]):0", arguments="double *x, int step")
+    logDiagSum = ReductionKernel(float, neutral="0", reduce_expr="a+b", map_expr="i%step==0?log(x[i]):0", arguments="double *x, int step")
     
-    strideSum = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="i%step==0?x[i]:0", arguments="double *x, int step")
+    strideSum = ReductionKernel(float, neutral="0", reduce_expr="a+b", map_expr="i%step==0?x[i]:0", arguments="double *x, int step")
     
     # np.trace(np.dot(A,B)) (also equivalent to (A*B.T).sum() ) A - a1 x a2, B - a2 x a1
-    traceDot = ReductionKernel(np.float64, neutral="0", reduce_expr="a+b", map_expr="A[i]*B[(i%a1)*a2+i/a1]", arguments="double *A, double *B, int a1, int a2")
+    traceDot = ReductionKernel(float, neutral="0", reduce_expr="a+b", map_expr="A[i]*B[(i%a1)*a2+i/a1]", arguments="double *A, double *B, int a1, int a2")
     
     #=======================================================================================
     # Element-wise functions

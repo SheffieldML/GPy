@@ -11,10 +11,10 @@ cimport cython
 cdef extern from "numpy/npy_math.h":
     bint npy_isnan(double x)
 
-DTYPE = np.float64
+DTYPE = float
 DTYPE_int = np.int64
 
-ctypedef np.float64_t DTYPE_t
+ctypedef float_t DTYPE_t
 ctypedef np.int64_t DTYPE_int_t
 
 # Template class for dynamic callables

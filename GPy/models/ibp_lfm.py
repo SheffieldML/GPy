@@ -302,7 +302,7 @@ def update_gradients(model, mpi_comm=None):
     if het_noise:
         dL_dthetaL = np.empty((model.Y.shape[0],))
     else:
-        dL_dthetaL = np.float64(0.)
+        dL_dthetaL = float(0.)
 
     kern_grad = model.kern.gradient.copy()
     kern_grad[:] = 0.

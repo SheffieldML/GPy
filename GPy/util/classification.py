@@ -23,7 +23,7 @@ def conf_matrix(p,labels,names=['1','0'],threshold=.5,show=True):
     false_1 = diff[diff == 1].size
     true_1 = np.sum(decision[diff ==0])
     true_0 = labels.size - true_1 - false_0 - false_1
-    error = (false_1 + false_0)/np.float(labels.size)
+    error = (false_1 + false_0)/float(labels.size)
     if show:
         print(100. - error * 100,'% instances correctly classified')
         print('%-10s|  %-10s|  %-10s| ' % ('',names[0],names[1]))

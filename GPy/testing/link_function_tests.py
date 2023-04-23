@@ -3,7 +3,7 @@ import scipy
 from scipy.special import cbrt
 from GPy.models import GradientChecker
 import random
-_lim_val = np.finfo(np.float64).max
+_lim_val = np.finfo(float).max
 _lim_val_exp = np.log(_lim_val)
 _lim_val_square = np.sqrt(_lim_val)
 _lim_val_cube = cbrt(_lim_val)

@@ -17,5 +17,5 @@ class RMSE(Evaluation):
     name = 'RMSE'
     
     def evaluate(self, gt, pred):
-        return np.sqrt(np.square(gt-pred).astype(np.float).mean())
+        return np.sqrt(np.square(gt-pred).astype(float).mean())
     

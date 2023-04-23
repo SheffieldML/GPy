@@ -8,7 +8,7 @@ cimport cython
 
 np.import_array()
 
-ctypedef np.float64_t DTYPE_t
+ctypedef float_t DTYPE_t
  
 cdef extern from "stationary_utils.h":
     void _grad_X "_grad_X" (int N, int D, int M, double* X, double* X2, double* tmp, double* grad) nogil

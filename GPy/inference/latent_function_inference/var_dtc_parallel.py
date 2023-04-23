@@ -349,7 +349,7 @@ def update_gradients(model, mpi_comm=None):
     if het_noise:
         dL_dthetaL = np.empty((model.Y.shape[0],))
     else:
-        dL_dthetaL = np.float64(0.)
+        dL_dthetaL = float(0.)
 
     kern_grad = model.kern.gradient.copy()
     kern_grad[:] = 0.
@@ -410,7 +410,7 @@ def update_gradients(model, mpi_comm=None):
     if mpi_comm != None:
         from mpi4py import MPI
         KL_div_all = np.array(KL_div)
-        mpi_comm.Allreduce([np.float64(KL_div), MPI.DOUBLE], [KL_div_all, MPI.DOUBLE])
+        mpi_comm.Allreduce([float(KL_div), MPI.DOUBLE], [KL_div_all, MPI.DOUBLE])
         KL_div = KL_div_all
         [mpi_comm.Allgatherv([pp.copy(), MPI.DOUBLE], [pa, (model.N_list*pa.shape[-1], None), MPI.DOUBLE]) for pp,pa in zip(model.get_X_gradients(X),model.get_X_gradients(model.X))]
 #         from ...models import SSGPLVM
@@ -437,7 +437,7 @@ def update_gradients_sparsegp(model, mpi_comm=None):
     if het_noise:
         dL_dthetaL = np.empty((model.Y.shape[0],))
     else:
-        dL_dthetaL = np.float64(0.)
+        dL_dthetaL = float(0.)
     
     kern_grad = model.kern.gradient.copy()
     kern_grad[:] = 0.

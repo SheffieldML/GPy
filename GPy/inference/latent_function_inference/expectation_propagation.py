@@ -15,15 +15,15 @@ log_2_pi = np.log(2*np.pi)
 #Four wrapper classes to help modularisation of different EP versions
 class marginalMoments(object):
     def __init__(self, num_data):
-        self.Z_hat = np.empty(num_data,dtype=np.float64)
-        self.mu_hat = np.empty(num_data,dtype=np.float64)
-        self.sigma2_hat = np.empty(num_data,dtype=np.float64)
+        self.Z_hat = np.empty(num_data,dtype=float)
+        self.mu_hat = np.empty(num_data,dtype=float)
+        self.sigma2_hat = np.empty(num_data,dtype=float)
 
 
 class cavityParams(object):
     def __init__(self, num_data):
-        self.tau = np.empty(num_data,dtype=np.float64)
-        self.v = np.empty(num_data,dtype=np.float64)
+        self.tau = np.empty(num_data,dtype=float)
+        self.v = np.empty(num_data,dtype=float)
     def _update_i(self, eta, ga_approx, post_params, i):
         self.tau[i] = 1./post_params.Sigma_diag[i] - eta*ga_approx.tau[i]
         self.v[i] = post_params.mu[i]/post_params.Sigma_diag[i] - eta*ga_approx.v[i]

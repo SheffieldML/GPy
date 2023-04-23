@@ -265,27 +265,27 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         import pycuda.gpuarray as gpuarray
         if self.gpuCache == None:
             self.gpuCache = {
-                             'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
-                             'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
-                             'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'S_gpu'                :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
-                             'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
-                             'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
-                             'dL_dpsi1_gpu'         :gpuarray.empty((N,M),np.float64,order='F'),
-                             'dL_dpsi2_gpu'         :gpuarray.empty((M,M),np.float64,order='F'),
-                             'log_denom1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_denom2_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
+                             'l_gpu'                :gpuarray.empty((Q,),float,order='F'),
+                             'Z_gpu'                :gpuarray.empty((M,Q),float,order='F'),
+                             'mu_gpu'               :gpuarray.empty((N,Q),float,order='F'),
+                             'S_gpu'                :gpuarray.empty((N,Q),float,order='F'),
+                             'psi1_gpu'             :gpuarray.empty((N,M),float,order='F'),
+                             'psi2_gpu'             :gpuarray.empty((M,M),float,order='F'),
+                             'psi2n_gpu'            :gpuarray.empty((N,M,M),float,order='F'),
+                             'dL_dpsi1_gpu'         :gpuarray.empty((N,M),float,order='F'),
+                             'dL_dpsi2_gpu'         :gpuarray.empty((M,M),float,order='F'),
+                             'log_denom1_gpu'       :gpuarray.empty((N,Q),float,order='F'),
+                             'log_denom2_gpu'       :gpuarray.empty((N,Q),float,order='F'),
                              # derivatives
-                             'dvar_gpu'             :gpuarray.empty((self.blocknum,),np.float64, order='F'),
-                             'dl_gpu'               :gpuarray.empty((Q,self.blocknum),np.float64, order='F'),
-                             'dZ_gpu'               :gpuarray.empty((M,Q),np.float64, order='F'),
-                             'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
+                             'dvar_gpu'             :gpuarray.empty((self.blocknum,),float, order='F'),
+                             'dl_gpu'               :gpuarray.empty((Q,self.blocknum),float, order='F'),
+                             'dZ_gpu'               :gpuarray.empty((M,Q),float, order='F'),
+                             'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),float, order='F'),
+                             'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),float, order='F'),
                              # grad
-                             'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
-                             'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
+                             'grad_l_gpu'               :gpuarray.empty((Q,),float, order='F'),
+                             'grad_mu_gpu'              :gpuarray.empty((N,Q,),float, order='F'),
+                             'grad_S_gpu'               :gpuarray.empty((N,Q,),float, order='F'),
                              }
         else:
             assert N==self.gpuCache['mu_gpu'].shape[0]
@@ -348,11 +348,11 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
 
         psi0 = np.empty((N,))
         psi0[:] = variance
-        self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        # t = self.g_psi1computations(psi1_gpu, log_denom1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, float(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, float(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        # t = self.g_psi1computations(psi1_gpu, log_denom1_gpu, float(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi1computations '+str(t)
-        # t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, float(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2computations '+str(t)
          
         if self.GPU_direct:
@@ -407,12 +407,12 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
             dL_dpsi0_sum = dL_dpsi0.sum()
 
         self.reset_derivative()
-        # t=self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # t=self.g_psi1compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi1_gpu,psi1_gpu, float(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi1compDer '+str(t)
-        # t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
+        # t=self.g_psi2compDer(dvar_gpu,dl_gpu,dZ_gpu,dmu_gpu,dS_gpu,dL_dpsi2_gpu,psi2n_gpu, float(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2compDer '+str(t)
-        self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi1compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi1_gpu.gpudata,psi1_gpu.gpudata, float(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
+        self.g_psi2compDer.prepared_call((self.blocknum,1),(self.threadnum,1,1),dvar_gpu.gpudata,dl_gpu.gpudata,dZ_gpu.gpudata,dmu_gpu.gpudata,dS_gpu.gpudata,dL_dpsi2_gpu.gpudata,psi2n_gpu.gpudata, float(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
 
         dL_dvar = dL_dpsi0_sum + dvar_gpu.get().sum()#gpuarray.sum(dvar_gpu).get()
         sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)

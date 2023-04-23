@@ -88,11 +88,11 @@ class StudentT(Likelihood):
         #FIXME:
         #Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
         #But np.log(1 + (1/float(self.v))*((y-inv_link_f)**2)/self.sigma2) throws it correctly
-        #print - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
+        #print - 0.5*(self.v + 1)*np.log(1 + (1/float(self.v))*((e**2)/self.sigma2))
         objective = (+ gammaln((self.v + 1) * 0.5)
                     - gammaln(self.v * 0.5)
                     - 0.5*np.log(self.sigma2 * self.v * np.pi)
-                    - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
+                    - 0.5*(self.v + 1)*np.log(1 + (1/float(self.v))*((e**2)/self.sigma2))
                     )
         return objective
 

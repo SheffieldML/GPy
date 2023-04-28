@@ -4,7 +4,7 @@ Created on Aug 27, 2014
 @author: Max Zwiessele
 '''
 import numpy as np
-
+import warnings
 
 class _Norm(object):
     def __init__(self):
@@ -90,6 +90,10 @@ class Standardize(_Norm):
         Y = np.ma.masked_invalid(Y, copy=False)
         self.mean = Y.mean(0).view(np.ndarray)
         self.std = Y.std(0).view(np.ndarray)
+        if np.any(self.std == 0):
+            warnings.warn("Some values of Y have standard deviation of zero. Resetting to 1.0 to avoid divide by zero errors.")
+           # Choice of setting to 1.0 is somewhat arbitrary. It avoids a divide by zero error, but setting to EPS would also do this. Don't have strong reasons for choosing 1.0, it was just first instinct 
+            self.std[np.where(self.std==0)]=1. 
 
     def normalize(self, Y):
         super(Standardize, self).normalize(Y)

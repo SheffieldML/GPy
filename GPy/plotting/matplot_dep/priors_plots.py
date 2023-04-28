@@ -11,7 +11,7 @@ except:
 
 def univariate_plot(prior):
     rvs = prior.rvs(1000)
-    pb.hist(rvs, 100, normed=True)
+    pb.hist(rvs, 100, density=True)
     xmin, xmax = pb.xlim()
     xx = np.linspace(xmin, xmax, 1000)
     pb.plot(xx, prior.pdf(xx), 'r', linewidth=2)

@@ -80,3 +80,32 @@ class MixedNoise(Likelihood):
             _ysim = np.array([np.random.normal(lik.gp_link.transf(gpj), scale=np.sqrt(lik.variance), size=1) for gpj in gp_filtered.flatten()])
             Ysim[flt,:] = _ysim.reshape(n1,N2)
         return Ysim
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        # input_dict = super(MixedNoise, self)._save_to_input_dict()
+        input_dict = {"name": self.name,
+                      "class": "GPy.likelihoods.MixedNoise",
+                      "likelihoods_list": []}
+        for ii in range(len(self.likelihoods_list)):
+            input_dict["likelihoods_list"].append(self.likelihoods_list[ii].to_dict())
+
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(likelihood_class, input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        # gp_link_dict = input_dict.pop('gp_link_dict')
+        # import GPy
+        # gp_link = GPy.likelihoods.link_functions.GPTransformation.from_dict(gp_link_dict)
+        # input_dict["gp_link"] = gp_link
+        input_dict['likelihoods_list'] = [Likelihood.from_dict(l) for l in input_dict['likelihoods_list']]
+        return likelihood_class(**input_dict)

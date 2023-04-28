@@ -134,3 +134,28 @@ class Coregionalize(Kern):
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(Coregionalize, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.Coregionalize"
+        # W and kappa must be serializable
+        input_dict["W"] = self.W.values.tolist()
+        input_dict["kappa"] = self.kappa.values.tolist()
+        input_dict["output_dim"] = self.output_dim
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        # W and kappa must be converted back to numpy arrays
+        input_dict['W'] = np.array(input_dict['W'])
+        input_dict['kappa'] = np.array(input_dict['kappa'])
+        return Coregionalize(**input_dict)

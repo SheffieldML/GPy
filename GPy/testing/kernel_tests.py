@@ -426,6 +426,22 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_Cosine(self):
+        # Don't test Cosine directly as it fails positive definite test.
+        k = GPy.kern.RBF(self.D-1, ARD=False)*GPy.kern.Cosine(self.D-1, ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_ExpQuadCosine(self):
+        k = GPy.kern.ExpQuadCosine(self.D-1, ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
+    def test_Sinc(self):
+        k = GPy.kern.Sinc(self.D-1, ARD=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_RatQuad(self):
         k = GPy.kern.RatQuad(self.D-1, ARD=True)
         k.randomize()

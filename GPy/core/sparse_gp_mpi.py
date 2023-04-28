@@ -108,6 +108,7 @@ class SparseGP_MPI(SparseGP):
                             raise
                         self._fail_count += 1
                 elif flag==-1:
+                    ret = None
                     break
                 else:
                     self._IN_OPTIMIZATION_ = False

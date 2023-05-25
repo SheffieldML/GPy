@@ -72,7 +72,7 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
     if 'Y_metadata' not in predict_kw:
         predict_kw['Y_metadata'] = {}
     if 'output_index' not in predict_kw['Y_metadata']:
-        predict_kw['Y_metadata']['output_index'] = Xgrid[:,-1:].astype(np.int)
+        predict_kw['Y_metadata']['output_index'] = Xgrid[:,-1:].astype(np.int64)
 
     mu, _ = self.predict(Xgrid, **predict_kw)
 

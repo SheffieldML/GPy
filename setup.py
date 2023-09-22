@@ -117,7 +117,7 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
-install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0', 'cython>=0.29']
+install_requirements = ['numpy>=1.7', 'six', 'paramz>=0.9.0']
 matplotlib_version = 'matplotlib==3.3.4'
 install_requirements += ['scipy>=1.3.0']
 
@@ -166,7 +166,7 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      setup_requires = ['numpy>=1.7'],
+      setup_requires = ['numpy>=1.7', 'cython>=0.29'],
       install_requires = install_requirements,
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',

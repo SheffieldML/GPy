@@ -68,13 +68,13 @@ class FITC(LatentFunctionInference):
 
 
         # Compute dL_dKmm
-        vvT_P = tdot(v.reshape(-1,1)) + P
+        vvT_P = tdot(v) + P
         dL_dK = 0.5*(Kmmi - vvT_P)
         KiU = np.dot(Kmmi, U.T)
         dL_dK += np.dot(KiU*dL_dR, KiU.T)
 
         # Compute dL_dU
-        vY = np.dot(v.reshape(-1,1),Y.T)
+        vY = np.dot(v, Y.T)
         dL_dU = vY - np.dot(vvT_P, U.T)
         dL_dU *= beta_star
         dL_dU -= 2.*KiU*dL_dR

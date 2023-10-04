@@ -1,13 +1,12 @@
 # Copyright (c) 2014, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import unittest
 import numpy as np
 import GPy
 
 
-class FITCtest(unittest.TestCase):
-    def setUp(self):
+class FITCtest:
+    def setup(self):
         ######################################
         # # 1 dimensional example
 
@@ -27,11 +26,13 @@ class FITCtest(unittest.TestCase):
         )
 
     def test_fitc_1d(self):
+        self.setup()
         m = GPy.models.SparseGPRegression(self.X1D, self.Y1D)
         m.inference_method = GPy.inference.latent_function_inference.FITC()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad(), "Gradient check failed!"
 
     def test_fitc_2d(self):
+        self.setup()
         m = GPy.models.SparseGPRegression(self.X2D, self.Y2D)
         m.inference_method = GPy.inference.latent_function_inference.FITC()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad(), "Gradient check failed!"

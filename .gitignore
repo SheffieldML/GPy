@@ -56,3 +56,8 @@ GPy*.rst
 
 # vscode
 settings.json
+
+# local dev
+.eggs
+.venv
+.env

@@ -1,0 +1,47 @@
+[project]
+name = "GPy"
+version = "1.10.0"
+description = "The Gaussian Process Toolbox"
+authors = [
+	{name = "GPy Authors: https://github.com/SheffieldML/GPy/graphs/contributors", email = "gpy.authors@gmail.com"}
+]
+license = {text = "BSD 3-Clause"}
+readme = "README.md"
+requires-python = ">=3.6"
+
+keywords = ["machine-learning gaussian-processes kernels"]
+
+dependencies=[
+        "numpy>=1.7",
+        "matplotlib==3.3.4",
+        "six",
+        "paramz>=0.9.0",
+        "cython>=0.29",
+    ]
+
+classifiers = [
+    'License :: OSI Approved :: BSD License',
+    'Natural Language :: English',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Framework :: IPython',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+]
+
+[project.urls]
+homepage = "http://sheffieldml.github.com/GPy/"
+repository = "https://github.com/SheffieldML/GPy/"
+documentation = "https://gpy.readthedocs.io/en/deploy/"
+
+[build-system]
+requires = ["setuptools>=46.0", "wheel", "Cython", "oldest-supported-numpy"]  # PEP 518 - what is required to build
+build-backend = "setuptools.build_meta"

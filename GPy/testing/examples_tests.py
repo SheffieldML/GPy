@@ -1,24 +1,18 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import unittest
-import numpy as np
 import GPy
 import inspect
 import pkgutil
 import os
-import random
-from nose.tools import nottest
-import sys
-import itertools
 
 
-class ExamplesTests(unittest.TestCase):
-    def _checkgrad(self, Model):
-        self.assertTrue(Model.checkgrad())
+def check_grad(Model):
+    assert Model.checkgrad(), "Gradient check failed!"
 
-    def _model_instance(self, Model):
-        self.assertTrue(isinstance(Model, GPy.models))
+
+def check_model_instance(Model):
+    assert isinstance(Model, GPy.models), "Wrong type!"
 
 
 def model_checkgrads(model):
@@ -41,14 +35,14 @@ def flatten_nested(lst):
     return result
 
 
-@nottest
 def test_models():
+    # TODO: testing setup is not that clear to me yet...
     optimize = False
     plot = True
     examples_path = os.path.dirname(GPy.examples.__file__)
     # Load modules
     failing_models = {}
-    for loader, module_name, is_pkg in pkgutil.iter_modules([examples_path]):
+    for loader, module_name, _is_pkg in pkgutil.iter_modules([examples_path]):
         # Load examples
         module_examples = loader.find_module(module_name).load_module(module_name)
         print("MODULE", module_examples)
@@ -108,9 +102,3 @@ def test_models():
     if len(failing_models.keys()) > 0:
         print(failing_models)
         raise Exception(failing_models)
-
-
-if __name__ == "__main__":
-    print("Running unit tests, please be (very) patient...")
-    # unittest.main()
-    test_models()

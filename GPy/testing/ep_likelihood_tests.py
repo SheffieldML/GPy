@@ -118,9 +118,10 @@ class TestObservationModels:
 
         # for simple single dimension data , marginal likelihood for laplace and EP approximations should not be so far apart.
         # TODO: the below were assertAlmostEqual, not sure if allclose will do the job here
-        assert np.allclose(m1.log_likelihood(), m2.log_likelihood())  # , delta=1
-        assert np.allcose(m1.log_likelihood(), m3.log_likelihood())  # , delta=1
-        assert np.allclose(m1.log_likelihood(), m4.log_likelihood())  # , delta=5
+        #     I replace the old delta with the atol
+        assert np.allclose(m1.log_likelihood(), m2.log_likelihood(), atol=1.0)
+        assert np.allclose(m1.log_likelihood(), m3.log_likelihood(), atol=1)
+        assert np.allclose(m1.log_likelihood(), m4.log_likelihood(), atol=5.0)
 
         GPy.util.classification.conf_matrix(probs_mean_lap, self.binary_Y)
         GPy.util.classification.conf_matrix(probs_mean_ep_alt, self.binary_Y)
@@ -177,7 +178,8 @@ class TestObservationModels:
         # m3.optimize(optimizer=optimizer, max_iters=500)
 
         # TODO: this was assertAlmostEqual, not sure if allclose will do the job here
-        assert np.allclose(m1.log_likelihood(), m2.log_likelihood())  # , delta=200
+        #    I replace the old delta with the atol
+        assert np.allclose(m1.log_likelihood(), m2.log_likelihood(), atol=200.0)
 
         # self.assertAlmostEqual(m1.log_likelihood(), m3.log_likelihood(), 3)
 
@@ -190,5 +192,6 @@ class TestObservationModels:
 
         if rmse_alt > rmse_lap:
             # TODO: this was assertAlmostEqual, not sure if allclose will do the job here
-            assert np.allclose(rmse_lap, rmse_alt)  # , delta=1.5
+            #   I replace the old delta with the atol
+            assert np.allclose(rmse_lap, rmse_alt, atol=1.5)
         # m3.optimize(optimizer=optimizer, max_iters=500)

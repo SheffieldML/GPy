@@ -3,13 +3,12 @@
 
 # Kurt Cutajar
 
-import unittest
 import numpy as np
 import GPy
 
 
-class GridModelTest(unittest.TestCase):
-    def setUp(self):
+class GridModelTest:
+    def setup(self):
         ######################################
         # # 3 dimensional example
 

@@ -121,15 +121,12 @@ def dparam_checkgrad(
     return gradchecking
 
 
-from nose.tools import with_setup
-
-
-class TestNoiseModels(object):
+class TestNoiseModels:
     """
     Generic model checker
     """
 
-    def setUp(self):
+    def setup(self):
         np.random.seed(fixed_seed)
         self.N = 15
         self.D = 3
@@ -418,13 +415,8 @@ class TestNoiseModels(object):
         """
         model[regex].constrain_bounded(lower, upper)
 
-    def tearDown(self):
-        self.Y = None
-        self.f = None
-        self.X = None
-
     def test_scale2_models(self):
-        self.setUp()
+        self.setup()
 
         for name, attributes in self.noise_models.items():
             model = attributes["model"]
@@ -503,12 +495,12 @@ class TestNoiseModels(object):
                 yield self.t_dexp_dmu, model, Y, Y_metadata
                 yield self.t_dexp_dvar, model, Y, Y_metadata
 
-        self.tearDown()
+        # TODO: how to now run all of the tests?
 
     #############
-    # dpdf_df's #
+    # dpdf
+    # _df's #
     #############
-    @with_setup(setUp, tearDown)
     def t_logpdf(self, model, Y, f, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         print(model)
@@ -518,7 +510,6 @@ class TestNoiseModels(object):
             np.exp(model.logpdf(f.copy(), Y.copy(), Y_metadata=Y_metadata).sum()),
         )
 
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_df(self, model, Y, f, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         self.description = "\n{}".format(inspect.stack()[0][3])
@@ -529,7 +520,6 @@ class TestNoiseModels(object):
         print(model)
         assert grad.checkgrad(verbose=1)
 
-    @with_setup(setUp, tearDown)
     def t_d2logpdf_df2(self, model, Y, f, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y, Y_metadata=Y_metadata)
@@ -539,7 +529,6 @@ class TestNoiseModels(object):
         print(model)
         assert grad.checkgrad(verbose=1)
 
-    @with_setup(setUp, tearDown)
     def t_d3logpdf_df3(self, model, Y, f, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=Y, Y_metadata=Y_metadata)
@@ -552,7 +541,6 @@ class TestNoiseModels(object):
     ##############
     # df_dparams #
     ##############
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_dparams(
         self, model, Y, f, Y_metadata, params, params_names, param_constraints
     ):
@@ -569,7 +557,6 @@ class TestNoiseModels(object):
             verbose=True,
         )
 
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_df_dparams(
         self, model, Y, f, Y_metadata, params, params_names, param_constraints
     ):
@@ -586,7 +573,6 @@ class TestNoiseModels(object):
             verbose=True,
         )
 
-    @with_setup(setUp, tearDown)
     def t_d2logpdf2_df2_dparams(
         self, model, Y, f, Y_metadata, params, params_names, param_constraints
     ):
@@ -606,7 +592,6 @@ class TestNoiseModels(object):
     ################
     # dpdf_dlink's #
     ################
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_dlink(self, model, Y, f, Y_metadata, link_f_constraints):
         print("\n{}".format(inspect.stack()[0][3]))
         logpdf = functools.partial(model.logpdf_link, y=Y, Y_metadata=Y_metadata)
@@ -624,7 +609,6 @@ class TestNoiseModels(object):
         print(model)
         assert grad.checkgrad(verbose=1)
 
-    @with_setup(setUp, tearDown)
     def t_d2logpdf_dlink2(self, model, Y, f, Y_metadata, link_f_constraints):
         print("\n{}".format(inspect.stack()[0][3]))
         dlogpdf_dlink = functools.partial(
@@ -644,7 +628,6 @@ class TestNoiseModels(object):
         print(model)
         assert grad.checkgrad(verbose=1)
 
-    @with_setup(setUp, tearDown)
     def t_d3logpdf_dlink3(self, model, Y, f, Y_metadata, link_f_constraints):
         print("\n{}".format(inspect.stack()[0][3]))
         d2logpdf_dlink2 = functools.partial(
@@ -667,7 +650,6 @@ class TestNoiseModels(object):
     #################
     # dlink_dparams #
     #################
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_link_dparams(
         self, model, Y, f, Y_metadata, params, param_names, param_constraints
     ):
@@ -684,7 +666,6 @@ class TestNoiseModels(object):
             verbose=True,
         )
 
-    @with_setup(setUp, tearDown)
     def t_dlogpdf_dlink_dparams(
         self, model, Y, f, Y_metadata, params, param_names, param_constraints
     ):
@@ -701,7 +682,6 @@ class TestNoiseModels(object):
             verbose=True,
         )
 
-    @with_setup(setUp, tearDown)
     def t_d2logpdf2_dlink2_dparams(
         self, model, Y, f, Y_metadata, params, param_names, param_constraints
     ):
@@ -721,7 +701,6 @@ class TestNoiseModels(object):
     ################
     # laplace test #
     ################
-    @with_setup(setUp, tearDown)
     def t_laplace_fit_rbf_white(
         self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints
     ):
@@ -761,7 +740,6 @@ class TestNoiseModels(object):
     ###########
     # EP test #
     ###########
-    @with_setup(setUp, tearDown)
     def t_ep_fit_rbf_white(
         self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints
     ):
@@ -794,7 +772,6 @@ class TestNoiseModels(object):
     ################
     # variational expectations #
     ################
-    @with_setup(setUp, tearDown)
     def t_varexp(self, model, Y, Y_metadata):
         # Test that the analytic implementation (if it exists) matches the generic gauss
         # hermite implementation
@@ -826,7 +803,6 @@ class TestNoiseModels(object):
 
         np.testing.assert_almost_equal(expectation, expectation_gh, decimal=5)
 
-    @with_setup(setUp, tearDown)
     def t_dexp_dmu(self, model, Y, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         # Make mu and var (marginal means and variances of q(f)) draws from a GP
@@ -857,7 +833,6 @@ class TestNoiseModels(object):
         print(model)
         assert grad.checkgrad(verbose=1)
 
-    @with_setup(setUp, tearDown)
     def t_dexp_dvar(self, model, Y, Y_metadata):
         print("\n{}".format(inspect.stack()[0][3]))
         # Make mu and var (marginal means and variances of q(f)) draws from a GP
@@ -890,12 +865,12 @@ class TestNoiseModels(object):
         assert grad.checkgrad(verbose=1)
 
 
-class LaplaceTests(unittest.TestCase):
+class LaplaceTests:
     """
     Specific likelihood tests, not general enough for the above tests
     """
 
-    def setUp(self):
+    def setup(self):
         np.random.seed(fixed_seed)
         self.N = 15
         self.D = 1
@@ -916,14 +891,9 @@ class LaplaceTests(unittest.TestCase):
         # Make a bigger step as lower bound can be quite curved
         self.step = 1e-6
 
-    def tearDown(self):
-        self.stu_t = None
-        self.gauss = None
-        self.Y = None
-        self.f = None
-        self.X = None
-
     def test_gaussian_d2logpdf_df2_2(self):
+        self.setup()
+
         print("\n{}".format(inspect.stack()[0][3]))
         self.Y = None
 
@@ -943,6 +913,8 @@ class LaplaceTests(unittest.TestCase):
         self.assertTrue(grad.checkgrad(verbose=1))
 
     def test_laplace_log_likelihood(self):
+        self.setup()
+
         debug = False
         real_std = 0.1
         initial_var_guess = 0.5
@@ -1046,10 +1018,5 @@ class LaplaceTests(unittest.TestCase):
         # Check they are checkgradding
         # m1.checkgrad(verbose=1)
         # m2.checkgrad(verbose=1)
-        self.assertTrue(m1.checkgrad(verbose=True))
-        self.assertTrue(m2.checkgrad(verbose=True))
-
-
-if __name__ == "__main__":
-    print("Running unit tests")
-    unittest.main()
+        assert m1.checkgrad(verbose=True)
+        assert m2.checkgrad(verbose=True)

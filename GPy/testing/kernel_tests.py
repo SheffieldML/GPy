@@ -499,6 +499,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
+    def test_WienerVelocity(self):
+        k = GPy.kern.WienerVelocity(1)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+
     def test_symmetric_even(self):
         k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
         transform = -np.array([[1.0]])

@@ -20,8 +20,8 @@ from GPy.likelihoods.link_functions import (
 )
 
 
-class LinkFunctionTests(np.testing.TestCase):
-    def setUp(self):
+class TestLinkFunction:
+    def setup(self):
         self.small_f = np.array([[-1e-4]])
         self.zero_f = np.array([[1e-4]])
         self.mid_f = np.array([[5.0]])
@@ -31,50 +31,50 @@ class LinkFunctionTests(np.testing.TestCase):
 
     def check_gradient(self, link_func, lim_of_inf, test_lim=False):
         grad = GradientChecker(link_func.transf, link_func.dtransf_df, x0=self.mid_f)
-        self.assertTrue(grad.checkgrad(verbose=True))
+        assert grad.checkgrad(verbose=True)
         grad2 = GradientChecker(
             link_func.dtransf_df, link_func.d2transf_df2, x0=self.mid_f
         )
-        self.assertTrue(grad2.checkgrad(verbose=True))
+        assert grad2.checkgrad(verbose=True)
         grad3 = GradientChecker(
             link_func.d2transf_df2, link_func.d3transf_df3, x0=self.mid_f
         )
-        self.assertTrue(grad3.checkgrad(verbose=True))
+        assert grad3.checkgrad(verbose=True)
 
         grad = GradientChecker(link_func.transf, link_func.dtransf_df, x0=self.small_f)
-        self.assertTrue(grad.checkgrad(verbose=True))
+        assert grad.checkgrad(verbose=True)
         grad2 = GradientChecker(
             link_func.dtransf_df, link_func.d2transf_df2, x0=self.small_f
         )
-        self.assertTrue(grad2.checkgrad(verbose=True))
+        assert grad2.checkgrad(verbose=True)
         grad3 = GradientChecker(
             link_func.d2transf_df2, link_func.d3transf_df3, x0=self.small_f
         )
-        self.assertTrue(grad3.checkgrad(verbose=True))
+        assert grad3.checkgrad(verbose=True)
 
         grad = GradientChecker(link_func.transf, link_func.dtransf_df, x0=self.zero_f)
-        self.assertTrue(grad.checkgrad(verbose=True))
+        assert grad.checkgrad(verbose=True)
         grad2 = GradientChecker(
             link_func.dtransf_df, link_func.d2transf_df2, x0=self.zero_f
         )
-        self.assertTrue(grad2.checkgrad(verbose=True))
+        assert grad2.checkgrad(verbose=True)
         grad3 = GradientChecker(
             link_func.d2transf_df2, link_func.d3transf_df3, x0=self.zero_f
         )
-        self.assertTrue(grad3.checkgrad(verbose=True))
+        assert grad3.checkgrad(verbose=True)
 
         # Do a limit test if the large f value is too large
         large_f = np.clip(self.large_f, -np.inf, lim_of_inf - 1e-3)
         grad = GradientChecker(link_func.transf, link_func.dtransf_df, x0=large_f)
-        self.assertTrue(grad.checkgrad(verbose=True))
+        assert grad.checkgrad(verbose=True)
         grad2 = GradientChecker(
             link_func.dtransf_df, link_func.d2transf_df2, x0=large_f
         )
-        self.assertTrue(grad2.checkgrad(verbose=True))
+        assert grad2.checkgrad(verbose=True)
         grad3 = GradientChecker(
             link_func.d2transf_df2, link_func.d3transf_df3, x0=large_f
         )
-        self.assertTrue(grad3.checkgrad(verbose=True))
+        assert grad3.checkgrad(verbose=True)
 
         if test_lim:
             print("Testing limits")
@@ -83,29 +83,31 @@ class LinkFunctionTests(np.testing.TestCase):
             grad = GradientChecker(
                 link_func.transf, link_func.dtransf_df, x0=lim_of_inf
             )
-            self.assertTrue(grad.checkgrad(verbose=True))
+            assert grad.checkgrad(verbose=True)
             grad2 = GradientChecker(
                 link_func.dtransf_df, link_func.d2transf_df2, x0=lim_of_inf
             )
-            self.assertTrue(grad2.checkgrad(verbose=True))
+            assert grad2.checkgrad(verbose=True)
             grad3 = GradientChecker(
                 link_func.d2transf_df2, link_func.d3transf_df3, x0=lim_of_inf
             )
-            self.assertTrue(grad3.checkgrad(verbose=True))
+            assert grad3.checkgrad(verbose=True)
 
     def check_overflow(self, link_func, lim_of_inf):
         # Check that it does something sensible beyond this limit,
         # note this is not checking the value is correct, just that it isn't nan
         beyond_lim_of_inf = lim_of_inf + 100.0
-        self.assertFalse(np.isinf(link_func.transf(beyond_lim_of_inf)))
-        self.assertFalse(np.isinf(link_func.dtransf_df(beyond_lim_of_inf)))
-        self.assertFalse(np.isinf(link_func.d2transf_df2(beyond_lim_of_inf)))
+        assert np.isinf(link_func.transf(beyond_lim_of_inf))
+        assert np.isinf(link_func.dtransf_df(beyond_lim_of_inf))
+        assert np.isinf(link_func.d2transf_df2(beyond_lim_of_inf))
 
-        self.assertFalse(np.isnan(link_func.transf(beyond_lim_of_inf)))
-        self.assertFalse(np.isnan(link_func.dtransf_df(beyond_lim_of_inf)))
-        self.assertFalse(np.isnan(link_func.d2transf_df2(beyond_lim_of_inf)))
+        assert np.isnan(link_func.transf(beyond_lim_of_inf))
+        assert np.isnan(link_func.dtransf_df(beyond_lim_of_inf))
+        assert np.isnan(link_func.d2transf_df2(beyond_lim_of_inf))
 
     def test_log_overflow(self):
+        self.setup()
+
         link = Log()
         lim_of_inf = _lim_val_exp
 
@@ -113,16 +115,18 @@ class LinkFunctionTests(np.testing.TestCase):
         assert np.isinf(np.exp(np.log(self.f_upper_lim)))
         # Check the clipping works
         np.testing.assert_almost_equal(link.transf(self.f_lower_lim), 0, decimal=5)
-        self.assertTrue(np.isfinite(link.transf(self.f_upper_lim)))
+        assert np.isfinite(link.transf(self.f_upper_lim))
         self.check_overflow(link, lim_of_inf)
 
         # Check that it would otherwise fail
         beyond_lim_of_inf = lim_of_inf + 10.0
         old_err_state = np.seterr(over="ignore")
-        self.assertTrue(np.isinf(np.exp(beyond_lim_of_inf)))
+        assert np.isinf(np.exp(beyond_lim_of_inf))
         np.seterr(**old_err_state)
 
     def test_log_ex_1_overflow(self):
+        self.setup()
+
         link = Log_ex_1()
         lim_of_inf = _lim_val_exp
 
@@ -141,43 +145,51 @@ class LinkFunctionTests(np.testing.TestCase):
         # Check that it would otherwise fail
         beyond_lim_of_inf = lim_of_inf + 10.0
         old_err_state = np.seterr(over="ignore")
-        self.assertTrue(np.isinf(scipy.special.log1p(np.exp(beyond_lim_of_inf))))
+        assert np.isinf(scipy.special.log1p(np.exp(beyond_lim_of_inf)))
         np.seterr(**old_err_state)
 
     def test_log_gradients(self):
         # transf dtransf_df d2transf_df2 d3transf_df3
+        self.setup()
+
         link = Log()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_identity_gradients(self):
+        self.setup()
         link = Identity()
         lim_of_inf = _lim_val
         # FIXME: Should be able to think of a way to test the limits of this
         self.check_gradient(link, lim_of_inf, test_lim=False)
 
     def test_probit_gradients(self):
+        self.setup()
         link = Probit()
         lim_of_inf = _lim_val
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_scaledprobit_gradients(self):
+        self.setup()
         link = ScaledProbit(nu=random.random())
         lim_of_inf = _lim_val
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_Cloglog_gradients(self):
+        self.setup()
         link = Cloglog()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_Log_ex_1_gradients(self):
+        self.setup()
         link = Log_ex_1()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
         self.check_overflow(link, lim_of_inf)
 
     def test_reciprocal_gradients(self):
+        self.setup()
         link = Reciprocal()
         lim_of_inf = _lim_val
         # Does not work with much smaller values, and values closer to zero than 1e-5

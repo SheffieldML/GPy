@@ -1,12 +1,11 @@
 # Copyright (c) 2015, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import unittest
 import numpy as np
 import GPy
 
 
-class MFtests(unittest.TestCase):
+class TestMF:
     def test_simple_mean_function(self):
         """
         The simplest possible mean function. No parameters, just a simple Sinusoid.

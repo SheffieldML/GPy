@@ -1,16 +1,18 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from __future__ import division
-
-import unittest
+import pytest
 import numpy as np
 import GPy
-from GPy.models import GradientChecker
 from functools import reduce
 
+try:
+    import autograd
+except ImportError:
+    autograd = None
 
-class MiscTests(unittest.TestCase):
-    def setUp(self):
+
+class TestMisc:
+    def setup(self):
         self.N = 20
         self.N_new = 50
         self.D = 1
@@ -19,6 +21,7 @@ class MiscTests(unittest.TestCase):
         self.X_new = np.random.uniform(-3.0, 3.0, (self.N_new, 1))
 
     def test_setXY(self):
+        self.setup()
         m = GPy.models.GPRegression(self.X, self.Y)
         m.set_XY(
             np.vstack([self.X, np.random.rand(1, self.X.shape[1])]),
@@ -33,6 +36,7 @@ class MiscTests(unittest.TestCase):
         Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
         Thanks simbartonels@github for reporting the bug and providing the following example.
         """
+        self.setup()
 
         # set seed for reproducability
         np.random.seed(3)
@@ -71,9 +75,10 @@ class MiscTests(unittest.TestCase):
         Xp[:, 0] = Xp[:, 0] * 15 - 5
         Xp[:, 1] = Xp[:, 1] * 15
         _, var = m.predict(Xp)
-        self.assertTrue(np.all(var >= 0.0))
+        assert np.all(var >= 0.0))
 
     def test_raw_predict(self):
+        self.setup()
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.randomize()
@@ -85,18 +90,19 @@ class MiscTests(unittest.TestCase):
         mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
         mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
-        self.assertEquals(mu.shape, (self.N_new, self.D))
-        self.assertEquals(covar.shape, (self.N_new, self.N_new))
+        assert mu.shape == (self.N_new, self.D)
+        assert covar.shape == (self.N_new, self.N_new)
         np.testing.assert_almost_equal(K_hat, covar)
         np.testing.assert_almost_equal(mu_hat, mu)
 
         mu, var = m.predict_noiseless(self.X_new)
-        self.assertEquals(mu.shape, (self.N_new, self.D))
-        self.assertEquals(var.shape, (self.N_new, 1))
+        assert mu.shape == (self.N_new, self.D)
+        assert var.shape == (self.N_new, 1)
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
         np.testing.assert_almost_equal(mu_hat, mu)
 
     def test_normalizer(self):
+        self.setup()
         k = GPy.kern.RBF(1)
         Y = self.Y
         mu, std = Y.mean(0), Y.std(0)
@@ -141,6 +147,7 @@ class MiscTests(unittest.TestCase):
         """
         Test that normalizing works in multi-output case
         """
+        self.setup()
 
         # Create test inputs
         X = self.X
@@ -186,12 +193,12 @@ class MiscTests(unittest.TestCase):
             np.array(q95).flatten(),
         )
 
-    def check_jacobian(self):
-        try:
-            import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt
-            from GPy.models import GradientChecker, GPRegression
-        except:
-            raise self.skipTest("autograd not available to check gradients")
+    @pytest.mark.skipif(
+        autograd is None, reason="autograd not available to check gradients"
+    )
+    def test_jacobian(self):
+        import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt
+        from GPy.models import GradientChecker, GPRegression
 
         def k(X, X2, alpha=1.0, lengthscale=None):
             if lengthscale is None:
@@ -242,6 +249,8 @@ class MiscTests(unittest.TestCase):
 
     def test_predict_uncertain_inputs(self):
         """Projection of Gaussian through a linear function is still gaussian, and moments are analytical to compute, so we can check this case for predictions easily"""
+        self.setup()
+
         X = np.linspace(-5, 5, 10)[:, None]
         Y = 2 * X + np.random.randn(*X.shape) * 1e-3
         m = GPy.models.BayesianGPLVM(
@@ -266,6 +275,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-3)
 
     def test_sparse_raw_predict(self):
+        self.setup()
+
         k = GPy.kern.RBF(1)
         m = GPy.models.SparseGPRegression(self.X, self.Y, kernel=k)
         m.randomize()
@@ -277,18 +288,20 @@ class MiscTests(unittest.TestCase):
         # K_hat = np.clip(K_hat, 1e-15, np.inf)
 
         mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
-        self.assertEquals(mu.shape, (self.N_new, self.D))
-        self.assertEquals(covar.shape, (self.N_new, self.N_new))
+        assert mu.shape == (self.N_new, self.D)
+        assert covar.shape == (self.N_new, self.N_new)
         np.testing.assert_almost_equal(K_hat, covar)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
         mu, var = m.predict_noiseless(self.X_new)
-        self.assertEquals(mu.shape, (self.N_new, self.D))
-        self.assertEquals(var.shape, (self.N_new, 1))
+        assert mu.shape == (self.N_new, self.D)
+        assert var.shape == (self.N_new, 1)
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
     def test_likelihood_replicate(self):
+        self.setup()
+
         m = GPy.models.GPRegression(self.X, self.Y)
         m2 = GPy.models.GPRegression(self.X, self.Y)
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
@@ -318,6 +331,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
     def test_likelihood_set(self):
+        self.setup()
+
         m = GPy.models.GPRegression(self.X, self.Y)
         m2 = GPy.models.GPRegression(self.X, self.Y)
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
@@ -339,6 +354,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
 
     def test_missing_data(self):
+        self.setup()
+
         Q = 4
 
         k = GPy.kern.Linear(Q, ARD=True) + GPy.kern.White(
@@ -364,6 +381,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_allclose(mul, q50[0])
 
     def test_likelihood_replicate_kern(self):
+        self.setup()
+
         m = GPy.models.GPRegression(self.X, self.Y)
         m2 = GPy.models.GPRegression(self.X, self.Y)
         np.testing.assert_equal(m.log_likelihood(), m2.log_likelihood())
@@ -381,6 +400,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(m.log_likelihood(), m2.log_likelihood())
 
     def test_big_model(self):
+        self.setup()
+
         m = GPy.examples.dimensionality_reduction.mrd_simulation(
             optimize=0, plot=0, plot_sim=0
         )
@@ -402,6 +423,8 @@ class MiscTests(unittest.TestCase):
     def test_mrd(self):
         from GPy.inference.latent_function_inference import InferenceMethodList, VarDTC
         from GPy.likelihoods import Gaussian
+
+        self.setup()
 
         Y1 = np.random.normal(0, 1, (40, 13))
         Y2 = np.random.normal(0, 1, (40, 6))
@@ -448,6 +471,8 @@ class MiscTests(unittest.TestCase):
         assert m.checkgrad()
 
     def test_model_set_params(self):
+        self.setup()
+
         m = GPy.models.GPRegression(self.X, self.Y)
         lengthscale = np.random.uniform()
         m.kern.lengthscale = lengthscale
@@ -459,6 +484,8 @@ class MiscTests(unittest.TestCase):
         print(m)
 
     def test_model_updates(self):
+        self.setup()
+
         Y1 = np.random.normal(0, 1, (40, 13))
         Y2 = np.random.normal(0, 1, (40, 6))
         m = GPy.models.MRD([Y1, Y2], 5)
@@ -466,18 +493,20 @@ class MiscTests(unittest.TestCase):
         m.add_observer(self, self._count_updates, -2000)
         m.update_model(False)
         m[".*Gaussian"] = 0.001
-        self.assertEquals(self.count, 0)
+        assert self.count == 0
         m[".*Gaussian"].constrain_bounded(0, 0.01)
-        self.assertEquals(self.count, 0)
+        assert self.count == 0
         m.Z.fix()
-        self.assertEquals(self.count, 0)
+        assert self.count == 0
         m.update_model(True)
-        self.assertEquals(self.count, 1)
+        assert self.count == 1
 
     def _count_updates(self, me, which):
         self.count += 1
 
     def test_model_optimize(self):
+        self.setup()
+
         X = np.random.uniform(-3.0, 3.0, (20, 1))
         Y = np.sin(X) + np.random.randn(20, 1) * 0.05
         m = GPy.models.GPRegression(X, Y)
@@ -489,6 +518,8 @@ class MiscTests(unittest.TestCase):
         A InputWarpedGP with the identity warping function should be
         equal to a standard GP.
         """
+        self.setup()
+
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.optimize()
@@ -505,6 +536,8 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
 
     def test_kumar_warping_gradient(self):
+        self.setup()
+
         n_X = 100
         np.random.seed(0)
         X = np.random.randn(n_X, 2)
@@ -513,21 +546,23 @@ class MiscTests(unittest.TestCase):
         k1 = GPy.kern.Linear(2)
         m1 = GPy.models.InputWarpedGP(X, Y, kernel=k1)
         m1.randomize()
-        self.assertEquals(m1.checkgrad(), True)
+        assert m1.checkgrad()
 
         k2 = GPy.kern.RBF(2)
         m2 = GPy.models.InputWarpedGP(X, Y, kernel=k2)
         m2.randomize()
         m2.checkgrad()
-        self.assertEquals(m2.checkgrad(), True)
+        assert m2.checkgrad()
 
         k3 = GPy.kern.Matern52(2)
         m3 = GPy.models.InputWarpedGP(X, Y, kernel=k3)
         m3.randomize()
         m3.checkgrad()
-        self.assertEquals(m3.checkgrad(), True)
+        assert m3.checkgrad()
 
     def test_kumar_warping_parameters(self):
+        self.setup()
+
         np.random.seed(1)
         X = np.random.rand(5, 2)
         epsilon = 1e-6
@@ -583,6 +618,8 @@ class MiscTests(unittest.TestCase):
         A WarpedGP with the identity warping function should be
         equal to a standard GP.
         """
+        self.setup()
+
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.optimize()
@@ -613,6 +650,8 @@ class MiscTests(unittest.TestCase):
         equal to a standard GP with log labels.
         Note that we predict the median here.
         """
+        self.setup()
+
         k = GPy.kern.RBF(1)
         Y = np.abs(self.Y)
         logY = np.log(Y)
@@ -637,12 +676,15 @@ class MiscTests(unittest.TestCase):
         np.testing.assert_almost_equal(np.exp(preds), warp_preds, decimal=4)
         np.testing.assert_almost_equal(np.exp(preds), warp_preds_exact, decimal=4)
 
-    def test_warped_gp_cubic_sine(self, max_iters=100):
+    def test_warped_gp_cubic_sine(self):
         """
         A test replicating the cubic sine regression problem from
         Snelson's paper. This test doesn't have any assertions, it's
         just to ensure coverage of the tanh warping function code.
         """
+        self.setup()
+        max_iters = 100
+
         X = (2 * np.pi) * np.random.random(151) - np.pi
         Y = np.sin(X) + np.random.normal(0, 0.2, 151)
         Y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in Y])
@@ -669,6 +711,8 @@ class MiscTests(unittest.TestCase):
         # from a sine wave, we confirm the algorithm determines that the
         # likelihood is maximised when the offset hyperparameter is approximately
         # equal to the actual offset in X between the two time series.
+        self.setup()
+
         offset = 3
         X1 = np.arange(0, 50, 5.0)[:, None]
         X2 = np.arange(0 + offset, 50 + offset, 5.0)[:, None]
@@ -692,6 +736,8 @@ class MiscTests(unittest.TestCase):
         )
 
     def test_logistic_basis_func_gradients(self):
+        self.setup()
+
         X = np.random.uniform(-4, 4, (20, 5))
         points = np.random.uniform(X.min(0), X.max(0), X.shape[1])
         ks = []
@@ -720,6 +766,8 @@ class MiscTests(unittest.TestCase):
         assert m.checkgrad()
 
     def test_posterior_inf_basis_funcs(self):
+        self.setup()
+
         X = np.random.uniform(-4, 1, (50, 1))
 
         # Logistic:
@@ -754,8 +802,8 @@ class MiscTests(unittest.TestCase):
         )
 
 
-class GradientTests(np.testing.TestCase):
-    def setUp(self):
+class TestGradient:
+    def setup(self):
         ######################################
         # # 1 dimensional example
 
@@ -800,21 +848,25 @@ class GradientTests(np.testing.TestCase):
 
     def test_GPRegression_rbf_1d(self):
         """Testing the GP regression with rbf kernel with white kernel on 1d data"""
+        self.setup()
         rbf = GPy.kern.RBF(1)
         self.check_model(rbf, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_rbf_2D(self):
         """Testing the GP regression with rbf kernel on 2d data"""
+        self.setup()
         rbf = GPy.kern.RBF(2)
         self.check_model(rbf, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_rbf_ARD_2D(self):
         """Testing the GP regression with rbf kernel on 2d data"""
+        self.setup()
         k = GPy.kern.RBF(2, ARD=True)
         self.check_model(k, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_mlp_1d(self):
         """Testing the GP regression with mlp kernel with white kernel on 1d data"""
+        self.setup()
         mlp = GPy.kern.MLP(1)
         self.check_model(mlp, model_type="GPRegression", dimension=1)
 
@@ -826,101 +878,121 @@ class GradientTests(np.testing.TestCase):
 
     def test_GPRegression_matern52_1D(self):
         """Testing the GP regression with matern52 kernel on 1d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(1)
         self.check_model(matern52, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_matern52_2D(self):
         """Testing the GP regression with matern52 kernel on 2d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(2)
         self.check_model(matern52, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_matern52_ARD_2D(self):
         """Testing the GP regression with matern52 kernel on 2d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(2, ARD=True)
         self.check_model(matern52, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_matern32_1D(self):
         """Testing the GP regression with matern32 kernel on 1d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(1)
         self.check_model(matern32, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_matern32_2D(self):
         """Testing the GP regression with matern32 kernel on 2d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(2)
         self.check_model(matern32, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_matern32_ARD_2D(self):
         """Testing the GP regression with matern32 kernel on 2d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(2, ARD=True)
         self.check_model(matern32, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_exponential_1D(self):
         """Testing the GP regression with exponential kernel on 1d data"""
+        self.setup()
         exponential = GPy.kern.Exponential(1)
         self.check_model(exponential, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_exponential_2D(self):
         """Testing the GP regression with exponential kernel on 2d data"""
+        self.setup()
         exponential = GPy.kern.Exponential(2)
         self.check_model(exponential, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_exponential_ARD_2D(self):
         """Testing the GP regression with exponential kernel on 2d data"""
+        self.setup()
         exponential = GPy.kern.Exponential(2, ARD=True)
         self.check_model(exponential, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_bias_kern_1D(self):
         """Testing the GP regression with bias kernel on 1d data"""
+        self.setup()
         bias = GPy.kern.Bias(1)
         self.check_model(bias, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_bias_kern_2D(self):
         """Testing the GP regression with bias kernel on 2d data"""
+        self.setup()
         bias = GPy.kern.Bias(2)
         self.check_model(bias, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_linear_kern_1D_ARD(self):
         """Testing the GP regression with linear kernel on 1d data"""
+        self.setup()
         linear = GPy.kern.Linear(1, ARD=True)
         self.check_model(linear, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_linear_kern_2D_ARD(self):
         """Testing the GP regression with linear kernel on 2d data"""
+        self.setup()
         linear = GPy.kern.Linear(2, ARD=True)
         self.check_model(linear, model_type="GPRegression", dimension=2)
 
     def test_GPRegression_linear_kern_1D(self):
         """Testing the GP regression with linear kernel on 1d data"""
+        self.setup()
         linear = GPy.kern.Linear(1)
         self.check_model(linear, model_type="GPRegression", dimension=1)
 
     def test_GPRegression_linear_kern_2D(self):
         """Testing the GP regression with linear kernel on 2d data"""
+        self.setup()
         linear = GPy.kern.Linear(2)
         self.check_model(linear, model_type="GPRegression", dimension=2)
 
     def test_SparseGPRegression_rbf_white_kern_1d(self):
         """Testing the sparse GP regression with rbf kernel with white kernel on 1d data"""
+        self.setup()
         rbf = GPy.kern.RBF(1)
         self.check_model(rbf, model_type="SparseGPRegression", dimension=1)
 
     def test_SparseGPRegression_rbf_white_kern_2D(self):
         """Testing the sparse GP regression with rbf kernel on 2d data"""
+        self.setup()
         rbf = GPy.kern.RBF(2)
         self.check_model(rbf, model_type="SparseGPRegression", dimension=2)
 
     def test_SparseGPRegression_rbf_linear_white_kern_1D(self):
         """Testing the sparse GP regression with rbf kernel on 1d data"""
+        self.setup()
         rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1) + GPy.kern.White(1, 1e-5)
         self.check_model(rbflin, model_type="SparseGPRegression", dimension=1)
 
     def test_SparseGPRegression_rbf_linear_white_kern_2D(self):
         """Testing the sparse GP regression with rbf kernel on 2d data"""
+        self.setup()
         rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2)
         self.check_model(rbflin, model_type="SparseGPRegression", dimension=2)
 
     def test_SparseGPRegression_rbf_white_kern_2D_uncertain_inputs(self):
         """Testing the sparse GP regression with rbf, linear kernel on 2d data with uncertain inputs"""
+        self.setup()
         rbflin = GPy.kern.RBF(2) + GPy.kern.White(2)
         self.check_model(
             rbflin, model_type="SparseGPRegression", dimension=2, uncertain_inputs=1
@@ -928,6 +1000,7 @@ class GradientTests(np.testing.TestCase):
 
     def test_SparseGPRegression_rbf_white_kern_1D_uncertain_inputs(self):
         """Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs"""
+        self.setup()
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(
             rbflin, model_type="SparseGPRegression", dimension=1, uncertain_inputs=1
@@ -935,46 +1008,55 @@ class GradientTests(np.testing.TestCase):
 
     def test_TPRegression_matern52_1D(self):
         """Testing the TP regression with matern52 kernel on 1d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(1) + GPy.kern.White(1)
         self.check_model(matern52, model_type="TPRegression", dimension=1)
 
     def test_TPRegression_rbf_2D(self):
         """Testing the TP regression with rbf kernel on 2d data"""
+        self.setup()
         rbf = GPy.kern.RBF(2)
         self.check_model(rbf, model_type="TPRegression", dimension=2)
 
     def test_TPRegression_rbf_ARD_2D(self):
         """Testing the GP regression with rbf kernel on 2d data"""
+        self.setup()
         k = GPy.kern.RBF(2, ARD=True)
         self.check_model(k, model_type="TPRegression", dimension=2)
 
     def test_TPRegression_matern52_2D(self):
         """Testing the TP regression with matern52 kernel on 2d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(2)
         self.check_model(matern52, model_type="TPRegression", dimension=2)
 
     def test_TPRegression_matern52_ARD_2D(self):
         """Testing the TP regression with matern52 kernel on 2d data"""
+        self.setup()
         matern52 = GPy.kern.Matern52(2, ARD=True)
         self.check_model(matern52, model_type="TPRegression", dimension=2)
 
     def test_TPRegression_matern32_1D(self):
         """Testing the TP regression with matern32 kernel on 1d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(1)
         self.check_model(matern32, model_type="TPRegression", dimension=1)
 
     def test_TPRegression_matern32_2D(self):
         """Testing the TP regression with matern32 kernel on 2d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(2)
         self.check_model(matern32, model_type="TPRegression", dimension=2)
 
     def test_TPRegression_matern32_ARD_2D(self):
         """Testing the TP regression with matern32 kernel on 2d data"""
+        self.setup()
         matern32 = GPy.kern.Matern32(2, ARD=True)
         self.check_model(matern32, model_type="TPRegression", dimension=2)
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
+        self.setup()
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
@@ -991,6 +1073,7 @@ class GradientTests(np.testing.TestCase):
 
     def test_SparseGPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
+        self.setup()
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
@@ -1007,6 +1090,7 @@ class GradientTests(np.testing.TestCase):
 
     def test_BCGPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
+        self.setup()
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
@@ -1021,6 +1105,7 @@ class GradientTests(np.testing.TestCase):
 
     def test_GPLVM_rbf_linear_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
+        self.setup()
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
@@ -1034,6 +1119,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_GP_EP_probit(self):
+        self.setup()
         N = 20
         Nhalf = int(N / 2)
         X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[
@@ -1045,6 +1131,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_sparse_EP_DTC_probit(self):
+        self.setup()
         N = 20
         Nhalf = int(N / 2)
         X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[
@@ -1057,6 +1144,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_sparse_EP_DTC_probit_uncertain_inputs(self):
+        self.setup()
         N = 20
         Nhalf = int(N / 2)
         X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[
@@ -1072,6 +1160,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_multioutput_regression_1D(self):
+        self.setup()
         X1 = np.random.rand(50, 1) * 8
         X2 = np.random.rand(30, 1) * 5
         X = np.vstack((X1, X2))
@@ -1088,6 +1177,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_simple_MultivariateGaussian_prior(self):
+        self.setup()
         X = np.random.multivariate_normal(
             [1, 5], np.diag([0.5, 0.3]), (100, 1)
         ).reshape(100, 2)
@@ -1104,6 +1194,7 @@ class GradientTests(np.testing.TestCase):
         print(m.kern.lengthscale)
 
     def test_simple_MultivariateGaussian_prior_matrixmean(self):
+        self.setup()
         X = np.random.multivariate_normal(
             [1, 5], np.diag([0.5, 0.3]), (100, 1)
         ).reshape(100, 2)
@@ -1120,6 +1211,7 @@ class GradientTests(np.testing.TestCase):
         print(m.kern.lengthscale)
 
     def test_multioutput_sparse_regression_1D(self):
+        self.setup()
         X1 = np.random.rand(500, 1) * 8
         X2 = np.random.rand(300, 1) * 5
         X = np.vstack((X1, X2))
@@ -1134,6 +1226,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_gp_heteroscedastic_regression(self):
+        self.setup()
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -1143,6 +1236,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_sparse_gp_heteroscedastic_regression(self):
+        self.setup()
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -1166,6 +1260,7 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_gp_kronecker_gaussian(self):
+        self.setup()
         np.random.seed(0)
         N1, N2 = 30, 20
         X1 = np.random.randn(N1, 1)
@@ -1188,18 +1283,19 @@ class GradientTests(np.testing.TestCase):
 
         m.randomize()
         mm[:] = m[:]
-        self.assertTrue(np.allclose(m.log_likelihood(), mm.log_likelihood()))
-        self.assertTrue(np.allclose(m.gradient, mm.gradient))
+        assert np.allclose(m.log_likelihood(), mm.log_likelihood())
+        assert np.allclose(m.gradient, mm.gradient)
         X1test = np.random.randn(100, 1)
         X2test = np.random.randn(100, 1)
         mean1, var1 = m.predict(X1test, X2test)
         yy, xx = np.meshgrid(X2test, X1test)
         Xgrid = np.vstack((xx.flatten(order="F"), yy.flatten(order="F"))).T
         mean2, var2 = mm.predict(Xgrid)
-        self.assertTrue(np.allclose(mean1, mean2))
-        self.assertTrue(np.allclose(var1, var2))
+        assert np.allclose(mean1, mean2)
+        assert np.allclose(var1, var2)
 
     def test_gp_VGPC(self):
+        self.setup()
         np.random.seed(10)
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
@@ -1218,6 +1314,8 @@ class GradientTests(np.testing.TestCase):
         from GPy.models import SSGPLVM
         from GPy.examples.dimensionality_reduction import _simulate_matern
 
+        self.setup()
+
         np.random.seed(10)
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
         _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
@@ -1233,6 +1331,8 @@ class GradientTests(np.testing.TestCase):
     def test_multiout_regression(self):
         np.random.seed(0)
         import GPy
+
+        self.setup()
 
         N = 10
         N_train = 5
@@ -1272,7 +1372,7 @@ class GradientTests(np.testing.TestCase):
         )
         m_mr.optimize_auto(max_iters=1)
         m_mr.randomize()
-        self.assertTrue(m_mr.checkgrad())
+        assert m_mr.checkgrad()
 
         m_mr = GPy.models.GPMultioutRegression(
             x,
@@ -1284,12 +1384,14 @@ class GradientTests(np.testing.TestCase):
         )
         m_mr.optimize_auto(max_iters=1)
         m_mr.randomize()
-        self.assertTrue(m_mr.checkgrad())
+        assert m_mr.checkgrad()
 
     def test_multiout_regression_md(self):
         import GPy
 
         np.random.seed(0)
+
+        self.setup()
 
         N = 20
         N_train = 5
@@ -1390,6 +1492,8 @@ class GradientTests(np.testing.TestCase):
         assert m.checkgrad()
 
     def test_posterior_covariance(self):
+        self.setup()
+
         k = GPy.kern.Poly(2, order=1)
         X1 = np.array([[-2, 2], [-1, 1]])
         X2 = np.array([[2, 3], [-1, 3]])
@@ -1399,9 +1503,11 @@ class GradientTests(np.testing.TestCase):
         result = m._raw_posterior_covariance_between_points(X1, X2)
         expected = np.array([[0.4, 2.2], [1.0, 1.0]]) / 3.0
 
-        self.assertTrue(np.allclose(result, expected))
+        assert np.allclose(result, expected)
 
     def test_posterior_covariance_missing_data(self):
+        self.setup()
+
         Q = 4
         k = GPy.kern.Linear(Q, ARD=True)
         m = _create_missing_data_model(k, Q)
@@ -1412,6 +1518,8 @@ class GradientTests(np.testing.TestCase):
             )
 
     def test_multioutput_model_with_ep(self):
+        self.setup()
+
         f = lambda x: np.sin(x) + 0.1 * (x - 2.0) ** 2 - 0.005 * x**3
         fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x**2
         N = 10
@@ -1453,6 +1561,8 @@ class GradientTests(np.testing.TestCase):
         Check that model.predictive_gradients returns the gradients of
         model.predict when normalizer=True
         """
+        self.setup()
+
         N, M, Q = 10, 15, 3
         X = np.random.rand(M, Q)
         Y = np.random.rand(M, 1)
@@ -1480,6 +1590,8 @@ class GradientTests(np.testing.TestCase):
         Check that model.posterior_covariance_between_points returns
         the covariance from model.predict when normalizer=True
         """
+        self.setup()
+
         np.random.seed(3)
         N, M, Q = 10, 15, 3
         X = np.random.rand(M, Q)
@@ -1492,8 +1604,8 @@ class GradientTests(np.testing.TestCase):
         np.testing.assert_allclose(c1, c2)
 
 
-class GradientMultioutputGPModelTests(np.testing.TestCase):
-    def setUp(self):
+class TestGradientMultioutputGPModel:
+    def setup(self):
         # standard test function
         self.period = 3
         self.w = 2 * np.pi / self.period
@@ -1564,11 +1676,11 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         )
         model = GPy.models.MultioutputGP(X_list, Y_list, kernel_list, likelihood_list)
         model.likelihood.constrain_fixed()
-        self.assertTrue(model.checkgrad(step=1e-3))
+        assert model.checkgrad(step=1e-3)
 
         # optimize the model, and check its hyperparameter gradient again
         model.optimize()
-        self.assertTrue(model.checkgrad(step=1e-3))
+        assert model.checkgrad(step=1e-3)
 
         # check predictions
         np.testing.assert_allclose(
@@ -1592,6 +1704,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with an RBF kernel.
         """
+        self.setup()
         for D in range(1, 4):
             kern = GPy.kern.RBF(input_dim=D)
             kern.randomize()
@@ -1601,6 +1714,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with an RBF (ARD) kernel.
         """
+        self.setup()
         for D in range(1, 4):
             kern = GPy.kern.RBF(input_dim=D, ARD=True)
             kern.randomize()
@@ -1610,6 +1724,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with a StdP kernel.
         """
+        self.setup()
         for D in range(1, 4):
             kern = GPy.kern.StdPeriodic(input_dim=D, period=self.period)
             kern.period.constrain_fixed()
@@ -1620,6 +1735,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with a StdP (ARD) kernel.
         """
+        self.setup()
         for D in range(1, 4):
             kern = GPy.kern.StdPeriodic(
                 input_dim=D, period=[self.period] * D, ARD1=True, ARD2=True
@@ -1632,6 +1748,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with several RBF kernels.
         """
+        self.setup()
         for D in range(2, 4):
             kerns = [GPy.kern.RBF(input_dim=1) for d in range(D)]
             kern = reduce(lambda k0, k1: k0 * k1, kerns)
@@ -1642,6 +1759,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with several StdP kernels.
         """
+        self.setup()
         for D in range(2, 4):
             kerns = [
                 GPy.kern.StdPeriodic(input_dim=1, period=self.period) for d in range(D)
@@ -1655,6 +1773,7 @@ class GradientMultioutputGPModelTests(np.testing.TestCase):
         """
         Testing gradient observing MultioutputGP model with a mix of kernel types.
         """
+        self.setup()
         for D in range(2, 4):
             kerns = []
             for d in range(D):
@@ -1690,8 +1809,3 @@ def _create_missing_data_model(kernel, Q):
     )
 
     return m
-
-
-if __name__ == "__main__":
-    print("Running unit tests, please be (very) patient...")
-    unittest.main()

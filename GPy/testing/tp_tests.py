@@ -3,13 +3,12 @@ Created on 14 Jul 2017, based on gp_tests
 
 @author: javdrher
 """
-import unittest
 import numpy as np
 import GPy
 
 
-class Test(unittest.TestCase):
-    def setUp(self):
+class TestTP:
+    def setup(self):
         np.random.seed(12345)
         self.N = 20
         self.N_new = 50
@@ -19,6 +18,7 @@ class Test(unittest.TestCase):
         self.X_new = np.random.uniform(-3.0, 3.0, (self.N_new, 1))
 
     def test_setxy_gp(self):
+        self.setup()
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         m = GPy.models.TPRegression(self.X, self.Y, kernel=k)
         mu, var = m.predict(m.X)
@@ -33,6 +33,8 @@ class Test(unittest.TestCase):
     def test_mean_function(self):
         from GPy.core.parameterization.param import Param
         from GPy.core.mapping import Mapping
+
+        self.setup()
 
         class Parabola(Mapping):
             def __init__(self, variance, degree=2, name="parabola"):
@@ -74,6 +76,8 @@ class Test(unittest.TestCase):
         _ = m.predict(m.X)
 
     def test_normalizer(self):
+        self.setup()
+
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         Y = self.Y
         mu, std = Y.mean(0), Y.std(0)
@@ -115,6 +119,8 @@ class Test(unittest.TestCase):
         )
 
     def test_predict_equivalence(self):
+        self.setup()
+
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         m = GPy.models.TPRegression(self.X, self.Y, kernel=k)
         m.optimize()
@@ -133,10 +139,12 @@ class Test(unittest.TestCase):
         mu3, var3 = m2._raw_predict(m.X)
         np.testing.assert_allclose(mu1, mu2)
         np.testing.assert_allclose(var1, var2)
-        self.assertFalse(np.allclose(mu1, mu3))
-        self.assertFalse(np.allclose(var1, var3))
+        assert not np.allclose(mu1, mu3)
+        assert not np.allclose(var1, var3)
 
     def test_gp_equivalence(self):
+        self.setup()
+
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
         m.optimize()
@@ -148,7 +156,3 @@ class Test(unittest.TestCase):
         mu2, var2 = m2.predict(self.X)
         np.testing.assert_allclose(mu1, mu2)
         np.testing.assert_allclose(var1, var2)
-
-
-if __name__ == "__main__":
-    unittest.main()

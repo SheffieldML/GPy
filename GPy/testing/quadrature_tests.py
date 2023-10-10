@@ -3,15 +3,12 @@ import numpy as np
 from ..util.quad_integrate import quadgk_int, quadvgk
 
 
-class QuadTests(np.testing.TestCase):
+class TestQuad:
     """
     test file for checking implementation of gaussian-kronrod quadrature.
     we will take a function which can be integrated analytically and check if quadgk result is similar or not!
     through this file we can test how numerically accurate quadrature implementation in native numpy or manual code is.
     """
-
-    def setUp(self):
-        pass
 
     def test_infinite_quad(self):
         def f(x):

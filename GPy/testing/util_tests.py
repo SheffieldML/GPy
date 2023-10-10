@@ -37,20 +37,20 @@ class UtilTest:
         from GPy.util.debug import checkFinite
 
         array = np.random.normal(0, 1, 100).reshape(25, 4)
-        self.assertTrue(checkFinite(array, name="test"))
+        assert checkFinite(array, name="test")
 
         array[np.random.binomial(1, 0.3, array.shape).astype(bool)] = np.nan
-        self.assertFalse(checkFinite(array))
+        assert not checkFinite(array)
 
     def test_checkFullRank(self):
         from GPy.util.debug import checkFullRank
         from GPy.util.linalg import tdot
 
         array = np.random.normal(0, 1, 100).reshape(25, 4)
-        self.assertFalse(checkFullRank(tdot(array), name="test"))
+        assert not checkFullRank(tdot(array), name="test")
 
         array = np.random.normal(0, 1, (25, 25))
-        self.assertTrue(checkFullRank(tdot(array)))
+        assert checkFullRank(tdot(array))
 
     def test_fixed_inputs_median(self):
         """test fixed_inputs convenience function"""
@@ -61,9 +61,9 @@ class UtilTest:
         Y = np.sin(X) + np.random.randn(10, 3) * 1e-3
         m = GPy.models.GPRegression(X, Y)
         fixed = fixed_inputs(m, [1], fix_routine="median", as_list=True, X_all=False)
-        self.assertTrue((0, np.median(X[:, 0])) in fixed)
-        self.assertTrue((2, np.median(X[:, 2])) in fixed)
-        self.assertTrue(
+        assert (0, np.median(X[:, 0])) in fixed
+        assert (2, np.median(X[:, 2])) in fixed
+        assert (
             len([t for t in fixed if t[0] == 1]) == 0
         )  # Unfixed input should not be in fixed
 
@@ -75,9 +75,9 @@ class UtilTest:
         Y = np.sin(X) + np.random.randn(10, 3) * 1e-3
         m = GPy.models.GPRegression(X, Y)
         fixed = fixed_inputs(m, [1], fix_routine="mean", as_list=True, X_all=False)
-        self.assertTrue((0, np.mean(X[:, 0])) in fixed)
-        self.assertTrue((2, np.mean(X[:, 2])) in fixed)
-        self.assertTrue(
+        assert (0, np.mean(X[:, 0])) in fixed
+        assert (2, np.mean(X[:, 2])) in fixed
+        assert (
             len([t for t in fixed if t[0] == 1]) == 0
         )  # Unfixed input should not be in fixed
 
@@ -89,9 +89,9 @@ class UtilTest:
         Y = np.sin(X) + np.random.randn(10, 3) * 1e-3
         m = GPy.models.GPRegression(X, Y)
         fixed = fixed_inputs(m, [1], fix_routine="zero", as_list=True, X_all=False)
-        self.assertTrue((0, 0.0) in fixed)
-        self.assertTrue((2, 0.0) in fixed)
-        self.assertTrue(
+        assert (0, 0.0) in fixed
+        assert (2, 0.0) in fixed
+        assert (
             len([t for t in fixed if t[0] == 1]) == 0
         )  # Unfixed input should not be in fixed
 
@@ -106,9 +106,9 @@ class UtilTest:
         Y = np.sin(X_mu) + np.random.randn(10, 3) * 1e-3
         m = GPy.models.BayesianGPLVM(Y, X=X_mu, X_variance=X_var, input_dim=3)
         fixed = fixed_inputs(m, [1], fix_routine="median", as_list=True, X_all=False)
-        self.assertTrue((0, np.median(X.mean.values[:, 0])) in fixed)
-        self.assertTrue((2, np.median(X.mean.values[:, 2])) in fixed)
-        self.assertTrue(
+        assert (0, np.median(X.mean.values[:, 0])) in fixed
+        assert (2, np.median(X.mean.values[:, 2])) in fixed
+        assert (
             len([t for t in fixed if t[0] == 1]) == 0
         )  # Unfixed input should not be in fixed
 
@@ -121,7 +121,7 @@ class UtilTest:
         alpha = 1.0
         DSYR(A, b, alpha)
         R = np.array([[46, 55, 64], [55, 67, 79], [64, 79, 94]])
-        self.assertTrue(abs(np.sum(A - R)) < 1e-12)
+        assert abs(np.sum(A - R)) < 1e-12
 
     def test_subarray(self):
         import GPy
@@ -130,10 +130,10 @@ class UtilTest:
         X[[1, 1, 1], [0, 4, 5]] = 1
         X[1:, [2, 3]] = 1
         d = GPy.util.subarray_and_sorting.common_subarrays(X, axis=1)
-        self.assertTrue(len(d) == 3)
+        assert len(d) == 3
         X[:, d[tuple(X[:, 0])]]
-        self.assertTrue(d[tuple(X[:, 4])] == d[tuple(X[:, 0])] == [0, 4, 5])
-        self.assertTrue(d[tuple(X[:, 1])] == [1])
+        assert d[tuple(X[:, 4])] == d[tuple(X[:, 0])] == [0, 4, 5]
+        assert d[tuple(X[:, 1])] == [1]
 
     def test_offset_cluster(self):
         # Tests the GPy.util.cluster_with_offset.cluster utility with a small
@@ -191,12 +191,14 @@ class UtilTest:
         assert set([0, 3]) in clusters, "Offset Clustering algoirthm failed"
 
 
-class TestUnivariateGaussian(unittest.TestCase):
-    def setUp(self):
+class TestUnivariateGaussian:
+    def setup(self):
         self.zz = [-5.0, -0.8, 0.0, 0.5, 2.0, 10.0]
 
     def test_logPdfNormal(self):
         from GPy.util.univariate_Gaussian import logPdfNormal
+
+        self.setup()
 
         pySols = [
             -13.4189385332,
@@ -209,10 +211,12 @@ class TestUnivariateGaussian(unittest.TestCase):
         diff = 0.0
         for i in range(len(pySols)):
             diff += abs(logPdfNormal(self.zz[i]) - pySols[i])
-        self.assertTrue(diff < 1e-10)
+        assert diff < 1e-10
 
     def test_cdfNormal(self):
         from GPy.util.univariate_Gaussian import cdfNormal
+
+        self.setup()
 
         pySols = [
             2.86651571879e-07,
@@ -225,10 +229,12 @@ class TestUnivariateGaussian(unittest.TestCase):
         diff = 0.0
         for i in range(len(pySols)):
             diff += abs(cdfNormal(self.zz[i]) - pySols[i])
-        self.assertTrue(diff < 1e-10)
+        assert diff < 1e-10
 
     def test_logCdfNormal(self):
         from GPy.util.univariate_Gaussian import logCdfNormal
+
+        self.setup()
 
         pySols = [
             -15.064998394,
@@ -241,10 +247,12 @@ class TestUnivariateGaussian(unittest.TestCase):
         diff = 0.0
         for i in range(len(pySols)):
             diff += abs(logCdfNormal(self.zz[i]) - pySols[i])
-        self.assertTrue(diff < 1e-10)
+        assert diff < 1e-10
 
     def test_derivLogCdfNormal(self):
         from GPy.util.univariate_Gaussian import derivLogCdfNormal
+
+        self.setup()
 
         pySols = [
             5.18650396941,
@@ -257,11 +265,11 @@ class TestUnivariateGaussian(unittest.TestCase):
         diff = 0.0
         for i in range(len(pySols)):
             diff += abs(derivLogCdfNormal(self.zz[i]) - pySols[i])
-        self.assertTrue(diff < 1e-8)
+        assert diff < 1e-8
 
 
-class TestStandardize(unittest.TestCase):
-    def setUp(self):
+class TestStandardize:
+    def setup(self):
         self.normalizer = GPy.util.normalizer.Standardize()
         y = np.stack([np.random.randn(10), 2 * np.random.randn(10)], axis=1)
         self.normalizer.scale_by(y)
@@ -270,6 +278,7 @@ class TestStandardize(unittest.TestCase):
         """
         Test inverse covariance outputs correct size
         """
+        self.setup()
         covariance = np.random.rand(100, 100)
         output = self.normalizer.inverse_covariance(covariance)
-        self.assertTrue(output.shape == (100, 100, 2))
+        assert output.shape == (100, 100, 2)

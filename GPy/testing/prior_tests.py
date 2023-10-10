@@ -1,12 +1,11 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
-import unittest
+import pytest
 import numpy as np
 import GPy
 
 
-class PriorTests(unittest.TestCase):
+class TestPrior:
     def test_studentT(self):
         xmin, xmax = 1, 2.5 * np.pi
         b, C, SNR = 1, 0, 0.1
@@ -21,14 +20,16 @@ class PriorTests(unittest.TestCase):
 
         # setting a StudentT prior on non-negative parameters
         # should raise an assertionerror.
-        self.assertRaises(AssertionError, m.rbf.set_prior, studentT)
+
+        with pytest.raises(AssertionError):
+            m.rbf.set_prior(studentT)
 
         # The gradients need to be checked
         assert m.checkgrad()
 
         # Check the singleton pattern:
-        self.assertIs(studentT, GPy.priors.StudentT(1, 2, 4))
-        self.assertIsNot(studentT, GPy.priors.StudentT(2, 2, 4))
+        assert studentT is GPy.priors.StudentT(1, 2, 4)
+        assert studentT is not GPy.priors.StudentT(2, 2, 4)
 
     def test_lognormal(self):
         xmin, xmax = 1, 2.5 * np.pi
@@ -82,7 +83,8 @@ class PriorTests(unittest.TestCase):
         gaussian = GPy.priors.Gaussian(1, 1)
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
-        self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
+        with pytest.raises(AssertionError):
+            m.rbf.set_prior(gaussian)
 
     def test_set_prior(self):
         xmin, xmax = 1, 2.5 * np.pi
@@ -97,7 +99,8 @@ class PriorTests(unittest.TestCase):
         # m.rbf.set_prior(gaussian)
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
-        self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
+        with pytest.raises(AssertionError):
+            m.rbf.set_prior(gaussian)
 
     def test_uniform(self):
         xmin, xmax = 1, 2.5 * np.pi
@@ -157,7 +160,8 @@ class PriorTests(unittest.TestCase):
         gaussian = GPy.priors.Gaussian(1, 1)
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
-        self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
+        with pytest.raises(AssertionError):
+            m.rbf.set_prior(gaussian)
 
     def test_fixed_domain_check1(self):
         xmin, xmax = 1, 2.5 * np.pi
@@ -172,9 +176,5 @@ class PriorTests(unittest.TestCase):
         gaussian = GPy.priors.Gaussian(1, 1)
         # setting a Gaussian prior on non-negative parameters
         # should raise an assertionerror.
-        self.assertRaises(AssertionError, m.rbf.set_prior, gaussian)
-
-
-if __name__ == "__main__":
-    print("Running unit tests, please be (very) patient...")
-    unittest.main()
+        with pytest.raises(AssertionError):
+            m.rbf.set_prior(gaussian)

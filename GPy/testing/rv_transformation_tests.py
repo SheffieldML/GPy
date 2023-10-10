@@ -3,7 +3,7 @@
 Test if hyperparameters in models are properly transformed.
 """
 
-
+import pytest
 import numpy as np
 import scipy.stats as st
 import GPy
@@ -23,7 +23,7 @@ class TestModel(GPy.core.Model):
         return 0.0
 
 
-class RVTransformationTestCase(unittest.TestCase):
+class TestRVTransformation:
     def _test_trans(self, trans):
         m = TestModel()
         prior = GPy.priors.LogGaussian(0.5, 0.1)
@@ -53,9 +53,7 @@ class RVTransformationTestCase(unittest.TestCase):
         # plt.show(block=True)
         # END OF PLOT
         # The following test cannot be very accurate
-        self.assertTrue(
-            np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1
-        )
+        assert np.linalg.norm(pdf_phi - kde(phi)) / np.linalg.norm(kde(phi)) <= 1e-1
 
     def _test_grad(self, trans):
         np.random.seed(1234)
@@ -65,54 +63,22 @@ class RVTransformationTestCase(unittest.TestCase):
         m.theta.constrain(trans)
         m.randomize()
         print(m)
-        self.assertTrue(m.checkgrad(1))
+        assert m.checkgrad(1)
 
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
 
-    @unittest.skip("Gradient not checking right, @jameshensman what is going on here?")
+    @pytest.mark.skip(
+        "Gradient not checking right, @jameshensman what is going on here?"
+    )
     def test_Logexp_grad(self):
         self._test_grad(GPy.constraints.Logexp())
 
     def test_Exponent(self):
         self._test_trans(GPy.constraints.Exponent())
 
-    @unittest.skip("Gradient not checking right, @jameshensman what is going on here?")
+    @pytest.mark.skip(
+        "Gradient not checking right, @jameshensman what is going on here?"
+    )
     def test_Exponent_grad(self):
         self._test_grad(GPy.constraints.Exponent())
-
-
-if __name__ == "__main__":
-    unittest.main()
-    quit()
-    m = TestModel()
-    prior = GPy.priors.LogGaussian(0.0, 0.9)
-    m.theta.set_prior(prior)
-
-    # The following should return the PDF in terms of the transformed quantities
-    p_phi = lambda phi: np.exp(-m._objective_grads(phi)[0])
-
-    # Let's look at the transformation phi = log(exp(theta - 1))
-    trans = GPy.constraints.Exponent()
-    m.theta.constrain(trans)
-    # Plot the transformed probability density
-    phi = np.linspace(-8, 8, 100)
-    fig, ax = plt.subplots()
-    # Let's draw some samples of theta and transform them so that we see
-    # which one is right
-    theta_s = prior.rvs(10000)
-    # Transform it to the new variables
-    phi_s = trans.finv(theta_s)
-    # And draw their histogram
-    ax.hist(phi_s, normed=True, bins=100, alpha=0.25, label="Empirical")
-    # This is to be compared to the PDF of the model expressed in terms of these new
-    # variables
-    ax.plot(phi, [p_phi(p) for p in phi], label="Transformed PDF", linewidth=2)
-    ax.set_xlim(-3, 10)
-    ax.set_xlabel(r"transformed $\theta$", fontsize=16)
-    ax.set_ylabel("PDF", fontsize=16)
-    plt.legend(loc="best")
-    # Now let's test the gradients
-    m.checkgrad(verbose=True)
-    # And show the plot
-    plt.show(block=True)

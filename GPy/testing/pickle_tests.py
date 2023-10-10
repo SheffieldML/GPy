@@ -3,8 +3,6 @@ Created on 13 Mar 2014
 
 @author: maxz
 """
-import unittest, itertools
-
 # import cPickle as pickle
 import pickle
 import numpy as np
@@ -13,7 +11,6 @@ from GPy.examples.dimensionality_reduction import mrd_simulation
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.models.gp_regression import GPRegression
 import GPy
-from nose import SkipTest
 
 
 def toy_model():

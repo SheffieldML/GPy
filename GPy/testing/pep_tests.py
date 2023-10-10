@@ -1,13 +1,12 @@
 # Copyright (c) 2014, James Hensman, 2016, Thang Bui
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import unittest
 import numpy as np
 import GPy
 
 
-class PEPgradienttest(unittest.TestCase):
-    def setUp(self):
+class TestPEPgradient:
+    def setup(self):
         ######################################
         # # 1 dimensional example
         np.random.seed(10)
@@ -39,6 +38,7 @@ class PEPgradienttest(unittest.TestCase):
         self.lik_noise_var = 0.01
 
     def test_pep_1d_gradients(self):
+        self.setup()
         m = GPy.models.SparseGPRegression(self.X1D, self.Y1D)
         m.inference_method = GPy.inference.latent_function_inference.PEP(
             alpha=np.random.rand()
@@ -46,6 +46,7 @@ class PEPgradienttest(unittest.TestCase):
         assert m.checkgrad()
 
     def test_pep_2d_gradients(self):
+        self.setup()
         m = GPy.models.SparseGPRegression(self.X2D, self.Y2D)
         m.inference_method = GPy.inference.latent_function_inference.PEP(
             alpha=np.random.rand()
@@ -53,6 +54,7 @@ class PEPgradienttest(unittest.TestCase):
         assert m.checkgrad()
 
     def test_pep_vfe_consistency(self):
+        self.setup()
         vfe_model = GPy.models.SparseGPRegression(
             self.X1, self.Y1, kernel=self.kernel, Z=self.Z
         )
@@ -69,9 +71,12 @@ class PEPgradienttest(unittest.TestCase):
         pep_model.Gaussian_noise.variance = self.lik_noise_var
         pep_lml = pep_model.log_likelihood()
 
-        self.assertAlmostEqual(vfe_lml[0, 0], pep_lml[0], delta=abs(0.01 * pep_lml[0]))
+        np.testing.assert_almost_equal(
+            vfe_lml[0, 0], pep_lml[0], decimal=abs(0.01 * pep_lml[0])
+        )
 
     def test_pep_fitc_consistency(self):
+        self.setup()
         fitc_model = GPy.models.SparseGPRegression(
             self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z
         )
@@ -88,4 +93,6 @@ class PEPgradienttest(unittest.TestCase):
         pep_model.Gaussian_noise.variance = self.lik_noise_var
         pep_lml = pep_model.log_likelihood()
 
-        self.assertAlmostEqual(fitc_lml, pep_lml[0], delta=abs(0.001 * pep_lml[0]))
+        np.testing.assert_almost_equal(
+            fitc_lml, pep_lml[0], decimal=abs(0.001 * pep_lml[0])
+        )

@@ -3,13 +3,11 @@
 
 import unittest
 import numpy as np
-import GPy
 
 try:
-    from mpi4py import MPI
     import subprocess
 
-    class MPITests:
+    class TestMPI:
         def test_BayesianGPLVM_MPI(self):
             code = """
 import numpy as np
@@ -38,7 +36,7 @@ if comm.rank==0:
             p = subprocess.Popen(
                 "mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True
             )
-            (stdout, stderr) = p.communicate()
+            (stdout, _stderr) = p.communicate()
             L1 = float(stdout.splitlines()[-2])
             L2 = float(stdout.splitlines()[-1])
             self.assertTrue(np.allclose(L1, L2))
@@ -77,20 +75,10 @@ if comm.rank==0:
             (stdout, stderr) = p.communicate()
             L1 = float(stdout.splitlines()[-2])
             L2 = float(stdout.splitlines()[-1])
-            self.assertTrue(np.allclose(L1, L2))
+            assert np.allclose(L1, L2)
             import os
 
             os.remove("mpi_test__.py")
 
 except:
     pass
-
-
-if __name__ == "__main__":
-    print("Running unit tests, please be (very) patient...")
-    try:
-        import mpi4py
-
-        unittest.main()
-    except:
-        pass

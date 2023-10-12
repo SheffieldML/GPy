@@ -298,6 +298,23 @@ def test_plot():
                                                                                       'samples', 'in_error']], extensions=extensions):
         yield (do_test, )
 
+
+def test_show():
+    np.random.seed(111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams[u'text.usetex'] = False
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        X = np.random.uniform(-3.,3.,(20,1))
+        Y = np.sin(X) + np.random.randn(20,1)*0.05
+        kernel = GPy.kern.RBF(input_dim=1, variance=1., lengthscale=1.)
+        m = GPy.models.GPRegression(X,Y,kernel)
+        fig = m.plot()
+        GPy.plotting.show(fig, filename='show fig test')
+
+
 def test_twod():
     np.random.seed(11111)
     import matplotlib

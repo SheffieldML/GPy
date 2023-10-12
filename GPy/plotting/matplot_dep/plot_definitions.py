@@ -90,7 +90,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             #ax.legend(prop=fontdict)
             legend_ontop(ax, ncol=legend, fontdict=fontdict)
         if title is not None: ax.figure.suptitle(title)
-        return plots
+        return ax
 
     def show_canvas(self, ax, **kwargs):
         ax.figure.canvas.draw()

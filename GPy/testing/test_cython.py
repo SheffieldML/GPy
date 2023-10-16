@@ -24,7 +24,7 @@ These tests make sure that the pure python and cython codes work the same
 """
 
 
-@pytest.skipIf(
+@pytest.mark.skipif(
     not choleskies_cython_working,
     "Cython cholesky module has not been built on this machine",
 )
@@ -44,7 +44,7 @@ class CythonTestChols:
         assert np.allclose(A1, A2), "Flat mismatch!"
 
 
-@pytest.skipIf(
+@pytest.mark.skipif(
     not stationary_cython_working,
     "Cython stationary module has not been built on this machine",
 )
@@ -82,7 +82,7 @@ class TestStationary:
         assert np.allclose(g1, g2), "Gradient mismatch on rect lengthscale!"
 
 
-@pytest.skipIf(
+@pytest.mark.skipif(
     not choleskies_cython_working,
     "Cython cholesky module has not been built on this machine",
 )

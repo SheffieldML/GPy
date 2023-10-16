@@ -15,7 +15,6 @@ from .state_space_main_tests import (
     generate_brownian_data,
     generate_linear_plus_sin,
 )
-from nose import SkipTest
 
 # from state_space_main_tests import generate_x_points, generate_sine_data, \
 #    generate_linear_data, generate_brownian_data, generate_linear_plus_sin

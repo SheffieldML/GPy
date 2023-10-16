@@ -75,7 +75,7 @@ class TestMisc:
         Xp[:, 0] = Xp[:, 0] * 15 - 5
         Xp[:, 1] = Xp[:, 1] * 15
         _, var = m.predict(Xp)
-        assert np.all(var >= 0.0))
+        assert np.all(var >= 0.0)
 
     def test_raw_predict(self):
         self.setup()

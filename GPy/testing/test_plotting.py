@@ -141,39 +141,42 @@ def _image_comparison(
             if ext == "npz":
 
                 def do_test():
-                    with pytest.skip
-                    if not os.path.exists(expected):
-                        import shutil
+                    with pytest.skip:
+                        if not os.path.exists(expected):
+                            import shutil
 
-                        shutil.copy2(actual, expected)
-                        # shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
-                        raise IOError(
-                            "Baseline file {} not found, copying result {}".format(
-                                expected, actual
+                            shutil.copy2(actual, expected)
+                            # shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
+                            raise IOError(
+                                "Baseline file {} not found, copying result {}".format(
+                                    expected, actual
+                                )
                             )
-                        )
-                    else:
-                        exp_dict = dict(np.load(expected).items())
-                        act_dict = dict(np.load(actual).items())
-                        for name in act_dict:
-                            if name in exp_dict:
-                                try:
-                                    np.testing.assert_allclose(
-                                        exp_dict[name],
-                                        act_dict[name],
-                                        err_msg="Mismatch in {}.{}".format(base, name),
-                                        rtol=rtol,
-                                        **kwargs
-                                    )
-                                except AssertionError as e:
-                                    pass
+                        else:
+                            exp_dict = dict(np.load(expected).items())
+                            act_dict = dict(np.load(actual).items())
+                            for name in act_dict:
+                                if name in exp_dict:
+                                    try:
+                                        np.testing.assert_allclose(
+                                            exp_dict[name],
+                                            act_dict[name],
+                                            err_msg="Mismatch in {}.{}".format(
+                                                base, name
+                                            ),
+                                            rtol=rtol,
+                                            **kwargs
+                                        )
+                                    except AssertionError as e:
+                                        pass
 
             else:
 
                 def do_test():
                     err = compare_images(expected, actual, tol, in_decorator=True)
                     if err:
-                        print("Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(
+                        print(
+                            "Error between {} and {} is {:.5f}, which is bigger then the tolerance of {:.5f}".format(
                                 actual, expected, err["rms"], tol
                             )
                         )
@@ -319,6 +322,7 @@ def test_figure():
         ):
             yield (do_test,)
 
+
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
 )
@@ -363,6 +367,7 @@ def test_kernel():
         ):
             yield (do_test,)
 
+
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
 )
@@ -406,6 +411,7 @@ def test_plot():
     ):
         yield (do_test,)
 
+
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
 )
@@ -440,6 +446,7 @@ def test_twod():
         extensions=extensions,
     ):
         yield (do_test,)
+
 
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
@@ -477,6 +484,7 @@ def test_threed():
     ):
         yield (do_test,)
 
+
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
 )
@@ -501,6 +509,7 @@ def test_sparse():
         extensions=extensions,
     ):
         yield (do_test,)
+
 
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
@@ -534,6 +543,7 @@ def test_classification():
     ):
         yield (do_test,)
 
+
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
 )
@@ -563,6 +573,7 @@ def test_sparse_classification():
         rtol=2,
     ):
         yield (do_test,)
+
 
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
@@ -620,6 +631,7 @@ def test_gplvm():
         tol=12,
     ):
         yield (do_test,)
+
 
 @pytest.mark.skipif(
     matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"

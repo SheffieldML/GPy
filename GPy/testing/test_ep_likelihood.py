@@ -1,7 +1,6 @@
+import pytest
 import numpy as np
-import unittest
 import GPy
-from GPy.models import GradientChecker
 
 
 fixed_seed = 10
@@ -127,7 +126,7 @@ class TestObservationModels:
         GPy.util.classification.conf_matrix(probs_mean_ep_alt, self.binary_Y)
         GPy.util.classification.conf_matrix(probs_mean_ep_nested, self.binary_Y)
 
-    @pytest.skip(
+    @pytest.mark.skip(
         "Fails as a consequence of fixing the DSYR function. Needs to be reviewed!"
     )
     def test_ep_with_studentt(self):

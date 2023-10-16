@@ -870,7 +870,7 @@ class TestKernelNonContinuous:
         )
 
 
-@pytest.skipIf(
+@pytest.mark.skipif(
     not cython_coregionalize_working,
     "Cython coregionalize module has not been built on this machine",
 )

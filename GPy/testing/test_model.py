@@ -1432,8 +1432,8 @@ class TestGradient:
         y = np.zeros((D * N_train,))
         x_test = np.zeros((D * (N - N_train),))
         y_test = np.zeros((D * (N - N_train),))
-        indexD = np.zeros((D * N_train), dtype=np.int)
-        indexD_test = np.zeros((D * (N - N_train)), dtype=np.int)
+        indexD = np.zeros((D * N_train), dtype=int)
+        indexD_test = np.zeros((D * (N - N_train)), dtype=int)
 
         offset_all = 0
         offset_train = 0

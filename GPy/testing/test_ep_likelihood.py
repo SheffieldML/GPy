@@ -24,7 +24,7 @@ class TestObservationModels:
         self.Y = (np.sin(self.X[:, 0] * 2 * np.pi) + noise)[:, None]
         self.num_points = self.X.shape[0]
         self.f = np.random.rand(self.N, 1)
-        self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=np.int)[:, None]
+        self.binary_Y = np.asarray(np.random.rand(self.N) > 0.5, dtype=int)[:, None]
         # self.binary_Y[self.binary_Y == 0.0] = -1.0
         self.positive_Y = np.exp(self.Y.copy())
 

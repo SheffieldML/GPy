@@ -52,7 +52,8 @@ class TestBGPLVM:
         )
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
 
-        self.assertRaises(NotImplementedError, m.predict, m.X, full_cov=True)
+        with pytest.raises(NotImplementedError):
+            m.predict(m.X, full_cov=True)
 
         mu1, var1 = m.predict(m.X, full_cov=False)
         mu2, var2 = self.m_full.predict(self.m_full.X, full_cov=False)
@@ -124,7 +125,7 @@ class TestBGPLVM:
         assert m.checkgrad()
 
     def test_gradients_missingdata(self):
-        self.seutp()
+        self.setup()
         m = GPy.models.bayesian_gplvm_minibatch.BayesianGPLVMMiniBatch(
             self.Y,
             self.Q,

@@ -50,7 +50,6 @@ class TestObservationModels:
 
     def test_epccassification(self):
         self.setup()
-        self.tear_down()
 
         bernoulli = GPy.likelihoods.Bernoulli()
         laplace_inf = GPy.inference.latent_function_inference.Laplace()

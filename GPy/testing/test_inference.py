@@ -5,7 +5,6 @@
 The test cases for various inference algorithms
 """
 
-import unittest
 import numpy as np
 import GPy
 

@@ -4,7 +4,6 @@
 """
 Testing state space related functions.
 """
-import unittest
 import numpy as np
 import GPy
 import GPy.models.state_space_model as SS_model

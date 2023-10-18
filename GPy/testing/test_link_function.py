@@ -97,13 +97,13 @@ class TestLinkFunction:
         # Check that it does something sensible beyond this limit,
         # note this is not checking the value is correct, just that it isn't nan
         beyond_lim_of_inf = lim_of_inf + 100.0
-        assert np.isinf(link_func.transf(beyond_lim_of_inf))
-        assert np.isinf(link_func.dtransf_df(beyond_lim_of_inf))
-        assert np.isinf(link_func.d2transf_df2(beyond_lim_of_inf))
+        assert not np.isinf(link_func.transf(beyond_lim_of_inf))
+        assert not np.isinf(link_func.dtransf_df(beyond_lim_of_inf))
+        assert not np.isinf(link_func.d2transf_df2(beyond_lim_of_inf))
 
-        assert np.isnan(link_func.transf(beyond_lim_of_inf))
-        assert np.isnan(link_func.dtransf_df(beyond_lim_of_inf))
-        assert np.isnan(link_func.d2transf_df2(beyond_lim_of_inf))
+        assert not np.isnan(link_func.transf(beyond_lim_of_inf))
+        assert not np.isnan(link_func.dtransf_df(beyond_lim_of_inf))
+        assert not np.isnan(link_func.d2transf_df2(beyond_lim_of_inf))
 
     def test_log_overflow(self):
         self.setup()

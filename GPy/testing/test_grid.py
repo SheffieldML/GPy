@@ -7,7 +7,7 @@ import numpy as np
 import GPy
 
 
-class GridModelTest:
+class TestGridModel:
     def setup(self):
         ######################################
         # # 3 dimensional example

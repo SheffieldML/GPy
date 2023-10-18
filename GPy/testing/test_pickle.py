@@ -34,8 +34,7 @@ class ListDictTestCase:
 
 
 class TestPickleSupport(ListDictTestCase):
-    # TODO: why is this test skipped?
-    @pytest.mark.skip(reason="")
+    @pytest.mark.skip(reason="")  # why is this test skipped?
     def test_load_pickle(self):
         import os
 

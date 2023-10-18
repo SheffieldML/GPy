@@ -258,7 +258,6 @@ class TestHMCSampler:
 
         hmc = GPy.inference.mcmc.HMC(m, stepsize=1e-2)
         _s = hmc.sample(num_samples=3)
-        # TODO: seems like there is no test here?
 
 
 class TestMCMCSampler:
@@ -274,4 +273,3 @@ class TestMCMCSampler:
 
         mcmc = GPy.inference.mcmc.Metropolis_Hastings(m)
         mcmc.sample(Ntotal=100, Nburn=10)
-        # TODO: seems like there is no test here?

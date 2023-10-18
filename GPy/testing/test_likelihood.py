@@ -495,8 +495,6 @@ class TestNoiseModels:
                 yield self.t_dexp_dmu, model, Y, Y_metadata
                 yield self.t_dexp_dvar, model, Y, Y_metadata
 
-        # TODO: how to now run all of the tests?
-
     #############
     # dpdf
     # _df's #
@@ -885,7 +883,6 @@ class LaplaceTests:
 
         self.var = np.random.rand(1)
         self.stu_t = GPy.likelihoods.StudentT(deg_free=5, sigma2=self.var)
-        # TODO: gaussians with on Identity link. self.gauss = GPy.likelihoods.Gaussian(gp_link=link_functions.Log(), variance=self.var)
         self.gauss = GPy.likelihoods.Gaussian(variance=self.var)
 
         # Make a bigger step as lower bound can be quite curved

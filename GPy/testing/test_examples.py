@@ -36,7 +36,6 @@ def flatten_nested(lst):
 
 
 def test_models():
-    # TODO: testing setup is not that clear to me yet...
     optimize = False
     plot = True
     examples_path = os.path.dirname(GPy.examples.__file__)

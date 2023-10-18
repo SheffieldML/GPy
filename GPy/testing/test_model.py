@@ -743,15 +743,10 @@ class TestMisc:
         ks = []
         for i in range(points.shape[0]):
             if (i % 2 == 0) and (i % 3 != 0):
-                self.assertRaises(
-                    AssertionError,
-                    GPy.kern.LogisticBasisFuncKernel,
-                    1,
-                    points,
-                    ARD=i % 2 == 0,
-                    ARD_slope=i % 3 == 0,
-                    active_dims=[i],
-                )
+                with pytest.raises(AssertionError):
+                    GPy.kern.LogisticBasisFuncKernel(
+                        1, points, ARD=i % 2 == 0, ARD_slope=i % 3 == 0, active_dims=[i]
+                    )
             else:
                 ks.append(
                     GPy.kern.LogisticBasisFuncKernel(

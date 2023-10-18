@@ -1507,7 +1507,7 @@ class TestGradient:
         k = GPy.kern.Linear(Q, ARD=True)
         m = _create_missing_data_model(k, Q)
 
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             m._raw_posterior_covariance_between_points(
                 np.array([[1], [2]]), np.array([[3], [4]])
             )

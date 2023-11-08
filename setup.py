@@ -139,7 +139,13 @@ try:
 except ModuleNotFoundError:
     ext_mods = []
 
-install_requirements = ["numpy>=1.7", "six", "paramz>=0.9.0", "cython>=0.29"]
+install_requirements = [
+    "numpy>=1.7",
+    "six",
+    "paramz @ git+https://github.com/connorfuhrman/paramz/tree/connorfuhrman/np_type_alias_dep.git",
+    "cython>=0.29",
+]
+# 'some-pkg @ git+ssh://git@github.com/someorgname/pkg-repo-name@v1.1#egg=some-pkg',
 matplotlib_version = "matplotlib==3.3.4"
 install_requirements += ["scipy>=1.3.0"]
 

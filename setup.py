@@ -142,7 +142,8 @@ except ModuleNotFoundError:
 install_requirements = [
     "numpy>=1.7",
     "six",
-    "paramz @ git+https://github.com/connorfuhrman/paramz/tree/connorfuhrman/np_type_alias_dep.git",
+    # "paramz @ git+https://github.com/connorfuhrman/paramz/tree/connorfuhrman/np_type_alias_dep.git",
+    "paramz @ git+https://github.com/MartinBubel/paramz.git@fix-numpy-types",
     "cython>=0.29",
 ]
 # 'some-pkg @ git+ssh://git@github.com/someorgname/pkg-repo-name@v1.1#egg=some-pkg',

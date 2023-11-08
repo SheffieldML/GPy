@@ -571,47 +571,42 @@ class TestMisc:
         warping_ind_1 = [0, 1, 2]
         warping_ind_2 = [-1, 1, 2]
         warping_ind_3 = [0, 1.5, 2]
-        self.failUnlessRaises(
-            ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_1
-        )
-        self.failUnlessRaises(
-            ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_2
-        )
-        self.failUnlessRaises(
-            ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_3
-        )
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(X, warping_ind_1)
+
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(X, warping_ind_2)
+
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(X, warping_ind_3)
 
         # testing Xmin and Xmax
         Xmin_1, Xmax_1 = None, [1, 1]
         Xmin_2, Xmax_2 = [0, 0], None
         Xmin_3, Xmax_3 = [0, 0, 0], [1, 1]
-        self.failUnlessRaises(
-            ValueError,
-            GPy.util.input_warping_functions.KumarWarping,
-            X,
-            [0, 1],
-            epsilon,
-            Xmin_1,
-            Xmax_1,
-        )
-        self.failUnlessRaises(
-            ValueError,
-            GPy.util.input_warping_functions.KumarWarping,
-            X,
-            [0, 1],
-            epsilon,
-            Xmin_2,
-            Xmax_2,
-        )
-        self.failUnlessRaises(
-            ValueError,
-            GPy.util.input_warping_functions.KumarWarping,
-            X,
-            [0, 1],
-            epsilon,
-            Xmin_3,
-            Xmax_3,
-        )
+
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(
+                X, [0, 1], epsilon, Xmin_1, Xmax_1
+            )
+
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(
+                X,
+                [0, 1],
+                epsilon,
+                Xmin_2,
+                Xmax_2
+            )
+
+        with pytest.raises(ValueError):
+            GPy.util.input_warping_functions.KumarWarping(
+                X,
+                [0, 1],
+                epsilon,
+                Xmin_3,
+                Xmax_3
+            )
 
     def test_warped_gp_identity(self):
         """
@@ -1804,3 +1799,7 @@ def _create_missing_data_model(kernel, Q):
     )
 
     return m
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

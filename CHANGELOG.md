@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+
+* Change from `nosetest` to `pytest`
 
 ## v1.9.8 (2019-05-17)
 

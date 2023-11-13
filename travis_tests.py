@@ -30,10 +30,9 @@
 # ===============================================================================
 
 #!/usr/bin/env python
+import pytest
 import matplotlib
 
 matplotlib.use("agg")
-
-import pytest
 
 pytest.main(["GPy/testing/"])

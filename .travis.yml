@@ -44,7 +44,6 @@ install:
 - pip install pypandoc
 - pip install git+git://github.com/BRML/climin.git
 - pip install autograd
-- pip install nose-show-skipped
 - python setup.py develop
 
 script:

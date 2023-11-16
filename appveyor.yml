@@ -33,13 +33,12 @@ install:
  # We need wheel installed to build wheels
  - python -m pip install wheel
  # GPy needs paramz
- - python -m pip install paramz
- - python -m pip install nose-show-skipped
  - python -m pip install coverage
  - python -m pip install coveralls
  - python -m pip install codecov
  - python -m pip install twine
- - "python setup.py develop"
+ - python -m pip install pytest
+ - python setup.py develop
 
 build: off
 

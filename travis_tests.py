@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 # Copyright (c) 2015, Max Zwiessele
 #
 # All rights reserved.
@@ -27,14 +27,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
 #!/usr/bin/env python
+import pytest
 import matplotlib
-matplotlib.use('agg')
 
-import nose, warnings
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    nose.main('GPy', defaultTest='GPy/testing', argv=['', '--show-skipped'])
+matplotlib.use("agg")
 
+pytest.main(["GPy/testing/"])

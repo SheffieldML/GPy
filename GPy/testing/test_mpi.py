@@ -1,16 +1,12 @@
 # Copyright (c) 2013-2014, Zhenwen Dai
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import unittest
 import numpy as np
-import GPy
 
 try:
-    from mpi4py import MPI
     import subprocess
 
-    class MPITests(unittest.TestCase):
-            
+    class TestMPI:
         def test_BayesianGPLVM_MPI(self):
             code = """
 import numpy as np
@@ -33,17 +29,20 @@ if comm.rank==0:
     m._trigger_params_changed()
     print float(m.objective_function())
             """
-            with open('mpi_test__.py','w') as f:
+            with open("mpi_test__.py", "w") as f:
                 f.write(code)
                 f.close()
-            p = subprocess.Popen('mpirun -n 4 python mpi_test__.py',stdout=subprocess.PIPE,shell=True)
-            (stdout, stderr) = p.communicate()
-            L1 =  float(stdout.splitlines()[-2])
-            L2 =  float(stdout.splitlines()[-1])
-            self.assertTrue(np.allclose(L1,L2))
+            p = subprocess.Popen(
+                "mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True
+            )
+            (stdout, _stderr) = p.communicate()
+            L1 = float(stdout.splitlines()[-2])
+            L2 = float(stdout.splitlines()[-1])
+            self.assertTrue(np.allclose(L1, L2))
             import os
-            os.remove('mpi_test__.py')
-            
+
+            os.remove("mpi_test__.py")
+
         def test_SparseGPRegression_MPI(self):
             code = """
 import numpy as np
@@ -66,27 +65,19 @@ if comm.rank==0:
     m._trigger_params_changed()
     print float(m.objective_function())
             """
-            with open('mpi_test__.py','w') as f:
+            with open("mpi_test__.py", "w") as f:
                 f.write(code)
                 f.close()
-            p = subprocess.Popen('mpirun -n 4 python mpi_test__.py',stdout=subprocess.PIPE,shell=True)
+            p = subprocess.Popen(
+                "mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True
+            )
             (stdout, stderr) = p.communicate()
-            L1 =  float(stdout.splitlines()[-2])
-            L2 =  float(stdout.splitlines()[-1])
-            self.assertTrue(np.allclose(L1,L2))
+            L1 = float(stdout.splitlines()[-2])
+            L2 = float(stdout.splitlines()[-1])
+            assert np.allclose(L1, L2)
             import os
-            os.remove('mpi_test__.py')
 
+            os.remove("mpi_test__.py")
 
 except:
     pass
-
-
-
-if __name__ == "__main__":
-    print("Running unit tests, please be (very) patient...")
-    try:
-        import mpi4py
-        unittest.main()
-    except:
-        pass

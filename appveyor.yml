@@ -5,16 +5,16 @@ environment:
     secure: d3Luic/ESkGaWnZrvWZTKrzO+xaVwJWaRCEP0F+K/9DQGPSRZsJ/Du5g3s4XF+tS
   gpy_version: 1.12.0
   matrix:
-    - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3-x64
-      MPL_VERSION: 3.3.4
-    - PYTHON_VERSION: 3.7
-      MINICONDA: C:\Miniconda3-x64
-      MPL_VERSION: 3.3.4
-    - PYTHON_VERSION: 3.8
-      MINICONDA: C:\Miniconda3-x64
-      MPL_VERSION: 3.3.4
     - PYTHON_VERSION: 3.9
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
+    - PYTHON_VERSION: 3.10
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
+    - PYTHON_VERSION: 3.11
+      MINICONDA: C:\Miniconda3-x64
+      MPL_VERSION: 3.3.4
+    - PYTHON_VERSION: 3.12
       MINICONDA: C:\Miniconda3-x64
       MPL_VERSION: 3.3.4
 

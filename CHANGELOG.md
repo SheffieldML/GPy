@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* limit supported python versions to `">=3.9"` in accordance with numpy
+
 * Change from `nosetest` to `pytest`
 
 ## v1.9.8 (2019-05-17)

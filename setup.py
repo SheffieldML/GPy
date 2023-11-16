@@ -158,6 +158,7 @@ setup(
     description=("The Gaussian Process Toolbox"),
     long_description=desc,
     license="BSD 3-clause",
+    python_requires=">=3.9",
     keywords="machine-learning gaussian-processes kernels",
     url="https://sheffieldml.github.io/GPy/",
     download_url="https://github.com/SheffieldML/GPy/archive/refs/heads/devel.zip",

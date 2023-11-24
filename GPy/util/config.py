@@ -25,7 +25,7 @@ home = os.getenv('HOME') or os.getenv('USERPROFILE') or ''
 user_file = os.path.join(home,'.config','GPy', 'user.cfg')
 
 # Read in the given files.
-config.readfp(open(default_file))
+config.read_file(open(default_file))
 config.read([local_file, user_file])
 
 if not config:

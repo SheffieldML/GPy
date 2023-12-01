@@ -1,0 +1,49 @@
+name: "Test Python Lib"
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 1047-modernize-ci  # remove after testing is done
+    pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  develop-matrix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        versions: ['3.9', '3.10', '3.11']  # do we need a higher python version?
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version }}
+
+      - name: Upgrade pip
+        run: pip install --upgrade pip
+
+      - name: Install wheel
+        run: pip install pytest
+
+      - name: Install lib
+        run: python setup.py develop
+
+      - name: Run pytest
+        run: pytest
+
+      - name: Install wheel
+        run: pip install wheel
+
+      - name: Build wheel
+        run: python setup.py wheel
+
+# TODO: add deploy job

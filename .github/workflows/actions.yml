@@ -28,17 +28,11 @@ jobs:
         with:
           python-version: ${{ matrix.version }}
 
-      - name: Setup virtual environment
-        run: |
-          python --version  # this uses python3.12 instead of python3.X
-          python -m venv .venv
-          source .venv/bin/activate  # this will not work on widows
-
       - name: Upgrade pip
         run: pip install --upgrade pip
 
       - name: Install lib
-        run: python setup.py develop
+        run: python setup.py develop --user
 
       - name: Run pytest
         run: pytest

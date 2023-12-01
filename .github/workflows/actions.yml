@@ -28,6 +28,11 @@ jobs:
         with:
           python-version: ${{ matrix.version }}
 
+      - name: Setup virtual environment
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate  # this will not work on widows
+
       - name: Upgrade pip
         run: pip install --upgrade pip
 

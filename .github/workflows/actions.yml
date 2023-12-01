@@ -30,26 +30,23 @@ jobs:
 
       - name: Setup virtual environment
         run: |
-          python3 --version
-          python3 -m venv .venv
+          python --version  # this uses python3.12 instead of python3.X
+          python -m venv .venv
           source .venv/bin/activate  # this will not work on widows
 
       - name: Upgrade pip
-        run: pip3 install --upgrade pip
-
-      - name: Install wheel
-        run: pip3 install pytest
+        run: pip install --upgrade pip
 
       - name: Install lib
-        run: python3 setup.py develop
+        run: python setup.py develop
 
       - name: Run pytest
         run: pytest
 
       - name: Install wheel
-        run: pip3 install wheel
+        run: pip install wheel
 
       - name: Build wheel
-        run: python3 setup.py wheel
+        run: python setup.py wheel
 
 # TODO: add deploy job

@@ -31,6 +31,9 @@ jobs:
       - name: Upgrade pip
         run: pip install --upgrade pip
 
+      - name: Install setuptools
+        run: pip install setuptools
+
       - name: Install lib
         run: python setup.py develop --user
 

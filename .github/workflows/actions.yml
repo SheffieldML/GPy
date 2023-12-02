@@ -28,22 +28,20 @@ jobs:
         with:
           python-version: ${{ matrix.version }}
 
-      - name: Upgrade pip
-        run: pip install --upgrade pip
-
-      - name: Install setuptools
-        run: pip install setuptools
-
       - name: Install lib
-        run: python setup.py develop --user
+        run: |
+          pip install --upgrade pip
+          pip install setuptools
+          python setup.py develop --user
 
-      - name: Run pytest
-        run: pytest
-
-      - name: Install wheel
-        run: pip install wheel
+      - name: pytest
+        run: |
+          pip install pytest
+          pytest
 
       - name: Build wheel
-        run: python setup.py wheel
+        run: |
+          pip install wheel
+          python setup.py wheel
 
 # TODO: add deploy job

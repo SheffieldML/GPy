@@ -37,7 +37,7 @@ jobs:
         run: |
           pip install matplotlib
           pip install pytest
-          pytest .
+          pytest GPy/testing
 
       - name: Build wheel
         run: |

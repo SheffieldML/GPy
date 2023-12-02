@@ -30,15 +30,19 @@ jobs:
 
       - name: Install lib
         run: |
+          apt-get update
+          apt-get install -y git
+          git config --global --add safe.directory /gpy/src/paramz
+          pip install -e git+https://github.com/MartinBubel/paramz.git@fix-numpy-types#egg=paramz
+          apt-get install -y gcc
           pip install --upgrade pip
-          pip install setuptools
-          python setup.py develop --user
+          pip install -e .
 
       - name: pytest
         run: |
           pip install matplotlib
           pip install pytest
-          pytest
+          pytest .
 
       - name: Build wheel
         run: |

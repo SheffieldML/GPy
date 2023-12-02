@@ -30,11 +30,6 @@ jobs:
 
       - name: Install lib
         run: |
-          # apt-get update
-          # apt-get install -y git
-          git config --global --add safe.directory /gpy/src/paramz
-          pip install -e git+https://github.com/MartinBubel/paramz.git@fix-numpy-types#egg=paramz
-          # apt-get install -y gcc
           pip install --upgrade pip
           pip install -e .
 

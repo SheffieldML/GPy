@@ -5,14 +5,12 @@
 Main functionality for state-space inference.
 """
 
-import collections  # for cheking whether a variable is iterable
 import types  # for cheking whether a variable is a function
 
 import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
-
-import warnings
+from typing import Iterable
 
 try:
     from . import state_space_setup
@@ -885,7 +883,7 @@ class DescreteStateSpace(object):
         # P_init
         if P_init is None:
             P_init = np.eye(state_dim)
-        elif not isinstance(P_init, collections.Iterable):  # scalar
+        elif not isinstance(P_init, Iterable):  # scalar
             P_init = P_init * np.eye(state_dim)
 
         if p_kalman_filter_type not in ("regular", "svd"):
@@ -1094,7 +1092,7 @@ class DescreteStateSpace(object):
         # P_init
         if P_init is None:
             P_init = np.eye(p_state_dim)
-        elif not isinstance(P_init, collections.Iterable):  # scalar
+        elif not isinstance(P_init, Iterable):  # scalar
             P_init = P_init * np.eye(p_state_dim)
 
         if p_a is None:
@@ -4078,7 +4076,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         # Dimensionality
         n = F.shape[0]
 
-        if not isinstance(dt, collections.Iterable):  # not iterable, scalar
+        if not isinstance(dt, Iterable):  # not iterable, scalar
             # import pdb; pdb.set_trace()
             # The dynamical model
             A = matrix_exponent(F * dt)

@@ -67,7 +67,7 @@ deploy:
 
     - name: Upload to PyPI using twine
       run: |
-        twine upload dist/*
+        twine upload --skip-existing dist/*
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

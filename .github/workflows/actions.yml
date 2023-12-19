@@ -4,7 +4,6 @@ on:
     branches:
       - main
       - develop
-      - 1047-modernize-ci  # remove after testing is done
     pull_request:
 
 permissions:
@@ -16,8 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        versions: ['3.9', '3.10', '3.11']  # do we need a higher python version?
-
+        versions: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -45,4 +43,41 @@ jobs:
           pip install wheel
           python setup.py bdist_wheel
 
-# TODO: add deploy job
+
+name: "Deploy Python Lib"
+on:
+  release:
+    types:
+      - created
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  runs-on: ubuntu-latest
+  needs: develop-matrix
+  if: github.event_name == 'release' && github.event.action == 'created'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install twine
+      run: |
+        pip install --upgrade pip
+        pip install twine
+
+    - name: Inspect dist files
+      run: |
+        ls -la dist/
+
+    - name: Upload to PyPI using twine
+      run: |
+        twine upload dist/*
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

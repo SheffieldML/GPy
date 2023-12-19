@@ -5,7 +5,7 @@ on:
       - main
       - devel
       - deploy
-    pull_request:
+  pull_request:
 
 permissions:
   contents: read

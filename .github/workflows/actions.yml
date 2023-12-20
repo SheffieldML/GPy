@@ -47,7 +47,6 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
           name: build-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
 

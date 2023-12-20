@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        versions: ['3.9', '3.10', '3.11', '3.12']
+        python: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -25,7 +25,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.version }}
+          python-version: ${{ matrix.python }}
 
       - name: Install lib
         run: |
@@ -48,6 +48,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
+          name: build-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
 
   deploy:
@@ -57,6 +58,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+       # Extract matrix parameters from the build job
+      - name: Set matrix parameters
+        run: |
+          os=${{ needs.build.outputs.os }}
+          python=${{ needs.build.outputs.python }}
+          echo "Matrix parameters: OS=$os, Python=$python"
+          echo "::set-env name=OS::$os"
+          echo "::set-env name=PYTHON::$python"
 
       - name: Setup python
         uses: actions/setup-python@v4
@@ -71,7 +81,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-${{ env.OS }}-${{ env.PYTHON }}
           path: dist
 
       - name: Inspect dist files

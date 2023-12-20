@@ -44,10 +44,16 @@ jobs:
           pip install wheel
           python setup.py bdist_wheel
 
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
   deploy:
     runs-on: ubuntu-latest
     needs: develop-matrix
-    # if: github.event_name == 'release' && github.event.action == 'created'
+    if: github.event_name == 'release' && github.event.action == 'created'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,9 +68,15 @@ jobs:
           pip install --upgrade pip
           pip install twine
 
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
       - name: Inspect dist files
         run: |
-          ls -la dist/
+          ls -la dist
 
       - name: Upload to PyPI using twine
         run: |

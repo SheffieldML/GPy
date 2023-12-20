@@ -58,15 +58,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-       # Extract matrix parameters from the build job
-      - name: Set matrix parameters
-        run: |
-          os=${{ needs.build.outputs.os }}
-          python=${{ needs.build.outputs.python }}
-          echo "Matrix parameters: OS=$os, Python=$python"
-          echo "::set-env name=OS::$os"
-          echo "::set-env name=PYTHON::$python"
-
       - name: Setup python
         uses: actions/setup-python@v4
         with:
@@ -80,12 +71,12 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-${{ env.OS }}-${{ env.PYTHON }}
           path: dist
+          merge-multiple: true
 
       - name: Inspect dist files
         run: |
-          ls -la dist
+          ls -R dist
 
       - name: Upload to PyPI using twine
         run: |

@@ -3,6 +3,7 @@ on:
   release:
     types:
       - created
+  pull_request:
 
 permissions:
   contents: read

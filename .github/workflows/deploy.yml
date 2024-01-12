@@ -12,7 +12,15 @@ jobs:
   develop-matrix:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [
+          quay.io/pypa/manylinux2014_x86_64  # replacement for ubuntu-latest, which is accepted on pypi
+          # quay.io/pypa/manylinux2014_i686
+          # quay.io/pypa/manylinux2014_aarch64
+          # quay.io/pypa/manylinux2014_ppc64le
+          # quay.io/pypa/manylinux2014_s390x,
+          windows-latest,
+          macos-latest
+        ]
         python: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:

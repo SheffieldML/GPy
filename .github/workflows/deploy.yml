@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [
-          quay.io/pypa/manylinux2014_x86_64  # replacement for ubuntu-latest, which is accepted on pypi
+          quay.io/pypa/manylinux2014_x86_64,  # replacement for ubuntu-latest, which is accepted on pypi
           # quay.io/pypa/manylinux2014_i686
           # quay.io/pypa/manylinux2014_aarch64
           # quay.io/pypa/manylinux2014_ppc64le

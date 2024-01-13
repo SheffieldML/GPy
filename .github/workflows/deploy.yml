@@ -76,9 +76,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: quay.io/pypa/manylinux2014_x86_64
-    
-    outputs:
-      wheelhouse: ${{ steps.upload.outputs.wheelhouse }} 
 
     steps:
       - name: Checkout
@@ -145,14 +142,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: wheelhouse
-          name: wheelhouse-artifacts
-          merge-multiple: true
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: wheelhouse
-          merge-multiple: true
+          # merge-multiple: true
 
       - name: Inspect wheelhouse files
         run: ls -R wheelhouse

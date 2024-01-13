@@ -31,6 +31,7 @@ jobs:
           pip install wheel
           python setup.py develop
           python setup.py bdist_wheel
+          python setup.py sdist bdist_wheel
 
       - name: List contents of dist
         run: ls -R dist

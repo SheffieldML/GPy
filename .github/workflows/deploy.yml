@@ -74,6 +74,9 @@ jobs:
           path: dist
 
   build-linux:
+    strategy:
+        matrix:
+          python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
     runs-on: ubuntu-latest
     container:
       image: quay.io/pypa/manylinux2014_x86_64
@@ -84,31 +87,19 @@ jobs:
 
       - name: Compile c headers
         run: |
-          /opt/python/cp39-cp39/bin/python setup.py develop
-          /opt/python/cp310-cp310/bin/python setup.py develop
-          /opt/python/cp311-cp311/bin/python setup.py develop
-          /opt/python/cp312-cp312/bin/python setup.py develop
+          /opt/python/${{ matrix.python }}/bin/python setup.py develop
 
       - name: Build wheel files
         run: |
-          /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
-          /opt/python/cp310-cp310/bin/python setup.py bdist_wheel
-          /opt/python/cp311-cp311/bin/python setup.py bdist_wheel
-          /opt/python/cp312-cp312/bin/python setup.py bdist_wheel
+          /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
 
       - name: Install auditwheel  # this should be available?!
         run: |
-          /opt/python/cp39-cp39/bin/python -m pip install auditwheel
-          /opt/python/cp310-cp310/bin/python -m pip install auditwheel
-          /opt/python/cp311-cp311/bin/python -m pip install auditwheel
-          /opt/python/cp312-cp312/bin/python -m pip install auditwheel
+          /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
       
       - name: Repair wheel files
         run: |
-          /opt/python/cp39-cp39/bin/python -m auditwheel repair dist/*cp39-cp39-linux_x86_64.whl
-          /opt/python/cp310-cp310/bin/python -m auditwheel repair dist/*cp310-cp310-linux_x86_64.whl
-          /opt/python/cp311-cp311/bin/python -m auditwheel repair dist/*cp311-cp311-linux_x86_64.whl
-          /opt/python/cp312-cp312/bin/python -m auditwheel repair dist/*cp312-cp312-linux_x86_64.whl
+          /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
 
       - name: List contents of dist
         run: ls -R dist
@@ -116,11 +107,20 @@ jobs:
       - name: List contests of wheelhouse
         run: ls -R wheelhouse
 
+      - name: Move wheelhouse wheel files to dist
+        run: |
+          rm dist/*
+          mv wheelhouse/* dist/
+          rmdir wheelhouse
+
+      - name: List contents of dist
+        run: ls -R dist
+
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: wheelhouse-artifacts-linux
-          path: wheelhouse
+          name: dist-artifacts-manylinux-${{ matrix.python }}
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest

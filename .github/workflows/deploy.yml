@@ -76,6 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: quay.io/pypa/manylinux2014_x86_64
+    
+    outputs:
+      wheelhouse: ${{ steps.upload.outputs.wheelhouse }} 
 
     steps:
       - name: Checkout
@@ -138,28 +141,14 @@ jobs:
           pip install --upgrade pip
           pip install twine
 
-      - name: Download build artifacts for windows and mac wheels
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: Download build artifacts for manylinux wheels
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: wheelhouse
           merge-multiple: true
 
-      - name: Inspect dist files
-        run: ls -R dist
-      
       - name: Inspect wheelhouse files
         run: ls -R wheelhouse
-
-      - name: Merge wheel files
-        run: |
-          cp dist/* wheelhouse/
-          ls -R wheelhouse
 
       - name: Upload to PyPI using twine
         run: twine upload --skip-existing wheelhouse/*

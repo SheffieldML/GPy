@@ -54,7 +54,7 @@ jobs:
         run: ls -R wheelhouse
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifacts-none-any
           path: wheelhouse

@@ -27,6 +27,7 @@ jobs:
 
       - name: Build lib
         run: |
+          pip install setuptools
           pip install wheel
           python setup.py develop
           python setup.py bdist_wheel

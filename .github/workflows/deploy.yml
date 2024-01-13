@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
-          path: dist
+          path: dist/*
 
   build-linux:
     strategy:
@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: dist-artifacts-manylinux-${{ matrix.python }}
-          path: dist
+          path: dist/*
 
   deploy:
     runs-on: ubuntu-latest
@@ -143,7 +143,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: dist
-          merge-multiple: true
 
       - name: Inspect wheel files
         run: |

@@ -11,23 +11,43 @@ permissions:
 
 jobs:
   build:
-    runs-on: quay.io/pypa/manylinux2014_x86_64
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build c stuff
+        run: |
+          /opt/python/cp39-cp39/bin/python3.9 setup.py develop
+          /opt/python/cp310-cp310/bin/python3.10 setup.py develop
+          /opt/python/cp311-cp311/bin/python3.11 setup.py develop
+
       - name: Build wheel files
         run: |
-          python3.9 setup.py bdist_wheel
+          /opt/python/cp39-cp39/bin/python3.9 setup.py bdist_wheel
+          /opt/python/cp310-cp310/bin/python3.10 setup.py bdist_wheel
+          /opt/python/cp311-cp311/bin/python3.11 setup.py bdist_wheel
+
+      - name: Repair wheel files
+        run: |
+          /opt/python/cp39-cp39/bin/auditwheel repair dist/*cp39-cp39-linux_x86_64.whl
+          /opt/python/cp310-cp310/bin/auditwheel repair dist/*cp310-cp310-linux_x86_64.whl
+          /opt/python/cp311-cp311/bin/auditwheel repair dist/*cp311-cp311-linux_x86_64.whl
 
       - name: List contents of dist
-        run: ls dist
+        run: ls -R dist
+
+      - name: List contests of wheelhouse
+        run: ls -R wheelhouse
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-none-any
-          path: dist
+          path: wheelhouse
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,16 +69,16 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: wheelhouse
           merge-multiple: true
 
-      - name: Inspect dist files
+      - name: Inspect wheelhouse files
         run: |
-          ls -R dist
+          ls -R wheelhouse
 
       - name: Upload to PyPI using twine
         run: |
-          twine upload --skip-existing dist/*
+          twine upload --skip-existing wheelhouse/*
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

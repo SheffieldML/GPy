@@ -118,7 +118,7 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: wheelhouse-artifacts
+          name: wheelhouse-artifacts-linux
           path: wheelhouse
 
   deploy:
@@ -138,14 +138,21 @@ jobs:
           pip install --upgrade pip
           pip install twine
 
-      - name: Download build artifacts
+      - name: Download linux build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: wheelhouse
-          # merge-multiple: true
+          name: wheelhouse-artifacts-linux
+          path: wheelhouse-linux
+      
+      - name: Download windows and mac build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
 
       - name: Inspect wheelhouse files
-        run: ls -R wheelhouse
+        run: |
+          ls -R wheelhouse-linux
+          ls -R dist
 
       # - name: Upload to PyPI using twine
       #   run: twine upload --skip-existing wheelhouse/*

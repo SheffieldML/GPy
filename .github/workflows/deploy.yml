@@ -33,6 +33,13 @@ jobs:
           /opt/python/cp311-cp311/bin/python setup.py bdist_wheel
           /opt/python/cp312-cp312/bin/python setup.py bdist_wheel
 
+      - name: Install auditwheel  # this should be available?!
+        run: |
+          /opt/python/cp39-cp39/bin/python -m pip install auditwheel
+          /opt/python/cp310-cp310/bin/python -m pip install auditwheel
+          /opt/python/cp311-cp311/bin/python -m pip install auditwheel
+          /opt/python/cp312-cp312/bin/python -m pip install auditwheel
+      
       - name: Repair wheel files
         run: |
           /opt/python/cp39-cp39/bin/python -m auditwheel repair dist/*cp39-cp39-linux_x86_64.whl

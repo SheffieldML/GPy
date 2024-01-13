@@ -38,7 +38,7 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-artifacts
+          name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
 
   build-linux:
@@ -110,13 +110,13 @@ jobs:
       - name: Download build artifacts for windows and mac wheels
         uses: actions/download-artifact@v4
         with:
-          path: dist-artifacts
+          path: dist
           merge-multiple: true
 
       - name: Download build artifacts for manylinux wheels
         uses: actions/download-artifact@v4
         with:
-          path: wheelhouse-artifacts
+          path: wheelhouse
           merge-multiple: true
 
       - name: Inspect dist files

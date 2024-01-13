@@ -145,13 +145,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: wheelhouse
+          name: wheelhouse-artifacts
+          merge-multiple: true
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: wheelhouse
           merge-multiple: true
 
       - name: Inspect wheelhouse files
         run: ls -R wheelhouse
 
-      - name: Upload to PyPI using twine
-        run: twine upload --skip-existing wheelhouse/*
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      # - name: Upload to PyPI using twine
+      #   run: twine upload --skip-existing wheelhouse/*
+      #   env:
+      #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+      #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

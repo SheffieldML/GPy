@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build c stuff
+      - name: Compile c headers
         run: |
           /opt/python/cp39-cp39/bin/python setup.py develop
           /opt/python/cp310-cp310/bin/python setup.py develop
@@ -35,10 +35,10 @@ jobs:
 
       - name: Repair wheel files
         run: |
-          /opt/python/cp39-cp39/bin/auditwheel repair dist/*cp39-cp39-linux_x86_64.whl
-          /opt/python/cp310-cp310/bin/auditwheel repair dist/*cp310-cp310-linux_x86_64.whl
-          /opt/python/cp311-cp311/bin/auditwheel repair dist/*cp311-cp311-linux_x86_64.whl
-          /opt/python/cp312-cp312/bin/auditwheel repair dist/*cp312-cp312-linux_x86_64.whl
+          /opt/python/cp39-cp39/bin/python -m auditwheel repair dist/*cp39-cp39-linux_x86_64.whl
+          /opt/python/cp310-cp310/bin/python -m auditwheel repair dist/*cp310-cp310-linux_x86_64.whl
+          /opt/python/cp311-cp311/bin/python -m auditwheel repair dist/*cp311-cp311-linux_x86_64.whl
+          /opt/python/cp312-cp312/bin/python -m auditwheel repair dist/*cp312-cp312-linux_x86_64.whl
 
       - name: List contents of dist
         run: ls -R dist

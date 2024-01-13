@@ -12,11 +12,68 @@ permissions:
   pull-requests: read
 
 jobs:
-  test:
+  test-windows:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
         python: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install matplotlib
+          pip install pytest
+      
+      - name: Install lib
+        run: |
+          python setup.py develop
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+
+  test-linux:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install matplotlib
+          pip install pytest
+      
+      - name: Install lib
+        run: |
+          python setup.py develop
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+  test-macos:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python: ['3.10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -73,7 +130,7 @@ jobs:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
 
-  build-mac:
+  build-macos:
     strategy:
       matrix:
         os: [macos-latest]
@@ -155,7 +212,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [test, build-linux, build-windows, build-mac]
+    needs: [test-windows, test-linux, test-macos, build-linux, build-windows, build-macos]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

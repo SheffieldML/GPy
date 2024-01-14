@@ -9,13 +9,13 @@ import scipy.stats as st
 import GPy
 
 
-class TestModel(GPy.core.Model):
+class Model(GPy.core.Model):
     """
     A simple GPy model with one parameter.
     """
 
     def __init__(self, theta=1.0):
-        super(TestModel, self).__init__("test_model")
+        super(Model, self).__init__("test_model")
         theta = GPy.core.Param("theta", theta)
         self.link_parameter(theta)
 
@@ -25,7 +25,7 @@ class TestModel(GPy.core.Model):
 
 class TestRVTransformation:
     def _test_trans(self, trans):
-        m = TestModel()
+        m = Model()
         prior = GPy.priors.LogGaussian(0.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.unconstrain()
@@ -57,7 +57,7 @@ class TestRVTransformation:
 
     def _test_grad(self, trans):
         np.random.seed(1234)
-        m = TestModel(np.random.uniform(0.5, 1.5, 20))
+        m = Model(np.random.uniform(0.5, 1.5, 20))
         prior = GPy.priors.LogGaussian(0.5, 0.1)
         m.theta.set_prior(prior)
         m.theta.constrain(trans)

@@ -130,11 +130,6 @@ jobs:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
 
-      # Output the artifact name for later use
-      - name: Set output
-        id: set_output
-        run: echo "dist-artifacts-${{ matrix.os }}-${{ matrix.python }}" >> $GITHUB_ENV
-
   build-macos:
     strategy:
       matrix:
@@ -165,11 +160,6 @@ jobs:
         with:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist/*
-
-      # Output the artifact name for later use
-      - name: Set output
-        id: set_output
-        run: printf "dist-artifacts-${{ matrix.os }}-${{ matrix.python }}" >> $GITHUB_ENV
 
   build-linux:
     strategy:
@@ -220,11 +210,6 @@ jobs:
           name: dist-artifacts-manylinux-${{ matrix.python }}
           path: dist/*
 
-      # Output the artifact name for later use
-      - name: Set output
-        id: set_output
-        run: printf "dist-artifacts-manylinux-${{ matrix.python }}" >> $GITHUB_ENV
-
   deploy:
     runs-on: ubuntu-latest
     needs: [test-windows, test-linux, test-macos, build-linux, build-windows, build-macos]
@@ -247,14 +232,17 @@ jobs:
         with:
           path: dist
 
-      - name: Get artifact names
-        run: |
-          # Read the artifact_name output from the build job
-          ARTIFACT_NAME=$(grep 'artifact_name=' $GITHUB_ENV | cut -d= -f2)
+      - name: Create dist directory
+        run: mkdir -p dist
 
-          # Download artifacts without additional subdirectories
-          mkdir -p dist
-          mv dist/$ARTIFACT_NAME/* dist/
+      - name: Move files from subdirectories
+        run: |
+          for subdirectory in dist/*/; do
+            dir_name=$(basename "$subdirectory")
+            mv "$subdirectory"* dist/
+            rm -r "$subdirectory"
+            echo "Moved files from '$dir_name' to 'dist/'"
+          done
 
       - name: Inspect wheel files
         run: |

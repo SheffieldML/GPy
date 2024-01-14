@@ -169,7 +169,7 @@ jobs:
       # Output the artifact name for later use
       - name: Set output
         id: set_output
-        run: echo "dist-artifacts-${{ matrix.os }}-${{ matrix.python }}" >> $GITHUB_ENV
+        run: printf "dist-artifacts-${{ matrix.os }}-${{ matrix.python }}" >> $GITHUB_ENV
 
   build-linux:
     strategy:
@@ -223,7 +223,7 @@ jobs:
       # Output the artifact name for later use
       - name: Set output
         id: set_output
-        run: echo "dist-artifacts-manylinux-${{ matrix.python }}" >> $GITHUB_ENV
+        run: printf "dist-artifacts-manylinux-${{ matrix.python }}" >> $GITHUB_ENV
 
   deploy:
     runs-on: ubuntu-latest

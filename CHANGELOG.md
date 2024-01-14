@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v1.13.1 (2024-01-14)
+
+* limit `scipy<1.12` as macos and linux jobs install some pre-release version of `scipy==1.12` which breaks tests
+
 ## v1.13.0 (2023-12-20)
 
 * update `paramz` depdency to `>=0.9.6`

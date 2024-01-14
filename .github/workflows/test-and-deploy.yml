@@ -213,6 +213,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [test-windows, test-linux, test-macos, build-linux, build-windows, build-macos]
+    if: github.event_name == 'release'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

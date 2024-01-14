@@ -1,0 +1,259 @@
+name: "Test Python Lib"
+on:
+  push:
+    branches:
+      - main
+      - devel
+      - deploy
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  test-windows:
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install matplotlib
+          pip install pytest
+      
+      - name: Install lib
+        run: |
+          python setup.py develop
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+
+  test-linux:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install matplotlib
+          pip install pytest
+      
+      - name: Install lib
+        run: |
+          python setup.py develop
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+  test-macos:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python: ['3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install matplotlib
+          pip install pytest
+      
+      - name: Install lib
+        run: |
+          python setup.py develop
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+
+  build-windows:
+    if: github.event_name == 'release'
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build lib
+        run: |
+          pip install setuptools
+          pip install wheel
+          python setup.py develop
+          python setup.py bdist_wheel
+          python setup.py sdist bdist_wheel
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
+          path: dist
+
+  build-macos:
+    if: github.event_name == 'release'
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python: ['3.10', '3.11', '3.12']  # 3.9 triggers scipy issues when installing
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build lib
+        run: |
+          pip install setuptools
+          pip install wheel
+          python setup.py develop
+          python setup.py bdist_wheel
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
+          path: dist/*
+
+  build-linux:
+    if: github.event_name == 'release'
+    strategy:
+        matrix:
+          python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Compile c headers
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python setup.py develop
+
+      - name: Build wheel files
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+
+      - name: Install auditwheel  # this should be available?!
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
+      
+      - name: Repair wheel files
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: List contests of wheelhouse
+        run: ls -R wheelhouse
+
+      - name: Move wheelhouse wheel files to dist
+        run: |
+          rm dist/*
+          mv wheelhouse/* dist/
+          rmdir wheelhouse
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-artifacts-manylinux-${{ matrix.python }}
+          path: dist/*
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test-windows, test-linux, test-macos, build-linux, build-windows, build-macos]
+    if: github.event_name == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install twine
+        run: |
+          pip install --upgrade pip
+          pip install twine
+    
+      - name: Download all artifacts to a specific directory
+        uses: actions/download-artifact@v3
+        with:
+          path: dist
+
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Move files from subdirectories
+        run: |
+          for subdirectory in dist/*/; do
+            dir_name=$(basename "$subdirectory")
+            mv "$subdirectory"* dist/
+            rm -r "$subdirectory"
+            echo "Moved files from '$dir_name' to 'dist/'"
+          done
+
+      - name: Inspect wheel files
+        run: |
+          ls -R dist
+
+      - name: Upload to PyPI using twine
+        run: twine upload --skip-existing dist/*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

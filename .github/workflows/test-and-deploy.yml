@@ -99,6 +99,7 @@ jobs:
           pytest GPy/testing
 
   build-windows:
+    if: github.event_name == 'release'
     strategy:
       matrix:
         os: [windows-latest]
@@ -131,6 +132,7 @@ jobs:
           path: dist
 
   build-macos:
+    if: github.event_name == 'release'
     strategy:
       matrix:
         os: [macos-latest]
@@ -162,6 +164,7 @@ jobs:
           path: dist/*
 
   build-linux:
+    if: github.event_name == 'release'
     strategy:
         matrix:
           python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']

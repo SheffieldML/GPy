@@ -24,7 +24,7 @@ class Symmetric(Kernpart):
         self.num_params = k.num_params
         self.name = k.name + '_symm'
         self.k = k
-        self.add_parameter(k)
+        self.link_parameter(k)
         #self._set_params(k._get_params())
 
     def K(self,X,X2,target):

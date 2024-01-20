@@ -51,8 +51,8 @@ class TruncLinear(Kern):
 
         self.variances = Param('variances', variances, Logexp())
         self.delta = Param('delta', delta)
-        self.add_parameter(self.variances)
-        self.add_parameter(self.delta)
+        self.link_parameter(self.variances)
+        self.link_parameter(self.delta)
 
     @Cache_this(limit=3)
     def K(self, X, X2=None):
@@ -146,7 +146,7 @@ class TruncLinear_inf(Kern):
                 variances = np.ones(self.input_dim)
 
         self.variances = Param('variances', variances, Logexp())
-        self.add_parameter(self.variances)
+        self.link_parameter(self.variances)
 
 
 #     @Cache_this(limit=3)

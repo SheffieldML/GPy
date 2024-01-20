@@ -23,7 +23,7 @@ class GPCoregionalizedRegression(GP):
     :type likelihoods_list: None | a list GPy.likelihoods
     :param name: model name
     :type name: string
-    :param W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
+    :param W_rank: number tuples of the coregionalization parameters 'W' (see coregionalize kernel documentation)
     :type W_rank: integer
     :param kernel_name: name of the kernel
     :type kernel_name: string

@@ -147,7 +147,7 @@ install_requirements = [
 ]
 # 'some-pkg @ git+ssh://git@github.com/someorgname/pkg-repo-name@v1.1#egg=some-pkg',
 matplotlib_version = "matplotlib==3.3.4"
-install_requirements += ["scipy>=1.3.0,<1.12.0"]
+install_requirements += ["scipy>=1.3.0,<=1.12.0"]
 
 setup(
     name="GPy",

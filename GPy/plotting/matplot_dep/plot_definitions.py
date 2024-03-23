@@ -403,8 +403,8 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             except ImportError:
                 from matplotlib.mlab import contiguous_regions
             # Handle united data, such as dates
-            ax._process_unit_info(xdata=X, ydata=y1)
-            ax._process_unit_info(ydata=y2)
+            ax._process_unit_info([("x", X), ("y", y1)], convert=False)
+            ax._process_unit_info([("y", y2)], convert=False)
             # Convert the arrays so we can work with them
             from numpy import ma
 

@@ -23,11 +23,11 @@ infr = GPy.inference.latent_function_inference.VarDTC_minibatch(mpi_comm=comm)
 m = GPy.models.BayesianGPLVM(data.T,1,mpi_comm=comm)
 m.optimize(max_iters=10)
 if comm.rank==0:
-    print float(m.objective_function())
+    print(float(m.objective_function()))
     m.inference_method.mpi_comm=None
     m.mpi_comm=None
     m._trigger_params_changed()
-    print float(m.objective_function())
+    print(float(m.objective_function()))
             """
             with open("mpi_test__.py", "w") as f:
                 f.write(code)
@@ -59,11 +59,11 @@ data = np.vstack([x,y])
 m = GPy.models.SparseGPRegression(data[:1].T,data[1:2].T,mpi_comm=comm)
 m.optimize(max_iters=10)
 if comm.rank==0:
-    print float(m.objective_function())
+    print(float(m.objective_function()))
     m.inference_method.mpi_comm=None
     m.mpi_comm=None
     m._trigger_params_changed()
-    print float(m.objective_function())
+    print(float(m.objective_function()))
             """
             with open("mpi_test__.py", "w") as f:
                 f.write(code)

@@ -19,9 +19,7 @@ The Gaussian processes framework in Python.
 
 ## What's new:
 
-From now on we keep track of changes in the CHANGELOG.md.
-If you want your changes to show up there follow the [guidelines](#gl).
-In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
+We switched to [poetry](https://python-poetry.org/). This means that `GPy` has become a `poetry` project. This change won't affect you if you are using `GPy` as a dependency. However, for developers and contributors, this change will make the development process easier and more consistent.
 
 ## Contributing to GPy
 
@@ -53,24 +51,6 @@ For any further questions/suggestions head over to the issues section in GPy.
 ## Support and questions to the community
 
 Ask questions using the issues section.
-
-## Updated Structure
-
-We have pulled the core parameterization out of GPy. It is a package called [paramz](https://github.com/sods/paramz) and is the pure gradient based model optimization.
-
-If you installed GPy with pip, just upgrade the package using:
-
-    $ pip install --upgrade GPy
-
-If you have the developmental version of GPy (using the develop or -e option) just install the dependencies by running
-
-    $ python setup.py develop
-
-again, in the GPy installation folder.
-
-A warning: This usually works, but sometimes `distutils/setuptools` opens a
-whole can of worms here, specially when compiled extensions are involved.
-If that is the case, it is best to clean the repo and reinstall.
 
 ## Supported Platforms:
 

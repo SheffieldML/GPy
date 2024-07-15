@@ -30,17 +30,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install setuptools
-          pip install matplotlib
-          pip install pytest
+          pip install poetry
       
       - name: Install lib
         run: |
-          python setup.py develop
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
 
   test-linux:
     strategy:
@@ -59,17 +57,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install setuptools
-          pip install matplotlib
-          pip install pytest
+          pip install poetry
       
       - name: Install lib
         run: |
-          python setup.py develop
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
   test-macos:
     strategy:
       matrix:
@@ -87,17 +83,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install setuptools
-          pip install matplotlib
-          pip install pytest
+          pip install poetry
       
       - name: Install lib
         run: |
-          python setup.py develop
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
 
   build-windows:
     if: github.event_name == 'release'
@@ -117,11 +111,8 @@ jobs:
 
       - name: Build lib
         run: |
-          pip install setuptools
-          pip install wheel
-          python setup.py develop
-          python setup.py bdist_wheel
-          python setup.py sdist bdist_wheel
+          pip install poetry
+          poetry build
 
       - name: List contents of dist
         run: ls -R dist
@@ -150,10 +141,8 @@ jobs:
 
       - name: Build lib
         run: |
-          pip install setuptools
-          pip install wheel
-          python setup.py develop
-          python setup.py bdist_wheel
+          pip install poetry
+          poetry build
 
       - name: List contents of dist
         run: ls -R dist
@@ -177,15 +166,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install poetry
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m pip install poetry
+
       - name: Compile c headers
         run: |
-          /opt/python/${{ matrix.python }}/bin/python setup.py develop
+          /opt/python/${{ matrix.python }}/bin/python -m poetry install
 
       - name: Build wheel files
         run: |
-          /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+          /opt/python/${{ matrix.python }}/bin/python -m poetry build
 
-      - name: Install auditwheel  # this should be available?!
+      - name: Install auditwheel
         run: |
           /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
       
@@ -253,8 +246,7 @@ jobs:
         run: |
           ls -R dist
 
-      - name: Upload to PyPI using twine
-        run: twine upload --skip-existing dist/*
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      - name: Upload to PyPI
+        run: |
+          poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+          poetry publish

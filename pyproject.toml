@@ -2,7 +2,7 @@
 name = "GPy"
 version = "1.13.1"
 description = "The Gaussian Process Toolbox"
-authors = ["GPy Authors <https://github.com/SheffieldML/GPy/graphs/contributors"]
+authors = ["GPy Authors <gpy.authors@gmail.com"]
 license = "BSD-3-Clause"
 keywords = ["machine-learning", "gaussian-processes", "kernels"]
 homepage = "https://sheffieldml.github.io/GPy/"

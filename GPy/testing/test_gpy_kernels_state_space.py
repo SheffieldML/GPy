@@ -4,6 +4,7 @@
 """
 Testing state space related functions.
 """
+import pytest
 import numpy as np
 import GPy
 import GPy.models.state_space_model as SS_model
@@ -620,7 +621,7 @@ class TestStateSpaceKernels:
                 var_compare_decimal=2,
             )
         except AssertionError:
-            raise SkipTest(
+            raise pytest.skip(
                 "Skipping Regular kalman filter for kernel addition, because it is not stable (normal situation) for this data."
             )
 

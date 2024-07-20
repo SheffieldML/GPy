@@ -9,8 +9,8 @@ homepage = "https://sheffieldml.github.io/GPy/"
 repository = "https://github.com/SheffieldML/GPy"
 documentation = "https://github.com/SheffieldML/GPy"
 readme = "README.md"
-build = "build.py"
-include = ["build.py"]
+build = "build_extension.py"
+include = ["build_extension.py"]
 
 [tool.poetry.dependencies]
 python = ">=3.9"

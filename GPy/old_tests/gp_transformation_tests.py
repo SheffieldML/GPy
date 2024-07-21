@@ -1,4 +1,3 @@
-from nose.tools import with_setup
 from GPy.models import GradientChecker
 from GPy.likelihoods.noise_models import gp_transformations
 import inspect

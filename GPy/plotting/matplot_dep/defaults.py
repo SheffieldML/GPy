@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 # Copyright (c) 2015, Max Zwiessele
 # All rights reserved.
 #
@@ -26,12 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
-from matplotlib import cm
+from matplotlib import pyplot
 from .. import Tango
 
-'''
+"""
 This file is for defaults for the gpy plot, specific to the plotting library.
 
 Create a kwargs dictionary with the right name for the plotting function
@@ -40,36 +40,55 @@ the plotting library will be used.
 
 In the code, always ise plotting.gpy_plots.defaults to get the defaults, as
 it gives back an empty default, when defaults are not defined.
-'''
+"""
 
 # Data plots:
-data_1d = dict(lw=1.5, marker='x', color='k')
-data_2d = dict(s=35, edgecolors='none', linewidth=0., cmap=cm.get_cmap('hot'), alpha=.5)
-inducing_1d = dict(lw=0, s=500, color=Tango.colorsHex['darkRed'])
-inducing_2d = dict(s=17, edgecolor='k', linewidth=.4, color='white', alpha=.5, marker='^')
-inducing_3d = dict(lw=.3, s=500, color=Tango.colorsHex['darkRed'], edgecolor='k')
-xerrorbar = dict(color='k', fmt='none', elinewidth=.5, alpha=.5)
-yerrorbar = dict(color=Tango.colorsHex['darkRed'], fmt='none', elinewidth=.5, alpha=.5)
+data_1d = dict(lw=1.5, marker="x", color="k")
+data_2d = dict(
+    s=35, edgecolors="none", linewidth=0.0, cmap=pyplot.get_cmap("hot"), alpha=0.5
+)
+inducing_1d = dict(lw=0, s=500, color=Tango.colorsHex["darkRed"])
+inducing_2d = dict(
+    s=17, edgecolor="k", linewidth=0.4, color="white", alpha=0.5, marker="^"
+)
+inducing_3d = dict(lw=0.3, s=500, color=Tango.colorsHex["darkRed"], edgecolor="k")
+xerrorbar = dict(color="k", fmt="none", elinewidth=0.5, alpha=0.5)
+yerrorbar = dict(
+    color=Tango.colorsHex["darkRed"], fmt="none", elinewidth=0.5, alpha=0.5
+)
 
 # GP plots:
-meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=2)
-meanplot_2d = dict(cmap='hot', linewidth=.5)
-meanplot_3d = dict(linewidth=0, antialiased=True, cstride=1, rstride=1, cmap='hot', alpha=.3)
-samples_1d = dict(color=Tango.colorsHex['mediumBlue'], linewidth=.3)
-samples_3d = dict(cmap='hot', alpha=.1, antialiased=True, cstride=1, rstride=1, linewidth=0)
-confidence_interval = dict(edgecolor=Tango.colorsHex['darkBlue'], linewidth=.5, color=Tango.colorsHex['lightBlue'],alpha=.2)
-density = dict(alpha=.5, color=Tango.colorsHex['lightBlue'])
+meanplot_1d = dict(color=Tango.colorsHex["mediumBlue"], linewidth=2)
+meanplot_2d = dict(cmap="hot", linewidth=0.5)
+meanplot_3d = dict(
+    linewidth=0, antialiased=True, cstride=1, rstride=1, cmap="hot", alpha=0.3
+)
+samples_1d = dict(color=Tango.colorsHex["mediumBlue"], linewidth=0.3)
+samples_3d = dict(
+    cmap="hot", alpha=0.1, antialiased=True, cstride=1, rstride=1, linewidth=0
+)
+confidence_interval = dict(
+    edgecolor=Tango.colorsHex["darkBlue"],
+    linewidth=0.5,
+    color=Tango.colorsHex["lightBlue"],
+    alpha=0.2,
+)
+density = dict(alpha=0.5, color=Tango.colorsHex["lightBlue"])
 
 # GPLVM plots:
-data_y_1d = dict(linewidth=0, cmap='RdBu', s=40)
-data_y_1d_plot = dict(color='k', linewidth=1.5)
+data_y_1d = dict(linewidth=0, cmap="RdBu", s=40)
+data_y_1d_plot = dict(color="k", linewidth=1.5)
 
 # Kernel plots:
-ard = dict(edgecolor='k', linewidth=1.2)
+ard = dict(edgecolor="k", linewidth=1.2)
 
 # Input plots:
-latent = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
-gradient = dict(aspect='auto', cmap='RdBu', interpolation='nearest', alpha=.7)
-magnification = dict(aspect='auto', cmap='Greys', interpolation='bicubic')
-latent_scatter = dict(s=20, linewidth=.2, edgecolor='k', alpha=.9)
-annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)
+latent = dict(aspect="auto", cmap="Greys", interpolation="bicubic")
+gradient = dict(aspect="auto", cmap="RdBu", interpolation="nearest", alpha=0.7)
+magnification = dict(aspect="auto", cmap="Greys", interpolation="bicubic")
+latent_scatter = dict(s=20, linewidth=0.2, edgecolor="k", alpha=0.9)
+annotation = dict(
+    fontdict=dict(family="sans-serif", weight="light", fontsize=9),
+    zorder=0.3,
+    alpha=0.7,
+)

@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+## v1.13.2 (2024-07-21)
+* update string checks in initialization method for latent variable and put `empirical_samples` init-method on a deprecation path
+
+* update dependencies to `numpy>=1.7.0,<2.0.0`
+
+* update dependencies to `numpy>=1.7.0,<2.0.0`
+
+* update import in `.plotting.matplot_dep.defaults` due to change in matplotlib
+
+* Correct dl_dm term in student t inference #1065
+
+## v1.13.1 (2024-01-14)
+
+* limit `scipy<1.12` as macos and linux jobs install some pre-release version of `scipy==1.12` which breaks tests
+
+## v1.13.0 (2023-12-20)
+
+* update `paramz` depdency to `>=0.9.6`
+
+* limit supported python versions to `">=3.9"` in accordance with numpy
+
+* Change from `nosetest` to `pytest`
 
 ## v1.9.8 (2019-05-17)
 

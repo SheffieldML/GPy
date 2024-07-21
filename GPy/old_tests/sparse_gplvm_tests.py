@@ -16,7 +16,7 @@ class sparse_GPLVMTests(unittest.TestCase):
         k = GPy.kern.Bias(input_dim) + GPy.kern.White(input_dim, 0.00001)
         m = SparseGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
 
     def test_linear_kern(self):
         N, num_inducing, input_dim, D = 10, 3, 2, 4
@@ -27,7 +27,7 @@ class sparse_GPLVMTests(unittest.TestCase):
         k = GPy.kern.Linear(input_dim) + GPy.kern.White(input_dim, 0.00001)
         m = SparseGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
 
     def test_rbf_kern(self):
         N, num_inducing, input_dim, D = 10, 3, 2, 4
@@ -38,7 +38,7 @@ class sparse_GPLVMTests(unittest.TestCase):
         k = GPy.kern.RBF(input_dim) + GPy.kern.White(input_dim, 0.00001)
         m = SparseGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

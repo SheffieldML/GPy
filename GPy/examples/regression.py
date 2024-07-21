@@ -771,3 +771,117 @@ def multioutput_gp_with_derivative_observations(plot=True):
     mu, var = m.predict_noiseless(Xnew=[xpred, np.empty((0, 1))])
 
     return m
+
+def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
+    '''
+    This in an example on how to use a MultioutputGP model with gradient
+    observations and multiple single-dimensional kernels of differing types.
+    '''
+
+    period = 3
+    w = 2*np.pi/period # angular frequency
+    bounds = (-period, period)
+
+    # latent function and gradient
+    f = lambda x: (np.exp(-x[:,0]**2) + np.cos(w*x[:,1]))[:,None]
+    df = lambda x: np.array([-2*np.exp(-x[:,0]**2)*x[:,0], -w*np.sin(w*x[:,1])]).T
+
+    # 2D input grid
+    ppa = 25 # points per axis
+    x = np.linspace(*bounds, ppa)
+    xx, yy = np.meshgrid(x, x)
+    grid = np.array([xx.reshape(-1), yy.reshape(-1)]).T
+
+    fgrid = f(grid)
+    dfgrid = df(grid)
+
+    # 10 random training points generated with a space-filling sobol sequence
+    X = np.array([
+        [ 0.50421399,  2.1331483 ],
+        [-2.15717152, -1.70295936],
+        [-1.46704334,  1.37111521],
+        [ 2.79064536, -0.9649018 ],
+        [ 1.60728264,  0.27702713],
+        [-0.30712366, -0.57372129],
+        [-2.6140632 ,  2.49192488],
+        [ 0.89078772, -2.85873686],
+        [ 1.15813136,  0.96910322],
+        [-2.83307021, -1.38155383]
+    ])
+
+    # Note!
+    # This example uses the same inputs for function and gradient observations.
+
+    noise_std = 1e-2
+    # function observations
+    Y = f(X) + np.random.normal(scale=noise_std, size=(len(X), 1))
+    # gradient observations
+    dY = df(X) + np.random.normal(scale=noise_std, size=(len(X), 2))
+
+    # gather inputs and observations into lists
+    X_list = [X, X, X]
+    # once for function observations, and once for each partial derivative
+    # make sure all arrays are of shape (N x dims), where N is # of training points
+    Y_list = [Y, dY[:,0,None], dY[:,1,None]]
+
+    # create a kernel that is the product of two one-dimensional kernels
+    # the first kernel is an RBF kernel
+    kern0 = GPy.kern.RBF(input_dim=1, active_dims=[0])
+    # as the function is periodic in the second dimension, we use a StdP kernel
+    kern1 = GPy.kern.StdPeriodic(input_dim=1, active_dims=[1], period=period)
+    kern1.period.constrain_fixed()
+    # the kernels can be multiplied together into a product kernel
+    kern = kern0 * kern1
+
+    # with gradient observations, we need to define a DiffKern for each dimension
+    # the DiffKern is given the main kernel as a base kernel
+    diffkern0 = GPy.kern.DiffKern(kern, 0)
+    diffkern1 = GPy.kern.DiffKern(kern, 1)
+
+    # gather the main kernel and diffkerns into a list
+    kern_list = [kern, diffkern0, diffkern1]
+
+    # define a likelihood and repeat it in a list
+    likelihood_list = [GPy.likelihoods.Gaussian(variance=noise_std**2)]*3
+
+    # create the MultioutputGP model and optimize
+    model = GPy.models.MultioutputGP(X_list, Y_list, kern_list, likelihood_list)
+    model.likelihood.constrain_fixed()
+    if optimize:
+        model.optimize()
+
+    # make function predictions
+    Xnew, _, ind = GPy.util.multioutput.build_XY([grid], index=[0])
+    Y_metadata={'output_index': ind, 'trials': np.ones(ind.shape)}
+
+    mu, var = model.predict(Xnew, Y_metadata=Y_metadata)
+
+    # make gradient predictions
+    Xnew, _, ind = GPy.util.multioutput.build_XY([grid]*2, index=[1, 2])
+    Y_metadata={'output_index': ind, 'trials': np.ones(ind.shape)}
+
+    mu_d, var_d = model.predict(Xnew, Y_metadata=Y_metadata)
+
+    mu_d = np.array([mu_d[:len(grid)], mu_d[len(grid):]]).T[0]
+    var_d = np.array([var_d[:len(grid)], var_d[len(grid):]]).T[0]
+
+    if plot and MPL_AVAILABLE:
+        fig, axs = plt.subplots(1, 3)
+        for ax in axs: ax.set_box_aspect(1)
+        axs[0].set_title('true f')
+        axs[0].contourf(xx, yy, fgrid.reshape(ppa, ppa), levels=25)
+        axs[1].set_title('true df1')
+        axs[1].contourf(xx, yy, dfgrid[:,0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title('true df2')
+        axs[2].contourf(xx, yy, dfgrid[:,1].reshape(ppa, ppa), levels=25)
+
+        fig, axs = plt.subplots(1, 3)
+        for ax in axs: ax.set_box_aspect(1)
+        axs[0].set_title('pred f')
+        axs[0].contourf(xx, yy, mu.reshape(ppa, ppa), levels=25)
+        axs[1].set_title('pred df1')
+        axs[1].contourf(xx, yy, mu_d[:,0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title('pred df2')
+        axs[2].contourf(xx, yy, mu_d[:,1].reshape(ppa, ppa), levels=25)
+
+    return model

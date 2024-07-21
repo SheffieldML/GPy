@@ -79,7 +79,7 @@ If that is the case, it is best to clean the repo and reinstall.
 [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
-Python 3.5 and higher
+Python 3.9 and higher
 
 ## Citation
 
@@ -129,7 +129,7 @@ If you're having trouble installing GPy via `pip install GPy` here is a probable
     cd GPy
     git checkout devel
     python setup.py build_ext --inplace
-    nosetests GPy/testing
+    pytest .
 
 ### Direct downloads
 
@@ -171,13 +171,13 @@ print(m_load)
 
 New way of running tests is using coverage:
 
-Ensure nose and coverage is installed:
+Ensure pytest and coverage is installed:
 
-    pip install nose coverage
+    pip install pytest
 
 Run nosetests from root directory of repository:
 
-    coverage run travis_tests.py
+    python travis_tests.py
 
 Create coverage report in htmlcov/
 

@@ -121,7 +121,7 @@ class Eq_ode1(Kernpart):
             target+=self.initial_variance * np.exp(- self.decay * (t1_mat + t2_mat))
 
     def Kdiag(self,index,target):
-        #target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
+        #target += np.diag(self.B)[np.asarray(index,dtype=int).flatten()]
         pass
     
     def _param_grad_helper(self,dL_dK,X,X2,target):
@@ -203,7 +203,7 @@ class Eq_ode1(Kernpart):
         self._t = X[:, 0]
         if not X.shape[1] == 2:
             raise ValueError('Input matrix for ode1 covariance should have two columns, one containing times, the other output indices')
-        self._index = np.asarray(X[:, 1],dtype=np.int)
+        self._index = np.asarray(X[:, 1],dtype=int)
         # Sort indices so that outputs are in blocks for computational
         # convenience.
         self._order = self._index.argsort()
@@ -220,7 +220,7 @@ class Eq_ode1(Kernpart):
             if not X2.shape[1] == 2:
                 raise ValueError('Input matrix for ode1 covariance should have two columns, one containing times, the other output indices')
             self._t2 = X2[:, 0]
-            self._index2 = np.asarray(X2[:, 1],dtype=np.int)
+            self._index2 = np.asarray(X2[:, 1],dtype=int)
             self._order2 = self._index2.argsort()
             self._index2 = self._index2[self._order2]
             self._t2 = self._t2[self._order2]

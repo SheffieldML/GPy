@@ -7,6 +7,7 @@ from ..inference.latent_function_inference import VarDTC
 from .. import kern
 from .. import util
 
+
 class SparseGPCoregionalizedRegression(SparseGP):
     """
     Sparse Gaussian Process model for heteroscedastic multioutput regression
@@ -34,34 +35,65 @@ class SparseGPCoregionalizedRegression(SparseGP):
     :type kernel_name: string
     """
 
-    def __init__(self, X_list, Y_list, Z_list=[], kernel=None, likelihoods_list=None, num_inducing=10, X_variance=None, name='SGPCR',W_rank=1,kernel_name='coreg'):
-
-        #Input and Output
-        X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)
+    def __init__(
+        self,
+        X_list,
+        Y_list,
+        Z_list=[],
+        kernel=None,
+        likelihoods_list=None,
+        num_inducing=10,
+        X_variance=None,
+        name="SGPCR",
+        W_rank=1,
+        kernel_name="coreg",
+    ):
+        # Input and Output
+        X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
         Ny = len(Y_list)
 
-        #Kernel
+        # Kernel
         if kernel is None:
-            kernel = kern.RBF(X.shape[1]-1)
-            
-            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=kernel, W_rank=W_rank, name=kernel_name)
+            kernel = kern.RBF(X.shape[1] - 1)
 
-        #Likelihood
-        likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)
+            kernel = util.multioutput.ICM(
+                input_dim=X.shape[1] - 1,
+                num_outputs=Ny,
+                kernel=kernel,
+                W_rank=W_rank,
+                name=kernel_name,
+            )
 
-        #Inducing inputs list
+        # Likelihood
+        likelihood = util.multioutput.build_likelihood(
+            Y_list, self.output_index, likelihoods_list
+        )
+
+        # Inducing inputs list
         if len(Z_list):
-            assert len(Z_list) == Ny, 'Number of outputs do not match length of inducing inputs list.'
+            assert (
+                len(Z_list) == Ny
+            ), "Number of outputs do not match length of inducing inputs list."
         else:
-            if isinstance(num_inducing,np.int):
+            if isinstance(num_inducing, int):
                 num_inducing = [num_inducing] * Ny
             num_inducing = np.asarray(num_inducing)
-            assert num_inducing.size == Ny, 'Number of outputs do not match length of inducing inputs list.'
-            for ni,Xi in zip(num_inducing,X_list):
+            assert (
+                num_inducing.size == Ny
+            ), "Number of outputs do not match length of inducing inputs list."
+            for ni, Xi in zip(num_inducing, X_list):
                 i = np.random.permutation(Xi.shape[0])[:ni]
                 Z_list.append(Xi[i].copy())
 
         Z, _, Iz = util.multioutput.build_XY(Z_list)
 
-        super(SparseGPCoregionalizedRegression, self).__init__(X, Y, Z, kernel, likelihood, inference_method=VarDTC(), Y_metadata={'output_index':self.output_index})
-        self['.*inducing'][:,-1].fix()
+        super(SparseGPCoregionalizedRegression, self).__init__(
+            X,
+            Y,
+            Z,
+            kernel,
+            likelihood,
+            inference_method=VarDTC(),
+            Y_metadata={"output_index": self.output_index},
+        )
+        self[".*inducing"][:, -1].fix()

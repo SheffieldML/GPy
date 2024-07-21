@@ -306,7 +306,12 @@ class Stationary(Kern):
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
-    
+
+    def dgradients(self, X, X2):
+        g1 = self.dK_dvariance(X, X2)
+        g2 = self.dK_dlengthscale(X, X2)
+        return [g1, g2]
+
     def dgradients_dX(self, X, X2, dimX):
         g1 = self.dK2_dvariancedX(X, X2, dimX)
         g2 = self.dK2_dlengthscaledX(X, X2, dimX)

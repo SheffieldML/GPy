@@ -180,40 +180,31 @@ jobs:
         matrix:
           python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
     runs-on: ubuntu-latest
-    container:
-      image: quay.io/pypa/manylinux2014_x86_64
+    # container:
+    #   image: quay.io/pypa/manylinux2014_x86_64
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Compile c headers
+      - name: Install Docker
         run: |
-          /opt/python/${{ matrix.python }}/bin/python setup.py develop
+          sudo apt-get update
+          sudo apt-get install -y docker.io
 
-      - name: Build wheel files
+      - name: Build inside manylinux container
         run: |
-          /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
-
-      - name: Install auditwheel
-        run: |
-          /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
-      
-      - name: Repair wheel files
-        run: |
-          /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
-
-      - name: List contents of dist
-        run: ls -R dist
-
-      - name: List contests of wheelhouse
-        run: ls -R wheelhouse
-
-      - name: Move wheelhouse wheel files to dist
-        run: |
-          rm dist/*
-          mv wheelhouse/* dist/
-          rmdir wheelhouse
+          docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 /bin/bash -c "
+            /opt/python/${{ matrix.python }}/bin/python -m pip install --upgrade pip
+            /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
+            cd /io
+            /opt/python/${{ matrix.python }}/bin/python setup.py develop
+            /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+            /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+            rm dist/*
+            mv wheelhouse/* dist/
+            rmdir wheelhouse
+          "
 
       - name: List contents of dist
         run: ls -R dist

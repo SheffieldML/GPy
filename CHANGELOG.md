@@ -7,8 +7,6 @@
 
 * update dependencies to `numpy>=1.7.0,<2.0.0`
 
-* update dependencies to `numpy>=1.7.0,<2.0.0`
-
 * update import in `.plotting.matplot_dep.defaults` due to change in matplotlib
 
 * Correct dl_dm term in student t inference #1065

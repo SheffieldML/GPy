@@ -223,7 +223,7 @@ jobs:
         run: ls -R dist
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v1
         with:
           name: dist-artifacts-manylinux-${{ matrix.python }}
           path: dist/*

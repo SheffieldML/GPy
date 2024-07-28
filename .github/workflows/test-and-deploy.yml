@@ -36,10 +36,6 @@ jobs:
         run: |
           poetry install
 
-      - name: Install lib
-        run: |
-          python setup.py develop
-
       - name: pytest
         run: |
           poetry run pytest

@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           pip install poetry
       
@@ -36,7 +36,11 @@ jobs:
         run: |
           poetry install
 
-      - name: pytest
+      - name: Install lib
+        run: |
+          python setup.py develop
+      
+       - name: pytest
         run: |
           poetry run pytest
 
@@ -55,7 +59,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           pip install poetry
       
@@ -66,6 +70,7 @@ jobs:
       - name: pytest
         run: |
           poetry run pytest
+
   test-macos:
     strategy:
       matrix:
@@ -159,12 +164,11 @@ jobs:
         matrix:
           python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
     runs-on: ubuntu-latest
-    container:
-      image: quay.io/pypa/manylinux2014_x86_64
+    container: quay.io/pypa/manylinux2014_x86_64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v1
 
       - name: Install poetry
         run: |
@@ -201,11 +205,15 @@ jobs:
       - name: List contents of dist
         run: ls -R dist
 
+      - name: Get the name of the wheel file
+        id: get-wheel-name
+        run: echo "::set-output name=wheel-name::$(ls dist/*.whl)"
+
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v1
         with:
           name: dist-artifacts-manylinux-${{ matrix.python }}
-          path: dist/*
+          path: ${{ steps.get-wheel-name.outputs.wheel-name }}
 
   deploy:
     runs-on: ubuntu-latest

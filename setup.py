@@ -140,7 +140,7 @@ except ModuleNotFoundError:
     ext_mods = []
 
 install_requirements = [
-    "numpy>=1.7",
+    "numpy>=1.7,<2.0.0",
     "six",
     "paramz>=0.9.6",
     "cython>=0.29",
@@ -197,7 +197,7 @@ setup(
     include_package_data=True,
     py_modules=["GPy.__init__"],
     test_suite="GPy.testing",
-    setup_requires=["numpy>=1.7"],
+    setup_requires=["numpy>=1.7,<2.0.0"],
     install_requires=install_requirements,
     extras_require={
         "docs": ["sphinx"],

@@ -15,7 +15,7 @@ packages = [{ include = "GPy" }]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-numpy = "^1.7"
+numpy = ">=1.7,<2"  # paramz is not compatible with numpy 2.0
 six = "*"
 paramz = ">=0.9.6"
 cython = "^0.29"

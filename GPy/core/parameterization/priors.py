@@ -1275,7 +1275,12 @@ class HalfT(Prior):
             for instance in cls._instances:
                 if instance().A == A and instance().nu == nu:
                     return instance()
-        o = super(Prior, cls).__new__(cls, A, nu)
+
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)
+        else:
+            o = newfunc(cls, A, nu)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

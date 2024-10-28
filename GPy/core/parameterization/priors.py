@@ -580,7 +580,11 @@ class DGPLVM(Prior):
     domain = _REAL
 
     def __new__(cls, sigma2, lbl, x_shape):
-        return super(Prior, cls).__new__(cls, sigma2, lbl, x_shape)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            return newfunc(cls)
+        else:
+            return newfunc(cls, sigma2, lbl, x_shape)
 
     def __init__(self, sigma2, lbl, x_shape):
         self.sigma2 = sigma2

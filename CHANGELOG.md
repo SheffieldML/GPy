@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* update prior `__new__` methods #1098 [MartinBubel]
+
 * fix invalid escape sequence #1011 [janmayer]
 
 ## v1.13.2 (2024-07-21)

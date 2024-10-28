@@ -580,7 +580,11 @@ class DGPLVM(Prior):
     domain = _REAL
 
     def __new__(cls, sigma2, lbl, x_shape):
-        return super(Prior, cls).__new__(cls, sigma2, lbl, x_shape)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            return newfunc(cls)
+        else:
+            return newfunc(cls, sigma2, lbl, x_shape)
 
     def __init__(self, sigma2, lbl, x_shape):
         self.sigma2 = sigma2
@@ -1275,7 +1279,12 @@ class HalfT(Prior):
             for instance in cls._instances:
                 if instance().A == A and instance().nu == nu:
                     return instance()
-        o = super(Prior, cls).__new__(cls, A, nu)
+
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)
+        else:
+            o = newfunc(cls, A, nu)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

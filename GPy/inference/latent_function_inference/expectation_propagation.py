@@ -229,24 +229,17 @@ class EPBase(object):
         v_diff = np.mean(np.square(ga_approx.v-self.ga_approx_old.v))
         return ((tau_diff < self.epsilon) and (v_diff < self.epsilon))
 
-    def __setstate__(self, state):
-        super(EPBase, self).__setstate__(state[0])
-        self.epsilon, self.eta, self.delta = state[1]
-        self.reset()
-
-    def __getstate__(self):
-        return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
-
     def _save_to_input_dict(self):
-        input_dict = super(EPBase, self)._save_to_input_dict()
-        input_dict["epsilon"]=self.epsilon
-        input_dict["eta"]=self.eta
-        input_dict["delta"]=self.delta
-        input_dict["always_reset"]=self.always_reset
-        input_dict["max_iters"]=self.max_iters
-        input_dict["ep_mode"]=self.ep_mode
-        input_dict["parallel_updates"]=self.parallel_updates
-        input_dict["loading"]=True
+        input_dict = {
+            "epsilon": self.epsilon,
+            "eta": self.eta,
+            "delta": self.delta,
+            "always_reset": self.always_reset,
+            "max_iters": self.max_iters,
+            "ep_mode": self.ep_mode,
+            "parallel_updates": self.parallel_updates,
+            "loading": True
+        }
         return input_dict
 
 class EP(EPBase, ExactGaussianInference):

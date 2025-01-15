@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* fix pickle and deep copy for classification models inheriting from EP #1108 [olamarre]
+
 * update prior `__new__` methods #1098 [MartinBubel]
 
 * fix invalid escape sequence #1011 [janmayer]

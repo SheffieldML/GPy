@@ -5,6 +5,8 @@
 The test cases for various inference algorithms
 """
 
+import copy
+import pickle
 import numpy as np
 import GPy
 
@@ -145,6 +147,32 @@ class TestInferenceGPEP:
             )
             < 1e6
         )
+
+    def test_pickle_copy_EP(self):
+        """Pickling and deep-copying a classification model employing EP"""
+
+        # Dummy binary classification dataset
+        X = np.array([0, 1, 2, 3]).reshape(-1, 1)
+        Y = np.array([0, 0, 1, 1]).reshape(-1, 1)
+
+        # Some classification model
+        inf = GPy.inference.latent_function_inference.expectation_propagation.EP(
+            max_iters=30, delta=0.5
+        )
+        m = GPy.core.GP(
+            X=X,
+            Y=Y,
+            kernel=GPy.kern.RBF(input_dim=1, variance=1.0, lengthscale=1.0),
+            inference_method = inf,
+            likelihood=GPy.likelihoods.Bernoulli(),
+            mean_function=None
+        )
+        m.optimize()
+
+        m_pickled = pickle.dumps(m)
+        assert pickle.loads(m_pickled) is not None
+
+        assert copy.deepcopy(m) is not None
 
     # NOTE: adding a test like above for parameterized likelihood- the above test is
     # only for probit likelihood which does not have any tunable hyperparameter which is why

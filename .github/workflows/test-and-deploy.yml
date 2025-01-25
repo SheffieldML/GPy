@@ -30,20 +30,15 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          pip install setuptools
+          pip install poetry
       
       - name: Install lib
         run: |
-          python setup.py develop
-      
-      - name: Install test dependencies
-        run: |
-          pip install matplotlib
-          pip install pytest
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
 
   test-linux:
     strategy:
@@ -62,20 +57,15 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          pip install setuptools
-
+          pip install poetry
+      
       - name: Install lib
         run: |
-          python setup.py develop
-
-      - name: Install test dependencies
-        run: |
-          pip install matplotlib
-          pip install pytest
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
 
   test-macos:
     strategy:
@@ -94,20 +84,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install setuptools
+          pip install poetry
       
       - name: Install lib
         run: |
-          python setup.py develop
-
-      - name: Install test dependencies
-        run: |
-          pip install matplotlib
-          pip install pytest
+          poetry install
 
       - name: pytest
         run: |
-          pytest GPy/testing
+          poetry run pytest
 
   build-windows:
     if: github.event_name == 'release'
@@ -127,11 +112,8 @@ jobs:
 
       - name: Build lib
         run: |
-          pip install setuptools
-          pip install wheel
-          python setup.py develop
-          python setup.py bdist_wheel
-          python setup.py sdist bdist_wheel
+          pip install poetry
+          poetry build
 
       - name: List contents of dist
         run: ls -R dist
@@ -160,10 +142,8 @@ jobs:
 
       - name: Build lib
         run: |
-          pip install setuptools
-          pip install wheel
-          python setup.py develop
-          python setup.py bdist_wheel
+          pip install poetry
+          poetry build
 
       - name: List contents of dist
         run: ls -R dist
@@ -183,48 +163,53 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
 
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v1
 
-    - name: Compile c headers
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python setup.py develop
+      - name: Install poetry
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m pip install poetry
 
-    - name: Build wheel files
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+      - name: Compile c headers
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m poetry install
 
-    - name: Install auditwheel
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
-    
-    - name: Repair wheel files
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+      - name: Build wheel files
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m poetry build
 
-    - name: List contents of dist
-      run: ls -R dist
+      - name: Install auditwheel
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
+      
+      - name: Repair wheel files
+        run: |
+          /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
 
-    - name: List contests of wheelhouse
-      run: ls -R wheelhouse
+      - name: List contents of dist
+        run: ls -R dist
 
-    - name: Move wheelhouse wheel files to dist
-      run: |
-        rm dist/*
-        mv wheelhouse/* dist/
-        rmdir wheelhouse
+      - name: List contests of wheelhouse
+        run: ls -R wheelhouse
 
-    - name: List contents of dist
-      run: ls -R dist
+      - name: Move wheelhouse wheel files to dist
+        run: |
+          rm dist/*
+          mv wheelhouse/* dist/
+          rmdir wheelhouse
 
-    - name: Get the name of the wheel file
-      id: get-wheel-name
-      run: echo "::set-output name=wheel-name::$(ls dist/*.whl)"
+      - name: List contents of dist
+        run: ls -R dist
 
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: dist-artifacts-manylinux-${{ matrix.python }}
-        path: ${{ steps.get-wheel-name.outputs.wheel-name }}
+      - name: Get the name of the wheel file
+        id: get-wheel-name
+        run: echo "::set-output name=wheel-name::$(ls dist/*.whl)"
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: dist-artifacts-manylinux-${{ matrix.python }}
+          path: ${{ steps.get-wheel-name.outputs.wheel-name }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -265,8 +250,7 @@ jobs:
         run: |
           ls -R dist
 
-      - name: Upload to PyPI using twine
-        run: twine upload --skip-existing dist/*
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      - name: Upload to PyPI
+        run: |
+          poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+          poetry publish

@@ -1782,7 +1782,7 @@ typedef npy_double __pyx_t_5numpy_double_t;
 */
 typedef npy_longdouble __pyx_t_5numpy_longdouble_t;
 
-/* "scipy/linalg/cython_blas.pxd":15
+/* "scipy/linalg/cython_blas.pxd":17
  * # The original libraries should be linked directly.
  * 
  * ctypedef float s             # <<<<<<<<<<<<<<
@@ -1791,7 +1791,7 @@ typedef npy_longdouble __pyx_t_5numpy_longdouble_t;
 */
 typedef float __pyx_t_5scipy_6linalg_11cython_blas_s;
 
-/* "scipy/linalg/cython_blas.pxd":16
+/* "scipy/linalg/cython_blas.pxd":18
  * 
  * ctypedef float s
  * ctypedef double d             # <<<<<<<<<<<<<<

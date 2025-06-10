@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* naive removal of upper scipy and numpy limit [MartinBubel]
+
 * fix pickle and deep copy for classification models inheriting from EP #1108 [olamarre]
 
 * update prior `__new__` methods #1098 [MartinBubel]

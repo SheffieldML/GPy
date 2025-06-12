@@ -183,7 +183,7 @@ class SSMRD(Model):
 
     @Model.optimizer_array.setter
     def optimizer_array(self, p):
-        if self.mpi_comm != None:
+        if self.mpi_comm is not None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank == 0:
                 self.mpi_comm.Bcast(np.int32(1), root=0)
             self.mpi_comm.Bcast(p, root=0)

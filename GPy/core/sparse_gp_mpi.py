@@ -38,7 +38,7 @@ class SparseGP_MPI(SparseGP):
                  mean_function=None, inference_method=None, name='sparse gp',
                  Y_metadata=None, mpi_comm=None, normalizer=False):
         self._IN_OPTIMIZATION_ = False
-        if mpi_comm != None:
+        if mpi_comm is not None:
             if inference_method is None:
                 inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
             else:
@@ -52,7 +52,7 @@ class SparseGP_MPI(SparseGP):
 
         self.mpi_comm = mpi_comm
         # Manage the data (Y) division
-        if mpi_comm != None:
+        if mpi_comm is not None:
             from ..util.parallel import divide_data
             N_start, N_end, N_list = divide_data(Y.shape[0], mpi_comm.rank, mpi_comm.size)
             self.N_range = (N_start, N_end)
@@ -65,7 +65,7 @@ class SparseGP_MPI(SparseGP):
     def __getstate__(self):
         dc = super(SparseGP_MPI, self).__getstate__()
         dc['mpi_comm'] = None
-        if self.mpi_comm != None:
+        if self.mpi_comm is not None:
             del dc['N_range']
             del dc['N_list']
             del dc['Y_local']
@@ -81,7 +81,7 @@ class SparseGP_MPI(SparseGP):
 
     @SparseGP.optimizer_array.setter
     def optimizer_array(self, p):
-        if self.mpi_comm != None:
+        if self.mpi_comm is not None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
             self.mpi_comm.Bcast(p, root=0)

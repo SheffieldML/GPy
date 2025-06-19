@@ -118,7 +118,7 @@ class VarDTC_minibatch(LatentFunctionInference):
         if not het_noise:
             YRY_full = trYYT*beta
 
-        if self.mpi_comm != None:
+        if self.mpi_comm is not None:
             from mpi4py import MPI
             psi0_all = np.array(psi0_full)
             psi1Y_all = psi1Y_full.copy()
@@ -142,7 +142,7 @@ class VarDTC_minibatch(LatentFunctionInference):
 
         num_data, output_dim = Y.shape
         input_dim = Z.shape[0]
-        if self.mpi_comm != None:
+        if self.mpi_comm is not None:
             from mpi4py import MPI
             num_data_all = np.array(num_data,dtype=np.int32)
             self.mpi_comm.Allreduce([np.int32(num_data), MPI.INT], [num_data_all, MPI.INT])
@@ -384,7 +384,7 @@ def update_gradients(model, mpi_comm=None):
                 dL_dthetaL += grad_dict['dL_dthetaL']
 
     # Gather the gradients from multiple MPI nodes
-    if mpi_comm != None:
+    if mpi_comm is not None:
         from mpi4py import MPI
         if het_noise:
             raise "het_noise not implemented!"
@@ -407,7 +407,7 @@ def update_gradients(model, mpi_comm=None):
     # update for the KL divergence
     model.variational_prior.update_gradients_KL(X)
 
-    if mpi_comm != None:
+    if mpi_comm is not None:
         from mpi4py import MPI
         KL_div_all = np.array(KL_div)
         mpi_comm.Allreduce([np.float64(KL_div), MPI.DOUBLE], [KL_div_all, MPI.DOUBLE])
@@ -467,7 +467,7 @@ def update_gradients_sparsegp(model, mpi_comm=None):
             dL_dthetaL += grad_dict['dL_dthetaL']
     
     # Gather the gradients from multiple MPI nodes
-    if mpi_comm != None:
+    if mpi_comm is not None:
         from mpi4py import MPI
         if het_noise:
             raise "het_noise not implemented!"

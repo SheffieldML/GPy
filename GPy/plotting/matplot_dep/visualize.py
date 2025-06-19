@@ -167,7 +167,7 @@ class lvm(matplotlib_show):
 
     def show_sensitivities(self):
         # A click in the bar chart axis for selection a dimension.
-        if self.sense_axes != None:
+        if self.sense_axes is not None:
             self.sense_axes.cla()
             self.sense_axes.bar(np.arange(self.model.input_dim), self.model.input_sensitivity(), color='b')
 

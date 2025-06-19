@@ -71,7 +71,7 @@ jobs:
       - name: Install test dependencies
         run: |
           pip install matplotlib
-          pip install pytest<8
+          pip install 'pytest<8'
 
       - name: pytest
         run: |

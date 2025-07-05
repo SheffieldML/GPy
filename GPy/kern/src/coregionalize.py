@@ -171,6 +171,7 @@ class Coregionalize(Kern):
         input_dict["W"] = self.W.values.tolist()
         input_dict["kappa"] = self.kappa.values.tolist()
         input_dict["output_dim"] = self.output_dim
+        input_dict["rank"] = self.rank
         return input_dict
 
     @staticmethod

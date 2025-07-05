@@ -91,7 +91,7 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1, W=None, kappa=None, name="ICM"
     :num_outputs: Number of outputs
     :param kernel: kernel that will be multiplied by the coregionalize kernel (matrix B).
     :type kernel: a GPy kernel
-    :param W_rank: number tuples of the corregionalization parameters 'W'
+    :param W_rank: number tuples of the coregionalization parameters 'W'
     :type W_rank: integer
     """
     if kernel.input_dim != input_dim:

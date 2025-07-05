@@ -63,7 +63,7 @@ def randomize(self, rand_gen=None, *args, **kwargs):
     Make this draw from the prior if one exists, else draw from given random generator
 
     :param rand_gen: np random number generator which takes args and kwargs
-    :param flaot loc: loc parameter for random number generator
+    :param float loc: loc parameter for random number generator
     :param float scale: scale parameter for random number generator
     :param args, kwargs: will be passed through to random number generator
     """

@@ -31,7 +31,7 @@ During LFM kernel code review, we identified that GPy lacks systematic parameter
 ## Investigation Needed
 
 ### 1. Scope Assessment
-- [ ] Search existing GitHub issues for parameter tying discussions
+- [x] Search existing GitHub issues for parameter tying discussions
 - [ ] Identify other kernels/models that could benefit from parameter tying
 - [ ] Assess impact on current GPy codebase
 
@@ -74,3 +74,15 @@ During LFM kernel code review, we identified that GPy lacks systematic parameter
 
 ### 2025-08-15
 Task created after identifying parameter tying as a potential limitation during LFM kernel code review. Need to investigate scope and create CIP for community discussion.
+
+### 2025-08-15 (GitHub Investigation)
+Found existing GitHub issues confirming parameter tying limitations:
+- **Issue #462 (2016)**: "tie_params doesnt work ?" - `AttributeError: 'Add' object has no attribute 'tie_params'`
+- **Issue #789 (2019)**: "Non-implemented Param tying work-around options" - Confirms `tie_to` from Parametrized is not implemented
+- **Issue #878 (2020)**: "Constraining hyperparameters" - Open issue requesting parameter equality constraints in MultioutputGP
+
+**Key Findings:**
+- Parameter tying functionality has been missing/broken in GPy for at least 5 years
+- Multiple users have requested this feature for different use cases
+- Current workarounds involve manual parameter management
+- No systematic solution exists in the codebase

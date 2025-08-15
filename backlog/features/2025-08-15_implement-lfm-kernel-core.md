@@ -6,7 +6,8 @@ priority: "High"
 created: "2025-08-15"
 last_updated: "2025-08-15"
 owner: "Neil Lawrence"
-dependencies: ["design-modern-lfm-kernel"]
+github_issue: ""
+dependencies: "design-modern-lfm-kernel"
 tags:
 - lfm
 - kernel

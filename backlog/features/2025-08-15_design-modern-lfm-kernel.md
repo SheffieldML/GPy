@@ -6,7 +6,8 @@ priority: "High"
 created: "2025-08-15"
 last_updated: "2025-08-15"
 owner: "Neil Lawrence"
-dependencies: ["lfm-kernel-code-review"]
+github_issue: ""
+dependencies: "lfm-kernel-code-review"
 tags:
 - lfm
 - kernel

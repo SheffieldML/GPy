@@ -11,28 +11,43 @@ from paramz.caching import Cache_this
 
 class EQ_ODE1(Kern):
     """
-    Covariance function for first order differential equation driven by an exponentiated quadratic covariance.
-
-    This outputs of this kernel have the form
+    Latent Force Model (LFM) kernel for first-order differential equations (Single Input Motif - SIM).
+    
+    This kernel implements the covariance function for first-order differential equations driven by 
+    an exponentiated quadratic (RBF) covariance, which is the foundation of Latent Force Models.
+    
+    The outputs of this kernel have the form:
     .. math::
        \\frac{\\text{d}y_j}{\\text{d}t} = \\sum_{i=1}^R w_{j,i} u_i(t-\\delta_j) - d_jy_j(t)
 
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and :math:`u_i(t)` are independent latent Gaussian processes goverened by an exponentiated quadratic covariance.
+    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output 
+    to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and 
+    :math:`u_i(t)` are independent latent Gaussian processes governed by an exponentiated quadratic covariance.
 
-    :param output_dim: number of outputs driven by latent function.
+    This kernel is equivalent to the SIM (Single Input Motif) kernel from the GPmat toolbox and 
+    implements the mathematical framework described in:
+    
+    - Lawrence et al. (2006): "Modelling transcriptional regulation using Gaussian Processes"
+
+    :param input_dim: Input dimension (must be 2: time + output index)
+    :type input_dim: int
+    :param output_dim: Number of outputs driven by latent function
     :type output_dim: int
-    :param W: sensitivities of each output to the latent driving function.
-    :type W: ndarray (output_dim x rank).
-    :param rank: If rank is greater than 1 then there are assumed to be a total of rank latent forces independently driving the system, each with identical covariance.
+    :param rank: Number of latent forces. If rank > 1, there are multiple latent forces independently driving the system
     :type rank: int
-    :param decay: decay rates for the first order system.
-    :type decay: array of length output_dim.
-    :param delay: delay between latent force and output response.
-    :type delay: array of length output_dim.
-    :param kappa: diagonal term that allows each latent output to have an independent component to the response.
-    :type kappa: array of length output_dim.
+    :param W: Sensitivity matrix of each output to the latent driving functions (output_dim x rank)
+    :type W: ndarray
+    :param lengthscale: Lengthscale(s) of the RBF kernel for latent forces
+    :type lengthscale: float or array
+    :param decay: Decay rates for the first order system (array of length output_dim)
+    :type decay: array
+    :param active_dims: Active dimensions for the kernel
+    :type active_dims: array
+    :param name: Name of the kernel
+    :type name: str
 
-    .. Note: see first order differential equation examples in GPy.examples.regression for some usage.
+    .. Note: See first order differential equation examples in GPy.examples.regression for usage examples.
+    .. Note: This kernel requires input_dim=2 where the first dimension is time and the second is the output index.
     """
 
     def __init__(

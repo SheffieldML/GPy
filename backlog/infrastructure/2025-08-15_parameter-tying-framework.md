@@ -77,12 +77,33 @@ Task created after identifying parameter tying as a potential limitation during 
 
 ### 2025-08-15 (GitHub Investigation)
 Found existing GitHub issues confirming parameter tying limitations:
+
+**GPy Issues:**
 - **Issue #462 (2016)**: "tie_params doesnt work ?" - `AttributeError: 'Add' object has no attribute 'tie_params'`
 - **Issue #789 (2019)**: "Non-implemented Param tying work-around options" - Confirms `tie_to` from Parametrized is not implemented
 - **Issue #878 (2020)**: "Constraining hyperparameters" - Open issue requesting parameter equality constraints in MultioutputGP
 
+**Paramz Issues:**
+- **Issue #34 (2019)**: "What does m.name[0].tie_to(other) do?" - `tie_to` is documented but not implemented
+- **Issue #35 (2020)**: "Constraint that makes parameters sum to one?" - Also references missing `tie_to` functionality
+
 **Key Findings:**
-- Parameter tying functionality has been missing/broken in GPy for at least 5 years
+- Parameter tying functionality has been missing/broken in both GPy and paramz for at least 5 years
+- `tie_to` method is documented in paramz but not implemented
 - Multiple users have requested this feature for different use cases
 - Current workarounds involve manual parameter management
-- No systematic solution exists in the codebase
+- No systematic solution exists in either codebase
+- The problem is deeper than just GPy - it's a fundamental limitation in the paramz framework
+
+### 2025-08-15 (Paramz Dependency Analysis)
+**Current State:**
+- GPy still actively depends on paramz: `"paramz>=0.9.6"` in setup.py
+- No evidence of plans to remove paramz dependency
+- Recent paramz-related work: Issue #978 (2022) fixing broken kernels due to `add_parameter` → `link_parameter` rename
+
+**Implications for Parameter Tying:**
+- **Option 1**: Fix paramz first - implement `tie_to` in paramz framework
+- **Option 2**: Work around paramz - create parameter tying within GPy without relying on paramz's missing features  
+- **Option 3**: Replace paramz - major migration away from paramz (unlikely given current dependency)
+
+**Recommendation**: Focus on Option 1 or 2, as paramz remains actively maintained and GPy continues to depend on it.

@@ -244,9 +244,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
@@ -307,9 +307,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -328,9 +328,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upvc = -np.exp(lwnuc[ind] + gamct)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upvc[indv2] += np.exp(
                     nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -596,9 +596,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -649,9 +649,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] -= np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] -= np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -659,9 +659,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -829,9 +829,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
@@ -981,9 +981,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -1001,9 +1001,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upvc = -np.exp(lwnuc[ind] + gamct)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upvc[indv2] += np.exp(
                     nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -1230,9 +1230,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1342,11 +1342,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi1[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi1[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1357,11 +1357,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi2[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi2[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1524,9 +1524,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1585,11 +1585,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi1[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi1[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1600,11 +1600,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi2[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi2[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)

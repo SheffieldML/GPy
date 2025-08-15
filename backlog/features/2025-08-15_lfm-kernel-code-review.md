@@ -84,3 +84,26 @@ Started code review task. Initial findings:
 - Created CIP-0002 for community discussion of parameter tying solutions
 - **Decision**: Proceed with LFM implementation assuming parameter tying will be addressed separately
 - **Rationale**: Keeps implementation clean and focused on core LFM functionality
+
+### 2025-08-15 (MATLAB Kernel Analysis)
+**Comprehensive MATLAB Analysis**: Examined complete kernel implementations in GPmat:
+
+**SIM Kernel (First-order ODE):**
+- Parameters: `delay`, `decay`, `initVal`, `variance`, `inverseWidth`
+- Differential equation: `dx(t)/dt = B + S f(t-delta) - D x(t)`
+- Uses `simComputeH()` for kernel computation with error functions
+- Supports Gaussian initial conditions and negative sensitivity options
+- Cross-kernel computation with RBF kernels via `simXrbfKernCompute()`
+
+**DISIM Kernel (Second-order ODE):**
+- Parameters: `di_decay`, `inverseWidth`, `di_variance`, `decay`, `variance`, `rbf_variance`
+- Two-level differential equation system
+- More complex parameter structure for hierarchical modeling
+- Cross-kernel computations with SIM, RBF, and other DISIM kernels
+
+**Key Insights:**
+- SIM/DISIM are specialized kernels for gene networks
+- LFM is the general framework that can use these kernels
+- Complex cross-kernel computation system for multi-output modeling
+- Error function-based computation (`lnDiffErfs`) for analytical solutions
+- Parameter constraints and transformations built into kernel structure

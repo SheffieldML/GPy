@@ -28,7 +28,9 @@ Create a comprehensive comparison framework to validate our GPy LFM kernel imple
 - Will help catch implementation errors and validate parameter handling
 
 ## Implementation Tasks
-- [x] Create MATLAB comparison script (`scripts/compare_with_matlab.py`)
+- [x] Create MATLAB comparison script (prototype created)
+- [x] Move comparison framework outside GPy repository (separate validation tool)
+- [ ] Create external validation tool repository or standalone script
 - [ ] Test MATLAB script with existing GPmat installation
 - [ ] Create standard test cases for SIM and DISIM kernels
 - [ ] Implement GPy computation integration in comparison script
@@ -54,11 +56,14 @@ Create a comprehensive comparison framework to validate our GPy LFM kernel imple
 - [ ] Framework integrated into development workflow
 
 ## Implementation Notes
+- **External Tool**: This comparison framework should be built outside the GPy repository as a separate validation tool
+- **Independent Validation**: Should not depend on GPy implementation, only on GPmat reference
 - Use scipy.io for loading MATLAB .mat files
 - Support both MATLAB and Octave as reference implementations
 - Implement robust error handling for missing dependencies
 - Create standardized test data sets for reproducible comparisons
 - Consider numerical precision differences between platforms
+- **Repository Structure**: Consider creating separate repository (e.g., `lfm-validation-tool`) or standalone script
 
 ## Related
 - Backlog: lfm-kernel-code-review
@@ -74,3 +79,10 @@ Created initial MATLAB comparison framework:
 - Added result comparison with tolerance checking
 - Framework ready for integration with GPy implementation
 - Script can generate MATLAB code dynamically for different test cases
+
+### 2025-08-15 (Architecture Decision)
+**External Validation Tool**: Decided to build comparison framework outside GPy repository:
+- **Rationale**: Keeps GPy repository focused on core implementation
+- **Benefits**: Independent validation, reusable for other projects, cleaner separation
+- **Next Steps**: Move comparison script to separate location or repository
+- **Integration**: GPy implementation can reference external validation results

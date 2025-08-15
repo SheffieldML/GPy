@@ -37,7 +37,7 @@ During LFM kernel code review, we identified that GPy lacks systematic parameter
 
 
 ### 2. Community Input
-- [ ] Create GitHub issue and associated CIP to discuss parameter tying needs
+- [x] Create GitHub issue and associated CIP to discuss parameter tying needs
 - [ ] Gather feedback from GPy maintainers and users
 - [ ] Identify use cases beyond LFM kernels
 - [ ] Assess priority relative to other GPy improvements
@@ -50,9 +50,9 @@ During LFM kernel code review, we identified that GPy lacks systematic parameter
 
 ## Acceptance Criteria
 
-- [ ] Complete investigation of existing GitHub issues and discussions
-- [ ] Document scope of parameter tying needs across GPy
-- [ ] Create CIP for parameter tying framework discussion
+- [x] Complete investigation of existing GitHub issues and discussions
+- [x] Document scope of parameter tying needs across GPy
+- [x] Create CIP for parameter tying framework discussion
 - [ ] Gather community feedback on approach and priority
 - [ ] Provide recommendations for next steps
 
@@ -107,3 +107,10 @@ Found existing GitHub issues confirming parameter tying limitations:
 - **Option 3**: Replace paramz - major migration away from paramz (unlikely given current dependency)
 
 **Recommendation**: Focus on Option 1 or 2, as paramz remains actively maintained and GPy continues to depend on it.
+
+### 2025-08-15 (CIP Creation)
+Created CIP-0002: Parameter Tying Framework for GPy with community-focused approach:
+- Documented the problem and evidence from GitHub issues
+- Presented multiple potential approaches without prescribing solutions
+- Added community discussion points and open questions
+- Created framework for community input and decision-making

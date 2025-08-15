@@ -728,19 +728,85 @@ class EQ_ODE1(Kern):
 
 
 def lnDifErf(z1, z2):
-    # Z2 is always positive
+    """
+    Compute log of difference of two erfs in a numerically stable manner.
+    Based on MATLAB implementation by Antti Honkela and David Luengo.
+    
+    Args:
+        z1: First argument (scalar or array)
+        z2: Second argument (scalar or array, assumed to be positive)
+    
+    Returns:
+        log(abs(erf(z1) - erf(z2)))
+    """
+    # Convert to numpy arrays if scalars
+    z1 = np.asarray(z1)
+    z2 = np.asarray(z2)
+    
+    # Handle scalar inputs
+    if z1.ndim == 0 and z2.ndim == 0:
+        # Scalar case
+        if z1 == z2:
+            return -np.inf
+        elif (z1 * z2) < 0:
+            # Different signs
+            diff = np.abs(erf(z1) - erf(z2))
+            return np.log(np.maximum(diff, 1e-300))
+        elif z1 > 0 and z2 > 0:
+            # Both positive
+            diff = erfcx(z2) - erfcx(z1) * np.exp(z2**2 - z1**2)
+            return np.log(np.maximum(diff, 1e-300)) - z2**2
+        elif z1 < 0 and z2 < 0:
+            # Both negative
+            diff = erfcx(-z1) - erfcx(-z2) * np.exp(z1**2 - z2**2)
+            return np.log(np.maximum(diff, 1e-300)) - z1**2
+        else:
+            # One or both zero
+            diff = np.abs(erf(z1) - erf(z2))
+            return np.log(np.maximum(diff, 1e-300))
+    
+    # Array case
+    # Initialize result
     logdiferf = np.zeros(z1.shape)
-    ind = np.where(z1 > 0.0)
-    ind2 = np.where(z1 <= 0.0)
-    if ind[0].shape > 0:
-        z1i = z1[ind]
-        z12 = z1i * z1i
-        z2i = z2[ind]
-        logdiferf[ind] = -z12 + np.log(erfcx(z1i) - erfcx(z2i) * np.exp(z12 - z2i**2))
-
-    if ind2[0].shape > 0:
-        z1i = z1[ind2]
-        z2i = z2[ind2]
-        logdiferf[ind2] = np.log(erf(z2i) - erf(z1i))
-
+    
+    # Case 1: Arguments of different signs, no problems with loss of accuracy
+    I1 = (z1 * z2) < 0
+    if np.any(I1):
+        diff = np.abs(erf(z1[I1]) - erf(z2[I1]))
+        # Add safeguard for very small differences
+        diff = np.maximum(diff, 1e-300)
+        logdiferf[I1] = np.log(diff)
+    
+    # Case 2: z1 = z2
+    I2 = z1 == z2  # Use exact equality
+    if np.any(I2):
+        logdiferf[I2] = -np.inf
+    
+    # Case 3: Both arguments are positive
+    I3 = (z1 > 0) & (z2 > 0) & ~I1 & ~I2
+    if np.any(I3):
+        # Use erfcx for numerical stability
+        diff = erfcx(z2[I3]) - erfcx(z1[I3]) * np.exp(z2[I3]**2 - z1[I3]**2)
+        # Add safeguard for very small differences
+        diff = np.maximum(diff, 1e-300)
+        logdiferf[I3] = np.log(diff) - z2[I3]**2
+    
+    # Case 4: Both arguments are negative
+    I4 = (z1 < 0) & (z2 < 0) & ~I1 & ~I2
+    if np.any(I4):
+        # Use erfcx with negative arguments
+        diff = erfcx(-z1[I4]) - erfcx(-z2[I4]) * np.exp(z1[I4]**2 - z2[I4]**2)
+        # Add safeguard for very small differences
+        diff = np.maximum(diff, 1e-300)
+        logdiferf[I4] = np.log(diff) - z1[I4]**2
+    
+    # Case 5: Other cases (one or both zero, mixed signs)
+    I5 = ~I1 & ~I2 & ~I3 & ~I4
+    if np.any(I5):
+        # Use direct erf computation
+        diff = np.abs(erf(z1[I5]) - erf(z2[I5]))
+        # Add safeguard for very small differences
+        diff = np.maximum(diff, 1e-300)
+        logdiferf[I5] = np.log(diff)
+    
     return logdiferf

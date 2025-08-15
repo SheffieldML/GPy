@@ -1,7 +1,7 @@
 ---
 id: "implement-lfm-kernel-core"
 title: "Implement core LFM kernel functionality"
-status: "Proposed"
+status: "In Progress"
 priority: "High"
 created: "2025-08-15"
 last_updated: "2025-08-15"
@@ -26,7 +26,9 @@ Implement the core LFM kernel class with basic functionality including kernel co
 - Should follow the mathematical foundations from the papers and MATLAB implementation
 
 ## Implementation Tasks
-- [ ] Create `GPy.kern.LFM` class inheriting from appropriate base class
+- [x] Create test specification for `GPy.kern.LFM1` and `GPy.kern.LFM2` classes (test-driven design)
+- [ ] Create `GPy.kern.LFM1` class inheriting from appropriate base class
+- [ ] Create `GPy.kern.LFM2` class inheriting from appropriate base class
 - [ ] Implement parameter handling for mass, damper, spring, sensitivity, delay
 - [ ] Implement `K()` method for kernel matrix computation
 - [ ] Implement `Kdiag()` method for diagonal computation
@@ -35,12 +37,12 @@ Implement the core LFM kernel class with basic functionality including kernel co
 - [ ] Add support for different base kernels for latent functions
 
 ## Core Methods to Implement
-- [ ] `__init__()` - Parameter initialization and validation
-- [ ] `K(X, X2=None)` - Kernel matrix computation
-- [ ] `Kdiag(X)` - Diagonal computation
-- [ ] `update_gradients_full()` - Gradient computation
-- [ ] `update_gradients_diag()` - Diagonal gradient computation
-- [ ] `parameters_changed()` - Parameter update handling
+- [ ] `__init__()` - Parameter initialization and validation (LFM1 and LFM2)
+- [ ] `K(X, X2=None)` - Kernel matrix computation (LFM1 and LFM2)
+- [ ] `Kdiag(X)` - Diagonal computation (LFM1 and LFM2)
+- [ ] `update_gradients_full()` - Gradient computation (LFM1 and LFM2)
+- [ ] `update_gradients_diag()` - Diagonal gradient computation (LFM1 and LFM2)
+- [ ] `parameters_changed()` - Parameter update handling (LFM1 and LFM2)
 
 ## Acceptance Criteria
 - [ ] Core LFM kernel class implemented and functional
@@ -61,3 +63,12 @@ Implement the core LFM kernel class with basic functionality including kernel co
 - CIP: 0001 (LFM kernel implementation)
 - Backlog: design-modern-lfm-kernel
 - Papers: Álvarez et al. (2009, 2012)
+
+## Progress Updates
+
+### 2025-08-15
+Implementation task started after completion of test-driven design:
+- Design phase completed with comprehensive test suite
+- Test specification defines expected API and behavior
+- Ready to implement LFM1 and LFM2 kernel classes
+- Test framework validated and working correctly

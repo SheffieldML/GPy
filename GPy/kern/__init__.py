@@ -54,6 +54,7 @@ from .src.integral import Integral
 from .src.integral_limits import Integral_Limits
 from .src.multidimensional_integral_limits import Multidimensional_Integral_Limits
 from .src.eq_ode1 import EQ_ODE1
+from .src.lfm1 import LFM1
 from .src.trunclinear import TruncLinear,TruncLinear_inf
 from .src.splitKern import SplitKern,DEtime
 from .src.splitKern import DEtime as DiffGenomeKern

@@ -13,7 +13,7 @@ class Kern(Parameterized):
     #===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
-    # __meataclass__ is ignored in Python 3 - needs to be put in the function definiton
+    # __meataclass__ is ignored in Python 3 - needs to be put in the function definition
     # __metaclass__ = KernCallsViaSlicerMeta
     # Here, we use the Python module six to support Py3 and Py2 simultaneously
     #===========================================================================

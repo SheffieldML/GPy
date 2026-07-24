@@ -71,7 +71,7 @@ class Binomial(Likelihood):
         t2 = np.zeros(y.shape)
         t1[y>0] = y[y>0]*np.log(inv_link_f[y>0])
         t2[Ny>0] = Ny[Ny>0]*np.log(1.-inv_link_f[Ny>0])
-        
+
         return nchoosey + t1 + t2
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
@@ -96,7 +96,7 @@ class Binomial(Likelihood):
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
         t1[y>0] = y[y>0]/inv_link_f[y>0]
-        t2[Ny>0] = (Ny[Ny>0])/(1.-inv_link_f[Ny>0])        
+        t2[Ny>0] = (Ny[Ny>0])/(1.-inv_link_f[Ny>0])
 
         return t1 - t2
 
@@ -154,7 +154,7 @@ class Binomial(Likelihood):
         np.testing.assert_array_equal(N.shape, y.shape)
 
         #inv_link_f2 = np.square(inv_link_f)  #TODO Remove. Why is this here?
-        
+
         Ny = N-y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
@@ -176,7 +176,7 @@ class Binomial(Likelihood):
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
         pass
-    
+
     def moments_match_ep(self,obs,tau,v,Y_metadata_i=None):
         """
         Calculation of moments using quadrature
@@ -186,12 +186,13 @@ class Binomial(Likelihood):
         """
         #Compute first integral for zeroth moment.
         #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
-        if (isinstance(self.gp_link, link_functions.Probit) or isinstance(self.gp_link, link_functions.ScaledProbit)) and (Y_metadata_i is None or int(Y_metadata_i.get('trials', 1)) == int(1)): #Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
+        if (isinstance(self.gp_link, link_functions.Probit) or isinstance(self.gp_link, link_functions.ScaledProbit)) and (Y_metadata_i is None or np.asarray(Y_metadata_i.get('trials', 1)).item() == 1): #Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
             if isinstance(self.gp_link, link_functions.ScaledProbit):
                 nu = self.gp_link.nu
             else:
                 nu = 1.0
-            nu = self.gp_link.nu
+            nu = np.asarray(self.gp_link.nu).item()
+            obs, tau, v = (np.asarray(value).item() for value in (obs, tau, v))
             mu = v/tau
             sigma2 = 1./tau
             t = np.asarray(1 + sigma2*(nu**2))
@@ -207,10 +208,10 @@ class Binomial(Likelihood):
             #print("m0: {}, m1: {}, m2: {}".format(m0,m1,m2))
             #m0a, m1a, m2a =  super(Binomial, self).moments_match_ep(obs,tau,v,Y_metadata_i)
             #print("m0a: {}, m1a: {}, m2a: {}".format(m0a,m1a,m2a))
-            return m0, m1, m2
+            return tuple(np.asarray(moment).item() for moment in (m0, m1, m2))
         else:
             return super(Binomial, self).moments_match_ep(obs,tau,v,Y_metadata_i)
-    
+
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         if isinstance(self.gp_link, link_functions.Probit):
 

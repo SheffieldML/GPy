@@ -9,6 +9,7 @@ from .rbf import RBF
 from .stationary import Exponential
 from .stationary import RatQuad
 
+import math
 import numpy as np
 import scipy as sp
 
@@ -91,20 +92,20 @@ class sde_RBF(RBF):
 
         roots_rounding_decimals = 6
 
-        fn = np.math.factorial(N)
+        fn = math.factorial(N)
 
-        p_lengthscale = float(self.lengthscale)
-        p_variance = float(self.variance)
+        p_lengthscale = self.lengthscale.item()
+        p_variance = self.variance.item()
         kappa = 1.0 / 2.0 / p_lengthscale**2
 
         Qc = np.array(((p_variance * np.sqrt(np.pi / kappa) * fn * (4 * kappa) ** N,),))
 
         eps = 1e-12
-        if (float(Qc) > 1.0 / eps) or (float(Qc) < eps):
+        if (Qc.item() > 1.0 / eps) or (Qc.item() < eps):
             warnings.warn(
                 """sde_RBF kernel: the noise variance Qc is either very large or very small.
                                 It influece conditioning of P_inf: {0:e}""".format(
-                    float(Qc)
+                    Qc.item()
                 )
             )
 
@@ -114,7 +115,7 @@ class sde_RBF(RBF):
 
         for n in range(0, N + 1):  # (2N+1) - number of polynomial coefficients
             pp1[2 * (N - n)] = (
-                fn * (4.0 * kappa) ** (N - n) / np.math.factorial(n) * (-1) ** n
+                fn * (4.0 * kappa) ** (N - n) / math.factorial(n) * (-1) ** n
             )
 
         pp = np.poly1d(pp1)
@@ -221,8 +222,8 @@ class sde_Exponential(Exponential):
         """
         Return the state space representation of the covariance.
         """
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
 
         F = np.array(((-1.0 / lengthscale,),))
         L = np.array(((1.0,),))

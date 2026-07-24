@@ -68,7 +68,7 @@ class StudentT(Likelihood):
             np.exp(gammaln((self.v + 1) * 0.5) - gammaln(self.v * 0.5))
             / (np.sqrt(self.v * np.pi * self.sigma2))
         ) * (
-            (1 + (1.0 / float(self.v)) * ((e**2) / float(self.sigma2)))
+            (1 + (1.0 / self.v.item()) * ((e**2) / self.sigma2.item()))
             ** (-0.5 * (self.v + 1))
         )
         return np.prod(objective)
@@ -239,8 +239,8 @@ class StudentT(Likelihood):
     def dlogpdf_link_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
+        df = self.v.item()
+        s2 = self.sigma2.item()
         dlogpdf_dv = (
             0.5 * digamma(0.5 * (df + 1)) - 0.5 * digamma(0.5 * df) - 1.0 / (2 * df)
         )
@@ -251,16 +251,16 @@ class StudentT(Likelihood):
     def dlogpdf_dlink_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
+        df = self.v.item()
+        s2 = self.sigma2.item()
         dlogpdf_df_dv = e * (e2 - self.sigma2) / (e2 + s2 * df) ** 2
         return dlogpdf_df_dv
 
     def d2logpdf_dlink2_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
+        df = self.v.item()
+        s2 = self.sigma2.item()
         e2_s2v = e**2 + s2 * df
         d2logpdf_df2_dv = (-s2 * (df + 1) + e2 - s2 * df) / e2_s2v**2 - 2 * s2 * (
             df + 1

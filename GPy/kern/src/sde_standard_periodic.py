@@ -95,9 +95,9 @@ class sde_StdPeriodic(StdPeriodic):
         else:
             N = 7  # approximation order
 
-        p_period = float(self.period)
-        p_lengthscale = 2 * float(self.lengthscale)
-        p_variance = float(self.variance)
+        p_period = self.period.item()
+        p_lengthscale = 2 * self.lengthscale.item()
+        p_variance = self.variance.item()
 
         w0 = 2 * np.pi / p_period  # frequency
         # lengthscale is multiplied by 2 because of different definition of lengthscale

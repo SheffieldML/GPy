@@ -1,6 +1,6 @@
 # Copyright (c) 2013, Arno Solin.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-# 
+#
 # This implementation of converting GPs to state space models is based on the article:
 #
 #  @article{Sarkka+Solin+Hartikainen:2013,
@@ -27,12 +27,12 @@ class StateSpace(Model):
         """
         Inputs:
         ------------------
-        
+
         balance: bool
         Whether to balance or not the model as a whole
-        
+
         """
-        
+
         super(StateSpace, self).__init__(name=name)
 
         if len(X.shape) == 1:
@@ -61,7 +61,7 @@ class StateSpace(Model):
 
         #import pdb; pdb.set_trace()
         self.balance = balance
-        
+
         global ssm
         #from . import state_space_main as ssm
         if (ssm.cython_code_available) and (ssm.use_cython != ss_setup.use_cython):
@@ -96,12 +96,12 @@ class StateSpace(Model):
 
         #np.set_printoptions(16)
         #print(self.param_array)
-        
+
 
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dFt,dQct,dP_inft, dP0t) = self.kern.sde()
-        
-        
+
+
         # necessary parameters
         measurement_dim = self.output_dim
         grad_params_no = dFt.shape[2]+1 # we also add measurement noise as a parameter
@@ -146,7 +146,7 @@ class StateSpace(Model):
 
         (filter_means, filter_covs, log_likelihood,
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
-                                      float(self.Gaussian_noise.variance),P_inf,self.X,Y,m_init=None,
+                                      self.Gaussian_noise.variance.item(),P_inf,self.X,Y,m_init=None,
                                       P_init=P0, p_kalman_filter_type = kalman_filter_type, calc_log_likelihood=True,
                                       calc_grad_log_likelihood=True,
                                       grad_params_no=grad_params_no,
@@ -189,10 +189,10 @@ class StateSpace(Model):
         filteronly: bool
             Use only Kalman Filter for prediction. In this case the output does
             not coincide with corresponding Gaussian process.
-        
+
         balance: bool
             Whether to balance or not the model as a whole
-        
+
         Output:
         --------------------
 
@@ -225,12 +225,12 @@ class StateSpace(Model):
         # Get the model matrices from the kernel
         (F,L,Qc,H,P_inf, P0, dF,dQc,dP_inf,dP0) = self.kern.sde()
         state_dim = F.shape[0]
-        
+
         # Balancing
         if (p_balance==True):
             (F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf,dP0) = ssm.balance_ss_model(F,L,Qc,H,P_inf,P0, dF,dQc,dP_inf, dP0)
             print("SSM _raw_predict balancing!")
-            
+
         #Y = self.Y[:, 0,0]
         # Run the Kalman filter
         #import pdb; pdb.set_trace()
@@ -238,7 +238,7 @@ class StateSpace(Model):
 
         (M, P, log_likelihood,
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(
-                                      F,L,Qc,H,float(self.Gaussian_noise.variance),P_inf,X,Y,m_init=None,
+                                      F,L,Qc,H,self.Gaussian_noise.variance.item(),P_inf,X,Y,m_init=None,
                                       P_init=P0, p_kalman_filter_type = kalman_filter_type,
                                       calc_log_likelihood=False,
                                       calc_grad_log_likelihood=False)
@@ -269,14 +269,11 @@ class StateSpace(Model):
             M = M[self.num_data:,:,:]
             P = P[self.num_data:,:,:]
 
-        # Calculate the mean and variance
-        # after einsum m has dimension in 3D (sample_num, dim_no,time_series_no)
-        m = np.einsum('ijl,kj', M, H)# np.dot(M,H.T)
-        m.shape = (m.shape[0], m.shape[1]) # remove the third dimension
-
-        V = np.einsum('ij,ajk,kl', H, P, H.T)
-
-        V.shape = (V.shape[0], V.shape[1]) # remove the third dimension
+        # M and P include a trailing time-series axis.  Older NumPy versions
+        # silently accepted the missing axis in these einsum expressions;
+        # NumPy 2 correctly rejects it.  Contract the state axes explicitly.
+        m = np.einsum("aijt,kj->akt", M, H).reshape(M.shape[0], -1)
+        V = np.einsum("ij,aijk,kl->ail", H, P, H.T).reshape(P.shape[0], -1)
 
         # Return the posterior of the state
         return (m, V)
@@ -285,23 +282,23 @@ class StateSpace(Model):
         """
         Inputs:
         ------------------
-        
+
         balance: bool
         Whether to balance or not the model as a whole
-        
+
         """
-        
+
         if balance is None:
             p_balance = self.balance
         else:
             p_balance = balance
-            
+
         # Run the Kalman filter to get the state
         (m, V) = self._raw_predict(Xnew,filteronly=filteronly, p_balance=p_balance)
 
         # Add the noise variance to the state variance
         if include_likelihood:
-            V += float(self.likelihood.variance)
+            V += self.likelihood.variance.item()
 
         # Lower and upper bounds
         #lower = m - 2*np.sqrt(V)
@@ -314,20 +311,20 @@ class StateSpace(Model):
         """
         Inputs:
         ------------------
-        
+
         balance: bool
         Whether to balance or not the model as a whole
-        
+
         """
         if balance is None:
             p_balance = self.balance
         else:
             p_balance = balance
-        
-        
+
+
         mu, var = self._raw_predict(Xnew, p_balance=p_balance)
         #import pdb; pdb.set_trace()
-        return  [stats.norm.ppf(q/100.)*np.sqrt(var + float(self.Gaussian_noise.variance)) + mu for q in quantiles]
+        return  [stats.norm.ppf(q/100.)*np.sqrt(var + self.Gaussian_noise.variance.item()) + mu for q in quantiles]
 
 
 #    def plot(self, plot_limits=None, levels=20, samples=0, fignum=None,

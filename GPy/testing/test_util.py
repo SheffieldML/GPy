@@ -32,6 +32,19 @@ import numpy as np
 import GPy
 
 
+def test_block_matrices_use_object_dtype():
+    from GPy.util.block_matrices import block_dot, get_blocks, unblock
+
+    matrix = np.arange(16.0).reshape(4, 4)
+    blocks = get_blocks(matrix, [2, 2])
+
+    assert blocks.dtype == np.dtype(object)
+    np.testing.assert_array_equal(unblock(blocks), matrix)
+
+    product = block_dot(blocks, blocks)
+    np.testing.assert_array_equal(product[0, 0], matrix[:2, :2].dot(matrix[:2, :2]))
+
+
 class UtilTest:
     def test_checkFinite(self):
         from GPy.util.debug import checkFinite

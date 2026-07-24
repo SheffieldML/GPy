@@ -521,8 +521,8 @@ class Matern32(Stationary):
         """
         Return the state space representation of the covariance.
         """
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale.values)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
         foo  = np.sqrt(3.)/lengthscale
         F    = np.array([[0, 1], [-foo**2, -2*foo]])
         L    = np.array([[0], [1]])

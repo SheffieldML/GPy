@@ -677,7 +677,7 @@ class TestMisc:
 
         X = (2 * np.pi) * np.random.random(151) - np.pi
         Y = np.sin(X) + np.random.normal(0, 0.2, 151)
-        Y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in Y])
+        Y = np.cbrt(Y)
         X = X[:, None]
         Y = Y[:, None]
 

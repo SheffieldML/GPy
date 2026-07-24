@@ -57,7 +57,7 @@ class TestTP:
 
             def update_gradients(self, dL_dF, X):
                 for i in range(self.degree + 1):
-                    self.variance.gradient[i] = (dL_dF * X ** (i)).sum(0)
+                    self.variance.gradient[i] = (dL_dF * X ** (i)).sum()
 
         X = np.linspace(-2, 2, 100)[:, None]
         k = GPy.kern.RBF(1) + GPy.kern.White(1)

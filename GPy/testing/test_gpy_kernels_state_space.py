@@ -419,7 +419,7 @@ class TestStateSpaceKernels:
         ss_kernel = GPy.kern.sde_Exponential(
             1,
             Y.var(),
-            X.ptp() / 2.0,
+            np.ptp(X) / 2.0,
             active_dims=[
                 0,
             ],
@@ -427,7 +427,7 @@ class TestStateSpaceKernels:
         gp_kernel = GPy.kern.Exponential(
             1,
             Y.var(),
-            X.ptp() / 2.0,
+            np.ptp(X) / 2.0,
             active_dims=[
                 0,
             ],

@@ -315,7 +315,7 @@ class image_show(matplotlib_show):
         dim = self.dimensions[0] * self.dimensions[1]
         num_images = np.sqrt(vals[0,].size/dim)
         if num_images > 1 and num_images.is_integer(): # Show a mosaic of images
-            num_images = np.int(num_images)
+            num_images = int(num_images)
             self.vals = np.zeros((self.dimensions[0]*num_images, self.dimensions[1]*num_images))
             for iR in range(num_images):
                 for iC in range(num_images):
@@ -482,7 +482,7 @@ class mocap_data_show(matplotlib_show):
         r = maxsize/2
         for ctr, dim in zip(centers, 'xyz'):
             getattr(self.axes, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
-        
+
 #         self.axes.set_aspect('equal')
 #         self.axes.autoscale(enable=False)
 
@@ -504,7 +504,7 @@ class stick_show(mocap_data_show):
             self.vals = self.vals.reshape((3, self.vals.shape[1]//3)).T
         except ValueError as e:
             raise ValueError("Passed values to stick_show need to have a dimension which is divisible by 3 for display as they should be a point cloud of 3-D points.") from e
-            
+
 
 class skeleton_show(mocap_data_show):
     """data_show class for visualizing motion capture data encoded as a skeleton with angles."""

@@ -15,7 +15,7 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
         #Assume each page of A should be its own dimension
         pagesizes = range(A.shape[2])#[0]*A.shape[2]
     num_pages = len(pagesizes)
-    B = np.empty(shape=(num_blocks, num_blocks, num_pages), dtype=np.object)
+    B = np.empty(shape=(num_blocks, num_blocks, num_pages), dtype=object)
     count_k = 0
     #for Bk, k in enumerate(pagesizes):
     for Bk in pagesizes:
@@ -35,7 +35,7 @@ def get_blocks(A, blocksizes):
     N = np.sum(blocksizes)
     assert A.shape[0] == N, "bad blocksizes"
     num_blocks = len(blocksizes)
-    B = np.empty(shape=(num_blocks, num_blocks), dtype=np.object)
+    B = np.empty(shape=(num_blocks, num_blocks), dtype=object)
     count_i = 0
     for Bi, i in enumerate(blocksizes):
         count_j = 0
@@ -105,7 +105,7 @@ def block_dot(A, B, diagonal=False):
         else:
             print("Dotting, C: {} C:{}".format(C.shape, D.shape))
             return np.dot(C,D)
-    dot = np.vectorize(f, otypes = [np.object])
+    dot = np.vectorize(f, otypes=[object])
     return dot(A,B)
 
 

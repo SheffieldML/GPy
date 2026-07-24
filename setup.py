@@ -147,7 +147,7 @@ install_requirements = [
 ]
 # 'some-pkg @ git+ssh://git@github.com/someorgname/pkg-repo-name@v1.1#egg=some-pkg',
 matplotlib_version = "matplotlib==3.3.4"
-install_requirements += ["scipy>=1.3.0,<1.14"]  # 
+install_requirements += ["scipy>=1.3.0,<1.14"]  #
 
 setup(
     name="GPy",
@@ -197,7 +197,10 @@ setup(
     include_package_data=True,
     py_modules=["GPy.__init__"],
     test_suite="GPy.testing",
-    setup_requires=["numpy>=1.7,<2.0.0"],
+    # Extensions must be compiled with the NumPy version they will import
+    # against.  In particular, do not force a NumPy 1.x build when NumPy 2 is
+    # installed.
+    setup_requires=["numpy>=1.7"],
     install_requires=install_requirements,
     extras_require={
         "docs": ["sphinx"],

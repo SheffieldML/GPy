@@ -13,7 +13,7 @@ from GPy.core.parameterization.variational import (
 from ..util.misc import param_to_array
 from ..kern import RBF
 from ..core import Param
-from numpy.linalg.linalg import LinAlgError
+from numpy.linalg import LinAlgError
 
 
 class SSMRD(Model):

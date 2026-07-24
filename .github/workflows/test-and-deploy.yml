@@ -31,11 +31,12 @@ jobs:
       - name: Install build dependencies
         run: |
           pip install setuptools
-      
+          pip install 'numpy>=2,<3'
+
       - name: Install lib
         run: |
           python setup.py develop
-      
+
       - name: Install test dependencies
         run: |
           pip install matplotlib
@@ -63,6 +64,7 @@ jobs:
       - name: Install build dependencies
         run: |
           pip install setuptools
+          pip install 'numpy>=2,<3'
 
       - name: Install lib
         run: |
@@ -95,7 +97,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install setuptools
-      
+          pip install 'numpy>=2,<3'
+
       - name: Install lib
         run: |
           python setup.py develop
@@ -196,7 +199,7 @@ jobs:
     - name: Install auditwheel
       run: |
         /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
-    
+
     - name: Repair wheel files
       run: |
         /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
@@ -243,7 +246,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install twine
-    
+
       - name: Download all artifacts to a specific directory
         uses: actions/download-artifact@v3
         with:

@@ -987,6 +987,7 @@ class TestKernelPsiStatisticsGradient:
     def _test_kernel_param(self, kernel, psi2n=False):
         def f(p):
             kernel.param_array[:] = p
+            kernel.trigger_update()
             psi0 = kernel.psi0(self.Z, self.qX)
             psi1 = kernel.psi1(self.Z, self.qX)
             if not psi2n:
@@ -1006,6 +1007,7 @@ class TestKernelPsiStatisticsGradient:
 
         def df(p):
             kernel.param_array[:] = p
+            kernel.trigger_update()
             kernel.update_gradients_expectations(
                 self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX
             )

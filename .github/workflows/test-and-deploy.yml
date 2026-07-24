@@ -37,7 +37,7 @@ jobs:
 
       - name: Install lib
         run: |
-          python setup.py develop
+          python -m pip install --editable .
 
       - name: Install test dependencies
         run: |
@@ -70,7 +70,7 @@ jobs:
 
       - name: Install lib
         run: |
-          python setup.py develop
+          python -m pip install --editable .
 
       - name: Install test dependencies
         run: |
@@ -103,7 +103,7 @@ jobs:
 
       - name: Install lib
         run: |
-          python setup.py develop
+          python -m pip install --editable .
 
       - name: Install test dependencies
         run: |
@@ -135,7 +135,7 @@ jobs:
           pip install wheel
           pip install 'Cython>=0.29'
           pip install 'numpy>=2,<3'
-          python setup.py develop
+          python -m pip install --editable .
           python setup.py bdist_wheel
           python setup.py sdist bdist_wheel
 
@@ -170,7 +170,7 @@ jobs:
           pip install wheel
           pip install 'Cython>=0.29'
           pip install 'numpy>=2,<3'
-          python setup.py develop
+          python -m pip install --editable .
           python setup.py bdist_wheel
 
       - name: List contents of dist
@@ -196,7 +196,7 @@ jobs:
     - name: Compile c headers
       run: |
         /opt/python/${{ matrix.python }}/bin/python -m pip install 'Cython>=0.29' 'numpy>=2,<3'
-        /opt/python/${{ matrix.python }}/bin/python setup.py develop
+        /opt/python/${{ matrix.python }}/bin/python -m pip install --editable .
 
     - name: Build wheel files
       run: |

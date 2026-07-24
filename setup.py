@@ -136,7 +136,7 @@ try:
             extra_compile_args=compile_flags,
             extra_link_args=link_args,
         ),
-    ])
+    ], build_dir="build/cython")
 except ModuleNotFoundError:
     ext_mods = []
 
@@ -144,7 +144,6 @@ install_requirements = [
     "numpy>=1.7",
     "six",
     "paramz>=0.9.6",
-    "cython>=0.29",
     "scipy>=1.3.0"
 ]
 
@@ -199,7 +198,6 @@ setup(
     # Extensions must be compiled with the NumPy version they will import
     # against.  In particular, do not force a NumPy 1.x build when NumPy 2 is
     # installed.
-    setup_requires=["numpy>=2", "cython>=0.29"],
     install_requires=install_requirements,
     extras_require={
         "docs": ["sphinx"],

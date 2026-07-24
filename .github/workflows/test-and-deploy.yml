@@ -32,6 +32,7 @@ jobs:
       - name: Install build dependencies
         run: |
           pip install setuptools
+          pip install 'Cython>=0.29'
           pip install 'numpy>=2,<3'
 
       - name: Install lib
@@ -64,6 +65,7 @@ jobs:
       - name: Install build dependencies
         run: |
           pip install setuptools
+          pip install 'Cython>=0.29'
           pip install 'numpy>=2,<3'
 
       - name: Install lib
@@ -96,6 +98,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install setuptools
+          pip install 'Cython>=0.29'
           pip install 'numpy>=2,<3'
 
       - name: Install lib
@@ -130,6 +133,8 @@ jobs:
         run: |
           pip install setuptools
           pip install wheel
+          pip install 'Cython>=0.29'
+          pip install 'numpy>=2,<3'
           python setup.py develop
           python setup.py bdist_wheel
           python setup.py sdist bdist_wheel
@@ -163,6 +168,8 @@ jobs:
         run: |
           pip install setuptools
           pip install wheel
+          pip install 'Cython>=0.29'
+          pip install 'numpy>=2,<3'
           python setup.py develop
           python setup.py bdist_wheel
 
@@ -188,6 +195,7 @@ jobs:
 
     - name: Compile c headers
       run: |
+        /opt/python/${{ matrix.python }}/bin/python -m pip install 'Cython>=0.29' 'numpy>=2,<3'
         /opt/python/${{ matrix.python }}/bin/python setup.py develop
 
     - name: Build wheel files

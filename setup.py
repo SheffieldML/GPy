@@ -38,6 +38,7 @@ from __future__ import print_function
 import os
 import sys
 from setuptools import setup, Extension
+from Cython.Build import cythonize
 import codecs
 
 try:
@@ -96,7 +97,7 @@ try:
     # So that we don't need numpy installed to determine it's a dependency.
     import numpy as np
 
-    ext_mods = [
+    ext_mods = cythonize([
         Extension(
             name="GPy.kern.src.stationary_cython",
             sources=[
@@ -135,7 +136,7 @@ try:
             extra_compile_args=compile_flags,
             extra_link_args=link_args,
         ),
-    ]
+    ])
 except ModuleNotFoundError:
     ext_mods = []
 
@@ -198,7 +199,7 @@ setup(
     # Extensions must be compiled with the NumPy version they will import
     # against.  In particular, do not force a NumPy 1.x build when NumPy 2 is
     # installed.
-    setup_requires=["numpy>=2"],
+    setup_requires=["numpy>=2", "cython>=0.29"],
     install_requires=install_requirements,
     extras_require={
         "docs": ["sphinx"],

@@ -7,6 +7,7 @@ on:
       - deploy
   pull_request:
   release:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,8 +17,8 @@ jobs:
   test-windows:
     strategy:
       matrix:
-        os: [windows-latest]
-        python: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -39,8 +40,7 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          pip install matplotlib
-          pip install 'pytest<8'
+          pip install matplotlib pytest
 
       - name: pytest
         run: |
@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: ['3.9', '3.10', '3.11', '3.12']
+        python: ['3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -72,8 +72,7 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          pip install matplotlib
-          pip install 'pytest<8'
+          pip install matplotlib pytest
 
       - name: pytest
         run: |
@@ -83,7 +82,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ['3.10', '3.11', '3.12']
+        python: ['3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -105,8 +104,7 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          pip install matplotlib
-          pip install 'pytest<8'
+          pip install matplotlib pytest
 
       - name: pytest
         run: |
@@ -117,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ['3.9', '3.10', '3.11', '3.12']
+        python: ['3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -150,7 +148,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ['3.10', '3.11', '3.12']  # 3.9 triggers scipy issues when installing
+        python: ['3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -181,7 +179,7 @@ jobs:
     if: github.event_name == 'release'
     strategy:
         matrix:
-          python: ['cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
+          python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux2014_x86_64
 
@@ -240,7 +238,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install twine
         run: |

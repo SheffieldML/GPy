@@ -9,7 +9,7 @@ from GPy.core.parameterization.variational import NormalPosterior
 
 
 class TestGP:
-    def setup(self):
+    def setup_method(self):
         np.random.seed(12345)
         self.N = 20
         self.N_new = 50
@@ -19,7 +19,7 @@ class TestGP:
         self.X_new = np.random.uniform(-3.0, 3.0, (self.N_new, 1))
 
     def test_setxy_bgplvm(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1)
         m = GPy.models.BayesianGPLVM(self.Y, 1, kernel=k)
@@ -38,7 +38,7 @@ class TestGP:
         np.testing.assert_allclose(var, var2)
 
     def test_setxy_gplvm(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1)
         m = GPy.models.GPLVM(self.Y, 1, kernel=k)
@@ -57,7 +57,7 @@ class TestGP:
         np.testing.assert_allclose(var, var2)
 
     def test_setxy_gp(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
@@ -78,7 +78,7 @@ class TestGP:
         from GPy.core.parameterization.param import Param
         from GPy.core.mapping import Mapping
 
-        self.setup()
+        self.setup_method()
 
         class Parabola(Mapping):
             def __init__(self, variance, degree=2, name="parabola"):

@@ -8,7 +8,7 @@ import GPy
 
 
 class TestTP:
-    def setup(self):
+    def setup_method(self):
         np.random.seed(12345)
         self.N = 20
         self.N_new = 50
@@ -18,7 +18,7 @@ class TestTP:
         self.X_new = np.random.uniform(-3.0, 3.0, (self.N_new, 1))
 
     def test_setxy_gp(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         m = GPy.models.TPRegression(self.X, self.Y, kernel=k)
         mu, var = m.predict(m.X)
@@ -34,7 +34,7 @@ class TestTP:
         from GPy.core.parameterization.param import Param
         from GPy.core.mapping import Mapping
 
-        self.setup()
+        self.setup_method()
 
         class Parabola(Mapping):
             def __init__(self, variance, degree=2, name="parabola"):
@@ -76,7 +76,7 @@ class TestTP:
         _ = m.predict(m.X)
 
     def test_normalizer(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         Y = self.Y
@@ -119,7 +119,7 @@ class TestTP:
         )
 
     def test_predict_equivalence(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1) + GPy.kern.White(1)
         m = GPy.models.TPRegression(self.X, self.Y, kernel=k)
@@ -143,7 +143,7 @@ class TestTP:
         assert not np.allclose(var1, var3)
 
     def test_gp_equivalence(self):
-        self.setup()
+        self.setup_method()
 
         k = GPy.kern.RBF(1)
         m = GPy.models.GPRegression(self.X, self.Y, kernel=k)

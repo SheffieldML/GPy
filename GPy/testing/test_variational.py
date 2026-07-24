@@ -48,13 +48,13 @@ class KLGrad(GPy.core.Model):
 
 
 class TestVariational:
-    def setup(self):
+    def setup_method(self):
         np.random.seed(12345)
         self.Xvar = GPy.core.parameterization.variational.NormalPosterior(
             np.random.uniform(0, 1, (10, 3)), np.random.uniform(1e-5, 0.01, (10, 3))
         )
 
     def test_normal(self):
-        self.setup()
+        self.setup_method()
         klgrad = KLGrad(self.Xvar, GPy.core.parameterization.variational.NormalPrior())
         np.testing.assert_(klgrad.checkgrad())

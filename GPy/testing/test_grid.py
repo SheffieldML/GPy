@@ -8,7 +8,7 @@ import GPy
 
 
 class TestGridModel:
-    def setup(self):
+    def setup_method(self):
         ######################################
         # # 3 dimensional example
 
@@ -29,7 +29,7 @@ class TestGridModel:
         self.dim = self.X.shape[1]
 
     def test_alpha_match(self):
-        self.setup()
+        self.setup_method()
         kernel = GPy.kern.RBF(input_dim=self.dim, variance=1, ARD=True)
         m = GPy.models.GPRegressionGrid(self.X, self.Y, kernel)
 
@@ -39,7 +39,7 @@ class TestGridModel:
         np.testing.assert_almost_equal(m.posterior.alpha, m2.posterior.woodbury_vector)
 
     def test_gradient_match(self):
-        self.setup()
+        self.setup_method()
         kernel = GPy.kern.RBF(input_dim=self.dim, variance=1, ARD=True)
         m = GPy.models.GPRegressionGrid(self.X, self.Y, kernel)
 
@@ -57,7 +57,7 @@ class TestGridModel:
         )
 
     def test_prediction_match(self):
-        self.setup()
+        self.setup_method()
         kernel = GPy.kern.RBF(input_dim=self.dim, variance=1, ARD=True)
         m = GPy.models.GPRegressionGrid(self.X, self.Y, kernel)
 

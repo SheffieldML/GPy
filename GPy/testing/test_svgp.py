@@ -7,7 +7,7 @@ class TestSVGP_nonconvex:
     Inference in the SVGP with a student-T likelihood
     """
 
-    def setup(self):
+    def setup_method(self):
         X = np.linspace(0, 10, 100).reshape(-1, 1)
         Z = np.linspace(0, 10, 10).reshape(-1, 1)
         Y = np.sin(X) + np.random.randn(*X.shape) * 0.1
@@ -18,7 +18,7 @@ class TestSVGP_nonconvex:
         self.m = GPy.core.SVGP(X, Y, Z=Z, likelihood=lik, kernel=k)
 
     def test_grad(self):
-        self.setup()
+        self.setup_method()
         assert self.m.checkgrad(step=1e-4)
 
 
@@ -27,7 +27,7 @@ class TestSVGP_classification:
     Inference in the SVGP with a Bernoulli likelihood
     """
 
-    def setup(self):
+    def setup_method(self):
         X = np.linspace(0, 10, 100).reshape(-1, 1)
         Z = np.linspace(0, 10, 10).reshape(-1, 1)
         Y = np.where((np.sin(X) + np.random.randn(*X.shape) * 0.1) > 0, 1, 0)
@@ -37,7 +37,7 @@ class TestSVGP_classification:
         self.m = GPy.core.SVGP(X, Y, Z=Z, likelihood=lik, kernel=k)
 
     def test_grad(self):
-        self.setup()
+        self.setup_method()
         assert self.m.checkgrad(step=1e-4)
 
 
@@ -46,7 +46,7 @@ class TestSVGP_Poisson_with_meanfunction:
     Inference in the SVGP with a Bernoulli likelihood
     """
 
-    def setup(self):
+    def setup_method(self):
         X = np.linspace(0, 10, 100).reshape(-1, 1)
         Z = np.linspace(0, 10, 10).reshape(-1, 1)
         latent_f = np.exp(0.1 * X * 0.05 * X**2)
@@ -59,5 +59,5 @@ class TestSVGP_Poisson_with_meanfunction:
         self.m = GPy.core.SVGP(X, Y, Z=Z, likelihood=lik, kernel=k, mean_function=mf)
 
     def test_grad(self):
-        self.setup()
+        self.setup_method()
         assert self.m.checkgrad(step=1e-4)

@@ -13,7 +13,7 @@ def rmse(Y, Ystar):
 # this file will contain some high level tests, this is not unit testing, but will give us a higher level estimate
 # if things are going well under the hood.
 class TestObservationModels:
-    def setup(self):
+    def setup_method(self):
         np.random.seed(fixed_seed)
         self.N = 100
         self.D = 2
@@ -49,7 +49,7 @@ class TestObservationModels:
         self.kernel1 = None
 
     def test_epccassification(self):
-        self.setup()
+        self.setup_method()
 
         bernoulli = GPy.likelihoods.Bernoulli()
         laplace_inf = GPy.inference.latent_function_inference.Laplace()
@@ -129,7 +129,7 @@ class TestObservationModels:
         "Fails as a consequence of fixing the DSYR function. Needs to be reviewed!"
     )
     def test_ep_with_studentt(self):
-        self.setup()
+        self.setup_method()
         self.tear_down()
 
         studentT = GPy.likelihoods.StudentT(

@@ -140,9 +140,9 @@ class StateSpace(Model):
         # becomes 3D even though is must be 2D. The reason is undiscovered.
         Y = self.Y
         if self.ts_number is None:
-            Y.shape = (self.num_data,1)
+            Y = Y.reshape((self.num_data,1))
         else:
-            Y.shape = (self.num_data,1,self.ts_number)
+            Y = Y.reshape((self.num_data,1,self.ts_number))
 
         (filter_means, filter_covs, log_likelihood,
          grad_log_likelihood,SmootherMatrObject) = ssm.ContDescrStateSpace.cont_discr_kalman_filter(F,L,Qc,H,
@@ -162,7 +162,7 @@ class StateSpace(Model):
         #print(grad_log_likelihood)
 
         grad_log_likelihood_sum = np.sum(grad_log_likelihood,axis=1)
-        grad_log_likelihood_sum.shape = (grad_log_likelihood_sum.shape[0],1)
+        grad_log_likelihood_sum = grad_log_likelihood_sum.reshape((grad_log_likelihood_sum.shape[0],1))
         self._log_marginal_likelihood = np.sum( log_likelihood,axis=1 )
         self.likelihood.update_gradients(grad_log_likelihood_sum[-1,0])
 

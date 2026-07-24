@@ -6,7 +6,7 @@ import GPy
 
 
 class TestPEPgradient:
-    def setup(self):
+    def setup_method(self):
         ######################################
         # # 1 dimensional example
         np.random.seed(10)
@@ -38,7 +38,7 @@ class TestPEPgradient:
         self.lik_noise_var = 0.01
 
     def test_pep_1d_gradients(self):
-        self.setup()
+        self.setup_method()
         m = GPy.models.SparseGPRegression(self.X1D, self.Y1D)
         m.inference_method = GPy.inference.latent_function_inference.PEP(
             alpha=np.random.rand()
@@ -46,7 +46,7 @@ class TestPEPgradient:
         assert m.checkgrad()
 
     def test_pep_2d_gradients(self):
-        self.setup()
+        self.setup_method()
         m = GPy.models.SparseGPRegression(self.X2D, self.Y2D)
         m.inference_method = GPy.inference.latent_function_inference.PEP(
             alpha=np.random.rand()
@@ -54,7 +54,7 @@ class TestPEPgradient:
         assert m.checkgrad()
 
     def test_pep_vfe_consistency(self):
-        self.setup()
+        self.setup_method()
         vfe_model = GPy.models.SparseGPRegression(
             self.X1, self.Y1, kernel=self.kernel, Z=self.Z
         )
@@ -76,7 +76,7 @@ class TestPEPgradient:
         )
 
     def test_pep_fitc_consistency(self):
-        self.setup()
+        self.setup_method()
         fitc_model = GPy.models.SparseGPRegression(
             self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z
         )

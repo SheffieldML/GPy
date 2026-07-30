@@ -143,7 +143,7 @@ except ModuleNotFoundError:
 install_requirements = [
     "numpy>=1.7",
     "six",
-    "paramz>=0.9.6",
+    "paramz>0.9.6",
     "scipy>=1.3.0"
 ]
 

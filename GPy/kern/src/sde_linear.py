@@ -46,7 +46,7 @@ class sde_Linear(Linear):
         Return the state space representation of the covariance.
         """
 
-        variance = self.variances.item() # this is initial variancve in Bayesian linear regression
+        variance = self.variances.item() # this is initial variance in Bayesian linear regression
         t0 = float(self.t0)
 
         F = np.array( ((0,1.0),(0,0) ))

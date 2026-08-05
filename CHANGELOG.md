@@ -1,7 +1,19 @@
 # Changelog
 
 ## Unreleased
-* naive removal of upper scipy and numpy limit [MartinBubel]
+* add support for NumPy 2, including compatibility fixes across inference, kernels, likelihoods, state-space models, plotting, and utilities
+
+* update dependencies for NumPy 2 compatibility: require `paramz>0.9.6`, remove the NumPy and SciPy upper bounds, and require `scipy>=1.3.0`
+
+* modernize package builds with PEP 517 build metadata, isolated build dependencies, and on-demand Cython generation; generated Cython C sources are no longer distributed
+
+* update test setup hooks for current pytest compatibility and refresh tests for the NumPy 2 behavior
+
+* refresh GitHub Actions to test Python 3.11–3.14 on Linux, macOS, and Windows, and build release artifacts for the same supported versions
+
+* add a VS Code development-container configuration
+
+* correct state-space periodic-kernel warning messages and related documentation typos
 
 * fix pickle and deep copy for classification models inheriting from EP #1108 [olamarre]
 

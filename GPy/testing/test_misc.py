@@ -8,12 +8,12 @@ class TestMisc:
     Testing some utilities of misc
     """
 
-    def setup(self):
+    def setup_method(self):
         self._lim_val = np.finfo(np.float64).max
         self._lim_val_exp = np.log(self._lim_val)
 
     def test_safe_exp_upper(self):
-        self.setup()
+        self.setup_method()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")  # always print
             assert np.isfinite(np.exp(self._lim_val_exp))

@@ -100,15 +100,15 @@ class GaussianGridInference(LatentFunctionInference):
                     dKd_dTheta[d] = np.identity(len(xg)) #derivative wrt noise
                 gamma[d] = np.diag(np.dot(np.dot(QTs[d], dKd_dTheta[d].T), Qs[d]))
                 gam = np.kron(gam, gamma[d])
-            
+
             gam = gam.reshape(-1,1)
             kappa = self.kron_mvprod(dKd_dTheta, alpha_kron)
             derivs[t] = 0.5*np.dot(alpha_kron.T,kappa) - 0.5*np.sum(gam / (V_kron + noise))
 
         # separate derivatives
-        dL_dLen = derivs[:D]
-        dL_dVar = derivs[D]
-        dL_dThetaL = derivs[D+1]
+        dL_dLen = np.asarray([np.real(np.asarray(derivative)).item() for derivative in derivs[:D]])
+        dL_dVar = np.real(np.asarray(derivs[D])).item()
+        dL_dThetaL = np.real(np.asarray(derivs[D+1])).item()
 
         return GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron), \
                 log_likelihood, {'dL_dLen':dL_dLen, 'dL_dVar':dL_dVar, 'dL_dthetaL':dL_dThetaL}

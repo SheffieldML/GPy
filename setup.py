@@ -38,6 +38,7 @@ from __future__ import print_function
 import os
 import sys
 from setuptools import setup, Extension
+from Cython.Build import cythonize
 import codecs
 
 try:
@@ -96,7 +97,7 @@ try:
     # So that we don't need numpy installed to determine it's a dependency.
     import numpy as np
 
-    ext_mods = [
+    ext_mods = cythonize([
         Extension(
             name="GPy.kern.src.stationary_cython",
             sources=[
@@ -135,19 +136,16 @@ try:
             extra_compile_args=compile_flags,
             extra_link_args=link_args,
         ),
-    ]
+    ], build_dir="build/cython")
 except ModuleNotFoundError:
     ext_mods = []
 
 install_requirements = [
-    "numpy>=1.7,<2.0.0",
+    "numpy>=1.7",
     "six",
-    "paramz>=0.9.6",
-    "cython>=0.29",
+    "paramz>0.9.6",
+    "scipy>=1.3.0"
 ]
-# 'some-pkg @ git+ssh://git@github.com/someorgname/pkg-repo-name@v1.1#egg=some-pkg',
-matplotlib_version = "matplotlib==3.3.4"
-install_requirements += ["scipy>=1.3.0,<=1.12.0"]
 
 setup(
     name="GPy",
@@ -197,7 +195,9 @@ setup(
     include_package_data=True,
     py_modules=["GPy.__init__"],
     test_suite="GPy.testing",
-    setup_requires=["numpy>=1.7,<2.0.0"],
+    # Extensions must be compiled with the NumPy version they will import
+    # against.  In particular, do not force a NumPy 1.x build when NumPy 2 is
+    # installed.
     install_requires=install_requirements,
     extras_require={
         "docs": ["sphinx"],
@@ -206,7 +206,7 @@ setup(
             "ipython>=4.0.0",
         ],
         # matplotlib Version see github issue #955
-        "plotting": [matplotlib_version, "plotly >= 1.8.6"],
+        "plotting": ["matplotlib >= 3.3.4", "plotly >= 1.8.6"],
         "notebook": [
             "jupyter_client >= 4.0.6",
             "ipywidgets >= 4.0.3",

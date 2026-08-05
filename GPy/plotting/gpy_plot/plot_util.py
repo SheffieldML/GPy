@@ -296,7 +296,7 @@ def get_x_y_var(model):
 
     if isinstance(model, WarpedGP) and not model.predict_in_warped_space:
         Y = model.Y_normalized
-    
+
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
     return X, X_variance, Y
 
@@ -356,7 +356,7 @@ def x_frame1D(X,plot_limits=None,resolution=None):
     else:
         raise ValueError("Bad limits for plotting")
 
-    Xnew = np.linspace(float(xmin),float(xmax),int(resolution) or 200)[:,None]
+    Xnew = np.linspace(np.asarray(xmin).item(), np.asarray(xmax).item(), int(resolution) or 200)[:,None]
     return Xnew, xmin, xmax
 
 def x_frame2D(X,plot_limits=None,resolution=None):

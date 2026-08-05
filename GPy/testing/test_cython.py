@@ -25,7 +25,7 @@ These tests make sure that the pure python and cython codes work the same
 
 
 class CythonTestChols:
-    def setup(self):
+    def setup_method(self):
         self.flat = np.random.randn(45, 5)
         self.triang = np.array([np.eye(20) for i in range(3)])
 
@@ -49,7 +49,7 @@ class CythonTestChols:
 
 
 class TestStationary:
-    def setup(self):
+    def setup_method(self):
         self.k = GPy.kern.RBF(10)
         self.X = np.random.randn(300, 10)
         self.Z = np.random.randn(20, 10)
@@ -62,7 +62,7 @@ class TestStationary:
         reason="Cython stationary module has not been built on this machine",
     )
     def test_square_gradX(self):
-        self.setup()
+        self.setup_method()
         g1 = self.k._gradients_X_cython(self.dKxx, self.X)
         g2 = self.k._gradients_X_pure(self.dKxx, self.X)
         assert np.allclose(g1, g2), "Gradient mismatch on square X!"
@@ -72,7 +72,7 @@ class TestStationary:
         reason="Cython stationary module has not been built on this machine",
     )
     def test_rect_gradx(self):
-        self.setup()
+        self.setup_method()
         g1 = self.k._gradients_X_cython(self.dKxz, self.X, self.Z)
         g2 = self.k._gradients_X_pure(self.dKxz, self.X, self.Z)
         assert np.allclose(g1, g2), "Gradient mismatch on rect X!"
@@ -82,7 +82,7 @@ class TestStationary:
         reason="Cython stationary module has not been built on this machine",
     )
     def test_square_lengthscales(self):
-        self.setup()
+        self.setup_method()
         g1 = self.k._lengthscale_grads_pure(self.dKxx, self.X, self.X)
         g2 = self.k._lengthscale_grads_cython(self.dKxx, self.X, self.X)
         assert np.allclose(g1, g2), "Gradient mismatch on square lengthscale!"
@@ -92,14 +92,14 @@ class TestStationary:
         reason="Cython stationary module has not been built on this machine",
     )
     def test_rect_lengthscales(self):
-        self.setup()
+        self.setup_method()
         g1 = self.k._lengthscale_grads_pure(self.dKxz, self.X, self.Z)
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
         assert np.allclose(g1, g2), "Gradient mismatch on rect lengthscale!"
 
 
 class TestCholeskiesBackprop:
-    def setup(self):
+    def setup_method(self):
         a = np.random.randn(10, 12)
         A = a.dot(a.T)
         self.L = GPy.util.linalg.jitchol(A)
@@ -110,7 +110,7 @@ class TestCholeskiesBackprop:
         reason="Cython cholesky module has not been built on this machine",
     )
     def test_backprop(self):
-        self.setup()
+        self.setup_method()
         r1 = choleskies._backprop_gradient_pure(self.dL, self.L)
         r2 = choleskies_cython.backprop_gradient(self.dL, self.L)
         r3 = choleskies_cython.backprop_gradient_par_c(self.dL, self.L)

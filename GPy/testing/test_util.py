@@ -32,6 +32,19 @@ import numpy as np
 import GPy
 
 
+def test_block_matrices_use_object_dtype():
+    from GPy.util.block_matrices import block_dot, get_blocks, unblock
+
+    matrix = np.arange(16.0).reshape(4, 4)
+    blocks = get_blocks(matrix, [2, 2])
+
+    assert blocks.dtype == np.dtype(object)
+    np.testing.assert_array_equal(unblock(blocks), matrix)
+
+    product = block_dot(blocks, blocks)
+    np.testing.assert_array_equal(product[0, 0], matrix[:2, :2].dot(matrix[:2, :2]))
+
+
 class UtilTest:
     def test_checkFinite(self):
         from GPy.util.debug import checkFinite
@@ -192,13 +205,13 @@ class UtilTest:
 
 
 class TestUnivariateGaussian:
-    def setup(self):
+    def setup_method(self):
         self.zz = [-5.0, -0.8, 0.0, 0.5, 2.0, 10.0]
 
     def test_logPdfNormal(self):
         from GPy.util.univariate_Gaussian import logPdfNormal
 
-        self.setup()
+        self.setup_method()
 
         pySols = [
             -13.4189385332,
@@ -216,7 +229,7 @@ class TestUnivariateGaussian:
     def test_cdfNormal(self):
         from GPy.util.univariate_Gaussian import cdfNormal
 
-        self.setup()
+        self.setup_method()
 
         pySols = [
             2.86651571879e-07,
@@ -234,7 +247,7 @@ class TestUnivariateGaussian:
     def test_logCdfNormal(self):
         from GPy.util.univariate_Gaussian import logCdfNormal
 
-        self.setup()
+        self.setup_method()
 
         pySols = [
             -15.064998394,
@@ -252,7 +265,7 @@ class TestUnivariateGaussian:
     def test_derivLogCdfNormal(self):
         from GPy.util.univariate_Gaussian import derivLogCdfNormal
 
-        self.setup()
+        self.setup_method()
 
         pySols = [
             5.18650396941,
@@ -269,7 +282,7 @@ class TestUnivariateGaussian:
 
 
 class TestStandardize:
-    def setup(self):
+    def setup_method(self):
         self.normalizer = GPy.util.normalizer.Standardize()
         y = np.stack([np.random.randn(10), 2 * np.random.randn(10)], axis=1)
         self.normalizer.scale_by(y)
@@ -278,7 +291,7 @@ class TestStandardize:
         """
         Test inverse covariance outputs correct size
         """
-        self.setup()
+        self.setup_method()
         covariance = np.random.rand(100, 100)
         output = self.normalizer.inverse_covariance(covariance)
         assert output.shape == (100, 100, 2)

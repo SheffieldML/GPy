@@ -37,7 +37,7 @@ class sde_White(White):
         Return the state space representation of the covariance.
         """
 
-        variance = float(self.variance.values)
+        variance = self.variance.item()
 
         F = np.array( ((-np.inf,),) )
         L = np.array( ((1.0,),)  )
@@ -83,7 +83,7 @@ class sde_Bias(Bias):
         """
         Return the state space representation of the covariance.
         """
-        variance = float(self.variance.values)
+        variance = self.variance.item()
 
         F = np.array( ((0.0,),))
         L = np.array( ((1.0,),))

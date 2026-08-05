@@ -807,7 +807,8 @@ class DescreteStateSpace(object):
         p_R = np.atleast_1d(p_R)
 
         # Reshape and check measurements:
-        Y.shape, old_Y_shape = cls._reshape_input_data(Y.shape)
+        Y_shape, old_Y_shape = cls._reshape_input_data(Y.shape)
+        Y = Y.reshape(Y_shape)
         measurement_dim = Y.shape[1]
         time_series_no = Y.shape[2]  # multiple time series mode
 
@@ -837,7 +838,7 @@ class DescreteStateSpace(object):
                 index = np.zeros((1, Y.shape[0]))
         else:
             if len(index.shape) == 1:
-                index.shape = (1, index.shape[0])
+                index = index.reshape((1, index.shape[0]))
                 old_index_shape = (index.shape[0],)
 
             if index.shape[1] != Y.shape[0]:
@@ -977,22 +978,22 @@ class DescreteStateSpace(object):
 
         # restore shapes so that input parameters are unchenged
         if old_index_shape is not None:
-            index.shape = old_index_shape
+            index = index.reshape(old_index_shape)
 
         if old_Y_shape is not None:
-            Y.shape = old_Y_shape
+            Y = Y.reshape(old_Y_shape)
 
         if old_A_shape is not None:
-            p_A.shape = old_A_shape
+            p_A = p_A.reshape(old_A_shape)
 
         if old_Q_shape is not None:
-            p_Q.shape = old_Q_shape
+            p_Q = p_Q.reshape(old_Q_shape)
 
         if old_H_shape is not None:
-            p_H.shape = old_H_shape
+            p_H = p_H.reshape(old_H_shape)
 
         if old_R_shape is not None:
-            p_R.shape = old_R_shape
+            p_R = p_R.reshape(old_R_shape)
         # Return values
 
         return (M, P, log_likelihood, grad_log_likelihood, dynamic_callables)
@@ -1081,7 +1082,8 @@ class DescreteStateSpace(object):
         """
 
         # Y
-        Y.shape, old_Y_shape = cls._reshape_input_data(Y.shape)
+        Y_shape, old_Y_shape = cls._reshape_input_data(Y.shape)
+        Y = Y.reshape(Y_shape)
 
         # m_init
         if m_init is None:
@@ -1172,19 +1174,19 @@ class DescreteStateSpace(object):
         )
 
         if old_Y_shape is not None:
-            Y.shape = old_Y_shape
+            Y = Y.reshape(old_Y_shape)
 
         if old_A_shape is not None:
-            p_A.shape = old_A_shape
+            p_A = p_A.reshape(old_A_shape)
 
         if old_Q_shape is not None:
-            p_Q.shape = old_Q_shape
+            p_Q = p_Q.reshape(old_Q_shape)
 
         if old_H_shape is not None:
-            p_H.shape = old_H_shape
+            p_H = p_H.reshape(old_H_shape)
 
         if old_R_shape is not None:
-            p_R.shape = old_R_shape
+            p_R = p_R.reshape(old_R_shape)
 
         return (M, P)
 
@@ -2268,11 +2270,11 @@ class DescreteStateSpace(object):
             )
             p_m = filter_means[k, :]
             if len(p_m.shape) < 2:
-                p_m.shape = (p_m.shape[0], 1)
+                p_m = p_m.reshape((p_m.shape[0], 1))
 
             p_m_prev_step = M[k + 1, :]
             if len(p_m_prev_step.shape) < 2:
-                p_m_prev_step.shape = (p_m_prev_step.shape[0], 1)
+                p_m_prev_step = p_m_prev_step.reshape((p_m_prev_step.shape[0], 1))
 
             m_upd, P_upd, G_tmp = cls._rts_smoother_update_step(
                 k,
@@ -2386,7 +2388,7 @@ class DescreteStateSpace(object):
                 )  # p #m
 
                 M0_smoothed = M[0]
-                M0_smoothed.shape = (M0_smoothed.shape[0], 1)
+                M0_smoothed = M0_smoothed.reshape((M0_smoothed.shape[0], 1))
                 tmp1 = np.dot(
                     dP_init[:, :, j],
                     np.dot(
@@ -2473,7 +2475,7 @@ class DescreteStateSpace(object):
         if len(p_M.shape) < 3:  # new shape is 3 dimensional
             old_M_shape = p_M.shape  # save shape to restore it on exit
             if len(p_M.shape) == 2:  # matrix
-                p_M.shape = (p_M.shape[0], p_M.shape[1], 1)
+                p_M = p_M.reshape((p_M.shape[0], p_M.shape[1], 1))
             elif len(p_M.shape) == 1:  # scalar but in array already
                 if p_M.shape[0] != 1:
                     raise ValueError(
@@ -2481,7 +2483,7 @@ class DescreteStateSpace(object):
                         which,
                     )
                 else:
-                    p_M.shape = (1, 1, 1)
+                    p_M = p_M.reshape((1, 1, 1))
 
         if (which == "A") or (which == "Q"):
             if (p_M.shape[0] != state_dim) or (p_M.shape[1] != state_dim):
@@ -2538,10 +2540,10 @@ class DescreteStateSpace(object):
         elif isinstance(dM, np.ndarray):
             if state_dim == 1:
                 if len(dM.shape) < 3:
-                    dM.shape = (1, 1, 1)
+                    dM = dM.reshape((1, 1, 1))
             else:
                 if len(dM.shape) < 3:
-                    dM.shape = (state_dim, state_dim, 1)
+                    dM = dM.reshape((state_dim, state_dim, 1))
         elif isinstance(dM, int):
             if state_dim > 1:
                 raise ValueError(
@@ -2601,13 +2603,13 @@ class DescreteStateSpace(object):
         elif isinstance(dM, np.ndarray):
             if state_dim == 1:
                 if len(dM.shape) < 3:
-                    dM.shape = (1, 1, 1)
+                    dM = dM.reshape((1, 1, 1))
             else:
                 if len(dM.shape) < 3:
                     if which == "dH":
-                        dM.shape = (measurement_dim, state_dim, 1)
+                        dM = dM.reshape((measurement_dim, state_dim, 1))
                     elif which == "dR":
-                        dM.shape = (measurement_dim, measurement_dim, 1)
+                        dM = dM.reshape((measurement_dim, measurement_dim, 1))
         elif isinstance(dM, int):
             if state_dim > 1:
                 raise ValueError(
@@ -3290,13 +3292,13 @@ class ContDescrStateSpace(DescreteStateSpace):
         p_H = np.atleast_1d(p_H)
         p_R = np.atleast_1d(p_R)
 
-        X.shape, old_X_shape = cls._reshape_input_data(
-            X.shape, 2
-        )  # represent as column
+        X_shape, old_X_shape = cls._reshape_input_data(X.shape, 2)
+        X = X.reshape(X_shape)  # represent as column
         if X.shape[1] != 1:
             raise ValueError("Only one dimensional X data is supported.")
 
-        Y.shape, old_Y_shape = cls._reshape_input_data(Y.shape)  # represent as column
+        Y_shape, old_Y_shape = cls._reshape_input_data(Y.shape)
+        Y = Y.reshape(Y_shape)  # represent as column
 
         state_dim = F.shape[0]
         measurement_dim = Y.shape[1]
@@ -3320,7 +3322,7 @@ class ContDescrStateSpace(DescreteStateSpace):
                 index = np.zeros((1, Y.shape[0]))
         else:
             if len(index.shape) == 1:
-                index.shape = (1, index.shape[0])
+                index = index.reshape((1, index.shape[0]))
                 old_index_shape = (index.shape[0],)
 
             if index.shape[1] != Y.shape[0]:
@@ -3458,19 +3460,19 @@ class ContDescrStateSpace(DescreteStateSpace):
         )
 
         if old_index_shape is not None:
-            index.shape = old_index_shape
+            index = index.reshape(old_index_shape)
 
         if old_X_shape is not None:
-            X.shape = old_X_shape
+            X = X.reshape(old_X_shape)
 
         if old_Y_shape is not None:
-            Y.shape = old_Y_shape
+            Y = Y.reshape(old_Y_shape)
 
         if old_H_shape is not None:
-            p_H.shape = old_H_shape
+            p_H = p_H.reshape(old_H_shape)
 
         if old_R_shape is not None:
-            p_R.shape = old_R_shape
+            p_R = p_R.reshape(old_R_shape)
 
         return (M, P, log_likelihood, grad_log_likelihood, AQcomp)
 

@@ -521,8 +521,8 @@ class Matern32(Stationary):
         """
         Return the state space representation of the covariance.
         """
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale.values)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
         foo  = np.sqrt(3.)/lengthscale
         F    = np.array([[0, 1], [-foo**2, -2*foo]])
         L    = np.array([[0], [1]])
@@ -732,7 +732,15 @@ class Sinc(Stationary):
 
     def dK_dr(self, r):
         # small angle approximation to avoid divide by zero errors.
-        return np.where(r<1e-5, -self.variance*4/3*np.pi*np.pi*r, self.variance/r * (np.cos(2*np.pi*r)-np.sinc(2*r)))
+        gradient = -self.variance * 4 / 3 * np.pi**2 * r
+        mask = np.abs(r) >= 1e-5
+        np.divide(
+            self.variance * (np.cos(2 * np.pi * r) - np.sinc(2 * r)),
+            r,
+            out=gradient,
+            where=mask,
+        )
+        return gradient
 
 
 

@@ -95,9 +95,9 @@ class sde_StdPeriodic(StdPeriodic):
         else:
             N = 7  # approximation order
 
-        p_period = float(self.period)
-        p_lengthscale = 2 * float(self.lengthscale)
-        p_variance = float(self.variance)
+        p_period = self.period.item()
+        p_lengthscale = 2 * self.lengthscale.item()
+        p_variance = self.variance.item()
 
         w0 = 2 * np.pi / p_period  # frequency
         # lengthscale is multiplied by 2 because of different definition of lengthscale
@@ -110,7 +110,6 @@ class sde_StdPeriodic(StdPeriodic):
         if (
             np.any(np.isfinite(q2) == False)
             or np.any(np.abs(q2) > 1.0 / eps)
-            or np.any(np.abs(q2) < eps)
         ):
             warnings.warn(
                 "sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in q2 :".format(
@@ -122,7 +121,6 @@ class sde_StdPeriodic(StdPeriodic):
         if (
             np.any(np.isfinite(dq2l) == False)
             or np.any(np.abs(dq2l) > 1.0 / eps)
-            or np.any(np.abs(dq2l) < eps)
         ):
             warnings.warn(
                 "sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in dq2l :".format(

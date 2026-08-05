@@ -3,7 +3,7 @@
 
 import numpy as np
 from .sparse_gp import SparseGP
-from numpy.linalg.linalg import LinAlgError
+from numpy.linalg import LinAlgError
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 
 import logging

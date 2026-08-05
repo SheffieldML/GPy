@@ -21,7 +21,7 @@ from GPy.likelihoods.link_functions import (
 
 
 class TestLinkFunction:
-    def setup(self):
+    def setup_method(self):
         self.small_f = np.array([[-1e-4]])
         self.zero_f = np.array([[1e-4]])
         self.mid_f = np.array([[5.0]])
@@ -106,7 +106,7 @@ class TestLinkFunction:
         assert not np.isnan(link_func.d2transf_df2(beyond_lim_of_inf))
 
     def test_log_overflow(self):
-        self.setup()
+        self.setup_method()
 
         link = Log()
         lim_of_inf = _lim_val_exp
@@ -125,7 +125,7 @@ class TestLinkFunction:
         np.seterr(**old_err_state)
 
     def test_log_ex_1_overflow(self):
-        self.setup()
+        self.setup_method()
 
         link = Log_ex_1()
         lim_of_inf = _lim_val_exp
@@ -150,46 +150,46 @@ class TestLinkFunction:
 
     def test_log_gradients(self):
         # transf dtransf_df d2transf_df2 d3transf_df3
-        self.setup()
+        self.setup_method()
 
         link = Log()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_identity_gradients(self):
-        self.setup()
+        self.setup_method()
         link = Identity()
         lim_of_inf = _lim_val
         # FIXME: Should be able to think of a way to test the limits of this
         self.check_gradient(link, lim_of_inf, test_lim=False)
 
     def test_probit_gradients(self):
-        self.setup()
+        self.setup_method()
         link = Probit()
         lim_of_inf = _lim_val
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_scaledprobit_gradients(self):
-        self.setup()
+        self.setup_method()
         link = ScaledProbit(nu=random.random())
         lim_of_inf = _lim_val
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_Cloglog_gradients(self):
-        self.setup()
+        self.setup_method()
         link = Cloglog()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
 
     def test_Log_ex_1_gradients(self):
-        self.setup()
+        self.setup_method()
         link = Log_ex_1()
         lim_of_inf = _lim_val_exp
         self.check_gradient(link, lim_of_inf, test_lim=True)
         self.check_overflow(link, lim_of_inf)
 
     def test_reciprocal_gradients(self):
-        self.setup()
+        self.setup_method()
         link = Reciprocal()
         lim_of_inf = _lim_val
         # Does not work with much smaller values, and values closer to zero than 1e-5

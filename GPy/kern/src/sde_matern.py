@@ -36,8 +36,8 @@ class sde_Matern32(Matern32):
         Return the state space representation of the covariance.
         """
 
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale.values)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
 
         foo  = np.sqrt(3.)/lengthscale
         F    = np.array(((0, 1.0), (-foo**2, -2*foo)))
@@ -96,8 +96,8 @@ class sde_Matern52(Matern52):
         Return the state space representation of the covariance.
         """
 
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale.values)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
 
         lamda = np.sqrt(5.0)/lengthscale
         kappa = 5.0/3.0*variance/lengthscale**2

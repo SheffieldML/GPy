@@ -101,8 +101,8 @@ class TestStateSpaceKernels:
             x_interval=(0, 20),
             random=True,
         )
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Matern32(
             1,
@@ -143,8 +143,8 @@ class TestStateSpaceKernels:
             x_interval=(0, 20),
             random=True,
         )
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Matern52(
             1,
@@ -188,8 +188,8 @@ class TestStateSpaceKernels:
             x_interval=(0, 20),
             random=True,
         )
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_RBF(
             1,
@@ -236,8 +236,8 @@ class TestStateSpaceKernels:
             x_interval=(0, 20),
             random=True,
         )
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_StdPeriodic(
             1,
@@ -282,8 +282,8 @@ class TestStateSpaceKernels:
             x_interval=(0, 20),
             random=True,
         )
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Matern32(1) * GPy.kern.sde_StdPeriodic(
             1,
@@ -329,8 +329,8 @@ class TestStateSpaceKernels:
             random=True,
         )
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Linear(
             1,
@@ -381,8 +381,8 @@ class TestStateSpaceKernels:
             random=True,
         )
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Brownian()
         gp_kernel = GPy.kern.Brownian()
@@ -413,13 +413,13 @@ class TestStateSpaceKernels:
             random=True,
         )
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         ss_kernel = GPy.kern.sde_Exponential(
             1,
             Y.var(),
-            X.ptp() / 2.0,
+            np.ptp(X) / 2.0,
             active_dims=[
                 0,
             ],
@@ -427,7 +427,7 @@ class TestStateSpaceKernels:
         gp_kernel = GPy.kern.Exponential(
             1,
             Y.var(),
-            X.ptp() / 2.0,
+            np.ptp(X) / 2.0,
             active_dims=[
                 0,
             ],
@@ -478,8 +478,8 @@ class TestStateSpaceKernels:
         Y = Y + Y1
         Y -= Y.mean()
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         def get_new_kernels():
             ss_kernel = GPy.kern.sde_Linear(
@@ -572,8 +572,8 @@ class TestStateSpaceKernels:
         Y = Y + Y1
         Y -= Y.mean()
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         def get_new_kernels():
             ss_kernel = GPy.kern.sde_Linear(
@@ -639,8 +639,8 @@ class TestStateSpaceKernels:
             random=True,
         )
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
 
         def get_new_kernels():
             ss_kernel = GPy.kern.sde_Matern32(1) * GPy.kern.sde_Matern52(1)
@@ -730,12 +730,12 @@ class TestStateSpaceKernels:
         X_test = X[X > 20]
         Y_test = Y[X > 20]
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
-        X_train.shape = (X_train.shape[0], 1)
-        Y_train.shape = (Y_train.shape[0], 1)
-        X_test.shape = (X_test.shape[0], 1)
-        Y_test.shape = (Y_test.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
+        X_train = X_train.reshape((X_train.shape[0], 1))
+        Y_train = Y_train.reshape((Y_train.shape[0], 1))
+        X_test = X_test.reshape((X_test.shape[0], 1))
+        Y_test = Y_test.reshape((Y_test.shape[0], 1))
         # Generate data <-
 
         # import pdb; pdb.set_trace()
@@ -839,12 +839,12 @@ class TestStateSpaceKernels:
         X_test = X[X > 20]
         Y_test = Y[X > 20]
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
-        X_train.shape = (X_train.shape[0], 1)
-        Y_train.shape = (Y_train.shape[0], 1)
-        X_test.shape = (X_test.shape[0], 1)
-        Y_test.shape = (Y_test.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
+        X_train = X_train.reshape((X_train.shape[0], 1))
+        Y_train = Y_train.reshape((Y_train.shape[0], 1))
+        X_test = X_test.reshape((X_test.shape[0], 1))
+        Y_test = Y_test.reshape((Y_test.shape[0], 1))
         # Generate data <-
 
         # import pdb; pdb.set_trace()
@@ -948,12 +948,12 @@ class TestStateSpaceKernels:
         X_test = X[X > 20]
         Y_test = Y[X > 20]
 
-        X.shape = (X.shape[0], 1)
-        Y.shape = (Y.shape[0], 1)
-        X_train.shape = (X_train.shape[0], 1)
-        Y_train.shape = (Y_train.shape[0], 1)
-        X_test.shape = (X_test.shape[0], 1)
-        Y_test.shape = (Y_test.shape[0], 1)
+        X = X.reshape((X.shape[0], 1))
+        Y = Y.reshape((Y.shape[0], 1))
+        X_train = X_train.reshape((X_train.shape[0], 1))
+        Y_train = Y_train.reshape((Y_train.shape[0], 1))
+        X_test = X_test.reshape((X_test.shape[0], 1))
+        Y_test = Y_test.reshape((Y_test.shape[0], 1))
         # Generate data <-
 
         # import pdb; pdb.set_trace()

@@ -438,7 +438,7 @@ def check_kernel_gradient_functions(
 
 
 class TestKernelGradientContinuous:
-    def setup(self):
+    def setup_method(self):
         self.N, self.D = 10, 5
         self.X = np.random.randn(self.N, self.D + 1)
         self.X2 = np.random.randn(self.N + 10, self.D + 1)
@@ -447,19 +447,19 @@ class TestKernelGradientContinuous:
         self.kernclasses = [getattr(GPy.kern, s) for s in continuous_kerns]
 
     def test_MLP(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.MLP(self.D, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Matern32(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Matern32(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Prod(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Matern32(2, active_dims=[2, 3]) * GPy.kern.RBF(
             2, active_dims=[0, 4]
         ) + GPy.kern.Linear(self.D)
@@ -467,25 +467,25 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Prod1(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(self.D) * GPy.kern.Linear(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Prod2(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(2, active_dims=[0, 4]) * GPy.kern.Linear(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Prod3(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(self.D) * GPy.kern.Linear(self.D) * GPy.kern.Bias(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Prod4(self):
-        self.setup()
+        self.setup_method()
         k = (
             GPy.kern.RBF(2, active_dims=[0, 4])
             * GPy.kern.Linear(self.D)
@@ -495,7 +495,7 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Add(self):
-        self.setup()
+        self.setup_method()
         k = (
             GPy.kern.Matern32(2, active_dims=[2, 3])
             + GPy.kern.RBF(2, active_dims=[0, 4])
@@ -510,7 +510,7 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Add_dims(self):
-        self.setup()
+        self.setup_method()
         k = (
             GPy.kern.Matern32(2, active_dims=[2, self.D])
             + GPy.kern.RBF(2, active_dims=[0, 4])
@@ -532,86 +532,86 @@ class TestKernelGradientContinuous:
             raise AssertionError("k.K(X) should run on self.D-1 dimension")
 
     def test_Matern52(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Matern52(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_RBF(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_OU(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.OU(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Cosine(self):
-        self.setup()
+        self.setup_method()
         # Don't test Cosine directly as it fails positive definite test.
         k = GPy.kern.RBF(self.D - 1, ARD=False) * GPy.kern.Cosine(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_ExpQuadCosine(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.ExpQuadCosine(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Sinc(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Sinc(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_RatQuad(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RatQuad(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_ExpQuad(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.ExpQuad(self.D - 1, ARD=True)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_integral(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Integral(1)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_multidimensional_integral_limits(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Multidimensional_Integral_Limits(2)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_integral_limits(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Integral_Limits(2)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Linear(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Linear(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_LinearFull(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.LinearFull(self.D, self.D - 1)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Fixed(self):
-        self.setup()
+        self.setup_method()
         cov = np.dot(self.X, self.X.T)
         X = np.arange(self.N).reshape(self.N, 1)
         k = GPy.kern.Fixed(1, cov)
@@ -619,39 +619,39 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=X, X2=None, verbose=verbose)
 
     def test_Poly(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.Poly(self.D, order=5)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_WhiteHeteroscedastic(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.WhiteHeteroscedastic(self.D, self.X.shape[0])
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_standard_periodic(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.StdPeriodic(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_symmetric_even(self):
-        self.setup()
+        self.setup_method()
         k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
         transform = -np.array([[1.0]])
         k = GPy.kern.Symmetric(k_base, transform, "even")
         assert check_kernel_gradient_functions(k)
 
     def test_symmetric_odd(self):
-        self.setup()
+        self.setup_method()
         k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
         transform = -np.array([[1.0]])
         k = GPy.kern.Symmetric(k_base, transform, "odd")
         assert check_kernel_gradient_functions(k)
 
     def test_MultioutputKern(self):
-        self.setup()
+        self.setup_method()
         k1 = GPy.kern.RBF(self.D, ARD=True)
         k1.randomize()
         k2 = GPy.kern.RBF(self.D, ARD=True)
@@ -665,7 +665,7 @@ class TestKernelGradientContinuous:
         )
 
     def test_Precomputed(self):
-        self.setup()
+        self.setup_method()
         Xall = np.concatenate([self.X, self.X2])
         cov = np.dot(Xall, Xall.T)
         X = np.arange(self.N).reshape(self.N, 1)
@@ -677,7 +677,7 @@ class TestKernelGradientContinuous:
         )
 
     def test_basis_func_linear_slope(self):
-        self.setup()
+        self.setup_method()
         start_stop = np.random.uniform(
             self.X.min(0), self.X.max(0), (4, self.X.shape[1])
         ).T
@@ -694,7 +694,7 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_basis_func_changepoint(self):
-        self.setup()
+        self.setup_method()
         points = np.random.uniform(self.X.min(0), self.X.max(0), (self.X.shape[1]))
         ks = []
         for i in range(points.shape[0]):
@@ -707,7 +707,7 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_basis_func_poly(self):
-        self.setup()
+        self.setup_method()
         ks = []
         for i in range(self.X.shape[1]):
             ks.append(
@@ -719,7 +719,7 @@ class TestKernelGradientContinuous:
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_basis_func_domain(self):
-        self.setup()
+        self.setup_method()
         start_stop = np.random.uniform(
             self.X.min(0), self.X.max(0), (4, self.X.shape[1])
         ).T
@@ -735,7 +735,7 @@ class TestKernelGradientContinuous:
 
 
 class TestKernelMiscellaneous:
-    def setup(self):
+    def setup_method(self):
         N, D = 100, 10
         self.X = np.linspace(-np.pi, +np.pi, N)[:, None] * np.random.uniform(-10, 10, D)
         self.rbf = GPy.kern.RBF(2, active_dims=np.arange(0, 4, 2))
@@ -749,7 +749,7 @@ class TestKernelMiscellaneous:
         # self.sumkern.randomize()
 
     def test_which_parts(self):
-        self.setup()
+        self.setup_method()
         assert np.allclose(
             self.sumkern.K(self.X, which_parts=[self.linear, self.matern]),
             self.linear.K(self.X) + self.matern.K(self.X),
@@ -764,7 +764,7 @@ class TestKernelMiscellaneous:
         )
 
     def test_active_dims(self):
-        self.setup()
+        self.setup_method()
         np.testing.assert_array_equal(self.sumkern.active_dims, [0, 1, 2, 3, 7, 9])
         np.testing.assert_array_equal(self.sumkern._all_dims_active, range(10))
         tmp = self.linear + self.rbf
@@ -785,14 +785,14 @@ class TestKernelMiscellaneous:
 
 
 class TestKernelNonContinuous:
-    def setup(self):
+    def setup_method(self):
         N0 = 3
         N1 = 9
         N2 = 4
         N = N0 + N1 + N2
         self.D = 3
         self.X = np.random.randn(N, self.D + 1)
-        indices = np.random.random_integers(0, 2, size=N)
+        indices = np.random.randint(0, 3, size=N)
         self.X[indices == 0, -1] = 0
         self.X[indices == 1, -1] = 1
         self.X[indices == 2, -1] = 2
@@ -802,7 +802,7 @@ class TestKernelNonContinuous:
         self.X2[(N0 * 2) :, -1] = 1
 
     def test_IndependentOutputs(self):
-        self.setup()
+        self.setup_method()
         k = [
             GPy.kern.RBF(1, active_dims=[1], name="rbf1"),
             GPy.kern.RBF(self.D, active_dims=range(self.D), name="rbf012"),
@@ -813,7 +813,7 @@ class TestKernelNonContinuous:
         np.testing.assert_array_equal(kern._all_dims_active, [0, 1, 2, -1])
 
     def test_IndependendGradients(self):
-        self.setup()
+        self.setup_method()
         k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, "ind_single")
         assert check_kernel_gradient_functions(
@@ -830,7 +830,7 @@ class TestKernelNonContinuous:
         )
 
     def test_Hierarchical(self):
-        self.setup()
+        self.setup_method()
         k = [
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf1"),
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf2"),
@@ -840,7 +840,7 @@ class TestKernelNonContinuous:
         np.testing.assert_array_equal(kern._all_dims_active, [0, 1, 2, -1])
 
     def test_Hierarchical_gradients(self):
-        self.setup()
+        self.setup_method()
         k = [
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf1"),
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf2"),
@@ -851,7 +851,7 @@ class TestKernelNonContinuous:
         )
 
     def test_ODE_UY(self):
-        self.setup()
+        self.setup_method()
         kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
         X = self.X[self.X[:, -1] != 2]
         X2 = self.X2[self.X2[:, -1] != 2]
@@ -860,7 +860,7 @@ class TestKernelNonContinuous:
         )
 
     def test_Coregionalize(self):
-        self.setup()
+        self.setup_method()
         kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
         assert check_kernel_gradient_functions(
             kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1
@@ -876,14 +876,14 @@ class TestCoregionalizeCython:
     Make sure that the coregionalize kernel work with and without cython enabled
     """
 
-    def setup(self):
+    def setup_method(self):
         self.k = GPy.kern.Coregionalize(1, output_dim=12)
         self.N1, self.N2 = 100, 200
         self.X = np.random.randint(0, 12, (self.N1, 1))
         self.X2 = np.random.randint(0, 12, (self.N2, 1))
 
     def test_sym(self):
-        self.setup()
+        self.setup_method()
         dL_dK = np.random.randn(self.N1, self.N1)
         K_cython = self.k._K_cython(self.X)
         self.k.update_gradients_full(dL_dK, self.X)
@@ -904,7 +904,7 @@ class TestCoregionalizeCython:
         assert np.allclose(grads_numpy, grads_cython)
 
     def test_nonsym(self):
-        self.setup()
+        self.setup_method()
         dL_dK = np.random.randn(self.N1, self.N2)
         K_cython = self.k._K_cython(self.X, self.X2)
         self.k.gradient = 0.0
@@ -926,25 +926,25 @@ class TestCoregionalizeCython:
 
 
 class TestKernelProductWithZeroValues:
-    def setup(self):
+    def setup_method(self):
         self.X = np.array([[0, 1], [1, 0]])
         self.k = GPy.kern.Linear(2) * GPy.kern.Bias(2)
 
     def test_zero_valued_kernel_full(self):
-        self.setup()
+        self.setup_method()
         self.k.update_gradients_full(1, self.X)
         assert not np.isnan(
             self.k["linear.variances"].gradient
         ), "Gradient resulted in NaN"
 
     def test_zero_valued_kernel_gradients_X(self):
-        self.setup()
+        self.setup_method()
         target = self.k.gradients_X(1, self.X)
         assert not np.any(np.isnan(target)), "Gradient resulted in NaN"
 
 
 class TestKernelPsiStatisticsGradient:
-    def setup(self):
+    def setup_method(self):
         from GPy.core.parameterization.variational import NormalPosterior
 
         N, M, Q = 100, 20, 3
@@ -962,7 +962,7 @@ class TestKernelPsiStatisticsGradient:
         self.w3n = self.w3n + np.swapaxes(self.w3n, 1, 2)
 
     def test_kernels(self):
-        self.setup()
+        self.setup_method()
         from GPy.kern import RBF, Linear, MLP, Bias, White
 
         Q = self.Z.shape[1]
@@ -987,6 +987,7 @@ class TestKernelPsiStatisticsGradient:
     def _test_kernel_param(self, kernel, psi2n=False):
         def f(p):
             kernel.param_array[:] = p
+            kernel.trigger_update()
             psi0 = kernel.psi0(self.Z, self.qX)
             psi1 = kernel.psi1(self.Z, self.qX)
             if not psi2n:
@@ -1006,6 +1007,7 @@ class TestKernelPsiStatisticsGradient:
 
         def df(p):
             kernel.param_array[:] = p
+            kernel.trigger_update()
             kernel.update_gradients_expectations(
                 self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX
             )

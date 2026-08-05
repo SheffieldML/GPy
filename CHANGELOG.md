@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v1.14.1 (2026-08-05)
+* Patch ci build and deploy jobs
+
 ## v1.14.0 (2026-08-05)
 * add support for NumPy 2, including compatibility fixes across inference, kernels, likelihoods, state-space models, plotting, and utilities
 

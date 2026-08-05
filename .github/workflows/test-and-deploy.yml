@@ -80,7 +80,7 @@ jobs:
         run: ls -R dist
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
@@ -88,55 +88,42 @@ jobs:
   build-linux:
     if: github.event_name == 'release'
     strategy:
-        matrix:
-          python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
+      matrix:
+        python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux2014_x86_64
 
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Compile c headers
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python -m pip install 'Cython>=0.29' 'numpy>=2,<3'
-        /opt/python/${{ matrix.python }}/bin/python -m pip install --editable .
+      # Run the build inside manylinux via docker so host-side actions
+      # (checkout/upload-artifact) are not constrained by the old container.
+      - name: Build and repair wheel in manylinux container
+        run: |
+          docker run --rm \
+            -v "$PWD":/io \
+            -w /io \
+            quay.io/pypa/manylinux2014_x86_64 \
+            bash -euo pipefail -c "
+              /opt/python/${{ matrix.python }}/bin/python -m pip install 'Cython>=0.29' 'numpy>=2,<3'
+              /opt/python/${{ matrix.python }}/bin/python -m pip install --editable .
+              /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+              /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
+              /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+              rm -f dist/*
+              mv wheelhouse/* dist/
+              rmdir wheelhouse
+            "
+          sudo chown -R "$USER:$USER" dist
 
-    - name: Build wheel files
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
+      - name: List contents of dist
+        run: ls -R dist
 
-    - name: Install auditwheel
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
-
-    - name: Repair wheel files
-      run: |
-        /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
-
-    - name: List contents of dist
-      run: ls -R dist
-
-    - name: List contests of wheelhouse
-      run: ls -R wheelhouse
-
-    - name: Move wheelhouse wheel files to dist
-      run: |
-        rm dist/*
-        mv wheelhouse/* dist/
-        rmdir wheelhouse
-
-    - name: List contents of dist
-      run: ls -R dist
-
-    - name: Get the name of the wheel file
-      id: get-wheel-name
-      run: echo "::set-output name=wheel-name::$(ls dist/*.whl)"
-
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: dist-artifacts-manylinux-${{ matrix.python }}
-        path: ${{ steps.get-wheel-name.outputs.wheel-name }}
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts-manylinux-${{ matrix.python }}
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest
@@ -157,21 +144,10 @@ jobs:
           pip install twine
 
       - name: Download all artifacts to a specific directory
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
-
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Move files from subdirectories
-        run: |
-          for subdirectory in dist/*/; do
-            dir_name=$(basename "$subdirectory")
-            mv "$subdirectory"* dist/
-            rm -r "$subdirectory"
-            echo "Moved files from '$dir_name' to 'dist/'"
-          done
+          merge-multiple: true
 
       - name: Inspect wheel files
         run: |

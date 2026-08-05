@@ -37,7 +37,7 @@ class sde_Brownian(Brownian):
         Return the state space representation of the covariance.
         """
 
-        variance = self.variance.item() # this is initial variancve in Bayesian linear regression
+        variance = self.variance.item() # this is initial variance in Bayesian linear regression
 
         F = np.array( ((0,1.0),(0,0) ))
         L = np.array( ((1.0,),(0,)) )

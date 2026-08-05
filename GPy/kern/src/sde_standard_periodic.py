@@ -112,7 +112,7 @@ class sde_StdPeriodic(StdPeriodic):
             or np.any(np.abs(q2) > 1.0 / eps)
         ):
             warnings.warn(
-                "sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in q2 :".format(
+                "sde_Periodic:  Infinite or too large (eps={0:e}) values in q2 :".format(
                     eps
                 )
                 + q2.__format__("")
@@ -123,7 +123,7 @@ class sde_StdPeriodic(StdPeriodic):
             or np.any(np.abs(dq2l) > 1.0 / eps)
         ):
             warnings.warn(
-                "sde_Periodic:  Infinite, too small, or too large (eps={0:e}) values in dq2l :".format(
+                "sde_Periodic:  Infinite or too large (eps={0:e}) values in dq2l :".format(
                     eps
                 )
                 + q2.__format__("")

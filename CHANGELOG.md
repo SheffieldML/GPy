@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## v1.14.0 (2026-08-05)
 * add support for NumPy 2, including compatibility fixes across inference, kernels, likelihoods, state-space models, plotting, and utilities
 
 * update dependencies for NumPy 2 compatibility: require `paramz>0.9.6`, remove the NumPy and SciPy upper bounds, and require `scipy>=1.3.0`

@@ -86,7 +86,7 @@ jobs:
           path: dist
 
   build-linux:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     strategy:
       matrix:
         python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']

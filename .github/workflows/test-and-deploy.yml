@@ -86,7 +86,7 @@ jobs:
           path: dist
 
   build-linux:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     strategy:
       matrix:
         python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
@@ -96,20 +96,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Run the build inside manylinux via docker so host-side actions
-      # (checkout/upload-artifact) are not constrained by the old container.
+      # manylinux2014 ships GCC 10.2.1; NumPy 2.5+ requires GCC >= 10.3 and
+      # no longer provides usable manylinux2014 wheels, so pip tries (and fails)
+      # to build NumPy from source there. manylinux_2_28 has a new enough toolchain.
       - name: Build and repair wheel in manylinux container
         run: |
           docker run --rm \
             -v "$PWD":/io \
             -w /io \
-            quay.io/pypa/manylinux2014_x86_64 \
+            quay.io/pypa/manylinux_2_28_x86_64 \
             bash -euo pipefail -c "
-              /opt/python/${{ matrix.python }}/bin/python -m pip install 'Cython>=0.29' 'numpy>=2,<3'
-              /opt/python/${{ matrix.python }}/bin/python -m pip install --editable .
-              /opt/python/${{ matrix.python }}/bin/python setup.py bdist_wheel
-              /opt/python/${{ matrix.python }}/bin/python -m pip install auditwheel
-              /opt/python/${{ matrix.python }}/bin/python -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+              PY=/opt/python/${{ matrix.python }}/bin/python
+              \"\$PY\" -m pip install --upgrade pip
+              \"\$PY\" -m pip install setuptools wheel 'Cython>=0.29' 'scipy>=1.3.0'
+              # Prefer binary NumPy wheels; never fall back to a source build.
+              \"\$PY\" -m pip install --only-binary=:all: 'numpy>=2,<3'
+              \"\$PY\" setup.py bdist_wheel
+              \"\$PY\" -m pip install auditwheel
+              \"\$PY\" -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
               rm -f dist/*
               mv wheelhouse/* dist/
               rmdir wheelhouse

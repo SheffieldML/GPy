@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v1.14.2 (2026-08-07)
+* Fix ci build job
+
 ## v1.14.1 (2026-08-05)
 * Patch ci build and deploy jobs
 

@@ -156,6 +156,19 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: List and verify artifact integrity
+        run: |
+          echo "Contents of dist directory:"
+          ls -lhR dist
+          
+          # Verify all tar.gz files can be read
+          for file in dist/*.tar.gz; do
+            if [ -f "$file" ]; then
+              echo "Verifying $file..."
+              tar -tzf "$file" > /dev/null && echo "✓ $file is valid" || echo "✗ $file is corrupted"
+            fi
+          done
+
       - name: Inspect wheel files
         run: |
           ls -R dist

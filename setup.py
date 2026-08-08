@@ -148,7 +148,13 @@ install_requirements = [
 ]
 
 setup(
-    name="GPy",
+    # Use the PEP 503/normalized distribution name so wheel filenames and
+    # *.dist-info directories are consistently "gpy-..." across setuptools
+    # versions.  (Older setuptools kept the historical "GPy" spelling in
+    # artifact names; newer ones lowercase it — producing mixed uploads.)
+    # The import package remains "GPy" via packages=/package_dir below.
+    # PyPI treats "GPy" and "gpy" as the same project.
+    name="gpy",
     version=__version__,
     author=read_to_rst("AUTHORS.txt"),
     author_email="gpy.authors@gmail.com",

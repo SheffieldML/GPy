@@ -48,7 +48,7 @@ jobs:
           pytest GPy/testing
 
   build:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     strategy:
       matrix:
         os: [windows-latest, macos-latest]
@@ -86,7 +86,7 @@ jobs:
           path: dist
 
   build-linux:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     strategy:
       matrix:
         python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
@@ -132,7 +132,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [test, build-linux, build]
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     permissions:
       contents: read
       id-token: write

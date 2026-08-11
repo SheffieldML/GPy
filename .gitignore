@@ -61,3 +61,47 @@ settings.json
 .eggs
 .venv
 .env
+
+# VibeSafe System Files (Auto-added during installation)
+# These are VibeSafe infrastructure - not your project content
+
+# Backlog system files
+backlog/README.md
+backlog/task_template.md
+backlog/update_index.py
+backlog/index.md
+
+# CIP system files  
+cip/README.md
+cip/cip_template.md
+
+# Cursor AI rules (VibeSafe-managed)
+.cursor/rules/
+# Generated project tenet cursor rules
+.cursor/rules/project_tenet_*.mdc
+
+# VibeSafe scripts and tools
+scripts/whats_next.py
+install-whats-next.sh
+whats-next
+
+# VibeSafe templates directory
+templates/
+
+# AI-Requirements framework (VibeSafe-managed)
+ai-requirements/README.md
+ai-requirements/requirement_template.md
+ai-requirements/prompts/
+ai-requirements/patterns/
+ai-requirements/integrations/
+ai-requirements/examples/
+ai-requirements/guidance/
+
+# Tenets system files
+tenets/README.md
+tenets/tenet_template.md
+tenets/combine_tenets.py
+
+# VibeSafe documentation (system files)
+docs/whats_next_script.md
+docs/yaml_frontmatter_examples.md

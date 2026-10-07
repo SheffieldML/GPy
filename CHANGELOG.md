@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* close the configuration and dataset files read when `GPy` is imported, which removes the `ResourceWarning`s (#950)
 * implement the gradients of the `Gamma` likelihood with respect to `beta`, so it works with Laplace inference (#1037)
 * support saving and loading `SparseGPRegression` models with `save_model` / `load_model` (#535)
 * fix saving and loading `WarpedGP` models: the warping function is now serialized and the loaded model is a `WarpedGP` again (#1097)

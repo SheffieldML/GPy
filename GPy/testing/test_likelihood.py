@@ -1,6 +1,7 @@
 # Copyright (c) 2014, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
+from scipy import stats
 import GPy
 from GPy.models import GradientChecker
 import functools
@@ -1093,3 +1094,20 @@ class TestPredictiveQuadrature:
         mu, var = model._raw_predict(X)
         np.testing.assert_allclose(mean, np.exp(mu + var / 2), rtol=1e-6)
         assert np.all(variance > 0)
+
+
+class TestWeibullLikelihood:
+    def test_samples_follow_logpdf(self):
+        # logpdf is the density of weibull_min(r, scale=exp(f) ** (1 / r)),
+        # so the samples should have its mean.
+        np.random.seed(fixed_seed)
+        likelihood = GPy.likelihoods.Weibull(beta=1.5)
+        for f in (-0.4, 0.3):
+            samples = likelihood.samples(np.full((20000, 1), f))
+            y = np.linspace(0.1, 4, 5)[:, None]
+            dist = stats.weibull_min(1.5, scale=np.exp(f) ** (1 / 1.5))
+            np.testing.assert_allclose(
+                likelihood.logpdf(np.full_like(y, f), y), dist.logpdf(y)
+            )
+            np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
+

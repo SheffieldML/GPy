@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* implement `MixedNoise.log_predictive_density`, so `log_predictive_density` works for `GPCoregionalizedRegression` and other models with a `MixedNoise` likelihood when `Y_metadata['output_index']` is given (#893)
 * restrict wheel build and PyPI deploy jobs to GitHub `release` events again, so ordinary `devel` pushes stop re-uploading the current version and failing with HTTP 400
 * close the configuration and dataset files read when `GPy` is imported, which removes the `ResourceWarning`s (#950)
 * fix the quadrature in `Likelihood.predictive_mean` and `predictive_variance`: it failed with NumPy 2, could miss a narrow posterior far from zero and return 0 (#981), and integrated `E[E(y|f)^2]` over an empty range

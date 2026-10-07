@@ -1164,6 +1164,29 @@ class TestGradient:
         # m.constrain_fixed('.*rbf_var', 1.)
         assert m.checkgrad()
 
+    def test_multioutput_regression_log_predictive_density(self):
+        self.setup_method()
+        X1 = np.random.rand(20, 1) * 8
+        X2 = np.random.rand(15, 1) * 5
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1)
+        )
+        m.mixed_noise.Gaussian_noise_0.variance = 0.01
+        m.mixed_noise.Gaussian_noise_1.variance = 0.05
+
+        X_test = np.vstack([np.hstack([X1[:3], np.zeros((3, 1))]), np.hstack([X2[:3], np.ones((3, 1))])])
+        Y_test = np.vstack([Y1[:3], Y2[:3]])
+        Y_metadata = {"output_index": X_test[:, 1:].astype(int)}
+        lpd = m.log_predictive_density(X_test, Y_test, Y_metadata=Y_metadata)
+
+        mu, var = m.predict(X_test, Y_metadata=Y_metadata)
+        expected = -0.5 * np.log(2 * np.pi * var) - 0.5 * (Y_test - mu) ** 2 / var
+        np.testing.assert_allclose(lpd, expected)
+        with pytest.raises(ValueError, match="output_index"):
+            m.log_predictive_density(X_test, Y_test)
+
     def test_simple_MultivariateGaussian_prior(self):
         self.setup_method()
         X = np.random.multivariate_normal(

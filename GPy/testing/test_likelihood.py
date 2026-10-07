@@ -1062,3 +1062,34 @@ class TestGammaLikelihood:
         model.optimize(max_iters=20)
         assert np.isfinite(model.log_likelihood())
         assert np.isfinite(model.likelihood.beta.gradient).all()
+
+
+class TestPredictiveQuadrature:
+    def test_poisson_predictive_moments(self):
+        # For a log link, E[y] = exp(m + v/2) and
+        # V[y] = exp(m + v/2) + (exp(v) - 1) * exp(2m + v).
+        likelihood = GPy.likelihoods.Poisson()
+        mu = np.array([[0.0], [2.0], [4.7], [4.7], [10.0]])
+        var = np.array([[0.5], [0.01], [0.01], [1e-4], [0.01]])
+        mean = likelihood.predictive_mean(mu, var)
+        variance = likelihood.predictive_variance(mu, var, mean)
+        expected_mean = np.exp(mu + var / 2)
+        expected_variance = expected_mean + (np.exp(var) - 1) * np.exp(2 * mu + var)
+        np.testing.assert_allclose(mean, expected_mean, rtol=1e-6)
+        np.testing.assert_allclose(variance, expected_variance, rtol=1e-6)
+
+    def test_poisson_laplace_predict(self):
+        np.random.seed(fixed_seed)
+        X = np.linspace(0, 10, 30)[:, None]
+        Y = np.random.poisson(np.exp(1 + np.sin(X)))
+        model = GPy.core.GP(
+            X,
+            Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Poisson(),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(X)
+        mu, var = model._raw_predict(X)
+        np.testing.assert_allclose(mean, np.exp(mu + var / 2), rtol=1e-6)
+        assert np.all(variance > 0)

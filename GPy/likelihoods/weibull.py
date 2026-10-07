@@ -318,5 +318,6 @@ class Weibull(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        weibull_samples = np.array([sp.stats.weibull_min.rvs(self.r, loc=0, scale=self.gp_link.transf(f)) for f in gp])
+        # logpdf uses y**r / link(f), so the Weibull scale is link(f)**(1/r)
+        weibull_samples = np.array([sp.stats.weibull_min.rvs(self.r, loc=0, scale=self.gp_link.transf(f) ** (1.0 / self.r)) for f in gp])
         return weibull_samples.reshape(orig_shape)

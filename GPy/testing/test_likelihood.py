@@ -1,6 +1,8 @@
 # Copyright (c) 2014, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
+import pytest
+from scipy import integrate, stats
 import GPy
 from GPy.models import GradientChecker
 import functools
@@ -1093,3 +1095,36 @@ class TestPredictiveQuadrature:
         mu, var = model._raw_predict(X)
         np.testing.assert_allclose(mean, np.exp(mu + var / 2), rtol=1e-6)
         assert np.all(variance > 0)
+
+
+class TestLogPredictiveDensity:
+    @pytest.mark.parametrize(
+        "likelihood, Y, Y_metadata",
+        [
+            (GPy.likelihoods.StudentT(deg_free=4, sigma2=0.5), [[0.3], [2.5]], None),
+            (GPy.likelihoods.Poisson(), [[2.0], [0.0]], None),
+            (GPy.likelihoods.Gamma(beta=1.3), [[0.5], [2.0]], None),
+            (
+                GPy.likelihoods.Weibull(beta=1.5),
+                [[0.5], [2.0]],
+                {"censored": np.zeros((2, 1))},
+            ),
+        ],
+    )
+    def test_matches_numerical_integration(self, likelihood, Y, Y_metadata):
+        Y = np.array(Y)
+        mu = np.array([[0.2], [-0.5]])
+        var = np.array([[0.3], [24.0]])
+        lpd = likelihood.log_predictive_density(Y, mu, var, Y_metadata=Y_metadata)
+        expected = []
+        for i in range(2):
+            sd = np.sqrt(var[i, 0])
+            f = np.linspace(mu[i, 0] - 12 * sd, mu[i, 0] + 12 * sd, 200001)
+            meta = None
+            if Y_metadata is not None:
+                meta = {k: np.full((f.size, 1), v[i, 0]) for k, v in Y_metadata.items()}
+            logp = likelihood.logpdf(f[:, None], np.full((f.size, 1), Y[i, 0]), Y_metadata=meta)
+            integrand = np.exp(logp.ravel()) * stats.norm.pdf(f, mu[i, 0], sd)
+            expected.append(np.log(integrate.trapezoid(integrand, f)))
+        np.testing.assert_allclose(lpd.ravel(), expected, rtol=1e-4)
+

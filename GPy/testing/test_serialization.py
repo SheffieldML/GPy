@@ -495,3 +495,19 @@ class TestSerialization:
                 mean_r, var_r = m_r.predict(X_new)
                 np.testing.assert_allclose(mean_r, mean)
                 np.testing.assert_allclose(var_r, var)
+
+    def test_GPClassification_from_gp_and_from_dict(self):
+        np.random.seed(fixed_seed)
+        X = np.random.randn(20, 1)
+        Y = (X > 0).astype(float)
+        m = GPy.models.GPClassification(X, Y)
+        m.optimize(max_iters=20)
+        mean, var = m.predict(X)
+        for m_r in [
+            GPy.models.GPClassification.from_gp(m),
+            GPy.models.GPClassification.from_dict(m.to_dict()),
+        ]:
+            assert type(m_r) == GPy.models.GPClassification
+            mean_r, var_r = m_r.predict(X)
+            np.testing.assert_allclose(mean_r, mean)
+            np.testing.assert_allclose(var_r, var)

@@ -32,6 +32,20 @@ import numpy as np
 import GPy
 
 
+def test_import_closes_config_and_dataset_files():
+    # GPy.util.config and GPy.util.datasets read files at import time; with
+    # unclosed handles Python's development mode reports a ResourceWarning.
+    import subprocess
+    import sys
+
+    code = "import gc, GPy.util.config, GPy.util.datasets; gc.collect()"
+    result = subprocess.run(
+        [sys.executable, "-X", "dev", "-c", code], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert "ResourceWarning" not in result.stderr
+
+
 def test_block_matrices_use_object_dtype():
     from GPy.util.block_matrices import block_dot, get_blocks, unblock
 

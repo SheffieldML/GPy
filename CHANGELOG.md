@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix the `PiecewiseLinear` mapping at the breaks, where it returned `x` instead of the value of the break, and `PiecewiseLinear.gradients_X`, which raised `TypeError` for an `(N, 1)` `dL_dF`
 * respect the normalizer in `posterior_samples` and `log_predictive_density` / `log_predictive_density_sampling`: the noise of the samples was added on the normalized scale, so the samples of `Y` had too little variance, and the predictive density compared `Y` with the predictions on the normalized scale
 * implement `MixedNoise.log_predictive_density`, so `log_predictive_density` works for `GPCoregionalizedRegression` and other models with a `MixedNoise` likelihood when `Y_metadata['output_index']` is given (#893)
 * fix `Likelihood.log_predictive_density` for likelihoods without a closed form: with NumPy 2 it raised `TypeError` for `StudentT`, `Gamma`, `Weibull` and `LogLogistic`, and a `nan` in the far tails (e.g. `Poisson` with `y = 0`) stopped at a leftover `ipdb` breakpoint. It now integrates over 20 standard deviations around the predictive mean

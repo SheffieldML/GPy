@@ -30,6 +30,31 @@ class WarpedGP(GP):
         self.predict_in_warped_space = True
         self.link_parameter(self.warping_function)
 
+    def to_dict(self, save_data=True):
+        """
+        Convert the object into a json serializable dictionary.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(WarpedGP, self).to_dict(save_data)
+        input_dict["class"] = "GPy.models.WarpedGP"
+        input_dict["warping_function"] = self.warping_function.to_dict()
+        input_dict["predict_in_warped_space"] = self.predict_in_warped_space
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        from ..util.warping_functions import WarpingFunction
+        warping_function = WarpingFunction.from_dict(input_dict.pop("warping_function"))
+        predict_in_warped_space = input_dict.pop("predict_in_warped_space", True)
+        input_dict = GP._format_input_dict(input_dict, data)
+        m = WarpedGP(input_dict["X"], input_dict["Y"], kernel=input_dict["kernel"],
+                     warping_function=warping_function, normalizer=input_dict["normalizer"])
+        m.likelihood.variance[:] = input_dict["likelihood"].variance.values
+        m.predict_in_warped_space = predict_in_warped_space
+        return m
+
     def set_XY(self, X=None, Y=None):
         super(WarpedGP, self).set_XY(X, Y)
         self.Y_untransformed = self.Y_normalized.copy()

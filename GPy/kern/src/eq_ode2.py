@@ -11,25 +11,46 @@ from paramz.caching import Cache_this
 
 class EQ_ODE2(Kern):
     """
-    Covariance function for second order differential equation driven by an exponentiated quadratic covariance.
-
-    This outputs of this kernel have the form
+    Latent Force Model (LFM) kernel for second-order differential equations (Driven Input Single Input Motif - DISIM).
+    
+    This kernel implements the covariance function for second-order differential equations driven by 
+    an exponentiated quadratic (RBF) covariance, which extends the LFM framework to second-order systems.
+    
+    The outputs of this kernel have the form:
     .. math::
        \\frac{\\text{d}^2y_j(t)}{\\text{d}^2t} + C_j\\frac{\\text{d}y_j(t)}{\\text{d}t} + B_jy_j(t) = \\sum_{i=1}^R w_{j,i} u_i(t)
 
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and :math:`f_i(t)` and :math:`g_i(t)` are independent latent Gaussian processes goverened by an exponentiated quadratic covariance.
+    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output 
+    to the :math:`i`th latent function, :math:`C_j` is the damping coefficient, :math:`B_j` is the spring constant,
+    and :math:`u_i(t)` are independent latent Gaussian processes governed by an exponentiated quadratic covariance.
 
-    :param output_dim: number of outputs driven by latent function.
+    This kernel is equivalent to the LFM kernel from the GPmat toolbox and 
+    implements the mathematical framework described in:
+    
+    
+    - Álvarez et al. (2009): "Latent Force Models" 
+    - Álvarez et al. (2013): "Linear Latent Force Models Using Gaussian Processes"
+
+    :param input_dim: Input dimension (must be 2: time + output index)
+    :type input_dim: int
+    :param output_dim: Number of outputs driven by latent function
     :type output_dim: int
-    :param W: sensitivities of each output to the latent driving function.
-    :type W: ndarray (output_dim x rank).
-    :param rank: If rank is greater than 1 then there are assumed to be a total of rank latent forces independently driving the system, each with identical covariance.
+    :param rank: Number of latent forces. If rank > 1, there are multiple latent forces independently driving the system
     :type rank: int
-    :param C: damper constant for the second order system.
-    :type C: array of length output_dim.
-    :param B: spring constant for the second order system.
-    :type B: array of length output_dim.
+    :param W: Sensitivity matrix of each output to the latent driving functions (output_dim x rank)
+    :type W: ndarray
+    :param lengthscale: Lengthscale(s) of the RBF kernel for latent forces
+    :type lengthscale: float or array
+    :param C: Damping coefficients for the second order system (array of length output_dim)
+    :type C: array
+    :param B: Spring constants for the second order system (array of length output_dim)
+    :type B: array
+    :param active_dims: Active dimensions for the kernel
+    :type active_dims: array
+    :param name: Name of the kernel
+    :type name: str
 
+    .. Note: This kernel requires input_dim=2 where the first dimension is time and the second is the output index.
     """
 
     # This code will only work for the sparseGP model, due to limitations in models for this kernel
@@ -223,9 +244,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
@@ -286,9 +307,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -307,9 +328,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upvc = -np.exp(lwnuc[ind] + gamct)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upvc[indv2] += np.exp(
                     nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -575,9 +596,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -628,9 +649,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] -= np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] -= np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -638,9 +659,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -808,9 +829,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
@@ -960,9 +981,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upv = -np.exp(lwnu[ind] + gamt)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upv[indv2] += np.exp(
                     nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -980,9 +1001,9 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             upvc = -np.exp(lwnuc[ind] + gamct)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 upvc[indv2] += np.exp(
                     nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
                 ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
@@ -1209,9 +1230,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1321,11 +1342,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi1[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi1[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1336,11 +1357,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi2[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi2[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1503,9 +1524,9 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1.real >= 0.0)
             indv2 = np.where(z1.real < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1564,11 +1585,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi1[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi1[indv2] += np.exp(
                     nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
@@ -1579,11 +1600,11 @@ class EQ_ODE2(Kern):
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
-            if indv1[0].shape > 0:
+            if len(indv1[0]) > 0:
                 upsi2[indv1] += np.exp(
                     zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
                 )
-            if indv2[0].shape > 0:
+            if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
                 upsi2[indv2] += np.exp(
                     nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)

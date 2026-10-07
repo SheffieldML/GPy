@@ -11,7 +11,7 @@ verbose = 0
 class TestLFMKernel:
     """Test suite for LFM (Latent Force Model) kernel implementation using EQ_ODE1 and EQ_ODE2."""
     
-    def setup(self):
+    def setup_method(self):
         """Set up test data and parameters."""
         self.N = 10
         # Create test data with proper indexing for EQ_ODE1/EQ_ODE2
@@ -358,7 +358,7 @@ def check_eq_ode_kernel_gradient_functions(kern, X=None, X2=None, verbose=False)
 class TestEQODEKernelGradients:
     """Test EQ_ODE kernel gradients using GPy's standard gradient checking."""
     
-    def setup(self):
+    def setup_method(self):
         """Set up test data."""
         self.N = 10
         self.X = np.random.randn(self.N, 2)

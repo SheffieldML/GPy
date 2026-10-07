@@ -14,6 +14,17 @@ import warnings
 
 from ..core.parameterization import Parameterized
 
+
+def _quad_limits(m, v):
+    """
+    Integration limits for the expectations under N(m, v) in predictive_mean and
+    predictive_variance. Beyond 8 standard deviations the Gaussian weight is below
+    the 1e-10 cut-off used by the integrands, and integrating over a finite window
+    keeps quad from missing a narrow peak far from zero.
+    """
+    s = 8 * np.sqrt(v)
+    return m - s, m + s
+
 class Likelihood(Parameterized):
     """
     Likelihood base class, used to defing p(y|f).
@@ -419,13 +430,11 @@ class Likelihood(Parameterized):
 
         """
         #conditional_mean: the edpected value of y given some f, under this likelihood
-        fmin = -np.inf
-        fmax = np.inf
         def int_mean(f,m,v):
             exponent = -(0.5/v)*np.square(f - m)
             #If exponent is under -30 then exp(exponent) will be very small, so don't exp it!)
             #If p is zero then conditional_mean will overflow
-            assert v.all() > 0
+            assert v > 0
             p = safe_exp(exponent)
 
             #If p is zero then conditional_variance will overflow
@@ -433,7 +442,8 @@ class Likelihood(Parameterized):
                 return 0.
             else:
                 return self.conditional_mean(f)*p
-        scaled_mean = [quad(int_mean, fmin, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        scaled_mean = [quad(int_mean, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
+                       for mj, s2j in zip(np.ravel(mu), np.ravel(variance))]
         mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
         return mean
 
@@ -452,11 +462,6 @@ class Likelihood(Parameterized):
         #sigma2 = sigma**2
         normalizer = np.sqrt(2*np.pi*variance)
 
-        fmin_v = -np.inf
-        fmin_m = np.inf
-        fmin = -np.inf
-        fmax = np.inf
-
         from ..util.misc import safe_exp
         # E( V(Y_star|f_star) )
         def int_var(f,m,v):
@@ -467,7 +472,8 @@ class Likelihood(Parameterized):
                 return 0.
             else:
                 return self.conditional_variance(f)*p
-        scaled_exp_variance = [quad(int_var, fmin_v, fmax,args=(mj,s2j))[0] for mj,s2j in zip(mu,variance)]
+        scaled_exp_variance = [quad(int_var, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
+                               for mj, s2j in zip(np.ravel(mu), np.ravel(variance))]
         exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
 
         #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
@@ -487,7 +493,8 @@ class Likelihood(Parameterized):
             else:
                 return self.conditional_mean(f)**2*p
 
-        scaled_exp_exp2 = [quad(int_pred_mean_sq, fmin_m, fmax,args=(mj,s2j,pm2j))[0] for mj,s2j,pm2j in zip(mu,variance,predictive_mean_sq)]
+        scaled_exp_exp2 = [quad(int_pred_mean_sq, *_quad_limits(mj, s2j), args=(mj, s2j, pm2j))[0]
+                           for mj, s2j, pm2j in zip(np.ravel(mu), np.ravel(variance), np.ravel(predictive_mean_sq))]
         exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq

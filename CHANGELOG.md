@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix the quadrature in `Likelihood.predictive_mean` and `predictive_variance`: it failed with NumPy 2, could miss a narrow posterior far from zero and return 0 (#981), and integrated `E[E(y|f)^2]` over an empty range
 * implement the gradients of the `Gamma` likelihood with respect to `beta`, so it works with Laplace inference (#1037)
 * support saving and loading `SparseGPRegression` models with `save_model` / `load_model` (#535)
 * fix saving and loading `WarpedGP` models: the warping function is now serialized and the loaded model is a `WarpedGP` again (#1097)

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* support saving and loading `SparseGPRegression` models with `save_model` / `load_model` (#535)
 * fix saving and loading `WarpedGP` models: the warping function is now serialized and the loaded model is a `WarpedGP` again (#1097)
 * compare strings and integers by value instead of identity in `Symmetric` and `MRD`, which fixes the `SyntaxWarning`s on import and `Symmetric` rejecting a `symmetry_type` built at runtime (#1110)
 

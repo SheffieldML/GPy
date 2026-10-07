@@ -439,6 +439,31 @@ class TestSerialization:
             np.array(var).flatten(), np.array(var1_r).flatten()
         )
 
+    def test_serialize_deserialize_SparseGPRegression(self):
+        np.random.seed(fixed_seed)
+        X = np.random.uniform(-3.0, 3.0, (60, 1))
+        Y = np.sin(X) + np.random.randn(60, 1) * 0.05
+        X_new = np.random.uniform(-3.0, 3.0, (10, 1))
+        m = GPy.models.SparseGPRegression(X, Y, num_inducing=8)
+        m.optimize(max_iters=50)
+        m.save_model("temp_test_sparse_gp_regression_with_data.json", compress=True, save_data=True)
+        m.save_model("temp_test_sparse_gp_regression_without_data.json", compress=True, save_data=False)
+        m1_r = GPy.models.SparseGPRegression.load_model(
+            "temp_test_sparse_gp_regression_with_data.json.zip"
+        )
+        m2_r = GPy.models.SparseGPRegression.load_model(
+            "temp_test_sparse_gp_regression_without_data.json.zip", (X, Y)
+        )
+        os.remove("temp_test_sparse_gp_regression_with_data.json.zip")
+        os.remove("temp_test_sparse_gp_regression_without_data.json.zip")
+
+        mean, var = m.predict(X_new)
+        for m_r in [m1_r, m2_r]:
+            assert type(m_r) == GPy.models.SparseGPRegression
+            np.testing.assert_allclose(m_r.param_array, m.param_array)
+            mean_r, var_r = m_r.predict(X_new)
+            np.testing.assert_allclose(mean_r, mean)
+            np.testing.assert_allclose(var_r, var)
     def test_serialize_deserialize_WarpedGP(self):
         np.random.seed(fixed_seed)
         X = np.random.uniform(-3.0, 3.0, (40, 1))

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* `GPRegression.load_model` returns a `GPRegression` instead of a plain `GP`
 * compare strings and integers by value instead of identity in `Symmetric` and `MRD`, which fixes the `SyntaxWarning`s on import and `Symmetric` rejecting a `symmetry_type` built at runtime (#1110)
 
 ## v1.14.2 (2026-08-07)

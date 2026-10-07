@@ -341,6 +341,8 @@ class TestSerialization:
         )
         os.remove("temp_test_gp_regressor_with_data.json.zip")
         os.remove("temp_test_gp_regressor_without_data.json.zip")
+        assert type(m1_r) == GPy.models.GPRegression
+        assert type(m2_r) == GPy.models.GPRegression
 
         Xp = np.random.uniform(size=(int(1e5), 1))
         Xp[:, 0] = Xp[:, 0] * 15 - 5

@@ -650,6 +650,18 @@ class TestKernelGradientContinuous:
         k = GPy.kern.Symmetric(k_base, transform, "odd")
         assert check_kernel_gradient_functions(k)
 
+    def test_symmetric_type_from_runtime_string(self):
+        # symmetry_type must be compared by value: a string built at runtime
+        # is not the same object as the literal
+        k_base = GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        odd = "".join(["o", "dd"])
+        k = GPy.kern.Symmetric(k_base, transform, odd)
+        assert k.symmetry_sign == -1.0
+        even = "".join(["ev", "en"])
+        k = GPy.kern.Symmetric(k_base, transform, even)
+        assert k.symmetry_sign == 1.0
+
     def test_MultioutputKern(self):
         self.setup_method()
         k1 = GPy.kern.RBF(self.D, ARD=True)

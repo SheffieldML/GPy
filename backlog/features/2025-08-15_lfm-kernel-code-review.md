@@ -1,18 +1,20 @@
 ---
-id: "lfm-kernel-code-review"
-title: "Review existing LFM kernel implementations"
-status: "Completed"
-priority: "High"
-created: "2025-08-15"
-last_updated: "2025-08-15"
-owner: "Neil Lawrence"
-github_issue: ""
-dependencies: ""
+category: features
+created: '2025-08-15'
+dependencies: ''
+github_issue: ''
+id: lfm-kernel-code-review
+last_updated: '2025-08-15'
+owner: Neil Lawrence
+priority: High
+related_cips: []
+status: Completed
 tags:
 - lfm
 - kernel
 - code-review
 - documentation
+title: Review existing LFM kernel implementations
 ---
 
 # Review existing LFM kernel implementations

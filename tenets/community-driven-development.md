@@ -1,8 +1,11 @@
 ---
 id: "community-driven-development"
 title: "Community-Driven Development"
+status: "Active"
 created: "2025-08-15"
 last_updated: "2025-08-15"
+last_reviewed: "2026-10-07"
+review_frequency: "Annual"
 version: "1.0"
 tags:
 - tenet

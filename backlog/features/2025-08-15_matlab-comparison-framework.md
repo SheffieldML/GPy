@@ -1,19 +1,21 @@
 ---
-id: "matlab-comparison-framework"
-title: "Create MATLAB comparison framework for LFM kernel validation"
-status: "In Progress"
-priority: "High"
-created: "2025-08-15"
-last_updated: "2025-08-15"
-owner: "Neil Lawrence"
-github_issue: ""
-dependencies: "lfm-kernel-code-review"
+category: features
+created: '2025-08-15'
+dependencies: lfm-kernel-code-review
+github_issue: ''
+id: matlab-comparison-framework
+last_updated: '2025-08-15'
+owner: Neil Lawrence
+priority: High
+related_cips: []
+status: In Progress
 tags:
 - lfm
 - kernel
 - validation
 - matlab
 - comparison
+title: Create MATLAB comparison framework for LFM kernel validation
 ---
 
 # Create MATLAB comparison framework for LFM kernel validation

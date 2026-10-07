@@ -105,3 +105,8 @@ tenets/combine_tenets.py
 # VibeSafe documentation (system files)
 docs/whats_next_script.md
 docs/yaml_frontmatter_examples.md
+.venv-vibesafe/
+.github/copilot-instructions.md
+CLAUDE.md
+AGENTS.md
+scripts/validate_vibesafe_structure.py

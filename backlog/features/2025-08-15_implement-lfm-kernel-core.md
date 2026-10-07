@@ -1,18 +1,20 @@
 ---
-id: "implement-lfm-kernel-core"
-title: "Implement core LFM kernel functionality"
-status: "Completed"
-priority: "High"
-created: "2025-08-15"
-last_updated: "2025-08-15"
-owner: "Neil Lawrence"
-github_issue: ""
-dependencies: "design-modern-lfm-kernel"
+category: features
+created: '2025-08-15'
+dependencies: design-modern-lfm-kernel
+github_issue: ''
+id: implement-lfm-kernel-core
+last_updated: '2025-08-15'
+owner: Neil Lawrence
+priority: High
+related_cips: []
+status: Completed
 tags:
 - lfm
 - kernel
 - implementation
 - core
+title: Implement core LFM kernel functionality
 ---
 
 # Implement core LFM kernel functionality

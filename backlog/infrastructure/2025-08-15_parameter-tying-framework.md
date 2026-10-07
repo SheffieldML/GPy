@@ -1,18 +1,20 @@
 ---
-id: "parameter-tying-framework"
-title: "Design parameter tying framework for GPy multioutput kernels"
-status: "Ready"
-priority: "High"
-created: "2025-08-15"
-last_updated: "2025-08-15"
-owner: "Neil Lawrence"
-github_issue: ""
-dependencies: ""
+category: infrastructure
+created: '2025-08-15'
+dependencies: ''
+github_issue: ''
+id: parameter-tying-framework
+last_updated: '2025-08-15'
+owner: Neil Lawrence
+priority: High
+related_cips: []
+status: Ready
 tags:
 - parameter-tying
 - multioutput
 - kernel-framework
 - architecture
+title: Design parameter tying framework for GPy multioutput kernels
 ---
 
 # Investigate parameter tying limitations and create CIP for discussion

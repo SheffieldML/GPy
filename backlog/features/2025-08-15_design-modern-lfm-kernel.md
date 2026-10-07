@@ -1,18 +1,20 @@
 ---
-id: "design-modern-lfm-kernel"
-title: "Design modern LFM kernel architecture"
-status: "Completed"
-priority: "High"
-created: "2025-08-15"
-last_updated: "2025-08-15"
-owner: "Neil Lawrence"
-github_issue: ""
-dependencies: "lfm-kernel-code-review"
+category: features
+created: '2025-08-15'
+dependencies: lfm-kernel-code-review
+github_issue: ''
+id: design-modern-lfm-kernel
+last_updated: '2025-08-15'
+owner: Neil Lawrence
+priority: High
+related_cips: []
+status: Completed
 tags:
 - lfm
 - kernel
 - design
 - architecture
+title: Design modern LFM kernel architecture
 ---
 
 # Design modern LFM kernel architecture

@@ -1,6 +1,8 @@
 # Copyright (c) 2014, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
+import pytest
+from scipy import integrate, stats
 import GPy
 from GPy.models import GradientChecker
 import functools
@@ -1093,3 +1095,84 @@ class TestPredictiveQuadrature:
         mu, var = model._raw_predict(X)
         np.testing.assert_allclose(mean, np.exp(mu + var / 2), rtol=1e-6)
         assert np.all(variance > 0)
+
+
+class TestLogPredictiveDensity:
+    @pytest.mark.parametrize(
+        "likelihood, Y, Y_metadata",
+        [
+            (GPy.likelihoods.StudentT(deg_free=4, sigma2=0.5), [[0.3], [2.5]], None),
+            (GPy.likelihoods.Poisson(), [[2.0], [0.0]], None),
+            (GPy.likelihoods.Gamma(beta=1.3), [[0.5], [2.0]], None),
+            (
+                GPy.likelihoods.Weibull(beta=1.5),
+                [[0.5], [2.0]],
+                {"censored": np.zeros((2, 1))},
+            ),
+        ],
+    )
+    def test_matches_numerical_integration(self, likelihood, Y, Y_metadata):
+        Y = np.array(Y)
+        mu = np.array([[0.2], [-0.5]])
+        var = np.array([[0.3], [24.0]])
+        lpd = likelihood.log_predictive_density(Y, mu, var, Y_metadata=Y_metadata)
+        expected = []
+        for i in range(2):
+            sd = np.sqrt(var[i, 0])
+            f = np.linspace(mu[i, 0] - 12 * sd, mu[i, 0] + 12 * sd, 200001)
+            meta = None
+            if Y_metadata is not None:
+                meta = {k: np.full((f.size, 1), v[i, 0]) for k, v in Y_metadata.items()}
+            logp = likelihood.logpdf(f[:, None], np.full((f.size, 1), Y[i, 0]), Y_metadata=meta)
+            integrand = np.exp(logp.ravel()) * stats.norm.pdf(f, mu[i, 0], sd)
+            expected.append(np.log(integrate.trapezoid(integrand, f)))
+        np.testing.assert_allclose(lpd.ravel(), expected, rtol=1e-4)
+class TestBernoulliVariationalExpectations:
+    def test_misclassified_points(self):
+        # With a tiny variance, E[log Phi(y f)] is log Phi(y m) and its
+        # gradient is y phi(m) / Phi(y m), also far in the tail.
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [1.0], [0.0], [0.0]])
+        m = np.array([[-8.0], [0.5], [9.0], [-1.0]])
+        v = np.full_like(m, 1e-8)
+        F, dF_dm, dF_dv, _ = likelihood.variational_expectations(Y, m, v)
+        z = np.where(Y == 1, 1.0, -1.0) * m
+        np.testing.assert_allclose(F, stats.norm.logcdf(z), rtol=1e-6)
+        np.testing.assert_allclose(
+            dF_dm,
+            np.where(Y == 1, 1.0, -1.0) * np.exp(stats.norm.logpdf(z) - stats.norm.logcdf(z)),
+            rtol=1e-6,
+        )
+
+    def test_large_variance(self):
+        # Reference values from adaptive quadrature of E[log Phi(y f)].
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [0.0]])
+        m = np.array([[0.3], [-1.2]])
+        v = np.array([[47.0], [200.0]])
+        F = likelihood.variational_expectations(Y, m, v)[0]
+        expected = [
+            integrate.quad(
+                lambda f: stats.norm.pdf(f, mean, np.sqrt(var))
+                * stats.norm.logcdf(f if y == 1 else -f),
+                -np.inf,
+                np.inf,
+            )[0]
+            for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel())
+        ]
+        np.testing.assert_allclose(F.ravel(), expected, rtol=1e-2)
+class TestWeibullLikelihood:
+    def test_samples_follow_logpdf(self):
+        # logpdf is the density of weibull_min(r, scale=exp(f) ** (1 / r)),
+        # so the samples should have its mean.
+        np.random.seed(fixed_seed)
+        likelihood = GPy.likelihoods.Weibull(beta=1.5)
+        for f in (-0.4, 0.3):
+            samples = likelihood.samples(np.full((20000, 1), f))
+            y = np.linspace(0.1, 4, 5)[:, None]
+            dist = stats.weibull_min(1.5, scale=np.exp(f) ** (1 / 1.5))
+            np.testing.assert_allclose(
+                likelihood.logpdf(np.full_like(y, f), y), dist.logpdf(y)
+            )
+            np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
+

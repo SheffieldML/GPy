@@ -42,7 +42,9 @@ class GPClassification(GP):
     def from_gp(gp):
         from copy import deepcopy
         gp = deepcopy(gp)
-        GPClassification(gp.X, gp.Y, gp.kern, gp.likelihood, gp.inference_method, gp.mean_function, name='gp_classification')
+        return GPClassification(gp.X, gp.Y, kernel=gp.kern, Y_metadata=gp.Y_metadata,
+                                mean_function=gp.mean_function, inference_method=gp.inference_method,
+                                likelihood=gp.likelihood, normalizer=gp.normalizer)
 
     def to_dict(self, save_data=True):
         model_dict = super(GPClassification,self).to_dict(save_data)

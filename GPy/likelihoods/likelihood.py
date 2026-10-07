@@ -193,13 +193,16 @@ class Likelihood(Parameterized):
                 res = np.exp(self.logpdf(fi_star, yi, yi_m)
                               - 0.5*np.log(2*np.pi*vi)
                               - 0.5*np.square(fi_star-mi)/vi)
-                if not np.isfinite(res):
-                    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-                return res
+                # quad needs a scalar; logpdf can return a one-element array
+                return float(np.squeeze(res))
 
             return f
 
-        p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m), -np.inf, np.inf)
+        # Integrate over 20 standard deviations around the mean: the Gaussian
+        # weight outside is negligible, and far from it the link function can
+        # overflow and make logpdf nan
+        p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m),
+                                mi - 20*np.sqrt(vi), mi + 20*np.sqrt(vi))
                            for yi, mi, vi, yi_m in zipped_values])
         p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)

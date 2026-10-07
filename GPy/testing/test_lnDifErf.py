@@ -11,7 +11,7 @@ verbose = 0
 class TestLnDifErf:
     """Test suite for lnDifErf function - numerical stability and correctness."""
     
-    def setup(self):
+    def setup_method(self):
         """Set up test data."""
         # Test cases covering different scenarios
         self.test_cases = [

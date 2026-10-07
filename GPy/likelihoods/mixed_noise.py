@@ -63,6 +63,20 @@ class MixedNoise(Likelihood):
             Q[ind==j,:] = np.hstack(q)
         return [q[:,None] for q in Q.T]
 
+    def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
+        """
+        Log predictive density of each test point, using the likelihood of
+        its output given by Y_metadata['output_index'].
+        """
+        if Y_metadata is None or 'output_index' not in Y_metadata:
+            raise ValueError("MixedNoise needs Y_metadata['output_index'] to know the likelihood of each test point")
+        ind = Y_metadata['output_index'].flatten()
+        lpd = np.zeros(y_test.shape)
+        for j in np.unique(ind):
+            flt = ind == j
+            lpd[flt, :] = self.likelihoods_list[j].log_predictive_density(y_test[flt, :], mu_star[flt, :], var_star[flt, :])
+        return lpd
+
     def samples(self, gp, Y_metadata):
         """
         Returns a set of samples of observations based on a given value of the latent variable.

@@ -47,10 +47,8 @@ class GPRegression(GP):
         return model_dict
 
     @staticmethod
-    def _from_dict(input_dict, data=None):
-        import GPy
-        input_dict["class"] = "GPy.core.GP"
-        m = GPy.core.GP.from_dict(input_dict, data)
+    def _build_from_input_dict(input_dict, data=None):
+        m = GP._build_from_input_dict(input_dict, data)
         return GPRegression.from_gp(m)
 
     def save_model(self, output_filename, compress=True, save_data=True):

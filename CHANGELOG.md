@@ -2,6 +2,7 @@
 
 ## Unreleased
 * fix `GPClassification.from_gp` and `GPClassification.from_dict`, which raised a `TypeError` and passed the model's components to the wrong arguments
+* `GPRegression.load_model` returns a `GPRegression` instead of a plain `GP`
 * implement the gradients of the `Gamma` likelihood with respect to `beta`, so it works with Laplace inference (#1037)
 * support saving and loading `SparseGPRegression` models with `save_model` / `load_model` (#535)
 * fix saving and loading `WarpedGP` models: the warping function is now serialized and the loaded model is a `WarpedGP` again (#1097)

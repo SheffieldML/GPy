@@ -1,7 +1,7 @@
 # Copyright (c) 2014, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
-from scipy import stats
+from scipy import integrate, stats
 import GPy
 from GPy.models import GradientChecker
 import functools
@@ -1096,6 +1096,40 @@ class TestPredictiveQuadrature:
         assert np.all(variance > 0)
 
 
+class TestBernoulliVariationalExpectations:
+    def test_misclassified_points(self):
+        # With a tiny variance, E[log Phi(y f)] is log Phi(y m) and its
+        # gradient is y phi(m) / Phi(y m), also far in the tail.
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [1.0], [0.0], [0.0]])
+        m = np.array([[-8.0], [0.5], [9.0], [-1.0]])
+        v = np.full_like(m, 1e-8)
+        F, dF_dm, dF_dv, _ = likelihood.variational_expectations(Y, m, v)
+        z = np.where(Y == 1, 1.0, -1.0) * m
+        np.testing.assert_allclose(F, stats.norm.logcdf(z), rtol=1e-6)
+        np.testing.assert_allclose(
+            dF_dm,
+            np.where(Y == 1, 1.0, -1.0) * np.exp(stats.norm.logpdf(z) - stats.norm.logcdf(z)),
+            rtol=1e-6,
+        )
+
+    def test_large_variance(self):
+        # Reference values from adaptive quadrature of E[log Phi(y f)].
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [0.0]])
+        m = np.array([[0.3], [-1.2]])
+        v = np.array([[47.0], [200.0]])
+        F = likelihood.variational_expectations(Y, m, v)[0]
+        expected = [
+            integrate.quad(
+                lambda f: stats.norm.pdf(f, mean, np.sqrt(var))
+                * stats.norm.logcdf(f if y == 1 else -f),
+                -np.inf,
+                np.inf,
+            )[0]
+            for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel())
+        ]
+        np.testing.assert_allclose(F.ravel(), expected, rtol=1e-2)
 class TestWeibullLikelihood:
     def test_samples_follow_logpdf(self):
         # logpdf is the density of weibull_min(r, scale=exp(f) ** (1 / r)),

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* compute `Bernoulli.variational_expectations` (probit link) with `log_ndtr` instead of clipping the probabilities at `1e-9`: the clipping made the expectation and its gradient wrong for points misclassified by more than about 6 standard deviations (the gradient was close to 0) and for large variances
 * fix `Weibull.samples`: it used `exp(f)` as the Weibull scale, while `logpdf` uses `exp(f) ** (1 / r)`, so the samples did not follow the likelihood
 * fix `GPClassification.from_gp` and `GPClassification.from_dict`, which raised a `TypeError` and passed the model's components to the wrong arguments
 * restrict wheel build and PyPI deploy jobs to GitHub `release` events again, so ordinary `devel` pushes stop re-uploading the current version and failing with HTTP 400

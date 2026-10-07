@@ -2,6 +2,7 @@
 
 ## Unreleased
 * fix `Weibull.samples`: it used `exp(f)` as the Weibull scale, while `logpdf` uses `exp(f) ** (1 / r)`, so the samples did not follow the likelihood
+* fix `GPClassification.from_gp` and `GPClassification.from_dict`, which raised a `TypeError` and passed the model's components to the wrong arguments
 * restrict wheel build and PyPI deploy jobs to GitHub `release` events again, so ordinary `devel` pushes stop re-uploading the current version and failing with HTTP 400
 * close the configuration and dataset files read when `GPy` is imported, which removes the `ResourceWarning`s (#950)
 * fix the quadrature in `Likelihood.predictive_mean` and `predictive_variance`: it failed with NumPy 2, could miss a narrow posterior far from zero and return 0 (#981), and integrated `E[E(y|f)^2]` over an empty range

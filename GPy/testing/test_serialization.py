@@ -444,7 +444,11 @@ class TestSerialization:
         X = np.random.uniform(-3.0, 3.0, (40, 1))
         Y = np.exp(np.sin(X) + np.random.randn(40, 1) * 0.1)
         X_new = np.random.uniform(-3.0, 3.0, (10, 1))
-        for warping_function in [None, GPy.util.warping_functions.LogFunction()]:
+        for warping_function in [
+            None,
+            GPy.util.warping_functions.LogFunction(),
+            GPy.util.warping_functions.IdentityFunction(),
+        ]:
             m = GPy.models.WarpedGP(X, Y, warping_function=warping_function)
             m.optimize(max_iters=50)
             m.save_model("temp_test_warped_gp_with_data.json", compress=True, save_data=True)

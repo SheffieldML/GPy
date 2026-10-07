@@ -25,7 +25,7 @@ class Gamma(Likelihood):
 
         self.beta = Param('beta', beta)
         self.link_parameter(self.beta)
-        self.beta.fix()#TODO: gradients!
+        self.beta.fix()
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -139,3 +139,46 @@ class Gamma(Likelihood):
         """
         d3lik_dlink3 = -special.polygamma(2, self.beta*link_f)*(self.beta**3)
         return d3lik_dlink3
+
+    def update_gradients(self, grads):
+        self.beta.gradient = grads[0]
+
+    def dlogpdf_link_dbeta(self, link_f, y, Y_metadata=None):
+        """
+        Gradient of the log likelihood function at y, given link(f), w.r.t. beta
+
+        .. math::
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\beta} = \\lambda(f_{i})(\\log \\beta y_{i} + 1 - \\Psi(\\alpha_{i})) - y_{i}\\\\
+            \\alpha_{i} = \\beta \\lambda(f_{i})
+        """
+        alpha = self.beta*link_f
+        return link_f*(np.log(self.beta*y) + 1. - special.psi(alpha)) - y
+
+    def dlogpdf_dlink_dbeta(self, link_f, y, Y_metadata=None):
+        """
+        Derivative of the gradient of the log likelihood w.r.t. link(f), w.r.t. beta
+        """
+        alpha = self.beta*link_f
+        return np.log(self.beta*y) + 1. - special.psi(alpha) - alpha*special.polygamma(1, alpha)
+
+    def d2logpdf_dlink2_dbeta(self, link_f, y, Y_metadata=None):
+        """
+        Derivative of the hessian of the log likelihood w.r.t. link(f), w.r.t. beta
+        """
+        alpha = self.beta*link_f
+        return -2.*self.beta*special.polygamma(1, alpha) - self.beta*alpha*special.polygamma(2, alpha)
+
+    def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dtheta[0, :, :] = self.dlogpdf_link_dbeta(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dtheta
+
+    def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
+        dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        dlogpdf_dlink_dtheta[0, :, :] = self.dlogpdf_dlink_dbeta(f, y, Y_metadata=Y_metadata)
+        return dlogpdf_dlink_dtheta
+
+    def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
+        d2logpdf_dlink2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
+        d2logpdf_dlink2_dtheta[0, :, :] = self.d2logpdf_dlink2_dbeta(f, y, Y_metadata=Y_metadata)
+        return d2logpdf_dlink2_dtheta

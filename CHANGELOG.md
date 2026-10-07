@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* implement the gradients of the `Gamma` likelihood with respect to `beta`, so it works with Laplace inference (#1037)
 
 ## v1.14.2 (2026-08-07)
 * Fix ci build job

@@ -15,7 +15,7 @@ class Gamma(Likelihood):
 
     .. math::
         p(y_{i}|\\lambda(f_{i})) = \\frac{\\beta^{\\alpha_{i}}}{\\Gamma(\\alpha_{i})}y_{i}^{\\alpha_{i}-1}e^{-\\beta y_{i}}\\\\
-        \\alpha_{i} = \\beta y_{i}
+        \\alpha_{i} = \\beta \\lambda(f_{i})
 
     """
     def __init__(self,gp_link=None,beta=1.):
@@ -33,7 +33,7 @@ class Gamma(Likelihood):
 
         .. math::
             p(y_{i}|\\lambda(f_{i})) = \\frac{\\beta^{\\alpha_{i}}}{\\Gamma(\\alpha_{i})}y_{i}^{\\alpha_{i}-1}e^{-\\beta y_{i}}\\\\
-            \\alpha_{i} = \\beta y_{i}
+            \\alpha_{i} = \\beta \\lambda(f_{i})
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -55,7 +55,7 @@ class Gamma(Likelihood):
 
         .. math::
             \\ln p(y_{i}|\\lambda(f_{i})) = \\alpha_{i}\\log \\beta - \\log \\Gamma(\\alpha_{i}) + (\\alpha_{i} - 1)\\log y_{i} - \\beta y_{i}\\\\
-            \\alpha_{i} = \\beta y_{i}
+            \\alpha_{i} = \\beta \\lambda(f_{i})
 
         :param link_f: latent variables (link(f))
         :type link_f: Nx1 array
@@ -78,7 +78,7 @@ class Gamma(Likelihood):
 
         .. math::
             \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\beta (\\log \\beta y_{i}) - \\Psi(\\alpha_{i})\\beta\\\\
-            \\alpha_{i} = \\beta y_{i}
+            \\alpha_{i} = \\beta \\lambda(f_{i})
 
         :param link_f: latent variables (f)
         :type link_f: Nx1 array
@@ -102,7 +102,7 @@ class Gamma(Likelihood):
 
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\beta^{2}\\frac{d\\Psi(\\alpha_{i})}{d\\alpha_{i}}\\\\
-            \\alpha_{i} = \\beta y_{i}
+            \\alpha_{i} = \\beta \\lambda(f_{i})
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -127,7 +127,7 @@ class Gamma(Likelihood):
 
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = -\\beta^{3}\\frac{d^{2}\\Psi(\\alpha_{i})}{d\\alpha_{i}}\\\\
-            \\alpha_{i} = \\beta y_{i}
+            \\alpha_{i} = \\beta \\lambda(f_{i})
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array

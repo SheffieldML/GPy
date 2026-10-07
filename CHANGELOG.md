@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix saving and loading `WarpedGP` models: the warping function is now serialized and the loaded model is a `WarpedGP` again (#1097)
 
 ## v1.14.2 (2026-08-07)
 * Fix ci build job

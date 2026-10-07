@@ -1018,3 +1018,47 @@ class LaplaceTests:
         # m2.checkgrad(verbose=1)
         assert m1.checkgrad(verbose=True)
         assert m2.checkgrad(verbose=True)
+
+
+class TestGammaLikelihood:
+    def setup_method(self):
+        np.random.seed(fixed_seed)
+        self.N = 30
+        self.X = np.random.uniform(0, 5, (self.N, 1))
+        link_f = np.exp(np.sin(self.X) + 1.0)
+        self.Y = np.random.gamma(shape=1.5 * link_f, scale=1.0 / 1.5)
+
+    def test_beta_derivatives(self):
+        likelihood = GPy.likelihoods.Gamma(beta=1.5)
+        link_f = np.exp(np.random.randn(self.N, 1) * 0.5 + 1.0)
+        for value, gradient in [
+            (likelihood.logpdf_link, likelihood.dlogpdf_link_dtheta),
+            (likelihood.dlogpdf_dlink, likelihood.dlogpdf_dlink_dtheta),
+            (likelihood.d2logpdf_dlink2, likelihood.d2logpdf_dlink2_dtheta),
+        ]:
+
+            def f(beta):
+                likelihood.beta[:] = beta
+                return np.sum(value(link_f, self.Y))
+
+            def df(beta):
+                likelihood.beta[:] = beta
+                return np.sum(gradient(link_f, self.Y)[0])
+
+            grad = GradientChecker(f, df, np.array([1.5]), ["beta"])
+            assert grad.checkgrad(verbose=1)
+
+    def test_laplace_inference(self):
+        model = GPy.core.GP(
+            self.X,
+            self.Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Gamma(beta=1.5),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        assert np.isfinite(model.log_likelihood())
+        model.likelihood.beta.unfix()
+        model.likelihood.beta.constrain_positive()
+        model.optimize(max_iters=20)
+        assert np.isfinite(model.log_likelihood())
+        assert np.isfinite(model.likelihood.beta.gradient).all()

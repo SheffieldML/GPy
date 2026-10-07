@@ -146,6 +146,30 @@ class TestMisc:
             np.array(q95).flatten(),
         )
 
+    def test_normalizer_posterior_samples_and_log_predictive_density(self):
+        np.random.seed(0)
+        X = np.random.uniform(0, 10, (30, 1))
+        Y = 50 + 10 * np.sin(X) + np.random.randn(30, 1)
+        X_new = np.linspace(0, 10, 4)[:, None]
+        Y_new = 50 + 10 * np.sin(X_new)
+        m = GPy.models.GPRegression(X, Y, normalizer=True)
+        m.optimize()
+        mu, var = m.predict(X_new)
+
+        # The noise of the samples is on the scale of Y, like the predicted variance
+        samples = m.posterior_samples(X_new, size=40000)
+        np.testing.assert_allclose(samples.mean(-1), mu, atol=0.1)
+        np.testing.assert_allclose(samples.var(-1), var, rtol=0.05)
+
+        # The density is of Y, not of the normalized Y
+        expected = -0.5 * np.log(2 * np.pi * var) - 0.5 * (Y_new - mu) ** 2 / var
+        np.testing.assert_allclose(m.log_predictive_density(X_new, Y_new), expected)
+        np.testing.assert_allclose(
+            m.log_predictive_density_sampling(X_new, Y_new, num_samples=20000),
+            expected,
+            atol=0.05,
+        )
+
     def test_multioutput_regression_with_normalizer(self):
         """
         Test that normalizing works in multi-output case

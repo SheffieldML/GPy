@@ -644,11 +644,16 @@ class GP(Model):
         fsim = self.posterior_samples_f(X, size, **predict_kwargs)
         if likelihood is None:
             likelihood = self.likelihood
+        if self.normalizer is not None:
+            # The likelihood is defined on the normalized scale (axis 1 is the output)
+            fsim = np.moveaxis(self.normalizer.normalize(np.moveaxis(fsim, 1, -1)), -1, 1)
         if fsim.ndim == 3:
             for d in range(fsim.shape[1]):
                 fsim[:, d] = likelihood.samples(fsim[:, d], Y_metadata=Y_metadata)
         else:
             fsim = likelihood.samples(fsim, Y_metadata=Y_metadata)
+        if self.normalizer is not None:
+            fsim = np.moveaxis(self.normalizer.inverse_mean(np.moveaxis(fsim, 1, -1)), -1, 1)
         return fsim
 
     def input_sensitivity(self, summarize=True):
@@ -711,7 +716,10 @@ class GP(Model):
         :param Y_metadata: metadata associated with the test points
         """
         mu_star, var_star = self._raw_predict(x_test)
-        return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+        if self.normalizer is None:
+            return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+        lpd = self.likelihood.log_predictive_density(self.normalizer.normalize(y_test), mu_star, var_star, Y_metadata=Y_metadata)
+        return lpd + self._normalizer_log_jacobian()
 
     def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
         """
@@ -729,7 +737,18 @@ class GP(Model):
         :type num_samples: int
         """
         mu_star, var_star = self._raw_predict(x_test)
-        return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        if self.normalizer is None:
+            return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        lpd = self.likelihood.log_predictive_density_sampling(self.normalizer.normalize(y_test), mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        return lpd + self._normalizer_log_jacobian()
+
+    def _normalizer_log_jacobian(self):
+        """
+        Log of the derivative of the normalized Y with respect to Y, which turns
+        a density of the normalized Y into a density of Y. The normalizers are
+        affine, so it is minus half the log of the variance scaling.
+        """
+        return -0.5 * np.log(self.normalizer.inverse_variance(np.ones(self.output_dim)))
 
 
     def _raw_posterior_covariance_between_points(self, X1, X2):

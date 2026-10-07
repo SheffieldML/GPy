@@ -1130,4 +1130,18 @@ class TestBernoulliVariationalExpectations:
             for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel())
         ]
         np.testing.assert_allclose(F.ravel(), expected, rtol=1e-2)
+class TestWeibullLikelihood:
+    def test_samples_follow_logpdf(self):
+        # logpdf is the density of weibull_min(r, scale=exp(f) ** (1 / r)),
+        # so the samples should have its mean.
+        np.random.seed(fixed_seed)
+        likelihood = GPy.likelihoods.Weibull(beta=1.5)
+        for f in (-0.4, 0.3):
+            samples = likelihood.samples(np.full((20000, 1), f))
+            y = np.linspace(0.1, 4, 5)[:, None]
+            dist = stats.weibull_min(1.5, scale=np.exp(f) ** (1 / 1.5))
+            np.testing.assert_allclose(
+                likelihood.logpdf(np.full_like(y, f), y), dist.logpdf(y)
+            )
+            np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
 

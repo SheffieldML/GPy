@@ -9,7 +9,7 @@ class Constant(Mapping):
 
     .. math::
 
-       F(\mathbf{x}) = c
+       F(\\mathbf{x}) = c
 
 
     :param input_dim: dimension of input.

@@ -180,24 +180,24 @@ class NetpbmFile(object):
         """Read PAM header and initialize instance."""
         regroups = re.search(
             b"(^P7[\n\r]+(?:(?:[\n\r]+)|(?:#.*)|"
-            b"(HEIGHT\s+\d+)|(WIDTH\s+\d+)|(DEPTH\s+\d+)|(MAXVAL\s+\d+)|"
-            b"(?:TUPLTYPE\s+\w+))*ENDHDR\n)", data).groups()
+            rb"(HEIGHT\s+\d+)|(WIDTH\s+\d+)|(DEPTH\s+\d+)|(MAXVAL\s+\d+)|"
+            rb"(?:TUPLTYPE\s+\w+))*ENDHDR\n)", data).groups()
         self.header = regroups[0]
         self.magicnum = b'P7'
         for group in regroups[1:]:
             key, value = group.split()
             setattr(self, unicode(key).lower(), int(value))
-        matches = re.findall(b"(TUPLTYPE\s+\w+)", self.header)
+        matches = re.findall(rb"(TUPLTYPE\s+\w+)", self.header)
         self.tupltypes = [s.split(None, 1)[1] for s in matches]
 
     def _read_pnm_header(self, data):
         """Read PNM header and initialize instance."""
         bpm = data[1:2] in b"14"
         regroups = re.search(b"".join((
-            b"(^(P[123456]|P7 332)\s+(?:#.*[\r\n])*",
-            b"\s*(\d+)\s+(?:#.*[\r\n])*",
-            b"\s*(\d+)\s+(?:#.*[\r\n])*" * (not bpm),
-            b"\s*(\d+)\s(?:\s*#.*[\r\n]\s)*)")), data).groups() + (1, ) * bpm
+            rb"(^(P[123456]|P7 332)\s+(?:#.*[\r\n])*",
+            rb"\s*(\d+)\s+(?:#.*[\r\n])*",
+            rb"\s*(\d+)\s+(?:#.*[\r\n])*" * (not bpm),
+            rb"\s*(\d+)\s(?:\s*#.*[\r\n]\s)*)")), data).groups() + (1, ) * bpm
         self.header = regroups[0]
         self.magicnum = regroups[1]
         self.width = int(regroups[2])

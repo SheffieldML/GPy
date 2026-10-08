@@ -1,0 +1,180 @@
+name: "Test Python Lib"
+on:
+  push:
+    branches:
+      - main
+      - devel
+      - deploy
+  pull_request:
+  release:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.12', '3.13', '3.14']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install build dependencies
+        run: |
+          pip install setuptools
+          pip install 'Cython>=0.29'
+          pip install 'numpy>=2,<3'
+
+      - name: Install lib
+        run: |
+          python -m pip install --editable .
+
+      - name: Install test dependencies
+        run: |
+          pip install matplotlib pytest
+
+      - name: pytest
+        run: |
+          pytest GPy/testing
+
+  build:
+    if: github.event_name == 'release'
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        python: ['3.11', '3.12', '3.13', '3.14']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build lib
+        run: |
+          pip install setuptools
+          pip install wheel
+          pip install 'Cython>=0.29'
+          pip install 'numpy>=2,<3'
+          python -m pip install --editable .
+          python setup.py bdist_wheel
+
+      - name: Build sdist (Windows only)
+        if: runner.os == 'Windows'
+        run: python setup.py sdist
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
+          path: dist
+
+  build-linux:
+    if: github.event_name == 'release'
+    strategy:
+      matrix:
+        python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # manylinux2014 ships GCC 10.2.1; NumPy 2.5+ requires GCC >= 10.3 and
+      # no longer provides usable manylinux2014 wheels, so pip tries (and fails)
+      # to build NumPy from source there. manylinux_2_28 has a new enough toolchain.
+      - name: Build and repair wheel in manylinux container
+        run: |
+          docker run --rm \
+            -v "$PWD":/io \
+            -w /io \
+            quay.io/pypa/manylinux_2_28_x86_64 \
+            bash -euo pipefail -c "
+              PY=/opt/python/${{ matrix.python }}/bin/python
+              \"\$PY\" -m pip install --upgrade pip
+              \"\$PY\" -m pip install setuptools wheel 'Cython>=0.29' 'scipy>=1.3.0'
+              # Prefer binary NumPy wheels; never fall back to a source build.
+              \"\$PY\" -m pip install --only-binary=:all: 'numpy>=2,<3'
+              \"\$PY\" setup.py bdist_wheel
+              \"\$PY\" -m pip install auditwheel
+              \"\$PY\" -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+              rm -f dist/*
+              mv wheelhouse/* dist/
+              rmdir wheelhouse
+            "
+          sudo chown -R "$USER:$USER" dist
+
+      - name: List contents of dist
+        run: ls -R dist
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts-manylinux-${{ matrix.python }}
+          path: dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, build-linux, build]
+    if: github.event_name == 'release'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install twine
+        run: |
+          pip install --upgrade pip
+          pip install twine
+
+      - name: Download all artifacts to a specific directory
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List and verify artifact integrity
+        run: |
+          echo "Contents of dist directory:"
+          ls -lhR dist
+          
+          # Verify all tar.gz files can be read
+          for file in dist/*.tar.gz; do
+            if [ -f "$file" ]; then
+              echo "Verifying $file..."
+              tar -tzf "$file" > /dev/null && echo "✓ $file is valid" || echo "✗ $file is corrupted"
+            fi
+          done
+
+      - name: Inspect wheel files
+        run: |
+          ls -R dist
+
+      - name: Verify distributions
+        run: twine check dist/*
+
+      - name: Upload to PyPI using twine
+        run: twine upload dist/*

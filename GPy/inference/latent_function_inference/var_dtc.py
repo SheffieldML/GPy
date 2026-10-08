@@ -28,6 +28,17 @@ class VarDTC(LatentFunctionInference):
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
 
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        input_dict = super(VarDTC, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.inference.latent_function_inference.var_dtc.VarDTC"
+        input_dict["limit"] = self.limit
+        return input_dict
+
     def set_limit(self, limit):
         self.get_trYYT.limit = limit
         self.get_YYTfactor.limit = limit

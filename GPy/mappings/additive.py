@@ -10,7 +10,7 @@ class Additive(Mapping):
 
     .. math::
 
-       f(\mathbf{x}*) = f_1(\mathbf{x}*) + f_2(\mathbf(x)*)
+       f(\\mathbf{x}*) = f_1(\\mathbf{x}*) + f_2(\\mathbf(x)*)
 
     :param mapping1: first mapping to add together.
     :type mapping1: GPy.mappings.Mapping

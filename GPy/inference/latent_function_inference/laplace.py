@@ -27,7 +27,7 @@ class Laplace(LatentFunctionInference):
         """
         Laplace Approximation
 
-        Find the moments \hat{f} and the hessian at this point
+        Find the moments \\hat{f} and the hessian at this point
         (using Newton-Raphson) of the unnormalised posterior
 
         """

@@ -17,7 +17,7 @@ class BCGPLVMTests(unittest.TestCase):
         mapping = GPy.mappings.Kernel(output_dim=input_dim, X=Y, kernel=bk)
         m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
         
     def test_linear_backconstraint(self):
         num_data, num_inducing, input_dim, output_dim = 10, 3, 2, 4
@@ -30,7 +30,7 @@ class BCGPLVMTests(unittest.TestCase):
         mapping = GPy.mappings.Linear(output_dim=input_dim, input_dim=output_dim)
         m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
         
     def test_mlp_backconstraint(self):
         num_data, num_inducing, input_dim, output_dim = 10, 3, 2, 4
@@ -43,7 +43,7 @@ class BCGPLVMTests(unittest.TestCase):
         mapping = GPy.mappings.MLP(output_dim=input_dim, input_dim=output_dim, hidden_dim=[5, 4, 7])
         m = GPy.models.BCGPLVM(Y, input_dim, kernel = k, mapping=mapping)
         m.randomize()
-        self.assertTrue(m.checkgrad())
+        assert m.checkgrad()
 
 if __name__ == "__main__":
     print "Running unit tests, please be (very) patient..."

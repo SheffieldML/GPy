@@ -337,7 +337,7 @@ class Gaussian(Likelihood):
         if not isinstance(self.gp_link, link_functions.Identity):
             return super(Gaussian, self).variational_expectations(Y=Y, m=m, v=v, gh_points=gh_points, Y_metadata=Y_metadata)
 
-        lik_var = float(self.variance)
+        lik_var = self.variance.item()
         F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
         dF_dmu = (Y - m)/lik_var
         dF_dv = np.ones_like(v)*(-0.5/lik_var)

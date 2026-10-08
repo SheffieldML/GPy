@@ -146,25 +146,25 @@ class Kern(Parameterized):
     def psi0(self, Z, variational_posterior):
         """
         .. math::
-            \psi_0 = \sum_{i=0}^{n}E_{q(X)}[k(X_i, X_i)]
+            \\psi_0 = \\sum_{i=0}^{n}E_{q(X)}[k(X_i, X_i)]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
     def psi1(self, Z, variational_posterior):
         """
         .. math::
-            \psi_1^{n,m} = E_{q(X)}[k(X_n, Z_m)]
+            \\psi_1^{n,m} = E_{q(X)}[k(X_n, Z_m)]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
     def psi2(self, Z, variational_posterior):
         """
         .. math::
-            \psi_2^{m,m'} = \sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
+            \\psi_2^{m,m'} = \\sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
     def psi2n(self, Z, variational_posterior):
         """
         .. math::
-            \psi_2^{n,m,m'} = E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})]
+            \\psi_2^{n,m,m'} = E_{q(X)}[ k(Z_m, X_n) k(X_n, Z_{m'})]
 
         Thus, we do not sum out n, compared to psi2
         """
@@ -173,7 +173,7 @@ class Kern(Parameterized):
         """
         .. math::
 
-            \\frac{\partial L}{\partial X} = \\frac{\partial L}{\partial K}\\frac{\partial K}{\partial X}
+            \\frac{\\partial L}{\\partial X} = \\frac{\\partial L}{\\partial K}\\frac{\\partial K}{\\partial X}
         """
         raise NotImplementedError
     def gradients_X_X2(self, dL_dK, X, X2):
@@ -182,7 +182,7 @@ class Kern(Parameterized):
         """
         .. math::
 
-            \\frac{\partial^2 L}{\partial X\partial X_2} = \\frac{\partial L}{\partial K}\\frac{\partial^2 K}{\partial X\partial X_2}
+            \\frac{\\partial^2 L}{\\partial X\\partial X_2} = \\frac{\\partial L}{\\partial K}\\frac{\\partial^2 K}{\\partial X\\partial X_2}
         """
         raise NotImplementedError("This is the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
@@ -203,7 +203,7 @@ class Kern(Parameterized):
     def update_gradients_full(self, dL_dK, X, X2):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
-    
+
     def reset_gradients(self):
         raise NotImplementedError
 
@@ -216,9 +216,9 @@ class Kern(Parameterized):
 
         .. math::
 
-            \\frac{\partial L}{\partial \\theta_i} & = \\frac{\partial L}{\partial \psi_0}\\frac{\partial \psi_0}{\partial \\theta_i}\\
-                & \quad + \\frac{\partial L}{\partial \psi_1}\\frac{\partial \psi_1}{\partial \\theta_i}\\
-                & \quad + \\frac{\partial L}{\partial \psi_2}\\frac{\partial \psi_2}{\partial \\theta_i}
+            \\frac{\\partial L}{\\partial \\theta_i} & = \\frac{\\partial L}{\\partial \\psi_0}\\frac{\\partial \\psi_0}{\\partial \\theta_i}\\
+                & \\quad + \\frac{\\partial L}{\\partial \\psi_1}\\frac{\\partial \\psi_1}{\\partial \\theta_i}\\
+                & \\quad + \\frac{\\partial L}{\\partial \\psi_2}\\frac{\\partial \\psi_2}{\\partial \\theta_i}
 
         Thus, we push the different derivatives through the gradients of the psi
         statistics. Be sure to set the gradients for all kernel

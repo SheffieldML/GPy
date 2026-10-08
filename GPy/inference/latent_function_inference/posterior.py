@@ -82,7 +82,7 @@ class Posterior(object):
         Posterior mean
         $$
         K_{xx}v
-        v := \texttt{Woodbury vector}
+        v := \\texttt{Woodbury vector}
         $$
         """
         if self._mean is None:
@@ -95,7 +95,7 @@ class Posterior(object):
         Posterior covariance
         $$
         K_{xx} - K_{xx}W_{xx}^{-1}K_{xx}
-        W_{xx} := \texttt{Woodbury inv}
+        W_{xx} := \\texttt{Woodbury inv}
         $$
         """
         if self._covariance is None:
@@ -146,8 +146,8 @@ class Posterior(object):
         """
         return $L_{W}$ where L is the lower triangular Cholesky decomposition of the Woodbury matrix
         $$
-        L_{W}L_{W}^{\top} = W^{-1}
-        W^{-1} := \texttt{Woodbury inv}
+        L_{W}L_{W}^{\\top} = W^{-1}
+        W^{-1} := \\texttt{Woodbury inv}
         $$
         """
         if self._woodbury_chol is None:
@@ -178,8 +178,8 @@ class Posterior(object):
         """
         The inverse of the woodbury matrix, in the gaussian likelihood case it is defined as
         $$
-        (K_{xx} + \Sigma_{xx})^{-1}
-        \Sigma_{xx} := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        (K_{xx} + \\Sigma_{xx})^{-1}
+        \\Sigma_{xx} := \\texttt{Likelihood.variance / Approximate likelihood covariance}
         $$
         """
         if self._woodbury_inv is None:
@@ -200,8 +200,8 @@ class Posterior(object):
         """
         Woodbury vector in the gaussian likelihood case only is defined as
         $$
-        (K_{xx} + \Sigma)^{-1}Y
-        \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        (K_{xx} + \\Sigma)^{-1}Y
+        \\Sigma := \\texttt{Likelihood.variance / Approximate likelihood covariance}
         $$
         """
         if self._woodbury_vector is None:

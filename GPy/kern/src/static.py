@@ -68,6 +68,11 @@ class White(Static):
         input_dict = super(White, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.White"
         return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return White(**input_dict)
     
     def K(self, X, X2=None):
         if X2 is None:

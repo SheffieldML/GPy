@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+from scipy import special
 from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf, derivLogCdfNormal, logCdfNormal
 from . import link_functions
 from .likelihood import Likelihood
@@ -105,11 +106,11 @@ class Bernoulli(Likelihood):
             m,v,Y = m.flatten(), v.flatten(), Y.flatten()
             Ysign = np.where(Y==1,1,-1)
             X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + (m*Ysign)[:,None]
-            p = std_norm_cdf(X)
-            p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
-            N = std_norm_pdf(X)
-            F = np.log(p).dot(gh_w)
-            NoverP = N/p
+            # log Phi(X) and phi(X)/Phi(X) computed in log space, so that they
+            # stay accurate where Phi(X) underflows (large variances)
+            log_p = special.log_ndtr(X)
+            F = log_p.dot(gh_w)
+            NoverP = np.exp(-0.5 * X**2 - 0.5 * np.log(2 * np.pi) - log_p)
             dF_dm = (NoverP*Ysign[:,None]).dot(gh_w)
             dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(gh_w)
             return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
@@ -243,7 +244,7 @@ class Bernoulli(Likelihood):
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         #d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
         state = np.seterr(divide='ignore')
-        # TODO check y \in {0, 1} or {-1, 1}
+        # TODO check y \\in {0, 1} or {-1, 1}
         d3logpdf_dlink3 = np.where(y==1, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
         np.seterr(**state)
         return d3logpdf_dlink3

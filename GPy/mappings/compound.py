@@ -9,7 +9,7 @@ class Compound(Mapping):
 
     .. math::
 
-       f(\mathbf{x}) = f_2(f_1(\mathbf{x}))
+       f(\\mathbf{x}) = f_2(f_1(\\mathbf{x}))
 
     :param mapping1: first mapping
     :type mapping1: GPy.mappings.Mapping

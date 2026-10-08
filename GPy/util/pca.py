@@ -10,7 +10,7 @@ try:
     import matplotlib
 except:
     pass
-from numpy.linalg.linalg import LinAlgError
+from numpy.linalg import LinAlgError
 from operator import setitem
 import itertools
 from functools import reduce

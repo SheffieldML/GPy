@@ -150,7 +150,7 @@ with open('../../GPy/__version__.py', 'r') as f:
     version = f.read()
     release = version
 
-print version
+print(version)
 
 # version = '0.8.8'
 # The full version, including alpha/beta/rc tags.

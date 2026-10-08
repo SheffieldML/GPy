@@ -16,15 +16,15 @@ class Linear(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^{\\text{input_dim}} \sigma^2_i x_iy_i
+       k(x,y) = \\sum_{i=1}^{\\text{input_dim}} \\sigma^2_i x_iy_i
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
-    :param variances: the vector of variances :math:`\sigma^2_i`
+    :param variances: the vector of variances :math:`\\sigma^2_i`
     :type variances: array or list of the appropriate size (or float if there
                      is only one variance parameter)
     :param ARD: Auto Relevance Determination. If False, the kernel has only one
-                variance parameter \sigma^2, otherwise there is one variance
+                variance parameter \\sigma^2, otherwise there is one variance
                 parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
@@ -121,7 +121,7 @@ class Linear(Kern):
         the returned array is of shape [NxNxQxQ].
 
         ..math:
-            \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
+            \\frac{\\partial^2 K}{\\partial X2 ^2} = - \\frac{\\partial^2 K}{\\partial X\\partial X2}
 
         ..returns:
             dL2_dXdX2:  [NxMxQxQ] for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)

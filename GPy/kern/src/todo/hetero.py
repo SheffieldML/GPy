@@ -19,11 +19,11 @@ class Hetero(Kernpart):
 
     .. math::
 
-       k(x_i, x_j) = \delta_{i,j} \sigma^2(x_i)
+       k(x_i, x_j) = \\delta_{i,j} \\sigma^2(x_i)
 
-       where :math:`\sigma^2(x)` is a function giving the variance  as a function of input space and :math:`\delta_{i,j}` is the Kronecker delta function.
+       where :math:`\\sigma^2(x)` is a function giving the variance  as a function of input space and :math:`\\delta_{i,j}` is the Kronecker delta function.
 
-    The parameters are the parameters of \sigma^2(x) which is a
+    The parameters are the parameters of \\sigma^2(x) which is a
     function that can be specified by the user, by default an
     multi-layer peceptron is used.
 

@@ -77,7 +77,7 @@ def randomize(self, rand_gen=None, *args, **kwargs):
     # now draw from prior where possible
     x = self.param_array.copy()
     [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.items() if not p is None]
-    unfixlist = np.ones((self.size,),dtype=np.bool)
+    unfixlist = np.ones((self.size,),dtype=bool)
     from paramz.transformations import __fixed__
     unfixlist[self.constraints[__fixed__]] = False
     self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]

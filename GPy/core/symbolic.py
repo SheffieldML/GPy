@@ -44,7 +44,7 @@ class Symbolic_core():
         self._set_derivatives(derivatives)
         self._set_parameters(parameters)
         # Convert the expressions to a list for common sub expression elimination
-        # We should find the following type of expressions: 'function', 'derivative', 'second_derivative', 'third_derivative'. 
+        # We should find the following type of expressions: 'function', 'derivative', 'second_derivative', 'third_derivative'.
         self.update_expression_list()
 
         # Apply any global stabilisation operations to expressions.
@@ -86,7 +86,7 @@ class Symbolic_core():
         # object except as cached. For covariance functions this is X
         # and Z, for likelihoods F and for mapping functions X.
         self.cacheable_vars = [] # list of everything that's cacheable
-        for var in cacheable:            
+        for var in cacheable:
             self.variables[var] = [e for e in vars if e.name.split('_')[0]==var.lower()]
             self.cacheable_vars += self.variables[var]
         for var in cacheable:
@@ -105,7 +105,7 @@ class Symbolic_core():
             for derivative in derivatives:
                 derivative_arguments += self.variables[derivative]
 
-            # Do symbolic work to compute derivatives.        
+            # Do symbolic work to compute derivatives.
             for key, func in self.expressions.items():
                 # if func['function'].is_Matrix:
                 #     rows = func['function'].shape[0]
@@ -126,7 +126,7 @@ class Symbolic_core():
                 if theta.name in parameters:
                     val = parameters[theta.name]
             # Add parameter.
-            
+
             self.link_parameters(Param(theta.name, val, None))
             #self._set_attribute(theta.name, )
 
@@ -174,7 +174,7 @@ class Symbolic_core():
             code = self.code[function]['derivative'][theta.name]
             gradient[theta.name] = (partial*eval(code, self.namespace)).sum()
         return gradient
-        
+
     def eval_gradients_X(self, function, partial, **kwargs):
         if 'X' in kwargs:
             gradients_X = np.zeros_like(kwargs['X'])
@@ -194,7 +194,7 @@ class Symbolic_core():
         for variable, code in self.variable_sort(self.code['parameters_changed']):
             lcode += self._print_code(variable) + ' = ' + self._print_code(code) + '\n'
         return lcode
-    
+
     def code_update_cache(self):
         lcode = ''
         for var in self.cacheable:
@@ -208,7 +208,7 @@ class Symbolic_core():
             for i, theta in enumerate(self.variables[var]):
                 lcode+= "\t" + var + '= np.atleast_2d(' + var + ')\n'
                 lcode+= "\t" + self._print_code(theta.name) + ' = ' + var + '[:, ' + str(i) + "]" + reorder + "\n"
-    
+
         for variable, code in self.variable_sort(self.code['update_cache']):
             lcode+= self._print_code(variable) + ' = ' + self._print_code(code) + "\n"
 
@@ -250,7 +250,7 @@ class Symbolic_core():
         """Make sure namespace gets updated when setting attributes."""
         setattr(self, name, value)
         self.namespace.update({name: getattr(self, name)})
-        
+
 
     def update_expression_list(self):
         """Extract a list of expressions from the dictionary of expressions."""
@@ -260,9 +260,9 @@ class Symbolic_core():
         for fname, fexpressions in self.expressions.items():
             for type, texpressions in fexpressions.items():
                 if type == 'function':
-                    self.expression_list.append(texpressions)            
+                    self.expression_list.append(texpressions)
                     self.expression_keys.append([fname, type])
-                    self.expression_order.append(1) 
+                    self.expression_order.append(1)
                 elif type[-10:] == 'derivative':
                     for dtype, expression in texpressions.items():
                         self.expression_list.append(expression)
@@ -274,9 +274,9 @@ class Symbolic_core():
                         elif type[:-10] == 'third_':
                             self.expression_order.append(5) #sym.count_ops(self.expressions[type][dtype]))
                 else:
-                    self.expression_list.append(fexpressions[type])            
+                    self.expression_list.append(fexpressions[type])
                     self.expression_keys.append([fname, type])
-                    self.expression_order.append(2) 
+                    self.expression_order.append(2)
 
         # This step may be unecessary.
         # Not 100% sure if the sub expression elimination is order sensitive. This step orders the list with the 'function' code first and derivatives after.
@@ -313,7 +313,7 @@ class Symbolic_core():
             sym_var = sym.var(cache_prefix + str(i))
             self.variables[cache_prefix].append(sym_var)
             replace_dict[expr.name] = sym_var
-            
+
         for i, expr in enumerate(params_change_list):
             sym_var = sym.var(sub_prefix + str(i))
             self.variables[sub_prefix].append(sym_var)
@@ -329,7 +329,7 @@ class Symbolic_core():
         for keys in self.expression_keys:
             for replace, void in common_sub_expressions:
                 setInDict(self.expressions, keys, getFromDict(self.expressions, keys).subs(replace, replace_dict[replace.name]))
-        
+
         self.expressions['parameters_changed'] = {}
         self.expressions['update_cache'] = {}
         for var, expr in common_sub_expressions:
@@ -339,7 +339,7 @@ class Symbolic_core():
                 self.expressions['update_cache'][replace_dict[var.name].name] = expr
             else:
                 self.expressions['parameters_changed'][replace_dict[var.name].name] = expr
-            
+
 
     def _gen_code(self):
         """Generate code for the list of expressions provided using the common sub-expression eliminator to separate out portions that are computed multiple times."""
@@ -357,8 +357,8 @@ class Symbolic_core():
             return code
 
         self.code = match_key(self.expressions)
-                            
- 
+
+
     def _expr2code(self, arg_list, expr):
         """Convert the given symbolic expression into code."""
         code = lambdastr(arg_list, expr)
@@ -379,7 +379,7 @@ class Symbolic_core():
     def _display_expression(self, keys, user_substitutes={}):
         """Helper function for human friendly display of the symbolic components."""
         # Create some pretty maths symbols for the display.
-        sigma, alpha, nu, omega, l, variance = sym.var('\sigma, \alpha, \nu, \omega, \ell, \sigma^2')
+        sigma, alpha, nu, omega, l, variance = sym.var(r'\sigma, \alpha, \nu, \omega, \ell, \sigma^2')
         substitutes = {'scale': sigma, 'shape': alpha, 'lengthscale': l, 'variance': variance}
         substitutes.update(user_substitutes)
 
@@ -416,5 +416,5 @@ class Symbolic_core():
                 return int(digits[0])
             else:
                 return x[0]
-            
+
         return sorted(var_dict.items(), key=sort_key, reverse=reverse)

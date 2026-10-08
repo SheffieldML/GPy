@@ -38,7 +38,7 @@ class Metropolis_Hastings(object):
     def sample(self, Ntotal=10000, Nburn=1000, Nthin=10, tune=True, tune_throughout=False, tune_interval=400):
         current = self.model.optimizer_array
         fcurrent = self.model.log_likelihood() + self.model.log_prior() 
-        accepted = np.zeros(Ntotal,dtype=np.bool)
+        accepted = np.zeros(Ntotal,dtype=bool)
         for it in range(Ntotal):
             print("sample %d of %d\r"%(it+1,Ntotal),end="")
             sys.stdout.flush()

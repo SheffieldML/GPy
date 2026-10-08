@@ -22,7 +22,7 @@ class GPKroneckerGaussianRegression(Model):
 
     .. rubric:: References
 
-    .. [stegle_et_al_2011] Stegle, O.; Lippert, C.; Mooij, J.M.; Lawrence, N.D.; Borgwardt, K.:Efficient inference in matrix-variate Gaussian models with \iid observation noise. In: Advances in Neural Information Processing Systems, 2011, Pages 630-638
+    .. [stegle_et_al_2011] Stegle, O.; Lippert, C.; Mooij, J.M.; Lawrence, N.D.; Borgwardt, K.:Efficient inference in matrix-variate Gaussian models with \\iid observation noise. In: Advances in Neural Information Processing Systems, 2011, Pages 630-638
 
     """
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):

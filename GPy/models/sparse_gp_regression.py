@@ -58,6 +58,29 @@ class SparseGPRegression(SparseGP_MPI):
         super(SparseGPRegression, self).__init__(X, Y, Z, kernel, likelihood, mean_function=mean_function,
         inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
 
+    def to_dict(self, save_data=True):
+        """
+        Convert the object into a json serializable dictionary.
+
+        :param boolean save_data: if true, it adds the training data self.X and self.Y to the dictionary
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+        if self.has_uncertain_inputs():
+            raise NotImplementedError("Saving a SparseGPRegression with uncertain inputs (X_variance) is not supported.")
+        input_dict = super(SparseGPRegression, self).to_dict(save_data)
+        input_dict["class"] = "GPy.models.SparseGPRegression"
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(input_dict, data=None):
+        from ..core import SparseGP
+        input_dict = SparseGP._format_input_dict(input_dict, data)
+        m = SparseGPRegression(input_dict["X"], input_dict["Y"], kernel=input_dict["kernel"], Z=input_dict["Z"],
+                               mean_function=input_dict["mean_function"], normalizer=input_dict["normalizer"],
+                               name=input_dict["name"])
+        m.likelihood.variance[:] = input_dict["likelihood"].variance.values
+        return m
+
     def parameters_changed(self):
         from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp,VarDTC_minibatch
         if isinstance(self.inference_method,VarDTC_minibatch):

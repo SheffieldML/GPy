@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix `GPRegressionGrid` (`GaussianGridInference`) on grids with more than three values in a dimension: the unique values were taken from a `set`, whose order is not sorted, so the Kronecker factors did not match the order of the data and the likelihood, gradients and predictions were wrong
 * fix `posterior_samples_f` (and `posterior_samples`) with a normalizer and several output columns, which raised `ValueError` when scaling the full covariance
 * fix the `PiecewiseLinear` mapping at the breaks, where it returned `x` instead of the value of the break, and `PiecewiseLinear.gradients_X`, which raised `TypeError` for an `(N, 1)` `dL_dF`
 * include the gradient of the mean function in `predictive_gradients`: the predicted mean adds the mean function, but its gradient was left out

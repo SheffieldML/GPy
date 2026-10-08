@@ -444,6 +444,13 @@ class GP(Model):
                 self.posterior.woodbury_vector[:, i:i+1].T, Xnew,
                 self._predictive_variable)
 
+        # The predicted mean includes the mean function (see _raw_predict)
+        if self.mean_function is not None and kern is self.kern:
+            for i in range(self.output_dim):
+                dL_dF = np.zeros((Xnew.shape[0], self.output_dim))
+                dL_dF[:, i] = 1.0
+                mean_jac[:, :, i] += self.mean_function.gradients_X(dL_dF, Xnew)
+
         # Gradients wrt the diagonal part k_{xx}
         dv_dX = kern.gradients_X_diag(np.ones(Xnew.shape[0]), Xnew)
 

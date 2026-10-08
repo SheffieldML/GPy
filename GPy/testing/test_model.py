@@ -1620,6 +1620,30 @@ class TestGradient:
         assert gm.checkgrad()
         assert gc.checkgrad()
 
+    def test_predictive_gradients_with_mean_function(self):
+        """
+        Check that model.predictive_gradients includes the gradient of the
+        mean function, which model.predict adds to the mean
+        """
+        self.setup_method()
+
+        N, M, Q = 10, 15, 3
+        X = np.random.rand(M, Q)
+        Y = np.random.rand(M, 1)
+        x = np.random.rand(N, Q)
+        mean_function = GPy.mappings.Linear(Q, 1)
+        mean_function.A[:] = np.random.randn(Q, 1)
+        model = GPy.models.GPRegression(X=X, Y=Y, mean_function=mean_function)
+        from GPy.models import GradientChecker
+
+        gm = GradientChecker(
+            lambda x: model.predict(x)[0],
+            lambda x: model.predictive_gradients(x)[0],
+            x,
+            "x",
+        )
+        assert gm.checkgrad()
+
     def test_posterior_covariance_between_points_with_normalizer(self):
         """
         Check that model.posterior_covariance_between_points returns

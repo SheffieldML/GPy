@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* include the gradient of the mean function in `predictive_gradients`: the predicted mean adds the mean function, but its gradient was left out
 * fix the `HalfT` prior: `lnpdf` was missing the `log 2` and used `-0.5 log A` instead of `-log A` (it did not integrate to 1), `lnpdf_grad` was wrong for `A != 1` and used the first element for every entry of an array, and `rvs` set the negative draws to 0 instead of folding them
 * fix the `Exponential` prior: `rvs` used the rate as the scale, and creating a second `Exponential` prior with a different rate raised `TypeError`
 * respect the normalizer in `posterior_samples` and `log_predictive_density` / `log_predictive_density_sampling`: the noise of the samples was added on the normalized scale, so the samples of `Y` had too little variance, and the predictive density compared `Y` with the predictions on the normalized scale

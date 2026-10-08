@@ -41,12 +41,12 @@ class PiecewiseLinear(Mapping):
         #first adjus the points below the first value
         y[x<self.sorted_breaks[0]]  = x[x<self.sorted_breaks[0]] + self.sorted_values[0] - self.sorted_breaks[0]
 
-        #now all the points pas the last break
-        y[x>self.sorted_breaks[-1]]  = x[x>self.sorted_breaks[-1]] + self.sorted_values[-1] - self.sorted_breaks[-1]
+        #now all the points from the last break
+        y[x>=self.sorted_breaks[-1]]  = x[x>=self.sorted_breaks[-1]] + self.sorted_values[-1] - self.sorted_breaks[-1]
 
-        #loop throught the pairs of points
+        #loop throught the pairs of points (each interval includes its lower break)
         for low, up, g, v in zip(self. sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1]):
-            i = np.logical_and(x>low, x<up)
+            i = np.logical_and(x>=low, x<up)
             y[i] = v + (x[i]-low)*g
 
         return y.reshape(-1,1)
@@ -60,7 +60,7 @@ class PiecewiseLinear(Mapping):
 
         #loop across each interval, computing the gradient for each of the 4 parameters that define it
         for i, (low, up, g, v) in enumerate(zip(self. sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1])):
-            index = np.logical_and(x>low, x<up)
+            index = np.logical_and(x>=low, x<up)
             xx = x[index]
             grad = dL_dF[index]
             span = up-low
@@ -71,9 +71,9 @@ class PiecewiseLinear(Mapping):
 
         #now the end parts
         dL_db[0] -= np.sum(dL_dF[x<self.sorted_breaks[0]])
-        dL_db[-1] -= np.sum(dL_dF[x>self.sorted_breaks[-1]])
+        dL_db[-1] -= np.sum(dL_dF[x>=self.sorted_breaks[-1]])
         dL_dv[0] += np.sum(dL_dF[x<self.sorted_breaks[0]])
-        dL_dv[-1] += np.sum(dL_dF[x>self.sorted_breaks[-1]])
+        dL_dv[-1] += np.sum(dL_dF[x>=self.sorted_breaks[-1]])
 
         #now put the gradients back in the correct order!
         self.breaks.gradient = dL_db[self.reverse_order]
@@ -83,11 +83,12 @@ class PiecewiseLinear(Mapping):
         x = X.flatten()
 
         #outside the range of the breakpoints, the function is just offset by a contant, so the partial derivative is 1.
-        dL_dX = dL_dF.copy().flatten()
+        dL_dF = dL_dF.flatten()
+        dL_dX = dL_dF.copy()
 
         #insude the breakpoints, the partial derivative is self.grads
         for low, up, g, v in zip(self. sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1]):
-            i = np.logical_and(x>low, x<up)
+            i = np.logical_and(x>=low, x<up)
             dL_dX[i] = dL_dF[i]*g
 
         return dL_dX.reshape(-1,1)

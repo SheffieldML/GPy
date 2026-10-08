@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix `posterior_samples_f` (and `posterior_samples`) with a normalizer and several output columns, which raised `ValueError` when scaling the full covariance
 * fix the `PiecewiseLinear` mapping at the breaks, where it returned `x` instead of the value of the break, and `PiecewiseLinear.gradients_X`, which raised `TypeError` for an `(N, 1)` `dL_dF`
 * include the gradient of the mean function in `predictive_gradients`: the predicted mean adds the mean function, but its gradient was left out
 * fix the `HalfT` prior: `lnpdf` was missing the `log 2` and used `-0.5 log A` instead of `-log A` (it did not integrate to 1), `lnpdf_grad` was wrong for `A != 1` and used the first element for every entry of an array, and `rvs` set the negative draws to 0 instead of folding them

@@ -145,7 +145,7 @@ class ScaledProbit(Probit):
     """
     def __init__(self, nu=1.):
         self.nu = float(nu)
-        
+
     def transf(self,f):
         return std_norm_cdf(f*self.nu)
 
@@ -157,7 +157,7 @@ class ScaledProbit(Probit):
 
     def d3transf_df3(self,f):
         return (safe_square(f*self.nu)-1.)*std_norm_pdf(f*self.nu)*(self.nu**3)
-    
+
     def to_dict(self):
         """
         Convert the object into a json serializable dictionary.
@@ -180,7 +180,7 @@ class Cloglog(GPTransformation):
 
         or
 
-        f = \log (-\log(1-p))
+        f = \\log (-\\log(1-p))
 
     """
     def transf(self,f):

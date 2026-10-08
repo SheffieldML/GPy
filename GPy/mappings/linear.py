@@ -12,7 +12,7 @@ class Linear(Mapping):
 
     .. math::
 
-       F(\mathbf{x}) = \mathbf{A} \mathbf{x})
+       F(\\mathbf{x}) = \\mathbf{A} \\mathbf{x})
 
 
     :param input_dim: dimension of input.

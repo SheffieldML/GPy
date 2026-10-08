@@ -11,28 +11,28 @@ class POLY(Kernpart):
     Polynomial kernel parameter initialisation.  Included for completeness, but generally not recommended, is the polynomial kernel:
 
     .. math::
-        k(x, y) = \sigma^2\*(\sigma_w^2 x'y+\sigma_b^b)^d
+        k(x, y) = \\sigma^2\\*(\\sigma_w^2 x'y+\\sigma_b^b)^d
 
-    The kernel parameters are :math:`\sigma^2` (variance), :math:`\sigma^2_w`
-    (weight_variance), :math:`\sigma^2_b` (bias_variance) and d
+    The kernel parameters are :math:`\\sigma^2` (variance), :math:`\\sigma^2_w`
+    (weight_variance), :math:`\\sigma^2_b` (bias_variance) and d
     (degree). Only gradients of the first three are provided for
     kernel optimisation, it is assumed that polynomial degree would
     be set by hand.
 
     The kernel is not recommended as it is badly behaved when the
-    :math:`\sigma^2_w\*x'\*y + \sigma^2_b` has a magnitude greater than one. For completeness
+    :math:`\\sigma^2_w\\*x'\\*y + \\sigma^2_b` has a magnitude greater than one. For completeness
     there is an automatic relevance determination version of this
     kernel provided (NOTE YET IMPLEMENTED!).
     :param input_dim: the number of input dimensions
-    :type input_dim: int 
-    :param variance: the variance :math:`\sigma^2`
+    :type input_dim: int
+    :param variance: the variance :math:`\\sigma^2`
     :type variance: float
-    :param weight_variance: the vector of the variances of the prior over input weights in the neural network :math:`\sigma^2_w`
+    :param weight_variance: the vector of the variances of the prior over input weights in the neural network :math:`\\sigma^2_w`
     :type weight_variance: array or list of the appropriate size (or float if there is only one weight variance parameter)
-    :param bias_variance: the variance of the prior over bias parameters :math:`\sigma^2_b`
+    :param bias_variance: the variance of the prior over bias parameters :math:`\\sigma^2_b`
     :param degree: the degree of the polynomial.
     :type degree: int
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter :math:`\sigma^2_w`), otherwise there is one weight variance parameter per dimension.
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter :math:`\\sigma^2_w`), otherwise there is one weight variance parameter per dimension.
     :type ARD: Boolean
     :rtype: Kernpart object
 
@@ -93,7 +93,7 @@ class POLY(Kernpart):
         base_cov_grad = base*dL_dK
 
 
-            
+
         target[0] += np.sum(self._K_dvar*dL_dK)
         target[1] += (self._K_inner_prod*base_cov_grad).sum()
         target[2] += base_cov_grad.sum()
@@ -107,14 +107,14 @@ class POLY(Kernpart):
             target += 2*self.weight_variance*self.degree*self.variance*(((X[None,:, :])) *(arg**(self.degree-1))[:, :, None]*dL_dK[:, :, None]).sum(1)
         else:
             target += self.weight_variance*self.degree*self.variance*(((X2[None,:, :])) *(arg**(self.degree-1))[:, :, None]*dL_dK[:, :, None]).sum(1)
-            
+
     def dKdiag_dX(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to X"""
         self._K_diag_computations(X)
         arg = self._K_diag_poly_arg
         target += 2.*self.weight_variance*self.degree*self.variance*X*dL_dKdiag[:, None]*(arg**(self.degree-1))[:, None]
-    
-    
+
+
     def _K_computations(self, X, X2):
         if self.ARD:
             pass
@@ -133,6 +133,6 @@ class POLY(Kernpart):
             self._K_diag_poly_arg = (X*X).sum(1)*self.weight_variance + self.bias_variance
         self._K_diag_dvar = self._K_diag_poly_arg**self.degree
 
-  
+
 
 

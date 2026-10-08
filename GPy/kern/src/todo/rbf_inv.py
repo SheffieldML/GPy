@@ -15,9 +15,9 @@ class RBFInv(RBF):
 
     .. math::
 
-       k(r) = \sigma^2 \exp \\bigg(- \\frac{1}{2} r^2 \\bigg) \ \ \ \ \  \\text{ where  } r^2 = \sum_{i=1}^d \\frac{ (x_i-x^\prime_i)^2}{\ell_i^2}
+       k(r) = \\sigma^2 \\exp \\bigg(- \\frac{1}{2} r^2 \\bigg) \\ \\ \\ \\ \\  \\text{ where  } r^2 = \\sum_{i=1}^d \\frac{ (x_i-x^\\prime_i)^2}{\\ell_i^2}
 
-    where \ell_i is the lengthscale, \sigma^2 the variance and d the dimensionality of the input.
+    where \\ell_i is the lengthscale, \\sigma^2 the variance and d the dimensionality of the input.
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
@@ -25,7 +25,7 @@ class RBFInv(RBF):
     :type variance: float
     :param lengthscale: the vector of lengthscale of the kernel
     :type lengthscale: array or list of the appropriate size (or float if there is only one lengthscale parameter)
-    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \ell), otherwise there is one lengthscale parameter per dimension.
+    :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one single lengthscale parameter \\ell), otherwise there is one lengthscale parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
 

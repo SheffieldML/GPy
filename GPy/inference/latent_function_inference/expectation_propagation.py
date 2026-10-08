@@ -134,10 +134,10 @@ class posteriorParams(posteriorParamsBase):
         B = np.eye(num_data) + Sroot_tilde_K * tau_tilde_root[None,:]
         L = jitchol(B)
         V, _ = dtrtrs(L, Sroot_tilde_K, lower=1)
-        Sigma = K - np.dot(V.T,V) #K - KS^(1/2)BS^(1/2)K = (K^(-1) + \Sigma^(-1))^(-1)
+        Sigma = K - np.dot(V.T,V) #K - KS^(1/2)BS^(1/2)K = (K^(-1) + \\Sigma^(-1))^(-1)
 
         aux_alpha , _ = dpotrs(L, tau_tilde_root * (np.dot(K, ga_approx.v) + mean_prior), lower=1)
-        alpha = ga_approx.v - tau_tilde_root * aux_alpha #(K + Sigma^(\tilde))^(-1) (/mu^(/tilde) - /mu_p)
+        alpha = ga_approx.v - tau_tilde_root * aux_alpha #(K + Sigma^(\\tilde))^(-1) (/mu^(/tilde) - /mu_p)
         mu = np.dot(K, alpha) + mean_prior
 
         return posteriorParams(mu=mu, Sigma=Sigma, L=L)
@@ -151,8 +151,8 @@ class posteriorParamsDTC(posteriorParamsBase):
         DSYR(LLT,Kmn[:,i].copy(),delta_tau)
         L = jitchol(LLT)
         V,info = dtrtrs(L,Kmn,lower=1)
-        self.Sigma_diag = np.maximum(np.sum(V*V,-2), np.finfo(float).eps)  #diag(K_nm (L L^\top)^(-1)) K_mn
-        si = np.sum(V.T*V[:,i],-1) #(V V^\top)[:,i]
+        self.Sigma_diag = np.maximum(np.sum(V*V,-2), np.finfo(float).eps)  #diag(K_nm (L L^\\top)^(-1)) K_mn
+        si = np.sum(V.T*V[:,i],-1) #(V V^\\top)[:,i]
         self.mu += (delta_v-delta_tau*self.mu[i])*si
         #mu = np.dot(Sigma, v_tilde)
 
@@ -229,24 +229,17 @@ class EPBase(object):
         v_diff = np.mean(np.square(ga_approx.v-self.ga_approx_old.v))
         return ((tau_diff < self.epsilon) and (v_diff < self.epsilon))
 
-    def __setstate__(self, state):
-        super(EPBase, self).__setstate__(state[0])
-        self.epsilon, self.eta, self.delta = state[1]
-        self.reset()
-
-    def __getstate__(self):
-        return [super(EPBase, self).__getstate__() , [self.epsilon, self.eta, self.delta]]
-
     def _save_to_input_dict(self):
-        input_dict = super(EPBase, self)._save_to_input_dict()
-        input_dict["epsilon"]=self.epsilon
-        input_dict["eta"]=self.eta
-        input_dict["delta"]=self.delta
-        input_dict["always_reset"]=self.always_reset
-        input_dict["max_iters"]=self.max_iters
-        input_dict["ep_mode"]=self.ep_mode
-        input_dict["parallel_updates"]=self.parallel_updates
-        input_dict["loading"]=True
+        input_dict = {
+            "epsilon": self.epsilon,
+            "eta": self.eta,
+            "delta": self.delta,
+            "always_reset": self.always_reset,
+            "max_iters": self.max_iters,
+            "ep_mode": self.ep_mode,
+            "parallel_updates": self.parallel_updates,
+            "loading": True
+        }
         return input_dict
 
 class EP(EPBase, ExactGaussianInference):
@@ -391,11 +384,11 @@ class EP(EPBase, ExactGaussianInference):
 
 
         aux_alpha , _ = dpotrs(post_params.L, tau_tilde_root * (np.dot(K, ga_approx.v) +  mean_prior), lower=1)
-        alpha = (ga_approx.v - tau_tilde_root * aux_alpha)[:,None] #(K + Sigma^(\tilde))^(-1) (/mu^(/tilde) -  /mu_p)
+        alpha = (ga_approx.v - tau_tilde_root * aux_alpha)[:,None] #(K + Sigma^(\\tilde))^(-1) (/mu^(/tilde) -  /mu_p)
 
         LWi, _ = dtrtrs(post_params.L, np.diag(tau_tilde_root), lower=1)
         Wi = np.dot(LWi.T,LWi)
-        symmetrify(Wi) #(K + Sigma^(\tilde))^(-1)
+        symmetrify(Wi) #(K + Sigma^(\\tilde))^(-1)
 
         dL_dK = 0.5 * (tdot(alpha) - Wi)
         dL_dthetaL = likelihood.ep_gradients(Y, cav_params.tau, cav_params.v, np.diag(dL_dK), Y_metadata=Y_metadata, quad_mode='gh')
@@ -530,7 +523,7 @@ class EPDTC(EPBase, VarDTC):
         #initial values - Gaussian factors
         #Initial values - Posterior distribution parameters: q(f|X,Y) = N(f|mu,Sigma)
         LLT0 = Kmm.copy()
-        Lm = jitchol(LLT0) #K_m = L_m L_m^\top
+        Lm = jitchol(LLT0) #K_m = L_m L_m^\\top
         Vm,info = dtrtrs(Lm, Kmn,lower=1)
         # Lmi = dtrtri(Lm)
         # Kmmi = np.dot(Lmi.T,Lmi)

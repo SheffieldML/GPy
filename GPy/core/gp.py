@@ -194,7 +194,7 @@ class GP(Model):
     # Make sure to name this variable and the predict functions will "just work"
     # In maths the predictive variable is:
     #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
-    #         W_{pp} := \texttt{Woodbury inv}
+    #         W_{pp} := \\texttt{Woodbury inv}
     #         p := _predictive_variable
 
     @property
@@ -283,7 +283,7 @@ class GP(Model):
 
     def log_likelihood(self):
         """
-        The log marginal likelihood of the model, :math:`p(\mathbf{y})`, this is the objective function of the model being optimised
+        The log marginal likelihood of the model, :math:`p(\\mathbf{y})`, this is the objective function of the model being optimised
         """
         return self._log_marginal_likelihood
 
@@ -296,9 +296,9 @@ class GP(Model):
         diagonal of the covariance is returned.
 
         .. math::
-            p(f*|X*, X, Y) = \int^{\inf}_{\inf} p(f*|f,X*)p(f|X,Y) df
-                        = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
-            \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
+            p(f*|X*, X, Y) = \\int^{\\inf}_{\\inf} p(f*|f,X*)p(f|X,Y) df
+                        = N(f*| K_{x*x}(K_{xx} + \\Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \\Sigma)^{-1}K_{xx*}
+            \\Sigma := \\texttt{Likelihood.variance / Approximate likelihood covariance}
         """
         mu, var = self.posterior._raw_predict(kern=self.kern if kern is None else kern, Xnew=Xnew, pred_var=self._predictive_variable, full_cov=full_cov)
         if self.mean_function is not None:
@@ -443,6 +443,13 @@ class GP(Model):
             mean_jac[:, :, i] = kern.gradients_X(
                 self.posterior.woodbury_vector[:, i:i+1].T, Xnew,
                 self._predictive_variable)
+
+        # The predicted mean includes the mean function (see _raw_predict)
+        if self.mean_function is not None and kern is self.kern:
+            for i in range(self.output_dim):
+                dL_dF = np.zeros((Xnew.shape[0], self.output_dim))
+                dL_dF[:, i] = 1.0
+                mean_jac[:, :, i] += self.mean_function.gradients_X(dL_dF, Xnew)
 
         # Gradients wrt the diagonal part k_{xx}
         dv_dX = kern.gradients_X_diag(np.ones(Xnew.shape[0]), Xnew)
@@ -612,7 +619,13 @@ class GP(Model):
         predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples.
         m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
-            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
+            m = self.normalizer.inverse_mean(m)
+            # As in predict: with several outputs the full covariance gets
+            # one (N, N) slice per output, scaled by that output's variance
+            if m.shape[1] > 1 and v.ndim == 2:
+                v = self.normalizer.inverse_covariance(v)
+            else:
+                v = self.normalizer.inverse_variance(v)
 
         def sim_one_dim(m, v):
             return np.random.multivariate_normal(m, v, size).T
@@ -644,11 +657,16 @@ class GP(Model):
         fsim = self.posterior_samples_f(X, size, **predict_kwargs)
         if likelihood is None:
             likelihood = self.likelihood
+        if self.normalizer is not None:
+            # The likelihood is defined on the normalized scale (axis 1 is the output)
+            fsim = np.moveaxis(self.normalizer.normalize(np.moveaxis(fsim, 1, -1)), -1, 1)
         if fsim.ndim == 3:
             for d in range(fsim.shape[1]):
                 fsim[:, d] = likelihood.samples(fsim[:, d], Y_metadata=Y_metadata)
         else:
             fsim = likelihood.samples(fsim, Y_metadata=Y_metadata)
+        if self.normalizer is not None:
+            fsim = np.moveaxis(self.normalizer.inverse_mean(np.moveaxis(fsim, 1, -1)), -1, 1)
         return fsim
 
     def input_sensitivity(self, summarize=True):
@@ -702,7 +720,7 @@ class GP(Model):
         Calculation of the log predictive density
 
         .. math:
-            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\\mu_{*}\\sigma^{2}_{*})
 
         :param x_test: test locations (x_{*})
         :type x_test: (Nx1) array
@@ -711,14 +729,17 @@ class GP(Model):
         :param Y_metadata: metadata associated with the test points
         """
         mu_star, var_star = self._raw_predict(x_test)
-        return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+        if self.normalizer is None:
+            return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
+        lpd = self.likelihood.log_predictive_density(self.normalizer.normalize(y_test), mu_star, var_star, Y_metadata=Y_metadata)
+        return lpd + self._normalizer_log_jacobian()
 
     def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
         """
         Calculation of the log predictive density by sampling
 
         .. math:
-            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\\mu_{*}\\sigma^{2}_{*})
 
         :param x_test: test locations (x_{*})
         :type x_test: (Nx1) array
@@ -729,29 +750,40 @@ class GP(Model):
         :type num_samples: int
         """
         mu_star, var_star = self._raw_predict(x_test)
-        return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        if self.normalizer is None:
+            return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        lpd = self.likelihood.log_predictive_density_sampling(self.normalizer.normalize(y_test), mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
+        return lpd + self._normalizer_log_jacobian()
+
+    def _normalizer_log_jacobian(self):
+        """
+        Log of the derivative of the normalized Y with respect to Y, which turns
+        a density of the normalized Y into a density of Y. The normalizers are
+        affine, so it is minus half the log of the variance scaling.
+        """
+        return -0.5 * np.log(self.normalizer.inverse_variance(np.ones(self.output_dim)))
 
 
     def _raw_posterior_covariance_between_points(self, X1, X2):
         """
-        Computes the posterior covariance between points. Does not account for 
+        Computes the posterior covariance between points. Does not account for
         normalization or likelihood
 
         :param X1: some input observations
         :param X2: other input observations
 
-        :returns: 
+        :returns:
             cov: raw posterior covariance: k(X1,X2) - k(X1,X) G^{-1} K(X,X2)
         """
         return self.posterior.covariance_between_points(self.kern, self.X, X1, X2)
 
 
-    def posterior_covariance_between_points(self, X1, X2, Y_metadata=None, 
-                                            likelihood=None, 
+    def posterior_covariance_between_points(self, X1, X2, Y_metadata=None,
+                                            likelihood=None,
                                             include_likelihood=True):
         """
-        Computes the posterior covariance between points. Includes likelihood 
-        variance as well as normalization so that evaluation at (x,x) is consistent 
+        Computes the posterior covariance between points. Includes likelihood
+        variance as well as normalization so that evaluation at (x,x) is consistent
         with model.predict
 
         :param X1: some input observations
@@ -762,8 +794,8 @@ class GP(Model):
                                    the predicted underlying latent function f.
         :type include_likelihood: bool
 
-        :returns: 
-            cov: posterior covariance, a Numpy array, Nnew x Nnew if 
+        :returns:
+            cov: posterior covariance, a Numpy array, Nnew x Nnew if
             self.output_dim == 1, and Nnew x Nnew x self.output_dim otherwise.
         """
 
@@ -774,7 +806,7 @@ class GP(Model):
             mean, _ = self._raw_predict(X1, full_cov=True)
             if likelihood is None:
                 likelihood = self.likelihood
-            _, cov = likelihood.predictive_values(mean, cov, full_cov=True, 
+            _, cov = likelihood.predictive_values(mean, cov, full_cov=True,
                                                   Y_metadata=Y_metadata)
 
         if self.normalizer is not None:

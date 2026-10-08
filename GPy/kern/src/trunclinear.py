@@ -14,15 +14,15 @@ class TruncLinear(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \sigma_q)
+       k(x,y) = \\sum_{i=1}^input_dim \\sigma^2_i \\max(0, x_iy_i - \\sigma_q)
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
-    :param variances: the vector of variances :math:`\sigma^2_i`
+    :param variances: the vector of variances :math:`\\sigma^2_i`
     :type variances: array or list of the appropriate size (or float if there
                      is only one variance parameter)
     :param ARD: Auto Relevance Determination. If False, the kernel has only one
-                variance parameter \sigma^2, otherwise there is one variance
+                variance parameter \\sigma^2, otherwise there is one variance
                 parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object
@@ -113,15 +113,15 @@ class TruncLinear_inf(Kern):
 
     .. math::
 
-       k(x,y) = \sum_{i=1}^input_dim \sigma^2_i \max(0, x_iy_i - \sigma_q)
+       k(x,y) = \\sum_{i=1}^input_dim \\sigma^2_i \\max(0, x_iy_i - \\sigma_q)
 
     :param input_dim: the number of input dimensions
     :type input_dim: int
-    :param variances: the vector of variances :math:`\sigma^2_i`
+    :param variances: the vector of variances :math:`\\sigma^2_i`
     :type variances: array or list of the appropriate size (or float if there
                      is only one variance parameter)
     :param ARD: Auto Relevance Determination. If False, the kernel has only one
-                variance parameter \sigma^2, otherwise there is one variance
+                variance parameter \\sigma^2, otherwise there is one variance
                 parameter per dimension.
     :type ARD: Boolean
     :rtype: kernel object

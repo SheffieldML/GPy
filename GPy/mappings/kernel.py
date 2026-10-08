@@ -12,20 +12,20 @@ class Kernel(Mapping):
 
     .. math::
 
-       f(\mathbf{x}) = \sum_i \alpha_i k(\mathbf{z}_i, \mathbf{x})
+       f(\\mathbf{x}) = \\sum_i \\alpha_i k(\\mathbf{z}_i, \\mathbf{x})
 
     or for multple outputs
 
     .. math::
 
-       f_i(\mathbf{x}) = \sum_j \alpha_{i,j} k(\mathbf{z}_i, \mathbf{x})
+       f_i(\\mathbf{x}) = \\sum_j \\alpha_{i,j} k(\\mathbf{z}_i, \\mathbf{x})
 
 
     :param input_dim: dimension of input.
     :type input_dim: int
     :param output_dim: dimension of output.
     :type output_dim: int
-    :param Z: input observations containing :math:`\mathbf{Z}`
+    :param Z: input observations containing :math:`\\mathbf{Z}`
     :type Z: ndarray
     :param kernel: a GPy kernel, defaults to GPy.kern.RBF
     :type kernel: GPy.kern.kern

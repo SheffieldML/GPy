@@ -35,7 +35,7 @@ class Stationary(Kern):
 
     .. math::
 
-        r(x, x') = \\sqrt{ \\sum_{q=1}^Q \\frac{(x_q - x'_q)^2}{\ell_q^2} }.
+        r(x, x') = \\sqrt{ \\sum_{q=1}^Q \\frac{(x_q - x'_q)^2}{\\ell_q^2} }.
 
     By default, there's only one lengthscale: seaprate lengthscales for each
     dimension can be enables by setting ARD=True.
@@ -153,7 +153,7 @@ class Stationary(Kern):
         Efficiently compute the scaled distance, r.
 
         ..math::
-            r = \sqrt( \sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
+            r = \\sqrt( \\sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
 
         Note that if thre is only one lengthscale, l comes outside the sum. In
         this case we compute the unscaled distance first (in a separate
@@ -259,7 +259,7 @@ class Stationary(Kern):
         the returned array is of shape [NxNxQxQ].
 
         ..math:
-            \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
+            \\frac{\\partial^2 K}{\\partial X2 ^2} = - \\frac{\\partial^2 K}{\\partial X\\partial X2}
 
         ..returns:
             dL2_dXdX2:  [NxMxQxQ] in the cov=True case, or [NxMxQ] in the cov=False case,
@@ -295,7 +295,7 @@ class Stationary(Kern):
         Given the derivative of the objective dL_dK, compute the second derivative of K wrt X:
 
         ..math:
-          \frac{\partial^2 K}{\partial X\partial X}
+          \\frac{\\partial^2 K}{\\partial X\\partial X}
 
         ..returns:
             dL2_dXdX: [NxQxQ]
@@ -306,7 +306,12 @@ class Stationary(Kern):
         l4 =  np.ones(X.shape[1])*self.lengthscale**2
         return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
         #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
-    
+
+    def dgradients(self, X, X2):
+        g1 = self.dK_dvariance(X, X2)
+        g2 = self.dK_dlengthscale(X, X2)
+        return [g1, g2]
+
     def dgradients_dX(self, X, X2, dimX):
         g1 = self.dK2_dvariancedX(X, X2, dimX)
         g2 = self.dK2_dlengthscaledX(X, X2, dimX)
@@ -418,7 +423,7 @@ class OU(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 \exp(- r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 \\exp(- r) \\ \\ \\ \\  \\text{ where  } r = \\sqrt{\\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\\ell_i^2} }
 
     """
 
@@ -455,7 +460,7 @@ class Matern32(Stationary):
 
     .. math::
 
-       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \exp(- \sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \sqrt{\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\ell_i^2} }
+       k(r) = \\sigma^2 (1 + \\sqrt{3} r) \\exp(- \\sqrt{3} r) \\ \\ \\ \\  \\text{ where  } r = \\sqrt{\\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\\ell_i^2} }
 
     """
 
@@ -516,8 +521,8 @@ class Matern32(Stationary):
         """
         Return the state space representation of the covariance.
         """
-        variance = float(self.variance.values)
-        lengthscale = float(self.lengthscale.values)
+        variance = self.variance.item()
+        lengthscale = self.lengthscale.item()
         foo  = np.sqrt(3.)/lengthscale
         F    = np.array([[0, 1], [-foo**2, -2*foo]])
         L    = np.array([[0], [1]])
@@ -554,7 +559,7 @@ class Matern52(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 (1 + \sqrt{5} r + \\frac53 r^2) \exp(- \sqrt{5} r)
+       k(r) = \\sigma^2 (1 + \\sqrt{5} r + \\frac53 r^2) \\exp(- \\sqrt{5} r)
     """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
@@ -621,7 +626,7 @@ class ExpQuad(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 \exp(- 0.5 r^2)
+       k(r) = \\sigma^2 \\exp(- 0.5 r^2)
 
     notes::
      - This is exactly the same as the RBF covariance function, but the
@@ -659,10 +664,10 @@ class ExpQuad(Stationary):
 class Cosine(Stationary):
     """
     Cosine Covariance function
-    
+
     .. math::
 
-        k(r) = \sigma^2 \cos(r)
+        k(r) = \\sigma^2 \\cos(r)
 
     """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
@@ -677,18 +682,18 @@ class Cosine(Stationary):
 class ExpQuadCosine(Stationary):
     """
     Exponentiated quadratic multiplied by cosine covariance function (spectral mixture kernel).
-    
+
     .. math::
 
-        k(r) = \sigma^2 \exp(-2\pi^2r^2)\cos(2\pi r/T)
+        k(r) = \\sigma^2 \\exp(-2\\pi^2r^2)\\cos(2\\pi r/T)
 
     """
-    
+
     def __init__(self, input_dim, variance=1., lengthscale=None, period=1., ARD=False, active_dims=None, name='ExpQuadCosine'):
         super(ExpQuadCosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
         self.period = Param('period', period, Logexp())
         self.link_parameters(self.period)
-        
+
     def K_of_r(self, r):
         return self.variance * np.exp(-2*np.pi**2*r**2)*np.cos(2*np.pi*r/self.period)
 
@@ -707,18 +712,18 @@ class ExpQuadCosine(Stationary):
         super(ExpQuadCosine, self).update_gradients_diag(dL_dKdiag, X)
         self.period.gradient = 0.
 
-    
-    
+
+
 class Sinc(Stationary):
     """
     Sinc Covariance function
-    
+
     .. math::
 
-        k(r) = \sigma^2 \sinc(\pi r)
+        k(r) = \\sigma^2 \\sinc(\\pi r)
 
     """
-    
+
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Sinc'):
         super(Sinc, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
@@ -727,9 +732,17 @@ class Sinc(Stationary):
 
     def dK_dr(self, r):
         # small angle approximation to avoid divide by zero errors.
-        return np.where(r<1e-5, -self.variance*4/3*np.pi*np.pi*r, self.variance/r * (np.cos(2*np.pi*r)-np.sinc(2*r)))
+        gradient = -self.variance * 4 / 3 * np.pi**2 * r
+        mask = np.abs(r) >= 1e-5
+        np.divide(
+            self.variance * (np.cos(2 * np.pi * r) - np.sinc(2 * r)),
+            r,
+            out=gradient,
+            where=mask,
+        )
+        return gradient
 
-    
+
 
 class RatQuad(Stationary):
     """
@@ -737,7 +750,7 @@ class RatQuad(Stationary):
 
     .. math::
 
-       k(r) = \sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
+       k(r) = \\sigma^2 \\bigg( 1 + \\frac{r^2}{2} \\bigg)^{- \\alpha}
 
     """
 

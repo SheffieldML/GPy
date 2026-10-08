@@ -12,6 +12,7 @@ from ..core.parameterization import Param
 from paramz.transformations import Logexp
 from scipy.special import psi as digamma
 
+
 class StudentT(Likelihood):
     """
     Student T likelihood
@@ -22,17 +23,18 @@ class StudentT(Likelihood):
         p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
     """
-    def __init__(self,gp_link=None, deg_free=5, sigma2=2):
+
+    def __init__(self, gp_link=None, deg_free=5, sigma2=2):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
-        super(StudentT, self).__init__(gp_link, name='Student_T')
+        super(StudentT, self).__init__(gp_link, name="Student_T")
         # sigma2 is not a noise parameter, it is a squared scale.
-        self.sigma2 = Param('t_scale2', float(sigma2), Logexp())
-        self.v = Param('deg_free', float(deg_free), Logexp())
+        self.sigma2 = Param("t_scale2", float(sigma2), Logexp())
+        self.v = Param("deg_free", float(deg_free), Logexp())
         self.link_parameter(self.sigma2)
         self.link_parameter(self.v)
-        #self.v.constrain_fixed()
+        # self.v.constrain_fixed()
 
         self.log_concave = False
 
@@ -61,11 +63,14 @@ class StudentT(Likelihood):
         """
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
-        #Careful gamma(big_number) is infinity!
-        objective = ((np.exp(gammaln((self.v + 1)*0.5) - gammaln(self.v * 0.5))
-                     / (np.sqrt(self.v * np.pi * self.sigma2)))
-                     * ((1 + (1./float(self.v))*((e**2)/float(self.sigma2)))**(-0.5*(self.v + 1)))
-                    )
+        # Careful gamma(big_number) is infinity!
+        objective = (
+            np.exp(gammaln((self.v + 1) * 0.5) - gammaln(self.v * 0.5))
+            / (np.sqrt(self.v * np.pi * self.sigma2))
+        ) * (
+            (1 + (1.0 / self.v.item()) * ((e**2) / self.sigma2.item()))
+            ** (-0.5 * (self.v + 1))
+        )
         return np.prod(objective)
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
@@ -73,7 +78,7 @@ class StudentT(Likelihood):
         Log Likelihood Function given link(f)
 
         .. math::
-            \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)
+            \\ln p(y_{i}|\\lambda(f_{i})) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \\lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)
 
         :param inv_link_f: latent variables (link(f))
         :type inv_link_f: Nx1 array
@@ -85,15 +90,16 @@ class StudentT(Likelihood):
 
         """
         e = y - inv_link_f
-        #FIXME:
-        #Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
-        #But np.log(1 + (1/float(self.v))*((y-inv_link_f)**2)/self.sigma2) throws it correctly
-        #print - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
-        objective = (+ gammaln((self.v + 1) * 0.5)
-                    - gammaln(self.v * 0.5)
-                    - 0.5*np.log(self.sigma2 * self.v * np.pi)
-                    - 0.5*(self.v + 1)*np.log(1 + (1/np.float(self.v))*((e**2)/self.sigma2))
-                    )
+        # FIXME:
+        # Why does np.log(1 + (1/self.v)*((y-inv_link_f)**2)/self.sigma2) suppress the divide by zero?!
+        # But np.log(1 + (1/float(self.v))*((y-inv_link_f)**2)/self.sigma2) throws it correctly
+        # print - 0.5*(self.v + 1)*np.log(1 + (1/(self.v))*((e**2)/self.sigma2))
+        objective = (
+            +gammaln((self.v + 1) * 0.5)
+            - gammaln(self.v * 0.5)
+            - 0.5 * np.log(self.sigma2 * self.v * np.pi)
+            - 0.5 * (self.v + 1) * np.log(1 + (1 / (self.v)) * ((e**2) / self.sigma2))
+        )
         return objective
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
@@ -101,7 +107,7 @@ class StudentT(Likelihood):
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{(v+1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v}
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{(v+1)(y_{i}-\\lambda(f_{i}))}{(y_{i}-\\lambda(f_{i}))^{2} + \\sigma^{2}v}
 
         :param inv_link_f: latent variables (f)
         :type inv_link_f: Nx1 array
@@ -123,7 +129,7 @@ class StudentT(Likelihood):
         The hessian will be 0 unless i == j
 
         .. math::
-            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
+            \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
 
         :param inv_link_f: latent variables inv_link(f)
         :type inv_link_f: Nx1 array
@@ -138,7 +144,9 @@ class StudentT(Likelihood):
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
         e = y - inv_link_f
-        hess = ((self.v + 1)*(e**2 - self.v*self.sigma2)) / ((self.sigma2*self.v + e**2)**2)
+        hess = ((self.v + 1) * (e**2 - self.v * self.sigma2)) / (
+            (self.sigma2 * self.v + e**2) ** 2
+        )
         return hess
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
@@ -146,7 +154,7 @@ class StudentT(Likelihood):
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{-2(v+1)((y_{i} - \lambda(f_{i}))^3 - 3(y_{i} - \lambda(f_{i})) \\sigma^{2} v))}{((y_{i} - \lambda(f_{i})) + \\sigma^{2} v)^3}
+            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{-2(v+1)((y_{i} - \\lambda(f_{i}))^3 - 3(y_{i} - \\lambda(f_{i})) \\sigma^{2} v))}{((y_{i} - \\lambda(f_{i})) + \\sigma^{2} v)^3}
 
         :param inv_link_f: latent variables link(f)
         :type inv_link_f: Nx1 array
@@ -157,9 +165,9 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
-                       ((e**2 + self.sigma2*self.v)**3)
-                    )
+        d3lik_dlink3 = -(
+            2 * (self.v + 1) * (-e) * (e**2 - 3 * self.v * self.sigma2)
+        ) / ((e**2 + self.sigma2 * self.v) ** 3)
         return d3lik_dlink3
 
     def dlogpdf_link_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -167,7 +175,7 @@ class StudentT(Likelihood):
         Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{v((y_{i} - \lambda(f_{i}))^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})}
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{v((y_{i} - \\lambda(f_{i}))^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - \\lambda(f_{i}))^{2})}
 
         :param inv_link_f: latent variables link(f)
         :type inv_link_f: Nx1 array
@@ -179,7 +187,11 @@ class StudentT(Likelihood):
         """
         e = y - inv_link_f
         e2 = np.square(e)
-        dlogpdf_dvar = self.v*(e2 - self.sigma2)/(2*self.sigma2*(self.sigma2*self.v + e2))
+        dlogpdf_dvar = (
+            self.v
+            * (e2 - self.sigma2)
+            / (2 * self.sigma2 * (self.sigma2 * self.v + e2))
+        )
         return dlogpdf_dvar
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -187,7 +199,7 @@ class StudentT(Likelihood):
         Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^2 + \\sigma^2 v)^2}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-\\lambda(f_{i}))}{(y_{i}-\\lambda(f_{i}))^2 + \\sigma^2 v)^2}
 
         :param inv_link_f: latent variables inv_link_f
         :type inv_link_f: Nx1 array
@@ -198,7 +210,9 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
+        dlogpdf_dlink_dvar = (self.v * (self.v + 1) * (-e)) / (
+            (self.sigma2 * self.v + e**2) ** 2
+        )
         return dlogpdf_dlink_dvar
 
     def d2logpdf_dlink2_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -206,7 +220,7 @@ class StudentT(Likelihood):
         Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
 
         .. math::
-            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - \lambda(f_{i}))^{2})}{(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})^{3}}
+            \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - \\lambda(f_{i}))^{2})}{(\\sigma^{2}v + (y_{i} - \\lambda(f_{i}))^{2})^{3}}
 
         :param inv_link_f: latent variables link(f)
         :type inv_link_f: Nx1 array
@@ -217,36 +231,40 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
-                              / ((self.sigma2*self.v + (e**2))**3)
-                           )
+        d2logpdf_dlink2_dvar = (
+            self.v * (self.v + 1) * (self.sigma2 * self.v - 3 * (e**2))
+        ) / ((self.sigma2 * self.v + (e**2)) ** 3)
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
-        dlogpdf_dv =  0.5*digamma(0.5*(df+1)) - 0.5*digamma(0.5*df) - 1.0/(2*df)
-        dlogpdf_dv += 0.5*(df+1)*e2/(df*(e2 + s2*df))
-        dlogpdf_dv -= 0.5*np.log1p(e2/(s2*df))
+        df = self.v.item()
+        s2 = self.sigma2.item()
+        dlogpdf_dv = (
+            0.5 * digamma(0.5 * (df + 1)) - 0.5 * digamma(0.5 * df) - 1.0 / (2 * df)
+        )
+        dlogpdf_dv += 0.5 * (df + 1) * e2 / (df * (e2 + s2 * df))
+        dlogpdf_dv -= 0.5 * np.log1p(e2 / (s2 * df))
         return dlogpdf_dv
 
     def dlogpdf_dlink_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
-        dlogpdf_df_dv = e*(e2 - self.sigma2)/(e2 + s2*df)**2
+        df = self.v.item()
+        s2 = self.sigma2.item()
+        dlogpdf_df_dv = e * (e2 - self.sigma2) / (e2 + s2 * df) ** 2
         return dlogpdf_df_dv
 
     def d2logpdf_dlink2_dv(self, inv_link_f, y, Y_metadata=None):
         e = y - inv_link_f
         e2 = np.square(e)
-        df = float(self.v[:])
-        s2 = float(self.sigma2[:])
-        e2_s2v = e**2 + s2*df
-        d2logpdf_df2_dv = (-s2*(df+1) + e2 - s2*df)/e2_s2v**2 - 2*s2*(df+1)*(e2 - s2*df)/e2_s2v**3
+        df = self.v.item()
+        s2 = self.sigma2.item()
+        e2_s2v = e**2 + s2 * df
+        d2logpdf_df2_dv = (-s2 * (df + 1) + e2 - s2 * df) / e2_s2v**2 - 2 * s2 * (
+            df + 1
+        ) * (e2 - s2 * df) / e2_s2v**3
         return d2logpdf_df2_dv
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
@@ -266,19 +284,25 @@ class StudentT(Likelihood):
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
         # The comment here confuses mean and median.
-        return self.gp_link.transf(mu) # only true if link is monotonic, which it is.
+        return self.gp_link.transf(mu)  # only true if link is monotonic, which it is.
 
-    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
-        if self.deg_free<=2.:
-            return np.empty(mu.shape)*np.nan # does not exist for degrees of freedom <= 2.
+    def predictive_variance(self, mu, variance, predictive_mean=None, Y_metadata=None):
+        if self.deg_free <= 2.0:
+            return (
+                np.empty(mu.shape) * np.nan
+            )  # does not exist for degrees of freedom <= 2.
         else:
-            return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
+            return super(StudentT, self).predictive_variance(
+                mu, variance, predictive_mean, Y_metadata
+            )
 
     def conditional_mean(self, gp):
         return self.gp_link.transf(gp)
 
     def conditional_variance(self, gp):
-        return self.deg_free/(self.deg_free - 2.)
+        # Variance of a Student-t with scale sqrt(sigma2): sigma2 * nu / (nu - 2)
+        nu = self.deg_free.item()
+        return np.ones_like(gp) * (self.sigma2.item() * nu / (nu - 2.0))
 
     def samples(self, gp, Y_metadata=None):
         """
@@ -288,11 +312,10 @@ class StudentT(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        #FIXME: Very slow as we are computing a new random variable per input!
-        #Can't get it to sample all at the same time
-        #student_t_samples = np.array([stats.t.rvs(self.v, self.gp_link.transf(gpj),scale=np.sqrt(self.sigma2), size=1) for gpj in gp])
-        dfs = np.ones_like(gp)*self.v
-        scales = np.ones_like(gp)*np.sqrt(self.sigma2)
-        student_t_samples = stats.t.rvs(dfs, loc=self.gp_link.transf(gp),
-                                        scale=scales)
+        # FIXME: Very slow as we are computing a new random variable per input!
+        # Can't get it to sample all at the same time
+        # student_t_samples = np.array([stats.t.rvs(self.v, self.gp_link.transf(gpj),scale=np.sqrt(self.sigma2), size=1) for gpj in gp])
+        dfs = np.ones_like(gp) * self.v
+        scales = np.ones_like(gp) * np.sqrt(self.sigma2)
+        student_t_samples = stats.t.rvs(dfs, loc=self.gp_link.transf(gp), scale=scales)
         return student_t_samples.reshape(orig_shape)

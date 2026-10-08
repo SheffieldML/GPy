@@ -54,7 +54,7 @@ class Poisson(Likelihood):
         Log Likelihood Function given link(f)
 
         .. math::
-            \\ln p(y_{i}|\lambda(f_{i})) = -\\lambda(f_{i}) + y_{i}\\log \\lambda(f_{i}) - \\log y_{i}!
+            \\ln p(y_{i}|\\lambda(f_{i})) = -\\lambda(f_{i}) + y_{i}\\log \\lambda(f_{i}) - \\log y_{i}!
 
         :param link_f: latent variables (link(f))
         :type link_f: Nx1 array
@@ -72,7 +72,7 @@ class Poisson(Likelihood):
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{y_{i}}{\\lambda(f_{i})} - 1
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{y_{i}}{\\lambda(f_{i})} - 1
 
         :param link_f: latent variables (f)
         :type link_f: Nx1 array
@@ -92,7 +92,7 @@ class Poisson(Likelihood):
         The hessian will be 0 unless i == j
 
         .. math::
-            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{-y_{i}}{\\lambda(f_{i})^{2}}
+            \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{-y_{i}}{\\lambda(f_{i})^{2}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -113,7 +113,7 @@ class Poisson(Likelihood):
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2y_{i}}{\\lambda(f_{i})^{3}}
+            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2y_{i}}{\\lambda(f_{i})^{3}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array

@@ -1,0 +1,22 @@
+{
+  "name": "GPy",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.13-bullseye",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestArgs": [
+          "GPy/testing"
+        ]
+      }
+    }
+  },
+  "postCreateCommand": "sudo rm -f /etc/apt/sources.list.d/yarn.list && sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential libgomp1 && python -m pip install --upgrade pip && python -m pip install -e '.[dev,docs,plotting,notebook]'",
+  "remoteUser": "vscode"
+}

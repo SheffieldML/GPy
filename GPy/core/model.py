@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .parameterization.priorizable import Priorizable
 from paramz import Model as ParamzModel
+import numpy as np
 
 class Model(ParamzModel, Priorizable):
 
@@ -105,7 +106,7 @@ class Model(ParamzModel, Priorizable):
         (including the MAP prior), so we return it here. If your model is not
         probabilistic, just return your objective to minimize here!
         """
-        return -float(self.log_likelihood()) - self.log_prior()
+        return -np.asarray(self.log_likelihood()).item() - self.log_prior()
 
     def objective_function_gradients(self):
         """

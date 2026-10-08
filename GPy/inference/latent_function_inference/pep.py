@@ -8,14 +8,14 @@ log_2_pi = np.log(2*np.pi)
 class PEP(LatentFunctionInference):
     '''
     Sparse Gaussian processes using Power-Expectation Propagation
-    for regression: alpha \approx 0 gives VarDTC and alpha = 1 gives FITC
-    
-    Reference: A Unifying Framework for Sparse Gaussian Process Approximation using 
+    for regression: alpha \\approx 0 gives VarDTC and alpha = 1 gives FITC
+
+    Reference: A Unifying Framework for Sparse Gaussian Process Approximation using
     Power Expectation Propagation, https://arxiv.org/abs/1605.07066
-    
+
     '''
     const_jitter = 1e-6
-    
+
     def __init__(self, alpha):
         super(PEP, self).__init__()
         self.alpha = alpha
@@ -69,7 +69,7 @@ class PEP(LatentFunctionInference):
         #compute dL_dR
         Uv = np.dot(U, v)
         dL_dR = 0.5*(np.sum(U*np.dot(U,P), 1) - (1.0+alpha_const_term)/beta_star + np.sum(np.square(Y), 1) - 2.*np.sum(Uv*Y, 1) \
-            + np.sum(np.square(Uv), 1))*beta_star**2 
+            + np.sum(np.square(Uv), 1))*beta_star**2
 
         # Compute dL_dKmm
         vvT_P = tdot(v.reshape(-1,1)) + P

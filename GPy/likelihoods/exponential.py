@@ -14,7 +14,7 @@ class Exponential(Likelihood):
     Y is expected to take values in {0,1,2,...}
     -----
     $$
-    L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
+    L(x) = \\exp(\\lambda) * \\lambda**Y_i / Y_i!
     $$
     """
     def __init__(self,gp_link=None):
@@ -46,7 +46,7 @@ class Exponential(Likelihood):
         Log Likelihood Function given link(f)
 
         .. math::
-            \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\lambda(f_{i}) - y_{i}\\lambda(f_{i})
+            \\ln p(y_{i}|\\lambda(f_{i})) = \\ln \\lambda(f_{i}) - y_{i}\\lambda(f_{i})
 
         :param link_f: latent variables (link(f))
         :type link_f: Nx1 array
@@ -65,7 +65,7 @@ class Exponential(Likelihood):
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\lambda(f)} - y_{i}
+            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\lambda(f)} - y_{i}
 
         :param link_f: latent variables (f)
         :type link_f: Nx1 array
@@ -87,7 +87,7 @@ class Exponential(Likelihood):
         The hessian will be 0 unless i == j
 
         .. math::
-            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\frac{1}{\\lambda(f_{i})^{2}}
+            \\frac{d^{2} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\frac{1}{\\lambda(f_{i})^{2}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array
@@ -110,7 +110,7 @@ class Exponential(Likelihood):
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
-            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2}{\\lambda(f_{i})^{3}}
+            \\frac{d^{3} \\ln p(y_{i}|\\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2}{\\lambda(f_{i})^{3}}
 
         :param link_f: latent variables link(f)
         :type link_f: Nx1 array

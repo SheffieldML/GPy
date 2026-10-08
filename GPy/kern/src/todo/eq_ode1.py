@@ -14,23 +14,23 @@ class Eq_ode1(Kernpart):
 
     This outputs of this kernel have the form
     .. math::
-       \frac{\text{d}y_j}{\text{d}t} = \sum_{i=1}^R w_{j,i} f_i(t-\delta_j) +\sqrt{\kappa_j}g_j(t) - d_jy_j(t)
+       \\frac{\\text{d}y_j}{\\text{d}t} = \\sum_{i=1}^R w_{j,i} f_i(t-\\delta_j) +\\sqrt{\\kappa_j}g_j(t) - d_jy_j(t)
 
     where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and :math:`f_i(t)` and :math:`g_i(t)` are independent latent Gaussian processes goverened by an exponentiated quadratic covariance.
-    
+
     :param output_dim: number of outputs driven by latent function.
     :type output_dim: int
-    :param W: sensitivities of each output to the latent driving function. 
+    :param W: sensitivities of each output to the latent driving function.
     :type W: ndarray (output_dim x rank).
     :param rank: If rank is greater than 1 then there are assumed to be a total of rank latent forces independently driving the system, each with identical covariance.
     :type rank: int
-    :param decay: decay rates for the first order system. 
+    :param decay: decay rates for the first order system.
     :type decay: array of length output_dim.
     :param delay: delay between latent force and output response.
     :type delay: array of length output_dim.
     :param kappa: diagonal term that allows each latent output to have an independent component to the response.
     :type kappa: array of length output_dim.
-    
+
     .. Note: see first order differential equation examples in GPy.examples.regression for some usage.
     """
     def __init__(self,output_dim, W=None, rank=1, kappa=None, lengthscale=1.0,  decay=None, delay=None):
@@ -62,7 +62,7 @@ class Eq_ode1(Kernpart):
         self.is_stationary = False
         self.gaussian_initial = False
         self._set_params(self._get_params())
-        
+
     def _get_params(self):
         param_list = [self.W.flatten()]
         if self.kappa is not None:
@@ -103,11 +103,11 @@ class Eq_ode1(Kernpart):
         param_names += ['decay_%i'%i for i in range(1,self.output_dim)]
         if self.delay is not None:
             param_names += ['delay_%i'%i for i in 1+range(1,self.output_dim)]
-        param_names+= ['lengthscale'] 
+        param_names+= ['lengthscale']
         return param_names
 
     def K(self,X,X2,target):
-        
+
         if X.shape[1] > 2:
             raise ValueError('Input matrix for ode1 covariance should have at most two columns, one containing times, the other output indices')
 
@@ -121,15 +121,15 @@ class Eq_ode1(Kernpart):
             target+=self.initial_variance * np.exp(- self.decay * (t1_mat + t2_mat))
 
     def Kdiag(self,index,target):
-        #target += np.diag(self.B)[np.asarray(index,dtype=np.int).flatten()]
+        #target += np.diag(self.B)[np.asarray(index,dtype=int).flatten()]
         pass
-    
+
     def _param_grad_helper(self,dL_dK,X,X2,target):
-        
+
         # First extract times and indices.
         self._extract_t_indices(X, X2, dL_dK=dL_dK)
         self._dK_ode_dtheta(target)
-        
+
 
     def _dK_ode_dtheta(self, target):
         """Do all the computations for the ode parts of the covariance function."""
@@ -138,7 +138,7 @@ class Eq_ode1(Kernpart):
         index_ode = self._index[self._index>0]-1
         if self._t2 is None:
             if t_ode.size==0:
-                return        
+                return
             t2_ode = t_ode
             dL_dK_ode = dL_dK_ode[:, self._index>0]
             index2_ode = index_ode
@@ -203,14 +203,14 @@ class Eq_ode1(Kernpart):
         self._t = X[:, 0]
         if not X.shape[1] == 2:
             raise ValueError('Input matrix for ode1 covariance should have two columns, one containing times, the other output indices')
-        self._index = np.asarray(X[:, 1],dtype=np.int)
+        self._index = np.asarray(X[:, 1],dtype=int)
         # Sort indices so that outputs are in blocks for computational
         # convenience.
         self._order = self._index.argsort()
         self._index = self._index[self._order]
         self._t = self._t[self._order]
         self._rorder = self._order.argsort() # rorder is for reversing the order
-        
+
         if X2 is None:
             self._t2 = None
             self._index2 = None
@@ -220,7 +220,7 @@ class Eq_ode1(Kernpart):
             if not X2.shape[1] == 2:
                 raise ValueError('Input matrix for ode1 covariance should have two columns, one containing times, the other output indices')
             self._t2 = X2[:, 0]
-            self._index2 = np.asarray(X2[:, 1],dtype=np.int)
+            self._index2 = np.asarray(X2[:, 1],dtype=int)
             self._order2 = self._index2.argsort()
             self._index2 = self._index2[self._order2]
             self._t2 = self._t2[self._order2]
@@ -229,7 +229,7 @@ class Eq_ode1(Kernpart):
         if dL_dK is not None:
             self._dL_dK = dL_dK[self._order, :]
             self._dL_dK = self._dL_dK[:, self._order2]
-            
+
     def _K_computations(self, X, X2):
         """Perform main body of computations for the ode1 covariance function."""
         # First extract times and indices.
@@ -253,8 +253,8 @@ class Eq_ode1(Kernpart):
                                                    np.hstack((self._K_ode_eq, self._K_ode))))
         self._K_dvar = self._K_dvar[self._rorder, :]
         self._K_dvar = self._K_dvar[:, self._rorder2]
-        
-        
+
+
         if X2 is None:
             # Matrix giving scales of each output
             self._scale = np.zeros((self._t.size, self._t.size))
@@ -303,7 +303,7 @@ class Eq_ode1(Kernpart):
                 self._K_eq = np.zeros((t_eq.size, t2_eq.size))
                 return
             self._dist2 = np.square(t_eq[:, None] - t2_eq[None, :])
-        
+
         self._K_eq = np.exp(-self._dist2/(2*self.lengthscale*self.lengthscale))
         if self.is_normalized:
             self._K_eq/=(np.sqrt(2*np.pi)*self.lengthscale)
@@ -361,7 +361,7 @@ class Eq_ode1(Kernpart):
             self._K_eq_ode = sK.T
         else:
             self._K_ode_eq = sK
-        
+
     def _K_compute_ode(self):
         # Compute covariances between outputs of the ODE models.
 
@@ -370,7 +370,7 @@ class Eq_ode1(Kernpart):
         if self._t2 is None:
             if t_ode.size==0:
                 self._K_ode = np.zeros((0, 0))
-                return        
+                return
             t2_ode = t_ode
             index2_ode = index_ode
         else:
@@ -379,14 +379,14 @@ class Eq_ode1(Kernpart):
                 self._K_ode = np.zeros((t_ode.size, t2_ode.size))
                 return
             index2_ode = self._index2[self._index2>0]-1
-        
+
         # When index is identical
         h = self._compute_H(t_ode, index_ode, t2_ode, index2_ode, stationary=self.is_stationary)
 
         if self._t2 is None:
             self._K_ode = 0.5 * (h + h.T)
         else:
-            h2 = self._compute_H(t2_ode, index2_ode, t_ode, index_ode, stationary=self.is_stationary)                
+            h2 = self._compute_H(t2_ode, index2_ode, t_ode, index_ode, stationary=self.is_stationary)
             self._K_ode = 0.5 * (h + h2.T)
 
         if not self.is_normalized:
@@ -410,28 +410,28 @@ class Eq_ode1(Kernpart):
             Decay = self.decay[index]
             if self.delay is not None:
                 t = t - self.delay[index]
-            
+
             t_squared = t*t
             half_sigma_decay = 0.5*self.sigma*Decay
             [ln_part_1, sign1] = ln_diff_erfs(half_sigma_decay + t/self.sigma,
                                               half_sigma_decay)
-    
+
             [ln_part_2, sign2] = ln_diff_erfs(half_sigma_decay,
                                               half_sigma_decay - t/self.sigma)
-            
+
             h = (sign1*np.exp(half_sigma_decay*half_sigma_decay
                              + ln_part_1
-                             - log(Decay + D_j)) 
+                             - log(Decay + D_j))
                  - sign2*np.exp(half_sigma_decay*half_sigma_decay
                                 - (Decay + D_j)*t
-                                + ln_part_2 
+                                + ln_part_2
                                 - log(Decay + D_j)))
-    
+
             sigma2 = self.sigma*self.sigma
 
         if update_derivatives:
-        
-            dh_dD_i = ((0.5*Decay*sigma2*(Decay + D_j)-1)*h 
+
+            dh_dD_i = ((0.5*Decay*sigma2*(Decay + D_j)-1)*h
                        + t*sign2*np.exp(
                 half_sigma_decay*half_sigma_decay-(Decay+D_j)*t + ln_part_2
                 )
@@ -439,11 +439,11 @@ class Eq_ode1(Kernpart):
                        (-1 + np.exp(-t_squared/sigma2-Decay*t)
                         + np.exp(-t_squared/sigma2-D_j*t)
                         - np.exp(-(Decay + D_j)*t)))
-        
+
             dh_dD_i = (dh_dD_i/(Decay+D_j)).real
-        
-        
-        
+
+
+
             dh_dD_j = (t*sign2*np.exp(
                 half_sigma_decay*half_sigma_decay-(Decay + D_j)*t+ln_part_2
                 )
@@ -457,7 +457,7 @@ class Eq_ode1(Kernpart):
                           - (-t/sigma2-Decay/2)*np.exp(-t_squared/sigma2 - D_j*t) \
                           - Decay/2*np.exp(-(Decay+D_j)*t))"""
         pass
-    
+
     def _compute_H(self, t, index, t2, index2, update_derivatives=False, stationary=False):
         """Helper function for computing part of the ode1 covariance function.
 
@@ -491,7 +491,7 @@ class Eq_ode1(Kernpart):
         inv_sigma_diff_t = 1./self.sigma*diff_t
         half_sigma_decay_i = 0.5*self.sigma*Decay[:, None]
 
-        ln_part_1, sign1 = ln_diff_erfs(half_sigma_decay_i + t2_mat/self.sigma, 
+        ln_part_1, sign1 = ln_diff_erfs(half_sigma_decay_i + t2_mat/self.sigma,
                                         half_sigma_decay_i - inv_sigma_diff_t,
                                         return_sign=True)
         ln_part_2, sign2 = ln_diff_erfs(half_sigma_decay_i,
@@ -529,7 +529,7 @@ class Eq_ode1(Kernpart):
                 )
                 ))
             self._dh_ddecay = (dh_ddecay/(Decay[:, None]+Decay2[None, :])).real
-            
+
             # Update jth decay gradient
             dh_ddecay2 = (t2_mat*sign2
                          *np.exp(
@@ -539,7 +539,7 @@ class Eq_ode1(Kernpart):
                 )
                          -h)
             self._dh_ddecay2 = (dh_ddecay/(Decay[:, None] + Decay2[None, :])).real
-            
+
             # Update sigma gradient
             self._dh_dsigma = (half_sigma_decay_i*Decay[:, None]*h
                                + 2/(np.sqrt(np.pi)
@@ -547,10 +547,10 @@ class Eq_ode1(Kernpart):
                                *((-diff_t/sigma2-Decay[:, None]/2)
                                  *np.exp(-diff_t*diff_t/sigma2)
                                  + (-t2_mat/sigma2+Decay[:, None]/2)
-                                 *np.exp(-t2_mat*t2_mat/sigma2-Decay[:, None]*t_mat) 
-                                 - (-t_mat/sigma2-Decay[:, None]/2) 
-                                 *np.exp(-t_mat*t_mat/sigma2-Decay2[None, :]*t2_mat) 
+                                 *np.exp(-t2_mat*t2_mat/sigma2-Decay[:, None]*t_mat)
+                                 - (-t_mat/sigma2-Decay[:, None]/2)
+                                 *np.exp(-t_mat*t_mat/sigma2-Decay2[None, :]*t2_mat)
                                  - Decay[:, None]/2
                                  *np.exp(-(Decay[:, None]*t_mat+Decay2[None, :]*t2_mat))))
-                
+
         return h

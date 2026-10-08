@@ -56,6 +56,29 @@ class WarpingFunction(Parameterized):
         #    print("Sum of roots: %.4f" % np.sum(fy - z))
         return y
 
+    def to_dict(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def from_dict(input_dict):
+        """
+        Instantiate a warping function from a dictionary built by the
+        to_dict method of the derived class.
+
+        :param dict input_dict: Dictionary with all the information needed to
+           instantiate the object.
+        """
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        warping_class = input_dict.pop('class')
+        import GPy
+        warping_class = eval(warping_class)
+        return warping_class._build_from_input_dict(warping_class, input_dict)
+
+    @staticmethod
+    def _build_from_input_dict(warping_class, input_dict):
+        return warping_class(**input_dict)
+
     def plot(self, xmin, xmax):
         y = np.arange(xmin, xmax, 0.01)
         f_y = self.f(y)
@@ -89,6 +112,24 @@ class TanhFunction(WarpingFunction):
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
         self.initial_y = initial_y
+
+    def to_dict(self):
+        input_dict = {}
+        input_dict["class"] = "GPy.util.warping_functions.TanhFunction"
+        input_dict["n_terms"] = self.n_terms
+        input_dict["initial_y"] = self.initial_y
+        input_dict["psi"] = self.psi.values.tolist()
+        input_dict["d"] = self.d.values.tolist()
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(warping_class, input_dict):
+        psi = input_dict.pop("psi")
+        d = input_dict.pop("d")
+        warping_function = warping_class(**input_dict)
+        warping_function.psi[:] = np.array(psi)
+        warping_function.d[:] = np.array(d)
+        return warping_function
 
     def f(self, y):
         """
@@ -179,8 +220,15 @@ class LogFunction(WarpingFunction):
     def __init__(self, closed_inverse=True):
         self.num_parameters = 0
         super(LogFunction, self).__init__(name='log')
+        self.closed_inverse = closed_inverse
         if closed_inverse:
             self.f_inv = self._f_inv
+
+    def to_dict(self):
+        input_dict = {}
+        input_dict["class"] = "GPy.util.warping_functions.LogFunction"
+        input_dict["closed_inverse"] = self.closed_inverse
+        return input_dict
 
     def f(self, y):
         return np.log(y)
@@ -210,8 +258,15 @@ class IdentityFunction(WarpingFunction):
     def __init__(self, closed_inverse=True):
         self.num_parameters = 0
         super(IdentityFunction, self).__init__(name='identity')
+        self.closed_inverse = closed_inverse
         if closed_inverse:
             self.f_inv = self._f_inv
+
+    def to_dict(self):
+        input_dict = {}
+        input_dict["class"] = "GPy.util.warping_functions.IdentityFunction"
+        input_dict["closed_inverse"] = self.closed_inverse
+        return input_dict
         
     def f(self, y):
         return y

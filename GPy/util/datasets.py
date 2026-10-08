@@ -55,12 +55,14 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True' #Checks if RTD is scannin
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'data_resources.json')
-    json_data = open(path, encoding='utf-8').read()
+    with open(path, encoding='utf-8') as f:
+        json_data = f.read()
     data_resources = json.loads(json_data)
 
 if not (on_rtd):
     path = os.path.join(os.path.dirname(__file__), 'football_teams.json')
-    json_data = open(path, encoding='utf-8').read()
+    with open(path, encoding='utf-8') as f:
+        json_data = f.read()
     football_dict = json.loads(json_data)
 
 
@@ -537,7 +539,7 @@ http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%2
         # In the notebook they did some data cleaning: remove Javascript header+footer, and translate new Date(....,..,..) into YYYY-MM-DD.
         header = """// Data table response\ngoogle.visualization.Query.setResponse("""
         data = data[len(header):-2]
-        data = re.sub('new Date\((\d+),(\d+),(\d+)\)', (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1+int(m.group(2)), int(m.group(3)))), data)
+        data = re.sub(r'new Date\((\d+),(\d+),(\d+)\)', (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1+int(m.group(2)), int(m.group(3)))), data)
         timeseries = json.loads(data)
         columns = [k['label'] for k in timeseries['table']['cols']]
         rows = map(lambda x: [k['v'] for k in x['c']], timeseries['table']['rows'])
@@ -782,7 +784,7 @@ def hapmap3(data_set='hapmap3'):
 
           /  1, iff SNPij==(B1,B1)
     Aij = |  0, iff SNPij==(B1,B2)
-          \ -1, iff SNPij==(B2,B2)
+          \\ -1, iff SNPij==(B2,B2)
 
     The SNP data and the meta information (such as iid, sex and phenotype) are
     stored in the dataframe datadf, index is the Individual ID,
@@ -1011,7 +1013,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
     sample_info.columns = c
 
     # get the labels right:
-    rep = re.compile('\(.*\)')
+    rep = re.compile(r'\(.*\)')
     def filter_dev_stage(row):
         if isnull(row):
             row = "2-cell stage embryo"
@@ -1050,7 +1052,7 @@ def singlecell_rna_seq_deng(dataset='singlecell_deng'):
                 #gene_info[file_info.name[:-18]] = inner.Refseq_IDs
 
     # Strip GSM number off data index
-    rep = re.compile('GSM\d+_')
+    rep = re.compile(r'GSM\d+_')
 
     from pandas import MultiIndex
     columns = MultiIndex.from_tuples([row.split('_', 1) for row in data.columns])

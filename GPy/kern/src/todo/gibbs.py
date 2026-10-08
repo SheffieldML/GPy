@@ -9,13 +9,13 @@ import GPy
 
 class Gibbs(Kernpart):
     """
-    Gibbs non-stationary covariance function. 
+    Gibbs non-stationary covariance function.
 
     .. math::
-       
+
        r = sqrt((x_i - x_j)'*(x_i - x_j))
-       
-       k(x_i, x_j) = \sigma^2*Z*exp(-r^2/(l(x)*l(x) + l(x')*l(x')))
+
+       k(x_i, x_j) = \\sigma^2*Z*exp(-r^2/(l(x)*l(x) + l(x')*l(x')))
 
        Z = (2*l(x)*l(x')/(l(x)*l(x) + l(x')*l(x')^{q/2}
 
@@ -25,18 +25,18 @@ class Gibbs(Kernpart):
         with input location. This leads to an additional term in front of
         the kernel.
 
-        The parameters are :math:`\sigma^2`, the process variance, and
+        The parameters are :math:`\\sigma^2`, the process variance, and
         the parameters of l(x) which is a function that can be
         specified by the user, by default an multi-layer peceptron is
         used.
 
         :param input_dim: the number of input dimensions
-        :type input_dim: int 
-        :param variance: the variance :math:`\sigma^2`
+        :type input_dim: int
+        :param variance: the variance :math:`\\sigma^2`
         :type variance: float
         :param mapping: the mapping that gives the lengthscale across the input space (by default GPy.mappings.MLP is used with 20 hidden nodes).
         :type mapping: GPy.core.Mapping
-        :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter \sigma^2_w), otherwise there is one weight variance parameter per dimension.
+        :param ARD: Auto Relevance Determination. If equal to "False", the kernel is isotropic (ie. one weight variance parameter \\sigma^2_w), otherwise there is one weight variance parameter per dimension.
         :type ARD: Boolean
         :rtype: Kernpart object
 
@@ -113,7 +113,7 @@ class Gibbs(Kernpart):
             target += 2.*self.mapping.df_dX(self._dL_dl[:, None], X)
         else:
             target += self.mapping.df_dX(self._dL_dl[:, None], X)
-    
+
     def dKdiag_dX(self, dL_dKdiag, X, target):
         """Gradient of diagonal of covariance with respect to X."""
         pass
@@ -123,7 +123,7 @@ class Gibbs(Kernpart):
         target[0] += np.sum(dL_dKdiag)
 
 
-    
+
     def _K_computations(self, X, X2=None):
         """Pre-computations for the covariance function (used both when computing the covariance and its gradients). Here self._dK_dvar and self._K_dist2 are updated."""
         self._lengthscales=self.mapping.f(X)
@@ -146,7 +146,7 @@ class Gibbs(Kernpart):
         """Pre-computations for the gradients of the covaraince function. Here the gradient of the covariance with respect to all the individual lengthscales is computed.
         :param dL_dK: the gradient of the objective with respect to the covariance function.
         :type dL_dK: ndarray"""
-        
+
         self._dL_dl = (dL_dK*self.variance*self._K_dvar*(self.input_dim/2.*(self._lengthscales_two.T**4 - self._lengthscales**4) + 2*self._lengthscales2*self._K_dist2)/(self._w2*self._w2*self._lengthscales)).sum(1)
         if self._lengthscales_two is self._lengthscales:
             self._dL_dl_two = None

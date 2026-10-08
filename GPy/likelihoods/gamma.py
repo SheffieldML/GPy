@@ -143,6 +143,30 @@ class Gamma(Likelihood):
     def update_gradients(self, grads):
         self.beta.gradient = grads[0]
 
+    def conditional_mean(self, gp):
+        """
+        Mean of y given f under the mean-rate parameterization:
+        alpha = beta * link(f), scale = 1/beta, so E[y|f] = link(f).
+        """
+        return self.gp_link.transf(gp)
+
+    def conditional_variance(self, gp):
+        """
+        Variance of y given f: Var[y|f] = link(f) / beta.
+        """
+        beta = float(np.asarray(self.beta).reshape(-1)[0])
+        return self.gp_link.transf(gp) / beta
+
+    def samples(self, gp, Y_metadata=None):
+        """
+        Draw observations y | f ~ Gamma(shape=beta*link(f), scale=1/beta).
+        """
+        orig_shape = gp.shape
+        link_f = self.gp_link.transf(gp).flatten()
+        beta = float(np.asarray(self.beta).reshape(-1)[0])
+        Ysim = np.random.gamma(shape=beta * link_f, scale=1.0 / beta)
+        return Ysim.reshape(orig_shape)
+
     def dlogpdf_link_dbeta(self, link_f, y, Y_metadata=None):
         """
         Gradient of the log likelihood function at y, given link(f), w.r.t. beta

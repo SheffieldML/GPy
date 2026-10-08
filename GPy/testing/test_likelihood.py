@@ -1065,6 +1065,32 @@ class TestGammaLikelihood:
         assert np.isfinite(model.log_likelihood())
         assert np.isfinite(model.likelihood.beta.gradient).all()
 
+    def test_conditional_moments_and_predict(self):
+        # Mean-rate Gamma: E[y|f] = link(f), Var[y|f] = link(f) / beta
+        likelihood = GPy.likelihoods.Gamma(beta=1.5)
+        gp = np.array([[0.0], [1.0], [-0.5]])
+        link_f = likelihood.gp_link.transf(gp)
+        np.testing.assert_allclose(likelihood.conditional_mean(gp), link_f)
+        np.testing.assert_allclose(likelihood.conditional_variance(gp), link_f / 1.5)
+
+        np.random.seed(fixed_seed)
+        draws = likelihood.samples(np.full((8000, 1), 0.0))
+        # link(0) = 1 under Log link; mean and var of Gamma(beta, scale=1/beta)
+        np.testing.assert_allclose(draws.mean(), 1.0, rtol=0.05)
+        np.testing.assert_allclose(draws.var(), 1.0 / 1.5, rtol=0.08)
+
+        model = GPy.core.GP(
+            self.X,
+            self.Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Gamma(beta=1.5),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(self.X[:3])
+        assert mean.shape == (3, 1) and variance.shape == (3, 1)
+        assert np.all(np.isfinite(mean)) and np.all(mean > 0)
+        assert np.all(np.isfinite(variance)) and np.all(variance > 0)
+
 
 class TestPredictiveQuadrature:
     def test_poisson_predictive_moments(self):

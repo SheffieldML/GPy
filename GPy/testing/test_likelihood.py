@@ -1177,6 +1177,25 @@ class TestWeibullLikelihood:
             np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
 
 
+class TestPredictiveValuesSampling:
+    @pytest.mark.parametrize(
+        "likelihood, Y_metadata",
+        [
+            (GPy.likelihoods.Exponential(), None),
+            (GPy.likelihoods.Weibull(beta=1.5), {"censored": np.zeros((3, 1))}),
+            (GPy.likelihoods.LogLogistic(r=3.0), {"censored": np.zeros((3, 1))}),
+        ],
+    )
+    def test_falls_back_to_sampling(self, likelihood, Y_metadata):
+        # These likelihoods have no conditional mean, so predictive_values
+        # samples from the likelihood
+        np.random.seed(fixed_seed)
+        mu = np.array([[0.2], [-0.5], [0.8]])
+        var = np.array([[0.3], [0.1], [0.2]])
+        mean, variance = likelihood.predictive_values(mu, var, Y_metadata=Y_metadata)
+        assert mean.shape == (3, 1) and variance.shape == (3, 1)
+        assert np.all(np.isfinite(mean)) and np.all(mean > 0)
+        assert np.all(np.isfinite(variance)) and np.all(variance > 0)
 class TestStudentTPredictive:
     def test_predictive_variance(self):
         # Var(y) = Var(f) + sigma2 * nu / (nu - 2) for the identity link

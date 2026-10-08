@@ -170,6 +170,23 @@ class TestMisc:
             atol=0.05,
         )
 
+    def test_multioutput_posterior_samples_f_with_normalizer(self):
+        np.random.seed(0)
+        X = np.random.uniform(0, 10, (30, 1))
+        Y = np.hstack([50 + 10 * np.sin(X), 3 * np.cos(X)]) + np.random.randn(30, 2)
+        m = GPy.models.GPRegression(X, Y, normalizer=True)
+        X_new = np.linspace(0, 10, 4)[:, None]
+        mu, cov = m.predict_noiseless(X_new, full_cov=True)
+
+        samples = m.posterior_samples_f(X_new, size=40000)
+        assert samples.shape == (4, 2, 40000)
+        for d in range(2):
+            scale = np.sqrt(cov[:, :, d].diagonal().max())
+            np.testing.assert_allclose(samples[:, d].mean(-1), mu[:, d], atol=0.05 * scale)
+            np.testing.assert_allclose(
+                np.cov(samples[:, d, :]), cov[:, :, d], atol=0.05 * scale**2
+            )
+
     def test_multioutput_regression_with_normalizer(self):
         """
         Test that normalizing works in multi-output case

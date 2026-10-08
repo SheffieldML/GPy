@@ -612,7 +612,13 @@ class GP(Model):
         predict_kwargs["full_cov"] = True  # Always use the full covariance for posterior samples.
         m, v = self._raw_predict(X,  **predict_kwargs)
         if self.normalizer is not None:
-            m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
+            m = self.normalizer.inverse_mean(m)
+            # As in predict: with several outputs the full covariance gets
+            # one (N, N) slice per output, scaled by that output's variance
+            if m.shape[1] > 1 and v.ndim == 2:
+                v = self.normalizer.inverse_covariance(v)
+            else:
+                v = self.normalizer.inverse_variance(v)
 
         def sim_one_dim(m, v):
             return np.random.multivariate_normal(m, v, size).T

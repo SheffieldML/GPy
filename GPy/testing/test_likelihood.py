@@ -1,6 +1,8 @@
 # Copyright (c) 2014, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
+import pytest
+from scipy import integrate, stats
 import GPy
 from GPy.models import GradientChecker
 import functools
@@ -1018,3 +1020,231 @@ class LaplaceTests:
         # m2.checkgrad(verbose=1)
         assert m1.checkgrad(verbose=True)
         assert m2.checkgrad(verbose=True)
+
+
+class TestGammaLikelihood:
+    def setup_method(self):
+        np.random.seed(fixed_seed)
+        self.N = 30
+        self.X = np.random.uniform(0, 5, (self.N, 1))
+        link_f = np.exp(np.sin(self.X) + 1.0)
+        self.Y = np.random.gamma(shape=1.5 * link_f, scale=1.0 / 1.5)
+
+    def test_beta_derivatives(self):
+        likelihood = GPy.likelihoods.Gamma(beta=1.5)
+        link_f = np.exp(np.random.randn(self.N, 1) * 0.5 + 1.0)
+        for value, gradient in [
+            (likelihood.logpdf_link, likelihood.dlogpdf_link_dtheta),
+            (likelihood.dlogpdf_dlink, likelihood.dlogpdf_dlink_dtheta),
+            (likelihood.d2logpdf_dlink2, likelihood.d2logpdf_dlink2_dtheta),
+        ]:
+
+            def f(beta):
+                likelihood.beta[:] = beta
+                return np.sum(value(link_f, self.Y))
+
+            def df(beta):
+                likelihood.beta[:] = beta
+                return np.sum(gradient(link_f, self.Y)[0])
+
+            grad = GradientChecker(f, df, np.array([1.5]), ["beta"])
+            assert grad.checkgrad(verbose=1)
+
+    def test_laplace_inference(self):
+        model = GPy.core.GP(
+            self.X,
+            self.Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Gamma(beta=1.5),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        assert np.isfinite(model.log_likelihood())
+        model.likelihood.beta.unfix()
+        model.likelihood.beta.constrain_positive()
+        model.optimize(max_iters=20)
+        assert np.isfinite(model.log_likelihood())
+        assert np.isfinite(model.likelihood.beta.gradient).all()
+
+    def test_conditional_moments_and_predict(self):
+        # Mean-rate Gamma: E[y|f] = link(f), Var[y|f] = link(f) / beta
+        likelihood = GPy.likelihoods.Gamma(beta=1.5)
+        gp = np.array([[0.0], [1.0], [-0.5]])
+        link_f = likelihood.gp_link.transf(gp)
+        np.testing.assert_allclose(likelihood.conditional_mean(gp), link_f)
+        np.testing.assert_allclose(likelihood.conditional_variance(gp), link_f / 1.5)
+
+        np.random.seed(fixed_seed)
+        draws = likelihood.samples(np.full((8000, 1), 0.0))
+        # link(0) = 1 under Log link; mean and var of Gamma(beta, scale=1/beta)
+        np.testing.assert_allclose(draws.mean(), 1.0, rtol=0.05)
+        np.testing.assert_allclose(draws.var(), 1.0 / 1.5, rtol=0.08)
+
+        model = GPy.core.GP(
+            self.X,
+            self.Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Gamma(beta=1.5),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(self.X[:3])
+        assert mean.shape == (3, 1) and variance.shape == (3, 1)
+        assert np.all(np.isfinite(mean)) and np.all(mean > 0)
+        assert np.all(np.isfinite(variance)) and np.all(variance > 0)
+
+
+class TestPredictiveQuadrature:
+    def test_poisson_predictive_moments(self):
+        # For a log link, E[y] = exp(m + v/2) and
+        # V[y] = exp(m + v/2) + (exp(v) - 1) * exp(2m + v).
+        likelihood = GPy.likelihoods.Poisson()
+        mu = np.array([[0.0], [2.0], [4.7], [4.7], [10.0]])
+        var = np.array([[0.5], [0.01], [0.01], [1e-4], [0.01]])
+        mean = likelihood.predictive_mean(mu, var)
+        variance = likelihood.predictive_variance(mu, var, mean)
+        expected_mean = np.exp(mu + var / 2)
+        expected_variance = expected_mean + (np.exp(var) - 1) * np.exp(2 * mu + var)
+        np.testing.assert_allclose(mean, expected_mean, rtol=1e-6)
+        np.testing.assert_allclose(variance, expected_variance, rtol=1e-6)
+
+    def test_poisson_laplace_predict(self):
+        np.random.seed(fixed_seed)
+        X = np.linspace(0, 10, 30)[:, None]
+        Y = np.random.poisson(np.exp(1 + np.sin(X)))
+        model = GPy.core.GP(
+            X,
+            Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.Poisson(),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(X)
+        mu, var = model._raw_predict(X)
+        np.testing.assert_allclose(mean, np.exp(mu + var / 2), rtol=1e-6)
+        assert np.all(variance > 0)
+
+
+class TestLogPredictiveDensity:
+    @pytest.mark.parametrize(
+        "likelihood, Y, Y_metadata",
+        [
+            (GPy.likelihoods.StudentT(deg_free=4, sigma2=0.5), [[0.3], [2.5]], None),
+            (GPy.likelihoods.Poisson(), [[2.0], [0.0]], None),
+            (GPy.likelihoods.Gamma(beta=1.3), [[0.5], [2.0]], None),
+            (
+                GPy.likelihoods.Weibull(beta=1.5),
+                [[0.5], [2.0]],
+                {"censored": np.zeros((2, 1))},
+            ),
+        ],
+    )
+    def test_matches_numerical_integration(self, likelihood, Y, Y_metadata):
+        Y = np.array(Y)
+        mu = np.array([[0.2], [-0.5]])
+        var = np.array([[0.3], [24.0]])
+        lpd = likelihood.log_predictive_density(Y, mu, var, Y_metadata=Y_metadata)
+        expected = []
+        for i in range(2):
+            sd = np.sqrt(var[i, 0])
+            f = np.linspace(mu[i, 0] - 12 * sd, mu[i, 0] + 12 * sd, 200001)
+            meta = None
+            if Y_metadata is not None:
+                meta = {k: np.full((f.size, 1), v[i, 0]) for k, v in Y_metadata.items()}
+            logp = likelihood.logpdf(f[:, None], np.full((f.size, 1), Y[i, 0]), Y_metadata=meta)
+            integrand = np.exp(logp.ravel()) * stats.norm.pdf(f, mu[i, 0], sd)
+            expected.append(np.log(integrate.trapezoid(integrand, f)))
+        np.testing.assert_allclose(lpd.ravel(), expected, rtol=1e-4)
+class TestBernoulliVariationalExpectations:
+    def test_misclassified_points(self):
+        # With a tiny variance, E[log Phi(y f)] is log Phi(y m) and its
+        # gradient is y phi(m) / Phi(y m), also far in the tail.
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [1.0], [0.0], [0.0]])
+        m = np.array([[-8.0], [0.5], [9.0], [-1.0]])
+        v = np.full_like(m, 1e-8)
+        F, dF_dm, dF_dv, _ = likelihood.variational_expectations(Y, m, v)
+        z = np.where(Y == 1, 1.0, -1.0) * m
+        np.testing.assert_allclose(F, stats.norm.logcdf(z), rtol=1e-6)
+        np.testing.assert_allclose(
+            dF_dm,
+            np.where(Y == 1, 1.0, -1.0) * np.exp(stats.norm.logpdf(z) - stats.norm.logcdf(z)),
+            rtol=1e-6,
+        )
+
+    def test_large_variance(self):
+        # Reference values from adaptive quadrature of E[log Phi(y f)].
+        likelihood = GPy.likelihoods.Bernoulli()
+        Y = np.array([[1.0], [0.0]])
+        m = np.array([[0.3], [-1.2]])
+        v = np.array([[47.0], [200.0]])
+        F = likelihood.variational_expectations(Y, m, v)[0]
+        expected = [
+            integrate.quad(
+                lambda f: stats.norm.pdf(f, mean, np.sqrt(var))
+                * stats.norm.logcdf(f if y == 1 else -f),
+                -np.inf,
+                np.inf,
+            )[0]
+            for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel())
+        ]
+        np.testing.assert_allclose(F.ravel(), expected, rtol=1e-2)
+class TestWeibullLikelihood:
+    def test_samples_follow_logpdf(self):
+        # logpdf is the density of weibull_min(r, scale=exp(f) ** (1 / r)),
+        # so the samples should have its mean.
+        np.random.seed(fixed_seed)
+        likelihood = GPy.likelihoods.Weibull(beta=1.5)
+        for f in (-0.4, 0.3):
+            samples = likelihood.samples(np.full((20000, 1), f))
+            y = np.linspace(0.1, 4, 5)[:, None]
+            dist = stats.weibull_min(1.5, scale=np.exp(f) ** (1 / 1.5))
+            np.testing.assert_allclose(
+                likelihood.logpdf(np.full_like(y, f), y), dist.logpdf(y)
+            )
+            np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
+
+
+class TestPredictiveValuesSampling:
+    @pytest.mark.parametrize(
+        "likelihood, Y_metadata",
+        [
+            (GPy.likelihoods.Exponential(), None),
+            (GPy.likelihoods.Weibull(beta=1.5), {"censored": np.zeros((3, 1))}),
+            (GPy.likelihoods.LogLogistic(r=3.0), {"censored": np.zeros((3, 1))}),
+        ],
+    )
+    def test_falls_back_to_sampling(self, likelihood, Y_metadata):
+        # These likelihoods have no conditional mean, so predictive_values
+        # samples from the likelihood
+        np.random.seed(fixed_seed)
+        mu = np.array([[0.2], [-0.5], [0.8]])
+        var = np.array([[0.3], [0.1], [0.2]])
+        mean, variance = likelihood.predictive_values(mu, var, Y_metadata=Y_metadata)
+        assert mean.shape == (3, 1) and variance.shape == (3, 1)
+        assert np.all(np.isfinite(mean)) and np.all(mean > 0)
+        assert np.all(np.isfinite(variance)) and np.all(variance > 0)
+class TestStudentTPredictive:
+    def test_predictive_variance(self):
+        # Var(y) = Var(f) + sigma2 * nu / (nu - 2) for the identity link
+        likelihood = GPy.likelihoods.StudentT(deg_free=5, sigma2=0.7)
+        mu = np.array([[0.3], [-1.0]])
+        var = np.array([[0.5], [2.0]])
+        mean = likelihood.predictive_mean(mu, var)
+        variance = likelihood.predictive_variance(mu, var, mean)
+        np.testing.assert_allclose(variance, var + 0.7 * 5 / 3, rtol=1e-6)
+
+    def test_laplace_predict(self):
+        np.random.seed(fixed_seed)
+        X = np.linspace(0, 5, 20)[:, None]
+        Y = np.sin(X) + 0.1 * np.random.standard_t(4, (20, 1))
+        model = GPy.core.GP(
+            X,
+            Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.StudentT(deg_free=5, sigma2=0.1),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(X[:3])
+        mu, var = model._raw_predict(X[:3])
+        np.testing.assert_allclose(mean, mu)
+        np.testing.assert_allclose(variance, var + 0.1 * 5 / 3, rtol=1e-6)
+

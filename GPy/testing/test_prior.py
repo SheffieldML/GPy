@@ -280,3 +280,35 @@ def test_priors() -> None:
             raise RuntimeError(
                 f"Failed to initialize {prior_name} prior"
             ) from e  # noqa E501
+
+
+def test_halft_matches_half_student_t() -> None:
+    from scipy import integrate, stats
+
+    prior = HalfT(2.0, 4.0)
+    theta = np.array([0.3, 1.2, 2.7])
+    # Twice the Student-t density with scale A and nu degrees of freedom
+    np.testing.assert_allclose(
+        prior.lnpdf(theta), np.log(2.0) + stats.t(4.0, scale=2.0).logpdf(theta)
+    )
+    total, _ = integrate.quad(lambda t: np.exp(prior.lnpdf(np.array([t]))[0]), 0, np.inf)
+    np.testing.assert_allclose(total, 1.0)
+
+    eps = 1e-6
+    numerical = (prior.lnpdf(theta + eps) - prior.lnpdf(theta - eps)) / (2 * eps)
+    np.testing.assert_allclose(prior.lnpdf_grad(theta), numerical, rtol=1e-5)
+
+    np.random.seed(0)
+    samples = prior.rvs(40000)
+    assert np.all(samples > 0)
+    np.testing.assert_allclose(samples.mean(), 2.0, rtol=0.03)
+
+
+def test_exponential_rvs_uses_the_rate() -> None:
+    # Two Exponential priors with different rates can coexist
+    assert Exponential(1.0).l == 1.0
+    prior = Exponential(1.5)
+    assert prior.l == 1.5
+    np.random.seed(0)
+    np.testing.assert_allclose(prior.rvs(40000).mean(), 1 / 1.5, rtol=0.02)
+

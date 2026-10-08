@@ -300,7 +300,9 @@ class StudentT(Likelihood):
         return self.gp_link.transf(gp)
 
     def conditional_variance(self, gp):
-        return self.deg_free / (self.deg_free - 2.0)
+        # Variance of a Student-t with scale sqrt(sigma2): sigma2 * nu / (nu - 2)
+        nu = self.deg_free.item()
+        return np.ones_like(gp) * (self.sigma2.item() * nu / (nu - 2.0))
 
     def samples(self, gp, Y_metadata=None):
         """

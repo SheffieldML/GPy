@@ -146,6 +146,47 @@ class TestMisc:
             np.array(q95).flatten(),
         )
 
+    def test_normalizer_posterior_samples_and_log_predictive_density(self):
+        np.random.seed(0)
+        X = np.random.uniform(0, 10, (30, 1))
+        Y = 50 + 10 * np.sin(X) + np.random.randn(30, 1)
+        X_new = np.linspace(0, 10, 4)[:, None]
+        Y_new = 50 + 10 * np.sin(X_new)
+        m = GPy.models.GPRegression(X, Y, normalizer=True)
+        m.optimize()
+        mu, var = m.predict(X_new)
+
+        # The noise of the samples is on the scale of Y, like the predicted variance
+        samples = m.posterior_samples(X_new, size=40000)
+        np.testing.assert_allclose(samples.mean(-1), mu, atol=0.1)
+        np.testing.assert_allclose(samples.var(-1), var, rtol=0.05)
+
+        # The density is of Y, not of the normalized Y
+        expected = -0.5 * np.log(2 * np.pi * var) - 0.5 * (Y_new - mu) ** 2 / var
+        np.testing.assert_allclose(m.log_predictive_density(X_new, Y_new), expected)
+        np.testing.assert_allclose(
+            m.log_predictive_density_sampling(X_new, Y_new, num_samples=20000),
+            expected,
+            atol=0.05,
+        )
+
+    def test_multioutput_posterior_samples_f_with_normalizer(self):
+        np.random.seed(0)
+        X = np.random.uniform(0, 10, (30, 1))
+        Y = np.hstack([50 + 10 * np.sin(X), 3 * np.cos(X)]) + np.random.randn(30, 2)
+        m = GPy.models.GPRegression(X, Y, normalizer=True)
+        X_new = np.linspace(0, 10, 4)[:, None]
+        mu, cov = m.predict_noiseless(X_new, full_cov=True)
+
+        samples = m.posterior_samples_f(X_new, size=40000)
+        assert samples.shape == (4, 2, 40000)
+        for d in range(2):
+            scale = np.sqrt(cov[:, :, d].diagonal().max())
+            np.testing.assert_allclose(samples[:, d].mean(-1), mu[:, d], atol=0.05 * scale)
+            np.testing.assert_allclose(
+                np.cov(samples[:, d, :]), cov[:, :, d], atol=0.05 * scale**2
+            )
+
     def test_multioutput_regression_with_normalizer(self):
         """
         Test that normalizing works in multi-output case
@@ -1164,6 +1205,29 @@ class TestGradient:
         # m.constrain_fixed('.*rbf_var', 1.)
         assert m.checkgrad()
 
+    def test_multioutput_regression_log_predictive_density(self):
+        self.setup_method()
+        X1 = np.random.rand(20, 1) * 8
+        X2 = np.random.rand(15, 1) * 5
+        Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1)
+        )
+        m.mixed_noise.Gaussian_noise_0.variance = 0.01
+        m.mixed_noise.Gaussian_noise_1.variance = 0.05
+
+        X_test = np.vstack([np.hstack([X1[:3], np.zeros((3, 1))]), np.hstack([X2[:3], np.ones((3, 1))])])
+        Y_test = np.vstack([Y1[:3], Y2[:3]])
+        Y_metadata = {"output_index": X_test[:, 1:].astype(int)}
+        lpd = m.log_predictive_density(X_test, Y_test, Y_metadata=Y_metadata)
+
+        mu, var = m.predict(X_test, Y_metadata=Y_metadata)
+        expected = -0.5 * np.log(2 * np.pi * var) - 0.5 * (Y_test - mu) ** 2 / var
+        np.testing.assert_allclose(lpd, expected)
+        with pytest.raises(ValueError, match="output_index"):
+            m.log_predictive_density(X_test, Y_test)
+
     def test_simple_MultivariateGaussian_prior(self):
         self.setup_method()
         X = np.random.multivariate_normal(
@@ -1572,6 +1636,30 @@ class TestGradient:
         )
         assert gm.checkgrad()
         assert gc.checkgrad()
+
+    def test_predictive_gradients_with_mean_function(self):
+        """
+        Check that model.predictive_gradients includes the gradient of the
+        mean function, which model.predict adds to the mean
+        """
+        self.setup_method()
+
+        N, M, Q = 10, 15, 3
+        X = np.random.rand(M, Q)
+        Y = np.random.rand(M, 1)
+        x = np.random.rand(N, Q)
+        mean_function = GPy.mappings.Linear(Q, 1)
+        mean_function.A[:] = np.random.randn(Q, 1)
+        model = GPy.models.GPRegression(X=X, Y=Y, mean_function=mean_function)
+        from GPy.models import GradientChecker
+
+        gm = GradientChecker(
+            lambda x: model.predict(x)[0],
+            lambda x: model.predictive_gradients(x)[0],
+            x,
+            "x",
+        )
+        assert gm.checkgrad()
 
     def test_posterior_covariance_between_points_with_normalizer(self):
         """

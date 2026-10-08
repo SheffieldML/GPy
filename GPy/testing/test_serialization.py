@@ -341,6 +341,8 @@ class TestSerialization:
         )
         os.remove("temp_test_gp_regressor_with_data.json.zip")
         os.remove("temp_test_gp_regressor_without_data.json.zip")
+        assert type(m1_r) == GPy.models.GPRegression
+        assert type(m2_r) == GPy.models.GPRegression
 
         Xp = np.random.uniform(size=(int(1e5), 1))
         Xp[:, 0] = Xp[:, 0] * 15 - 5
@@ -438,3 +440,74 @@ class TestSerialization:
         np.testing.assert_array_equal(
             np.array(var).flatten(), np.array(var1_r).flatten()
         )
+
+    def test_serialize_deserialize_SparseGPRegression(self):
+        np.random.seed(fixed_seed)
+        X = np.random.uniform(-3.0, 3.0, (60, 1))
+        Y = np.sin(X) + np.random.randn(60, 1) * 0.05
+        X_new = np.random.uniform(-3.0, 3.0, (10, 1))
+        m = GPy.models.SparseGPRegression(X, Y, num_inducing=8)
+        m.optimize(max_iters=50)
+        m.save_model("temp_test_sparse_gp_regression_with_data.json", compress=True, save_data=True)
+        m.save_model("temp_test_sparse_gp_regression_without_data.json", compress=True, save_data=False)
+        m1_r = GPy.models.SparseGPRegression.load_model(
+            "temp_test_sparse_gp_regression_with_data.json.zip"
+        )
+        m2_r = GPy.models.SparseGPRegression.load_model(
+            "temp_test_sparse_gp_regression_without_data.json.zip", (X, Y)
+        )
+        os.remove("temp_test_sparse_gp_regression_with_data.json.zip")
+        os.remove("temp_test_sparse_gp_regression_without_data.json.zip")
+
+        mean, var = m.predict(X_new)
+        for m_r in [m1_r, m2_r]:
+            assert type(m_r) == GPy.models.SparseGPRegression
+            np.testing.assert_allclose(m_r.param_array, m.param_array)
+            mean_r, var_r = m_r.predict(X_new)
+            np.testing.assert_allclose(mean_r, mean)
+            np.testing.assert_allclose(var_r, var)
+    def test_serialize_deserialize_WarpedGP(self):
+        np.random.seed(fixed_seed)
+        X = np.random.uniform(-3.0, 3.0, (40, 1))
+        Y = np.exp(np.sin(X) + np.random.randn(40, 1) * 0.1)
+        X_new = np.random.uniform(-3.0, 3.0, (10, 1))
+        for warping_function in [
+            None,
+            GPy.util.warping_functions.LogFunction(),
+            GPy.util.warping_functions.IdentityFunction(),
+        ]:
+            m = GPy.models.WarpedGP(X, Y, warping_function=warping_function)
+            m.optimize(max_iters=50)
+            m.save_model("temp_test_warped_gp_with_data.json", compress=True, save_data=True)
+            m.save_model("temp_test_warped_gp_without_data.json", compress=True, save_data=False)
+            m1_r = GPy.models.WarpedGP.load_model("temp_test_warped_gp_with_data.json.zip")
+            m2_r = GPy.models.WarpedGP.load_model(
+                "temp_test_warped_gp_without_data.json.zip", (X, Y)
+            )
+            os.remove("temp_test_warped_gp_with_data.json.zip")
+            os.remove("temp_test_warped_gp_without_data.json.zip")
+
+            mean, var = m.predict(X_new)
+            for m_r in [m1_r, m2_r]:
+                assert type(m_r) == GPy.models.WarpedGP
+                assert type(m_r.warping_function) == type(m.warping_function)
+                np.testing.assert_allclose(m_r.param_array, m.param_array)
+                mean_r, var_r = m_r.predict(X_new)
+                np.testing.assert_allclose(mean_r, mean)
+                np.testing.assert_allclose(var_r, var)
+
+    def test_GPClassification_from_gp_and_from_dict(self):
+        np.random.seed(fixed_seed)
+        X = np.random.randn(20, 1)
+        Y = (X > 0).astype(float)
+        m = GPy.models.GPClassification(X, Y)
+        m.optimize(max_iters=20)
+        mean, var = m.predict(X)
+        for m_r in [
+            GPy.models.GPClassification.from_gp(m),
+            GPy.models.GPClassification.from_dict(m.to_dict()),
+        ]:
+            assert type(m_r) == GPy.models.GPClassification
+            mean_r, var_r = m_r.predict(X)
+            np.testing.assert_allclose(mean_r, mean)
+            np.testing.assert_allclose(var_r, var)

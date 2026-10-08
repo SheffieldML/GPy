@@ -2,6 +2,11 @@
 
 ## Unreleased
 * fix `GPRegressionGrid` (`GaussianGridInference`) on grids with more than three values in a dimension: the unique values were taken from a `set`, whose order is not sorted, so the Kronecker factors did not match the order of the data and the likelihood, gradients and predictions were wrong
+* fix `posterior_samples_f` (and `posterior_samples`) with a normalizer and several output columns, which raised `ValueError` when scaling the full covariance
+* fix the `PiecewiseLinear` mapping at the breaks, where it returned `x` instead of the value of the break, and `PiecewiseLinear.gradients_X`, which raised `TypeError` for an `(N, 1)` `dL_dF`
+* include the gradient of the mean function in `predictive_gradients`: the predicted mean adds the mean function, but its gradient was left out
+* fix the `HalfT` prior: `lnpdf` was missing the `log 2` and used `-0.5 log A` instead of `-log A` (it did not integrate to 1), `lnpdf_grad` was wrong for `A != 1` and used the first element for every entry of an array, and `rvs` set the negative draws to 0 instead of folding them
+* fix the `Exponential` prior: `rvs` used the rate as the scale, and creating a second `Exponential` prior with a different rate raised `TypeError`
 * respect the normalizer in `posterior_samples` and `log_predictive_density` / `log_predictive_density_sampling`: the noise of the samples was added on the normalized scale, so the samples of `Y` had too little variance, and the predictive density compared `Y` with the predictions on the normalized scale
 * implement `MixedNoise.log_predictive_density`, so `log_predictive_density` works for `GPCoregionalizedRegression` and other models with a `MixedNoise` likelihood when `Y_metadata['output_index']` is given (#893)
 * fix `Likelihood.log_predictive_density` for likelihoods without a closed form: with NumPy 2 it raised `TypeError` for `StudentT`, `Gamma`, `Weibull` and `LogLogistic`, and a `nan` in the far tails (e.g. `Poisson` with `y = 0`) stopped at a leftover `ipdb` breakpoint. It now integrates over 20 standard deviations around the predictive mean

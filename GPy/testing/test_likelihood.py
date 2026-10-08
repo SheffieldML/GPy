@@ -1176,3 +1176,30 @@ class TestWeibullLikelihood:
             )
             np.testing.assert_allclose(samples.mean(), dist.mean(), rtol=0.02)
 
+
+class TestStudentTPredictive:
+    def test_predictive_variance(self):
+        # Var(y) = Var(f) + sigma2 * nu / (nu - 2) for the identity link
+        likelihood = GPy.likelihoods.StudentT(deg_free=5, sigma2=0.7)
+        mu = np.array([[0.3], [-1.0]])
+        var = np.array([[0.5], [2.0]])
+        mean = likelihood.predictive_mean(mu, var)
+        variance = likelihood.predictive_variance(mu, var, mean)
+        np.testing.assert_allclose(variance, var + 0.7 * 5 / 3, rtol=1e-6)
+
+    def test_laplace_predict(self):
+        np.random.seed(fixed_seed)
+        X = np.linspace(0, 5, 20)[:, None]
+        Y = np.sin(X) + 0.1 * np.random.standard_t(4, (20, 1))
+        model = GPy.core.GP(
+            X,
+            Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.StudentT(deg_free=5, sigma2=0.1),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        mean, variance = model.predict(X[:3])
+        mu, var = model._raw_predict(X[:3])
+        np.testing.assert_allclose(mean, mu)
+        np.testing.assert_allclose(variance, var + 0.1 * 5 / 3, rtol=1e-6)
+

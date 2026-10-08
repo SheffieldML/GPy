@@ -2,6 +2,7 @@
 
 ## Unreleased
 * implement `Gamma.conditional_mean`, `conditional_variance` and `samples`, so `predict` works for Gamma + Laplace (mean-rate form: E[y|f] = link(f), Var[y|f] = link(f)/beta)
+* fix the sampling fallback of `Likelihood.predictive_values`, which passed a `samples` argument that the likelihoods' `samples` methods do not accept, so `predict` raised `TypeError` for likelihoods without a conditional mean (`Exponential`, `Weibull`, `LogLogistic`)
 * fix `StudentT.conditional_variance`, which left out `sigma2` and returned an array, so `predictive_variance` and `predict` of models with a `StudentT` likelihood raised `TypeError` with NumPy 2 (and the variance was wrong for `sigma2 != 1`)
 * fix `GPRegressionGrid` (`GaussianGridInference`) on grids with more than three values in a dimension: the unique values were taken from a `set`, whose order is not sorted, so the Kronecker factors did not match the order of the data and the likelihood, gradients and predictions were wrong
 * fix `posterior_samples_f` (and `posterior_samples`) with a normalizer and several output columns, which raised `ValueError` when scaling the full covariance

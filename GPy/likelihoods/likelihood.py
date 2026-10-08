@@ -756,9 +756,8 @@ class Likelihood(Parameterized):
         except NotImplementedError:
             print("Finding predictive mean and variance via sampling rather than quadrature")
             Nf_samp = 300
-            Ny_samp = 1
             s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
-            ss_y = self.samples(s, Y_metadata, samples=Ny_samp)
+            ss_y = self.samples(s, Y_metadata=Y_metadata)
             pred_mean = np.mean(ss_y, axis=1)[:, None]
             pred_var = np.var(ss_y, axis=1)[:, None]
 

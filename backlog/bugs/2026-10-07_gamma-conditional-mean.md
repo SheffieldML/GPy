@@ -1,14 +1,14 @@
 ---
 id: 2026-10-07_gamma-conditional-mean
 title: Implement Gamma conditional_mean (and samples) for observation-space predict
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-07'
-last_updated: '2026-10-07'
+last_updated: '2026-10-08'
 category: bugs
 related_cips:
 - '0006'
-owner: Raashish Aggarwal
+owner: Neil Lawrence
 contributor: Raashish Aggarwal (@raashish1601)
 dependencies: []
 tags:
@@ -22,19 +22,24 @@ tags:
 
 ## Description
 
-Follow-up to **Raashish Aggarwal**’s #1125: Gamma + Laplace training works, but
-`model.predict(...)` (with likelihood) still falls through because `Gamma` does
-not implement `conditional_mean` / `samples`. The October demos therefore show
-latent predictions with `include_likelihood=False` only.
+Follow-up chain:
+
+1. **#1125** (Raashish) — Gamma + Laplace training via mean-rate `beta` gradients.
+2. **#1146** (Raashish) — fixed `predictive_values` sampling fallback kwargs for likelihoods without `conditional_mean`; Gamma still failed (`NotImplementedError` — no `samples` either).
+3. **#1147** (Neil) — implements `conditional_mean`, `conditional_variance`, and `samples` so `predict` works.
+
+Under the mean-rate form: \(\mathrm{E}[y|f]=\mathrm{link}(f)\), \(\mathrm{Var}[y|f]=\mathrm{link}(f)/\beta\).
 
 ## Acceptance Criteria
 
-- [ ] `Gamma.conditional_mean` (and variance if needed) implemented consistently with the mean-rate parameterization
-- [ ] `predict` returns finite observation-space mean/variance on a small Gamma+Laplace example
-- [ ] Unit test covering predictive moments or end-to-end `predict`
+- [x] `Gamma.conditional_mean` / `conditional_variance` consistent with mean-rate parameterization
+- [x] `samples` draws `Gamma(shape=beta*link(f), scale=1/beta)`
+- [x] Unit tests for moments, MC mean/var, and end-to-end `predict`
+- [ ] #1147 merged to `devel`
 
 ## Related
 
 - CIP: 0006
-- Contributor: Raashish Aggarwal (@raashish1601)
-- PRs: #1125
+- Originating contributor (Laplace/gradients): Raashish Aggarwal (@raashish1601)
+- Moments PR author: Neil Lawrence (@lawrennd)
+- PRs: #1125, #1146, #1147

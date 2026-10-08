@@ -40,6 +40,23 @@ class TestMF:
         m = GPy.core.GP(X, Y, kernel=k, likelihood=lik, mean_function=mf)
         assert m.checkgrad()
 
+    def test_piecewise_linear_at_breaks_and_gradients_X(self):
+        """
+        The piecewise linear mapping takes its values at the breaks, and
+        gradients_X accepts the (N, 1) arrays used by predictive_gradients
+        """
+        mf = GPy.mappings.PiecewiseLinear(1, 1, [0.0, 1.0], [0.5, 2.0])
+        X = np.array([[-1.0], [0.5], [1.0], [2.0], [3.0]])
+        np.testing.assert_allclose(
+            mf.f(X), np.array([[-1.5], [0.0], [1.0 / 3.0], [1.0], [2.0]])
+        )
+
+        X = np.array([[-1.0], [0.7], [1.3], [2.5]])
+        dL_dF = np.array([[0.3], [-1.2], [0.8], [2.0]])
+        eps = 1e-6
+        numerical = (mf.f(X + eps) - mf.f(X - eps)) / (2 * eps) * dL_dF
+        np.testing.assert_allclose(mf.gradients_X(dL_dF, X), numerical, rtol=1e-6)
+
     def test_parametric_mean_function_composition(self):
         """
         A linear mean function with parameters that we'll learn alongside the kernel

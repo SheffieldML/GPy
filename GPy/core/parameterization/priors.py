@@ -1291,10 +1291,13 @@ class HalfT(Prior):
     def __init__(self, A, nu):
         self.A = float(A)
         self.nu = float(nu)
+        # Twice the density of a Student-t with scale A, on theta > 0
         self.constant = (
-            gammaln(0.5 * (self.nu + 1.0))
+            np.log(2.0)
+            + gammaln(0.5 * (self.nu + 1.0))
             - gammaln(0.5 * self.nu)
-            - 0.5 * np.log(np.pi * self.A * self.nu)
+            - 0.5 * np.log(np.pi * self.nu)
+            - np.log(self.A)
         )
 
     def __str__(self):
@@ -1327,12 +1330,8 @@ class HalfT(Prior):
         grad = np.zeros_like(theta)
         above_zero = theta > 1e-6
         v = self.nu
-        sigma2 = self.A
         grad[above_zero] = (
-            -0.5
-            * (v + 1)
-            * (2 * theta[above_zero])
-            / (v * sigma2 + theta[above_zero][0] ** 2)
+            -(v + 1) * theta[above_zero] / (v * self.A**2 + theta[above_zero] ** 2)
         )
         return grad
 
@@ -1341,9 +1340,7 @@ class HalfT(Prior):
         from scipy.stats import t
 
         # [np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
-        ret = t.rvs(self.nu, loc=0, scale=self.A, size=n)
-        ret[ret < 0] = 0
-        return ret
+        return np.abs(t.rvs(self.nu, loc=0, scale=self.A, size=n))
 
 
 class Exponential(Prior):
@@ -1364,7 +1361,11 @@ class Exponential(Prior):
             for instance in cls._instances:
                 if instance().l == l:
                     return instance()
-        o = super(Exponential, cls).__new__(cls, l)
+        newfunc = super(Prior, cls).__new__
+        if newfunc is object.__new__:
+            o = newfunc(cls)
+        else:
+            o = newfunc(cls, l)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -1391,7 +1392,8 @@ class Exponential(Prior):
         return -self.l
 
     def rvs(self, n):
-        return np.random.exponential(scale=self.l, size=n)
+        # lnpdf uses l as the rate, numpy's scale is 1 / rate
+        return np.random.exponential(scale=1.0 / self.l, size=n)
 
 
 class StudentT(Prior):

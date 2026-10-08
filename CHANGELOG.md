@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* add CIP-0005 Phase 1 Ruff tooling: narrow `ruff check` config, optional pre-commit hooks, and a non-blocking CI lint job (does not enforce format or widen rules yet)
 * implement `Symmetric.gradients_X_diag` consistent with `Kdiag` (missing method identified in #1002; cross-term gradients included)
 * use `link_parameter` in leftover `splitKern` / `TruncLinear` kernels after the paramz rename (#978)
 * fix plotting for matplotlib ≥ 3.4: call `_process_unit_info` with the new datasets API in `plot_definitions` and `base_plots`, and require `matplotlib >= 3.4` in the plotting extra (#953 / idea from #960)

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix `GPRegressionGrid` (`GaussianGridInference`) on grids with more than three values in a dimension: the unique values were taken from a `set`, whose order is not sorted, so the Kronecker factors did not match the order of the data and the likelihood, gradients and predictions were wrong (#909)
 * respect the normalizer in `posterior_samples` and `log_predictive_density` / `log_predictive_density_sampling`: the noise of the samples was added on the normalized scale, so the samples of `Y` had too little variance, and the predictive density compared `Y` with the predictions on the normalized scale
 * implement `MixedNoise.log_predictive_density`, so `log_predictive_density` works for `GPCoregionalizedRegression` and other models with a `MixedNoise` likelihood when `Y_metadata['output_index']` is given (#893)
 * fix `Likelihood.log_predictive_density` for likelihoods without a closed form: with NumPy 2 it raised `TypeError` for `StudentT`, `Gamma`, `Weibull` and `LogLogistic`, and a `nan` in the far tails (e.g. `Poisson` with `y = 0`) stopped at a leftover `ipdb` breakpoint. It now integrates over 20 standard deviations around the predictive mean

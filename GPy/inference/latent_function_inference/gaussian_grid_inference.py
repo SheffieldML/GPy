@@ -64,7 +64,7 @@ class GaussianGridInference(LatentFunctionInference):
         oneDkernel = kern.get_one_dimensional_kernel(D)
 
         for d in range(D):
-            xg = list(set(X[:,d])) #extract unique values for a dimension
+            xg = np.unique(X[:,d]) #extract unique values for a dimension, sorted as in the grid
             xg = np.reshape(xg, (len(xg), 1))
             oneDkernel.lengthscale = kern.lengthscale[d]
             Kds[d] = oneDkernel.K(xg)
@@ -89,7 +89,7 @@ class GaussianGridInference(LatentFunctionInference):
             gamma = np.zeros(D, dtype='object')
             gam = 1
             for d in range(D):
-                xg = list(set(X[:,d]))
+                xg = np.unique(X[:,d])
                 xg = np.reshape(xg, (len(xg), 1))
                 oneDkernel.lengthscale = kern.lengthscale[d]
                 if t < D:

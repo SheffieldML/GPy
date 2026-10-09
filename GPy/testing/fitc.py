@@ -16,7 +16,7 @@ class FITCtest:
         self.Y1D = np.sin(self.X1D) + np.random.randn(N, 1) * 0.05
 
         ######################################
-        # # 2 dimensional example
+        # # 2 dimensional example with 1 dimensional output
 
         # sample inputs and outputs
         self.X2D = np.random.uniform(-3.0, 3.0, (N, 2))
@@ -24,6 +24,12 @@ class FITCtest:
             np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2])
             + np.random.randn(N, 1) * 0.05
         )
+
+        ######################################
+        # # 2 dimensional example with 2 dimensional output
+
+        # sample inputs and outputs
+        self.Y2D2D = np.sin(self.X2D) + np.random.randn(N, 2) * 0.05
 
     def test_fitc_1d(self):
         self.setup()
@@ -34,5 +40,11 @@ class FITCtest:
     def test_fitc_2d(self):
         self.setup()
         m = GPy.models.SparseGPRegression(self.X2D, self.Y2D)
+        m.inference_method = GPy.inference.latent_function_inference.FITC()
+        assert m.checkgrad(), "Gradient check failed!"
+
+    def test_fitc_2d2d(self):
+        self.setup()
+        m = GPy.models.SparseGPRegression(self.X2D, self.Y2D2D)
         m.inference_method = GPy.inference.latent_function_inference.FITC()
         assert m.checkgrad(), "Gradient check failed!"

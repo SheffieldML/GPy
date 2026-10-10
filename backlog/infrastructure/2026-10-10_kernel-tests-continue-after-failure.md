@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_kernel-tests-continue-after-failure
 title: Kernel gradient checks continue after first failure
-status: In Progress
+status: Completed
 priority: Low
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -42,7 +42,7 @@ in review on #867).
 
 - [x] `check_kernel_gradient_functions` runs all sub-checks after a failure
 - [x] Function still returns `False` (and callers fail) if any sub-check failed
-- [ ] Credits #867 / @bobturneruk; close #867 as superseded when the PR merges
+- [x] Credits #867 / @bobturneruk; close #867 as superseded when the PR merges
 - [x] Optional follow-up noted: pytest parametrize of kernel sub-checks
 
 ## Implementation Notes
@@ -54,7 +54,7 @@ in review on #867).
 
 - CIP: 0004
 - Contributor: bobturneruk (@bobturneruk)
-- PRs: #867 (source idea; supersede)
+- PRs: #1150 (merged); #867 (superseded)
 
 ## Progress Updates
 
@@ -63,3 +63,4 @@ in review on #867).
 - Confirmed early-exit pattern still on `devel` in `test_kernel.py`.
 - Backlog created; maintainer PR removes `assert`/`return False` early exits.
 - Local `TestKernelGradientContinuous` / RBF kernel tests passed.
+- [#1150](https://github.com/SheffieldML/GPy/pull/1150) merged to `devel`; #867 closed as superseded.

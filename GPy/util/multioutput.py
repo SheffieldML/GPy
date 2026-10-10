@@ -30,7 +30,7 @@ def index_to_slices(index):
 
     [
         ret[ind_i].append(slice(*indexes_i))
-        for ind_i, indexes_i in zip(ind[switchpoints[:-1]], zip(switchpoints, switchpoints[1:]))
+        for ind_i, indexes_i in zip(ind[switchpoints[:-1]], zip(switchpoints, switchpoints[1:], strict=False), strict=False)
     ]
     return ret
 
@@ -39,7 +39,7 @@ def get_slices(input_list):
     len(input_list)
     _s = [0] + [_x.shape[0] for _x in input_list]
     _s = np.cumsum(_s)
-    slices = [slice(a, b) for a, b in zip(_s[:-1], _s[1:])]
+    slices = [slice(a, b) for a, b in zip(_s[:-1], _s[1:], strict=False)]
     return slices
 
 
@@ -53,9 +53,9 @@ def build_XY(input_list, output_list=None, index=None):
 
     if index is not None:
         assert len(index) == num_outputs
-        I = np.hstack([np.repeat(j, _x.shape[0]) for _x, j in zip(input_list, index)])
+        I = np.hstack([np.repeat(j, _x.shape[0]) for _x, j in zip(input_list, index, strict=False)])
     else:
-        I = np.hstack([np.repeat(j, _x.shape[0]) for _x, j in zip(input_list, range(num_outputs))])
+        I = np.hstack([np.repeat(j, _x.shape[0]) for _x, j in zip(input_list, range(num_outputs), strict=False)])
 
     X = np.vstack(input_list)
     X = np.hstack([X, I[:, None]])
@@ -112,7 +112,7 @@ def coerce_coregionalized_XY(X, Y, output_index=None):
 def build_likelihood(Y_list, noise_index, likelihoods_list=None):
     Ny = len(Y_list)
     if likelihoods_list is None:
-        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for y, j in zip(Y_list, range(Ny))]
+        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for y, j in zip(Y_list, range(Ny), strict=False)]
     else:
         assert len(likelihoods_list) == Ny
     # likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list, noise_index=noise_index)

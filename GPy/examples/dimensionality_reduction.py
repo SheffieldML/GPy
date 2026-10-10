@@ -267,7 +267,7 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
-        for S, lab in zip(slist, labls):
+        for S, lab in zip(slist, labls, strict=False):
             ax.plot(S, label=lab)
         ax.legend()
         for i, Y in enumerate(Ylist):
@@ -318,7 +318,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
         fig.clf()
         ax = fig.add_subplot(2, 1, 1)
         labls = slist_names
-        for S, lab in zip(slist, labls):
+        for S, lab in zip(slist, labls, strict=False):
             ax.plot(S, label=lab)
         ax.legend()
         for i, Y in enumerate(Ylist):

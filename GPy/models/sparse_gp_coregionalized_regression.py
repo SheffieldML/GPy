@@ -79,7 +79,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
                 num_inducing = [num_inducing] * Ny
             num_inducing = np.asarray(num_inducing)
             assert num_inducing.size == Ny, "Number of outputs do not match length of inducing inputs list."
-            for ni, Xi in zip(num_inducing, X_list):
+            for ni, Xi in zip(num_inducing, X_list, strict=False):
                 i = np.random.permutation(Xi.shape[0])[:ni]
                 Z_list.append(Xi[i].copy())
 

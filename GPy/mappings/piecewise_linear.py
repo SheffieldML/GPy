@@ -49,7 +49,7 @@ class PiecewiseLinear(Mapping):
         )
 
         # loop throught the pairs of points (each interval includes its lower break)
-        for low, up, g, v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1]):
+        for low, up, g, v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False):
             i = np.logical_and(x >= low, x < up)
             y[i] = v + (x[i] - low) * g
 
@@ -63,8 +63,8 @@ class PiecewiseLinear(Mapping):
         dL_dv = np.zeros(self.sorted_values.size)
 
         # loop across each interval, computing the gradient for each of the 4 parameters that define it
-        for i, (low, up, g, v) in enumerate(
-            zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1])
+        for i, (low, up, g, _v) in enumerate(
+            zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False)
         ):
             index = np.logical_and(x >= low, x < up)
             xx = x[index]
@@ -93,7 +93,7 @@ class PiecewiseLinear(Mapping):
         dL_dX = dL_dF.copy()
 
         # insude the breakpoints, the partial derivative is self.grads
-        for low, up, g, v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1]):
+        for low, up, g, _v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False):
             i = np.logical_and(x >= low, x < up)
             dL_dX[i] = dL_dF[i] * g
 

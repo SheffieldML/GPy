@@ -754,7 +754,7 @@ class TestMisc:
         true_slope = [5, -2]
 
         Y = 0
-        for w, s, c in zip(true_w, true_slope, k.centers[0]):
+        for w, s, c in zip(true_w, true_slope, k.centers[0], strict=False):
             Y += w / (1 + np.exp(-s * (X - c)))
         Y += np.random.normal(0, 0.000001)
 
@@ -1616,12 +1616,12 @@ class TestGradient:
 
         # dimension assignment
         D_list = []
-        for i in range(2):
+        for _i in range(2):
             while True:
                 D_sub_list = []
                 ratios = []
                 r_p = 0.0
-                for j in range(3):
+                for _j in range(3):
                     ratios.append(np.random.rand() * (1 - r_p) + r_p)
                     D_sub_list.append(int((ratios[-1] - r_p) * 4 * N_train))
                     r_p = ratios[-1]

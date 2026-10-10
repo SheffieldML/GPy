@@ -61,7 +61,7 @@ def dparam_checkgrad(
     partial_f = dparam_partial(func, *args)
     partial_df = dparam_partial(dfunc, *args)
     gradchecking = True
-    zipped_params = zip(params, params_names)
+    zipped_params = zip(params, params_names, strict=False)
     for param_ind, (param_val, param_name) in enumerate(zipped_params):
         # Check one parameter at a time, make sure it is 2d (as some gradients only return arrays) then strip out the parameter
         f_ = partial_f(param_val, param_name)
@@ -383,7 +383,7 @@ class TestNoiseModels:
     def legacy_scale2_models(self):
         self.setup_method()
 
-        for name, attributes in self.noise_models.items():
+        for _name, attributes in self.noise_models.items():
             model = attributes["model"]
             if "grad_params" in attributes:
                 params = attributes["grad_params"]
@@ -1115,7 +1115,7 @@ class TestBernoulliVariationalExpectations:
                 -np.inf,
                 np.inf,
             )[0]
-            for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel())
+            for y, mean, var in zip(Y.ravel(), m.ravel(), v.ravel(), strict=False)
         ]
         np.testing.assert_allclose(F.ravel(), expected, rtol=1e-2)
 

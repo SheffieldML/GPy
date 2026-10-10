@@ -37,7 +37,7 @@ class MLPext(Mapping):
             self.b_list.append(Param("b%d" % i, np.random.randn(out_dim)))
 
         if prior is not None:
-            for W, b in zip(self.W_list, self.b_list):
+            for W, b in zip(self.W_list, self.b_list, strict=False):
                 W.set_prior(Gaussian(0, prior))
                 b.set_prior(Gaussian(0, prior))
 
@@ -61,7 +61,7 @@ class MLPext(Mapping):
 
     def f(self, X):
         net = X
-        for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list))):
+        for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list)), strict=False):
             net = np.dot(net, W)
             net = net + b
             if i < len(self.W_list) - 1:
@@ -80,7 +80,7 @@ class MLPext(Mapping):
         net = X
         preactivations_list.append(X)
 
-        for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list))):
+        for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list)), strict=False):
             net = np.dot(net, W)
             net = net + b
             if i < len(self.W_list) - 1:
@@ -96,7 +96,7 @@ class MLPext(Mapping):
             reversed(self.W_list),
             reversed(self.b_list),
             reversed(preactivations_list),
-            reversed(np.arange(len(self.W_list))),
+            reversed(np.arange(len(self.W_list))), strict=False,
         ):
             if i > 0:
                 # Apply activation function to linear preactivations to get input from previous layer
@@ -115,13 +115,13 @@ class MLPext(Mapping):
 
     def fix_parameters(self):
         """Helper function that fixes all parameters"""
-        for W, b in zip(self.W_list, self.b_list):
+        for W, b in zip(self.W_list, self.b_list, strict=False):
             W.fix()
             b.fix()
 
     def unfix_parameters(self):
         """Helper function that unfixes all parameters"""
-        for W, b in zip(self.W_list, self.b_list):
+        for W, b in zip(self.W_list, self.b_list, strict=False):
             W.unfix()
             b.unfix()
 
@@ -129,8 +129,8 @@ class MLPext(Mapping):
         preactivations_list = self._f_preactivations(X)
         d_dact = dL_dF
         d_dlayer = d_dact
-        for W, preactivation, i in zip(
-            reversed(self.W_list), reversed(preactivations_list), reversed(np.arange(len(self.W_list)))
+        for W, preactivation, _i in zip(
+            reversed(self.W_list), reversed(preactivations_list), reversed(np.arange(len(self.W_list))), strict=False
         ):
             # Backpropagation through hidden layer.
             d_dact = np.dot(d_dlayer, W.T)

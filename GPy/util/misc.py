@@ -121,7 +121,7 @@ def kmm_init(X, m=10):
     inducing = [s]
     prob = D[s] / D[s].sum()
 
-    for z in range(m - 1):
+    for _z in range(m - 1):
         s = np.random.multinomial(1, prob.flatten()).argmax()
         inducing.append(s)
         prob = D[s] / D[s].sum()

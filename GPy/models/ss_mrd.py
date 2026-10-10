@@ -157,7 +157,7 @@ class SSMRD(Model):
 
         if Gammas is None:
             Gammas = []
-            for x in X:
+            for _x in X:
                 gamma = np.empty_like(
                     X
                 )  # The posterior probabilities of the binary variable in the variational approximation

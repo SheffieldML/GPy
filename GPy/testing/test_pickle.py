@@ -30,7 +30,7 @@ class ListDictTestCase:
             self.assertListEqual(list(v), list(d2[k]), msg)
 
     def assertArrayListEquals(self, l1, l2):
-        for a1, a2 in zip(l1, l2):
+        for a1, a2 in zip(l1, l2, strict=False):
             np.testing.assert_array_equal(a1, a2)
 
 

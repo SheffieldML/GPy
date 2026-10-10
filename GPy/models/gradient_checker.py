@@ -82,7 +82,7 @@ class GradientChecker(Model):
             self.names = names
             self.shapes = [get_shape(x0)]
 
-        for name, xi in zip(self.names, at_least_one_element(x0)):
+        for name, xi in zip(self.names, at_least_one_element(x0), strict=False):
             self.__setattr__(name, Param(name, xi))
             self.link_parameter(self.__getattribute__(name))
         #         self._param_names = []
@@ -175,7 +175,7 @@ class HessianChecker(GradientChecker):
         # Repeat for each parameter, not the nicest but shouldn't be many cases where there are many
         # variables
         current_index = 0
-        for name, shape in zip(self.names, self.shapes):
+        for _name, shape in zip(self.names, self.shapes, strict=False):
             current_size = numpy.prod(shape)
             x = self.optimizer_array.copy()
             # x = self._get_params_transformed().copy()
@@ -358,7 +358,7 @@ class SkewChecker(HessianChecker):
         # Repeat for each parameter, not the nicest but shouldn't be many cases where there are many
         # variables
         current_index = 0
-        for name, n_shape in zip(self.names, self.shapes):
+        for _name, n_shape in zip(self.names, self.shapes, strict=False):
             current_size = numpy.prod(n_shape)
             x = self.optimizer_array.copy()
             # x = self._get_params_transformed().copy()

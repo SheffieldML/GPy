@@ -45,7 +45,7 @@ def optimize_parallel(
     if name is None:
         name = model.name
     stop = 0
-    for iter in range(int(ceil(float(max_iters) / interval))):
+    for _iter in range(int(ceil(float(max_iters) / interval))):
         model.optimize(
             optimizer=optimizer,
             messages=True if messages and model.mpi_comm.rank == model.mpi_root else False,

@@ -307,7 +307,7 @@ class Symbolic_core:
         # This step may be unecessary.
         # Not 100% sure if the sub expression elimination is order sensitive. This step orders the list with the 'function' code first and derivatives after.
         self.expression_order, self.expression_list, self.expression_keys = zip(
-            *sorted(zip(self.expression_order, self.expression_list, self.expression_keys))
+            *sorted(zip(self.expression_order, self.expression_list, self.expression_keys, strict=False)), strict=False
         )
 
     def extract_sub_expressions(self, cache_prefix="cache", sub_prefix="sub", prefix="XoXoXoX"):
@@ -321,7 +321,7 @@ class Symbolic_core:
 
         # Create dictionary of new sub expressions
         sub_expression_dict = {}
-        for var, void in common_sub_expressions:
+        for var, _void in common_sub_expressions:
             sub_expression_dict[var.name] = var
 
         # Sort out any expression that's dependent on something that scales with data size (these are listed in cacheable).
@@ -349,15 +349,15 @@ class Symbolic_core:
             self.variables[sub_prefix].append(sym_var)
             replace_dict[expr.name] = sym_var
 
-        for replace, void in common_sub_expressions:
-            for expr, keys in zip(expression_substituted_list, self.expression_keys):
+        for replace, _void in common_sub_expressions:
+            for expr, keys in zip(expression_substituted_list, self.expression_keys, strict=False):
                 setInDict(self.expressions, keys, expr.subs(replace, replace_dict[replace.name]))
-            for void, expr in common_sub_expressions:
+            for _void, expr in common_sub_expressions:
                 expr = expr.subs(replace, replace_dict[replace.name])
 
         # Replace original code with code including subexpressions.
         for keys in self.expression_keys:
-            for replace, void in common_sub_expressions:
+            for replace, _void in common_sub_expressions:
                 setInDict(
                     self.expressions,
                     keys,
@@ -367,7 +367,7 @@ class Symbolic_core:
         self.expressions["parameters_changed"] = {}
         self.expressions["update_cache"] = {}
         for var, expr in common_sub_expressions:
-            for replace, void in common_sub_expressions:
+            for replace, _void in common_sub_expressions:
                 expr = expr.subs(replace, replace_dict[replace.name])
             if var in cacheable_list:
                 self.expressions["update_cache"][replace_dict[var.name].name] = expr

@@ -413,7 +413,7 @@ class mocap_data_show_vpython(vpython_show):
         self.line_handle = []
         if self.connect is not None:
             self.I, self.J = np.nonzero(self.connect)
-            for i, j in zip(self.I, self.J):
+            for i, j in zip(self.I, self.J, strict=False):
                 pos, axis = self.pos_axis(i, j)
                 self.rods.append(visual.cylinder(pos=pos, axis=axis, radius=self.radius))
 
@@ -425,7 +425,7 @@ class mocap_data_show_vpython(vpython_show):
         self.line_handle = []
         if self.connect is not None:
             self.I, self.J = np.nonzero(self.connect)
-            for rod, i, j in zip(self.rods, self.I, self.J):
+            for rod, i, j in zip(self.rods, self.I, self.J, strict=False):
                 rod.pos, rod.axis = self.pos_axis(i, j)
 
     def pos_axis(self, i, j):
@@ -479,7 +479,7 @@ class mocap_data_show(matplotlib_show):
             y = []
             z = []
             self.I, self.J = np.nonzero(self.connect)
-            for i, j in zip(self.I, self.J):
+            for i, j in zip(self.I, self.J, strict=False):
                 x.append(self.vals[i, 0])
                 x.append(self.vals[j, 0])
                 x.append(np.NaN)
@@ -526,7 +526,7 @@ class mocap_data_show(matplotlib_show):
         centers = np.mean(extents, axis=1)
         maxsize = max(abs(sz))
         r = maxsize / 2
-        for ctr, dim in zip(centers, "xyz"):
+        for ctr, dim in zip(centers, "xyz", strict=False):
             getattr(self.axes, "set_{}lim".format(dim))(ctr - r, ctr + r)
 
     #         self.axes.set_aspect('equal')

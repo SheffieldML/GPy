@@ -128,7 +128,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     Y = np.zeros((num_data, 2))
     t = np.zeros((num_data, 2))
     start = 0
-    for Xpart, index in zip(data["X"], range(len(data["X"]))):
+    for Xpart, index in zip(data["X"], range(len(data["X"])), strict=False):
         end = start + Xpart.shape[0]
         t[start:end, :] = np.hstack((Xpart[:, 0:1], index * np.ones((Xpart.shape[0], 1))))
         Y[start:end, :] = Xpart[:, 1:3]

@@ -34,7 +34,7 @@ def plot_traces(model):
     pb.figure()
     t = np.array(model._param_trace)
     pb.subplot(2, 1, 1)
-    for l, ti in zip(model._get_param_names(), t.T):
+    for l, ti in zip(model._get_param_names(), t.T, strict=False):
         if not l[:3] == "iip":
             pb.plot(ti, label=l)
     pb.legend(loc=0)

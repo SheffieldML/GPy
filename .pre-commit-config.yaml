@@ -1,0 +1,11 @@
+# CIP-0005 Phase 1: optional local hooks. CI runs the same narrow ruff check
+# non-blocking (continue-on-error). Do not widen --fix / format enforcement yet.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--no-fix]
+      - id: ruff-format
+        types_or: [python, pyi]

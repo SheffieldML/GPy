@@ -4,3 +4,18 @@
 # isolated build environment, not only as a runtime dependency.
 requires = ["setuptools", "wheel", "numpy>=2", "Cython>=0.29", "scipy>=1.3.0"]
 build-backend = "setuptools.build_meta"
+
+# CIP-0005 Phase 1: narrow, advisory lint surface. Widen select/ignore in later phases.
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [
+  "build",
+  "dist",
+  ".eggs",
+  "GPy/kern/src/todo",
+]
+
+[tool.ruff.lint]
+# Syntax errors and clearly undefined names only — keep CI near-green once cleaned.
+select = ["E9", "F821"]

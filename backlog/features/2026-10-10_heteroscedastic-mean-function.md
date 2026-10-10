@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_heteroscedastic-mean-function
 title: Support mean_function on GPHeteroscedasticRegression
-status: In Progress
+status: Done
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -32,7 +32,7 @@ Open-issue triage (2026-10-10): backlog feature.
 - [x] `GPHeteroscedasticRegression(..., mean_function=mf)` constructs successfully
 - [x] Optimize / predict use the mean function consistently with `GPRegression`
 - [x] Unit test covering construction + predict
-- [ ] Comment / close #875
+- [x] Comment / close #875 via #1170
 
 ## Implementation Notes
 

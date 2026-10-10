@@ -11,8 +11,9 @@ import datetime
 import json
 import re
 import sys
+from functools import reduce
 from io import open
-from .config import *
+from .config import config
 
 import importlib.util
 
@@ -27,11 +28,11 @@ except ImportError:
 
 # A Python2/3 import handler - urllib2 changed its name in Py3 and was also reorganised
 try:
-    from urllib2 import urlopen
-    from urllib2 import URLError
+    from urllib2 import urlopen, URLError, quote
 except ImportError:
     from urllib.request import urlopen
     from urllib.error import URLError
+    from urllib.parse import quote
 
 
 def reporthook(a, b, c):
@@ -593,7 +594,7 @@ def google_trends(
         # quote the query terms.
         quoted_terms = []
         for term in query_terms:
-            quoted_terms.append(urllib2.quote(term))
+            quoted_terms.append(quote(term))
         print("Query terms: ", ", ".join(query_terms))
 
         print("Fetching query:")

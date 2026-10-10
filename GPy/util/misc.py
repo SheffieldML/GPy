@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from .config import *
 
 _lim_val = np.finfo(np.float64).max
 _lim_val_exp = np.log(_lim_val)

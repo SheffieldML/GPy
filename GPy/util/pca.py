@@ -95,7 +95,7 @@ class PCA:
             Q = self.Q
         ticks = numpy.arange(Q)
         bar = ax.bar(ticks - 0.4, self.fracs[:Q], color=col)
-        ax.set_xticks(ticks, map(lambda x: r"${}$".format(x), ticks + 1))
+        ax.set_xticks(ticks, map(lambda x: rf"${x}$", ticks + 1))
         ax.set_ylabel("Eigenvalue fraction")
         ax.set_xlabel("PC")
         ax.set_ylim(0, ax.get_ylim()[1])

@@ -45,7 +45,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         if X is None:
             from ..util.initialization import initialize_latent
 
-            self.logger.info("initializing latent space X with method {}".format(init))
+            self.logger.info(f"initializing latent space X with method {init}")
             X, fracs = initialize_latent(init, input_dim, Y)
         else:
             fracs = np.ones(input_dim)

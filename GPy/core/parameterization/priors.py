@@ -73,7 +73,7 @@ class Gaussian(Prior):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "N({:.2g}, {:.2g})".format(self.mu, self.sigma)
+        return f"N({self.mu:.2g}, {self.sigma:.2g})"
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(x - self.mu) / self.sigma2
@@ -124,7 +124,7 @@ class Uniform(Prior):
             self.domain = _REAL
 
     def __str__(self):
-        return "[{:.2g}, {:.2g}]".format(self.lower, self.upper)
+        return f"[{self.lower:.2g}, {self.upper:.2g}]"
 
     def lnpdf(self, x):
         region = (x >= self.lower) * (x <= self.upper)
@@ -180,7 +180,7 @@ class LogGaussian(Gaussian):
         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
     def __str__(self):
-        return "lnN({:.2g}, {:.2g})".format(self.mu, self.sigma)
+        return f"lnN({self.mu:.2g}, {self.sigma:.2g})"
 
     def lnpdf(self, x):
         return self.constant - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2 - np.log(x)
@@ -322,7 +322,7 @@ class Gamma(Prior):
         self.constant = -gammaln(self.a) + a * np.log(b)
 
     def __str__(self):
-        return "Ga({:.2g}, {:.2g})".format(self.a, self.b)
+        return f"Ga({self.a:.2g}, {self.b:.2g})"
 
     def summary(self):
         ret = {
@@ -383,7 +383,7 @@ class InverseGamma(Gamma):
     _instances = []
 
     def __str__(self):
-        return "iGa({:.2g}, {:.2g})".format(self.a, self.b)
+        return f"iGa({self.a:.2g}, {self.b:.2g})"
 
     def summary(self):
         return {}
@@ -1284,7 +1284,7 @@ class HalfT(Prior):
         )
 
     def __str__(self):
-        return "hT({:.2g}, {:.2g})".format(self.A, self.nu)
+        return f"hT({self.A:.2g}, {self.nu:.2g})"
 
     def lnpdf(self, theta):
         return (theta > 0) * (
@@ -1351,7 +1351,7 @@ class Exponential(Prior):
         self.l = l
 
     def __str__(self):
-        return "Exp({:.2g})".format(self.l)
+        return f"Exp({self.l:.2g})"
 
     def summary(self):
         ret = {
@@ -1410,7 +1410,7 @@ class StudentT(Prior):
         self.nu = float(nu)
 
     def __str__(self):
-        return "St({:.2g}, {:.2g}, {:.2g})".format(self.mu, self.sigma, self.nu)
+        return f"St({self.mu:.2g}, {self.sigma:.2g}, {self.nu:.2g})"
 
     def lnpdf(self, x):
         from scipy.stats import t

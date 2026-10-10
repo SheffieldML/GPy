@@ -90,7 +90,7 @@ class MRD(BayesianGPLVMMiniBatch):
 
         if Ynames is None:
             self.logger.debug("creating Ynames")
-            Ynames = ["Y{}".format(i) for i in range(len(Ylist))]
+            Ynames = [f"Y{i}" for i in range(len(Ylist))]
         self.names = Ynames
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
 
@@ -98,9 +98,7 @@ class MRD(BayesianGPLVMMiniBatch):
             self.inference_method = InferenceMethodList([VarDTC() for _ in range(len(self.Ylist))])
         else:
             assert isinstance(inference_method, InferenceMethodList), (
-                "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(
-                    inference_method
-                )
+                f"please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {inference_method}"
             )
             self.inference_method = inference_method
 
@@ -211,7 +209,7 @@ class MRD(BayesianGPLVMMiniBatch):
         for b, i in zip(self.bgplvms, self.inference_method, strict=False):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
-            self.logger.info("working on im <{}>".format(hex(id(i))))
+            self.logger.info(f"working on im <{hex(id(i))}>")
             self.Z.gradient[:] += b._Zgrad  # b.Z.gradient  # full_values['Zgrad']
 
             # grad_dict = b.full_values
@@ -293,7 +291,7 @@ class MRD(BayesianGPLVMMiniBatch):
         if fig_kwargs is None:
             fig_kwargs = {}
         if titles is None:
-            titles = [r"${}$".format(name) for name in self.names]
+            titles = [rf"${name}$" for name in self.names]
 
         M = len(self.bgplvms)
         fig = pl().figure(rows=1, cols=M, **fig_kwargs)

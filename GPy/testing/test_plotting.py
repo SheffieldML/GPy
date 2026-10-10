@@ -158,7 +158,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
             # fig.set_frameon(False)
             if ext in ["npz"]:
                 figdict = flatten_axis(fig)
-                np.savez_compressed(os.path.join(result_dir, "{}.{}".format(base, ext)), **figdict)
+                np.savez_compressed(os.path.join(result_dir, f"{base}.{ext}"), **figdict)
                 try:
                     fig.savefig(
                         os.path.join(result_dir, "{}.{}".format(base, "png")),
@@ -172,7 +172,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
                     # raise
             else:
                 fig.savefig(
-                    os.path.join(result_dir, "{}.{}".format(base, ext)),
+                    os.path.join(result_dir, f"{base}.{ext}"),
                     transparent=True,
                     edgecolor="none",
                     facecolor="none",
@@ -181,8 +181,8 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
     for _num, base in zip(plt.get_fignums(), baseline_images, strict=False):
         for ext in extensions:
             # plt.close(_num)
-            actual = os.path.join(result_dir, "{}.{}".format(base, ext))
-            expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
+            actual = os.path.join(result_dir, f"{base}.{ext}")
+            expected = os.path.join(baseline_dir, f"{base}.{ext}")
             if ext == "npz":
 
                 def do_test(expected=expected, actual=actual, base=base, rtol=rtol, kwargs=kwargs):
@@ -192,7 +192,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
 
                             shutil.copy2(actual, expected)
                             # shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
-                            raise OSError("Baseline file {} not found, copying result {}".format(expected, actual))
+                            raise OSError(f"Baseline file {expected} not found, copying result {actual}")
                         else:
                             exp_dict = dict(np.load(expected).items())
                             act_dict = dict(np.load(actual).items())
@@ -202,7 +202,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
                                         np.testing.assert_allclose(
                                             exp_dict[name],
                                             act_dict[name],
-                                            err_msg="Mismatch in {}.{}".format(base, name),
+                                            err_msg=f"Mismatch in {base}.{name}",
                                             rtol=rtol,
                                             **kwargs,
                                         )
@@ -245,9 +245,9 @@ def flatten_axis(ax, prevname=""):
                     arrays[_nt] = _tmp[_nt]
         elif isinstance(l, list) and len(l) > 0:
             for i in range(len(l)):
-                _tmp = _flatten(l[i], pre + "[{}]".format(i))
+                _tmp = _flatten(l[i], pre + f"[{i}]")
                 for _n in _tmp:
-                    arr["{}".format(_n)] = _tmp[_n]
+                    arr[f"{_n}"] = _tmp[_n]
         else:
             return flatten_axis(l, pre + ".")
         return arr
@@ -257,9 +257,9 @@ def flatten_axis(ax, prevname=""):
             arrays[prevname + name] = np.asarray(l)
         elif isinstance(l, list) and len(l) > 0:
             for i in range(len(l)):
-                _tmp = _flatten(l[i], prevname + name + "[{}]".format(i))
+                _tmp = _flatten(l[i], prevname + name + f"[{i}]")
                 for _n in _tmp:
-                    arrays["{}".format(_n)] = _tmp[_n]
+                    arrays[f"{_n}"] = _tmp[_n]
 
     return arrays
 
@@ -342,7 +342,7 @@ def legacy_image_comparison_figure():
 
         for do_test in _image_comparison(
             baseline_images=[
-                "coverage_{}".format(sub)
+                f"coverage_{sub}"
                 for sub in [
                     "imshow_interact",
                     "annotation_interact",
@@ -386,7 +386,7 @@ def legacy_image_comparison_kernel():
         )
         k2.plot_covariance(visible_dims=[1, 4])
         for do_test in _image_comparison(
-            baseline_images=["kern_{}".format(sub) for sub in ["ARD", "cov_2d", "cov_1d", "cov_3d", "cov_no_lim"]],
+            baseline_images=[f"kern_{sub}" for sub in ["ARD", "cov_2d", "cov_1d", "cov_3d", "cov_no_lim"]],
             extensions=extensions,
         ):
             do_test()
@@ -418,7 +418,7 @@ def legacy_image_comparison_plot():
         m.plot_data_error()
     for do_test in _image_comparison(
         baseline_images=[
-            "gp_{}".format(sub)
+            f"gp_{sub}"
             for sub in [
                 "data",
                 "mean",
@@ -454,7 +454,7 @@ def legacy_image_comparison_twod():
     m.plot_data_error()
     for do_test in _image_comparison(
         baseline_images=[
-            "gp_2d_{}".format(sub)
+            f"gp_2d_{sub}"
             for sub in [
                 "data",
                 "mean",
@@ -491,7 +491,7 @@ def legacy_image_comparison_threed():
     # m.plot_errorbars_trainset(projection='3d')
     for do_test in _image_comparison(
         baseline_images=[
-            "gp_3d_{}".format(sub)
+            f"gp_3d_{sub}"
             for sub in [
                 "data",
                 "mean",
@@ -521,7 +521,7 @@ def legacy_image_comparison_sparse():
     m.plot_data(ax=ax)
     m.plot_data_error(ax=ax)
     for do_test in _image_comparison(
-        baseline_images=["sparse_gp_{}".format(sub) for sub in ["data_error"]],
+        baseline_images=[f"sparse_gp_{sub}" for sub in ["data_error"]],
         extensions=extensions,
     ):
         do_test()
@@ -550,7 +550,7 @@ def legacy_image_comparison_classification():
     m.plot(plot_raw=True, apply_link=True, ax=ax, samples=3)
     m.plot_errorbars_trainset(plot_raw=True, apply_link=True, ax=ax)
     for do_test in _image_comparison(
-        baseline_images=["gp_class_{}".format(sub) for sub in ["likelihood", "raw", "raw_link"]],
+        baseline_images=[f"gp_class_{sub}" for sub in ["likelihood", "raw", "raw_link"]],
         extensions=extensions,
     ):
         do_test()
@@ -575,7 +575,7 @@ def legacy_image_comparison_sparse_classification():
     np.random.seed(111)
     m.plot(plot_raw=True, apply_link=True, samples=3)
     for do_test in _image_comparison(
-        baseline_images=["sparse_gp_class_{}".format(sub) for sub in ["likelihood", "raw", "raw_link"]],
+        baseline_images=[f"sparse_gp_class_{sub}" for sub in ["likelihood", "raw", "raw_link"]],
         extensions=extensions,
         rtol=2,
     ):
@@ -628,7 +628,7 @@ def legacy_image_comparison_gplvm():
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
     for do_test in _image_comparison(
-        baseline_images=["gplvm_{}".format(sub) for sub in ["latent", "latent_3d", "magnification", "gradient"]],
+        baseline_images=[f"gplvm_{sub}" for sub in ["latent", "latent_3d", "magnification", "gradient"]],
         extensions=extensions,
         tol=12,
     ):
@@ -688,7 +688,7 @@ def legacy_image_comparison_bayesian_gplvm():
     m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
     for do_test in _image_comparison(
         baseline_images=[
-            "bayesian_gplvm_{}".format(sub)
+            f"bayesian_gplvm_{sub}"
             for sub in [
                 "inducing",
                 "inducing_3d",

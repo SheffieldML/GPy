@@ -412,7 +412,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             showlegend=label is not None,
             name=label,
             fill="tonextx",
-            legendgroup="{}_fill_({},{})".format(label, ax[1], ax[2]),
+            legendgroup=f"{label}_fill_({ax[1]},{ax[2]})",
             **kwargs,
         )
         # fcolor = '{}, {alpha})'.format(','.join(fcolor.split(',')[:-1]), alpha=0.0)
@@ -422,7 +422,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             fillcolor=fcolor,
             showlegend=False,
             name=label,
-            legendgroup="{}_fill_({},{})".format(label, ax[1], ax[2]),
+            legendgroup=f"{label}_fill_({ax[1]},{ax[2]})",
             **kwargs,
         )
         return l, u

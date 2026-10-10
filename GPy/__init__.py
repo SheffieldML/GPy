@@ -22,7 +22,7 @@ import sys
 
 backwards_compatibility = ["lists_and_dicts", "observable_array", "index_operations"]
 for bc in backwards_compatibility:
-    sys.modules["GPy.core.parameterization.{!s}".format(bc)] = getattr(core.parameterization, bc)
+    sys.modules[f"GPy.core.parameterization.{bc!s}"] = getattr(core.parameterization, bc)
 
 # Direct imports for convenience:
 from .core import Model
@@ -50,7 +50,7 @@ def load(file_or_path):
     sys.modules["GPy.kern._src"] = kern.src
     for name, module in inspect.getmembers(kern.src):
         if not name.startswith("_"):
-            sys.modules["GPy.kern._src.{}".format(name)] = module
+            sys.modules[f"GPy.kern._src.{name}"] = module
     sys.modules["GPy.inference.optimization"] = inference.optimization
     import paramz
 

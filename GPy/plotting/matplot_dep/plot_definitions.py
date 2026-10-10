@@ -170,7 +170,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             )
         raise TypeError(
             "show_canvas expected a matplotlib Axes, Figure, or plots dict "
-            "from plot()/add_to_canvas(); got {!r}".format(type(canvas).__name__)
+            f"from plot()/add_to_canvas(); got {type(canvas).__name__!r}"
         )
 
     def show_canvas(self, canvas, **kwargs):
@@ -277,7 +277,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         ylin = np.linspace(ymin, ymax, X.shape[1], endpoint=False)
         annotations = []
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
+            annotations.append(ax.text(x + xoffset, y + yoffset, f"{annotation[j, i]}", **annotation_kwargs))
         return imshow, annotations
 
     def annotation_heatmap_interact(

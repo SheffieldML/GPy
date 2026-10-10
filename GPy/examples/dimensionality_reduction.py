@@ -273,7 +273,7 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
             ax.imshow(Y, aspect="auto", cmap=cm.gray)  # @UndefinedVariable
-            ax.set_title("Y{}".format(i + 1))
+            ax.set_title(f"Y{i + 1}")
         plt.draw()
         plt.tight_layout()
 
@@ -324,7 +324,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
         for i, Y in enumerate(Ylist):
             ax = fig.add_subplot(2, len(Ylist), len(Ylist) + 1 + i)
             ax.imshow(Y, aspect="auto", cmap=cm.gray)  # @UndefinedVariable
-            ax.set_title("Y{}".format(i + 1))
+            ax.set_title(f"Y{i + 1}")
         plt.draw()
         plt.tight_layout()
 

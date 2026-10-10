@@ -68,7 +68,7 @@ def test_models():
                 # If more than one model returned, flatten them
                 models = flatten_nested(models)
             except Exception as e:
-                failing_models[example[0]] = "Cannot make model: \n{e}".format(e=e)
+                failing_models[example[0]] = f"Cannot make model: \n{e}"
             else:
                 print(models)
                 model_checkgrads.description = "test_checkgrads_%s" % example[0]
@@ -90,7 +90,7 @@ def test_models():
             # yield model_checkgrads, model
             # yield model_instance, model
 
-        print("Finished checking module {m}".format(m=module_name))
+        print(f"Finished checking module {module_name}")
         if len(failing_models.keys()) > 0:
             print("Failing models: ")
             print(failing_models)

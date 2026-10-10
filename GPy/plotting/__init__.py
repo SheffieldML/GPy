@@ -72,9 +72,7 @@ def change_plotting_library(lib, **kwargs):
 
         warnings.warn(
             ImportWarning(
-                "You spevified {} in your configuration, but is not available. Install newest version of {} for plotting".format(
-                    lib, lib
-                )
+                f"You spevified {lib} in your configuration, but is not available. Install newest version of {lib} for plotting"
             ),
             stacklevel=2,
         )
@@ -181,7 +179,7 @@ def inject_plotting():
 
 def plotting_library():
     if current_lib[0] is None:
-        raise RuntimeError("No plotting library was loaded. \n{}".format(error_suggestion))
+        raise RuntimeError(f"No plotting library was loaded. \n{error_suggestion}")
     return current_lib[0]
 
 
@@ -207,4 +205,4 @@ try:
     lib = config.get("plotting", "library")
     change_plotting_library(lib)
 except NoOptionError:
-    print("No plotting library was specified in config file. \n{}".format(error_suggestion))
+    print(f"No plotting library was specified in config file. \n{error_suggestion}")

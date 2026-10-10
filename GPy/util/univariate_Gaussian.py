@@ -101,7 +101,7 @@ def derivLogCdfNormal(z):
 
 
 def _erfRationalHelper(x):
-    assert x > 0.0, "Arg of erfRationalHelper should be >0.0; was {}".format(x)
+    assert x > 0.0, f"Arg of erfRationalHelper should be >0.0; was {x}"
 
     if x >= ERF_CODY_LIMIT2:
         """
@@ -153,7 +153,7 @@ def _erfRationalHelper(x):
 
 
 def _erfRationalHelperR3(y):
-    assert y >= 0.0, "Arg of erfRationalHelperR3 should be >=0.0; was {}".format(y)
+    assert y >= 0.0, f"Arg of erfRationalHelperR3 should be >=0.0; was {y}"
 
     nom = y * P3_ERF[4]
     den = y

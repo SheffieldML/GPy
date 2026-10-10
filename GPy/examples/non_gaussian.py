@@ -160,7 +160,7 @@ def boston_example(optimize=True, plot=True):
 
     for n, (train, test) in enumerate(kf):
         X_train, X_test, Y_train, Y_test = X[train], X[test], Y[train], Y[test]
-        print("Fold {}".format(n))
+        print(f"Fold {n}")
 
         noise = 1e-1  # np.exp(-2)
         rbf_len = 0.5
@@ -211,7 +211,7 @@ def boston_example(optimize=True, plot=True):
 
         for stu_num, df in enumerate(degrees_freedoms):
             # Student T
-            print("Student-T GP {}df".format(df))
+            print(f"Student-T GP {df}df")
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(
@@ -247,14 +247,14 @@ def boston_example(optimize=True, plot=True):
         plt.figure()
         plt.scatter(X_test[:, data_axis_plot], Y_test_pred[0])
         plt.scatter(X_test[:, data_axis_plot], Y_test, c="r", marker="x")
-        plt.title("Stu t {}df".format(df))
+        plt.title(f"Stu t {df}df")
 
-    print("Average scores: {}".format(np.mean(score_folds, 1)))
-    print("Average pred density: {}".format(np.mean(pred_density, 1)))
+    print(f"Average scores: {np.mean(score_folds, 1)}")
+    print(f"Average pred density: {np.mean(pred_density, 1)}")
 
     if MPL_AVAILABLE and plot:
         # Plotting
-        stu_t_legends = ["Student T, df={}".format(df) for df in degrees_freedoms]
+        stu_t_legends = [f"Student T, df={df}" for df in degrees_freedoms]
         legends = ["Baseline", "Gaussian", "Laplace Approx Gaussian"] + stu_t_legends
 
         # Plot boxplots for RMSE density

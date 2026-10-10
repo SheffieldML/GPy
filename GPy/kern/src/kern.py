@@ -54,8 +54,8 @@ class Kern(Parameterized):
 
         self._all_dims_active = np.atleast_1d(self.active_dims).astype(np.int_)
 
-        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(
-            self.input_dim, self._all_dims_active.size
+        assert self.active_dims.size == self.input_dim, (
+            f"input_dim={self.input_dim} does not match len(active_dim)={self._all_dims_active.size}"
         )
 
         self._sliced_X = 0
@@ -383,14 +383,12 @@ class Kern(Parameterized):
 
     def _check_input_dim(self, X):
         assert X.shape[1] == self.input_dim, (
-            "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(
-                self.name, X.shape[1], self.input_dim
-            )
+            f"{self.name} did not specify active_dims and X has wrong shape: X_dim={X.shape[1]}, whereas input_dim={self.input_dim}"
         )
 
     def _check_active_dims(self, X):
-        assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(
-            len(self._all_dims_active), X.shape
+        assert X.shape[1] >= len(self._all_dims_active), (
+            f"At least {len(self._all_dims_active)} dimensional X needed, X.shape={X.shape!s}"
         )
 
 

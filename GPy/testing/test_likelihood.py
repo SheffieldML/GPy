@@ -57,7 +57,7 @@ def dparam_checkgrad(
     The number of parameters and N is the number of data
     Need to take a slice out from f and a slice out of df
     """
-    print("\n{} likelihood: {} vs {}".format(func.__self__.__class__.__name__, func.__name__, dfunc.__name__))
+    print(f"\n{func.__self__.__class__.__name__} likelihood: {func.__name__} vs {dfunc.__name__}")
     partial_f = dparam_partial(func, *args)
     partial_df = dparam_partial(dfunc, *args)
     gradchecking = True
@@ -78,7 +78,7 @@ def dparam_checkgrad(
         for fixed_val in range(dfnum):
             # dlik and dlik_dvar gives back 1 value for each
             f_ind = min(fnum, fixed_val + 1) - 1
-            print("fnum: {} dfnum: {} f_ind: {} fixed_val: {}".format(fnum, dfnum, f_ind, fixed_val))
+            print(f"fnum: {fnum} dfnum: {dfnum} f_ind: {f_ind} fixed_val: {fixed_val}")
             # Make grad checker with this param moving, note that set_params is NOT being called
             # The parameter is being set directly with __setattr__
             # Check only the parameter and function value we wish to check at a time
@@ -471,7 +471,7 @@ class TestNoiseModels:
     # _df's #
     #############
     def t_logpdf(self, model, Y, f, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         # print model._get_params()
         np.testing.assert_almost_equal(
@@ -480,8 +480,8 @@ class TestNoiseModels:
         )
 
     def t_dlogpdf_df(self, model, Y, f, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
-        self.description = "\n{}".format(inspect.stack()[0][3])
+        print(f"\n{inspect.stack()[0][3]}")
+        self.description = f"\n{inspect.stack()[0][3]}"
         logpdf = functools.partial(np.sum(model.logpdf), y=Y, Y_metadata=Y_metadata)
         dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(logpdf, dlogpdf_df, f.copy(), "g")
@@ -490,7 +490,7 @@ class TestNoiseModels:
         assert grad.checkgrad(verbose=1)
 
     def t_d2logpdf_df2(self, model, Y, f, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         dlogpdf_df = functools.partial(model.dlogpdf_df, y=Y, Y_metadata=Y_metadata)
         d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(dlogpdf_df, d2logpdf_df2, f.copy(), "g")
@@ -499,7 +499,7 @@ class TestNoiseModels:
         assert grad.checkgrad(verbose=1)
 
     def t_d3logpdf_df3(self, model, Y, f, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         d2logpdf_df2 = functools.partial(model.d2logpdf_df2, y=Y, Y_metadata=Y_metadata)
         d3logpdf_df3 = functools.partial(model.d3logpdf_df3, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(d2logpdf_df2, d3logpdf_df3, f.copy(), "g")
@@ -511,7 +511,7 @@ class TestNoiseModels:
     # df_dparams #
     ##############
     def t_dlogpdf_dparams(self, model, Y, f, Y_metadata, params, params_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.logpdf,
@@ -525,7 +525,7 @@ class TestNoiseModels:
         )
 
     def t_dlogpdf_df_dparams(self, model, Y, f, Y_metadata, params, params_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.dlogpdf_df,
@@ -539,7 +539,7 @@ class TestNoiseModels:
         )
 
     def t_d2logpdf2_df2_dparams(self, model, Y, f, Y_metadata, params, params_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.d2logpdf_df2,
@@ -556,7 +556,7 @@ class TestNoiseModels:
     # dpdf_dlink's #
     ################
     def t_dlogpdf_dlink(self, model, Y, f, Y_metadata, link_f_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         logpdf = functools.partial(model.logpdf_link, y=Y, Y_metadata=Y_metadata)
         dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(logpdf, dlogpdf_dlink, f.copy(), "g")
@@ -571,7 +571,7 @@ class TestNoiseModels:
         assert grad.checkgrad(verbose=1)
 
     def t_d2logpdf_dlink2(self, model, Y, f, Y_metadata, link_f_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         dlogpdf_dlink = functools.partial(model.dlogpdf_dlink, y=Y, Y_metadata=Y_metadata)
         d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(dlogpdf_dlink, d2logpdf_dlink2, f.copy(), "g")
@@ -586,7 +586,7 @@ class TestNoiseModels:
         assert grad.checkgrad(verbose=1)
 
     def t_d3logpdf_dlink3(self, model, Y, f, Y_metadata, link_f_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         d2logpdf_dlink2 = functools.partial(model.d2logpdf_dlink2, y=Y, Y_metadata=Y_metadata)
         d3logpdf_dlink3 = functools.partial(model.d3logpdf_dlink3, y=Y, Y_metadata=Y_metadata)
         grad = GradientChecker(d2logpdf_dlink2, d3logpdf_dlink3, f.copy(), "g")
@@ -604,7 +604,7 @@ class TestNoiseModels:
     # dlink_dparams #
     #################
     def t_dlogpdf_link_dparams(self, model, Y, f, Y_metadata, params, param_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.logpdf_link,
@@ -618,7 +618,7 @@ class TestNoiseModels:
         )
 
     def t_dlogpdf_dlink_dparams(self, model, Y, f, Y_metadata, params, param_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.dlogpdf_dlink,
@@ -632,7 +632,7 @@ class TestNoiseModels:
         )
 
     def t_d2logpdf2_dlink2_dparams(self, model, Y, f, Y_metadata, params, param_names, param_constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         print(model)
         assert dparam_checkgrad(
             model.d2logpdf_dlink2,
@@ -649,7 +649,7 @@ class TestNoiseModels:
     # laplace test #
     ################
     def t_laplace_fit_rbf_white(self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         np.random.seed(111)
         # Normalize
         # Y = Y/Y.max()
@@ -686,7 +686,7 @@ class TestNoiseModels:
     # EP test #
     ###########
     def t_ep_fit_rbf_white(self, model, X, Y, f, Y_metadata, step, param_vals, param_names, constraints):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         # Normalize
         # Y = Y/Y.max()
         white_var = 1e-4
@@ -718,7 +718,7 @@ class TestNoiseModels:
     def t_varexp(self, model, Y, Y_metadata):
         # Test that the analytic implementation (if it exists) matches the generic gauss
         # hermite implementation
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         # Make mu and var (marginal means and variances of q(f)) draws from a GP
         k = GPy.kern.RBF(1).K(np.linspace(0, 1, Y.shape[0])[:, None])
         L = GPy.util.linalg.jitchol(k)
@@ -745,7 +745,7 @@ class TestNoiseModels:
         np.testing.assert_almost_equal(expectation, expectation_gh, decimal=5)
 
     def t_dexp_dmu(self, model, Y, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         # Make mu and var (marginal means and variances of q(f)) draws from a GP
         k = GPy.kern.RBF(1).K(np.linspace(0, 1, Y.shape[0])[:, None])
         L = GPy.util.linalg.jitchol(k)
@@ -775,7 +775,7 @@ class TestNoiseModels:
         assert grad.checkgrad(verbose=1)
 
     def t_dexp_dvar(self, model, Y, Y_metadata):
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         # Make mu and var (marginal means and variances of q(f)) draws from a GP
         k = GPy.kern.RBF(1).K(np.linspace(0, 1, Y.shape[0])[:, None])
         L = GPy.util.linalg.jitchol(k)
@@ -834,7 +834,7 @@ class LaplaceTests:
     def test_gaussian_d2logpdf_df2_2(self):
         self.setup_method()
 
-        print("\n{}".format(inspect.stack()[0][3]))
+        print(f"\n{inspect.stack()[0][3]}")
         self.Y = None
 
         self.N = 2

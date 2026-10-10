@@ -14,6 +14,8 @@
 #  }
 #
 
+from importlib import reload
+
 import numpy as np
 from scipy import stats
 from .. import likelihoods

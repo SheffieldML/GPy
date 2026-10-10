@@ -37,7 +37,12 @@ class Symbolic(Kern, Symbolic_core):
         self.output_dim = output_dim
 
     def __add__(self, other):
-        return spkern(self._sym_k + other._sym_k)
+        return Symbolic(
+            self.input_dim,
+            k=self.expressions["k"] + other.expressions["k"],
+            name="+".join([self.name, other.name]),
+            active_dims=self.active_dims,
+        )
 
     def _set_expressions(self, expressions):
         """This method is overwritten because we need to modify kdiag by substituting z for x. We do this by calling the parent expression method to extract variables from expressions, then subsitute the z variables that are present with x."""

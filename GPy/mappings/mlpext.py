@@ -4,6 +4,7 @@
 import numpy as np
 from ..core.mapping import Mapping
 from ..core import Param
+from ..core.parameterization.priors import Gaussian
 
 
 class MLPext(Mapping):

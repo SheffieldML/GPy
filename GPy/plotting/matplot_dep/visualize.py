@@ -592,10 +592,10 @@ class skeleton_show(mocap_data_show):
 
     def wrap_around(self, lim, connect):
         quot = lim[1] - lim[0]
-        self.vals = rem(self.vals, quot) + lim[0]
-        nVals = floor(self.vals / quot)
+        self.vals = np.remainder(self.vals, quot) + lim[0]
+        nVals = np.floor(self.vals / quot)
         for i in range(connect.shape[0]):
-            for j in find(connect[i, :]):
+            for j in np.nonzero(connect[i, :])[0]:
                 if nVals[i] != nVals[j]:
                     connect[i, j] = False
         return connect

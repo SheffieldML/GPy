@@ -22,9 +22,7 @@ import sys
 
 backwards_compatibility = ["lists_and_dicts", "observable_array", "index_operations"]
 for bc in backwards_compatibility:
-    sys.modules["GPy.core.parameterization.{!s}".format(bc)] = getattr(
-        core.parameterization, bc
-    )
+    sys.modules["GPy.core.parameterization.{!s}".format(bc)] = getattr(core.parameterization, bc)
 
 # Direct imports for convenience:
 from .core import Model

@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .kern import Kern, CombinationKernel
+import itertools
 import numpy as np
 from functools import reduce, partial
 from ...util.multioutput import index_to_slices

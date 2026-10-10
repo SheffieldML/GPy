@@ -14,7 +14,7 @@ def plot(model, ax=None, fignum=None, Z_height=None, **kwargs):
     # horrible hack here:
     data = model.likelihood.data.copy()
     model.likelihood.data = model.Y
-    GP.plot(model, ax=ax, **kwargs)
+    model.plot(ax=ax, **kwargs)
     model.likelihood.data = data
 
     Zu = model.Z * model._Xscale + model._Xoffset

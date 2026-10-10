@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Alex Grigorevskiy, Arno Solin
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
@@ -57,8 +56,8 @@ class sde_Matern32(Matern32):
         # The partial derivatives
         dFvariance = np.zeros((2, 2))
         dFlengthscale = np.array(((0, 0), (6.0 / lengthscale**3, 2 * np.sqrt(3) / lengthscale**2)))
-        dQcvariance = np.array((12.0 * np.sqrt(3) / lengthscale**3))
-        dQclengthscale = np.array((-3 * 12 * np.sqrt(3) / lengthscale**4 * variance))
+        dQcvariance = np.array(12.0 * np.sqrt(3) / lengthscale**3)
+        dQclengthscale = np.array(-3 * 12 * np.sqrt(3) / lengthscale**4 * variance)
         dPinfvariance = np.array(((1, 0), (0, 3.0 / lengthscale**2)))
         dPinflengthscale = np.array(((0, 0), (0, -6 * variance / lengthscale**3)))
         # Combine the derivatives
@@ -128,8 +127,8 @@ class sde_Matern52(Matern52):
                 (15.0 * np.sqrt(5.0) / lengthscale**4, 30.0 / lengthscale**3, 3 * np.sqrt(5.0) / lengthscale**2),
             )
         )
-        dQcvariance = np.array((((400 * np.sqrt(5) / 3 / lengthscale**5,),)))
-        dQclengthscale = np.array((((-variance * 2000 * np.sqrt(5) / 3 / lengthscale**6,),)))
+        dQcvariance = np.array(((400 * np.sqrt(5) / 3 / lengthscale**5,),))
+        dQclengthscale = np.array(((-variance * 2000 * np.sqrt(5) / 3 / lengthscale**6,),))
 
         dPinf_variance = Pinf / variance
         kappa2 = -2.0 * kappa / lengthscale

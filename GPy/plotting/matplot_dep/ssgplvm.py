@@ -8,7 +8,7 @@ from ...models import SSGPLVM
 from .img_plots import plot_2D_images
 
 
-class SSGPLVM_plot(object):
+class SSGPLVM_plot:
     def __init__(self, model, imgsize):
         assert isinstance(model, SSGPLVM)
         self.model = model

@@ -289,7 +289,7 @@ class Stationary(Kern):
         # grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
         dist = X[:, None, :] - X2[None, :, :]
         dist = dist[:, :, :, None] * dist[:, :, None, :]
-        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1])) * np.eye((X2.shape[1]))
+        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1])) * np.eye(X2.shape[1])
         grad = (
             ((dL_dK * (tmp1 * invdist2 - tmp2))[:, :, None, None] * dist) / l2[None, None, :, None]
             - (dL_dK * tmp1)[:, :, None, None] * I

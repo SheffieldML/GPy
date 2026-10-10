@@ -31,7 +31,7 @@
 # ===============================================================================
 # Make sure that the necessary files and functions are
 # defined in the plotting library:
-class AbstractPlottingLibrary(object):
+class AbstractPlottingLibrary:
     def __init__(self):
         """
         Set the defaults dictionary in the _defaults variable:

@@ -464,7 +464,7 @@ def robot_wireless(max_iters=100, kernel=None, optimize=True, plot=True):
 
     sse = ((data["Xtest"] - Xpredict) ** 2).sum()
 
-    print(("Sum of squares error on test data: " + str(sse)))
+    print("Sum of squares error on test data: " + str(sse))
     return m
 
 

@@ -1,4 +1,3 @@
-from __future__ import division
 # Copyright (c) 2012-2014 Ricardo Andrade, Alan Saul
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 

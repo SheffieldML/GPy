@@ -312,7 +312,7 @@ class acclaim_skeleton(skeleton):
             self.get_child_xyz(cind, channels)
 
     def load_channels(self, file_name):
-        fid = open(file_name, "r")
+        fid = open(file_name)
         channels = self.read_channels(fid)
         fid.close()
         return channels
@@ -330,7 +330,7 @@ class acclaim_skeleton(skeleton):
 
         """
 
-        fid = open(file_name, "r")
+        fid = open(file_name)
         self.read_skel(fid)
         fid.close()
         self.name = file_name
@@ -686,7 +686,7 @@ def parse_text(file_name):
     """Parse data from Ohio State University text mocap files (http://accad.osu.edu/research/mocap/mocap_data.htm)."""
 
     # Read the header
-    fid = open(file_name, "r")
+    fid = open(file_name)
     point_names = np.array(fid.readline().split())[2:-1:3]
     fid.close()
     for i in range(len(point_names)):
@@ -714,7 +714,7 @@ def read_connections(file_name, point_names):
     """Read a file detailing which markers should be connected to which for motion capture data."""
 
     connections = []
-    fid = open(file_name, "r")
+    fid = open(file_name)
     line = fid.readline()
     while line:
         connections.append(np.array(line.split(",")))

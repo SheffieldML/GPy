@@ -1,12 +1,11 @@
 # ## Copyright (c) 2014, Zhenwen Dai
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-from __future__ import print_function
 
 import numpy as np
 import sys
 
 
-class Metropolis_Hastings(object):
+class Metropolis_Hastings:
     def __init__(self, model, cov=None):
         """Metropolis Hastings, with tunings according to Gelman et al."""
         self.model = model

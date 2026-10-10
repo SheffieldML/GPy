@@ -313,7 +313,7 @@ class SSGPLVM(SparseGP_MPI):
             inference_method = VarDTC_minibatch(mpi_comm=mpi_comm)
 
         if pi is None:
-            pi = np.empty((input_dim))
+            pi = np.empty(input_dim)
             pi[:] = 0.5
 
         if IBP:

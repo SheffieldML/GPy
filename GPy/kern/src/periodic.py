@@ -226,8 +226,8 @@ class PeriodicExponential(Periodic):
         # IPPint2[0,0] = (self.upper**2 - self.lower**2)*np.cos(phi[0,0])*np.cos(phi1[0,0])
         IPPint = np.where(np.isnan(IPPint1), IPPint2, IPPint1)
 
-        dLa_dper2 = np.column_stack((-self.a[1] * self.basis_omega / self.period))
-        dLp_dper2 = np.column_stack((self.basis_phi + np.pi / 2))
+        dLa_dper2 = np.column_stack(-self.a[1] * self.basis_omega / self.period)
+        dLp_dper2 = np.column_stack(self.basis_phi + np.pi / 2)
         r2, omega2, phi2 = dLa_dper2.T, Lo[:, 0:1], dLp_dper2.T
 
         dGint_dper = np.dot(r, r1.T) / 2 * (IPPprim - IPPint) + self._int_computation(r2, omega2, phi2, r, omega, phi)

@@ -128,7 +128,7 @@ class RBF(Stationary):
         Returns only diagonal elements.
         """
         if dimX == dimX2:
-            lengthscaleinv = np.ones((X.shape[1])) / (self.lengthscale)
+            lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
             return np.ones(X.shape[0]) * (lengthscaleinv[dimX] ** 2) * self.variance
         else:
             return np.zeros(X.shape[0])

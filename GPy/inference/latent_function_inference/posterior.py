@@ -6,7 +6,7 @@ from ...util.linalg import pdinv, dpotrs, dpotri, symmetrify, jitchol, dtrtrs, t
 from GPy.core.parameterization.variational import VariationalPosterior
 
 
-class Posterior(object):
+class Posterior:
     """
     An object to represent a Gaussian posterior over latent function values, p(f|D).
     This may be computed exactly for Gaussian likelihoods, or approximated for

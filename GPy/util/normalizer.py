@@ -8,7 +8,7 @@ import numpy as np
 import warnings
 
 
-class _Norm(object):
+class _Norm:
     def __init__(self):
         pass
 

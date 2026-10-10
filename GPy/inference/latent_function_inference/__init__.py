@@ -36,7 +36,7 @@ etc.
 """
 
 
-class LatentFunctionInference(object):
+class LatentFunctionInference:
     def on_optimization_start(self):
         """
         This function gets called, just before the optimization loop to start.

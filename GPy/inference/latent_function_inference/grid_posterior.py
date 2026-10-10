@@ -4,7 +4,7 @@
 # Kurt Cutajar
 
 
-class GridPosterior(object):
+class GridPosterior:
     """
     Specially intended for the Grid Regression case
     An object to represent a Gaussian posterior over latent function values, p(f|D).

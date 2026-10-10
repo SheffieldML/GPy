@@ -248,7 +248,7 @@ class VarDTC_SVI_Multiout(LatentFunctionInference):
         return post, logL, grad_dict
 
 
-class PosteriorMultioutput(object):
+class PosteriorMultioutput:
     def __init__(self, LcInvMLrInvT, LcInvScLcInvT, LrInvSrLrInvT, Lr, Lc, kern_r, Xr, Zr):
         self.LcInvMLrInvT = LcInvMLrInvT
         self.LcInvScLcInvT = LcInvScLcInvT

@@ -101,7 +101,7 @@ class DTC(LatentFunctionInference):
         return post, log_marginal, grad_dict
 
 
-class vDTC(object):
+class vDTC:
     def __init__(self):
         self.const_jitter = 1e-6
 

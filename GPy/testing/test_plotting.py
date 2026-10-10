@@ -191,7 +191,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
 
                             shutil.copy2(actual, expected)
                             # shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
-                            raise IOError("Baseline file {} not found, copying result {}".format(expected, actual))
+                            raise OSError("Baseline file {} not found, copying result {}".format(expected, actual))
                         else:
                             exp_dict = dict(np.load(expected).items())
                             act_dict = dict(np.load(actual).items())

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005 Phase 2: `ruff format` on `GPy/util` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/inference` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/likelihoods` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/core` (format-only; no behaviour change)

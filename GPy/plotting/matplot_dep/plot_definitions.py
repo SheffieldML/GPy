@@ -63,7 +63,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         xlim=None,
         ylim=None,
         zlim=None,
-        **kwargs
+        **kwargs,
     ):
         if projection == "3d":
             from mpl_toolkits.mplot3d import Axes3D
@@ -182,17 +182,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         fig.canvas.draw()
         return fig
 
-    def scatter(
-        self,
-        ax,
-        X,
-        Y,
-        Z=None,
-        color=Tango.colorsHex["mediumBlue"],
-        label=None,
-        marker="o",
-        **kwargs
-    ):
+    def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex["mediumBlue"], label=None, marker="o", **kwargs):
         if Z is not None:
             return ax.scatter(X, Y, c=color, zs=Z, label=label, marker=marker, **kwargs)
         return ax.scatter(X, Y, c=color, label=label, marker=marker, **kwargs)
@@ -202,9 +192,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             return ax.plot(X, Y, color=color, zs=Z, label=label, **kwargs)
         return ax.plot(X, Y, color=color, label=label, **kwargs)
 
-    def plot_axis_lines(
-        self, ax, X, color=Tango.colorsHex["darkRed"], label=None, **kwargs
-    ):
+    def plot_axis_lines(self, ax, X, color=Tango.colorsHex["darkRed"], label=None, **kwargs):
         from matplotlib import transforms
         from matplotlib.path import Path
 
@@ -229,188 +217,89 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             )
         if "transform" not in kwargs:
             if X.shape[1] == 1:
-                kwargs["transform"] = transforms.blended_transform_factory(
-                    ax.transData, ax.transAxes
-                )
+                kwargs["transform"] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if X.shape[1] == 2:
-            return ax.scatter(
-                X[:, 0], X[:, 1], ax.get_zlim()[0], c=color, label=label, **kwargs
-            )
+            return ax.scatter(X[:, 0], X[:, 1], ax.get_zlim()[0], c=color, label=label, **kwargs)
         return ax.scatter(X, np.zeros_like(X), c=color, label=label, **kwargs)
 
-    def barplot(
-        self,
-        ax,
-        x,
-        height,
-        width=0.8,
-        bottom=0,
-        color=Tango.colorsHex["mediumBlue"],
-        label=None,
-        **kwargs
-    ):
+    def barplot(self, ax, x, height, width=0.8, bottom=0, color=Tango.colorsHex["mediumBlue"], label=None, **kwargs):
         if "align" not in kwargs:
             kwargs["align"] = "center"
-        return ax.bar(
-            x=x,
-            height=height,
-            width=width,
-            bottom=bottom,
-            label=label,
-            color=color,
-            **kwargs
-        )
+        return ax.bar(x=x, height=height, width=width, bottom=bottom, label=label, color=color, **kwargs)
 
-    def xerrorbar(
-        self, ax, X, Y, error, color=Tango.colorsHex["darkRed"], label=None, **kwargs
-    ):
+    def xerrorbar(self, ax, X, Y, error, color=Tango.colorsHex["darkRed"], label=None, **kwargs):
         if not ("linestyle" in kwargs or "ls" in kwargs):
             kwargs["ls"] = "none"
         # if Z is not None:
         #    return ax.errorbar(X, Y, Z, xerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, xerr=error, ecolor=color, label=label, **kwargs)
 
-    def yerrorbar(
-        self, ax, X, Y, error, color=Tango.colorsHex["darkRed"], label=None, **kwargs
-    ):
+    def yerrorbar(self, ax, X, Y, error, color=Tango.colorsHex["darkRed"], label=None, **kwargs):
         if not ("linestyle" in kwargs or "ls" in kwargs):
             kwargs["ls"] = "none"
         # if Z is not None:
         #    return ax.errorbar(X, Y, Z, yerr=error, ecolor=color, label=label, **kwargs)
         return ax.errorbar(X, Y, yerr=error, ecolor=color, label=label, **kwargs)
 
-    def imshow(
-        self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs
-    ):
+    def imshow(self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs):
         if "origin" not in imshow_kwargs:
             imshow_kwargs["origin"] = "lower"
         # xmin, xmax, ymin, ymax = extent
         # xoffset, yoffset = (xmax - xmin) / (2. * X.shape[0]), (ymax - ymin) / (2. * X.shape[1])
         # xmin, xmax, ymin, ymax = extent = xmin-xoffset, xmax+xoffset, ymin-yoffset, ymax+yoffset
-        return ax.imshow(
-            X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs
-        )
+        return ax.imshow(X, label=label, extent=extent, vmin=vmin, vmax=vmax, **imshow_kwargs)
 
     def imshow_interact(
-        self,
-        ax,
-        plot_function,
-        extent,
-        label=None,
-        resolution=None,
-        vmin=None,
-        vmax=None,
-        **imshow_kwargs
+        self, ax, plot_function, extent, label=None, resolution=None, vmin=None, vmax=None, **imshow_kwargs
     ):
         if imshow_kwargs is None:
             imshow_kwargs = {}
         if "origin" not in imshow_kwargs:
             imshow_kwargs["origin"] = "lower"
-        return ImshowController(
-            ax,
-            plot_function,
-            extent,
-            resolution=resolution,
-            vmin=vmin,
-            vmax=vmax,
-            **imshow_kwargs
-        )
+        return ImshowController(ax, plot_function, extent, resolution=resolution, vmin=vmin, vmax=vmax, **imshow_kwargs)
 
-    def annotation_heatmap(
-        self,
-        ax,
-        X,
-        annotation,
-        extent=None,
-        label=None,
-        imshow_kwargs=None,
-        **annotation_kwargs
-    ):
+    def annotation_heatmap(self, ax, X, annotation, extent=None, label=None, imshow_kwargs=None, **annotation_kwargs):
         if imshow_kwargs is None:
             imshow_kwargs = {}
         if "origin" not in imshow_kwargs:
             imshow_kwargs["origin"] = "lower"
-        if ("ha" not in annotation_kwargs) and (
-            "horizontalalignment" not in annotation_kwargs
-        ):
+        if ("ha" not in annotation_kwargs) and ("horizontalalignment" not in annotation_kwargs):
             annotation_kwargs["ha"] = "center"
-        if ("va" not in annotation_kwargs) and (
-            "verticalalignment" not in annotation_kwargs
-        ):
+        if ("va" not in annotation_kwargs) and ("verticalalignment" not in annotation_kwargs):
             annotation_kwargs["va"] = "center"
         imshow = self.imshow(ax, X, extent, label, **imshow_kwargs)
         if extent is None:
             extent = (0, X.shape[0], 0, X.shape[1])
         xmin, xmax, ymin, ymax = extent
-        xoffset, yoffset = (xmax - xmin) / (2.0 * X.shape[0]), (ymax - ymin) / (
-            2.0 * X.shape[1]
-        )
+        xoffset, yoffset = (xmax - xmin) / (2.0 * X.shape[0]), (ymax - ymin) / (2.0 * X.shape[1])
         xlin = np.linspace(xmin, xmax, X.shape[0], endpoint=False)
         ylin = np.linspace(ymin, ymax, X.shape[1], endpoint=False)
         annotations = []
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            annotations.append(
-                ax.text(
-                    x + xoffset,
-                    y + yoffset,
-                    "{}".format(annotation[j, i]),
-                    **annotation_kwargs
-                )
-            )
+            annotations.append(ax.text(x + xoffset, y + yoffset, "{}".format(annotation[j, i]), **annotation_kwargs))
         return imshow, annotations
 
     def annotation_heatmap_interact(
-        self,
-        ax,
-        plot_function,
-        extent,
-        label=None,
-        resolution=15,
-        imshow_kwargs=None,
-        **annotation_kwargs
+        self, ax, plot_function, extent, label=None, resolution=15, imshow_kwargs=None, **annotation_kwargs
     ):
         if imshow_kwargs is None:
             imshow_kwargs = {}
         if "origin" not in imshow_kwargs:
             imshow_kwargs["origin"] = "lower"
         return ImAnnotateController(
-            ax,
-            plot_function,
-            extent,
-            resolution=resolution,
-            imshow_kwargs=imshow_kwargs or {},
-            **annotation_kwargs
+            ax, plot_function, extent, resolution=resolution, imshow_kwargs=imshow_kwargs or {}, **annotation_kwargs
         )
 
     def contour(self, ax, X, Y, C, levels=20, label=None, **kwargs):
-        return ax.contour(
-            X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs
-        )
+        return ax.contour(X, Y, C, levels=np.linspace(C.min(), C.max(), levels), label=label, **kwargs)
 
     def surface(self, ax, X, Y, Z, color=None, label=None, **kwargs):
         return ax.plot_surface(X, Y, Z, label=label, **kwargs)
 
-    def fill_between(
-        self,
-        ax,
-        X,
-        lower,
-        upper,
-        color=Tango.colorsHex["mediumBlue"],
-        label=None,
-        **kwargs
-    ):
+    def fill_between(self, ax, X, lower, upper, color=Tango.colorsHex["mediumBlue"], label=None, **kwargs):
         return ax.fill_between(X, lower, upper, facecolor=color, label=label, **kwargs)
 
-    def fill_gradient(
-        self,
-        canvas,
-        X,
-        percentiles,
-        color=Tango.colorsHex["mediumBlue"],
-        label=None,
-        **kwargs
-    ):
+    def fill_gradient(self, canvas, X, percentiles, color=Tango.colorsHex["mediumBlue"], label=None, **kwargs):
         ax = canvas
         plots = []
 
@@ -433,9 +322,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         if "cmap" in kwargs:
             cmap = kwargs.pop("cmap")
         else:
-            cmap = LinearSegmentedColormap.from_list(
-                "WhToColor", (color, color), N=array.size
-            )
+            cmap = LinearSegmentedColormap.from_list("WhToColor", (color, color), N=array.size)
         cmap._init()
         cmap._lut[:-3, -1] = alpha * array
 

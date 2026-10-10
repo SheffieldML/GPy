@@ -44,29 +44,19 @@ it gives back an empty default, when defaults are not defined.
 
 # Data plots:
 data_1d = dict(lw=1.5, marker="x", color="k")
-data_2d = dict(
-    s=35, edgecolors="none", linewidth=0.0, cmap=pyplot.get_cmap("hot"), alpha=0.5
-)
+data_2d = dict(s=35, edgecolors="none", linewidth=0.0, cmap=pyplot.get_cmap("hot"), alpha=0.5)
 inducing_1d = dict(lw=0, s=500, color=Tango.colorsHex["darkRed"])
-inducing_2d = dict(
-    s=17, edgecolor="k", linewidth=0.4, color="white", alpha=0.5, marker="^"
-)
+inducing_2d = dict(s=17, edgecolor="k", linewidth=0.4, color="white", alpha=0.5, marker="^")
 inducing_3d = dict(lw=0.3, s=500, color=Tango.colorsHex["darkRed"], edgecolor="k")
 xerrorbar = dict(color="k", fmt="none", elinewidth=0.5, alpha=0.5)
-yerrorbar = dict(
-    color=Tango.colorsHex["darkRed"], fmt="none", elinewidth=0.5, alpha=0.5
-)
+yerrorbar = dict(color=Tango.colorsHex["darkRed"], fmt="none", elinewidth=0.5, alpha=0.5)
 
 # GP plots:
 meanplot_1d = dict(color=Tango.colorsHex["mediumBlue"], linewidth=2)
 meanplot_2d = dict(cmap="hot", linewidth=0.5)
-meanplot_3d = dict(
-    linewidth=0, antialiased=True, cstride=1, rstride=1, cmap="hot", alpha=0.3
-)
+meanplot_3d = dict(linewidth=0, antialiased=True, cstride=1, rstride=1, cmap="hot", alpha=0.3)
 samples_1d = dict(color=Tango.colorsHex["mediumBlue"], linewidth=0.3)
-samples_3d = dict(
-    cmap="hot", alpha=0.1, antialiased=True, cstride=1, rstride=1, linewidth=0
-)
+samples_3d = dict(cmap="hot", alpha=0.1, antialiased=True, cstride=1, rstride=1, linewidth=0)
 confidence_interval = dict(
     edgecolor=Tango.colorsHex["darkBlue"],
     linewidth=0.5,

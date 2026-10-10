@@ -1,15 +1,16 @@
-'''
+"""
 Created on 24 Jul 2013
 
 @author: maxz
-'''
+"""
+
 from .axis_event_controller import BufferedAxisChangedController
 import itertools
 import numpy
 
 
 class ImshowController(BufferedAxisChangedController):
-    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=.9, **kwargs):
+    def __init__(self, ax, plot_function, plot_limits, resolution=50, update_lim=0.9, **kwargs):
         """
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
@@ -23,24 +24,20 @@ class ImshowController(BufferedAxisChangedController):
         super(ImshowController, self).__init__(ax, plot_function, plot_limits, resolution, update_lim, **kwargs)
 
     def _init_view(self, canvas, X, xmin, xmax, ymin, ymax, vmin=None, vmax=None, **kwargs):
-        #xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
-        return canvas.imshow(X, extent=(xmin, xmax, 
-                                        ymin, ymax),
-                             vmin=vmin, vmax=vmax,
-                             **kwargs)
+        # xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
+        return canvas.imshow(X, extent=(xmin, xmax, ymin, ymax), vmin=vmin, vmax=vmax, **kwargs)
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
         view.set_data(X)
-        xoffset, yoffset = 0, 0#self._offsets(xmin, xmax, ymin, ymax)
-        view.set_extent((xmin-xoffset, xmax+xoffset, 
-                         ymin-yoffset, ymax+yoffset))
+        xoffset, yoffset = 0, 0  # self._offsets(xmin, xmax, ymin, ymax)
+        view.set_extent((xmin - xoffset, xmax + xoffset, ymin - yoffset, ymax + yoffset))
 
     def _offsets(self, xmin, xmax, ymin, ymax):
         return float(xmax - xmin) / (2 * self.resolution), float(ymax - ymin) / (2 * self.resolution)
 
 
 class ImAnnotateController(ImshowController):
-    def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=.99, imshow_kwargs=None, **kwargs):
+    def __init__(self, ax, plot_function, plot_limits, resolution=20, update_lim=0.99, imshow_kwargs=None, **kwargs):
         """
         :param plot_function:
             function to use for creating image for plotting (return ndarray-like)
@@ -60,7 +57,7 @@ class ImAnnotateController(ImshowController):
         xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
         ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            view.append(ax.text(x+xoffset, y+yoffset, "{}".format(X[1][j, i]), ha='center', va='center', **kwargs))
+            view.append(ax.text(x + xoffset, y + yoffset, "{}".format(X[1][j, i]), ha="center", va="center", **kwargs))
         return view
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
@@ -69,7 +66,7 @@ class ImAnnotateController(ImshowController):
         xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
         ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [[i, x], [j, y]], text in zip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:]):
-            text.set_x(x+xoffset)
-            text.set_y(y+yoffset)
+            text.set_x(x + xoffset)
+            text.set_y(y + yoffset)
             text.set_text("{}".format(X[1][j, i]))
         return view

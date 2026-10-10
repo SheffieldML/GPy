@@ -2,6 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+
 try:
     from GPy.plotting import Tango
     from matplotlib import pyplot as pb
@@ -9,7 +10,19 @@ except:
     pass
 
 
-def plot_mapping(self, plot_limits=None, which_data='all', which_parts='all', resolution=None, levels=20, samples=0, fignum=None, ax=None, fixed_inputs=[], linecol=Tango.colorsHex['darkBlue']):
+def plot_mapping(
+    self,
+    plot_limits=None,
+    which_data="all",
+    which_parts="all",
+    resolution=None,
+    levels=20,
+    samples=0,
+    fignum=None,
+    ax=None,
+    fixed_inputs=[],
+    linecol=Tango.colorsHex["darkBlue"],
+):
     """
     Plots the mapping associated with the model.
       - In one dimension, the function is plotted.
@@ -43,7 +56,7 @@ def plot_mapping(self, plot_limits=None, which_data='all', which_parts='all', re
 
     """
     # TODO include samples
-    if which_data == 'all':
+    if which_data == "all":
         which_data = slice(None)
 
     if ax is None:
@@ -54,17 +67,16 @@ def plot_mapping(self, plot_limits=None, which_data='all', which_parts='all', re
     from ..gpy_plot.plot_util import x_frame1D, x_frame2D
 
     if plotdims == 1:
+        Xu = self.X * self._Xscale + self._Xoffset  # NOTE self.X are the normalized values now
 
-        Xu = self.X * self._Xscale + self._Xoffset # NOTE self.X are the normalized values now
+        fixed_dims = np.array([i for i, v in fixed_inputs])
+        freedim = np.setdiff1d(np.arange(self.input_dim), fixed_dims)
 
-        fixed_dims = np.array([i for i,v in fixed_inputs])
-        freedim = np.setdiff1d(np.arange(self.input_dim),fixed_dims)
-
-        Xnew, xmin, xmax = x_frame1D(Xu[:,freedim], plot_limits=plot_limits)
-        Xgrid = np.empty((Xnew.shape[0],self.input_dim))
-        Xgrid[:,freedim] = Xnew
-        for i,v in fixed_inputs:
-            Xgrid[:,i] = v
+        Xnew, xmin, xmax = x_frame1D(Xu[:, freedim], plot_limits=plot_limits)
+        Xgrid = np.empty((Xnew.shape[0], self.input_dim))
+        Xgrid[:, freedim] = Xnew
+        for i, v in fixed_inputs:
+            Xgrid[:, i] = v
 
         f = self.predict(Xgrid, which_parts=which_parts)
         for d in range(y.shape[1]):
@@ -76,7 +88,7 @@ def plot_mapping(self, plot_limits=None, which_data='all', which_parts='all', re
         x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
         f = self.predict(Xnew, which_parts=which_parts)
         m = m.reshape(resolution, resolution).T
-        ax.contour(x, y, f, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet) # @UndefinedVariable
+        ax.contour(x, y, f, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)  # @UndefinedVariable
         ax.set_xlim(xmin[0], xmax[0])
         ax.set_ylim(xmin[1], xmax[1])
 

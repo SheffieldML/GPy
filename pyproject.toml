@@ -79,7 +79,7 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# CIP-0005: pyflakes + bugbear + safe SIM + safe pyupgrade. Format enforced in CI.
+# CIP-0005: pyflakes + bugbear + SIM + pyupgrade (partial). Format enforced in CI.
 select = [
     "E9",
     "F",
@@ -109,6 +109,12 @@ select = [
     "UP024",
     "UP029",
     "UP034",
+    "UP030",
+    "UP035",
+    "UP036",
+    "SIM102",
+    "SIM105",
+    "SIM113",
 ]
 
 [tool.ruff.lint.per-file-ignores]

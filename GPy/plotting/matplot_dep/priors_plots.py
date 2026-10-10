@@ -3,11 +3,10 @@
 
 
 import numpy as np
+import contextlib
 
-try:
+with contextlib.suppress(Exception):
     from matplotlib import pyplot as pb
-except:
-    pass
 
 
 def univariate_plot(prior):

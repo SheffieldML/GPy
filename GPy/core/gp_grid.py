@@ -73,9 +73,8 @@ class GpGrid(GP):
         self.kern.update_gradients_direct(self.grad_dict["dL_dVar"], self.grad_dict["dL_dLen"])
 
     def kron_mmprod(self, A, B):
-        count = 0
         D = len(A)
-        for b in B.T:
+        for count, b in enumerate(B.T):
             x = b
             N = 1
             G = np.zeros(D, dtype=np.int_)
@@ -91,7 +90,6 @@ class GpGrid(GP):
                 result = x
             else:
                 result = np.column_stack((result, x))
-            count += 1
         return result
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):

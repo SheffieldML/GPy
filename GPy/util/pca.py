@@ -14,6 +14,7 @@ except:
     pass
 from operator import setitem
 from functools import reduce
+import contextlib
 
 
 class PCA:
@@ -99,10 +100,8 @@ class PCA:
         ax.set_xlabel("PC")
         ax.set_ylim(0, ax.get_ylim()[1])
         ax.set_xlim(ticks.min() - 0.5, ticks.max() + 0.5)
-        try:
+        with contextlib.suppress(Exception):
             pylab.tight_layout()
-        except:
-            pass
         return bar
 
     def plot_2d(
@@ -147,8 +146,6 @@ class PCA:
             plots.append(ax.scatter(*X_[labels == l, :].T, label=str(l), **kwargs))
         ax.set_xlabel(r"PC$_1$")
         ax.set_ylabel(r"PC$_2$")
-        try:
+        with contextlib.suppress(Exception):
             pylab.tight_layout()
-        except:
-            pass
         return plots

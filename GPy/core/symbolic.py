@@ -141,9 +141,8 @@ class Symbolic_core:
         for theta in self.variables["theta"]:
             val = 1.0
             # TODO: improve approach for initializing parameters.
-            if parameters is not None:
-                if theta.name in parameters:
-                    val = parameters[theta.name]
+            if parameters is not None and theta.name in parameters:
+                val = parameters[theta.name]
             # Add parameter.
 
             self.link_parameters(Param(theta.name, val, None))

@@ -5,15 +5,15 @@ Global variables: initSuccess
 providing CUBLAS handle: cublas_handle
 """
 
+import contextlib
+
 gpu_initialized = False
 gpu_device = None
 gpu_context = None
 MPI_enabled = False
 
-try:
+with contextlib.suppress(Exception):
     gpu_initialized = True
-except:
-    pass
 
 # def initGPU():
 #     try:

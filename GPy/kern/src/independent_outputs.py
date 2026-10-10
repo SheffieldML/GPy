@@ -67,7 +67,10 @@ class IndependentOutputs(CombinationKernel):
         slices = index_to_slices(X[:, self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         target = np.zeros(X.shape[0])
-        [[np.copyto(target[s], kern.Kdiag(X[s])) for s in slices_i] for kern, slices_i in zip(kerns, slices, strict=False)]
+        [
+            [np.copyto(target[s], kern.Kdiag(X[s])) for s in slices_i]
+            for kern, slices_i in zip(kerns, slices, strict=False)
+        ]
         return target
 
     def update_gradients_full(self, dL_dK, X, X2=None):
@@ -100,7 +103,10 @@ class IndependentOutputs(CombinationKernel):
         if self.single_kern:
             self.kern.gradient = target
         else:
-            [kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices, strict=False))]
+            [
+                kern.gradient.__setitem__(Ellipsis, target[i])
+                for i, [kern, _] in enumerate(zip(kerns, slices, strict=False))
+            ]
 
     def gradients_X(self, dL_dK, X, X2=None):
         target = np.zeros(X.shape)
@@ -160,7 +166,10 @@ class IndependentOutputs(CombinationKernel):
         if self.single_kern:
             self.kern.gradient = target
         else:
-            [kern.gradient.__setitem__(Ellipsis, target[i]) for i, [kern, _] in enumerate(zip(kerns, slices, strict=False))]
+            [
+                kern.gradient.__setitem__(Ellipsis, target[i])
+                for i, [kern, _] in enumerate(zip(kerns, slices, strict=False))
+            ]
 
 
 class Hierarchical(CombinationKernel):

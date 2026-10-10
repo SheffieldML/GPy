@@ -79,7 +79,7 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# CIP-0005 Phase 3: full pyflakes + bugbear (partial). Next: format CI.
+# CIP-0005: full pyflakes + targeted bugbear. Format enforced in CI.
 select = ["E9", "F", "B010", "B011", "B013", "B016", "B018", "B028", "B904", "B007", "B905", "B006", "B026", "B023"]
 
 [tool.ruff.lint.per-file-ignores]

@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-
 def ax_default(fignum, ax):
     if ax is None:
         fig = plt.figure(fignum)

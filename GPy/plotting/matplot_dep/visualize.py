@@ -240,9 +240,7 @@ class lvm_dimselect(lvm):
 
     """
 
-    def __init__(
-        self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=None, labels=None
-    ):
+    def __init__(self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=None, labels=None):
         if latent_index is None:
             latent_index = [0, 1]
         if latent_axes is None and sense_axes is None:

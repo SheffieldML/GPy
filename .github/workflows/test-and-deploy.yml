@@ -48,7 +48,7 @@ jobs:
       - name: pytest
         run: poetry run pytest GPy/testing
 
-  # CIP-0005 Phase 4 (partial): fail CI on configured ruff check (format still later).
+  # CIP-0005 Phase 4: fail CI on configured ruff check and format.
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -65,6 +65,9 @@ jobs:
 
       - name: Ruff check (select from pyproject.toml)
         run: ruff check GPy --exclude GPy/old_tests --exclude GPy/testing/mpi_test__.py
+
+      - name: Ruff format
+        run: ruff format --check GPy
 
   build:
     if: github.event_name == 'release'

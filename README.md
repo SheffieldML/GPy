@@ -50,7 +50,7 @@ For any further questions/suggestions head over to the issues section in GPy.
 <a name=gl></a>
 ### Pull Request Guidelines
 
- - Check your code with PEP8 or pylint. Try to stick to 80 columns wide.
+ - Lint and format with [Ruff](https://docs.astral.sh/ruff/) (CIP-0005). CI runs `ruff check GPy` and `ruff format --check GPy` using the select set in `pyproject.toml`. Recommended local setup: `pip install pre-commit && pre-commit install` (hooks in `.pre-commit-config.yaml`). Or run `ruff check GPy` / `ruff format GPy` yourself.
  - Separate commits per smallest concern.
  - Each functionality/bugfix commit should contain code, tests, and doc.
  - We are using gitchangelog to keep track of changes and log new features. So if you want your changes to show up in the changelog, make sure you follow the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.

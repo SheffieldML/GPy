@@ -1,5 +1,5 @@
-# CIP-0005: optional local hooks. CI fails on the same ruff check select
-# as pyproject.toml. Format remains advisory (do not require --check in CI yet).
+# CIP-0005: optional local hooks matching CI (ruff check + ruff format).
+# Install once: pip install pre-commit && pre-commit install
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.9.10

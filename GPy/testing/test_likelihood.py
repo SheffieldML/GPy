@@ -89,8 +89,10 @@ def dparam_checkgrad(
             func = lambda p_val, param_name=param_name, fnum=fnum, fdim=fdim, param_ind=param_ind, f_ind=f_ind: (
                 partial_f(p_val, param_name).reshape(-1, fnum, fdim)[param_ind, f_ind, :]
             )
-            dfunc_dparam = lambda d_val, param_name=param_name, fnum=fnum, fdim=fdim, param_ind=param_ind, fixed_val=fixed_val: (
-                partial_df(d_val, param_name).reshape(-1, fnum, fdim)[param_ind, fixed_val, :]
+            dfunc_dparam = (
+                lambda d_val, param_name=param_name, fnum=fnum, fdim=fdim, param_ind=param_ind, fixed_val=fixed_val: (
+                    partial_df(d_val, param_name).reshape(-1, fnum, fdim)[param_ind, fixed_val, :]
+                )
             )
             grad = GradientChecker(func, dfunc_dparam, param_val, [param_name])
 
@@ -1115,8 +1117,9 @@ class TestBernoulliVariationalExpectations:
         F = likelihood.variational_expectations(Y, m, v)[0]
         expected = [
             integrate.quad(
-                lambda f, mean=mean, var=var, y=y: stats.norm.pdf(f, mean, np.sqrt(var))
-                * stats.norm.logcdf(f if y == 1 else -f),
+                lambda f, mean=mean, var=var, y=y: (
+                    stats.norm.pdf(f, mean, np.sqrt(var)) * stats.norm.logcdf(f if y == 1 else -f)
+                ),
                 -np.inf,
                 np.inf,
             )[0]

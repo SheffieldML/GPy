@@ -209,7 +209,8 @@ class Likelihood(Parameterized):
             *[
                 quad(integral_generator(yi, mi, vi, yi_m), mi - 20 * np.sqrt(vi), mi + 20 * np.sqrt(vi))
                 for yi, mi, vi, yi_m in zipped_values
-            ], strict=False
+            ],
+            strict=False,
         )
         p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
@@ -316,7 +317,9 @@ class Likelihood(Parameterized):
 
             if quad_mode == "gk":
                 f = partial(self.integrate_gk)
-                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list), strict=False)
+                quads = zip(
+                    *map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list), strict=False
+                )
                 quads = np.vstack(quads)
                 quads.reshape(self.size, shape[0], shape[1])
             elif quad_mode == "gh":

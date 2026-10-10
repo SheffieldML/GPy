@@ -4,7 +4,6 @@
 # Kurt Cutajar
 
 
-
 class GridPosterior(object):
     """
     Specially intended for the Grid Regression case

@@ -24,7 +24,8 @@ def initialize_latent(init, input_dim, Y):
         # should be remove along the next major release
         warnings.warn(
             "Deprecated initialization method 'empirical_samples'. Use 'random' instead.",
-            DeprecationWarning, stacklevel=2,
+            DeprecationWarning,
+            stacklevel=2,
         )
 
         from ..util.linalg import tdot
@@ -43,7 +44,8 @@ def initialize_latent(init, input_dim, Y):
         warnings.warn(
             f"{init} is not a valid initialization method."
             "Supoprt for anything else than 'PCA' or 'random' will be removed in the next major release.",
-            DeprecationWarning, stacklevel=2,
+            DeprecationWarning,
+            stacklevel=2,
         )
         var = Xr.var(0)
 

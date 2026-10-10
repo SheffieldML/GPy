@@ -6,7 +6,6 @@ import numpy as np
 # from ..util.warping_functions import *
 from ..core import GP
 from .. import likelihoods
-from paramz import ObsAr
 
 # from GPy.util.warping_functions import TanhFunction
 from ..util.warping_functions import TanhFunction

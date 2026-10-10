@@ -66,7 +66,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         **kwargs,
     ):
         if projection == "3d":
-            from mpl_toolkits.mplot3d import Axes3D
+            pass
         elif projection == "2d":
             projection = None
         if "ax" in kwargs:

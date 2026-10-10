@@ -3,7 +3,7 @@
 
 import numpy as np
 from scipy import special
-from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf, derivLogCdfNormal, logCdfNormal
+from ..util.univariate_Gaussian import std_norm_cdf, derivLogCdfNormal, logCdfNormal
 from . import link_functions
 from .likelihood import Likelihood
 

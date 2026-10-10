@@ -3,7 +3,7 @@ from ...util import linalg
 from ...util import choleskies
 import numpy as np
 from .posterior import Posterior
-from scipy.linalg.blas import dgemm, dsymm, dtrmm
+from scipy.linalg.blas import dtrmm
 
 
 class SVGP(LatentFunctionInference):

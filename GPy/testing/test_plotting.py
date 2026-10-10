@@ -51,7 +51,6 @@ import numpy as np
 import GPy, os
 import logging
 
-from GPy.util.config import config
 from GPy.plotting import change_plotting_library, plotting_library
 
 

@@ -3,11 +3,9 @@ from __future__ import division
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats, special
 import scipy as sp
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
-from . import link_functions
 from .likelihood import Likelihood
 from .link_functions import Log
 

@@ -7,7 +7,6 @@
 #
 import numpy as np
 
-from ..util import gpu_init
 
 try:
     from pycuda.reduction import ReductionKernel

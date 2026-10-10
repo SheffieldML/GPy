@@ -3,7 +3,6 @@
 
 
 import numpy as np
-from scipy import stats, special
 import scipy as sp
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp

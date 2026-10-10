@@ -4,7 +4,6 @@
 import numpy as np
 import scipy
 from ..util.univariate_Gaussian import std_norm_cdf, std_norm_pdf
-import scipy as sp
 from ..util.misc import safe_exp, safe_square, safe_cube, safe_quad, safe_three_times
 
 
@@ -69,7 +68,7 @@ class GPTransformation(object):
 
         input_dict = copy.deepcopy(input_dict)
         link_class = input_dict.pop("class")
-        import GPy
+        import GPy  # noqa: F401 — needed for eval of serialized class paths
 
         link_class = eval(link_class)
         return link_class._build_from_input_dict(link_class, input_dict)

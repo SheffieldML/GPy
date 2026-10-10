@@ -228,7 +228,7 @@ class TestMisc:
 
     @pytest.mark.skipif(autograd is None, reason="autograd not available to check gradients")
     def test_jacobian(self):
-        import autograd.numpy as np, autograd as ag, GPy, matplotlib.pyplot as plt
+        import autograd.numpy as np, autograd as ag, GPy
         from GPy.models import GradientChecker, GPRegression
 
         def k(X, X2, alpha=1.0, lengthscale=None):

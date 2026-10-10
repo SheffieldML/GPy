@@ -2,14 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats, special
-from . import link_functions
 from .likelihood import Likelihood
 from .gaussian import Gaussian
-from ..core.parameterization import Param
-from paramz.transformations import Logexp
-from ..core.parameterization import Parameterized
-import itertools
 
 
 class MixedNoise(Likelihood):

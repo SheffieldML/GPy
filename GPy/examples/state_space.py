@@ -1,8 +1,6 @@
 import GPy
 import numpy as np
-import matplotlib.pyplot as plt
 
-import GPy.models.state_space_model as SS_model
 
 
 def state_space_example():

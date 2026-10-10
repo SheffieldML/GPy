@@ -4,7 +4,6 @@
 from ..core import GP
 from .. import likelihoods
 from .. import kern
-import numpy as np
 from ..inference.latent_function_inference.expectation_propagation import EP
 
 

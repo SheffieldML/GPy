@@ -15,7 +15,6 @@ from GPy.likelihoods.link_functions import (
     Log,
     Log_ex_1,
     Reciprocal,
-    Heaviside,
     ScaledProbit,
 )
 

@@ -1,5 +1,5 @@
 from .posterior import Posterior
-from ...util.linalg import jitchol, tdot, dtrtrs, dtrtri, pdinv
+from ...util.linalg import jitchol, tdot, dtrtrs, pdinv
 from ...util import diag
 import numpy as np
 from . import LatentFunctionInference

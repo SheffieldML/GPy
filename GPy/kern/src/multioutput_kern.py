@@ -4,7 +4,6 @@
 from .kern import Kern, CombinationKernel
 import itertools
 import numpy as np
-from functools import reduce, partial
 from ...util.multioutput import index_to_slices
 from paramz.caching import Cache_this
 

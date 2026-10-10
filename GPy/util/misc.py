@@ -2,7 +2,6 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy.special import cbrt
 from .config import *
 
 _lim_val = np.finfo(np.float64).max

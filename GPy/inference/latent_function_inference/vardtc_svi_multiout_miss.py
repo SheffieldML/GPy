@@ -1,12 +1,11 @@
 # Copyright (c) 2017, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, pdinv, dpotri
+from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri
 from GPy.util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np
 from GPy.inference.latent_function_inference import LatentFunctionInference
-from GPy.inference.latent_function_inference.posterior import Posterior
 from .vardtc_svi_multiout import PosteriorMultioutput
 
 log_2_pi = np.log(2 * np.pi)

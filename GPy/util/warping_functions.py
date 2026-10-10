@@ -4,7 +4,6 @@
 import numpy as np
 from ..core.parameterization import Parameterized, Param
 from paramz.transformations import Logexp
-import sys
 
 
 class WarpingFunction(Parameterized):
@@ -72,7 +71,7 @@ class WarpingFunction(Parameterized):
 
         input_dict = copy.deepcopy(input_dict)
         warping_class = input_dict.pop("class")
-        import GPy
+        import GPy  # noqa: F401 — needed for eval of serialized class paths
 
         warping_class = eval(warping_class)
         return warping_class._build_from_input_dict(warping_class, input_dict)

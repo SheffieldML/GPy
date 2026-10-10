@@ -5,7 +5,7 @@ from ...core.parameterization.variational import VariationalPosterior
 try:
     import matplotlib.pyplot as plt
     import matplotlib as mpl
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D as Axes3D  # registers 3d projection
     import visual
 
     visual_available = True

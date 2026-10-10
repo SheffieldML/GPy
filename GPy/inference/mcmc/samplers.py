@@ -6,14 +6,6 @@ import numpy as np
 import sys
 
 
-try:
-    # In Python 2, cPickle is faster. It does not exist in Python 3 but the underlying code is always used
-    # if available
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-
 class Metropolis_Hastings(object):
     def __init__(self, model, cov=None):
         """Metropolis Hastings, with tunings according to Gelman et al."""

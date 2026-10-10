@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .posterior import Posterior
-from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, pdinv
+from ...util.linalg import jitchol, backsub_both_sides, tdot, dtrtri
 from ...util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np

@@ -69,6 +69,53 @@ class TestConfig:
         self.teardown_method()
 
 
+@pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
+class TestShowAcceptsPlotDict:
+    """#920: model.plot() returns a plots dict; show() must accept it (and Axes)."""
+
+    def setup_method(self):
+        change_plotting_library("matplotlib")
+        plt.close("all")
+
+    def teardown_method(self):
+        plt.close("all")
+        change_plotting_library("matplotlib")
+
+    def _small_gp(self):
+        np.random.seed(1)
+        X = np.random.uniform(-3.0, 3.0, (12, 1))
+        Y = np.sin(X) + 0.05 * np.random.randn(12, 1)
+        return GPy.models.GPRegression(X, Y)
+
+    def test_show_plots_dict(self):
+        from GPy.plotting import show
+
+        plots = self._small_gp().plot()
+        assert isinstance(plots, dict)
+        fig = show(plots)
+        assert isinstance(fig, plt.Figure)
+
+    def test_show_axes(self):
+        from GPy.plotting import show
+
+        ax = plt.gca()
+        fig = show(ax)
+        assert fig is ax.figure
+
+    def test_show_figure(self):
+        from GPy.plotting import show
+
+        fig = plt.figure()
+        out = show(fig)
+        assert out is fig
+
+    def test_show_rejects_empty_dict(self):
+        from GPy.plotting import show
+
+        with pytest.raises(TypeError):
+            show({})
+
+
 change_plotting_library("matplotlib")
 
 extensions = ["npz"]

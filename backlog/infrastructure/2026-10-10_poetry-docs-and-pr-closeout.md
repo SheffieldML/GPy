@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-docs-and-pr-closeout
 title: Poetry install docs and packaging PR closeout
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -31,16 +31,16 @@ Finish the [CIP-0003](../../cip/cip0003.md) Option A community surface:
 
 ## Acceptance Criteria
 
-- [ ] README (and packaging metadata URLs if needed) describe:
+- [x] README (and packaging metadata URLs if needed) describe:
   - End users: `pip install gpy`
   - Contributors: Poetry install / test / lock refresh
-- [ ] Comment on [#1080](https://github.com/SheffieldML/GPy/pull/1080) pointing at
+- [x] Comment on [#1080](https://github.com/SheffieldML/GPy/pull/1080) pointing at
       the superseding PR; **close as superseded after that PR merges**
-- [ ] Comment + close [#1000](https://github.com/SheffieldML/GPy/pull/1000) as
+- [x] Comment + close [#1000](https://github.com/SheffieldML/GPy/pull/1000) as
       absorbed by CIP-0003 / Poetry metadata
-- [ ] Comment + close [#1031](https://github.com/SheffieldML/GPy/pull/1031) as
+- [x] Comment + close [#1031](https://github.com/SheffieldML/GPy/pull/1031) as
       absorbed (Cython build-only)
-- [ ] CIP-0003 implementation checklist updated; mark Implemented when verified
+- [x] CIP-0003 implementation checklist updated; mark Implemented when verified
 
 ## Implementation Notes
 
@@ -61,3 +61,5 @@ Finish the [CIP-0003](../../cip/cip0003.md) Option A community surface:
 CIP-0003 Accepted Option A; backlog created.
 
 - Implementing on branch `infra/poetry-option-a`.
+
+- Landed via [#1164](https://github.com/SheffieldML/GPy/pull/1164); closed #1080 / #1000 / #1031.

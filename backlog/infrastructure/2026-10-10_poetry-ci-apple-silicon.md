@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-ci-apple-silicon
 title: Poetry CI matrix and Apple Silicon green
-status: In Progress
+status: Completed
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -34,11 +34,11 @@ deferral recorded in CIP-0003.
 
 ## Acceptance Criteria
 
-- [ ] CI uses current Actions (no `checkout@v1` / `upload-artifact@v3` leftovers)
-- [ ] Linux / Windows / macOS jobs green for supported Python versions
-- [ ] Cython extension import smoke check on each OS
-- [ ] Wheel build + `pip install` path covered (end-user story)
-- [ ] Apple Silicon green, **or** CIP-0003 updated with explicit deferral + rationale
+- [x] CI uses current Actions (no `checkout@v1` / `upload-artifact@v3` leftovers)
+- [x] Linux / Windows / macOS jobs green for supported Python versions
+- [x] Cython extension import smoke check on each OS
+- [x] Wheel build + `pip install` path covered (end-user story)
+- [x] Apple Silicon green, **or** CIP-0003 updated with explicit deferral + rationale
 
 ## Implementation Notes
 
@@ -60,3 +60,5 @@ deferral recorded in CIP-0003.
 CIP-0003 Accepted Option A; backlog created.
 
 - Implementing on branch `infra/poetry-option-a`.
+
+- Landed via [#1164](https://github.com/SheffieldML/GPy/pull/1164); closed #1080 / #1000 / #1031.

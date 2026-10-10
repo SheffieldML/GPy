@@ -98,7 +98,6 @@ class VarDTC(LatentFunctionInference):
         psi2=None,
         Z_tilde=None,
     ):
-
         num_data, output_dim = Y.shape
         num_inducing = Z.shape[0]
 

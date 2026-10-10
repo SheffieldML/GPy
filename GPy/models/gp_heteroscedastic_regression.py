@@ -22,7 +22,6 @@ class GPHeteroscedasticRegression(GP):
     """
 
     def __init__(self, X, Y, kernel=None, Y_metadata=None, mean_function=None):
-
         Ny = Y.shape[0]
 
         if Y_metadata is None:

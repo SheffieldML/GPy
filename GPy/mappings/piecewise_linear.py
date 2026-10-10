@@ -13,7 +13,6 @@ class PiecewiseLinear(Mapping):
     """
 
     def __init__(self, input_dim, output_dim, values, breaks, name="piecewise_linear"):
-
         assert input_dim == 1
         assert output_dim == 1
 

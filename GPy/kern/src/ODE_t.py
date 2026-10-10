@@ -61,7 +61,6 @@ class ODE_t(Kern):
         return K
 
     def Kdiag(self, X):
-
         vyt = self.variance_Yt
         lyt = 1.0 / (2 * self.lengthscale_Yt)
 

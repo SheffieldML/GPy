@@ -286,7 +286,6 @@ class Posterior(object):
 
 class PosteriorExact(Posterior):
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
-
         Kx = kern.K(pred_var, Xnew)
         mu = np.dot(Kx.T, self.woodbury_vector)
         if len(mu.shape) == 1:
@@ -318,7 +317,6 @@ class PosteriorExact(Posterior):
 
 class PosteriorEP(Posterior):
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
-
         Kx = kern.K(pred_var, Xnew)
         mu = np.dot(Kx.T, self.woodbury_vector)
         if len(mu.shape) == 1:

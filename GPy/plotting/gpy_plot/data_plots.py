@@ -322,7 +322,6 @@ def _plot_errorbars_trainset(
     predict_kw=None,
     **plot_kwargs,
 ):
-
     ycols = get_which_data_ycols(self, which_data_ycols)
     rows = get_which_data_rows(self, which_data_rows)
 

@@ -28,7 +28,6 @@ class VarDTC_SVI_Multiout(LatentFunctionInference):
             return jitchol(tdot(Y))
 
     def gatherPsiStat(self, kern, X, Z, uncertain_inputs):
-
         if uncertain_inputs:
             psi0 = kern.psi0(Z, X).sum()
             psi1 = kern.psi1(Z, X)
@@ -288,7 +287,6 @@ class PosteriorMultioutput(object):
         )
 
     def _raw_predict(self, kern, Xnew, pred_var, full_cov=False):
-
         N = Xnew.shape[0]
         psi1_c = kern.K(Xnew, pred_var)
         psi0_c = kern.Kdiag(Xnew)

@@ -6,7 +6,6 @@ from matplotlib import pyplot as pb
 
 
 def plot(model, ax=None, fignum=None, Z_height=None, **kwargs):
-
     if ax is None:
         fig = pb.figure(num=fignum)
         ax = fig.add_subplot(111)
@@ -30,7 +29,6 @@ def plot(model, ax=None, fignum=None, Z_height=None, **kwargs):
 
 
 def plot_traces(model):
-
     pb.figure()
     t = np.array(model._param_trace)
     pb.subplot(2, 1, 1)

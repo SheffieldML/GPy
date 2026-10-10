@@ -46,7 +46,6 @@ class GPCoregionalizedRegression(GP):
         kernel_name="coreg",
         normalizer=False,
     ):
-
         # Input and Output
         X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
         Ny = len(Y_list)

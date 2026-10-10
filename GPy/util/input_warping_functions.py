@@ -13,7 +13,6 @@ class InputWarpingFunction(Parameterized):
         super(InputWarpingFunction, self).__init__(name=name)
 
     def f(self, X, test=False):
-
         raise NotImplementedError
 
     def fgrad_x(self, X):
@@ -117,7 +116,6 @@ class KumarWarping(InputWarpingFunction):
     """
 
     def __init__(self, X, warping_indices=None, epsilon=None, Xmin=None, Xmax=None):
-
         super(KumarWarping, self).__init__(name="input_warp_kumar")
 
         if warping_indices is not None and np.max(warping_indices) > X.shape[1] - 1:

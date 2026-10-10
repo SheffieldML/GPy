@@ -667,7 +667,6 @@ def warped_gp_cubic_sine(max_iters=100, plot=True):
 
 
 def multioutput_gp_with_derivative_observations(plot=True):
-
     f = lambda x: np.sin(x) + 0.1 * (x - 2.0) ** 2 - 0.005 * x**3
     fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x**2
     N = 10  # Number of observations

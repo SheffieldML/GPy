@@ -27,7 +27,6 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
         super(VarDTC_minibatch_IBPLFM, self).__init__(batchsize, limit, mpi_comm)
 
     def gatherPsiStat(self, kern, X, Z, Y, beta, Zp):
-
         het_noise = beta.size > 1
 
         assert beta.size == 1
@@ -530,7 +529,6 @@ class IBPLFM(SparseGP_MPI):
         variational_prior=None,
         **kwargs,
     ):
-
         if kernel is None:
             kernel = kern.EQ_ODE2(input_dim, output_dim, rank)
 

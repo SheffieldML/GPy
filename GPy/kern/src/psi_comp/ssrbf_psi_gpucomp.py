@@ -283,7 +283,6 @@ gpu_code = """
 
 class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
-
         from pycuda.compiler import SourceModule
 
         self.GPU_direct = GPU_direct

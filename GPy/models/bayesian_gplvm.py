@@ -43,7 +43,6 @@ class BayesianGPLVM(SparseGP_MPI):
         batchsize=1,
         Y_metadata=None,
     ):
-
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:
             from ..util.initialization import initialize_latent

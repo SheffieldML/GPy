@@ -118,7 +118,6 @@ class Bernoulli(Likelihood):
             raise NotImplementedError
 
     def predictive_mean(self, mu, variance, Y_metadata=None):
-
         if isinstance(self.gp_link, link_functions.Probit):
             return std_norm_cdf(mu / np.sqrt(1 + variance))
 
@@ -129,7 +128,6 @@ class Bernoulli(Likelihood):
             raise NotImplementedError
 
     def predictive_variance(self, mu, variance, pred_mean, Y_metadata=None):
-
         if isinstance(self.gp_link, link_functions.Heaviside):
             return 0.0
         else:

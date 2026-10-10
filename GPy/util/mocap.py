@@ -272,7 +272,6 @@ class acclaim_skeleton(skeleton):
         return np.array(xyz)
 
     def get_child_xyz(self, ind, channels):
-
         parent = self.vertices[ind].parents[0]
         children = self.vertices[ind].children
         rot_val = np.zeros(3)
@@ -313,7 +312,6 @@ class acclaim_skeleton(skeleton):
             self.get_child_xyz(cind, channels)
 
     def load_channels(self, file_name):
-
         fid = open(file_name, "r")
         channels = self.read_channels(fid)
         fid.close()

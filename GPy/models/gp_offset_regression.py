@@ -28,7 +28,6 @@ class GPOffsetRegression(GP):
     """
 
     def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None, noise_var=1.0, mean_function=None):
-
         assert X.shape[1] > 1, "Need at least two input dimensions, as last dimension is the label of the cluster"
         if kernel is None:
             kernel = kern.RBF(X.shape[1] - 1)

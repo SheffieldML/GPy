@@ -121,7 +121,6 @@ class Symmetric(Kern):
         self.base_kernel.gradient = gradient
 
     def update_gradients_diag(self, dL_dK, X):
-
         dL_dK_full = np.diag(dL_dK)
         X_sym = X.dot(self.transform)
 

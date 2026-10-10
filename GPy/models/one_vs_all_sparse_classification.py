@@ -23,7 +23,7 @@ class OneVsAllSparseClassification(object):
         if kernel is None:
             kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1]) + GPy.kern.Bias(X.shape[1])
 
-        likelihood = GPy.likelihoods.Bernoulli()
+        GPy.likelihoods.Bernoulli()
 
         assert Y.shape[1] == 1, "Y should be 1 column vector"
 

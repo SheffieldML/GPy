@@ -1085,7 +1085,7 @@ class TestStateSpaceKernels:
 
         try:
             import GPy
-        except ImportError as e:
+        except ImportError:
             return None
 
         periodic_kernel = GPy.kern.sde_StdPeriodic(
@@ -1096,7 +1096,7 @@ class TestStateSpaceKernels:
         )
         (F, L, Qc, H, P_inf, P0, dFt, dQct, dP_inft, dP0) = periodic_kernel.sde()
 
-        state_dim = dFt.shape[0]
+        dFt.shape[0]
         param_num = dFt.shape[2]
 
         grad_calc_params = {}
@@ -1210,7 +1210,7 @@ class TestStateSpaceKernels:
         )
         (F, L, Qc, H, P_inf, P0, dFt, dQct, dP_inft, dP0) = periodic_kernel.sde()
 
-        state_dim = dFt.shape[0]
+        dFt.shape[0]
         param_num = dFt.shape[2]
 
         grad_calc_params = {}
@@ -1326,7 +1326,7 @@ class TestStateSpaceKernels:
         H = np.vstack((H, H))  # make 2D measurements
         R = 1.5 * np.eye(measurement_dim)
 
-        state_dim = dFt.shape[0]
+        dFt.shape[0]
         param_num = dFt.shape[2]
 
         grad_calc_params = {}

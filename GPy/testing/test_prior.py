@@ -23,7 +23,7 @@ from GPy.core.parameterization.priors import (
 class TestPrior:
     def test_studentT(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -48,7 +48,7 @@ class TestPrior:
 
     def test_lognormal(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -61,7 +61,7 @@ class TestPrior:
 
     def test_Gamma(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -76,7 +76,7 @@ class TestPrior:
         # Test that this prior object can be instantiated and performs its basic functions
         # in integration.
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -89,7 +89,7 @@ class TestPrior:
 
     def test_incompatibility(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -103,7 +103,7 @@ class TestPrior:
 
     def test_set_prior(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -119,7 +119,7 @@ class TestPrior:
 
     def test_uniform(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -148,7 +148,7 @@ class TestPrior:
 
     def test_set_gaussian_for_reals(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -164,7 +164,7 @@ class TestPrior:
 
     def test_fixed_domain_check(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))
@@ -180,7 +180,7 @@ class TestPrior:
 
     def test_fixed_domain_check1(self):
         xmin, xmax = 1, 2.5 * np.pi
-        b, C, SNR = 1, 0, 0.1
+        b, C, _SNR = 1, 0, 0.1
         X = np.linspace(xmin, xmax, 500)
         y = b * X + C + 1 * np.sin(X)
         y += 0.05 * np.random.randn(len(X))

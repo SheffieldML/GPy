@@ -89,14 +89,13 @@ def quadvgk(feval, fmin, fmax, tol1=1e-5, tol2=1e-5):
     )
 
     NK = WK.size
-    G = np.arange(2, NK, 2)
+    np.arange(2, NK, 2)
     tol1 = 1e-4
     tol2 = 1e-4
     Subs = np.array([[fmin], [fmax]])
     #  number of functions to evaluate in the feval vector of functions.
     NF = feval(np.zeros(1)).size
     Q = np.zeros(NF)
-    neval = 0
     while Subs.size > 0:
         Subs = getSubs(Subs, XK)
         M = (Subs[1, :] - Subs[0, :]) / 2

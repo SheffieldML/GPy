@@ -16,7 +16,7 @@ try:
     from . import state_space_setup
 
     setup_available = True
-except ImportError as e:
+except ImportError:
     setup_available = False
 
 
@@ -28,7 +28,7 @@ try:
     cython_code_available = True
     if print_verbose:
         print("state_space: cython is available")
-except ImportError as e:
+except ImportError:
     cython_code_available = False
 
 # cython_code_available = False
@@ -1612,7 +1612,7 @@ class DescreteStateSpace(object):
 
         # index correspond to values from previous iteration.
         A = p_dyn_model_callable.Ak(k, p_m, Prev_cov)  # state transition matrix (or Jacobian)
-        Q = p_dyn_model_callable.Qk(
+        p_dyn_model_callable.Qk(
             k
         )  # state noise matrx. This is necessary for the square root calculation (next step)
         Q_sr = p_dyn_model_callable.Q_srk(k)
@@ -3222,9 +3222,9 @@ class ContDescrStateSpace(DescreteStateSpace):
         time_series_no = Y.shape[2]  # multiple time series mode
 
         if ((len(p_H.shape) == 3) and (len(p_H.shape[2]) != 1)) or ((len(p_R.shape) == 3) and (len(p_R.shape[2]) != 1)):
-            model_matrices_chage_with_time = True
+            pass
         else:
-            model_matrices_chage_with_time = False
+            pass
 
         # Check index
         old_index_shape = None
@@ -3976,7 +3976,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             AB = matrix_exponent(Phi * dt)
             AB = np.dot(AB, np.vstack((np.zeros((n, n)), np.eye(n))))
 
-            Q_noise_1 = linalg.solve(AB[n:, :].T, AB[:n, :].T)
+            linalg.solve(AB[n:, :].T, AB[:n, :].T)
             Q_noise_2 = P_inf - A.dot(P_inf).dot(A.T)
             # The covariance matrix Q by matrix fraction decomposition <-
 
@@ -4080,7 +4080,7 @@ def matrix_exponent(M):
         try:
             Mexp = linalg.expm(M)
             method = 1
-        except (Exception,) as e:
+        except (Exception,):
             Mexp = linalg.expm3(M)
             method = 2
         finally:

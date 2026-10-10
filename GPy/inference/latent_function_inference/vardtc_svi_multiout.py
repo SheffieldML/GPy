@@ -46,11 +46,11 @@ class VarDTC_SVI_Multiout(LatentFunctionInference):
         The SVI-VarDTC inference
         """
 
-        N, D, Mr, Mc, Qr, Qc = Y.shape[0], Y.shape[1], Zr.shape[0], Zc.shape[0], Zr.shape[1], Zc.shape[1]
+        N, D, Mr, Mc, _Qr, _Qc = Y.shape[0], Y.shape[1], Zr.shape[0], Zc.shape[0], Zr.shape[1], Zc.shape[1]
 
         uncertain_inputs_r = isinstance(Xr, VariationalPosterior)
         uncertain_inputs_c = isinstance(Xc, VariationalPosterior)
-        uncertain_outputs = isinstance(Y, VariationalPosterior)
+        isinstance(Y, VariationalPosterior)
 
         beta = 1.0 / likelihood.variance
 
@@ -264,7 +264,7 @@ class PosteriorMultioutput(object):
     def _prepare(self):
         D, Mr, Mc = self.Xr.shape[0], self.Zr.shape[0], self.LcInvMLrInvT.shape[0]
         psi2_r_n = self.kern_r.psi2n(self.Zr, self.Xr)
-        psi0_r = self.kern_r.psi0(self.Zr, self.Xr)
+        self.kern_r.psi0(self.Zr, self.Xr)
         psi1_r = self.kern_r.psi1(self.Zr, self.Xr)
 
         LrInvPsi1_rT = dtrtrs(self.Lr, psi1_r.T)[0]
@@ -277,8 +277,8 @@ class PosteriorMultioutput(object):
             .T,
         )[0].T.reshape(D, Mr, Mr)
 
-        tr_LrInvPsi2_r_nLrInvT = LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).sum(1)
-        tr_LrInvPsi2_r_nLrInvT_LrInvSrLrInvT = LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).dot(self.LrInvSrLrInvT.flat)
+        LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).sum(1)
+        LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).dot(self.LrInvSrLrInvT.flat)
 
         tmp = LrInvPsi2_r_nLrInvT - LrInvPsi1_rT.T[:, :, None] * LrInvPsi1_rT.T[:, None, :]
         tmp = (

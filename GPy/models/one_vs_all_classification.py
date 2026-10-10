@@ -26,7 +26,7 @@ class OneVsAllClassification(object):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
-        likelihood = likelihoods.Bernoulli()
+        likelihoods.Bernoulli()
 
         assert Y.shape[1] == 1, "Y should be 1 column vector"
 

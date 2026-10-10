@@ -40,7 +40,7 @@ class PSICOMP_GH(PSICOMP):
     @Cache_this(limit=3, ignore_args=(0,))
     def psicomputations(self, kern, Z, qX, return_psi2_n=False):
         mu, S = qX.mean.values, qX.variance.values
-        N, M, Q = mu.shape[0], Z.shape[0], mu.shape[1]
+        N, M, _Q = mu.shape[0], Z.shape[0], mu.shape[1]
         if self.cache_K:
             Xs = self.comp_K(Z, qX)
         else:

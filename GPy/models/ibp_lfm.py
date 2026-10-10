@@ -441,7 +441,6 @@ class IBPPosterior(Parameterized):
 class IBPPrior(VariationalPrior):
     def __init__(self, rank, alpha=2.0, name="IBPPrior", **kw):
         super(IBPPrior, self).__init__(name=name, **kw)
-        from paramz.transformations import __fixed__
 
         self.rank = rank
         self.alpha = Param("alpha", alpha, __fixed__)

@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats, special
 import scipy as sp
 from . import link_functions
-from scipy import stats, integrate
+from scipy import integrate
 from scipy.special import gammaln, gamma
 from .likelihood import Likelihood
 from ..core.parameterization import Param

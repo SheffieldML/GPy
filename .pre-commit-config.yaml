@@ -1,5 +1,5 @@
-# CIP-0005 Phase 1: optional local hooks. CI runs the same narrow ruff check
-# non-blocking (continue-on-error). Do not widen --fix / format enforcement yet.
+# CIP-0005: optional local hooks. CI fails on the same ruff check select
+# as pyproject.toml. Format remains advisory (do not require --check in CI yet).
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.9.10

@@ -184,7 +184,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
             expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
             if ext == "npz":
 
-                def do_test():
+                def do_test(expected=expected, actual=actual, base=base, rtol=rtol, kwargs=kwargs):
                     with pytest.skip:
                         if not os.path.exists(expected):
                             import shutil
@@ -210,7 +210,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
 
             else:
 
-                def do_test():
+                def do_test(expected=expected, actual=actual, tol=tol):
                     err = compare_images(expected, actual, tol, in_decorator=True)
                     if err:
                         print(

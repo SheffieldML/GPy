@@ -212,7 +212,7 @@ class Laplace(LatentFunctionInference):
             dKi_f = full_step_Ki_f - Ki_f
 
             # define an objective for the line search (minimize this one)
-            def inner_obj(step_size):
+            def inner_obj(step_size, Ki_f=Ki_f, dKi_f=dKi_f):
                 Ki_f_trial = Ki_f + step_size * dKi_f
                 f_trial = np.dot(K, Ki_f_trial)
                 return -obj(Ki_f_trial, f_trial)
@@ -415,7 +415,7 @@ class LaplaceBlock(Laplace):
             dKi_f = full_step_Ki_f - Ki_f
 
             # define an objective for the line search (minimize this one)
-            def inner_obj(step_size):
+            def inner_obj(step_size, Ki_f=Ki_f, dKi_f=dKi_f):
                 Ki_f_trial = Ki_f + step_size * dKi_f
                 f_trial = np.dot(K, Ki_f_trial)
                 return -obj(Ki_f_trial, f_trial)

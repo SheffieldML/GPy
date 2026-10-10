@@ -86,8 +86,12 @@ def dparam_checkgrad(
             # dfunc_dparam = lambda d_val, fnum, fdim, param_ind, fixed_val: partial_df(d_val, param_name).reshape(-1, fnum, fdim)[param_ind, fixed_val, :]
 
             # First we reshape the output such that it is (num_params, N, D) then we pull out the relavent parameter-findex and checkgrad just this index at a time
-            func = lambda p_val: partial_f(p_val, param_name).reshape(-1, fnum, fdim)[param_ind, f_ind, :]
-            dfunc_dparam = lambda d_val: partial_df(d_val, param_name).reshape(-1, fnum, fdim)[param_ind, fixed_val, :]
+            func = lambda p_val, param_name=param_name, fnum=fnum, fdim=fdim, param_ind=param_ind, f_ind=f_ind: (
+                partial_f(p_val, param_name).reshape(-1, fnum, fdim)[param_ind, f_ind, :]
+            )
+            dfunc_dparam = lambda d_val, param_name=param_name, fnum=fnum, fdim=fdim, param_ind=param_ind, fixed_val=fixed_val: (
+                partial_df(d_val, param_name).reshape(-1, fnum, fdim)[param_ind, fixed_val, :]
+            )
             grad = GradientChecker(func, dfunc_dparam, param_val, [param_name])
 
             if constraints is not None:
@@ -969,11 +973,11 @@ class TestGammaLikelihood:
             (likelihood.d2logpdf_dlink2, likelihood.d2logpdf_dlink2_dtheta),
         ]:
 
-            def f(beta):
+            def f(beta, value=value):
                 likelihood.beta[:] = beta
                 return np.sum(value(link_f, self.Y))
 
-            def df(beta):
+            def df(beta, gradient=gradient):
                 likelihood.beta[:] = beta
                 return np.sum(gradient(link_f, self.Y)[0])
 
@@ -1111,7 +1115,8 @@ class TestBernoulliVariationalExpectations:
         F = likelihood.variational_expectations(Y, m, v)[0]
         expected = [
             integrate.quad(
-                lambda f: stats.norm.pdf(f, mean, np.sqrt(var)) * stats.norm.logcdf(f if y == 1 else -f),
+                lambda f, mean=mean, var=var, y=y: stats.norm.pdf(f, mean, np.sqrt(var))
+                * stats.norm.logcdf(f if y == 1 else -f),
                 -np.inf,
                 np.inf,
             )[0]

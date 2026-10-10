@@ -1013,7 +1013,7 @@ def hapmap3(data_set="hapmap3"):
                         decomp = bz2.BZ2Decompressor()
                         file_processed = 0
                         buffsize = 100 * 1024
-                        for data in iter(lambda: f.read(buffsize), b""):
+                        for data in iter(lambda buffsize=buffsize: f.read(buffsize), b""):
                             new_file.write(decomp.decompress(data))
                             file_processed += len(data)
                             status = write_status("unpacking...", curr + 12.0 * file_processed / (file_size), status)

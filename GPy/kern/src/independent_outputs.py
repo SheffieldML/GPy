@@ -222,7 +222,7 @@ class Hierarchical(CombinationKernel):
             for k, slices_k in zip(self.parts[1:], slices, strict=False):
                 target = np.zeros(k.size)
 
-                def collate_grads(dL, X, X2, target):
+                def collate_grads(dL, X, X2, target, k=k):
                     k.update_gradients_full(dL, X, X2)
                     target += k.gradient
 

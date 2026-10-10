@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_periodic-kernel-serialization
 title: Serialize Periodic kernels and Coregionalize rank
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -40,16 +40,17 @@ and a round-trip test (including Coregionalize `rank=2`).
 - [x] `PeriodicExponential`, `PeriodicMatern32`, `PeriodicMatern52` serialize
 - [x] Saved dict includes `n_freq`, `lower`, `upper`
 - [x] `Coregionalize.to_dict` includes `rank`; `rank>1` round-trips
-- [ ] Credits #976 / @gehbiszumeis; close #976 as superseded when the PR merges
+- [x] Credits #976 / @gehbiszumeis; close #976 as superseded when the PR merges
 
 ## Related
 
 - CIP: 0004
 - Contributor: gehbiszumeis (@gehbiszumeis)
-- PRs: #976 (source idea)
+- PRs: #976 (source idea), #1156 (landed)
 
 ## Progress Updates
 
 ### 2026-10-10
 
 - Assessed #976; backlog created; implementing maintainer PR.
+- Landed via [#1156](https://github.com/SheffieldML/GPy/pull/1156); closed #976 as superseded.

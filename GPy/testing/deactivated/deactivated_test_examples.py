@@ -55,11 +55,10 @@ def test_models():
         print("After")
         print(functions)
         for example in functions:
-            if example[0] in ["epomeo_gpx"]:
-                # These are the edge cases that we might want to handle specially
-                if example[0] == "epomeo_gpx" and not GPy.util.datasets.gpxpy_available:
-                    print("Skipping as gpxpy is not available to parse GPS")
-                    continue
+            # Edge cases that we might want to handle specially
+            if example[0] == "epomeo_gpx" and not GPy.util.datasets.gpxpy_available:
+                print("Skipping as gpxpy is not available to parse GPS")
+                continue
 
             print("Testing example: ", example[0])
             # Generate model

@@ -27,6 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # ===============================================================================
+import contextlib
+
 import numpy as np
 from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
@@ -160,11 +162,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         marker_kwargs=None,
         **kwargs,
     ):
-        try:
+        with contextlib.suppress(KeyError):
+            # not matplotlib marker if missing from SYMBOL_MAP
             marker = SYMBOL_MAP[marker]
-        except:
-            # not matplotlib marker
-            pass
         marker_kwargs = marker_kwargs or {}
         if "symbol" not in marker_kwargs:
             marker_kwargs["symbol"] = marker

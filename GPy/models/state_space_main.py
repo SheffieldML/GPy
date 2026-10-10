@@ -9,7 +9,7 @@ import types  # for cheking whether a variable is a function
 import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
-from typing import Iterable
+from collections.abc import Iterable
 
 try:
     from . import state_space_setup
@@ -2414,19 +2414,14 @@ class DescreteStateSpace:
                 else:
                     p_M = p_M.reshape((1, 1, 1))
 
-        if (which == "A") or (which == "Q"):
-            if (p_M.shape[0] != state_dim) or (p_M.shape[1] != state_dim):
-                raise ValueError("%s must be a square matrix of size (%i,%i)" % (which, state_dim, state_dim))
-        if which == "H":
-            if (p_M.shape[0] != measurement_dim) or (p_M.shape[1] != state_dim):
-                raise ValueError(
-                    "H must be of shape (measurement_dim, state_dim) (%i,%i)" % (measurement_dim, state_dim)
-                )
-        if which == "R":
-            if (p_M.shape[0] != measurement_dim) or (p_M.shape[1] != measurement_dim):
-                raise ValueError(
-                    "R must be of shape (measurement_dim, measurement_dim) (%i,%i)" % (measurement_dim, measurement_dim)
-                )
+        if ((which == "A") or (which == "Q")) and ((p_M.shape[0] != state_dim) or (p_M.shape[1] != state_dim)):
+            raise ValueError("%s must be a square matrix of size (%i,%i)" % (which, state_dim, state_dim))
+        if which == "H" and ((p_M.shape[0] != measurement_dim) or (p_M.shape[1] != state_dim)):
+            raise ValueError("H must be of shape (measurement_dim, state_dim) (%i,%i)" % (measurement_dim, state_dim))
+        if which == "R" and ((p_M.shape[0] != measurement_dim) or (p_M.shape[1] != measurement_dim)):
+            raise ValueError(
+                "R must be of shape (measurement_dim, measurement_dim) (%i,%i)" % (measurement_dim, measurement_dim)
+            )
 
         return (p_M, old_M_shape)
 

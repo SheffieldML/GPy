@@ -217,9 +217,8 @@ class MatplotlibPlots(AbstractPlottingLibrary):
                     Path.CLOSEPOLY,
                 ],
             )
-        if "transform" not in kwargs:
-            if X.shape[1] == 1:
-                kwargs["transform"] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
+        if "transform" not in kwargs and X.shape[1] == 1:
+            kwargs["transform"] = transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if X.shape[1] == 2:
             return ax.scatter(X[:, 0], X[:, 1], ax.get_zlim()[0], c=color, label=label, **kwargs)
         return ax.scatter(X, np.zeros_like(X), c=color, label=label, **kwargs)

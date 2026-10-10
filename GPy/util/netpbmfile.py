@@ -316,8 +316,7 @@ class NetpbmFile:
             header = "P5 %i %i %i\n" % (self.width, self.height, self.maxval)
         else:
             header = "P6 %i %i %i\n" % (self.width, self.height, self.maxval)
-        if sys.version_info[0] > 2:
-            header = bytes(header, "ascii")
+        header = bytes(header, "ascii")
         return header
 
     def __str__(self):
@@ -325,9 +324,8 @@ class NetpbmFile:
         return unicode(self.header)
 
 
-if sys.version_info[0] > 2:
-    basestring = str
-    unicode = lambda x: str(x, "ascii")
+basestring = str
+unicode = lambda x: str(x, "ascii")
 
 if __name__ == "__main__":
     # Show images specified on command line or all images in current directory

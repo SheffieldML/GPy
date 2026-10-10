@@ -52,6 +52,7 @@ import GPy, os
 import logging
 
 from GPy.plotting import change_plotting_library, plotting_library
+import contextlib
 
 
 class TestConfig:
@@ -197,7 +198,7 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
                             act_dict = dict(np.load(actual).items())
                             for name in act_dict:
                                 if name in exp_dict:
-                                    try:
+                                    with contextlib.suppress(AssertionError):
                                         np.testing.assert_allclose(
                                             exp_dict[name],
                                             act_dict[name],
@@ -205,8 +206,6 @@ def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwa
                                             rtol=rtol,
                                             **kwargs,
                                         )
-                                    except AssertionError:
-                                        pass
 
             else:
 

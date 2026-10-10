@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* keep running remaining kernel gradient sub-checks in `check_kernel_gradient_functions` after the first failure, so later failures are not hidden (idea from #867)
 * add `normalizer` and list-aware `set_XY` to `GPCoregionalizedRegression` and `SparseGPCoregionalizedRegression` (API parity with `GPRegression`; idea from #859)
 * implement `Gamma.conditional_mean`, `conditional_variance` and `samples`, so `predict` works for Gamma + Laplace (mean-rate form: E[y|f] = link(f), Var[y|f] = link(f)/beta)
 * fix the sampling fallback of `Likelihood.predictive_values`, which passed a `samples` argument that the likelihoods' `samples` methods do not accept, so `predict` raised `TypeError` for likelihoods without a conditional mean (`Exponential`, `Weibull`, `LogLogistic`)

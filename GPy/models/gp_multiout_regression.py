@@ -1,15 +1,58 @@
 # Copyright (c) 2017  Zhenwen Dai
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+import warnings
+
 import numpy as np
 from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
-from .. import util
 from GPy.core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization.param import Param
 from paramz.transformations import Logexp
 from ..util.linalg import tdot
+
+
+def _match_qU_mean(mean, Mc, Mr):
+    """Ensure qU_mean is shaped (Mc, Mr), padding or truncating as needed."""
+    mean = np.asarray(mean, dtype=float)
+    out = np.zeros((Mc, Mr))
+    if mean.ndim != 2:
+        return out
+    mc = min(Mc, mean.shape[0])
+    mr = min(Mr, mean.shape[1])
+    out[:mc, :mr] = mean[:mc, :mr]
+    return out
+
+
+def _qU_cov_factors(cov, M, W_dim=None):
+    """
+    Low-rank-plus-diag factors for a M×M covariance.
+
+    ``cov`` may come from a warm-start posterior whose size differs from ``M``
+    (e.g. BGPLVM posterior over D outputs while Mr inducing points were requested).
+    """
+    from ..util.linalg import jitchol
+
+    if cov is not None:
+        cov = np.asarray(cov, dtype=float)
+        n = cov.shape[0]
+        if n == M:
+            base = cov
+        elif n > M:
+            base = cov[:M, :M]
+        else:
+            base = np.eye(M) * 1e-2
+            base[:n, :n] = cov
+        W = jitchol(base)
+        if W_dim is not None and W_dim < M:
+            W = W[:, :W_dim]
+    else:
+        width = M if W_dim is None else W_dim
+        W = np.random.randn(M, width) * 0.01
+    diag = np.full(M, 1e-5)
+    return W, diag
+
 
 class GPMultioutRegression(SparseGP):
     """
@@ -38,7 +81,7 @@ class GPMultioutRegression(SparseGP):
     :type X_row: numpy.ndarray or None
     :param Xvariance_row: the initial value of the variance of the variational posterior distribution of points in the latent space
     :type Xvariance_row: numpy.ndarray or None
-    :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space.
+    :param num_inducing: a tuple (M, Mr). M is the number of inducing points for GP of individual output dimensions. Mr is the number of inducing points for the latent space (must be ``<=`` number of outputs; capped with a warning if larger — #733).
     :type num_inducing: (int, int)
     :param int qU_var_r_W_dim: the dimensionality of the covariance of q(U) for the latent space. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
     :param int qU_var_c_W_dim: the dimensionality of the covariance of q(U) for the GP regression. If it is smaller than the number of inducing points, it represents a low-rank parameterization of the covariance matrix.
@@ -48,6 +91,18 @@ class GPMultioutRegression(SparseGP):
     """
     def __init__(self, X, Y, Xr_dim, kernel=None, kernel_row=None, Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', name='GPMR'):
 
+        D = Y.shape[1]
+        Mc, Mr = int(num_inducing[0]), int(num_inducing[1])
+        if Mr > D:
+            warnings.warn(
+                "num_inducing[1]=%d exceeds the number of outputs D=%d; "
+                "capping Mr to D so q(U) row covariance matches Z_row (#733)."
+                % (Mr, D),
+                UserWarning,
+                stacklevel=2,
+            )
+            Mr = D
+
         #Kernel
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
@@ -55,10 +110,12 @@ class GPMultioutRegression(SparseGP):
         if kernel_row is None:
             kernel_row = kern.RBF(Xr_dim,name='kern_row')
 
+        qU_mean = None
+        qU_var_col_W = qU_var_col_diag = None
+        qU_var_row_W = qU_var_row_diag = None
+
         if init=='GP':
             from . import SparseGPRegression, BayesianGPLVM
-            from ..util.linalg import jitchol
-            Mc, Mr = num_inducing
             print('Intializing with GP...')
             print('Fit Sparse GP...')
             m_sgp = SparseGPRegression(X,Y,kernel=kernel.copy(),num_inducing=Mc)
@@ -78,18 +135,36 @@ class GPMultioutRegression(SparseGP):
             X_row = m_lvm.X.mean.values.copy()
             Xvariance_row = m_lvm.X.variance.values
 
-            qU_mean = m_lvm.posterior.mean.T.copy()
-            qU_var_col_W = jitchol(m_sgp.posterior.covariance)
-            qU_var_col_diag = np.full(Mc,1e-5)
-            qU_var_row_W = jitchol(m_lvm.posterior.covariance)
-            qU_var_row_diag = np.full(Mr,1e-5)
+            Mc = Z.shape[0]
+            Mr = Z_row.shape[0]
+            qU_mean = _match_qU_mean(m_lvm.posterior.mean.T.copy(), Mc, Mr)
+            qU_var_col_W, qU_var_col_diag = _qU_cov_factors(
+                m_sgp.posterior.covariance, Mc, qU_var_c_W_dim
+            )
+            qU_var_row_W, qU_var_row_diag = _qU_cov_factors(
+                m_lvm.posterior.covariance, Mr, qU_var_r_W_dim
+            )
             print('Done.')
         else:
-            qU_mean = np.zeros(num_inducing)
-            qU_var_col_W = np.random.randn(num_inducing[0],num_inducing[0] if qU_var_c_W_dim is None else qU_var_c_W_dim)*0.01
-            qU_var_col_diag = np.full(num_inducing[0],1e-5)
-            qU_var_row_W = np.random.randn(num_inducing[1],num_inducing[1] if qU_var_r_W_dim is None else qU_var_r_W_dim)*0.01
-            qU_var_row_diag = np.full(num_inducing[1],1e-5)
+            if X_row is None:
+                u,s,v = np.linalg.svd(Y)
+                X_row = Y.T.dot(u[:,:Xr_dim])#*np.sqrt(s)[:Xr_dim])
+                X_row = X_row/X_row.std(0)
+            if Xvariance_row is None:
+                Xvariance_row = np.ones((Y.shape[1],Xr_dim))*0.0001
+            if Z is None:
+                Z = X[np.random.permutation(X.shape[0])[:Mc]].copy()
+            if Z_row is None:
+                Z_row = X_row[np.random.permutation(X_row.shape[0])[:Mr]].copy()
+            Mc = Z.shape[0]
+            Mr = Z_row.shape[0]
+            qU_mean = np.zeros((Mc, Mr))
+            qU_var_col_W, qU_var_col_diag = _qU_cov_factors(
+                None, Mc, qU_var_c_W_dim
+            )
+            qU_var_row_W, qU_var_row_diag = _qU_cov_factors(
+                None, Mr, qU_var_r_W_dim
+            )
 
         if X_row is None:
             u,s,v = np.linalg.svd(Y)
@@ -98,9 +173,26 @@ class GPMultioutRegression(SparseGP):
         if Xvariance_row is None:
             Xvariance_row = np.ones((Y.shape[1],Xr_dim))*0.0001
         if Z is None:
-            Z = X[np.random.permutation(X.shape[0])[:num_inducing[0]]].copy()
+            Z = X[np.random.permutation(X.shape[0])[:Mc]].copy()
         if Z_row is None:
-            Z_row = X_row[np.random.permutation(X_row.shape[0])[:num_inducing[1]]].copy()
+            Z_row = X_row[np.random.permutation(X_row.shape[0])[:Mr]].copy()
+
+        # Final sizes always follow the inducing sets actually used (#733).
+        Mc = Z.shape[0]
+        Mr = Z_row.shape[0]
+        qU_mean = _match_qU_mean(qU_mean, Mc, Mr)
+        if qU_var_col_W.shape[0] != Mc:
+            qU_var_col_W, qU_var_col_diag = _qU_cov_factors(
+                None, Mc, qU_var_c_W_dim
+            )
+        if qU_var_row_W.shape[0] != Mr:
+            qU_var_row_W, qU_var_row_diag = _qU_cov_factors(
+                None, Mr, qU_var_r_W_dim
+            )
+        if qU_var_col_diag.shape[0] != Mc:
+            qU_var_col_diag = np.full(Mc, 1e-5)
+        if qU_var_row_diag.shape[0] != Mr:
+            qU_var_row_diag = np.full(Mr, 1e-5)
 
         self.kern_row = kernel_row
         self.X_row = NormalPosterior(X_row, Xvariance_row,name='Xr')

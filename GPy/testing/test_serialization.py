@@ -3,9 +3,12 @@ Created on 20 April 2017
 
 @author: pgmoren
 """
+import gzip
+import json
 import numpy as np
 import GPy
 import os
+import tempfile
 
 fixed_seed = 11
 
@@ -511,3 +514,38 @@ class TestSerialization:
             mean_r, var_r = m_r.predict(X)
             np.testing.assert_allclose(mean_r, mean)
             np.testing.assert_allclose(var_r, var)
+
+    def test_save_model_respects_compress_and_save_data(self):
+        """save_model must honour compress=False and save_data=False (#938)."""
+        np.random.seed(fixed_seed)
+        X = np.random.uniform(-3.0, 3.0, (20, 1))
+        Y = np.sin(X) + np.random.randn(20, 1) * 0.05
+        models = [
+            GPy.models.GPRegression(X, Y),
+            GPy.models.GPClassification(
+                np.hstack([np.random.normal(5, 2, 10), np.random.normal(10, 2, 10)])[
+                    :, None
+                ],
+                np.hstack([np.ones(10), np.zeros(10)])[:, None],
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            for i, m in enumerate(models):
+                base = os.path.join(tmp, "model_%d" % i)
+                m.save_model(base, compress=False, save_data=False)
+                json_path = base + ".json"
+                zip_path = base + ".zip"
+                assert os.path.exists(json_path), "compress=False should write .json"
+                assert not os.path.exists(
+                    zip_path
+                ), "compress=False should not write .zip"
+                with open(json_path) as f:
+                    payload = json.load(f)
+                assert payload["X"] is None and payload["Y"] is None
+
+                m.save_model(base + "_c", compress=True, save_data=True)
+                zip_path = base + "_c.zip"
+                assert os.path.exists(zip_path), "compress=True should write .zip"
+                with gzip.GzipFile(zip_path, "r") as f:
+                    payload = json.loads(f.read().decode("utf-8"))
+                assert payload["X"] is not None and payload["Y"] is not None

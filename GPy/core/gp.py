@@ -183,7 +183,7 @@ class GP(Model):
         return GP(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):
-        self._save_model(output_filename, compress=True, save_data=True)
+        self._save_model(output_filename, compress=compress, save_data=save_data)
 
     # The predictive variable to be used to predict using the posterior object's
     # woodbury_vector and woodbury_inv is defined as predictive_variable

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* honour `compress` and `save_data` in `GP.save_model` and `SparseGPClassification.save_model` (same bug as #938; regression/classification fixed there by Peter Scherpelz) and add a regression test for both flags
 * keep running remaining kernel gradient sub-checks in `check_kernel_gradient_functions` after the first failure, so later failures are not hidden (idea from #867)
 * add `normalizer` and list-aware `set_XY` to `GPCoregionalizedRegression` and `SparseGPCoregionalizedRegression` (API parity with `GPRegression`; idea from #859)
 * implement `Gamma.conditional_mean`, `conditional_variance` and `samples`, so `predict` works for Gamma + Laplace (mean-rate form: E[y|f] = link(f), Var[y|f] = link(f)/beta)

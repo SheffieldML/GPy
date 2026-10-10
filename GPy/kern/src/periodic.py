@@ -35,6 +35,24 @@ class Periodic(Kern):
         self.period = Param('period', np.float64(period), Logexp())
         self.link_parameters(self.variance, self.lengthscale, self.period)
 
+    def _save_to_input_dict(self):
+        input_dict = super(Periodic, self)._save_to_input_dict()
+        input_dict["variance"] = self.variance.values.tolist()
+        input_dict["lengthscale"] = self.lengthscale.values.tolist()
+        input_dict["period"] = self.period.values.tolist()
+        input_dict["n_freq"] = int(self.n_freq)
+        input_dict["lower"] = float(self.lower)
+        input_dict["upper"] = float(self.upper)
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        input_dict.pop("useGPU", None)
+        for key in ("variance", "lengthscale", "period"):
+            if key in input_dict:
+                input_dict[key] = float(np.asarray(input_dict[key]).squeeze())
+        return kernel_class(**input_dict)
+
     def _cos(self, alpha, omega, phase):
         def f(x):
             return alpha*np.cos(omega*x + phase)
@@ -77,6 +95,11 @@ class PeriodicExponential(Periodic):
 
     def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_exponential'):
         super(PeriodicExponential, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
+
+    def to_dict(self):
+        input_dict = super(PeriodicExponential, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.PeriodicExponential"
+        return input_dict
 
     def parameters_changed(self):
         self.a = [1./self.lengthscale, 1.]
@@ -188,6 +211,12 @@ class PeriodicMatern32(Periodic):
 
     def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern32'):
         super(PeriodicMatern32, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
+
+    def to_dict(self):
+        input_dict = super(PeriodicMatern32, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.PeriodicMatern32"
+        return input_dict
+
     def parameters_changed(self):
         self.a = [3./self.lengthscale**2, 2*np.sqrt(3)/self.lengthscale, 1.]
         self.b = [1,self.lengthscale**2/3]
@@ -301,6 +330,11 @@ class PeriodicMatern52(Periodic):
 
     def __init__(self, input_dim=1, variance=1., lengthscale=1., period=2.*np.pi, n_freq=10, lower=0., upper=4*np.pi, active_dims=None, name='periodic_Matern52'):
         super(PeriodicMatern52, self).__init__(input_dim, variance, lengthscale, period, n_freq, lower, upper, active_dims, name)
+
+    def to_dict(self):
+        input_dict = super(PeriodicMatern52, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.PeriodicMatern52"
+        return input_dict
 
     def parameters_changed(self):
         self.a = [5*np.sqrt(5)/self.lengthscale**3, 15./self.lengthscale**2,3*np.sqrt(5)/self.lengthscale, 1.]

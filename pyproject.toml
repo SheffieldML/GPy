@@ -74,6 +74,8 @@ extend-exclude = [
     "dist",
     ".eggs",
     "GPy/kern/src/todo",
+    "GPy/old_tests",
+    "GPy/testing/mpi_test__.py",
 ]
 
 [tool.ruff.lint]

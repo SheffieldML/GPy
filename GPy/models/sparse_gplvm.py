@@ -48,9 +48,13 @@ class SparseGPLVM(SparseGPRegression):
         plot_limits=None,
         aspect="auto",
         updates=False,
-        predict_kwargs={},
-        imshow_kwargs={},
+        predict_kwargs=None,
+        imshow_kwargs=None,
     ):
+        if imshow_kwargs is None:
+            imshow_kwargs = {}
+        if predict_kwargs is None:
+            predict_kwargs = {}
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ..plotting.matplot_dep import dim_reduction_plots
 

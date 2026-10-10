@@ -42,7 +42,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
         self,
         X_list,
         Y_list,
-        Z_list=[],
+        Z_list=None,
         kernel=None,
         likelihoods_list=None,
         num_inducing=10,
@@ -53,6 +53,8 @@ class SparseGPCoregionalizedRegression(SparseGP):
         normalizer=False,
     ):
         # Input and Output
+        if Z_list is None:
+            Z_list = []
         X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
         Ny = len(Y_list)
 

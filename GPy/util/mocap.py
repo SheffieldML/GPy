@@ -4,7 +4,13 @@ import math
 
 
 class vertex:
-    def __init__(self, name, id, parents=[], children=[], meta={}):
+    def __init__(self, name, id, parents=None, children=None, meta=None):
+        if meta is None:
+            meta = {}
+        if children is None:
+            children = []
+        if parents is None:
+            parents = []
         self.name = name
         self.id = id
         self.parents = parents

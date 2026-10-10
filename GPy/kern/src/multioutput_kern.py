@@ -51,8 +51,10 @@ class MultioutputKern(CombinationKernel):
     -'gradients_X': gives a gradient of the cross covariance with respect to the first input
     """
 
-    def __init__(self, kernels, cross_covariances={}, name="MultioutputKern"):
+    def __init__(self, kernels, cross_covariances=None, name="MultioutputKern"):
         # kernels contains a list of kernels as input,
+        if cross_covariances is None:
+            cross_covariances = {}
         if not isinstance(kernels, list):
             self.single_kern = True
             self.kern = kernels

@@ -140,7 +140,7 @@ class HessianChecker(GradientChecker):
         :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
 
         """
-        super(HessianChecker, self).__init__(df, ddf, x0, names=names, *args, **kwargs)
+        super(HessianChecker, self).__init__(df, ddf, x0, *args, names=names, **kwargs)
         self._f = f
         self._df = df
         self._ddf = ddf
@@ -328,7 +328,7 @@ class SkewChecker(HessianChecker):
         :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
 
         """
-        super(SkewChecker, self).__init__(df, ddf, dddf, x0, names=names, *args, **kwargs)
+        super(SkewChecker, self).__init__(df, ddf, dddf, x0, *args, names=names, **kwargs)
 
     def checkgrad(
         self,

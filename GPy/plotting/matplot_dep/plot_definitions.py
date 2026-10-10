@@ -43,7 +43,9 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         super(MatplotlibPlots, self).__init__()
         self._defaults = defaults.__dict__
 
-    def figure(self, rows=1, cols=1, gridspec_kwargs={}, tight_layout=True, **kwargs):
+    def figure(self, rows=1, cols=1, gridspec_kwargs=None, tight_layout=True, **kwargs):
+        if gridspec_kwargs is None:
+            gridspec_kwargs = {}
         fig = plt.figure(tight_layout=tight_layout, **kwargs)
         fig.rows = rows
         fig.cols = cols

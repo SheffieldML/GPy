@@ -95,7 +95,7 @@ class vector_show(matplotlib_show):
 
 class lvm(matplotlib_show):
     def __init__(
-        self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], disable_drag=False
+        self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=None, disable_drag=False
     ):
         """Visualize a latent variable model
 
@@ -104,6 +104,8 @@ class lvm(matplotlib_show):
         :type data_visualize: visualize.data_show  type.
         :param latent_axes: the axes where the latent visualization should be plotted.
         """
+        if latent_index is None:
+            latent_index = [0, 1]
         if vals is None:
             if isinstance(model.X, VariationalPosterior):
                 vals = model.X.mean.values
@@ -239,8 +241,10 @@ class lvm_dimselect(lvm):
     """
 
     def __init__(
-        self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=[0, 1], labels=None
+        self, vals, model, data_visualize, latent_axes=None, sense_axes=None, latent_index=None, labels=None
     ):
+        if latent_index is None:
+            latent_index = [0, 1]
         if latent_axes is None and sense_axes is None:
             self.fig, (latent_axes, self.sense_axes) = plt.subplots(1, 2)
         elif sense_axes is None:
@@ -315,12 +319,14 @@ class image_show(matplotlib_show):
         order="C",
         invert=False,
         scale=False,
-        palette=[],
+        palette=None,
         preset_mean=0.0,
         preset_std=1.0,
         select_image=0,
         cmap=None,
     ):
+        if palette is None:
+            palette = []
         super(image_show, self).__init__(vals, axes)
         self.dimensions = dimensions
         self.transpose = transpose

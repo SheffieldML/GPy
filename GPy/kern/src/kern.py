@@ -44,7 +44,7 @@ class Kern(Parameterized):
 
         Do not instantiate.
         """
-        super(Kern, self).__init__(name=name, *a, **kw)
+        super(Kern, self).__init__(*a, name=name, **kw)
         self.input_dim = int(input_dim)
 
         if active_dims is None:
@@ -401,7 +401,7 @@ class CombinationKernel(Kern):
     Examples are the HierarchicalKernel or Add and Prod kernels.
     """
 
-    def __init__(self, kernels, name, extra_dims=[], link_parameters=True):
+    def __init__(self, kernels, name, extra_dims=None, link_parameters=True):
         """
         Abstract super class for combination kernels.
         A combination kernel combines (a list of) kernels and works on those.
@@ -411,6 +411,8 @@ class CombinationKernel(Kern):
         :param str name: name of the combination kernel
         :param array-like extra_dims: if needed extra dimensions for the combination kernel to work on
         """
+        if extra_dims is None:
+            extra_dims = []
         assert all([isinstance(k, Kern) for k in kernels])
         extra_dims = np.asarray(extra_dims, dtype=int)
 

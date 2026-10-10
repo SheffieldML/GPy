@@ -26,10 +26,12 @@ class Symbolic_core:
     Base model symbolic class.
     """
 
-    def __init__(self, expressions, cacheable, derivatives=None, parameters=None, func_modules=[]):
+    def __init__(self, expressions, cacheable, derivatives=None, parameters=None, func_modules=None):
         # Base class init, do some basic derivatives etc.
 
         # Func_modules sets up the right mapping for functions.
+        if func_modules is None:
+            func_modules = []
         func_modules += [
             {
                 "gamma": scipy.special.gamma,
@@ -409,9 +411,11 @@ class Symbolic_core:
                 code = code.replace(arg.name, "self." + arg.name)
         return code
 
-    def _display_expression(self, keys, user_substitutes={}):
+    def _display_expression(self, keys, user_substitutes=None):
         """Helper function for human friendly display of the symbolic components."""
         # Create some pretty maths symbols for the display.
+        if user_substitutes is None:
+            user_substitutes = {}
         sigma, alpha, nu, omega, l, variance = sym.var(r"\sigma, \alpha, \nu, \omega, \ell, \sigma^2")
         substitutes = {"scale": sigma, "shape": alpha, "lengthscale": l, "variance": variance}
         substitutes.update(user_substitutes)

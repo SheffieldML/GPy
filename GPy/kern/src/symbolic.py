@@ -16,9 +16,11 @@ class Symbolic(Kern, Symbolic_core):
         parameters=None,
         active_dims=None,
         operators=None,
-        func_modules=[],
+        func_modules=None,
     ):
 
+        if func_modules is None:
+            func_modules = []
         if k is None:
             raise ValueError("You must provide an argument for the covariance function.")
 

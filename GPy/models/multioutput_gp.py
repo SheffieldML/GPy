@@ -41,10 +41,12 @@ class MultioutputGP(GP):
         kernel_list,
         likelihood_list,
         name="multioutputgp",
-        kernel_cross_covariances={},
+        kernel_cross_covariances=None,
         inference_method=None,
     ):
         # Input and Output
+        if kernel_cross_covariances is None:
+            kernel_cross_covariances = {}
         X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
         len(Y_list)
 

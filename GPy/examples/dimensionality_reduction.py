@@ -771,11 +771,13 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     return m
 
 
-def cmu_mocap(subject="35", motion=["01"], in_place=True, optimize=True, verbose=True, plot=True):
+def cmu_mocap(subject="35", motion=None, in_place=True, optimize=True, verbose=True, plot=True):
     import matplotlib.pyplot as plt
     import GPy
     import pods
 
+    if motion is None:
+        motion = ["01"]
     data = pods.datasets.cmu_mocap(subject, motion)
     if in_place:
         # Make figure move in place.

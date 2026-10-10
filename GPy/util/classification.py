@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def conf_matrix(p, labels, names=["1", "0"], threshold=0.5, show=True):
+def conf_matrix(p, labels, names=None, threshold=0.5, show=True):
     """
     Returns error rate and true/false positives in a binary classification problem
     - Actual classes are displayed by column.
@@ -16,6 +16,8 @@ def conf_matrix(p, labels, names=["1", "0"], threshold=0.5, show=True):
     :param show: whether the matrix should be shown or not
     :type show: False|True
     """
+    if names is None:
+        names = ["1", "0"]
     assert p.size == labels.size, "Arrays p and labels have different dimensions."
     decision = np.ones((labels.size, 1))
     decision[p < threshold] = 0

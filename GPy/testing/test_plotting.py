@@ -142,7 +142,9 @@ if not os.path.exists(baseline_dir):
     baseline_dir = None
 
 
-def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11, rtol=1e-3, **kwargs):
+def _image_comparison(baseline_images, extensions=None, tol=11, rtol=1e-3, **kwargs):
+    if extensions is None:
+        extensions = ["pdf", "svg", "png"]
     for num, base in zip(plt.get_fignums(), baseline_images, strict=False):
         for ext in extensions:
             fig = plt.figure(num)

@@ -709,7 +709,11 @@ def multioutput_gp_with_derivative_observations(plot=True):
 
     if MPL_AVAILABLE and plot:
 
-        def plot_gp_vs_real(m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0, 11], ylim=[-1.5, 3]):
+        def plot_gp_vs_real(m, x, yreal, size_inputs, title, fixed_input=1, xlim=None, ylim=None):
+            if ylim is None:
+                ylim = [-1.5, 3]
+            if xlim is None:
+                xlim = [0, 11]
             fig, ax = plt.subplots()
             ax.set_title(title)
             plt.plot(x, yreal, "r", label="Real function")

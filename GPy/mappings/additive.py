@@ -4,6 +4,7 @@
 import numpy as np
 from ..core import Mapping
 
+
 class Additive(Mapping):
     """
     Mapping based on adding two existing mappings together.
@@ -20,8 +21,8 @@ class Additive(Mapping):
     """
 
     def __init__(self, mapping1, mapping2):
-        assert(mapping1.input_dim==mapping2.input_dim)
-        assert(mapping1.output_dim==mapping2.output_dim)
+        assert mapping1.input_dim == mapping2.input_dim
+        assert mapping1.output_dim == mapping2.output_dim
         input_dim, output_dim = mapping1.input_dim, mapping1.output_dim
         super(Additive, self).__init__(input_dim=input_dim, output_dim=output_dim)
         self.mapping1 = mapping1

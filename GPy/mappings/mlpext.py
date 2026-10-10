@@ -5,6 +5,7 @@ import numpy as np
 from ..core.mapping import Mapping
 from ..core import Param
 
+
 class MLPext(Mapping):
     """
     Mapping based on a multi-layer perceptron neural network model, with multiple hidden layers. Activation function
@@ -12,8 +13,7 @@ class MLPext(Mapping):
     last layer is linear.
     """
 
-    def __init__(self, input_dim=1, output_dim=1, hidden_dims=[3], prior=None, activation='tanh', name='mlpmap'):
-
+    def __init__(self, input_dim=1, output_dim=1, hidden_dims=[3], prior=None, activation="tanh", name="mlpmap"):
         """
         :param input_dim: number of input dimensions
         :param output_dim: number of output dimensions
@@ -23,16 +23,17 @@ class MLPext(Mapping):
         :param name:
         """
         super(MLPext, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
-        assert activation in ['tanh', 'sigmoid', 'relu'], NotImplementedError('Only tanh, relu and sigmoid activations'
-                                                                              'are implemented')
+        assert activation in ["tanh", "sigmoid", "relu"], NotImplementedError(
+            "Only tanh, relu and sigmoid activationsare implemented"
+        )
         self.hidden_dims = hidden_dims
         self.W_list = list()
         self.b_list = list()
         for i in np.arange(len(hidden_dims) + 1):
             in_dim = input_dim if i == 0 else hidden_dims[i - 1]
             out_dim = output_dim if i == len(hidden_dims) else hidden_dims[i]
-            self.W_list.append(Param('W%d'%i, np.random.randn(in_dim, out_dim)))
-            self.b_list.append(Param('b%d'%i, np.random.randn(out_dim)))
+            self.W_list.append(Param("W%d" % i, np.random.randn(in_dim, out_dim)))
+            self.b_list.append(Param("b%d" % i, np.random.randn(out_dim)))
 
         if prior is not None:
             for W, b in zip(self.W_list, self.b_list):
@@ -42,26 +43,27 @@ class MLPext(Mapping):
         self.link_parameters(*self.W_list)
         self.link_parameters(*self.b_list)
 
-        if activation == 'tanh':
+        if activation == "tanh":
             self.act = np.tanh
-            self.grad_act = lambda x: 1. / np.square(np.cosh(x))
+            self.grad_act = lambda x: 1.0 / np.square(np.cosh(x))
 
-        elif activation == 'sigmoid':
+        elif activation == "sigmoid":
             from scipy.special import expit
             from scipy.stats import logistic
+
             self.act = expit
             self.grad_act = logistic._pdf
 
-        elif activation == 'relu':
+        elif activation == "relu":
             self.act = lambda x: x * (x > 0)
-            self.grad_act = lambda x: 1. * (x > 0)
+            self.grad_act = lambda x: 1.0 * (x > 0)
 
     def f(self, X):
         net = X
         for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list))):
             net = np.dot(net, W)
             net = net + b
-            if i < len(self.W_list)-1:
+            if i < len(self.W_list) - 1:
                 # Don't apply nonlinearity to last layer outputs
                 net = self.act(net)
         return net
@@ -89,8 +91,12 @@ class MLPext(Mapping):
         preactivations_list = self._f_preactivations(X)
         d_dact = dL_dF
         d_dlayer = d_dact
-        for W, b, preactivation, i in zip(reversed(self.W_list), reversed(self.b_list), reversed(preactivations_list),
-                                          reversed(np.arange(len(self.W_list)))):
+        for W, b, preactivation, i in zip(
+            reversed(self.W_list),
+            reversed(self.b_list),
+            reversed(preactivations_list),
+            reversed(np.arange(len(self.W_list))),
+        ):
             if i > 0:
                 # Apply activation function to linear preactivations to get input from previous layer
                 # (except for first layer where input is X)
@@ -122,9 +128,9 @@ class MLPext(Mapping):
         preactivations_list = self._f_preactivations(X)
         d_dact = dL_dF
         d_dlayer = d_dact
-        for W, preactivation, i in zip(reversed(self.W_list), reversed(preactivations_list),
-                                       reversed(np.arange(len(self.W_list)))):
-
+        for W, preactivation, i in zip(
+            reversed(self.W_list), reversed(preactivations_list), reversed(np.arange(len(self.W_list)))
+        ):
             # Backpropagation through hidden layer.
             d_dact = np.dot(d_dlayer, W.T)
             d_dlayer = d_dact * self.grad_act(preactivation)

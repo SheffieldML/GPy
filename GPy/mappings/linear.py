@@ -6,6 +6,7 @@ import numpy as np
 from ..core.mapping import Mapping
 from ..core.parameterization import Param
 
+
 class Linear(Mapping):
     """
     A Linear mapping.
@@ -24,9 +25,9 @@ class Linear(Mapping):
 
     """
 
-    def __init__(self, input_dim, output_dim, name='linmap'):
+    def __init__(self, input_dim, output_dim, name="linmap"):
         super(Linear, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
-        self.A = Param('A', np.random.randn(self.input_dim, self.output_dim))
+        self.A = Param("A", np.random.randn(self.input_dim, self.output_dim))
         self.link_parameter(self.A)
 
     def f(self, X):
@@ -55,11 +56,12 @@ class Linear(Mapping):
     @staticmethod
     def _build_from_input_dict(mapping_class, input_dict):
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        A = np.array(input_dict.pop('A'))
+        A = np.array(input_dict.pop("A"))
         l = Linear(**input_dict)
         l.unlink_parameter(l.A)
         l.update_model(False)
-        l.A = Param('A', A)
+        l.A = Param("A", A)
         l.link_parameter(l.A)
         return l

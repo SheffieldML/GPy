@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* implement `Symmetric.gradients_X_diag` consistent with `Kdiag` (missing method identified in #1002; cross-term gradients included)
+* use `link_parameter` in leftover `splitKern` / `TruncLinear` kernels after the paramz rename (#978)
 * fix plotting for matplotlib ≥ 3.4: call `_process_unit_info` with the new datasets API in `plot_definitions` and `base_plots`, and require `matplotlib >= 3.4` in the plotting extra (#953 / idea from #960)
 * honour `compress` and `save_data` in `GP.save_model` and `SparseGPClassification.save_model` (same bug as #938; regression/classification fixed there by Peter Scherpelz) and add a regression test for both flags
 * keep running remaining kernel gradient sub-checks in `check_kernel_gradient_functions` after the first failure, so later failures are not hidden (idea from #867)

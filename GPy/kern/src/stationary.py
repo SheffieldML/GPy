@@ -523,7 +523,7 @@ class Matern32(Stationary):
         G = np.zeros((n, n))
         for i in range(n):
             for j in range(i, n):
-                G[i, j] = G[j, i] = integrate.quad(lambda x: L(x, i) * L(x, j), lower, upper)[0]
+                G[i, j] = G[j, i] = integrate.quad(lambda x, i=i, j=j: L(x, i) * L(x, j), lower, upper)[0]
         Flower = np.array([f(lower) for f in F])[:, None]
         F1lower = np.array([f(lower) for f in F1])[:, None]
         return (
@@ -631,7 +631,7 @@ class Matern52(Stationary):
         G = np.zeros((n, n))
         for i in range(n):
             for j in range(i, n):
-                G[i, j] = G[j, i] = integrate.quad(lambda x: L(x, i) * L(x, j), lower, upper)[0]
+                G[i, j] = G[j, i] = integrate.quad(lambda x, i=i, j=j: L(x, i) * L(x, j), lower, upper)[0]
         G_coef = 3.0 * self.lengthscale**5 / (400 * np.sqrt(5))
         Flower = np.array([f(lower) for f in F])[:, None]
         F1lower = np.array([f(lower) for f in F1])[:, None]

@@ -3,6 +3,7 @@
 """
 Gaussian Processes classification examples
 """
+
 MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
@@ -22,9 +23,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     try:
         import pods
     except ImportError:
-        raise ImportWarning(
-            "Need pods for example datasets. See https://github.com/sods/ods, or pip install pods."
-        )
+        raise ImportWarning("Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.")
     data = pods.datasets.oil()
     X = data["X"]
     Xtest = data["Xtest"]
@@ -34,9 +33,7 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     Ytest[Ytest.flatten() == -1] = 0
 
     # Create GP model
-    m = GPy.models.SparseGPClassification(
-        X, Y, kernel=kernel, num_inducing=num_inducing
-    )
+    m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, num_inducing=num_inducing)
     m.Ytest = Ytest
 
     # Contrain all parameters to be positive
@@ -65,9 +62,7 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     try:
         import pods
     except ImportError:
-        raise ImportWarning(
-            "Need pods for example datasets. See https://github.com/sods/ods, or pip install pods."
-        )
+        raise ImportWarning("Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.")
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data["Y"][:, 0:1]
     Y[Y.flatten() == -1] = 0
@@ -115,9 +110,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
     kernel = GPy.kern.RBF(1)
 
     # Model definition
-    m = GPy.core.GP(
-        data["X"], Y, kernel=kernel, likelihood=likelihood, inference_method=laplace_inf
-    )
+    m = GPy.core.GP(data["X"], Y, kernel=kernel, likelihood=likelihood, inference_method=laplace_inf)
 
     # Optimize
     if optimize:
@@ -135,9 +128,7 @@ def toy_linear_1d_classification_laplace(seed=default_seed, optimize=True, plot=
     return m
 
 
-def sparse_toy_linear_1d_classification(
-    num_inducing=10, seed=default_seed, optimize=True, plot=True
-):
+def sparse_toy_linear_1d_classification(num_inducing=10, seed=default_seed, optimize=True, plot=True):
     """
     Sparse 1D classification example
 
@@ -172,9 +163,7 @@ def sparse_toy_linear_1d_classification(
     return m
 
 
-def sparse_toy_linear_1d_classification_uncertain_input(
-    num_inducing=10, seed=default_seed, optimize=True, plot=True
-):
+def sparse_toy_linear_1d_classification_uncertain_input(num_inducing=10, seed=default_seed, optimize=True, plot=True):
     """
     Sparse 1D classification example
 
@@ -196,9 +185,7 @@ def sparse_toy_linear_1d_classification_uncertain_input(
     X_var = np.random.uniform(0.3, 0.5, X.shape)
 
     # Model definition
-    m = GPy.models.SparseGPClassificationUncertainInput(
-        X, X_var, Y, num_inducing=num_inducing
-    )
+    m = GPy.models.SparseGPClassificationUncertainInput(X, X_var, Y, num_inducing=num_inducing)
     m[".*len"] = 4.0
 
     # Optimize
@@ -234,9 +221,7 @@ def toy_heaviside(seed=default_seed, max_iters=100, optimize=True, plot=True):
 
     # Model definition
     kernel = GPy.kern.RBF(1)
-    likelihood = GPy.likelihoods.Bernoulli(
-        gp_link=GPy.likelihoods.link_functions.Heaviside()
-    )
+    likelihood = GPy.likelihoods.Bernoulli(gp_link=GPy.likelihoods.link_functions.Heaviside())
     ep = GPy.inference.latent_function_inference.expectation_propagation.EP()
     m = GPy.core.GP(
         X=data["X"],
@@ -296,15 +281,11 @@ def crescent_data(
         m = GPy.models.GPClassification(data["X"], Y, kernel=kernel)
 
     elif model_type == "DTC":
-        m = GPy.models.SparseGPClassification(
-            data["X"], Y, kernel=kernel, num_inducing=num_inducing
-        )
+        m = GPy.models.SparseGPClassification(data["X"], Y, kernel=kernel, num_inducing=num_inducing)
         m[".*len"] = 10.0
 
     elif model_type == "FITC":
-        m = GPy.models.FITCClassification(
-            data["X"], Y, kernel=kernel, num_inducing=num_inducing
-        )
+        m = GPy.models.FITCClassification(data["X"], Y, kernel=kernel, num_inducing=num_inducing)
         m[".*len"] = 3.0
     if optimize:
         m.optimize(messages=1)

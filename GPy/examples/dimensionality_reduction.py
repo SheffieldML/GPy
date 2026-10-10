@@ -42,9 +42,7 @@ def bgplvm_test_model(optimize=False, verbose=1, plot=False, output_dim=200, nan
     m = GPy.models.BayesianGPLVM(Y, input_dim, kernel=k, num_inducing=num_inducing)
 
     if nan:
-        m.inference_method = (
-            GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
-        )
+        m.inference_method = GPy.inference.latent_function_inference.var_dtc.VarDTCMissingData()
         m.Y[_np.random.binomial(1, p, size=(Y.shape)).astype(bool)] = _np.nan
         m.parameters_changed()
 
@@ -91,9 +89,7 @@ def gplvm_oil_100(optimize=True, verbose=1, plot=True):
     return m
 
 
-def sparse_gplvm_oil(
-    optimize=True, verbose=0, plot=True, N=100, Q=6, num_inducing=15, max_iters=50
-):
+def sparse_gplvm_oil(optimize=True, verbose=0, plot=True, N=100, Q=6, num_inducing=15, max_iters=50):
     import GPy
     import pods
 
@@ -115,9 +111,7 @@ def sparse_gplvm_oil(
     return m
 
 
-def swiss_roll(
-    optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4, sigma=0.2
-):
+def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4, sigma=0.2):
     import GPy
     from pods.datasets import swiss_roll_generated
     from GPy.models import BayesianGPLVM
@@ -154,21 +148,12 @@ def swiss_roll(
         ax.set_title("BGPLVM init")
 
     var = 0.5
-    S = (
-        var * _np.ones_like(X)
-        + _np.clip(_np.random.randn(N, Q) * var ** 2, -(1 - var), (1 - var))
-    ) + 0.001
+    S = (var * _np.ones_like(X) + _np.clip(_np.random.randn(N, Q) * var**2, -(1 - var), (1 - var))) + 0.001
     Z = _np.random.permutation(X)[:num_inducing]
 
-    kernel = (
-        GPy.kern.RBF(Q, ARD=True)
-        + GPy.kern.Bias(Q, _np.exp(-2))
-        + GPy.kern.White(Q, _np.exp(-2))
-    )
+    kernel = GPy.kern.RBF(Q, ARD=True) + GPy.kern.Bias(Q, _np.exp(-2)) + GPy.kern.White(Q, _np.exp(-2))
 
-    m = BayesianGPLVM(
-        Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel
-    )
+    m = BayesianGPLVM(Y, Q, X=X, X_variance=S, num_inducing=num_inducing, Z=Z, kernel=kernel)
     m.data_colors = c
     m.data_t = t
 
@@ -184,16 +169,7 @@ def swiss_roll(
     return m
 
 
-def bgplvm_oil(
-    optimize=True,
-    verbose=1,
-    plot=True,
-    N=200,
-    Q=7,
-    num_inducing=40,
-    max_iters=1000,
-    **k
-):
+def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
     import numpy as np
@@ -206,9 +182,7 @@ def bgplvm_oil(
     except ImportError:
         data = GPy.util.datasets.oil()
 
-    kernel = GPy.kern.RBF(
-        Q, 1.0, 1.0 / _np.random.uniform(0, 1, (Q,)), ARD=True
-    )  # + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1.0, 1.0 / _np.random.uniform(0, 1, (Q,)), ARD=True)  # + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data["X"][:N]
     m = GPy.models.BayesianGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data["Y"][:N].argmax(axis=1)
@@ -233,16 +207,7 @@ def bgplvm_oil(
     return m
 
 
-def ssgplvm_oil(
-    optimize=True,
-    verbose=1,
-    plot=True,
-    N=200,
-    Q=7,
-    num_inducing=40,
-    max_iters=1000,
-    **k
-):
+def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
     import pods
@@ -250,9 +215,7 @@ def ssgplvm_oil(
     _np.random.seed(0)
     data = pods.datasets.oil()
 
-    kernel = GPy.kern.RBF(
-        Q, 1.0, 1.0 / _np.random.uniform(0, 1, (Q,)), ARD=True
-    )  # + GPy.kern.Bias(Q, _np.exp(-2))
+    kernel = GPy.kern.RBF(Q, 1.0, 1.0 / _np.random.uniform(0, 1, (Q,)), ARD=True)  # + GPy.kern.Bias(Q, _np.exp(-2))
     Y = data["X"][:N]
     m = GPy.models.SSGPLVM(Y, Q, kernel=kernel, num_inducing=num_inducing, **k)
     m.data_labels = data["Y"][:N].argmax(axis=1)
@@ -285,22 +248,14 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
 
     np.random.seed(3000)
 
-    k = GPy.kern.Matern32(
-        Q_signal, 1.0, lengthscale=(np.random.uniform(1, 6, Q_signal)), ARD=1
-    )
+    k = GPy.kern.Matern32(Q_signal, 1.0, lengthscale=(np.random.uniform(1, 6, Q_signal)), ARD=1)
     for i in range(Q_signal):
-        k += GPy.kern.PeriodicExponential(
-            1, variance=1.0, active_dims=[i], period=3.0, lower=-2, upper=6
-        )
+        k += GPy.kern.PeriodicExponential(1, variance=1.0, active_dims=[i], period=3.0, lower=-2, upper=6)
     t = np.c_[[np.linspace(-1, 5, N) for _ in range(Q_signal)]].T
     K = k.K(t)
-    s2, s1, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[
-        :, :, None
-    ]
+    s2, s1, s3, sS = np.random.multivariate_normal(np.zeros(K.shape[0]), K, size=(4))[:, :, None]
 
-    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(
-        D1, D2, D3, s1, s2, s3, sS
-    )
+    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
 
     slist = [sS, s1, s2, s3]
     slist_names = ["sS", "s1", "s2", "s3"]
@@ -352,9 +307,7 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
     sS -= sS.mean()
     sS /= sS.std(0)
 
-    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(
-        D1, D2, D3, s1, s2, s3, sS
-    )
+    Y1, Y2, Y3, S1, S2, S3 = _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS)
 
     slist = [sS, s1, s2, s3]
     slist_names = ["sS", "s1", "s2", "s3"]
@@ -402,7 +355,11 @@ def _generate_high_dimensional_output(D1, D2, D3, s1, s2, s3, sS):
 
 
 def bgplvm_simulation(
-    optimize=True, verbose=1, plot=True, plot_sim=False, max_iters=2e4,
+    optimize=True,
+    verbose=1,
+    plot=True,
+    plot_sim=False,
+    max_iters=2e4,
 ):
     from GPy import kern
     from GPy.models import BayesianGPLVM
@@ -426,7 +383,11 @@ def bgplvm_simulation(
 
 
 def gplvm_simulation(
-    optimize=True, verbose=1, plot=True, plot_sim=False, max_iters=2e4,
+    optimize=True,
+    verbose=1,
+    plot=True,
+    plot_sim=False,
+    max_iters=2e4,
 ):
     from GPy import kern
     from GPy.models import GPLVM
@@ -448,9 +409,7 @@ def gplvm_simulation(
     return m
 
 
-def ssgplvm_simulation(
-    optimize=True, verbose=1, plot=True, plot_sim=False, max_iters=2e4, useGPU=False
-):
+def ssgplvm_simulation(optimize=True, verbose=1, plot=True, plot_sim=False, max_iters=2e4, useGPU=False):
     from GPy import kern
     from GPy.models import SSGPLVM
 
@@ -459,9 +418,7 @@ def ssgplvm_simulation(
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
     # k = kern.RBF(Q, ARD=True, lengthscale=10.)
-    m = SSGPLVM(
-        Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True
-    )
+    m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
     m.X.variance[:] = _np.random.uniform(0, 0.01, m.X.shape)
     m.likelihood.variance = 0.01
 
@@ -491,9 +448,7 @@ def bgplvm_simulation_missing_data(
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, percent_missing, size=Y.shape).astype(
-        bool
-    )  # 80% missing data
+    inan = _np.random.binomial(1, percent_missing, size=Y.shape).astype(bool)  # 80% missing data
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
@@ -535,9 +490,7 @@ def bgplvm_simulation_missing_data_stochastics(
     Y = Ylist[0]
     k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
 
-    inan = _np.random.binomial(1, percent_missing, size=Y.shape).astype(
-        bool
-    )  # 80% missing data
+    inan = _np.random.binomial(1, percent_missing, size=Y.shape).astype(bool)  # 80% missing data
     Ymissing = Y.copy()
     Ymissing[inan] = _np.nan
 
@@ -571,15 +524,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     _, _, Ylist = _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim)
 
     k = kern.Linear(Q, ARD=True) + kern.White(Q, variance=1e-4)
-    m = MRD(
-        Ylist,
-        input_dim=Q,
-        num_inducing=num_inducing,
-        kernel=k,
-        initx="PCA_concat",
-        initz="permute",
-        **kw
-    )
+    m = MRD(Ylist, input_dim=Q, num_inducing=num_inducing, kernel=k, initx="PCA_concat", initz="permute", **kw)
 
     m[".*noise"] = [Y.var() / 40.0 for Y in Ylist]
 
@@ -592,9 +537,7 @@ def mrd_simulation(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     return m
 
 
-def mrd_simulation_missing_data(
-    optimize=True, verbose=True, plot=True, plot_sim=True, **kw
-):
+def mrd_simulation_missing_data(optimize=True, verbose=True, plot=True, plot_sim=True, **kw):
     from GPy import kern
     from GPy.models import MRD
 
@@ -617,7 +560,7 @@ def mrd_simulation_missing_data(
         inference_method=None,
         initx="random",
         initz="permute",
-        **kw
+        **kw,
     )
 
     if optimize:
@@ -657,9 +600,7 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
             invert=False,
             scale=False,
         )
-        lvm = GPy.plotting.matplot_dep.visualize.lvm(
-            m.X.mean[0, :].copy(), m, data_show, ax
-        )
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         input("Press enter to finish")
 
     return m
@@ -685,9 +626,7 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
         data_show = GPy.plotting.matplot_dep.visualize.image_show(
             y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False
         )
-        lvm = GPy.plotting.matplot_dep.visualize.lvm(
-            m.X.mean[0, :].copy(), m, data_show, ax
-        )
+        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         input("Press enter to finish")
 
     return m
@@ -705,9 +644,7 @@ def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=Tru
         Y = data["Y"][range[0] : range[1], :].copy()
     if plot:
         y = Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(
-            y[None, :], connect=data["connect"]
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
         GPy.plotting.matplot_dep.visualize.data_play(Y, data_show, frame_rate)
     return Y
 
@@ -726,12 +663,8 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
         plt.clf
         ax = m.plot_latent()
         y = m.Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(
-            y[None, :], connect=data["connect"]
-        )
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(
-            m.X[:1, :].copy(), m, data_show, latent_axes=ax
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
+        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(m.X[:1, :].copy(), m, data_show, latent_axes=ax)
         input("Press enter to finish")
         lvm_visualizer.close()
         data_show.close()
@@ -753,9 +686,7 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
         plt.clf
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(
-            y[None, :], connect=data["connect"]
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         input("Press enter to finish")
 
@@ -778,9 +709,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
         plt.clf
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(
-            y[None, :], connect=data["connect"]
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
         GPy.plotting.matplot_dep.visualize.lvm(m.X[0, :].copy(), m, data_show, ax)
         # input('Press enter to finish')
 
@@ -831,9 +760,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         plt.sca(latent_axes)
         m.plot_latent(ax=latent_axes)
         y = m.Y[:1, :].copy()
-        data_show = GPy.plotting.matplot_dep.visualize.stick_show(
-            y, connect=data["connect"]
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data["connect"])
         dim_select = GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean[:1, :].copy(),
             m,
@@ -849,9 +776,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
     return m
 
 
-def cmu_mocap(
-    subject="35", motion=["01"], in_place=True, optimize=True, verbose=True, plot=True
-):
+def cmu_mocap(subject="35", motion=["01"], in_place=True, optimize=True, verbose=True, plot=True):
     import matplotlib.pyplot as plt
     import GPy
     import pods
@@ -875,9 +800,7 @@ def cmu_mocap(
         latent_axes.set_aspect("equal")
 
         y = m.Y[0, :]
-        data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(
-            y[None, :], data["skel"], viz_axes
-        )
+        data_show = GPy.plotting.matplot_dep.visualize.skeleton_show(y[None, :], data["skel"], viz_axes)
 
         lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm(
             m.X[0].copy(), m, data_show, latent_axes=latent_axes, sense_axes=sense_axes

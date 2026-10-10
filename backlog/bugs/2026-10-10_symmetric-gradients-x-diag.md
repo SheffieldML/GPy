@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_symmetric-gradients-x-diag
 title: Add Symmetric.gradients_X_diag
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -41,17 +41,17 @@ Orthogonal to #1126 (string identity for `symmetry_type`).
 
 - [x] `Symmetric.gradients_X_diag` is a class method consistent with `Kdiag`
 - [x] Regression test via `Kern_check_dKdiag_dX` for even/odd
-- [ ] Credits #1002 / @mirjanic; close #1002 as superseded when the PR merges
+- [x] Credits #1002 / @mirjanic; close #1002 as superseded when the PR merges
 
 ## Related
 
 - CIP: 0004
 - Contributor: mirjanic (@mirjanic)
-- PRs: #1002 (source idea; supersede)
+- PRs: #1155 (merged); #1002 (superseded)
 
 ## Progress Updates
 
 ### 2026-10-10
 
 - Confirmed #1002 indentation bug and incomplete formula on contributor fork.
-- Backlog created; implementing corrected maintainer PR.
+- Backlog created; [#1155](https://github.com/SheffieldML/GPy/pull/1155) merged; #1002 closed.

@@ -168,3 +168,28 @@ class Symmetric(Kern):
                 + self.base_kernel.gradients_X(dL_dK, X_sym, X2_sym).dot(self.transform.T)
                 + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X, X2_sym)
                 + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X_sym, X2).dot(self.transform.T))
+
+    def gradients_X_diag(self, dL_dKdiag, X):
+        """
+        Gradient of ``Kdiag`` wrt ``X``.
+
+        Matches :meth:`Kdiag`: ``Kdiag(X) + 2 s diag(K(AX, X)) + Kdiag(AX)``.
+        Identified as missing in #1002; formula corrected to include the cross
+        terms (the contributor patch only scaled the ``Kdiag`` parts).
+        """
+        X_sym = X.dot(self.transform)
+        dL_dK = np.diag(np.asarray(dL_dKdiag).reshape(-1))
+        return (
+            self.base_kernel.gradients_X_diag(dL_dKdiag, X)
+            + self.base_kernel.gradients_X_diag(dL_dKdiag, X_sym).dot(
+                self.transform.T
+            )
+            + 2
+            * self.symmetry_sign
+            * (
+                self.base_kernel.gradients_X(dL_dK, X, X_sym)
+                + self.base_kernel.gradients_X(dL_dK, X_sym, X).dot(
+                    self.transform.T
+                )
+            )
+        )

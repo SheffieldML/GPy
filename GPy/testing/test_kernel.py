@@ -673,6 +673,15 @@ class TestKernelGradientContinuous:
         k = GPy.kern.Symmetric(k_base, transform, even)
         assert k.symmetry_sign == 1.0
 
+    def test_symmetric_gradients_X_diag(self):
+        """Symmetric.gradients_X_diag must exist and match checkgrad (#1002)."""
+        k_base = GPy.kern.Linear(1) + GPy.kern.RBF(1)
+        transform = -np.array([[1.0]])
+        X = np.random.randn(8, 1)
+        for symmetry_type in ("even", "odd"):
+            k = GPy.kern.Symmetric(k_base.copy(), transform, symmetry_type)
+            assert Kern_check_dKdiag_dX(k, X=X).checkgrad()
+
     def test_MultioutputKern(self):
         self.setup_method()
         k1 = GPy.kern.RBF(self.D, ARD=True)

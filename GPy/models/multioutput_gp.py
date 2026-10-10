@@ -52,7 +52,7 @@ class MultioutputGP(GP):
     ):
         # Input and Output
         X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
-        Ny = len(Y_list)
+        len(Y_list)
 
         assert isinstance(kernel_list, list)
         kernel = kern.MultioutputDerivativeKern(kernels=kernel_list, cross_covariances=kernel_cross_covariances)
@@ -120,7 +120,7 @@ class MultioutputGP(GP):
         if isinstance(Xnew, list):
             Xnew, _, ind = util.multioutput.build_XY(Xnew, None)
 
-        slices = index_to_slices(Xnew[:, -1])
+        index_to_slices(Xnew[:, -1])
 
         if kern is None:
             kern = self.kern

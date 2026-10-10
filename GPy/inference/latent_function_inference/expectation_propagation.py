@@ -427,7 +427,7 @@ class EP(EPBase, ExactGaussianInference):
         log_marginal, post_params = self._ep_marginal(mean_prior, K, ga_approx, Z_tilde)
 
         tau_tilde_root = np.sqrt(ga_approx.tau)
-        Sroot_tilde_K = tau_tilde_root[:, None] * K
+        tau_tilde_root[:, None] * K
 
         aux_alpha, _ = dpotrs(post_params.L, tau_tilde_root * (np.dot(K, ga_approx.v) + mean_prior), lower=1)
         alpha = (ga_approx.v - tau_tilde_root * aux_alpha)[

@@ -679,7 +679,7 @@ class DGPLVM(Prior):
     def compute_wj(self, data_idx, M_i):
         W_i = np.zeros((self.datanum, self.dim))
         for i in data_idx:
-            N_i = float(len(data_idx[i]))
+            float(len(data_idx[i]))
             for tpl in data_idx[i]:
                 xj = tpl[1]
                 j = tpl[0]
@@ -906,7 +906,7 @@ class DGPLVM_Lamda(Prior, Parameterized):
     def compute_wj(self, data_idx, M_i):
         W_i = np.zeros((self.datanum, self.dim))
         for i in data_idx:
-            N_i = float(len(data_idx[i]))
+            float(len(data_idx[i]))
             for tpl in data_idx[i]:
                 xj = tpl[1]
                 j = tpl[0]
@@ -1151,7 +1151,7 @@ class DGPLVM_T(Prior):
     def compute_wj(self, data_idx, M_i):
         W_i = np.zeros((self.datanum, self.dim))
         for i in data_idx:
-            N_i = float(len(data_idx[i]))
+            float(len(data_idx[i]))
             for tpl in data_idx[i]:
                 xj = tpl[1]
                 j = tpl[0]

@@ -176,7 +176,7 @@ class ODE_st(Kern):
         X, slices = X[:, :-1], index_to_slices(X[:, -1])
         if X2 is None:
             X2, slices2 = X, slices
-            K = np.zeros((X.shape[0], X.shape[0]))
+            np.zeros((X.shape[0], X.shape[0]))
         else:
             X2, slices2 = X2[:, :-1], index_to_slices(X2[:, -1])
 

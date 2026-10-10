@@ -525,7 +525,7 @@ class StateSpace(Model):
         eg = np.zeros(nparam)
 
         # Set up
-        Z = np.zeros(F.shape)
+        np.zeros(F.shape)
         QC = L.dot(Qc).dot(L.T)
         m = np.zeros([n, 1])
         P = Pinf.copy()

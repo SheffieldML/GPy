@@ -51,7 +51,7 @@ class VarGauss(LatentFunctionInference):
         else:
             dL_dthetaL = np.array([])
         dF_da = np.dot(K, dF_dm)
-        SigmaB = Sigma * self.beta
+        Sigma * self.beta
         # dF_db_ = -np.diag(Sigma.dot(np.diag(dF_dv.flatten())).dot(SigmaB))*2
         dF_db = -2 * np.sum(Sigma**2 * (dF_dv * self.beta), 0)
         # assert np.allclose(dF_db, dF_db_)

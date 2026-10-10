@@ -207,11 +207,11 @@ class VarDTC_SVI_Multiout_Miss(LatentFunctionInference):
         The SVI-VarDTC inference
         """
 
-        N, D, Mr, Mc, Qr, Qc = Y.shape[0], output_dim, Zr.shape[0], Zc.shape[0], Zr.shape[1], Zc.shape[1]
+        N, D, Mr, Mc, _Qr, _Qc = Y.shape[0], output_dim, Zr.shape[0], Zc.shape[0], Zr.shape[1], Zc.shape[1]
 
         uncertain_inputs_r = isinstance(Xr, VariationalPosterior)
         uncertain_inputs_c = isinstance(Xc, VariationalPosterior)
-        uncertain_outputs = isinstance(Y, VariationalPosterior)
+        isinstance(Y, VariationalPosterior)
 
         grad_dict = self._init_grad_dict(N, D, Mr, Mc)
 

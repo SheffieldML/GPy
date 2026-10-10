@@ -75,7 +75,7 @@ class White(Static):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return White(**input_dict)
 
     def K(self, X, X2=None):
@@ -166,7 +166,7 @@ class Bias(Static):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return Bias(**input_dict)
 
     def K(self, X, X2=None):

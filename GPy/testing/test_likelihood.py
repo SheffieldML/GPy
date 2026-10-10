@@ -394,7 +394,6 @@ class TestNoiseModels:
                 params = []
                 param_vals = []
                 param_names = []
-                constrain_positive = []
                 param_constraints = []
             if "link_f_constraints" in attributes:
                 link_f_constraints = attributes["link_f_constraints"]

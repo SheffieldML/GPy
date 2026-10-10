@@ -174,7 +174,7 @@ class LFM1(Kern):
         """
         # Extract time and output indices
         t = X[:, 0:1]
-        idx = X[:, 1:2].astype(int)
+        X[:, 1:2].astype(int)
 
         # Apply time delay
         t_delayed = t - self.delay
@@ -209,8 +209,8 @@ class LFM1(Kern):
         idx2 = X2[:, 1:2].astype(int)
 
         # Apply time delay
-        t1_delayed = t1 - self.delay
-        t2_delayed = t2 - self.delay
+        t1 - self.delay
+        t2 - self.delay
 
         # Initialize gradients
         self.mass.gradient = 0.0

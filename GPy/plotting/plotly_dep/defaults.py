@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 # Copyright (c) 2015, Max Zwiessele
 # All rights reserved.
 #
@@ -26,12 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
 from .. import Tango
 from plotly.graph_objs import Line
 
-'''
+"""
 This file is for defaults for the gpy plot, specific to the plotting library.
 
 Create a kwargs dictionary with the right name for the plotting function
@@ -40,25 +40,36 @@ the plotting library will be used.
 
 In the code, always ise plotting.gpy_plots.defaults to get the defaults, as
 it gives back an empty default, when defaults are not defined.
-'''
+"""
 
 # Data plots:
-data_1d = dict(marker_kwargs=dict(), marker='x', color='black')
-data_2d = dict(marker='o', cmap='Hot', marker_kwargs=dict(opacity=1., size=5, line=Line(width=.5, color='black')))
-inducing_1d = dict(color=Tango.colorsHex['darkRed'])
-inducing_2d = dict(marker_kwargs=dict(size='5', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
-inducing_3d = dict(marker_kwargs=dict(symbol='diamond', size='5', opacity=.7, line=Line(width=.1, color='black')), color='#F5F5F5')
-xerrorbar = dict(color='black', error_kwargs=dict(thickness=.5), opacity=.5)
-yerrorbar = dict(color=Tango.colorsHex['darkRed'], error_kwargs=dict(thickness=.5), opacity=.5)
+data_1d = dict(marker_kwargs=dict(), marker="x", color="black")
+data_2d = dict(marker="o", cmap="Hot", marker_kwargs=dict(opacity=1.0, size=5, line=Line(width=0.5, color="black")))
+inducing_1d = dict(color=Tango.colorsHex["darkRed"])
+inducing_2d = dict(
+    marker_kwargs=dict(size="5", opacity=0.7, line=Line(width=0.5, color="black")),
+    opacity=0.7,
+    color="white",
+    marker="star-triangle-up",
+)
+inducing_3d = dict(
+    marker_kwargs=dict(symbol="diamond", size="5", opacity=0.7, line=Line(width=0.1, color="black")), color="#F5F5F5"
+)
+xerrorbar = dict(color="black", error_kwargs=dict(thickness=0.5), opacity=0.5)
+yerrorbar = dict(color=Tango.colorsHex["darkRed"], error_kwargs=dict(thickness=0.5), opacity=0.5)
 #
 # # GP plots:
-meanplot_1d = dict(color=Tango.colorsHex['mediumBlue'], line_kwargs=dict(width=2))
-meanplot_2d = dict(colorscale='Hot')
-meanplot_3d = dict(colorscale='Hot', opacity=.9)
-samples_1d = dict(color=Tango.colorsHex['mediumBlue'], line_kwargs=dict(width=.3))
-samples_3d = dict(cmap='Hot', opacity=.5)
-confidence_interval = dict(mode='lines', line_kwargs=dict(color=Tango.colorsHex['darkBlue'], width=.4),
-                           color=Tango.colorsHex['lightBlue'], opacity=.3)
+meanplot_1d = dict(color=Tango.colorsHex["mediumBlue"], line_kwargs=dict(width=2))
+meanplot_2d = dict(colorscale="Hot")
+meanplot_3d = dict(colorscale="Hot", opacity=0.9)
+samples_1d = dict(color=Tango.colorsHex["mediumBlue"], line_kwargs=dict(width=0.3))
+samples_3d = dict(cmap="Hot", opacity=0.5)
+confidence_interval = dict(
+    mode="lines",
+    line_kwargs=dict(color=Tango.colorsHex["darkBlue"], width=0.4),
+    color=Tango.colorsHex["lightBlue"],
+    opacity=0.3,
+)
 # density = dict(alpha=.5, color=Tango.colorsHex['lightBlue'])
 #
 # # GPLVM plots:
@@ -66,11 +77,11 @@ confidence_interval = dict(mode='lines', line_kwargs=dict(color=Tango.colorsHex[
 # data_y_1d_plot = dict(color='k', linewidth=1.5)
 #
 # # Kernel plots:
-ard = dict(linewidth=1.2, barmode='stack')
+ard = dict(linewidth=1.2, barmode="stack")
 #
 # # Input plots:
-latent = dict(colorscale='Greys', reversescale=True, zsmooth='best')
-gradient = dict(colorscale='RdBu', opacity=.7)
-magnification = dict(colorscale='Greys', zsmooth='best', reversescale=True)
-latent_scatter = dict(marker_kwargs=dict(size='5', opacity=.7))
+latent = dict(colorscale="Greys", reversescale=True, zsmooth="best")
+gradient = dict(colorscale="RdBu", opacity=0.7)
+magnification = dict(colorscale="Greys", zsmooth="best", reversescale=True)
+latent_scatter = dict(marker_kwargs=dict(size="5", opacity=0.7))
 # annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)

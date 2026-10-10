@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 # Copyright (c) 2015, Max Zwiessele
 # All rights reserved.
 #
@@ -26,12 +26,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 import numpy as np
 from . import plotting_library as pl
 from .. import Tango
 from .plot_util import update_not_existing_kwargs, helper_for_plot_data
 from ...kern.src.kern import Kern, CombinationKernel
+
 
 def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
     """
@@ -52,9 +53,11 @@ def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
     x = np.arange(kernel._effective_input_dim)
 
     parts = []
+
     def visit(x):
         if (not isinstance(x, CombinationKernel)) and isinstance(x, Kern):
             parts.append(x)
+
     kernel.traverse(visit)
 
     if filtering is None:
@@ -63,29 +66,41 @@ def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
     bars = []
     kwargs = update_not_existing_kwargs(kwargs, pl().defaults.ard)
 
-
     if canvas is None:
-        canvas, kwargs = pl().new_canvas(xlim=(-.5, kernel._effective_input_dim-.5), xlabel='input dimension', ylabel='ard contribution', **kwargs)
+        canvas, kwargs = pl().new_canvas(
+            xlim=(-0.5, kernel._effective_input_dim - 0.5),
+            xlabel="input dimension",
+            ylabel="ard contribution",
+            **kwargs,
+        )
 
     for i in range(ard_params.shape[0]):
         if parts[i].name in filtering:
             c = Tango.nextMedium()
-            bars.append(pl().barplot(canvas, x,
-                                     ard_params[i,:], color=c,
-                                     label=parts[i].name,
-                                     bottom=bottom, **kwargs))
-            last_bottom = ard_params[i,:]
+            bars.append(
+                pl().barplot(canvas, x, ard_params[i, :], color=c, label=parts[i].name, bottom=bottom, **kwargs)
+            )
+            last_bottom = ard_params[i, :]
             bottom += last_bottom
         else:
             print("filtering out {}".format(parts[i].name))
 
-    #add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
+    # add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
     return pl().add_to_canvas(canvas, bars, legend=legend)
 
-def plot_covariance(kernel, x=None, label=None,
-             plot_limits=None, visible_dims=None, resolution=None,
-             projection='2d', levels=20, **kwargs):
+
+def plot_covariance(
+    kernel,
+    x=None,
+    label=None,
+    plot_limits=None,
+    visible_dims=None,
+    resolution=None,
+    projection="2d",
+    levels=20,
+    **kwargs,
+):
     """
     Plot a kernel covariance w.r.t. another x.
 
@@ -99,44 +114,57 @@ def plot_covariance(kernel, x=None, label=None,
     :param kwargs:  valid kwargs for your specific plotting library
     """
     X = np.ones((2, kernel._effective_input_dim)) * [[-3], [3]]
-    _, free_dims, Xgrid, xx, yy, _, _, resolution = helper_for_plot_data(kernel, X, plot_limits, visible_dims, None, resolution)
+    _, free_dims, Xgrid, xx, yy, _, _, resolution = helper_for_plot_data(
+        kernel, X, plot_limits, visible_dims, None, resolution
+    )
 
     from numbers import Number
+
     if x is None:
         from ...kern.src.stationary import Stationary
+
         x = np.ones((1, kernel._effective_input_dim)) * (not isinstance(kernel, Stationary))
     elif isinstance(x, Number):
-        x = np.ones((1, kernel._effective_input_dim))*x
+        x = np.ones((1, kernel._effective_input_dim)) * x
     K = kernel.K(Xgrid, x)
 
-    if projection == '3d':
-        xlabel = 'X[:,0]'
-        ylabel = 'X[:,1]'
+    if projection == "3d":
+        xlabel = "X[:,0]"
+        ylabel = "X[:,1]"
         zlabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
     else:
-        xlabel = 'X'
+        xlabel = "X"
         ylabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
         zlabel = None
 
     canvas, kwargs = pl().new_canvas(projection=projection, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, **kwargs)
 
-    if len(free_dims)<=2:
-        if len(free_dims)==1:
+    if len(free_dims) <= 2:
+        if len(free_dims) == 1:
             # 1D plotting:
             update_not_existing_kwargs(kwargs, pl().defaults.meanplot_1d)  # @UndefinedVariable
             plots = dict(covariance=[pl().plot(canvas, Xgrid[:, free_dims], K, label=label, **kwargs)])
         else:
-            if projection == '2d':
+            if projection == "2d":
                 update_not_existing_kwargs(kwargs, pl().defaults.meanplot_2d)  # @UndefinedVariable
-                plots = dict(covariance=[pl().contour(canvas, xx[:, 0], yy[0, :],
-                                               K.reshape(resolution, resolution),
-                                               levels=levels, label=label, **kwargs)])
-            elif projection == '3d':
+                plots = dict(
+                    covariance=[
+                        pl().contour(
+                            canvas,
+                            xx[:, 0],
+                            yy[0, :],
+                            K.reshape(resolution, resolution),
+                            levels=levels,
+                            label=label,
+                            **kwargs,
+                        )
+                    ]
+                )
+            elif projection == "3d":
                 update_not_existing_kwargs(kwargs, pl().defaults.meanplot_3d)  # @UndefinedVariable
-                plots = dict(covariance=[pl().surface(canvas, xx, yy,
-                                               K.reshape(resolution, resolution),
-                                               label=label,
-                                               **kwargs)])
+                plots = dict(
+                    covariance=[pl().surface(canvas, xx, yy, K.reshape(resolution, resolution), label=label, **kwargs)]
+                )
         return pl().add_to_canvas(canvas, plots)
 
     else:

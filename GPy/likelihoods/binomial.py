@@ -7,6 +7,7 @@ from . import link_functions
 from .likelihood import Likelihood
 from scipy import special
 
+
 class Binomial(Likelihood):
     """
     Binomial likelihood
@@ -21,11 +22,12 @@ class Binomial(Likelihood):
     .. See also::
         likelihood.py, for the parent class
     """
+
     def __init__(self, gp_link=None):
         if gp_link is None:
             gp_link = link_functions.Probit()
 
-        super(Binomial, self).__init__(gp_link, 'Binomial')
+        super(Binomial, self).__init__(gp_link, "Binomial")
 
     def pdf_link(self, inv_link_f, y, Y_metadata):
         """
@@ -62,15 +64,15 @@ class Binomial(Likelihood):
         :returns: log likelihood evaluated at points inverse link of f.
         :rtype: float
         """
-        N = Y_metadata['trials']
+        N = Y_metadata["trials"]
         np.testing.assert_array_equal(N.shape, y.shape)
 
-        nchoosey = special.gammaln(N+1) - special.gammaln(y+1) - special.gammaln(N-y+1)
-        Ny = N-y
+        nchoosey = special.gammaln(N + 1) - special.gammaln(y + 1) - special.gammaln(N - y + 1)
+        Ny = N - y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
-        t1[y>0] = y[y>0]*np.log(inv_link_f[y>0])
-        t2[Ny>0] = Ny[Ny>0]*np.log(1.-inv_link_f[Ny>0])
+        t1[y > 0] = y[y > 0] * np.log(inv_link_f[y > 0])
+        t2[Ny > 0] = Ny[Ny > 0] * np.log(1.0 - inv_link_f[Ny > 0])
 
         return nchoosey + t1 + t2
 
@@ -89,14 +91,14 @@ class Binomial(Likelihood):
         :returns: gradient of log likelihood evaluated at points inverse link of f.
         :rtype: Nx1 array
         """
-        N = Y_metadata['trials']
+        N = Y_metadata["trials"]
         np.testing.assert_array_equal(N.shape, y.shape)
 
-        Ny = N-y
+        Ny = N - y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
-        t1[y>0] = y[y>0]/inv_link_f[y>0]
-        t2[Ny>0] = (Ny[Ny>0])/(1.-inv_link_f[Ny>0])
+        t1[y > 0] = y[y > 0] / inv_link_f[y > 0]
+        t2[Ny > 0] = (Ny[Ny > 0]) / (1.0 - inv_link_f[Ny > 0])
 
         return t1 - t2
 
@@ -121,15 +123,14 @@ class Binomial(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
-        N = Y_metadata['trials']
+        N = Y_metadata["trials"]
         np.testing.assert_array_equal(N.shape, y.shape)
-        Ny = N-y
+        Ny = N - y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
-        t1[y>0] = -y[y>0]/np.square(inv_link_f[y>0])
-        t2[Ny>0] = -(Ny[Ny>0])/np.square(1.-inv_link_f[Ny>0])
-        return t1+t2
-
+        t1[y > 0] = -y[y > 0] / np.square(inv_link_f[y > 0])
+        t2[Ny > 0] = -(Ny[Ny > 0]) / np.square(1.0 - inv_link_f[Ny > 0])
+        return t1 + t2
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """
@@ -150,16 +151,16 @@ class Binomial(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
-        N = Y_metadata['trials']
+        N = Y_metadata["trials"]
         np.testing.assert_array_equal(N.shape, y.shape)
 
-        #inv_link_f2 = np.square(inv_link_f)  #TODO Remove. Why is this here?
+        # inv_link_f2 = np.square(inv_link_f)  #TODO Remove. Why is this here?
 
-        Ny = N-y
+        Ny = N - y
         t1 = np.zeros(y.shape)
         t2 = np.zeros(y.shape)
-        t1[y>0] = 2*y[y>0]/inv_link_f[y>0]**3
-        t2[Ny>0] = - 2*(Ny[Ny>0])/(1.-inv_link_f[Ny>0])**3
+        t1[y > 0] = 2 * y[y > 0] / inv_link_f[y > 0] ** 3
+        t2[Ny > 0] = -2 * (Ny[Ny > 0]) / (1.0 - inv_link_f[Ny > 0]) ** 3
         return t1 + t2
 
     def samples(self, gp, Y_metadata=None, **kw):
@@ -170,74 +171,75 @@ class Binomial(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        N = Y_metadata['trials']
+        N = Y_metadata["trials"]
         Ysim = np.random.binomial(N, self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)
 
-    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
         pass
 
-    def moments_match_ep(self,obs,tau,v,Y_metadata_i=None):
+    def moments_match_ep(self, obs, tau, v, Y_metadata_i=None):
         """
         Calculation of moments using quadrature
         :param obs: observed output
         :param tau: cavity distribution 1st natural parameter (precision)
         :param v: cavity distribution 2nd natural paramenter (mu*precision)
         """
-        #Compute first integral for zeroth moment.
-        #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
-        if (isinstance(self.gp_link, link_functions.Probit) or isinstance(self.gp_link, link_functions.ScaledProbit)) and (Y_metadata_i is None or np.asarray(Y_metadata_i.get('trials', 1)).item() == 1): #Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
+        # Compute first integral for zeroth moment.
+        # NOTE constant np.sqrt(2*pi/tau) added at the end of the function
+        if (
+            isinstance(self.gp_link, link_functions.Probit) or isinstance(self.gp_link, link_functions.ScaledProbit)
+        ) and (
+            Y_metadata_i is None or np.asarray(Y_metadata_i.get("trials", 1)).item() == 1
+        ):  # Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
             if isinstance(self.gp_link, link_functions.ScaledProbit):
                 nu = self.gp_link.nu
             else:
                 nu = 1.0
             nu = np.asarray(self.gp_link.nu).item()
             obs, tau, v = (np.asarray(value).item() for value in (obs, tau, v))
-            mu = v/tau
-            sigma2 = 1./tau
-            t = np.asarray(1 + sigma2*(nu**2))
-            t[t<1e-20] = 1e-20
+            mu = v / tau
+            sigma2 = 1.0 / tau
+            t = np.asarray(1 + sigma2 * (nu**2))
+            t[t < 1e-20] = 1e-20
             a = np.sqrt(t)
-            z = obs*mu/a
+            z = obs * mu / a
             normc_z = max(self.gp_link.transf(z), 1e-20)
             m0 = normc_z
             normp_z = self.gp_link.dtransf_df(z)
-            m1 = mu + (obs*sigma2*normp_z)/(normc_z*a)
-            #print('tau: {}, v: {}, nu: {}, z: {}, normc_z: {}, normp_z: {}'.format(tau, v, nu.values, z, normc_z, normp_z))
-            m2 = sigma2 - ((sigma2**2)*normp_z)/((1./(nu**2)+sigma2)*normc_z)*(z + normp_z/(nu**2)/normc_z)
-            #print("m0: {}, m1: {}, m2: {}".format(m0,m1,m2))
-            #m0a, m1a, m2a =  super(Binomial, self).moments_match_ep(obs,tau,v,Y_metadata_i)
-            #print("m0a: {}, m1a: {}, m2a: {}".format(m0a,m1a,m2a))
+            m1 = mu + (obs * sigma2 * normp_z) / (normc_z * a)
+            # print('tau: {}, v: {}, nu: {}, z: {}, normc_z: {}, normp_z: {}'.format(tau, v, nu.values, z, normc_z, normp_z))
+            m2 = sigma2 - ((sigma2**2) * normp_z) / ((1.0 / (nu**2) + sigma2) * normc_z) * (
+                z + normp_z / (nu**2) / normc_z
+            )
+            # print("m0: {}, m1: {}, m2: {}".format(m0,m1,m2))
+            # m0a, m1a, m2a =  super(Binomial, self).moments_match_ep(obs,tau,v,Y_metadata_i)
+            # print("m0a: {}, m1a: {}, m2a: {}".format(m0a,m1a,m2a))
             return tuple(np.asarray(moment).item() for moment in (m0, m1, m2))
         else:
-            return super(Binomial, self).moments_match_ep(obs,tau,v,Y_metadata_i)
+            return super(Binomial, self).moments_match_ep(obs, tau, v, Y_metadata_i)
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         if isinstance(self.gp_link, link_functions.Probit):
-
             if gh_points is None:
                 gh_x, gh_w = self._gh_points()
             else:
                 gh_x, gh_w = gh_points
 
-
             gh_w = gh_w / np.sqrt(np.pi)
             shape = m.shape
-            C = np.atleast_1d(Y_metadata['trials'])
-            m,v,Y, C = m.flatten(), v.flatten(), Y.flatten()[:,None], C.flatten()[:,None]
-            X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+            C = np.atleast_1d(Y_metadata["trials"])
+            m, v, Y, C = m.flatten(), v.flatten(), Y.flatten()[:, None], C.flatten()[:, None]
+            X = gh_x[None, :] * np.sqrt(2.0 * v[:, None]) + m[:, None]
             p = std_norm_cdf(X)
-            p = np.clip(p, 1e-9, 1.-1e-9) # for numerical stability
+            p = np.clip(p, 1e-9, 1.0 - 1e-9)  # for numerical stability
             N = std_norm_pdf(X)
-            #TODO: missing nchoosek coefficient! use gammaln?
-            F = (Y*np.log(p) + (C-Y)*np.log(1.-p)).dot(gh_w)
-            NoverP = N/p
-            NoverP_ = N/(1.-p)
-            dF_dm = (Y*NoverP - (C-Y)*NoverP_).dot(gh_w)
-            dF_dv = -0.5* ( Y*(NoverP**2 + NoverP*X) + (C-Y)*(NoverP_**2 - NoverP_*X) ).dot(gh_w)
+            # TODO: missing nchoosek coefficient! use gammaln?
+            F = (Y * np.log(p) + (C - Y) * np.log(1.0 - p)).dot(gh_w)
+            NoverP = N / p
+            NoverP_ = N / (1.0 - p)
+            dF_dm = (Y * NoverP - (C - Y) * NoverP_).dot(gh_w)
+            dF_dv = -0.5 * (Y * (NoverP**2 + NoverP * X) + (C - Y) * (NoverP_**2 - NoverP_ * X)).dot(gh_w)
             return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
         else:
             raise NotImplementedError
-
-
-

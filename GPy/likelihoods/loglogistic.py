@@ -63,7 +63,7 @@ class LogLogistic(Likelihood):
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         link_f = np.clip(link_f, 1e-150, 1e100)
@@ -106,7 +106,7 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         # y_link_f = y/link_f
@@ -145,7 +145,7 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         y_link_f = y / link_f
@@ -179,7 +179,7 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         y_link_f = y / link_f
         y_link_f_r = y_link_f**self.r
@@ -222,7 +222,7 @@ class LogLogistic(Likelihood):
         # c = Y_metadata['censored']
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         link_f = inv_link_f  # FIXME: Change names consistently...
@@ -255,7 +255,7 @@ class LogLogistic(Likelihood):
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         link_f = inv_link_f
         y_link_f = y / link_f
@@ -292,7 +292,7 @@ class LogLogistic(Likelihood):
 
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         link_f = inv_link_f
         y_link_f = y / link_f

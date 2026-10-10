@@ -187,9 +187,7 @@ class Binomial(Likelihood):
         """
         # Compute first integral for zeroth moment.
         # NOTE constant np.sqrt(2*pi/tau) added at the end of the function
-        if (
-            isinstance(self.gp_link, link_functions.Probit) or isinstance(self.gp_link, link_functions.ScaledProbit)
-        ) and (
+        if (isinstance(self.gp_link, (link_functions.Probit, link_functions.ScaledProbit))) and (
             Y_metadata_i is None or np.asarray(Y_metadata_i.get("trials", 1)).item() == 1
         ):  # Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
             if isinstance(self.gp_link, link_functions.ScaledProbit):

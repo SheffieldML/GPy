@@ -55,7 +55,7 @@ class Bernoulli(Likelihood):
         Y_prep = Y.copy()
         Y1 = Y[Y.flatten() == 1].size
         Y2 = Y[Y.flatten() == 0].size
-        assert Y1 + Y2 == Y.size, "Bernoulli likelihood is meant to be used only with outputs in {0, 1}."
+        assert Y.size == Y1 + Y2, "Bernoulli likelihood is meant to be used only with outputs in {0, 1}."
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 

@@ -61,7 +61,7 @@ class Symbolic(Kern, Symbolic_core):
 
     def Kdiag(self, X):
         d = self.eval_function("kdiag", X=X)
-        if not d.shape[0] == X.shape[0]:
+        if d.shape[0] != X.shape[0]:
             d = np.tile(d, (X.shape[0], 1))
         return d
 

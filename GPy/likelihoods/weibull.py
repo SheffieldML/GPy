@@ -69,7 +69,7 @@ class Weibull(Likelihood):
         # return (1. - alpha)*np.log(obs) + self.beta*obs - alpha * np.log(self.beta) + np.log(special.gamma(alpha))
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         # uncensored = (1-c)* (np.log(self.r) + (self.r - 1) * np.log(y) - link_f - (np.exp(-link_f) * (y ** self.r)))
@@ -99,7 +99,7 @@ class Weibull(Likelihood):
         """
         # grad =  (1. - self.beta) / (y - link_f)
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         # uncensored = (1-c)* ( -1 + np.exp(-link_f)*(y ** self.r))
@@ -133,7 +133,7 @@ class Weibull(Likelihood):
         """
         # hess = (self.beta - 1.) / (y - link_f)**2
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         # uncensored = (1-c)* (-(y ** self.r) * np.exp(-link_f))
@@ -163,7 +163,7 @@ class Weibull(Likelihood):
         # d3lik_dlink3 = (1. - self.beta) / (y - link_f)**3
 
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         # uncensored = (1-c)* ((y ** self.r) * np.exp(-link_f))
         # censored = c*np.exp(-link_f)*y**self.r
@@ -194,7 +194,7 @@ class Weibull(Likelihood):
         """
         c = np.zeros_like(y)
         link_f = inv_link_f
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         uncensored = (1 - c) * (1.0 / self.r + np.log(y) - y**self.r * np.log(y) / link_f)
         censored = -c * y**self.r * np.log(y) / link_f
@@ -216,7 +216,7 @@ class Weibull(Likelihood):
         # dlogpdf_dlink_dr = self.beta * y**(self.beta - 1) * np.exp(-link_f)
         # dlogpdf_dlink_dr = np.exp(-link_f) * (y ** self.r) * np.log(y)
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         link_f = inv_link_f
@@ -238,7 +238,7 @@ class Weibull(Likelihood):
         """
 
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         # uncensored = (1-c)*( -np.exp(-link_f)* (y ** self.r) * np.log(y))
@@ -258,7 +258,7 @@ class Weibull(Likelihood):
         :return:
         """
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         uncensored = (1 - c) * ((y**self.r) * np.exp(-link_f) * np.log1p(y))

@@ -48,7 +48,7 @@ def optimize_parallel(
     for _iter in range(int(ceil(float(max_iters) / interval))):
         model.optimize(
             optimizer=optimizer,
-            messages=True if messages and model.mpi_comm.rank == model.mpi_root else False,
+            messages=bool(messages and model.mpi_comm.rank == model.mpi_root),
             max_iters=interval,
             **kwargs,
         )

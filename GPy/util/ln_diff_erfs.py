@@ -68,9 +68,9 @@ def ln_diff_erfs(x1, x2, return_sign=False):
         _x1 = x1.flatten()
         for group, flags in zip((0, 1, 2, 3), (I0, I1, I2, I3), strict=False):
             if np.any(flags):
-                if not x1.size == 1:
+                if x1.size != 1:
                     _x1 = x1[flags]
-                if not x2.size == 1:
+                if x2.size != 1:
                     _x2 = x2[flags]
                 if group == 0:
                     v[flags] = np.log(erf(_x1) - erf(_x2))

@@ -337,7 +337,7 @@ class image_show(matplotlib_show):
         self.select_image = select_image  # This is used when the y vector contains multiple images concatenated.
 
         self.set_image(self.vals)
-        if not self.palette == []:  # Can just show the image (self.set_image() took care of setting the palette)
+        if self.palette != []:  # Can just show the image (self.set_image() took care of setting the palette)
             self.handle = self.axes.imshow(self.vals, interpolation="nearest")
         elif cmap is None:  # Use a jet map.
             self.handle = self.axes.imshow(self.vals, cmap=plt.cm.jet, interpolation="nearest")  # @UndefinedVariable
@@ -386,7 +386,7 @@ class image_show(matplotlib_show):
         # self.vals[self.vals > 255] = 255
         # else:
         # self.vals = 255*(self.vals - self.vals.min())/(self.vals.max() - self.vals.min())
-        if not self.palette == []:  # applying using an image palette (e.g. if the image has been quantized)
+        if self.palette != []:  # applying using an image palette (e.g. if the image has been quantized)
             from PIL import Image
 
             self.vals = Image.fromarray(self.vals.astype("uint8"))

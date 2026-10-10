@@ -242,7 +242,7 @@ def flatten_axis(ax, prevname=""):
         elif isinstance(l, dict):
             for _n in l:
                 _tmp = _flatten(l, pre + "." + _n + ".")
-                for _nt in _tmp.keys():
+                for _nt in _tmp:
                     arrays[_nt] = _tmp[_nt]
         elif isinstance(l, list) and len(l) > 0:
             for i in range(len(l)):
@@ -539,7 +539,7 @@ def legacy_image_comparison_classification():
     X = np.random.uniform(-2, 2, (40, 1))
     f = 0.2 * np.sin(1.3 * X) + 1.3 * np.cos(2 * X)
     Y = f + np.random.normal(0, 0.1, f.shape)
-    m = GPy.models.GPClassification(X, Y > Y.mean())
+    m = GPy.models.GPClassification(X, Y.mean() < Y)
     # m.optimize()
     _, ax = plt.subplots()
     m.plot(plot_raw=False, apply_link=False, ax=ax, samples=3)
@@ -568,7 +568,7 @@ def legacy_image_comparison_sparse_classification():
     X = np.random.uniform(-2, 2, (40, 1))
     f = 0.2 * np.sin(1.3 * X) + 1.3 * np.cos(2 * X)
     Y = f + np.random.normal(0, 0.1, f.shape)
-    m = GPy.models.SparseGPClassification(X, Y > Y.mean())
+    m = GPy.models.SparseGPClassification(X, Y.mean() < Y)
     # m.optimize()
     m.plot(plot_raw=False, apply_link=False, samples_likelihood=3)
     np.random.seed(111)

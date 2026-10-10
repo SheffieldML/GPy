@@ -21,7 +21,7 @@ def plot_sgd_traces(optimizer):
     figure = pl().figure(2, 1)
     canvas, _ = pl().new_canvas(figure, 1, 1, title="Parameters")
     plots = dict(lines=[])
-    for k in optimizer.param_traces.keys():
+    for k in optimizer.param_traces:
         plots["lines"].append(
             pl().plot(canvas, range(len(optimizer.param_traces[k])), optimizer.param_traces[k], label=k)
         )

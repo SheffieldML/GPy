@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_pickle-live-kernels
 title: Make used kernels and models pickleable for multiprocessing
-status: In Progress
+status: Completed
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -39,34 +39,32 @@ tracked under CIP-0007 triage + this backlog task.
 
 ## Acceptance Criteria
 
-- [x] Reproduce #605 / #932 on current `devel` with a minimal script
-- [x] Identify the unpickleable attribute(s) (observers, caches, Cython state)
+- [x] Reproduce #605 / #932 on current `devel`
+- [x] Identify the unpickleable attribute(s) (parent-link cycle / observers)
 - [x] Kernels remain pickleable after use in `GPRegression` (round-trip)
-- [ ] Document preferred persistence: pickle vs `to_dict` / `save_model`
-- [ ] Comment on #605 and #932; close when fixed or with a clear wontfix + docs
+- [x] Document preferred persistence: pickle vs `to_dict` / `save_model`
+- [x] Comment on #605 and #932; close when fixed
 
 ## Implementation Notes
 
-- Prefer fixing `__getstate__` / `__setstate__` (or dropping non-essential
-  runtime links) over forcing every caller onto `to_dict`.
-- Guard against regressing CIP-0006 serialization tests.
-- Multiprocessing is the primary motivator; sklearn pipelines are a secondary
-  check.
-- **Root cause:** pickling a used kernel serializes `_parent_` (the GP). On load,
-  the GP’s `__setstate__` walks `parameters` before the kernel has `_name`, and
-  `Parameterized.__setattr__` (when restoring `observers`) raises.
-- **Fix:** omit `_parent_` from the pickle memento (rebuilt by
-  `_connect_parameters` for whole-model pickles); use `object.__setattr__` when
-  restoring observers/cache in paramz. GPy `Parameterized.__getstate__` also
-  pops `_parent_` so the regression passes against paramz &lt; 0.10.1.
+**Root cause:** pickling a used kernel serializes `_parent_` (the GP). On load,
+the GP’s `__setstate__` walks `parameters` before the kernel has `_name`, and
+`Parameterized.__setattr__` (when restoring `observers`) raises.
+
+**Fix:** omit `_parent_` from the pickle memento (rebuilt by
+`_connect_parameters` for whole-model pickles). GPy
+`Parameterized.__getstate__` pops `_parent_` (#1165). Companion paramz 0.10.1
+hardening: https://github.com/sods/paramz/pull/50.
+
+**Persistence guidance:** use `pickle` / `copy` for live objects and
+multiprocessing; prefer `to_dict` / `save_model` for durable, version-tolerant
+model archives (CIP-0006 paths).
 
 ## Related
 
 - CIP: 0006 (residual; model save/load done), 0007 (issue triage)
-- Issues: #605, #932 (also #535 historically)
-- Branches: `sods/paramz` `fix/605-pickle-used-parameterized`;
-  `SheffieldML/GPy` `fix/605-pickle-live-kernels`
-- Open-issue triage: 2026-10-10
+- Issues: #605, #932 (closed)
+- PRs: GPy #1165 (merged); paramz #50 (companion)
 
 ## Progress Updates
 
@@ -76,5 +74,4 @@ Task created from open-issue triage against October correctness batch.
 
 ### 2026-10-10 (execution)
 
-Reproduced on `devel`. Fix landed in paramz 0.10.1 + GPy guard/regression test;
-PRs on separate branches (no new CIP).
+Reproduced; fixed on `devel` via #1165; closed #605 and #932.

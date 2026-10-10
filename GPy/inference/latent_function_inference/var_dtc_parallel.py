@@ -455,7 +455,7 @@ def update_gradients(model, mpi_comm=None):
         KL_div = KL_div_all
         [
             mpi_comm.Allgatherv([pp.copy(), MPI.DOUBLE], [pa, (model.N_list * pa.shape[-1], None), MPI.DOUBLE])
-            for pp, pa in zip(model.get_X_gradients(X), model.get_X_gradients(model.X))
+            for pp, pa in zip(model.get_X_gradients(X), model.get_X_gradients(model.X), strict=False)
         ]
     #         from ...models import SSGPLVM
     #         if isinstance(model, SSGPLVM):

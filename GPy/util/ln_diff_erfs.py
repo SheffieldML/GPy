@@ -66,7 +66,7 @@ def ln_diff_erfs(x1, x2, return_sign=False):
         I3 = np.logical_and(np.logical_and(np.logical_not(I0), np.logical_not(I1)), np.logical_not(I2))
         _x2 = x2.flatten()
         _x1 = x1.flatten()
-        for group, flags in zip((0, 1, 2, 3), (I0, I1, I2, I3)):
+        for group, flags in zip((0, 1, 2, 3), (I0, I1, I2, I3), strict=False):
             if np.any(flags):
                 if not x1.size == 1:
                     _x1 = x1[flags]

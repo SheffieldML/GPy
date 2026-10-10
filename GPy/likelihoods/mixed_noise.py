@@ -19,7 +19,7 @@ class MixedNoise(Likelihood):
         assert all([isinstance(l, Gaussian) for l in self.likelihoods_list])
         ind = Y_metadata["output_index"].flatten()
         variance = np.zeros(ind.size)
-        for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list))):
+        for lik, j in zip(self.likelihoods_list, range(len(self.likelihoods_list)), strict=False):
             variance[ind == j] = lik.variance
         return variance
 

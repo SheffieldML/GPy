@@ -68,7 +68,7 @@ class GPOffsetRegression(GP):
         # a matrix G represents the effect of increasing the offset on the radius passed to the kernel for each input. For example
         # what effect will increasing offset 4 have on the kernel output of inputs 5 and 8? Answer: Gs[4][5,8]... (positive or negative)
         Gs = []
-        for i, d in enumerate(delta):
+        for i, _d in enumerate(delta):
             # X[sel==(i+1)]-=d
             G = np.repeat(np.array(sel == (i + 1))[:, None] * 1, len(X), axis=1) - np.repeat(
                 np.array(sel == (i + 1))[None, :] * 1, len(X), axis=0
@@ -77,7 +77,7 @@ class GPOffsetRegression(GP):
         # does subtracting the two Xs end up positive or negative (if negative we need to flip the sign in G).
         w = np.repeat(X, len(X), axis=1) - np.repeat(X.T, len(X), axis=0)
         dr_doffsets = []
-        for i, d in enumerate(delta):
+        for i, _d in enumerate(delta):
             dr_doffset = np.sign(w * Gs[i])
             # print "dr_doffset %d" % i
             # print dr_doffset

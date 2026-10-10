@@ -104,14 +104,14 @@ class SVGP(LatentFunctionInference):
         Admu = A.dot(dF_dmu)
         Adv = np.ascontiguousarray(Adv)  # makes for faster operations later...(inc dsymm)
         AdvA = np.dot(Adv.reshape(-1, num_data), A.T).reshape(num_outputs, num_inducing, num_inducing)
-        tmp = np.sum([np.dot(a, s) for a, s in zip(AdvA, S)], 0).dot(Kmmi)
+        tmp = np.sum([np.dot(a, s) for a, s in zip(AdvA, S, strict=False)], 0).dot(Kmmi)
         dF_dKmm = -Admu.dot(Kmmim.T) + AdvA.sum(0) - tmp - tmp.T
         dF_dKmm = 0.5 * (dF_dKmm + dF_dKmm.T)  # necessary? GPy bug?
         tmp = S.reshape(-1, num_inducing).dot(Kmmi).reshape(num_outputs, num_inducing, num_inducing)
         tmp = 2.0 * (tmp - np.eye(num_inducing)[None, :, :])
 
         dF_dKmn = Kmmim.dot(dF_dmu.T)
-        for a, b in zip(tmp, Adv):
+        for a, b in zip(tmp, Adv, strict=False):
             dF_dKmn += np.dot(a.T, b)
 
         dF_dm = Admu
@@ -128,7 +128,7 @@ class SVGP(LatentFunctionInference):
         log_marginal = F.sum() - KL
         dL_dm, dL_dS, dL_dKmm, dL_dKmn = dF_dm - dKL_dm, dF_dS - dKL_dS, dF_dKmm - dKL_dKmm, dF_dKmn
 
-        dL_dchol = 2.0 * np.array([np.dot(a, b) for a, b in zip(dL_dS, L)])
+        dL_dchol = 2.0 * np.array([np.dot(a, b) for a, b in zip(dL_dS, L, strict=False)])
         dL_dchol = choleskies.triang_to_flat(dL_dchol)
 
         grad_dict = {

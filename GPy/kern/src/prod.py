@@ -305,7 +305,7 @@ class Prod(CombinationKernel):
         return prod_sum
 
     def update_gradients_direct(self, *args):
-        for i, (g, p) in enumerate(zip(args, self.parts)):
+        for _i, (g, p) in enumerate(zip(args, self.parts, strict=False)):
             p.update_gradients_direct(*g)
 
     def dgradients_dX(self, X, X2, dimX, parts=None):
@@ -330,7 +330,7 @@ class Prod(CombinationKernel):
             g = part.dgradients(X, X2)
             g_dx = part.dgradients_dX(X, X2, dimX)
 
-            gradients += [[(g_i * K_dx + g_dx_i * K) for (g_i, g_dx_i) in zip(g, g_dx)]]
+            gradients += [[(g_i * K_dx + g_dx_i * K) for (g_i, g_dx_i) in zip(g, g_dx, strict=False)]]
 
         return gradients
 
@@ -356,7 +356,7 @@ class Prod(CombinationKernel):
             g = part.dgradients(X, X2)
             g_dx2 = part.dgradients_dX2(X, X2, dimX2)
 
-            gradients += [[(g_i * K_dx2 + g_dx2_i * K) for (g_i, g_dx2_i) in zip(g, g_dx2)]]
+            gradients += [[(g_i * K_dx2 + g_dx2_i * K) for (g_i, g_dx2_i) in zip(g, g_dx2, strict=False)]]
 
         return gradients
 
@@ -387,7 +387,7 @@ class Prod(CombinationKernel):
             gradients += [
                 [
                     (g_i * K_dxdx2 + g_dx_i * K_dx2 + g_dx2_i * K_dx + g_dxdx2_i * K)
-                    for (g_i, g_dx_i, g_dx2_i, g_dxdx2_i) in zip(g, g_dx, g_dx2, g_dxdx2)
+                    for (g_i, g_dx_i, g_dx2_i, g_dxdx2_i) in zip(g, g_dx, g_dx2, g_dxdx2, strict=False)
                 ]
             ]
         return gradients

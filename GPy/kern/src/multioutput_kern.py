@@ -111,7 +111,7 @@ class MultioutputKern(CombinationKernel):
         slices = index_to_slices(X[:, self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         target = np.zeros(X.shape[0])
-        for kern, slices_i in zip(kerns, slices):
+        for kern, slices_i in zip(kerns, slices, strict=False):
             for s in slices_i:
                 np.copyto(target[s], kern.Kdiag(X[s]))
         return target
@@ -145,7 +145,7 @@ class MultioutputKern(CombinationKernel):
         slices = index_to_slices(X[:, self.index_dim])
         kerns = itertools.repeat(self.kern) if self.single_kern else self.kern
         target = np.zeros(X.shape[0])
-        for kern, slices_i in zip(kerns, slices):
+        for kern, slices_i in zip(kerns, slices, strict=False):
             for s in slices_i:
                 np.copyto(target[s], kern.dK_dXdiag(X[s], dimX))
         return target

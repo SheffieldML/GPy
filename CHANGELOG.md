@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable bugbear `B007`/`B905` (unused loop vars; explicit `zip(..., strict=False)`)
 * CIP-0005: enable safe bugbear rules (`B010`/`B011`/`B013`/`B016`/`B018`/`B028`/`B904`)
 * CIP-0005: clear import-star pyflakes (`F403`/`F405`) and enable full `F` select
 * CIP-0005: enable `F401` (unused import); ignore re-exports in `**/__init__.py`

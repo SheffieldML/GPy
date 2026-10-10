@@ -53,9 +53,9 @@ class Multidimensional_Integral_Limits(Kern):  # todo do I need to inherit from 
                     for j, x2 in enumerate(X):
                         dK_dl_term[i, j, il] = self.dk_dl(x[idx], x2[idx], x[idx + 1], x2[idx + 1], l)
                         k_term[i, j, il] = self.k_xx(x[idx], x2[idx], x[idx + 1], x2[idx + 1], l)
-            for il, l in enumerate(self.lengthscale):
+            for il, _l in enumerate(self.lengthscale):
                 dK_dl = self.variances[0] * dK_dl_term[:, :, il]
-                for jl, l in enumerate(self.lengthscale):
+                for jl, _l2 in enumerate(self.lengthscale):
                     if jl != il:
                         dK_dl *= k_term[:, :, jl]
                 self.lengthscale.gradient[il] = np.sum(dK_dl * dL_dK)

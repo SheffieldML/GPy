@@ -344,7 +344,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             #    pass
             a, b = tee(iterable)
             next(b, None)
-            return zip(a, b)
+            return zip(a, b, strict=False)
 
         polycol = []
         for y1, y2 in pairwise(percentiles):

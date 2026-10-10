@@ -50,7 +50,7 @@ class PCA(object):
             X_ = numpy.ma.masked_array(X, inan)
             self.mu = X_.mean(0).base
             self.sigma = X_.std(0).base
-        reduce(lambda y, x: setitem(x[0], x[1], x[2]), zip(X.T, inan.T, self.mu), None)
+        reduce(lambda y, x: setitem(x[0], x[1], x[2]), zip(X.T, inan.T, self.mu, strict=False), None)
         X = X - self.mu
         X = X / numpy.where(self.sigma == 0, 1e-30, self.sigma)
         return X

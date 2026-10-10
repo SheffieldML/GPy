@@ -48,7 +48,7 @@ class Symbolic(Kern, Symbolic_core):
         Symbolic_core._set_expressions(self, expressions)
         Symbolic_core._set_variables(self, self.cacheable)
         # Substitute z with x to obtain kdiag.
-        for x, z in zip(self.variables["X"], self.variables["Z"]):
+        for x, z in zip(self.variables["X"], self.variables["Z"], strict=False):
             expressions["kdiag"] = expressions["kdiag"].subs(z, x)
         Symbolic_core._set_expressions(self, expressions)
 

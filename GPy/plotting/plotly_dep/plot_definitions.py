@@ -213,7 +213,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
     def plot_axis_lines(self, ax, X, color=Tango.colorsHex["mediumBlue"], label=None, marker_kwargs=None, **kwargs):
         if X.shape[1] == 1:
             annotations = Annotations()
-            for i, row in enumerate(X):
+            for _i, row in enumerate(X):
                 annotations.append(
                     Annotation(
                         text="",
@@ -444,10 +444,10 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
 
             a, b = tee(iterable)
             next(b, None)
-            return zip(a, b)
+            return zip(a, b, strict=False)
 
         polycol = []
-        for i, y1, a in zip(range(len(percentiles)), percentiles, alpha):
+        for i, y1, a in zip(range(len(percentiles)), percentiles, alpha, strict=False):
             fcolor = "rgba({}, {}, {}, {alpha})".format(*colarray, alpha=a)
             if i == len(percentiles) / 2:
                 polycol.append(

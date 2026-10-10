@@ -106,7 +106,7 @@ class Laplace(LatentFunctionInference):
                 zipped_values.append((flat_y[i], flat_mu[i], flat_var[i], y_m))
         else:
             # Otherwise just pass along None's
-            zipped_values = zip(flat_y, flat_mu, flat_var, [None] * Y.shape[0])
+            zipped_values = zip(flat_y, flat_mu, flat_var, [None] * Y.shape[0], strict=False)
 
         def integral_generator(yi, mi, vi, yi_m):
             def f(fi_star):
@@ -121,7 +121,7 @@ class Laplace(LatentFunctionInference):
             return f
 
         # Eq 30
-        p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf) for y, m, v, yi_m in zipped_values])
+        p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf) for y, m, v, yi_m in zipped_values], strict=False)
         p_ystar = np.array(p_ystar).reshape(-1, 1)
         return np.log(p_ystar)
 

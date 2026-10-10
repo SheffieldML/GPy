@@ -744,7 +744,7 @@ def robot_wireless(data_set="robot_wireless"):
     allY = np.zeros((len(times), len(addresses)))
     allX = np.zeros((len(times), 2))
     allY[:] = -92.0
-    for address, j in zip(addresses, range(len(addresses))):
+    for address, j in zip(addresses, range(len(addresses)), strict=False):
         ind = np.nonzero(address == macaddress)
         temp_strengths = strength[ind]
         temp_x = x[ind]

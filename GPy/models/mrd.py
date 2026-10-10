@@ -82,7 +82,7 @@ class MRD(BayesianGPLVMMiniBatch):
         self.num_inducing = num_inducing
 
         if isinstance(Ylist, dict):
-            Ynames, Ylist = zip(*Ylist.items())
+            Ynames, Ylist = zip(*Ylist.items(), strict=False)
 
         self.logger.debug("creating observable arrays")
         self.Ylist = [ObsAr(Y) for Y in Ylist]
@@ -122,7 +122,7 @@ class MRD(BayesianGPLVMMiniBatch):
             kernels = [RBF(input_dim, ARD=1, lengthscale=1.0 / fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
             kernels = []
-            for i in range(len(Ylist)):
+            for _i in range(len(Ylist)):
                 k = kernel.copy()
                 kernels.append(k)
         else:
@@ -209,7 +209,7 @@ class MRD(BayesianGPLVMMiniBatch):
         self._log_marginal_likelihood = 0
         self.Z.gradient[:] = 0.0
         self.X.gradient[:] = 0.0
-        for b, i in zip(self.bgplvms, self.inference_method):
+        for b, i in zip(self.bgplvms, self.inference_method, strict=False):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
             self.logger.info("working on im <{}>".format(hex(id(i))))
@@ -240,7 +240,7 @@ class MRD(BayesianGPLVMMiniBatch):
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], input_dim))
             fracs = np.empty((len(Ylist), input_dim))
-            for qs, Y in zip(np.array_split(np.arange(input_dim), len(Ylist)), Ylist):
+            for qs, Y in zip(np.array_split(np.arange(input_dim), len(Ylist)), Ylist, strict=False):
                 x, frcs = initialize_latent("PCA", len(qs), Y)
                 X[:, qs] = x
                 fracs[:, qs] = frcs

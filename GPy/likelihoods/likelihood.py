@@ -181,7 +181,7 @@ class Likelihood(Parameterized):
                 zipped_values.append((flat_y_test[i], flat_mu_star[i], flat_var_star[i], y_m))
         else:
             # Otherwise just pass along None's
-            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None] * y_test.shape[0])
+            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None] * y_test.shape[0], strict=False)
 
         def integral_generator(yi, mi, vi, yi_m):
             """Generate a function which can be integrated
@@ -209,7 +209,7 @@ class Likelihood(Parameterized):
             *[
                 quad(integral_generator(yi, mi, vi, yi_m), mi - 20 * np.sqrt(vi), mi + 20 * np.sqrt(vi))
                 for yi, mi, vi, yi_m in zipped_values
-            ]
+            ], strict=False
         )
         p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
@@ -316,12 +316,12 @@ class Likelihood(Parameterized):
 
             if quad_mode == "gk":
                 f = partial(self.integrate_gk)
-                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list))
+                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list), strict=False)
                 quads = np.vstack(quads)
                 quads.reshape(self.size, shape[0], shape[1])
             elif quad_mode == "gh":
                 f = partial(self.integrate_gh)
-                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
+                quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())), strict=False)
                 quads = np.hstack(list(quads))
                 quads = quads.T
             else:
@@ -378,7 +378,7 @@ class Likelihood(Parameterized):
         a = a.repeat(self.num_params, 0)
         b = self.dlogpdf_dtheta(X, Y, Y_metadata_i)
         old_shape = b.shape
-        fn = np.array([i * j for i, j in zip(a.flatten(), b.flatten())])
+        fn = np.array([i * j for i, j in zip(a.flatten(), b.flatten(), strict=False)])
         fn = fn.reshape(old_shape)
 
         dF_dtheta_i = np.dot(fn, gh_w) / np.sqrt(np.pi)
@@ -466,7 +466,7 @@ class Likelihood(Parameterized):
 
         scaled_mean = [
             quad(int_mean, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
-            for mj, s2j in zip(np.ravel(mu), np.ravel(variance))
+            for mj, s2j in zip(np.ravel(mu), np.ravel(variance), strict=False)
         ]
         mean = np.array(scaled_mean)[:, None] / np.sqrt(2 * np.pi * (variance))
         return mean
@@ -500,7 +500,7 @@ class Likelihood(Parameterized):
 
         scaled_exp_variance = [
             quad(int_var, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
-            for mj, s2j in zip(np.ravel(mu), np.ravel(variance))
+            for mj, s2j in zip(np.ravel(mu), np.ravel(variance), strict=False)
         ]
         exp_var = np.array(scaled_exp_variance)[:, None] / normalizer
 
@@ -523,7 +523,7 @@ class Likelihood(Parameterized):
 
         scaled_exp_exp2 = [
             quad(int_pred_mean_sq, *_quad_limits(mj, s2j), args=(mj, s2j, pm2j))[0]
-            for mj, s2j, pm2j in zip(np.ravel(mu), np.ravel(variance), np.ravel(predictive_mean_sq))
+            for mj, s2j, pm2j in zip(np.ravel(mu), np.ravel(variance), np.ravel(predictive_mean_sq), strict=False)
         ]
         exp_exp2 = np.array(scaled_exp_exp2)[:, None] / normalizer
 

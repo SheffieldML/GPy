@@ -60,7 +60,7 @@ class HMC:
         return params
 
     def _update(self, hmc_iters):
-        for i in range(hmc_iters):
+        for _i in range(hmc_iters):
             self.p[:] += (
                 -self.stepsize / 2.0 * self.model._transform_gradients(self.model.objective_function_gradients())
             )

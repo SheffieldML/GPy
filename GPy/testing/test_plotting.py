@@ -143,7 +143,7 @@ if not os.path.exists(baseline_dir):
 
 
 def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11, rtol=1e-3, **kwargs):
-    for num, base in zip(plt.get_fignums(), baseline_images):
+    for num, base in zip(plt.get_fignums(), baseline_images, strict=False):
         for ext in extensions:
             fig = plt.figure(num)
             try:
@@ -175,9 +175,9 @@ def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11,
                     facecolor="none",
                     # bbox='tight'
                 )
-    for num, base in zip(plt.get_fignums(), baseline_images):
+    for _num, base in zip(plt.get_fignums(), baseline_images, strict=False):
         for ext in extensions:
-            # plt.close(num)
+            # plt.close(_num)
             actual = os.path.join(result_dir, "{}.{}".format(base, ext))
             expected = os.path.join(baseline_dir, "{}.{}".format(base, ext))
             if ext == "npz":

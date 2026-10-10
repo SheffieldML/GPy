@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* switch packaging to Poetry (CIP-0003 Option A): `pyproject.toml` + `build_extension.py` Cython hook, committed contributor `poetry.lock`, NumPy ≥ 2 / SciPy in the build env / Cython build-only / optional `tables`; supersedes #1080 (@MartinBubel)
 * pickle kernels (and other parameterized subtrees) after they have been linked into a GP: omit the parent link from the memento so load no longer fails with missing `_name` (#605, #932; paramz ≥ 0.10.1 preferred)
 * refresh latent inference after `optimize_restarts` restores the best hyperparameters, so EP site approximations match that restart instead of the last one (#1109)
 * fix Student-t full observation predictive covariance (`full_cov=True`): add constant observation noise on the diagonal for the identity link, and stop the base likelihood from silently ravelling a latent covariance through 1D quadrature (#993)

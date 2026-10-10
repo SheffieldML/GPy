@@ -16,6 +16,7 @@ permissions:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ['3.11', '3.12', '3.13', '3.14']
@@ -29,23 +30,23 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install build dependencies
+      - name: Install Poetry
         run: |
-          pip install setuptools
-          pip install 'Cython>=0.29'
-          pip install 'numpy>=2,<3'
+          python -m pip install --upgrade pip
+          python -m pip install "poetry==2.1.3"
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
-      - name: Install lib
-        run: |
-          python -m pip install --editable .
+      - name: Install lib (Poetry, with Cython build)
+        run: poetry install --with dev --no-interaction
 
-      - name: Install test dependencies
+      - name: Smoke-import Cython extensions
         run: |
-          pip install matplotlib pytest
+          poetry run python -c "from GPy.kern.src import stationary_cython; from GPy.util import choleskies_cython, linalg_cython; from GPy.kern.src import coregionalize_cython; from GPy.models import state_space_cython; print('cython ok')"
 
       - name: pytest
-        run: |
-          pytest GPy/testing
+        run: poetry run pytest GPy/testing
 
   # CIP-0005 Phase 1: advisory only until the narrow rule set is green.
   lint:
@@ -64,7 +65,7 @@ jobs:
         run: pip install 'ruff==0.9.10'
 
       - name: Ruff check (narrow select from pyproject.toml)
-        run: ruff check GPy
+        run: ruff check GPy --exclude GPy/old_tests --exclude GPy/testing/mpi_test__.py
 
   build:
     if: github.event_name == 'release'
@@ -82,18 +83,16 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Build lib
+      - name: Install Poetry
         run: |
-          pip install setuptools
-          pip install wheel
-          pip install 'Cython>=0.29'
-          pip install 'numpy>=2,<3'
-          python -m pip install --editable .
-          python setup.py bdist_wheel
+          python -m pip install --upgrade pip
+          python -m pip install "poetry==2.1.3"
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
-      - name: Build sdist (Windows only)
-        if: runner.os == 'Windows'
-        run: python setup.py sdist
+      - name: Build wheel and sdist
+        run: poetry build
 
       - name: List contents of dist
         run: ls -R dist
@@ -127,12 +126,12 @@ jobs:
             bash -euo pipefail -c "
               PY=/opt/python/${{ matrix.python }}/bin/python
               \"\$PY\" -m pip install --upgrade pip
-              \"\$PY\" -m pip install setuptools wheel 'Cython>=0.29' 'scipy>=1.3.0'
+              \"\$PY\" -m pip install poetry==2.1.3
               # Prefer binary NumPy wheels; never fall back to a source build.
               \"\$PY\" -m pip install --only-binary=:all: 'numpy>=2,<3'
-              \"\$PY\" setup.py bdist_wheel
+              \"\$PY\" -m poetry build -f wheel
               \"\$PY\" -m pip install auditwheel
-              \"\$PY\" -m auditwheel repair dist/*${{ matrix.python }}-linux_x86_64.whl
+              \"\$PY\" -m auditwheel repair dist/*${{ matrix.python }}-linux_*.whl
               rm -f dist/*
               mv wheelhouse/* dist/
               rmdir wheelhouse
@@ -179,8 +178,7 @@ jobs:
         run: |
           echo "Contents of dist directory:"
           ls -lhR dist
-          
-          # Verify all tar.gz files can be read
+
           for file in dist/*.tar.gz; do
             if [ -f "$file" ]; then
               echo "Verifying $file..."

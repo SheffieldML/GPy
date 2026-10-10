@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-dependency-policy
 title: Encode Poetry dependency policy (NumPy 2, SciPy build, Cython, tables)
-status: Proposed
+status: In Progress
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -61,3 +61,5 @@ that PR as-is.
 ### 2026-10-10
 
 CIP-0003 Accepted Option A; backlog created.
+
+- Implementing on branch `infra/poetry-option-a`.

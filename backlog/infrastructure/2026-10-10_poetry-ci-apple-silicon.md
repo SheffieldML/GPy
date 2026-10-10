@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-ci-apple-silicon
 title: Poetry CI matrix and Apple Silicon green
-status: Proposed
+status: In Progress
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -58,3 +58,5 @@ deferral recorded in CIP-0003.
 ### 2026-10-10
 
 CIP-0003 Accepted Option A; backlog created.
+
+- Implementing on branch `infra/poetry-option-a`.

@@ -23,6 +23,10 @@ From now on we keep track of changes in the CHANGELOG.md.
 If you want your changes to show up there follow the [guidelines](#gl).
 In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
+Packaging uses [Poetry](https://python-poetry.org/) (CIP-0003). **End users**
+still install with `pip install gpy` from PyPI wheels. **Contributors** should
+use Poetry for editable installs and a locked environment (`poetry.lock`).
+
 ## Contributing to GPy
 
 We welcome any contributions to GPy, after all it is an open source project. We use the GitHub feature of pull requests for contributions.
@@ -60,17 +64,9 @@ We have pulled the core parameterization out of GPy. It is a package called [par
 
 If you installed GPy with pip, just upgrade the package using:
 
-    $ pip install --upgrade GPy
+    $ pip install --upgrade gpy
 
-If you have the developmental version of GPy (using the develop or -e option) just install the dependencies by running
-
-    $ python setup.py develop
-
-again, in the GPy installation folder.
-
-A warning: This usually works, but sometimes `distutils/setuptools` opens a
-whole can of worms here, specially when compiled extensions are involved.
-If that is the case, it is best to clean the repo and reinstall.
+For a developmental install from a clone, use Poetry (see below).
 
 ## Supported Platforms:
 
@@ -121,14 +117,35 @@ We've also had luck with [enthought](http://www.enthought.com). Install scipy 1.
 
 If you'd like to install from source, or want to contribute to the project (i.e. by sending pull requests via github), read on.
 
+### Contributor install (Poetry)
+
+Requires [Poetry](https://python-poetry.org/docs/#installation) 1.8+ (2.x recommended).
+
+```bash
+git clone https://github.com/SheffieldML/GPy.git
+cd GPy
+poetry install --with dev
+poetry run pytest GPy/testing
+```
+
+`poetry.lock` pins the contributor environment for reproducibility. PyPI /
+`pip install gpy` installs do **not** use the lockfile.
+
+You can also build and install a local wheel without Poetry at runtime:
+
+```bash
+poetry build
+pip install dist/gpy-*.whl
+```
+
 ### Troubleshooting installation problems
 
-If you're having trouble installing GPy via `pip install GPy` here is a probable solution:
+If you're having trouble installing GPy via `pip install gpy` here is a probable solution:
 
     git clone https://github.com/SheffieldML/GPy.git
     cd GPy
     git checkout devel
-    python setup.py build_ext --inplace
+    poetry install --with dev
     pytest .
 
 ### Direct downloads
@@ -201,7 +218,7 @@ or from within IPython
 
 or using setuptools
 
-    python setup.py test
+    poetry run pytest GPy/testing
 
 
 ### Compiling documentation:

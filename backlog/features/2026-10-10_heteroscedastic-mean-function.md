@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_heteroscedastic-mean-function
 title: Support mean_function on GPHeteroscedasticRegression
-status: Done
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'

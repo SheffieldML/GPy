@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-dependency-policy
 title: Encode Poetry dependency policy (NumPy 2, SciPy build, Cython, tables)
-status: In Progress
+status: Completed
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -39,12 +39,12 @@ that PR as-is.
 
 ## Acceptance Criteria
 
-- [ ] `pyproject.toml` reflects the Accept table
-- [ ] Isolated PEP 517 build succeeds with SciPy present
-- [ ] Cython not required to *import* a released wheel
-- [ ] `tables` only via extra
-- [ ] Fresh `poetry.lock` committed and regenerable
-- [ ] Note in PR how #1000 / #1031 are absorbed
+- [x] `pyproject.toml` reflects the Accept table
+- [x] Isolated PEP 517 build succeeds with SciPy present
+- [x] Cython not required to *import* a released wheel
+- [x] `tables` only via extra
+- [x] Fresh `poetry.lock` committed and regenerable
+- [x] Note in PR how #1000 / #1031 are absorbed
 
 ## Implementation Notes
 
@@ -63,3 +63,5 @@ that PR as-is.
 CIP-0003 Accepted Option A; backlog created.
 
 - Implementing on branch `infra/poetry-option-a`.
+
+- Landed via [#1164](https://github.com/SheffieldML/GPy/pull/1164); closed #1080 / #1000 / #1031.

@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-core-migration
 title: Poetry core migration superseding #1080
-status: In Progress
+status: Completed
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -37,11 +37,11 @@ Align with the CIP Accept table (name/`gpy`, current version, no dual SoT).
 
 ## Acceptance Criteria
 
-- [ ] New PR against `devel` (not a force-push of #1080's stale tip)
-- [ ] Poetry builds wheels/sdists; Cython extensions import after install
-- [ ] `setup.py` / `setup.cfg` removed or inert so they cannot diverge
-- [ ] Credits @MartinBubel / #1080 in CHANGELOG and PR body
-- [ ] Depends on dependency-policy task decisions encoded in the same or prior PR
+- [x] New PR against `devel` (not a force-push of #1080's stale tip)
+- [x] Poetry builds wheels/sdists; Cython extensions import after install
+- [x] `setup.py` / `setup.cfg` removed or inert so they cannot diverge
+- [x] Credits @MartinBubel / #1080 in CHANGELOG and PR body
+- [x] Depends on dependency-policy task decisions encoded in the same or prior PR
 
 ## Implementation Notes
 
@@ -63,3 +63,5 @@ Align with the CIP Accept table (name/`gpy`, current version, no dual SoT).
 CIP-0003 Accepted Option A; backlog created.
 
 - Implementing on branch `infra/poetry-option-a`.
+
+- Landed via [#1164](https://github.com/SheffieldML/GPy/pull/1164); closed #1080 / #1000 / #1031.

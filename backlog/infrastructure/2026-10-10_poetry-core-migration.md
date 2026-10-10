@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-core-migration
 title: Poetry core migration superseding #1080
-status: Proposed
+status: In Progress
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -61,3 +61,5 @@ Align with the CIP Accept table (name/`gpy`, current version, no dual SoT).
 ### 2026-10-10
 
 CIP-0003 Accepted Option A; backlog created.
+
+- Implementing on branch `infra/poetry-option-a`.

@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_poetry-docs-and-pr-closeout
 title: Poetry install docs and packaging PR closeout
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -59,3 +59,5 @@ Finish the [CIP-0003](../../cip/cip0003.md) Option A community surface:
 ### 2026-10-10
 
 CIP-0003 Accepted Option A; backlog created.
+
+- Implementing on branch `infra/poetry-option-a`.

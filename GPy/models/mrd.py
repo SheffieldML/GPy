@@ -280,7 +280,7 @@ class MRD(BayesianGPLVMMiniBatch):
     #                                     sharex=sharex, sharey=sharey)
     #         return fig
 
-    def plot_scales(self, titles=None, fig_kwargs={}, **kwargs):
+    def plot_scales(self, titles=None, fig_kwargs=None, **kwargs):
         """
         Plot input sensitivity for all datasets, to see which input dimensions are
         significant for which dataset.
@@ -291,6 +291,8 @@ class MRD(BayesianGPLVMMiniBatch):
         """
         from ..plotting import plotting_library as pl
 
+        if fig_kwargs is None:
+            fig_kwargs = {}
         if titles is None:
             titles = [r"${}$".format(name) for name in self.names]
 
@@ -312,7 +314,7 @@ class MRD(BayesianGPLVMMiniBatch):
         marker="<>^vsd",
         num_samples=1000,
         projection="2d",
-        predict_kwargs={},
+        predict_kwargs=None,
         scatter_kwargs=None,
         **imshow_kwargs,
     ):
@@ -323,6 +325,8 @@ class MRD(BayesianGPLVMMiniBatch):
         """
         from ..plotting.gpy_plot.latent_plots import plot_latent
 
+        if predict_kwargs is None:
+            predict_kwargs = {}
         if "Yindex" not in predict_kwargs:
             predict_kwargs["Yindex"] = 0
 

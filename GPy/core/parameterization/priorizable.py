@@ -8,7 +8,7 @@ from functools import reduce
 
 class Priorizable(Parameterizable):
     def __init__(self, name, default_prior=None, *a, **kw):
-        super(Priorizable, self).__init__(name=name, *a, **kw)
+        super(Priorizable, self).__init__(*a, name=name, **kw)
         self._default_prior_ = default_prior
         from paramz.core.index_operations import ParameterIndexOperations
 

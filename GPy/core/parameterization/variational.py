@@ -102,7 +102,7 @@ class SpikeAndSlabPrior(VariationalPrior):
 
 class VariationalPosterior(Parameterized):
     def __init__(self, means=None, variances=None, name="latent space", *a, **kw):
-        super(VariationalPosterior, self).__init__(name=name, *a, **kw)
+        super(VariationalPosterior, self).__init__(*a, name=name, **kw)
         self.mean = Param("mean", means)
         self.variance = Param("variance", variances, Logexp())
         self.ndim = self.mean.ndim

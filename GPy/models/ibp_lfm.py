@@ -404,7 +404,7 @@ class IBPPosterior(Parameterized):
         """
         binary_prob : the probability of including a latent function over an output.
         """
-        super(IBPPosterior, self).__init__(name=name, *a, **kw)
+        super(IBPPosterior, self).__init__(*a, name=name, **kw)
         self.gamma = Param("binary_prob", binary_prob, Logistic(1e-10, 1.0 - 1e-10))
         self.link_parameter(self.gamma)
         if tau is not None:

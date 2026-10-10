@@ -14,7 +14,7 @@ class MLPext(Mapping):
     last layer is linear.
     """
 
-    def __init__(self, input_dim=1, output_dim=1, hidden_dims=[3], prior=None, activation="tanh", name="mlpmap"):
+    def __init__(self, input_dim=1, output_dim=1, hidden_dims=None, prior=None, activation="tanh", name="mlpmap"):
         """
         :param input_dim: number of input dimensions
         :param output_dim: number of output dimensions
@@ -23,6 +23,8 @@ class MLPext(Mapping):
         :param activation: choose activation function. Allowed values are 'tanh' and 'sigmoid'
         :param name:
         """
+        if hidden_dims is None:
+            hidden_dims = [3]
         super(MLPext, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         assert activation in ["tanh", "sigmoid", "relu"], NotImplementedError(
             "Only tanh, relu and sigmoid activationsare implemented"

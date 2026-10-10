@@ -568,7 +568,7 @@ def drosophila_knirps(data_set="drosophila_protein"):
 
 # This will be for downloading google trends data.
 def google_trends(
-    query_terms=["big data", "machine learning", "data science"], data_set="google_trends", refresh_data=False
+    query_terms=None, data_set="google_trends", refresh_data=False
 ):
     """Data downloaded from Google trends for given query terms.
 
@@ -579,6 +579,8 @@ def google_trends(
 
     The function is inspired by this notebook:
     http://nbviewer.ipython.org/github/sahuguet/notebooks/blob/master/GoogleTrends%20meet%20Notebook.ipynb"""
+    if query_terms is None:
+        query_terms = ["big data", "machine learning", "data science"]
     query_terms.sort()
     import pandas
 
@@ -786,7 +788,9 @@ def silhouette(data_set="ankur_pose_data"):
     return data_details_return({"X": X, "Y": Y, "Xtest": Xtest, "Ytest": Ytest}, data_set)
 
 
-def decampos_digits(data_set="decampos_characters", which_digits=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]):
+def decampos_digits(data_set="decampos_characters", which_digits=None):
+    if which_digits is None:
+        which_digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     if not data_available(data_set):
         download_data(data_set)
     path = os.path.join(data_path, data_set)
@@ -1773,9 +1777,11 @@ def cmu_mocap_35_walk_jog(data_set="cmu_mocap"):
     return data
 
 
-def cmu_mocap(subject, train_motions, test_motions=[], sample_every=4, data_set="cmu_mocap"):
+def cmu_mocap(subject, train_motions, test_motions=None, sample_every=4, data_set="cmu_mocap"):
     """Load a given subject's training and test motions from the CMU motion capture data."""
     # Load in subject skeleton.
+    if test_motions is None:
+        test_motions = []
     subject_dir = os.path.join(data_path, data_set)
 
     # Make sure the data is downloaded.

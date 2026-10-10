@@ -72,7 +72,7 @@ def randomize(self, rand_gen=None, *args, **kwargs):
     if rand_gen is None:
         rand_gen = np.random.normal
     # first take care of all parameters (from N(0,1))
-    x = rand_gen(size=self._size_transformed(), *args, **kwargs)
+    x = rand_gen(*args, size=self._size_transformed(), **kwargs)
     updates = self.update_model()
     self.update_model(False)  # Switch off the updates
     self.optimizer_array = (

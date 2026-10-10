@@ -81,7 +81,11 @@ class HMC:
 
 
 class HMC_shortcut:
-    def __init__(self, model, M=None, stepsize_range=[1e-6, 1e-1], groupsize=5, Hstd_th=[1e-5, 3.0]):
+    def __init__(self, model, M=None, stepsize_range=None, groupsize=5, Hstd_th=None):
+        if Hstd_th is None:
+            Hstd_th = [1e-05, 3.0]
+        if stepsize_range is None:
+            stepsize_range = [1e-06, 0.1]
         self.model = model
         self.stepsize_range = np.log(stepsize_range)
         self.p = np.empty_like(model.optimizer_array.copy())

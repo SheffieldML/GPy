@@ -20,7 +20,7 @@ def plot_mapping(
     samples=0,
     fignum=None,
     ax=None,
-    fixed_inputs=[],
+    fixed_inputs=None,
     linecol=Tango.colorsHex["darkBlue"],
 ):
     """
@@ -56,6 +56,8 @@ def plot_mapping(
 
     """
     # TODO include samples
+    if fixed_inputs is None:
+        fixed_inputs = []
     if which_data == "all":
         which_data = slice(None)
 

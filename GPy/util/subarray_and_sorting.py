@@ -8,7 +8,6 @@
 __updated__ = "2014-05-21"
 
 
-
 def common_subarrays(X, axis=0):
     """
     Find common subarrays of 2 dimensional X, where axis is the axis to apply the search over.

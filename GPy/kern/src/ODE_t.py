@@ -37,7 +37,6 @@ class ODE_t(Kern):
 
         lyt = 1 / (2 * self.lengthscale_Yt)
 
-
         kyy = lambda tdist: np.exp(-lyt * (tdist))
 
         k1 = lambda tdist: 2 * lyt - 4 * lyt**2 * (tdist)
@@ -62,10 +61,8 @@ class ODE_t(Kern):
         return K
 
     def Kdiag(self, X):
-
         vyt = self.variance_Yt
         lyt = 1.0 / (2 * self.lengthscale_Yt)
-
 
         k1 = (2 * lyt) * vyt
 

@@ -84,7 +84,8 @@ class GP(Model):
             # function values
             warnings.warn(
                 "There are more rows in your input data X, \
-                         than in your output data Y, be VERY sure this is what you want", stacklevel=2
+                         than in your output data Y, be VERY sure this is what you want",
+                stacklevel=2,
             )
         _, self.output_dim = self.Y.shape
 
@@ -102,7 +103,8 @@ class GP(Model):
             warnings.warn(
                 "Your kernel has a different input dimension {} then the given X dimension {}. Be very sure this is what you want and you have not forgotten to set the right input dimenion in your kernel".format(
                     self.kern._effective_input_dim, self.X.shape[1]
-                ), stacklevel=2
+                ),
+                stacklevel=2,
             )
 
         # handle the mean function
@@ -172,7 +174,9 @@ class GP(Model):
             assert data is not None
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         elif data is not None:
-            warnings.warn("WARNING: The model has been saved with X,Y! The original values are being overridden!", stacklevel=2)
+            warnings.warn(
+                "WARNING: The model has been saved with X,Y! The original values are being overridden!", stacklevel=2
+            )
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         else:
             input_dict["X"], input_dict["Y"] = np.array(input_dict["X"]), np.array(input_dict["Y"])
@@ -628,7 +632,8 @@ class GP(Model):
     def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
         warnings.warn(
             "Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!",
-            DeprecationWarning, stacklevel=2,
+            DeprecationWarning,
+            stacklevel=2,
         )
         return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
 

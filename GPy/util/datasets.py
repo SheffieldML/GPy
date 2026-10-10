@@ -141,13 +141,9 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix="")
             raise
         response = e
         if response.code > 399 and response.code < 500:
-            raise ValueError(
-                "Tried url " + url + suffix + " and received client error " + str(response.code)
-            ) from e
+            raise ValueError("Tried url " + url + suffix + " and received client error " + str(response.code)) from e
         elif response.code > 499:
-            raise ValueError(
-                "Tried url " + url + suffix + " and received server error " + str(response.code)
-            ) from e
+            raise ValueError("Tried url " + url + suffix + " and received server error " + str(response.code)) from e
     with open(save_name, "wb") as f:
         meta = response.info()
         content_length_str = meta.get("Content-Length")
@@ -284,9 +280,7 @@ def cmu_urls_files(subj_motions, messages=True):
                 curMot = "0" + curMot
             motions[i].append(curMot)
 
-
     assert len(subjects) == len(motions)
-
 
     for i in range(len(subjects)):
         skel_dir = os.path.join(data_path, "cmu_mocap")
@@ -567,9 +561,7 @@ def drosophila_knirps(data_set="drosophila_protein"):
 
 
 # This will be for downloading google trends data.
-def google_trends(
-    query_terms=None, data_set="google_trends", refresh_data=False
-):
+def google_trends(query_terms=None, data_set="google_trends", refresh_data=False):
     """Data downloaded from Google trends for given query terms.
 
     Warning, if you use this function multiple times in a row you get

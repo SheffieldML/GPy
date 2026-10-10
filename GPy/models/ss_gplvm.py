@@ -273,7 +273,6 @@ class SSGPLVM(SparseGP_MPI):
         variational_prior=None,
         **kwargs,
     ):
-
         self.group_spike = group_spike
         self.init = init
         self.sharedX = sharedX

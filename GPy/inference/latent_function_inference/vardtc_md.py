@@ -19,7 +19,6 @@ class VarDTC_MD(LatentFunctionInference):
     const_jitter = 1e-6
 
     def gatherPsiStat(self, kern, X, Z, Y, beta, uncertain_inputs):
-
         if uncertain_inputs:
             psi0 = kern.psi0(Z, X)
             psi1 = kern.psi1(Z, X)

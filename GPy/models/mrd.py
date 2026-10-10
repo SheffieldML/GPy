@@ -77,7 +77,6 @@ class MRD(BayesianGPLVMMiniBatch):
         stochastic=False,
         batchsize=10,
     ):
-
         self.logger = logging.getLogger(self.__class__.__name__)
         self.num_inducing = num_inducing
 

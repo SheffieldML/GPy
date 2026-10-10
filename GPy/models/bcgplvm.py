@@ -21,7 +21,6 @@ class BCGPLVM(GPLVM):
     """
 
     def __init__(self, Y, input_dim, kernel=None, mapping=None):
-
         if mapping is None:
             mapping = mappings.MLP(input_dim=Y.shape[1], output_dim=input_dim, hidden_dim=10)
         else:

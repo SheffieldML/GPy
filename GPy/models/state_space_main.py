@@ -1612,9 +1612,7 @@ class DescreteStateSpace(object):
 
         # index correspond to values from previous iteration.
         A = p_dyn_model_callable.Ak(k, p_m, Prev_cov)  # state transition matrix (or Jacobian)
-        p_dyn_model_callable.Qk(
-            k
-        )  # state noise matrx. This is necessary for the square root calculation (next step)
+        p_dyn_model_callable.Qk(k)  # state noise matrx. This is necessary for the square root calculation (next step)
         Q_sr = p_dyn_model_callable.Q_srk(k)
         # Prediction step ->
         m_pred = p_dyn_model_callable.f_a(k, p_m, A)  # predicted mean

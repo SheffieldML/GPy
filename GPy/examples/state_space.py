@@ -2,7 +2,6 @@ import GPy
 import numpy as np
 
 
-
 def state_space_example():
     X = np.linspace(0, 10, 2000)[:, None]
     Y = np.sin(X) + np.random.randn(*X.shape) * 0.1

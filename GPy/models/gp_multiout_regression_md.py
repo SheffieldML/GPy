@@ -79,7 +79,6 @@ class GPMultioutRegressionMD(SparseGP):
         heter_noise=False,
         name="GPMRMD",
     ):
-
         assert len(Y.shape) == 1 or Y.shape[1] == 1
 
         self.output_dim = int(np.max(indexD)) + 1

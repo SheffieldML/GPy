@@ -121,7 +121,9 @@ class Laplace(LatentFunctionInference):
             return f
 
         # Eq 30
-        p_ystar, _ = zip(*[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf) for y, m, v, yi_m in zipped_values], strict=False)
+        p_ystar, _ = zip(
+            *[quad(integral_generator(y, m, v, yi_m), -np.inf, np.inf) for y, m, v, yi_m in zipped_values], strict=False
+        )
         p_ystar = np.array(p_ystar).reshape(-1, 1)
         return np.log(p_ystar)
 
@@ -238,7 +240,8 @@ class Laplace(LatentFunctionInference):
                 warnings.warn(
                     "Not perfect mode found (f_hat). difference: {}, iteration: {} out of max {}".format(
                         difference, iteration, self._mode_finding_max_iter
-                    ), stacklevel=2
+                    ),
+                    stacklevel=2,
                 )
             self.bad_fhat = True
         elif self.bad_fhat:
@@ -246,7 +249,8 @@ class Laplace(LatentFunctionInference):
             warnings.warn(
                 "f_hat now fine again. difference: {}, iteration: {} out of max {}".format(
                     difference, iteration, self._mode_finding_max_iter
-                ), stacklevel=2
+                ),
+                stacklevel=2,
             )
 
         return f, Ki_f

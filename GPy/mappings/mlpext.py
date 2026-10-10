@@ -98,7 +98,8 @@ class MLPext(Mapping):
             reversed(self.W_list),
             reversed(self.b_list),
             reversed(preactivations_list),
-            reversed(np.arange(len(self.W_list))), strict=False,
+            reversed(np.arange(len(self.W_list))),
+            strict=False,
         ):
             if i > 0:
                 # Apply activation function to linear preactivations to get input from previous layer

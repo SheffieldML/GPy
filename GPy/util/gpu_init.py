@@ -11,7 +11,6 @@ gpu_context = None
 MPI_enabled = False
 
 try:
-
     gpu_initialized = True
 except:
     pass

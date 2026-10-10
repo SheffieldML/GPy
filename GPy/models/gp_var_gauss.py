@@ -19,7 +19,6 @@ class GPVariationalGaussianApproximation(GP):
     """
 
     def __init__(self, X, Y, kernel, likelihood, Y_metadata=None):
-
         num_data = Y.shape[0]
         self.alpha = Param("alpha", np.zeros((num_data, 1)))  # only one latent fn for now.
         self.beta = Param("beta", np.ones(num_data))

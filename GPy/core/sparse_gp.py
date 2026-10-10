@@ -54,7 +54,6 @@ class SparseGP(GP):
         Y_metadata=None,
         normalizer=False,
     ):
-
         # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):

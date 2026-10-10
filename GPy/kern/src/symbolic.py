@@ -18,7 +18,6 @@ class Symbolic(Kern, Symbolic_core):
         operators=None,
         func_modules=None,
     ):
-
         if func_modules is None:
             func_modules = []
         if k is None:

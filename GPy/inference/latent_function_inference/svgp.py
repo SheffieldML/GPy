@@ -21,7 +21,6 @@ class SVGP(LatentFunctionInference):
         KL_scale=1.0,
         batch_scale=1.0,
     ):
-
         num_data, _ = Y.shape
         num_inducing, num_outputs = q_u_mean.shape
 

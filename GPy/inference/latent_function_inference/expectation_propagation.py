@@ -306,7 +306,6 @@ class EP(EPBase, ExactGaussianInference):
         )
 
     def expectation_propagation(self, mean_prior, K, Y, likelihood, Y_metadata):
-
         num_data, data_dim = Y.shape
         assert data_dim == 1, "This EP methods only works for 1D outputs"
 
@@ -560,7 +559,6 @@ class EPDTC(EPBase, VarDTC):
         )
 
     def expectation_propagation(self, Kmm, Kmn, Y, likelihood, Y_metadata):
-
         num_data, output_dim = Y.shape
         assert output_dim == 1, "This EP methods only works for 1D outputs"
 

@@ -30,7 +30,9 @@ def index_to_slices(index):
 
     [
         ret[ind_i].append(slice(*indexes_i))
-        for ind_i, indexes_i in zip(ind[switchpoints[:-1]], zip(switchpoints, switchpoints[1:], strict=False), strict=False)
+        for ind_i, indexes_i in zip(
+            ind[switchpoints[:-1]], zip(switchpoints, switchpoints[1:], strict=False), strict=False
+        )
     ]
     return ret
 
@@ -112,7 +114,9 @@ def coerce_coregionalized_XY(X, Y, output_index=None):
 def build_likelihood(Y_list, noise_index, likelihoods_list=None):
     Ny = len(Y_list)
     if likelihoods_list is None:
-        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for y, j in zip(Y_list, range(Ny), strict=False)]
+        likelihoods_list = [
+            GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for y, j in zip(Y_list, range(Ny), strict=False)
+        ]
     else:
         assert len(likelihoods_list) == Ny
     # likelihood = GPy.likelihoods.mixed_noise.MixedNoise(likelihoods_list=likelihoods_list, noise_index=noise_index)

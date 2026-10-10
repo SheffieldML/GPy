@@ -96,7 +96,6 @@ class StateSpace(Model):
         return gradients
 
     def predict_raw(self, Xnew, Ynew=None, filteronly=False):
-
         # Set defaults
         if Ynew is None:
             Ynew = self.Y
@@ -138,7 +137,6 @@ class StateSpace(Model):
         return (m, V)
 
     def predict(self, Xnew, filteronly=False):
-
         # Run the Kalman filter to get the state
         (m, V) = self.predict_raw(Xnew, filteronly=filteronly)
 
@@ -165,7 +163,6 @@ class StateSpace(Model):
         linecol=Tango.colorsHex["darkBlue"],
         fillcol=Tango.colorsHex["lightBlue"],
     ):
-
         # Deal with optional parameters
         if ax is None:
             fig = pb.figure(num=fignum)
@@ -205,7 +202,6 @@ class StateSpace(Model):
         ax.set_ylim(ymin, ymax)
 
     def prior_samples_f(self, X, size=10):
-
         # Sort the matrix (save the order)
         (_, return_index, return_inverse) = np.unique(X, True, True)
         X = X[return_index]
@@ -231,7 +227,6 @@ class StateSpace(Model):
         return Y.T
 
     def posterior_samples_f(self, X, size=10):
-
         # Sort the matrix (save the order)
         (_, return_index, return_inverse) = np.unique(X, True, True)
         X = X[return_index]
@@ -261,7 +256,6 @@ class StateSpace(Model):
         return Y.T
 
     def posterior_samples(self, X, size=10):
-
         # Make samples of f
         Y = self.posterior_samples_f(X, size)
 

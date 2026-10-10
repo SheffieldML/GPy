@@ -53,7 +53,6 @@ class SparseGPRegressionMD(SparseGP_MPI):
         individual_Y_noise=False,
         name="sparse_gp",
     ):
-
         assert len(Y.shape) == 1 or Y.shape[1] == 1
         self.individual_Y_noise = individual_Y_noise
         self.indexD = indexD
@@ -87,7 +86,6 @@ class SparseGPRegressionMD(SparseGP_MPI):
         self.output_dim = output_dim
 
     def parameters_changed(self):
-
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(
             self.kern, self.X, self.Z, self.likelihood, self.Y, self.indexD, self.output_dim, self.Y_metadata
         )

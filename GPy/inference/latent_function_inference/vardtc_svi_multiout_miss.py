@@ -29,7 +29,6 @@ class VarDTC_SVI_Multiout_Miss(LatentFunctionInference):
             return jitchol(tdot(Y))
 
     def gatherPsiStat(self, kern, X, Z, uncertain_inputs):
-
         if uncertain_inputs:
             psi0 = kern.psi0(Z, X)
             psi1 = kern.psi1(Z, X)
@@ -59,7 +58,6 @@ class VarDTC_SVI_Multiout_Miss(LatentFunctionInference):
         return grad_dict
 
     def inference_d(self, d, beta, Y, indexD, grad_dict, mid_res, uncertain_inputs_r, uncertain_inputs_c, Mr, Mc):
-
         idx_d = indexD == d
         Y = Y[idx_d]
         N, D = Y.shape[0], 1

@@ -19,7 +19,6 @@ def univariate_plot(prior):
 
 
 def plot(prior):
-
     if prior.input_dim == 2:
         rvs = prior.rvs(200)
         pb.plot(rvs[:, 0], rvs[:, 1], "kx", mew=1.5)

@@ -107,7 +107,6 @@ class GPMultioutRegression(SparseGP):
         init="GP",
         name="GPMR",
     ):
-
         D = Y.shape[1]
         Mc, Mr = int(num_inducing[0]), int(num_inducing[1])
         if Mr > D:

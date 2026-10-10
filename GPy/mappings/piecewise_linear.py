@@ -13,7 +13,6 @@ class PiecewiseLinear(Mapping):
     """
 
     def __init__(self, input_dim, output_dim, values, breaks, name="piecewise_linear"):
-
         assert input_dim == 1
         assert output_dim == 1
 
@@ -49,7 +48,9 @@ class PiecewiseLinear(Mapping):
         )
 
         # loop throught the pairs of points (each interval includes its lower break)
-        for low, up, g, v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False):
+        for low, up, g, v in zip(
+            self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False
+        ):
             i = np.logical_and(x >= low, x < up)
             y[i] = v + (x[i] - low) * g
 
@@ -93,7 +94,9 @@ class PiecewiseLinear(Mapping):
         dL_dX = dL_dF.copy()
 
         # insude the breakpoints, the partial derivative is self.grads
-        for low, up, g, _v in zip(self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False):
+        for low, up, g, _v in zip(
+            self.sorted_breaks[:-1], self.sorted_breaks[1:], self.grads, self.sorted_values[:-1], strict=False
+        ):
             i = np.logical_and(x >= low, x < up)
             dL_dX[i] = dL_dF[i] * g
 

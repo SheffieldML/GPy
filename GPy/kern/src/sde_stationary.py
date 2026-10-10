@@ -104,7 +104,8 @@ class sde_RBF(RBF):
         if (Qc.item() > 1.0 / eps) or (Qc.item() < eps):
             warnings.warn(
                 """sde_RBF kernel: the noise variance Qc is either very large or very small.
-                                It influece conditioning of P_inf: {0:e}""".format(Qc.item()), stacklevel=2
+                                It influece conditioning of P_inf: {0:e}""".format(Qc.item()),
+                stacklevel=2,
             )
 
         pp1 = np.zeros((2 * N + 1,))  # array of polynomial coefficients from higher power to lower

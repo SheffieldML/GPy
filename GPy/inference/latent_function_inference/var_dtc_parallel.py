@@ -25,7 +25,6 @@ class VarDTC_minibatch(LatentFunctionInference):
     const_jitter = 1e-8
 
     def __init__(self, batchsize=None, limit=3, mpi_comm=None):
-
         self.batchsize = batchsize
         self.mpi_comm = mpi_comm
         self.limit = limit
@@ -75,7 +74,6 @@ class VarDTC_minibatch(LatentFunctionInference):
             return jitchol(tdot(Y))
 
     def gatherPsiStat(self, kern, X, Z, Y, beta, uncertain_inputs):
-
         het_noise = beta.size > 1
 
         assert beta.size == 1

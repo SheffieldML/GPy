@@ -355,14 +355,59 @@ class HeteroscedasticGaussian(Gaussian):
 
         super(HeteroscedasticGaussian, self).__init__(gp_link, np.ones(Y_metadata['output_index'].shape)*variance, name)
 
+    def resize_for_data(self, num_data, variance=None):
+        """
+        Resize the per-point noise parameter to ``num_data`` rows.
+
+        Used when ``GP.set_XY`` changes the number of observations (#959, #858).
+        If ``variance`` is omitted, new entries are filled with the mean of the
+        previous noise values (or 1.0 if empty).
+        """
+        num_data = int(num_data)
+        if num_data < 1:
+            raise ValueError("num_data must be positive, got %s" % num_data)
+        old = np.asarray(self.variance.values, dtype=float).reshape(-1)
+        if variance is None:
+            fill = float(np.mean(old)) if old.size else 1.0
+            new_vals = np.full((num_data, 1), fill, dtype=float)
+        else:
+            new_vals = np.asarray(variance, dtype=float).reshape(-1, 1)
+            if new_vals.shape[0] != num_data:
+                raise ValueError(
+                    "variance has %d rows but num_data=%d"
+                    % (new_vals.shape[0], num_data)
+                )
+        if self.variance.shape == new_vals.shape:
+            self.variance[:] = new_vals
+            return
+        index = self.variance._parent_index_
+        self.unlink_parameter(self.variance)
+        self.variance = Param('variance', new_vals, Logexp())
+        self.link_parameter(self.variance, index=index)
+
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
         return dL_dKdiag[Y_metadata['output_index']]
 
     def gaussian_variance(self, Y_metadata=None):
         return self.variance[Y_metadata['output_index'].flatten()]
 
+    def _noise_for_points(self, mu, Y_metadata=None):
+        if Y_metadata is not None and 'output_index' in Y_metadata:
+            idx = np.asarray(Y_metadata['output_index']).flatten()
+        else:
+            n = mu.shape[0]
+            if self.variance.shape[0] != n:
+                raise ValueError(
+                    "HeteroscedasticGaussian needs Y_metadata['output_index'] "
+                    "when the number of test points (%d) differs from the "
+                    "noise parameter length (%d)"
+                    % (n, self.variance.shape[0])
+                )
+            idx = np.arange(n)
+        return self.variance[idx]
+
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
-        _s = self.variance[Y_metadata['output_index'].flatten()]
+        _s = self._noise_for_points(mu, Y_metadata)
         if full_cov:
             if var.ndim == 2:
                 var += np.eye(var.shape[0])*_s
@@ -373,5 +418,5 @@ class HeteroscedasticGaussian(Gaussian):
         return mu, var
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
-        _s = self.variance[Y_metadata['output_index'].flatten()]
+        _s = self._noise_for_points(mu, Y_metadata)
         return  [stats.norm.ppf(q/100.)*np.sqrt(var + _s) + mu for q in quantiles]

@@ -13,7 +13,7 @@ Inference over Gaussian process latent functions
 In all our GP models, the consistency property means that we have a Gaussian
 prior over a finite set of points f. This prior is:
 
-.. math:: 
+.. math::
     N(f | 0, K)
 
 where :math:`K` is the kernel matrix.
@@ -34,6 +34,7 @@ use this posterior object for making predictions, optimizing hyper-parameters,
 etc.
 
 """
+
 
 class LatentFunctionInference(object):
     def on_optimization_start(self):
@@ -70,9 +71,11 @@ class LatentFunctionInference(object):
         """
 
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        inference_class = input_dict.pop('class')
+        inference_class = input_dict.pop("class")
         import GPy
+
         inference_class = eval(inference_class)
         return inference_class._build_from_input_dict(inference_class, input_dict)
 
@@ -80,8 +83,8 @@ class LatentFunctionInference(object):
     def _build_from_input_dict(inference_class, input_dict):
         return inference_class(**input_dict)
 
-class InferenceMethodList(LatentFunctionInference, list):
 
+class InferenceMethodList(LatentFunctionInference, list):
     def on_optimization_start(self):
         for inf in self:
             inf.on_optimization_start()
@@ -100,9 +103,10 @@ class InferenceMethodList(LatentFunctionInference, list):
         for inf in state:
             self.append(inf)
 
+
 from .exact_gaussian_inference import ExactGaussianInference
 from .exact_studentt_inference import ExactStudentTInference
-from .laplace import Laplace,LaplaceBlock
+from .laplace import Laplace, LaplaceBlock
 from GPy.inference.latent_function_inference.var_dtc import VarDTC
 from .expectation_propagation import EP, EPDTC
 from .dtc import DTC

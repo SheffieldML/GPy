@@ -5,6 +5,7 @@
 
 import numpy as np
 
+
 class GridPosterior(object):
     """
     Specially intended for the Grid Regression case
@@ -14,17 +15,17 @@ class GridPosterior(object):
     schemes and the model classes.
 
     """
+
     def __init__(self, alpha_kron=None, QTs=None, Qs=None, V_kron=None):
         """
-        alpha_kron : 
+        alpha_kron :
         QTs : transpose of eigen vectors resulting from decomposition of single dimension covariance matrices
         Qs : eigen vectors resulting from decomposition of single dimension covariance matrices
         V_kron : kronecker product of eigenvalues reulting decomposition of single dimension covariance matrices
         """
 
-        if ((alpha_kron is not None) and (QTs is not None) 
-            and (Qs is not None) and (V_kron is not None)):
-            pass # we have sufficient to compute the posterior
+        if (alpha_kron is not None) and (QTs is not None) and (Qs is not None) and (V_kron is not None):
+            pass  # we have sufficient to compute the posterior
         else:
             raise ValueError("insufficient information for predictions")
 
@@ -35,8 +36,7 @@ class GridPosterior(object):
 
     @property
     def alpha(self):
-        """
-        """
+        """ """
         return self._alpha_kron
 
     @property
@@ -59,4 +59,3 @@ class GridPosterior(object):
         kronecker product of eigenvalues s
         """
         return self._v_kron
-    

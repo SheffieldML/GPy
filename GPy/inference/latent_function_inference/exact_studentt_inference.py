@@ -35,11 +35,7 @@ class ExactStudentTInference(LatentFunctionInference):
         # Log marginal
         N = Y.shape[0]
         D = Y.shape[1]
-        log_marginal = 0.5 * (
-            -N * np.log((nu - 2) * np.pi)
-            - W_logdet
-            - (nu + N) * np.log(1 + beta / (nu - 2))
-        )
+        log_marginal = 0.5 * (-N * np.log((nu - 2) * np.pi) - W_logdet - (nu + N) * np.log(1 + beta / (nu - 2)))
         log_marginal += gammaln((nu + N) / 2) - gammaln(nu / 2)
 
         # Gradients

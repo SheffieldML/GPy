@@ -16,10 +16,11 @@ class GPHeteroscedasticRegression(GP):
     :param X: input observations
     :param Y: observed values
     :param kernel: a GPy kernel, defaults to rbf
+    :param mean_function: optional mean function (same as :class:`GPRegression`)
 
     NB: This model does not make inference on the noise outside the training set
     """
-    def __init__(self, X, Y, kernel=None, Y_metadata=None):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None, mean_function=None):
 
         Ny = Y.shape[0]
 
@@ -34,7 +35,9 @@ class GPHeteroscedasticRegression(GP):
         #Likelihood
         likelihood = likelihoods.HeteroscedasticGaussian(Y_metadata)
 
-        super(GPHeteroscedasticRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata=Y_metadata)
+        super(GPHeteroscedasticRegression, self).__init__(
+            X, Y, kernel, likelihood, Y_metadata=Y_metadata, mean_function=mean_function
+        )
 
     def set_XY(self, X=None, Y=None, Y_metadata=None):
         """

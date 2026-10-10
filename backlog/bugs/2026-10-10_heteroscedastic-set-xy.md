@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_heteroscedastic-set-xy
 title: Fix set_XY for heteroscedastic Gaussian regression
-status: In Progress
+status: Done
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -33,7 +33,7 @@ heteroscedastic + mean_function feature task.
 - [x] Reproduce #959 on current `devel`
 - [x] `set_XY` updates `X`, `Y`, and heteroscedastic noise metadata consistently
 - [x] Regression test for train → `set_XY` → predict
-- [ ] Comment / close #959 (and #858)
+- [x] Comment / close #959 (and #858) via #1169
 
 ## Implementation Notes
 

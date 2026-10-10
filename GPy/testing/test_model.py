@@ -1475,6 +1475,25 @@ class TestGradient:
         m = GPy.models.GPHeteroscedasticRegression(X, Y, kern)
         assert m.checkgrad()
 
+    def test_gp_heteroscedastic_mean_function(self):
+        """GPHeteroscedasticRegression accepts mean_function like GPRegression (#875)."""
+        self.setup_method()
+        np.random.seed(0)
+        X = np.linspace(0, 1, 20)[:, None]
+        Y = 2.0 * X + 0.1 * np.random.randn(20, 1)
+        mean_function = GPy.mappings.Linear(1, 1)
+        mean_function.A[:] = 1.5
+        m = GPy.models.GPHeteroscedasticRegression(X, Y, mean_function=mean_function)
+        assert m.mean_function is mean_function
+        assert m.checkgrad()
+        mu, var = m.predict(X)
+        assert mu.shape == (20, 1)
+        assert np.all(np.isfinite(mu))
+        assert np.all(np.isfinite(var))
+        # Mean contribution is present in the predictive mean
+        mu0, _ = GPy.models.GPHeteroscedasticRegression(X, Y).predict(X)
+        assert np.linalg.norm(mu - mu0) > 1e-3
+
     def test_gp_heteroscedastic_set_XY_resize(self):
         """set_XY with a new data size refreshes per-point noise (#959, #858)."""
         self.setup_method()

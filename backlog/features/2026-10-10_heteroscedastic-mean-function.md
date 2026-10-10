@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_heteroscedastic-mean-function
 title: Support mean_function on GPHeteroscedasticRegression
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -29,15 +29,15 @@ Open-issue triage (2026-10-10): backlog feature.
 
 ## Acceptance Criteria
 
-- [ ] `GPHeteroscedasticRegression(..., mean_function=mf)` constructs successfully
-- [ ] Optimize / predict use the mean function consistently with `GPRegression`
-- [ ] Unit test covering construction + predict
+- [x] `GPHeteroscedasticRegression(..., mean_function=mf)` constructs successfully
+- [x] Optimize / predict use the mean function consistently with `GPRegression`
+- [x] Unit test covering construction + predict
 - [ ] Comment / close #875
 
 ## Implementation Notes
 
-- Thin wrapper change may be enough; verify inheritance / `**kwargs` to `GP`.
-- Pair review with heteroscedastic `set_XY` bug task.
+- Thin wrapper change: pass `mean_function` through to `GP.__init__`.
+- Pair review with heteroscedastic `set_XY` bug task (#1169).
 
 ## Related
 
@@ -51,3 +51,5 @@ Open-issue triage (2026-10-10): backlog feature.
 ### 2026-10-10
 
 Task created from open-issue triage.
+
+Implemented `mean_function=` on the wrapper + `test_gp_heteroscedastic_mean_function`.

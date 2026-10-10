@@ -9,7 +9,6 @@ from paramz.caching import Cache_this
 
 
 class GridKern(Stationary):
-
     def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, originalDimensions, useGPU=False):
         super(GridKern, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=useGPU)
         self.originalDimensions = originalDimensions
@@ -38,6 +37,7 @@ class GridKern(Stationary):
         r = self._scaled_dist(X, X2)
         return self.dKdLen_of_r(r, dimension, lengthscale)
 
+
 class GridRBF(GridKern):
     """
     Similar to regular RBF but supplemented with methods required for Gaussian grid regression
@@ -48,12 +48,26 @@ class GridRBF(GridKern):
        k(r) = \\sigma^2 \\exp \\bigg(- \\frac{1}{2} r^2 \\bigg)
 
     """
+
     _support_GPU = True
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='gridRBF', originalDimensions=1, useGPU=False):
-        super(GridRBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name, originalDimensions, useGPU=useGPU)
+
+    def __init__(
+        self,
+        input_dim,
+        variance=1.0,
+        lengthscale=None,
+        ARD=False,
+        active_dims=None,
+        name="gridRBF",
+        originalDimensions=1,
+        useGPU=False,
+    ):
+        super(GridRBF, self).__init__(
+            input_dim, variance, lengthscale, ARD, active_dims, name, originalDimensions, useGPU=useGPU
+        )
 
     def K_of_r(self, r):
-        return (self.variance**(float(1)/self.originalDimensions)) * np.exp(-0.5 *  r**2)
+        return (self.variance ** (float(1) / self.originalDimensions)) * np.exp(-0.5 * r**2)
 
     def dKdVar_of_r(self, r):
         """
@@ -67,10 +81,19 @@ class GridRBF(GridKern):
         Computation of derivative changes when lengthscale corresponds to
         the dimension of the kernel whose derivate is being computed.
         """
-        if (dimCheck == True):
-            return (self.variance**(float(1)/self.originalDimensions)) * np.exp(-0.5 * r**2) * (r**2) / (lengthscale**(float(1)/self.originalDimensions))
+        if dimCheck == True:
+            return (
+                (self.variance ** (float(1) / self.originalDimensions))
+                * np.exp(-0.5 * r**2)
+                * (r**2)
+                / (lengthscale ** (float(1) / self.originalDimensions))
+            )
         else:
-            return (self.variance**(float(1)/self.originalDimensions)) * np.exp(-0.5 * r**2) / (lengthscale**(float(1)/self.originalDimensions))
+            return (
+                (self.variance ** (float(1) / self.originalDimensions))
+                * np.exp(-0.5 * r**2)
+                / (lengthscale ** (float(1) / self.originalDimensions))
+            )
 
     def dK_dr(self, r):
-        return -r*self.K_of_r(r)
+        return -r * self.K_of_r(r)

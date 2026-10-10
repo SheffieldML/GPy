@@ -21,11 +21,11 @@ class WienerVelocity(Kern):
     :type variance: float
     """
 
-    def __init__(self, input_dim=1, variance=1., active_dims=None, name='WienerVelocity', useGPU=False):
+    def __init__(self, input_dim=1, variance=1.0, active_dims=None, name="WienerVelocity", useGPU=False):
         assert input_dim == 1, "Wiener velocity in 1D only"
         super(WienerVelocity, self).__init__(input_dim, active_dims, name)
 
-        self.variance = Param('variance', variance, Logexp())
+        self.variance = Param("variance", variance, Logexp())
         self.link_parameters(self.variance)
 
     def to_dict(self):
@@ -44,14 +44,25 @@ class WienerVelocity(Kern):
     def K(self, X, X2=None):
         if X2 is None:
             X2 = X
-        return (self.variance*np.where(np.sign(X) == np.sign(X2.T), (np.fmin(np.abs(X), np.abs(X2.T))**3) /
-                                       3 + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T))**2) / 2, 0.))
+        return self.variance * np.where(
+            np.sign(X) == np.sign(X2.T),
+            (np.fmin(np.abs(X), np.abs(X2.T)) ** 3) / 3
+            + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T)) ** 2) / 2,
+            0.0,
+        )
 
     def Kdiag(self, X):
-        return self.variance*np.divide(np.abs(X.flatten())**3, 3)
+        return self.variance * np.divide(np.abs(X.flatten()) ** 3, 3)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:
             X2 = X
-        self.variance.gradient = (np.sum(dL_dK * np.where(np.sign(X) == np.sign(X2.T), (np.fmin(np.abs(X), np.abs(X2.T))**3) /
-                                                          3 + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T))**2) / 2, 0.)))
+        self.variance.gradient = np.sum(
+            dL_dK
+            * np.where(
+                np.sign(X) == np.sign(X2.T),
+                (np.fmin(np.abs(X), np.abs(X2.T)) ** 3) / 3
+                + np.abs(X - X2.T) * (np.fmin(np.abs(X), np.abs(X2.T)) ** 2) / 2,
+                0.0,
+            )
+        )

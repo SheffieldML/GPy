@@ -12,23 +12,23 @@ from paramz.caching import Cache_this
 class LFM1(Kern):
     """
     Latent Force Model kernel for first-order differential equation (LFM1).
-    
+
     This kernel implements the Single Input Motif (SIM) kernel for first-order
     differential equations of the form:
-    
+
     .. math::
        \\frac{dx(t)}{dt} = B + S f(t-\\delta) - D x(t)
-    
+
     where:
     - B is the initial level (initVal)
     - S is the sensitivity to the latent force
     - D is the decay rate
     - δ is the time delay
     - f(t) is the latent force with RBF covariance
-    
+
     The kernel is designed to work with GPy's multioutput framework where
     the second input dimension is used as the output index.
-    
+
     :param input_dim: Input dimension (should be 2: 1 for time + 1 for output index)
     :type input_dim: int
     :param output_dim: Number of outputs (default: 2 for force and displacement)
@@ -66,13 +66,11 @@ class LFM1(Kern):
     ):
         # Validate input dimension (should be 2: time + output index)
         assert input_dim == 2, "LFM1 kernel requires exactly 2 input dimensions (time + output index)"
-        
-        super(LFM1, self).__init__(
-            input_dim=input_dim, active_dims=active_dims, name=name
-        )
-        
+
+        super(LFM1, self).__init__(input_dim=input_dim, active_dims=active_dims, name=name)
+
         self.output_dim = output_dim
-        
+
         # Initialize parameters with constraints
         self.mass = Param("mass", mass, Logexp())  # Must be positive
         self.damper = Param("damper", damper, Logexp())  # Must be positive (decay rate)
@@ -80,13 +78,10 @@ class LFM1(Kern):
         self.delay = Param("delay", delay)  # Can be negative
         self.variance = Param("variance", variance, Logexp())  # Must be positive
         self.lengthscale = Param("lengthscale", lengthscale, Logexp())  # Must be positive
-        
+
         # Link parameters for optimization
-        self.link_parameters(
-            self.mass, self.damper, self.sensitivity, 
-            self.delay, self.variance, self.lengthscale
-        )
-        
+        self.link_parameters(self.mass, self.damper, self.sensitivity, self.delay, self.variance, self.lengthscale)
+
         # Kernel properties
         self.is_stationary = False
         self.is_normalized = False
@@ -96,127 +91,127 @@ class LFM1(Kern):
     def K(self, X, X2=None):
         """
         Compute the kernel matrix.
-        
+
         :param X: Input array of shape (n, 2) where first column is time, second is output index
         :param X2: Second input array (optional)
         :return: Kernel matrix
         """
         if X2 is None:
             X2 = X
-            
+
         # Extract time and output indices
         t1 = X[:, 0:1]  # Time points
         t2 = X2[:, 0:1]  # Time points for X2
         idx1 = X[:, 1:2].astype(int)  # Output indices
         idx2 = X2[:, 1:2].astype(int)  # Output indices for X2
-        
+
         # Apply time delay
         t1_delayed = t1 - self.delay
         t2_delayed = t2 - self.delay
-        
+
         # Compute kernel matrix
         K = self._compute_kernel_matrix(t1_delayed, t2_delayed, idx1, idx2)
-        
+
         return K
 
     def _compute_kernel_matrix(self, t1, t2, idx1, idx2):
         """
         Compute the kernel matrix using the analytical solution.
-        
+
         This implements the SIM kernel computation based on the MATLAB implementation.
         """
         n1, n2 = t1.shape[0], t2.shape[0]
         K = np.zeros((n1, n2))
-        
+
         # Parameters
         D = self.damper  # Decay rate
         sigma = self.lengthscale * np.sqrt(2)  # Lengthscale for RBF
         S = self.sensitivity  # Sensitivity
-        
+
         # Compute kernel for each pair of points
         for i in range(n1):
             for j in range(n2):
                 # Only compute kernel if output indices match (same output)
                 if idx1[i] == idx2[j]:
                     K[i, j] = self._compute_kernel_element(t1[i, 0], t2[j, 0], D, sigma, S)
-        
+
         # Apply variance scaling
         K = self.variance * K
-        
+
         return K
 
     def _compute_kernel_element(self, t1, t2, D, sigma, S):
         """
         Compute a single kernel element using the analytical solution.
-        
+
         Based on the MATLAB simComputeH function.
         """
         # Apply time delay (already done in K method)
-        
+
         # Compute the kernel using error functions
         # This is the analytical solution for the first-order ODE kernel
-        
+
         # For now, implement a simplified version
         # TODO: Implement full analytical solution with error functions
-        
+
         # Simplified implementation based on exponential decay
         diff_t = t1 - t2
         abs_diff_t = np.abs(diff_t)
-        
+
         # Basic exponential decay kernel
         # This is a placeholder - need to implement the full analytical solution
         kernel_val = np.exp(-D * abs_diff_t) * np.exp(-0.5 * (diff_t / sigma) ** 2)
-        
+
         return kernel_val
 
     @Cache_this(limit=3)
     def Kdiag(self, X):
         """
         Compute the diagonal of the kernel matrix.
-        
+
         :param X: Input array
         :return: Diagonal of kernel matrix
         """
         # Extract time and output indices
         t = X[:, 0:1]
         idx = X[:, 1:2].astype(int)
-        
+
         # Apply time delay
         t_delayed = t - self.delay
-        
+
         # Compute diagonal elements
         diag = np.zeros(X.shape[0])
         for i in range(X.shape[0]):
-            diag[i] = self._compute_kernel_element(t_delayed[i, 0], t_delayed[i, 0], 
-                                                 self.damper, self.lengthscale * np.sqrt(2), 
-                                                 self.sensitivity)
-        
+            diag[i] = self._compute_kernel_element(
+                t_delayed[i, 0], t_delayed[i, 0], self.damper, self.lengthscale * np.sqrt(2), self.sensitivity
+            )
+
         # Apply variance scaling
         diag = self.variance * diag
-        
+
         return diag
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         """
         Update gradients with respect to parameters.
-        
+
         :param dL_dK: Gradient of objective with respect to kernel matrix
         :param X: Input array
         :param X2: Second input array (optional)
         """
         if X2 is None:
             X2 = X
-            
+
         # Extract time and output indices
         t1 = X[:, 0:1]
         t2 = X2[:, 0:1]
         idx1 = X[:, 1:2].astype(int)
         idx2 = X2[:, 1:2].astype(int)
-        
+
         # Apply time delay
         t1_delayed = t1 - self.delay
         t2_delayed = t2 - self.delay
-        
+
         # Initialize gradients
         self.mass.gradient = 0.0
         self.damper.gradient = 0.0
@@ -224,14 +219,14 @@ class LFM1(Kern):
         self.delay.gradient = 0.0
         self.variance.gradient = 0.0
         self.lengthscale.gradient = 0.0
-        
+
         # Compute gradients
         # TODO: Implement gradient computation
         # For now, use finite differences or analytical gradients
-        
+
         # Simplified gradient computation
         n1, n2 = t1.shape[0], t2.shape[0]
-        
+
         for i in range(n1):
             for j in range(n2):
                 if idx1[i] == idx2[j]:
@@ -242,7 +237,7 @@ class LFM1(Kern):
     def update_gradients_diag(self, dL_dKdiag, X):
         """
         Update gradients with respect to parameters for diagonal computation.
-        
+
         :param dL_dKdiag: Gradient of objective with respect to diagonal
         :param X: Input array
         """
@@ -286,5 +281,5 @@ class LFM1(Kern):
             variance=input_dict["variance"],
             lengthscale=input_dict["lengthscale"],
             active_dims=input_dict["active_dims"],
-            name=input_dict["name"]
+            name=input_dict["name"],
         )

@@ -8,16 +8,18 @@ from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
 import six
 
+
 @six.add_metaclass(KernCallsViaSlicerMeta)
 class Kern(Parameterized):
-    #===========================================================================
+    # ===========================================================================
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
     # __meataclass__ is ignored in Python 3 - needs to be put in the function definiton
     # __metaclass__ = KernCallsViaSlicerMeta
     # Here, we use the Python module six to support Py3 and Py2 simultaneously
-    #===========================================================================
+    # ===========================================================================
     _support_GPU = False
+
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):
         """
         The base class for a kernel: a positive definite function
@@ -52,12 +54,15 @@ class Kern(Parameterized):
 
         self._all_dims_active = np.atleast_1d(self.active_dims).astype(np.int_)
 
-        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(self.input_dim, self._all_dims_active.size)
+        assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(
+            self.input_dim, self._all_dims_active.size
+        )
 
         self._sliced_X = 0
         self.useGPU = self._support_GPU and useGPU
 
         from .psi_comp import PSICOMP_GH
+
         self.psicomp = PSICOMP_GH()
 
     def _save_to_input_dict(self):
@@ -89,10 +94,12 @@ class Kern(Parameterized):
         """
 
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        kernel_class = input_dict.pop('class')
+        kernel_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
         import GPy
+
         kernel_class = eval(kernel_class)
         return kernel_class._build_from_input_dict(kernel_class, input_dict)
 
@@ -100,9 +107,8 @@ class Kern(Parameterized):
     def _build_from_input_dict(kernel_class, input_dict):
         return kernel_class(**input_dict)
 
-
     def __setstate__(self, state):
-        self._all_dims_active = np.arange(0, max(state['active_dims']) + 1)
+        self._all_dims_active = np.arange(0, max(state["active_dims"]) + 1)
         super(Kern, self).__setstate__(state)
 
     @property
@@ -112,7 +118,7 @@ class Kern(Parameterized):
     @Cache_this(limit=3)
     def _slice_X(self, X):
         try:
-            return X[:, self._all_dims_active].astype('float')
+            return X[:, self._all_dims_active].astype("float")
         except:
             return X[:, self._all_dims_active]
 
@@ -135,6 +141,7 @@ class Kern(Parameterized):
                    handLes this as X2 == X.
         """
         raise NotImplementedError
+
     def Kdiag(self, X):
         """
         The diagonal of the kernel matrix K
@@ -143,24 +150,28 @@ class Kern(Parameterized):
             Kdiag_{i} = k(X_i, X_i)
         """
         raise NotImplementedError
+
     def psi0(self, Z, variational_posterior):
         """
         .. math::
             \\psi_0 = \\sum_{i=0}^{n}E_{q(X)}[k(X_i, X_i)]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[0]
+
     def psi1(self, Z, variational_posterior):
         """
         .. math::
             \\psi_1^{n,m} = E_{q(X)}[k(X_n, Z_m)]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior)[1]
+
     def psi2(self, Z, variational_posterior):
         """
         .. math::
             \\psi_2^{m,m'} = \\sum_{i=0}^{n}E_{q(X)}[ k(Z_m, X_i) k(X_i, Z_{m'})]
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=False)[2]
+
     def psi2n(self, Z, variational_posterior):
         """
         .. math::
@@ -169,6 +180,7 @@ class Kern(Parameterized):
         Thus, we do not sum out n, compared to psi2
         """
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psi2_n=True)[2]
+
     def gradients_X(self, dL_dK, X, X2):
         """
         .. math::
@@ -176,20 +188,28 @@ class Kern(Parameterized):
             \\frac{\\partial L}{\\partial X} = \\frac{\\partial L}{\\partial K}\\frac{\\partial K}{\\partial X}
         """
         raise NotImplementedError
+
     def gradients_X_X2(self, dL_dK, X, X2):
         return self.gradients_X(dL_dK, X, X2), self.gradients_X(dL_dK.T, X2, X)
+
     def gradients_XX(self, dL_dK, X, X2, cov=True):
         """
         .. math::
 
             \\frac{\\partial^2 L}{\\partial X\\partial X_2} = \\frac{\\partial L}{\\partial K}\\frac{\\partial^2 K}{\\partial X\\partial X_2}
         """
-        raise NotImplementedError("This is the second derivative of K wrt X and X2, and not implemented for this kernel")
+        raise NotImplementedError(
+            "This is the second derivative of K wrt X and X2, and not implemented for this kernel"
+        )
+
     def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
         """
         The diagonal of the second derivative w.r.t. X and X2
         """
-        raise NotImplementedError("This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
+        raise NotImplementedError(
+            "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel"
+        )
+
     def gradients_X_diag(self, dL_dKdiag, X):
         """
         The diagonal of the derivative w.r.t. X
@@ -197,7 +217,7 @@ class Kern(Parameterized):
         raise NotImplementedError
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        """ update the gradients of all parameters when using only the diagonal elements of the covariance matrix"""
+        """update the gradients of all parameters when using only the diagonal elements of the covariance matrix"""
         raise NotImplementedError
 
     def update_gradients_full(self, dL_dK, X, X2):
@@ -227,8 +247,9 @@ class Kern(Parameterized):
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior,
-                                psi0=None, psi1=None, psi2=None):
+    def gradients_Z_expectations(
+        self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, psi0=None, psi1=None, psi2=None
+    ):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
@@ -255,6 +276,7 @@ class Kern(Parameterized):
         """
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import kernel_plots
+
         kernel_plots.plot(self, x, fignum, ax, title, plot_limits, resolution, **mpl_kwargs)
 
     def input_sensitivity(self, summarize=True):
@@ -299,15 +321,14 @@ class Kern(Parameterized):
                 input_1, input_2 = which_indices[0], None
         return input_1, input_2, input_3
 
-
     def __add__(self, other):
-        """ Overloading of the '+' operator. for more control, see self.add """
+        """Overloading of the '+' operator. for more control, see self.add"""
         return self.add(other)
 
     def __iadd__(self, other):
         return self.add(other)
 
-    def add(self, other, name='sum'):
+    def add(self, other, name="sum"):
         """
         Add another kernel to this one.
 
@@ -317,26 +338,31 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be added to kernels..."
         from .add import Add
+
         return Add([self, other], name=name)
 
     def __mul__(self, other):
-        """ Here we overload the '*' operator. See self.prod for more information"""
+        """Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
     def __imul__(self, other):
-        """ Here we overload the '*' operator. See self.prod for more information"""
+        """Here we overload the '*' operator. See self.prod for more information"""
         return self.prod(other)
 
     def __pow__(self, other):
         """
         Shortcut for tensor `prod`.
         """
-        assert np.all(self._all_dims_active == range(self.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
-        assert np.all(other._all_dims_active == range(other.input_dim)), "Can only use kernels, which have their input_dims defined from 0"
+        assert np.all(self._all_dims_active == range(self.input_dim)), (
+            "Can only use kernels, which have their input_dims defined from 0"
+        )
+        assert np.all(other._all_dims_active == range(other.input_dim)), (
+            "Can only use kernels, which have their input_dims defined from 0"
+        )
         other._all_dims_active += self.input_dim
         return self.prod(other)
 
-    def prod(self, other, name='mul'):
+    def prod(self, other, name="mul"):
         """
         Multiply two kernels (either on the same space, or on the tensor
         product of the input space).
@@ -347,6 +373,7 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."
         from .prod import Prod
+
         # kernels = []
         # if isinstance(self, Prod): kernels.extend(self.parameters)
         # else: kernels.append(self)
@@ -355,10 +382,17 @@ class Kern(Parameterized):
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+        assert X.shape[1] == self.input_dim, (
+            "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(
+                self.name, X.shape[1], self.input_dim
+            )
+        )
 
     def _check_active_dims(self, X):
-        assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
+        assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(
+            len(self._all_dims_active), X.shape
+        )
+
 
 class CombinationKernel(Kern):
     """
@@ -366,6 +400,7 @@ class CombinationKernel(Kern):
     A combination kernel combines (a list of) kernels and works on those.
     Examples are the HierarchicalKernel or Add and Prod kernels.
     """
+
     def __init__(self, kernels, name, extra_dims=[], link_parameters=True):
         """
         Abstract super class for combination kernels.
@@ -387,7 +422,9 @@ class CombinationKernel(Kern):
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
 
         effective_input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
-        self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
+        self._all_dims_active = np.array(
+            np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int
+        )
 
         self.extra_dims = extra_dims
         if link_parameters:
@@ -395,14 +432,14 @@ class CombinationKernel(Kern):
 
     def _save_to_input_dict(self):
         input_dict = super(CombinationKernel, self)._save_to_input_dict()
-        input_dict["parts"]  = {}
+        input_dict["parts"] = {}
         for ii in range(len(self.parts)):
             input_dict["parts"][ii] = self.parts[ii].to_dict()
         return input_dict
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        parts = input_dict.pop('parts', None)
+        parts = input_dict.pop("parts", None)
         subkerns = []
         for pp in parts:
             subkerns.append(Kern.from_dict(parts[pp]))
@@ -424,24 +461,29 @@ class CombinationKernel(Kern):
         if not summarize:
             num_params = [0]
             parts = []
+
             def sum_params(x):
                 if (not isinstance(x, CombinationKernel)) and isinstance(x, Kern):
                     num_params[0] += 1
                     parts.append(x)
+
             self.traverse(sum_params)
             i_s = np.zeros((num_params[0], self.input_dim))
             from operator import setitem
+
             [setitem(i_s, (i, k._all_dims_active), k.input_sensitivity(summarize)) for i, k in enumerate(parts)]
             return i_s
         else:
-            raise NotImplementedError("Choose the kernel you want to get the sensitivity for. "
-                                      "You need to override the default behaviour for getting "
-                                      "the input sensitivity to be able to get the input sensitivity. "
-                                      "For sum kernel it is the sum of all sensitivities, "
-                                      "TODO: product kernel? Other kernels?, also "
-                                      "TODO: shall we return all the sensitivities here in the combination "
-                                      "kernel? So we can combine them however we want? "
-                                      "This could lead to just plot all the sensitivities here...")
+            raise NotImplementedError(
+                "Choose the kernel you want to get the sensitivity for. "
+                "You need to override the default behaviour for getting "
+                "the input sensitivity to be able to get the input sensitivity. "
+                "For sum kernel it is the sum of all sensitivities, "
+                "TODO: product kernel? Other kernels?, also "
+                "TODO: shall we return all the sensitivities here in the combination "
+                "kernel? So we can combine them however we want? "
+                "This could lead to just plot all the sensitivities here..."
+            )
 
     def _check_active_dims(self, X):
         return

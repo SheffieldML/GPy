@@ -1,4 +1,3 @@
-
 """
 The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM
 """
@@ -281,95 +280,129 @@ gpu_code = """
     }
     """
 
-class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
 
+class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
     def __init__(self, threadnum=128, blocknum=15, GPU_direct=False):
-        
+
         from pycuda.compiler import SourceModule
         import GPy.util.gpu_init
-        
+
         self.GPU_direct = GPU_direct
         self.gpuCache = None
-        
+
         self.threadnum = threadnum
         self.blocknum = blocknum
-        module = SourceModule("#define THREADNUM "+str(self.threadnum)+"\n"+gpu_code)
-        self.g_psi1computations = module.get_function('psi1computations')
-        self.g_psi1computations.prepare('PPPPdPPPPiii')
-        self.g_psi2computations = module.get_function('psi2computations')
-        self.g_psi2computations.prepare('PPPPPdPPPPiii')
-        self.g_psi1compDer = module.get_function('psi1compDer')
-        self.g_psi1compDer.prepare('PPPPPPPPPPPdPPPPPiii')
-        self.g_psi2compDer = module.get_function('psi2compDer')
-        self.g_psi2compDer.prepare('PPPPPPPPPPPdPPPPPiii')
-        self.g_compDenom = module.get_function('compDenom')
-        self.g_compDenom.prepare('PPPPPPPii')
+        module = SourceModule("#define THREADNUM " + str(self.threadnum) + "\n" + gpu_code)
+        self.g_psi1computations = module.get_function("psi1computations")
+        self.g_psi1computations.prepare("PPPPdPPPPiii")
+        self.g_psi2computations = module.get_function("psi2computations")
+        self.g_psi2computations.prepare("PPPPPdPPPPiii")
+        self.g_psi1compDer = module.get_function("psi1compDer")
+        self.g_psi1compDer.prepare("PPPPPPPPPPPdPPPPPiii")
+        self.g_psi2compDer = module.get_function("psi2compDer")
+        self.g_psi2compDer.prepare("PPPPPPPPPPPdPPPPPiii")
+        self.g_compDenom = module.get_function("compDenom")
+        self.g_compDenom.prepare("PPPPPPPii")
 
     def __deepcopy__(self, memo):
         s = PSICOMP_SSRBF_GPU(threadnum=self.threadnum, blocknum=self.blocknum, GPU_direct=self.GPU_direct)
-        memo[id(self)] = s 
+        memo[id(self)] = s
         return s
 
     def _initGPUCache(self, N, M, Q):
         import pycuda.gpuarray as gpuarray
+
         if self.gpuCache == None:
             self.gpuCache = {
-                             'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
-                             'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
-                             'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'S_gpu'                :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'gamma_gpu'            :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
-                             'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
-                             'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
-                             'dL_dpsi1_gpu'         :gpuarray.empty((N,M),np.float64,order='F'),
-                             'dL_dpsi2_gpu'         :gpuarray.empty((M,M),np.float64,order='F'),
-                             'log_denom1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_denom2_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_gamma_gpu'        :gpuarray.empty((N,Q),np.float64,order='F'),
-                             'log_gamma1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
-                             # derivatives
-                             'dvar_gpu'             :gpuarray.empty((self.blocknum,),np.float64, order='F'),
-                             'dl_gpu'               :gpuarray.empty((Q,self.blocknum),np.float64, order='F'),
-                             'dZ_gpu'               :gpuarray.empty((M,Q),np.float64, order='F'),
-                             'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             'dgamma_gpu'           :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             # grad
-                             'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
-                             'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_gamma_gpu'           :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             }
+                "l_gpu": gpuarray.empty((Q,), np.float64, order="F"),
+                "Z_gpu": gpuarray.empty((M, Q), np.float64, order="F"),
+                "mu_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "S_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "gamma_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "psi1_gpu": gpuarray.empty((N, M), np.float64, order="F"),
+                "psi2_gpu": gpuarray.empty((M, M), np.float64, order="F"),
+                "psi2n_gpu": gpuarray.empty((N, M, M), np.float64, order="F"),
+                "dL_dpsi1_gpu": gpuarray.empty((N, M), np.float64, order="F"),
+                "dL_dpsi2_gpu": gpuarray.empty((M, M), np.float64, order="F"),
+                "log_denom1_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "log_denom2_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "log_gamma_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                "log_gamma1_gpu": gpuarray.empty((N, Q), np.float64, order="F"),
+                # derivatives
+                "dvar_gpu": gpuarray.empty((self.blocknum,), np.float64, order="F"),
+                "dl_gpu": gpuarray.empty((Q, self.blocknum), np.float64, order="F"),
+                "dZ_gpu": gpuarray.empty((M, Q), np.float64, order="F"),
+                "dmu_gpu": gpuarray.empty((N, Q, self.blocknum), np.float64, order="F"),
+                "dS_gpu": gpuarray.empty((N, Q, self.blocknum), np.float64, order="F"),
+                "dgamma_gpu": gpuarray.empty((N, Q, self.blocknum), np.float64, order="F"),
+                # grad
+                "grad_l_gpu": gpuarray.empty((Q,), np.float64, order="F"),
+                "grad_mu_gpu": gpuarray.empty(
+                    (
+                        N,
+                        Q,
+                    ),
+                    np.float64,
+                    order="F",
+                ),
+                "grad_S_gpu": gpuarray.empty(
+                    (
+                        N,
+                        Q,
+                    ),
+                    np.float64,
+                    order="F",
+                ),
+                "grad_gamma_gpu": gpuarray.empty(
+                    (
+                        N,
+                        Q,
+                    ),
+                    np.float64,
+                    order="F",
+                ),
+            }
         else:
-            assert N==self.gpuCache['mu_gpu'].shape[0]
-            assert M==self.gpuCache['Z_gpu'].shape[0]
-            assert Q==self.gpuCache['l_gpu'].shape[0]
-    
+            assert N == self.gpuCache["mu_gpu"].shape[0]
+            assert M == self.gpuCache["Z_gpu"].shape[0]
+            assert Q == self.gpuCache["l_gpu"].shape[0]
+
     def sync_params(self, lengthscale, Z, mu, S, gamma):
-        if len(lengthscale)==1:
-            self.gpuCache['l_gpu'].fill(lengthscale)
+        if len(lengthscale) == 1:
+            self.gpuCache["l_gpu"].fill(lengthscale)
         else:
-            self.gpuCache['l_gpu'].set(np.asfortranarray(lengthscale))
-        self.gpuCache['Z_gpu'].set(np.asfortranarray(Z))
-        self.gpuCache['mu_gpu'].set(np.asfortranarray(mu))
-        self.gpuCache['S_gpu'].set(np.asfortranarray(S))
-        self.gpuCache['gamma_gpu'].set(np.asfortranarray(gamma))
-        N,Q = self.gpuCache['S_gpu'].shape
-        self.g_compDenom.prepared_call((self.blocknum,1),(self.threadnum,1,1), self.gpuCache['log_denom1_gpu'].gpudata,self.gpuCache['log_denom2_gpu'].gpudata,self.gpuCache['log_gamma_gpu'].gpudata,self.gpuCache['log_gamma1_gpu'].gpudata,self.gpuCache['gamma_gpu'].gpudata,self.gpuCache['l_gpu'].gpudata,self.gpuCache['S_gpu'].gpudata, np.int32(N), np.int32(Q))
-        
+            self.gpuCache["l_gpu"].set(np.asfortranarray(lengthscale))
+        self.gpuCache["Z_gpu"].set(np.asfortranarray(Z))
+        self.gpuCache["mu_gpu"].set(np.asfortranarray(mu))
+        self.gpuCache["S_gpu"].set(np.asfortranarray(S))
+        self.gpuCache["gamma_gpu"].set(np.asfortranarray(gamma))
+        N, Q = self.gpuCache["S_gpu"].shape
+        self.g_compDenom.prepared_call(
+            (self.blocknum, 1),
+            (self.threadnum, 1, 1),
+            self.gpuCache["log_denom1_gpu"].gpudata,
+            self.gpuCache["log_denom2_gpu"].gpudata,
+            self.gpuCache["log_gamma_gpu"].gpudata,
+            self.gpuCache["log_gamma1_gpu"].gpudata,
+            self.gpuCache["gamma_gpu"].gpudata,
+            self.gpuCache["l_gpu"].gpudata,
+            self.gpuCache["S_gpu"].gpudata,
+            np.int32(N),
+            np.int32(Q),
+        )
+
     def reset_derivative(self):
-        self.gpuCache['dvar_gpu'].fill(0.)
-        self.gpuCache['dl_gpu'].fill(0.)
-        self.gpuCache['dZ_gpu'].fill(0.)
-        self.gpuCache['dmu_gpu'].fill(0.)
-        self.gpuCache['dS_gpu'].fill(0.)
-        self.gpuCache['dgamma_gpu'].fill(0.)
-        self.gpuCache['grad_l_gpu'].fill(0.)
-        self.gpuCache['grad_mu_gpu'].fill(0.)
-        self.gpuCache['grad_S_gpu'].fill(0.)
-        self.gpuCache['grad_gamma_gpu'].fill(0.)
-    
+        self.gpuCache["dvar_gpu"].fill(0.0)
+        self.gpuCache["dl_gpu"].fill(0.0)
+        self.gpuCache["dZ_gpu"].fill(0.0)
+        self.gpuCache["dmu_gpu"].fill(0.0)
+        self.gpuCache["dS_gpu"].fill(0.0)
+        self.gpuCache["dgamma_gpu"].fill(0.0)
+        self.gpuCache["grad_l_gpu"].fill(0.0)
+        self.gpuCache["grad_mu_gpu"].fill(0.0)
+        self.gpuCache["grad_S_gpu"].fill(0.0)
+        self.gpuCache["grad_gamma_gpu"].fill(0.0)
+
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
@@ -381,68 +414,106 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         S - NxQ
         """
         variance, lengthscale = kern.variance, kern.lengthscale
-        N,M,Q = self.get_dimensions(Z, variational_posterior)
-        self._initGPUCache(N,M,Q)
-        self.sync_params(lengthscale, Z, variational_posterior.mean, variational_posterior.variance, variational_posterior.binary_prob)
-        
-        psi1_gpu = self.gpuCache['psi1_gpu']
-        psi2_gpu = self.gpuCache['psi2_gpu']
-        psi2n_gpu = self.gpuCache['psi2n_gpu']
-        l_gpu = self.gpuCache['l_gpu']
-        Z_gpu = self.gpuCache['Z_gpu']
-        mu_gpu = self.gpuCache['mu_gpu']
-        S_gpu = self.gpuCache['S_gpu']
-        log_denom1_gpu = self.gpuCache['log_denom1_gpu']
-        log_denom2_gpu = self.gpuCache['log_denom2_gpu']
-        log_gamma_gpu = self.gpuCache['log_gamma_gpu']
-        log_gamma1_gpu = self.gpuCache['log_gamma1_gpu']
+        N, M, Q = self.get_dimensions(Z, variational_posterior)
+        self._initGPUCache(N, M, Q)
+        self.sync_params(
+            lengthscale,
+            Z,
+            variational_posterior.mean,
+            variational_posterior.variance,
+            variational_posterior.binary_prob,
+        )
+
+        psi1_gpu = self.gpuCache["psi1_gpu"]
+        psi2_gpu = self.gpuCache["psi2_gpu"]
+        psi2n_gpu = self.gpuCache["psi2n_gpu"]
+        l_gpu = self.gpuCache["l_gpu"]
+        Z_gpu = self.gpuCache["Z_gpu"]
+        mu_gpu = self.gpuCache["mu_gpu"]
+        S_gpu = self.gpuCache["S_gpu"]
+        log_denom1_gpu = self.gpuCache["log_denom1_gpu"]
+        log_denom2_gpu = self.gpuCache["log_denom2_gpu"]
+        log_gamma_gpu = self.gpuCache["log_gamma_gpu"]
+        log_gamma1_gpu = self.gpuCache["log_gamma1_gpu"]
 
         psi0 = np.empty((N,))
         psi0[:] = variance
-        self.g_psi1computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi1_gpu.gpudata, log_denom1_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        self.g_psi2computations.prepared_call((self.blocknum,1),(self.threadnum,1,1),psi2_gpu.gpudata, psi2n_gpu.gpudata, log_denom2_gpu.gpudata, log_gamma_gpu.gpudata, log_gamma1_gpu.gpudata, np.float64(variance),l_gpu.gpudata,Z_gpu.gpudata,mu_gpu.gpudata,S_gpu.gpudata, np.int32(N), np.int32(M), np.int32(Q))
-        
+        self.g_psi1computations.prepared_call(
+            (self.blocknum, 1),
+            (self.threadnum, 1, 1),
+            psi1_gpu.gpudata,
+            log_denom1_gpu.gpudata,
+            log_gamma_gpu.gpudata,
+            log_gamma1_gpu.gpudata,
+            np.float64(variance),
+            l_gpu.gpudata,
+            Z_gpu.gpudata,
+            mu_gpu.gpudata,
+            S_gpu.gpudata,
+            np.int32(N),
+            np.int32(M),
+            np.int32(Q),
+        )
+        self.g_psi2computations.prepared_call(
+            (self.blocknum, 1),
+            (self.threadnum, 1, 1),
+            psi2_gpu.gpudata,
+            psi2n_gpu.gpudata,
+            log_denom2_gpu.gpudata,
+            log_gamma_gpu.gpudata,
+            log_gamma1_gpu.gpudata,
+            np.float64(variance),
+            l_gpu.gpudata,
+            Z_gpu.gpudata,
+            mu_gpu.gpudata,
+            S_gpu.gpudata,
+            np.int32(N),
+            np.int32(M),
+            np.int32(Q),
+        )
+
         if self.GPU_direct:
             return psi0, psi1_gpu, psi2_gpu
         else:
             return psi0, psi1_gpu.get(), psi2_gpu.get()
 
-    @Cache_this(limit=3, ignore_args=(0,2,3,4))
+    @Cache_this(limit=3, ignore_args=(0, 2, 3, 4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         variance, lengthscale = kern.variance, kern.lengthscale
         from ....util.linalg_gpu import sum_axis
-        ARD = (len(lengthscale)!=1)
-        
-        N,M,Q = self.get_dimensions(Z, variational_posterior)
-        psi1_gpu = self.gpuCache['psi1_gpu']
-        psi2n_gpu = self.gpuCache['psi2n_gpu']
-        l_gpu = self.gpuCache['l_gpu']
-        Z_gpu = self.gpuCache['Z_gpu']
-        mu_gpu = self.gpuCache['mu_gpu']
-        S_gpu = self.gpuCache['S_gpu']
-        gamma_gpu = self.gpuCache['gamma_gpu']
-        dvar_gpu = self.gpuCache['dvar_gpu']
-        dl_gpu = self.gpuCache['dl_gpu']
-        dZ_gpu = self.gpuCache['dZ_gpu']
-        dmu_gpu = self.gpuCache['dmu_gpu']
-        dS_gpu = self.gpuCache['dS_gpu']
-        dgamma_gpu = self.gpuCache['dgamma_gpu']
-        grad_l_gpu = self.gpuCache['grad_l_gpu']
-        grad_mu_gpu = self.gpuCache['grad_mu_gpu']
-        grad_S_gpu = self.gpuCache['grad_S_gpu']
-        grad_gamma_gpu = self.gpuCache['grad_gamma_gpu']
-        log_denom1_gpu = self.gpuCache['log_denom1_gpu']
-        log_denom2_gpu = self.gpuCache['log_denom2_gpu']
-        log_gamma_gpu = self.gpuCache['log_gamma_gpu']
-        log_gamma1_gpu = self.gpuCache['log_gamma1_gpu']
-        
+
+        ARD = len(lengthscale) != 1
+
+        N, M, Q = self.get_dimensions(Z, variational_posterior)
+        psi1_gpu = self.gpuCache["psi1_gpu"]
+        psi2n_gpu = self.gpuCache["psi2n_gpu"]
+        l_gpu = self.gpuCache["l_gpu"]
+        Z_gpu = self.gpuCache["Z_gpu"]
+        mu_gpu = self.gpuCache["mu_gpu"]
+        S_gpu = self.gpuCache["S_gpu"]
+        gamma_gpu = self.gpuCache["gamma_gpu"]
+        dvar_gpu = self.gpuCache["dvar_gpu"]
+        dl_gpu = self.gpuCache["dl_gpu"]
+        dZ_gpu = self.gpuCache["dZ_gpu"]
+        dmu_gpu = self.gpuCache["dmu_gpu"]
+        dS_gpu = self.gpuCache["dS_gpu"]
+        dgamma_gpu = self.gpuCache["dgamma_gpu"]
+        grad_l_gpu = self.gpuCache["grad_l_gpu"]
+        grad_mu_gpu = self.gpuCache["grad_mu_gpu"]
+        grad_S_gpu = self.gpuCache["grad_S_gpu"]
+        grad_gamma_gpu = self.gpuCache["grad_gamma_gpu"]
+        log_denom1_gpu = self.gpuCache["log_denom1_gpu"]
+        log_denom2_gpu = self.gpuCache["log_denom2_gpu"]
+        log_gamma_gpu = self.gpuCache["log_gamma_gpu"]
+        log_gamma1_gpu = self.gpuCache["log_gamma1_gpu"]
+
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
             dL_dpsi2_gpu = dL_dpsi2
             dL_dpsi0_sum = gpuarray.sum(dL_dpsi0).get()
         else:
-            dL_dpsi1_gpu = self.gpuCache['dL_dpsi1_gpu']
-            dL_dpsi2_gpu = self.gpuCache['dL_dpsi2_gpu']
+            dL_dpsi1_gpu = self.gpuCache["dL_dpsi1_gpu"]
+            dL_dpsi2_gpu = self.gpuCache["dL_dpsi2_gpu"]
             dL_dpsi1_gpu.set(np.asfortranarray(dL_dpsi1))
             dL_dpsi2_gpu.set(np.asfortranarray(dL_dpsi2))
             dL_dpsi0_sum = dL_dpsi0.sum()
@@ -458,38 +529,67 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         #                      np.int32(M), np.int32(Q), block=(self.threadnum,1,1),
         #                      grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2compDer '+str(t)
-        self.g_psi1compDer.prepared_call((self.blocknum,1), (self.threadnum,1,1),
-                                         dvar_gpu.gpudata, dl_gpu.gpudata, dZ_gpu.gpudata,
-                                         dmu_gpu.gpudata, dS_gpu.gpudata, dgamma_gpu.gpudata,
-                                         dL_dpsi1_gpu.gpudata, psi1_gpu.gpudata,
-                                         log_denom1_gpu.gpudata, log_gamma_gpu.gpudata,
-                                         log_gamma1_gpu.gpudata, np.float64(variance),
-                                         l_gpu.gpudata, Z_gpu.gpudata, mu_gpu.gpudata,
-                                         S_gpu.gpudata, gamma_gpu.gpudata, np.int32(N),
-                                         np.int32(M), np.int32(Q))
-        self.g_psi2compDer.prepared_call((self.blocknum,1), (self.threadnum,1,1),
-                                         dvar_gpu.gpudata, dl_gpu.gpudata, dZ_gpu.gpudata,
-                                         dmu_gpu.gpudata, dS_gpu.gpudata, dgamma_gpu.gpudata,
-                                         dL_dpsi2_gpu.gpudata, psi2n_gpu.gpudata,
-                                         log_denom2_gpu.gpudata, log_gamma_gpu.gpudata,
-                                         log_gamma1_gpu.gpudata, np.float64(variance),
-                                         l_gpu.gpudata, Z_gpu.gpudata, mu_gpu.gpudata,
-                                         S_gpu.gpudata, gamma_gpu.gpudata, np.int32(N),
-                                         np.int32(M), np.int32(Q))
+        self.g_psi1compDer.prepared_call(
+            (self.blocknum, 1),
+            (self.threadnum, 1, 1),
+            dvar_gpu.gpudata,
+            dl_gpu.gpudata,
+            dZ_gpu.gpudata,
+            dmu_gpu.gpudata,
+            dS_gpu.gpudata,
+            dgamma_gpu.gpudata,
+            dL_dpsi1_gpu.gpudata,
+            psi1_gpu.gpudata,
+            log_denom1_gpu.gpudata,
+            log_gamma_gpu.gpudata,
+            log_gamma1_gpu.gpudata,
+            np.float64(variance),
+            l_gpu.gpudata,
+            Z_gpu.gpudata,
+            mu_gpu.gpudata,
+            S_gpu.gpudata,
+            gamma_gpu.gpudata,
+            np.int32(N),
+            np.int32(M),
+            np.int32(Q),
+        )
+        self.g_psi2compDer.prepared_call(
+            (self.blocknum, 1),
+            (self.threadnum, 1, 1),
+            dvar_gpu.gpudata,
+            dl_gpu.gpudata,
+            dZ_gpu.gpudata,
+            dmu_gpu.gpudata,
+            dS_gpu.gpudata,
+            dgamma_gpu.gpudata,
+            dL_dpsi2_gpu.gpudata,
+            psi2n_gpu.gpudata,
+            log_denom2_gpu.gpudata,
+            log_gamma_gpu.gpudata,
+            log_gamma1_gpu.gpudata,
+            np.float64(variance),
+            l_gpu.gpudata,
+            Z_gpu.gpudata,
+            mu_gpu.gpudata,
+            S_gpu.gpudata,
+            gamma_gpu.gpudata,
+            np.int32(N),
+            np.int32(M),
+            np.int32(Q),
+        )
 
         dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
-        sum_axis(grad_mu_gpu,dmu_gpu,N*Q,self.blocknum)
+        sum_axis(grad_mu_gpu, dmu_gpu, N * Q, self.blocknum)
         dL_dmu = grad_mu_gpu.get()
-        sum_axis(grad_S_gpu,dS_gpu,N*Q,self.blocknum)
+        sum_axis(grad_S_gpu, dS_gpu, N * Q, self.blocknum)
         dL_dS = grad_S_gpu.get()
-        sum_axis(grad_gamma_gpu,dgamma_gpu,N*Q,self.blocknum)
+        sum_axis(grad_gamma_gpu, dgamma_gpu, N * Q, self.blocknum)
         dL_dgamma = grad_gamma_gpu.get()
         dL_dZ = dZ_gpu.get()
         if ARD:
-            sum_axis(grad_l_gpu,dl_gpu,Q,self.blocknum)
+            sum_axis(grad_l_gpu, dl_gpu, Q, self.blocknum)
             dL_dlengscale = grad_l_gpu.get()
         else:
             dL_dlengscale = gpuarray.sum(dl_gpu).get()
 
         return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS, dL_dgamma
-

@@ -12,9 +12,7 @@ try:
 
     use_coregionalize_cython = config.getboolean("cython", "working")
 except ImportError:
-    print(
-        "warning in coregionalize: failed to import cython module: falling back to numpy"
-    )
+    print("warning in coregionalize: failed to import cython module: falling back to numpy")
     use_coregionalize_cython = False
 
 
@@ -61,9 +59,7 @@ class Coregionalize(Kern):
         self.output_dim = output_dim
         self.rank = rank
         if self.rank > output_dim:
-            print(
-                "Warning: Unusual choice of rank, it should normally be less than the output_dim."
-            )
+            print("Warning: Unusual choice of rank, it should normally be less than the output_dim.")
         if W is None:
             W = 0.5 * np.random.randn(self.output_dim, self.rank) / np.sqrt(self.rank)
         else:
@@ -95,9 +91,7 @@ class Coregionalize(Kern):
 
     def _K_cython(self, X, X2=None):
         if X2 is None:
-            return coregionalize_cython.K_symmetric(
-                self.B, np.asarray(X, dtype=np.int64)[:, 0]
-            )
+            return coregionalize_cython.K_symmetric(self.B, np.asarray(X, dtype=np.int64)[:, 0])
         return coregionalize_cython.K_asymmetric(
             self.B,
             np.asarray(X, dtype=np.int64)[:, 0],
@@ -138,15 +132,11 @@ class Coregionalize(Kern):
 
     def _gradient_reduce_cython(self, dL_dK, index, index2):
         index, index2 = np.int64(index[:, 0]), np.int64(index2[:, 0])
-        return coregionalize_cython.gradient_reduce(
-            self.B.shape[0], dL_dK, index, index2
-        )
+        return coregionalize_cython.gradient_reduce(self.B.shape[0], dL_dK, index, index2)
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=int).flatten()
-        dL_dKdiag_small = np.array(
-            [dL_dKdiag[index == i].sum() for i in range(self.output_dim)]
-        )
+        dL_dKdiag_small = np.array([dL_dKdiag[index == i].sum() for i in range(self.output_dim)])
         self.W.gradient = 2.0 * self.W * dL_dKdiag_small[:, None]
         self.kappa.gradient = dL_dKdiag_small
 

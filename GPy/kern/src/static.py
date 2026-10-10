@@ -8,15 +8,16 @@ from ...core.parameterization import Param
 from paramz.transformations import Logexp
 from paramz.caching import Cache_this
 
+
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
         super(Static, self).__init__(input_dim, active_dims, name)
-        self.variance = Param('variance', variance, Logexp())
+        self.variance = Param("variance", variance, Logexp())
         self.link_parameters(self.variance)
 
     def _save_to_input_dict(self):
         input_dict = super(Static, self)._save_to_input_dict()
-        input_dict["variance"] =  self.variance.values.tolist()
+        input_dict["variance"] = self.variance.values.tolist()
         return input_dict
 
     def Kdiag(self, X):
@@ -52,7 +53,9 @@ class Static(Kern):
 
     def psi2(self, Z, variational_posterior):
         K = self.K(variational_posterior.mean, Z)
-        return np.einsum('ij,ik->jk',K,K) #K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
+        return np.einsum(
+            "ij,ik->jk", K, K
+        )  # K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
 
     def input_sensitivity(self, summarize=True):
         if summarize:
@@ -60,8 +63,9 @@ class Static(Kern):
         else:
             return np.ones(self.input_dim) * self.variance
 
+
 class White(Static):
-    def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
+    def __init__(self, input_dim, variance=1.0, active_dims=None, name="white"):
         super(White, self).__init__(input_dim, variance, active_dims, name)
 
     def to_dict(self):
@@ -71,12 +75,12 @@ class White(Static):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return White(**input_dict)
-    
+
     def K(self, X, X2=None):
         if X2 is None:
-            return np.eye(X.shape[0])*self.variance
+            return np.eye(X.shape[0]) * self.variance
         else:
             return np.zeros((X.shape[0], X2.shape[0]))
 
@@ -90,7 +94,7 @@ class White(Static):
         if X2 is None:
             self.variance.gradient = np.trace(dL_dK)
         else:
-            self.variance.gradient = 0.
+            self.variance.gradient = 0.0
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
@@ -98,8 +102,9 @@ class White(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
 
+
 class WhiteHeteroscedastic(Static):
-    def __init__(self, input_dim, num_data, variance=1., active_dims=None, name='white_hetero'):
+    def __init__(self, input_dim, num_data, variance=1.0, active_dims=None, name="white_hetero"):
         """
         A heteroscedastic White kernel (nugget/noise).
         It defines one variance (nugget) per input sample.
@@ -110,8 +115,9 @@ class WhiteHeteroscedastic(Static):
         plt.errorbar(m.X, m.Y, yerr=2*np.sqrt(m.kern.white.variance))
         """
         super(Static, self).__init__(input_dim, active_dims, name)
-        self.variance = Param('variance', np.ones(num_data) * variance, Logexp())
+        self.variance = Param("variance", np.ones(num_data) * variance, Logexp())
         self.link_parameters(self.variance)
+
     def to_dict(self):
         input_dict = super(WhiteHeteroscedastic, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.WhiteHeteroscedastic"
@@ -122,13 +128,13 @@ class WhiteHeteroscedastic(Static):
             # If the input has the same number of samples as
             # the number of variances, we return the variances
             return self.variance
-        return 0.
+        return 0.0
 
     def K(self, X, X2=None):
         if X2 is None and X.shape[0] == self.variance.shape[0]:
             return np.eye(X.shape[0]) * self.variance
         else:
-            return 0.
+            return 0.0
 
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
@@ -140,7 +146,7 @@ class WhiteHeteroscedastic(Static):
         if X2 is None:
             self.variance.gradient = np.diagonal(dL_dK)
         else:
-            self.variance.gradient = 0.
+            self.variance.gradient = 0.0
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag
@@ -148,8 +154,9 @@ class WhiteHeteroscedastic(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0
 
+
 class Bias(Static):
-    def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):
+    def __init__(self, input_dim, variance=1.0, active_dims=None, name="bias"):
         super(Bias, self).__init__(input_dim, variance, active_dims, name)
 
     def to_dict(self):
@@ -159,7 +166,7 @@ class Bias(Static):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return Bias(**input_dict)
 
     def K(self, X, X2=None):
@@ -173,23 +180,26 @@ class Bias(Static):
         self.variance.gradient = dL_dKdiag.sum()
 
     def psi2(self, Z, variational_posterior):
-        return np.full((Z.shape[0], Z.shape[0]), self.variance*self.variance*variational_posterior.shape[0], dtype=np.float64)
+        return np.full(
+            (Z.shape[0], Z.shape[0]), self.variance * self.variance * variational_posterior.shape[0], dtype=np.float64
+        )
 
     def psi2n(self, Z, variational_posterior):
         ret = np.empty((variational_posterior.mean.shape[0], Z.shape[0], Z.shape[0]), dtype=np.float64)
-        ret[:] = self.variance*self.variance
+        ret[:] = self.variance * self.variance
         return ret
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         if dL_dpsi2.ndim == 2:
-            self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
-                                    + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0])
+            self.variance.gradient = (
+                dL_dpsi0.sum() + dL_dpsi1.sum() + 2.0 * self.variance * dL_dpsi2.sum() * variational_posterior.shape[0]
+            )
         else:
-            self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
-                                    + 2.*self.variance*dL_dpsi2.sum())
+            self.variance.gradient = dL_dpsi0.sum() + dL_dpsi1.sum() + 2.0 * self.variance * dL_dpsi2.sum()
+
 
 class Fixed(Static):
-    def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):
+    def __init__(self, input_dim, covariance_matrix, variance=1.0, active_dims=None, name="fixed"):
         """
         :param input_dim: the number of input dimensions
         :type input_dim: int
@@ -198,6 +208,7 @@ class Fixed(Static):
         """
         super(Fixed, self).__init__(input_dim, variance, active_dims, name)
         self.fixed_K = covariance_matrix
+
     def K(self, X, X2):
         if X2 is None:
             return self.variance * self.fixed_K
@@ -209,12 +220,12 @@ class Fixed(Static):
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         if X2 is None:
-            self.variance.gradient = np.einsum('ij,ij', dL_dK, self.fixed_K)
+            self.variance.gradient = np.einsum("ij,ij", dL_dK, self.fixed_K)
         else:
             self.variance.gradient = 0
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = np.einsum('i,i', dL_dKdiag, np.diagonal(self.fixed_K))
+        self.variance.gradient = np.einsum("i,i", dL_dKdiag, np.diagonal(self.fixed_K))
 
     def psi2(self, Z, variational_posterior):
         return np.zeros((Z.shape[0], Z.shape[0]), dtype=np.float64)
@@ -225,8 +236,9 @@ class Fixed(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
 
+
 class Precomputed(Fixed):
-    def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='precomputed'):
+    def __init__(self, input_dim, covariance_matrix, variance=1.0, active_dims=None, name="precomputed"):
         """
         Class for precomputed kernels, indexed by columns in X
 
@@ -257,25 +269,27 @@ class Precomputed(Fixed):
         :param variance: the variance of the kernel
         :type variance: float
         """
-        assert input_dim==1, "Precomputed only implemented in one dimension. Use multiple Precomputed kernels to have more dimensions by making use of active_dims"
+        assert input_dim == 1, (
+            "Precomputed only implemented in one dimension. Use multiple Precomputed kernels to have more dimensions by making use of active_dims"
+        )
         super(Precomputed, self).__init__(input_dim, covariance_matrix, variance, active_dims, name)
 
     @Cache_this(limit=2)
     def _index(self, X, X2):
         if X2 is None:
-            i1 = i2 = X.astype('int').flat
+            i1 = i2 = X.astype("int").flat
         else:
-            i1, i2 = X.astype('int').flat, X2.astype('int').flat
-        return self.fixed_K[i1,:][:,i2]
+            i1, i2 = X.astype("int").flat, X2.astype("int").flat
+        return self.fixed_K[i1, :][:, i2]
 
     def K(self, X, X2=None):
         return self.variance * self._index(X, X2)
 
     def Kdiag(self, X):
-        return self.variance * self._index(X,None).diagonal()
+        return self.variance * self._index(X, None).diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        self.variance.gradient = np.einsum('ij,ij', dL_dK, self._index(X, X2))
+        self.variance.gradient = np.einsum("ij,ij", dL_dK, self._index(X, X2))
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self._index(X, None))
+        self.variance.gradient = np.einsum("i,ii", dL_dKdiag, self._index(X, None))

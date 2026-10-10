@@ -12,23 +12,23 @@ from paramz.caching import Cache_this
 class EQ_ODE2(Kern):
     """
     Latent Force Model (LFM) kernel for second-order differential equations (Driven Input Single Input Motif - DISIM).
-    
-    This kernel implements the covariance function for second-order differential equations driven by 
+
+    This kernel implements the covariance function for second-order differential equations driven by
     an exponentiated quadratic (RBF) covariance, which extends the LFM framework to second-order systems.
-    
+
     The outputs of this kernel have the form:
     .. math::
        \\frac{\\text{d}^2y_j(t)}{\\text{d}^2t} + C_j\\frac{\\text{d}y_j(t)}{\\text{d}t} + B_jy_j(t) = \\sum_{i=1}^R w_{j,i} u_i(t)
 
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output 
+    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output
     to the :math:`i`th latent function, :math:`C_j` is the damping coefficient, :math:`B_j` is the spring constant,
     and :math:`u_i(t)` are independent latent Gaussian processes governed by an exponentiated quadratic covariance.
 
-    This kernel is equivalent to the LFM kernel from the GPmat toolbox and 
+    This kernel is equivalent to the LFM kernel from the GPmat toolbox and
     implements the mathematical framework described in:
-    
-    
-    - Álvarez et al. (2009): "Latent Force Models" 
+
+
+    - Álvarez et al. (2009): "Latent Force Models"
     - Álvarez et al. (2013): "Linear Latent Force Models Using Gaussian Processes"
 
     :param input_dim: Input dimension (must be 2: time + output index)
@@ -68,9 +68,7 @@ class EQ_ODE2(Kern):
     ):
         # input_dim should be 1, but kern._slice_X is not returning index information required to evaluate kernels
         assert input_dim == 2, "only defined for 1 input dims"
-        super(EQ_ODE2, self).__init__(
-            input_dim=input_dim, active_dims=active_dims, name=name
-        )
+        super(EQ_ODE2, self).__init__(input_dim=input_dim, active_dims=active_dims, name=name)
         self.rank = rank
         self.output_dim = output_dim
 
@@ -247,9 +245,9 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
             if len(indv2[0]) > 0:
-                upv[indv2] += np.exp(
-                    nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
+                upv[indv2] += np.exp(nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]))
+                )
             upv[t1[:, 0] == 0, :] = 0.0
 
             # Covariance calculation
@@ -297,9 +295,7 @@ class EQ_ODE2(Kern):
             t2_lq2 = -t_lq * t_lq  # Required when using wofz
             wnu = wofz(1j * nu).real
             lwnu = np.log(wnu)
-            upm = wnu[ind] - np.exp(
-                t2_lq2 + gamt + np.log(wofz(1j * (t_lq + nu[ind])).real)
-            )
+            upm = wnu[ind] - np.exp(t2_lq2 + gamt + np.log(wofz(1j * (t_lq + nu[ind])).real))
             upm[t1[:, 0] == 0.0, :] = 0.0
 
             nu2 = nu * nu
@@ -310,17 +306,15 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
-                upv[indv2] += np.exp(
-                    nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upv[indv2] += np.exp(nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upv[t1[:, 0] == 0, :] = 0.0
 
             wnuc = wofz(1j * nuc).real
             lwnuc = np.log(wnuc)
 
-            upmc = wnuc[ind] - np.exp(
-                t2_lq2 + gamct + np.log(wofz(1j * (t_lq + nuc[ind])).real)
-            )
+            upmc = wnuc[ind] - np.exp(t2_lq2 + gamct + np.log(wofz(1j * (t_lq + nuc[ind])).real))
             upmc[t1[:, 0] == 0.0, :] = 0.0
 
             nuc2 = nuc * nuc
@@ -331,18 +325,13 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
-                upvc[indv2] += np.exp(
-                    nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upvc[indv2] += np.exp(nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upvc[t1[:, 0] == 0, :] = 0.0
 
             # Covariance calculation
-            kdiag[ind2t] = (
-                K011[ind] * upm
-                + K012[ind] * upmc
-                + (c0[ind] * ec) * upv
-                + (c0[ind] * ec2) * upvc
-            )
+            kdiag[ind2t] = K011[ind] * upm + K012[ind] * upmc + (c0[ind] * ec) * upv + (c0[ind] * ec2) * upvc
         return kdiag
 
     def update_gradients_full(self, dL_dK, X, X2=None):
@@ -600,9 +589,9 @@ class EQ_ODE2(Kern):
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi[indv2] += np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
+                upsi[indv2] += np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]))
+                )
             upsi[t1[:, 0] == 0.0, :] = 0.0
 
             # Covariance calculation
@@ -642,9 +631,9 @@ class EQ_ODE2(Kern):
             gamt = -gam[ind] * t1
             gamct = -gamc[ind] * t1
             fullind = np.ix_(ind, index2)
-            upsi = np.exp(
-                z_lq2 + gamt + np.log(wofz(1j * (z_lq + nu[fullind])).real)
-            ) - np.exp(z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real))
+            upsi = np.exp(z_lq2 + gamt + np.log(wofz(1j * (z_lq + nu[fullind])).real)) - np.exp(
+                z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real)
+            )
 
             z1 = zt_lq + nu[fullind]
             indv1 = np.where(z1 >= 0.0)
@@ -653,9 +642,9 @@ class EQ_ODE2(Kern):
                 upsi[indv1] -= np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi[indv2] -= np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi[indv2] -= np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
@@ -663,9 +652,9 @@ class EQ_ODE2(Kern):
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi[indv2] += np.exp(
-                    nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi[indv2] += np.exp(nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upsi[t1[:, 0] == 0.0, :] = 0.0
 
             kfu[ind2t] = c0[np.ix_(ind, index2)] * upsi
@@ -832,9 +821,9 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
             if len(indv2[0]) > 0:
-                upv[indv2] += np.exp(
-                    nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
+                upv[indv2] += np.exp(nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]))
+                )
             upv[t1[:, 0] == 0, :] = 0.0
 
             # Gradient wrt S
@@ -852,9 +841,7 @@ class EQ_ODE2(Kern):
             dw_dB = 0.5 / w
             dgam_dB = 1j * dw_dB
 
-            Ba1 = c0 * (
-                0.5 * dgam_dB / gam2 + (0.5 * lq2 * gam * dgam_dB - 2.0 * dw_dB / w) * c
-            )
+            Ba1 = c0 * (0.5 * dgam_dB / gam2 + (0.5 * lq2 * gam * dgam_dB - 2.0 * dw_dB / w) * c)
             Ba2_1 = c0 * (dgam_dB * (0.5 / gam2 - 0.25 * lq2) + dw_dB / (w * gam))
             Ba2_2 = c0 * dgam_dB / gam
             Ba3 = c0 * (-0.25 * lq2 * gam * dgam_dB / alphad + dw_dB / (w * alphad))
@@ -863,9 +850,7 @@ class EQ_ODE2(Kern):
 
             gB[ind3t] = (
                 np.real(Ba1[ind] * upm)
-                - np.real(
-                    ((Ba2_1[ind] + Ba2_2[ind] * t1) * egamt - Ba3[ind] * egamct) * upv
-                )
+                - np.real(((Ba2_1[ind] + Ba2_2[ind] * t1) * egamt - Ba3[ind] * egamct) * upv)
                 + np.real(Ba4[ind] * upmd)
                 + np.real((Ba4_1[ind] * ec) * upvd)
             )
@@ -874,31 +859,17 @@ class EQ_ODE2(Kern):
             dw_dC = -alphad * dw_dB
             dgam_dC = 0.5 + 1j * dw_dC
 
-            Ca1 = c0 * (
-                -0.25 / alpha2
-                + 0.5 * dgam_dC / gam2
-                + (0.5 * lq2 * gam * dgam_dC - 2.0 * dw_dC / w) * c
-            )
+            Ca1 = c0 * (-0.25 / alpha2 + 0.5 * dgam_dC / gam2 + (0.5 * lq2 * gam * dgam_dC - 2.0 * dw_dC / w) * c)
             Ca2_1 = c0 * (dgam_dC * (0.5 / gam2 - 0.25 * lq2) + dw_dC / (w * gam))
             Ca2_2 = c0 * dgam_dC / gam
-            Ca3_1 = c0 * (
-                0.25 / alpha2
-                - 0.25 * lq2 * gam * dgam_dC / alphad
-                + dw_dC / (w * alphad)
-            )
+            Ca3_1 = c0 * (0.25 / alpha2 - 0.25 * lq2 * gam * dgam_dC / alphad + dw_dC / (w * alphad))
             Ca3_2 = 0.5 * c0 / alphad
             Ca4_1 = (S2lq * lq) * dgam_dC / w2
             Ca4 = Ca4_1 * c
 
             gC[ind3t] = (
                 np.real(Ca1[ind] * upm)
-                - np.real(
-                    (
-                        (Ca2_1[ind] + Ca2_2[ind] * t1) * egamt
-                        - (Ca3_1[ind] + Ca3_2[ind] * t1) * egamct
-                    )
-                    * upv
-                )
+                - np.real(((Ca2_1[ind] + Ca2_2[ind] * t1) * egamt - (Ca3_1[ind] + Ca3_2[ind] * t1) * egamct) * upv)
                 + np.real(Ca4[ind] * upmd)
                 + np.real((Ca4_1[ind] * ec) * upvd)
             )
@@ -915,10 +886,7 @@ class EQ_ODE2(Kern):
                 (la1[ind] * upm).real
                 + ((la[ind] * ec) * upv).real
                 + (la3[ind] * (-gam_2[ind] + etlq2gamt * (-t_lq2 + gam_2[ind]))).real
-                + (
-                    (c0l[ind] * ec)
-                    * (-et2_lq2 * (t_lq2 + gam_2[ind]) + egamt * gam_2[ind])
-                ).real
+                + ((c0l[ind] * ec) * (-et2_lq2 * (t_lq2 + gam_2[ind]) + egamt * gam_2[ind])).real
             )
 
         # (2) When w_d is complex
@@ -971,9 +939,7 @@ class EQ_ODE2(Kern):
             wnu = np.real(wofz(1j * nu))
             lwnu = np.log(wnu)
 
-            upm = wnu[ind] - np.exp(
-                t2_lq2 + gamt + np.log(wofz(1j * (t_lq + nu[ind])).real)
-            )
+            upm = wnu[ind] - np.exp(t2_lq2 + gamt + np.log(wofz(1j * (t_lq + nu[ind])).real))
             upm[t1[:, 0] == 0.0, :] = 0.0
 
             nu2 = nu * nu
@@ -984,15 +950,13 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upv[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
-                upv[indv2] += np.exp(
-                    nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upv[indv2] += np.exp(nu2[ind[indv2[0]], indv2[1]] + gamt[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upv[t1[:, 0] == 0, :] = 0.0
 
             wnuc = wofz(1j * nuc).real
-            upmc = wnuc[ind] - np.exp(
-                t2_lq2 + gamct + np.log(wofz(1j * (t_lq + nuc[ind])).real)
-            )
+            upmc = wnuc[ind] - np.exp(t2_lq2 + gamct + np.log(wofz(1j * (t_lq + nuc[ind])).real))
             upmc[t1[:, 0] == 0.0, :] = 0.0
 
             lwnuc = np.log(wnuc)
@@ -1004,9 +968,9 @@ class EQ_ODE2(Kern):
             if len(indv1[0]) > 0:
                 upvc[indv1] += np.exp(t2_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
-                upvc[indv2] += np.exp(
-                    nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)
-                ) - np.exp(t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upvc[indv2] += np.exp(nuc2[ind[indv2[0]], indv2[1]] + gamct[indv2[0], 0] + np.log(2.0)) - np.exp(
+                    t2_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upvc[t1[:, 0] == 0, :] = 0.0
 
             # Gradient wrt S
@@ -1016,12 +980,7 @@ class EQ_ODE2(Kern):
             K011 = c0_S * c
             K012 = c0_S * c2
 
-            gS[ind2t] = (
-                K011[ind] * upm
-                + K012[ind] * upmc
-                + (c0_S[ind] * ec) * upv
-                + (c0_S[ind] * ec2) * upvc
-            )
+            gS[ind2t] = K011[ind] * upm + K012[ind] * upmc + (c0_S[ind] * ec) * upv + (c0_S[ind] * ec2) * upvc
 
             # Is required to cache this, C gradient also required them
             upmd = -1.0 + etlq2gamt
@@ -1033,18 +992,14 @@ class EQ_ODE2(Kern):
             dgam_dB = 0.5 / w
             dgamc_dB = -dgam_dB
 
-            Ba1 = c0 * (
-                0.5 * dgam_dB / gam2 + (0.5 * lq2 * gam * dgam_dB - 1.0 / w2) * c
-            )
+            Ba1 = c0 * (0.5 * dgam_dB / gam2 + (0.5 * lq2 * gam * dgam_dB - 1.0 / w2) * c)
             Ba3 = c0 * (-0.25 * lq2 * gam * dgam_dB / alphad + 0.5 / (w2 * alphad))
             Ba4_1 = (S2lq * lq) * dgam_dB / w2
             Ba4 = Ba4_1 * c
             Ba2_1 = c0 * (dgam_dB * (0.5 / gam2 - 0.25 * lq2) + 0.5 / (w2 * gam))
             Ba2_2 = c0 * dgam_dB / gam
 
-            Ba1c = c0 * (
-                0.5 * dgamc_dB / gamc2 + (0.5 * lq2 * gamc * dgamc_dB - 1.0 / w2) * c2
-            )
+            Ba1c = c0 * (0.5 * dgamc_dB / gamc2 + (0.5 * lq2 * gamc * dgamc_dB - 1.0 / w2) * c2)
             Ba3c = c0 * (-0.25 * lq2 * gamc * dgamc_dB / alphad + 0.5 / (w2 * alphad))
             Ba4_1c = (S2lq * lq) * dgamc_dB / w2
             Ba4c = Ba4_1c * c2
@@ -1068,53 +1023,29 @@ class EQ_ODE2(Kern):
             dgamc_dC = 0.5 + dw_dC
             S2lq2 = S2lq * lq
 
-            Ca1 = c0 * (
-                -0.25 / alpha2
-                + 0.5 * dgam_dC / gam2
-                + (0.5 * lq2 * gam * dgam_dC + alphad / w2) * c
-            )
-            Ca2_1 = c0 * (
-                dgam_dC * (0.5 / gam2 - 0.25 * lq2) - 0.5 * alphad / (w2 * gam)
-            )
+            Ca1 = c0 * (-0.25 / alpha2 + 0.5 * dgam_dC / gam2 + (0.5 * lq2 * gam * dgam_dC + alphad / w2) * c)
+            Ca2_1 = c0 * (dgam_dC * (0.5 / gam2 - 0.25 * lq2) - 0.5 * alphad / (w2 * gam))
             Ca2_2 = c0 * dgam_dC / gam
-            Ca3_1 = c0 * (
-                0.25 / alpha2 - 0.25 * lq2 * gam * dgam_dC / alphad - 0.5 / w2
-            )
+            Ca3_1 = c0 * (0.25 / alpha2 - 0.25 * lq2 * gam * dgam_dC / alphad - 0.5 / w2)
             Ca3_2 = 0.5 * c0 / alphad
             Ca4_1 = S2lq2 * (dgam_dC / w2)
             Ca4 = Ca4_1 * c
 
-            Ca1c = c0 * (
-                -0.25 / alpha2
-                + 0.5 * dgamc_dC / gamc2
-                + (0.5 * lq2 * gamc * dgamc_dC + alphad / w2) * c2
-            )
-            Ca2_1c = c0 * (
-                dgamc_dC * (0.5 / gamc2 - 0.25 * lq2) - 0.5 * alphad / (w2 * gamc)
-            )
+            Ca1c = c0 * (-0.25 / alpha2 + 0.5 * dgamc_dC / gamc2 + (0.5 * lq2 * gamc * dgamc_dC + alphad / w2) * c2)
+            Ca2_1c = c0 * (dgamc_dC * (0.5 / gamc2 - 0.25 * lq2) - 0.5 * alphad / (w2 * gamc))
             Ca2_2c = c0 * dgamc_dC / gamc
-            Ca3_1c = c0 * (
-                0.25 / alpha2 - 0.25 * lq2 * gamc * dgamc_dC / alphad - 0.5 / w2
-            )
+            Ca3_1c = c0 * (0.25 / alpha2 - 0.25 * lq2 * gamc * dgamc_dC / alphad - 0.5 / w2)
             Ca3_2c = 0.5 * c0 / alphad
             Ca4_1c = S2lq2 * (dgamc_dC / w2)
             Ca4c = Ca4_1c * c2
 
             gC[ind2t] = (
                 Ca1[ind] * upm
-                - (
-                    (Ca2_1[ind] + Ca2_2[ind] * t1) * egamt
-                    - (Ca3_1[ind] + Ca3_2[ind] * t1) * egamct
-                )
-                * upv
+                - ((Ca2_1[ind] + Ca2_2[ind] * t1) * egamt - (Ca3_1[ind] + Ca3_2[ind] * t1) * egamct) * upv
                 + Ca4[ind] * upmd
                 + (Ca4_1[ind] * ec) * upvd
                 + Ca1c[ind] * upmc
-                - (
-                    (Ca2_1c[ind] + Ca2_2c[ind] * t1) * egamct
-                    - (Ca3_1c[ind] + Ca3_2c[ind] * t1) * egamt
-                )
-                * upvc
+                - ((Ca2_1c[ind] + Ca2_2c[ind] * t1) * egamct - (Ca3_1c[ind] + Ca3_2c[ind] * t1) * egamt) * upvc
                 + Ca4c[ind] * upmdc
                 + (Ca4_1c[ind] * ec2) * upvdc
             )
@@ -1135,13 +1066,11 @@ class EQ_ODE2(Kern):
                 la1c[ind] * upmc
                 + (lac[ind] * ec2) * upvc
                 + la3c[ind] * (-gamc_2[ind] + etlq2gamct * (-t_lq2 + gamc_2[ind]))
-                + (c0l[ind] * ec2)
-                * (-et2_lq2 * (t_lq2 + gamc_2[ind]) + egamct * gamc_2[ind])
+                + (c0l[ind] * ec2) * (-et2_lq2 * (t_lq2 + gamc_2[ind]) + egamct * gamc_2[ind])
                 + la1[ind] * upm
                 + (la[ind] * ec) * upv
                 + la3[ind] * (-gam_2[ind] + etlq2gamt * (-t_lq2 + gam_2[ind]))
-                + (c0l[ind] * ec)
-                * (-et2_lq2 * (t_lq2 + gam_2[ind]) + egamt * gam_2[ind])
+                + (c0l[ind] * ec) * (-et2_lq2 * (t_lq2 + gam_2[ind]) + egamt * gam_2[ind])
             )
 
         return glq, gS, gB, gC
@@ -1234,9 +1163,9 @@ class EQ_ODE2(Kern):
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi[indv2] += np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
+                upsi[indv2] += np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]))
+                )
             upsi[t1[:, 0] == 0.0, :] = 0.0
 
             # Gradient wrt S
@@ -1265,11 +1194,7 @@ class EQ_ODE2(Kern):
             Ba4 = (dgam_dB * S_w) * (0.5 * lq2)  # DxQ
 
             gB[ind3t] = (
-                (
-                    Ba1[np.ix_(ind, index2)]
-                    + Ba2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi
+                (Ba1[np.ix_(ind, index2)] + Ba2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))) * upsi
             ).imag + (Ba4[np.ix_(ind, index2)] * (ezt_lq2 + ezgamt)).imag
 
             # Gradient wrt C (it uses some calculations performed in B)
@@ -1282,11 +1207,7 @@ class EQ_ODE2(Kern):
             Ca4 = (dgam_dC * S_w) * (0.5 * lq2)  # DxQ
 
             gC[ind3t] = (
-                (
-                    Ca1[np.ix_(ind, index2)]
-                    + Ca2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi
+                (Ca1[np.ix_(ind, index2)] + Ca2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))) * upsi
             ).imag + (Ca4[np.ix_(ind, index2)] * (ezt_lq2 + ezgamt)).imag
 
         # (2) when wd is complex
@@ -1335,22 +1256,18 @@ class EQ_ODE2(Kern):
 
             # Upsilon calculations
             fullind = np.ix_(ind, index2)
-            upsi1 = -np.exp(
-                z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real)
-            )
+            upsi1 = -np.exp(z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real))
             tz = t1 - z
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             if len(indv1[0]) > 0:
-                upsi1[indv1] += np.exp(
-                    zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
-                )
+                upsi1[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi1[indv2] += np.exp(
-                    nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi1[indv2] += np.exp(nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upsi1[t1[:, 0] == 0.0, :] = 0.0
 
             upsi2 = -np.exp(z_lq2 + gamt + np.log(wofz(1j * (z_lq + nu[fullind])).real))
@@ -1358,14 +1275,12 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             if len(indv1[0]) > 0:
-                upsi2[indv1] += np.exp(
-                    zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
-                )
+                upsi2[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi2[indv2] += np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi2[indv2] += np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upsi2[t1[:, 0] == 0.0, :] = 0.0
 
             # Gradient wrt lq
@@ -1380,9 +1295,7 @@ class EQ_ODE2(Kern):
             )
 
             glq[ind2t] = (
-                la1c[np.ix_(ind, index2)] * upsi1
-                - la1[np.ix_(ind, index2)] * upsi2
-                + la2[np.ix_(ind, index2)] * uplq
+                la1c[np.ix_(ind, index2)] * upsi1 - la1[np.ix_(ind, index2)] * upsi2 + la2[np.ix_(ind, index2)] * uplq
             )
 
             # Gradient wrt S
@@ -1405,17 +1318,9 @@ class EQ_ODE2(Kern):
             Ba4c = (dgamc_dB * S_w) * (0.25 * lq2)
 
             gB[ind2t] = (
-                (
-                    Ba1[np.ix_(ind, index2)]
-                    + Ba2c[np.ix_(ind, index2)] * (Ba3c[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi1
+                (Ba1[np.ix_(ind, index2)] + Ba2c[np.ix_(ind, index2)] * (Ba3c[np.ix_(ind, index2)] - (t1 - z))) * upsi1
                 + Ba4c[np.ix_(ind, index2)] * (ezt_lq2 + ezgamct)
-                - (
-                    Ba1[np.ix_(ind, index2)]
-                    + Ba2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi2
+                - (Ba1[np.ix_(ind, index2)] + Ba2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))) * upsi2
                 - Ba4[np.ix_(ind, index2)] * (ezt_lq2 + ezgamt)
             )
 
@@ -1432,17 +1337,9 @@ class EQ_ODE2(Kern):
             Ca4c = (dgamc_dC * S_w) * (0.25 * lq2)
 
             gC[ind2t] = (
-                (
-                    Ca1[np.ix_(ind, index2)]
-                    + Ca2c[np.ix_(ind, index2)] * (Ba3c[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi1
+                (Ca1[np.ix_(ind, index2)] + Ca2c[np.ix_(ind, index2)] * (Ba3c[np.ix_(ind, index2)] - (t1 - z))) * upsi1
                 + Ca4c[np.ix_(ind, index2)] * (ezt_lq2 + ezgamct)
-                - (
-                    Ca1[np.ix_(ind, index2)]
-                    + Ca2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))
-                )
-                * upsi2
+                - (Ca1[np.ix_(ind, index2)] + Ca2[np.ix_(ind, index2)] * (Ba3[np.ix_(ind, index2)] - (t1 - z))) * upsi2
                 - Ca4[np.ix_(ind, index2)] * (ezt_lq2 + ezgamt)
             )
 
@@ -1528,17 +1425,15 @@ class EQ_ODE2(Kern):
                 upsi[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1])))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi[indv2] += np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2])))
+                upsi[indv2] += np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]))
+                )
             upsi[t1[:, 0] == 0.0, :] = 0.0
 
             # Gradient wrt z
             za1 = c0 * gam
             # za2 = S_w
-            gz[ind3t] = (za1[np.ix_(ind, index2)] * upsi).imag + S_w[
-                np.ix_(ind, index2)
-            ] * ezgamt.imag
+            gz[ind3t] = (za1[np.ix_(ind, index2)] * upsi).imag + S_w[np.ix_(ind, index2)] * ezgamt.imag
 
         # (2) when wd is complex
         if np.any(wbool):
@@ -1578,22 +1473,18 @@ class EQ_ODE2(Kern):
             # Upsilon calculations
             zt_lq2 = -zt_lq * zt_lq
             fullind = np.ix_(ind, index2)
-            upsi1 = -np.exp(
-                z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real)
-            )
+            upsi1 = -np.exp(z_lq2 + gamct + np.log(wofz(1j * (z_lq + nuc[fullind])).real))
             tz = t1 - z
             z1 = zt_lq + nuc[fullind]
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             if len(indv1[0]) > 0:
-                upsi1[indv1] += np.exp(
-                    zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
-                )
+                upsi1[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nuac2 = nuc[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi1[indv2] += np.exp(
-                    nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi1[indv2] += np.exp(nuac2 - gamc[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upsi1[t1[:, 0] == 0.0, :] = 0.0
 
             upsi2 = -np.exp(z_lq2 + gamt + np.log(wofz(1j * (z_lq + nu[fullind])).real))
@@ -1601,14 +1492,12 @@ class EQ_ODE2(Kern):
             indv1 = np.where(z1 >= 0.0)
             indv2 = np.where(z1 < 0.0)
             if len(indv1[0]) > 0:
-                upsi2[indv1] += np.exp(
-                    zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real)
-                )
+                upsi2[indv1] += np.exp(zt_lq2[indv1] + np.log(wofz(1j * z1[indv1]).real))
             if len(indv2[0]) > 0:
                 nua2 = nu[ind[indv2[0]], index2[indv2[1]]] ** 2
-                upsi2[indv2] += np.exp(
-                    nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)
-                ) - np.exp(zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real))
+                upsi2[indv2] += np.exp(nua2 - gam[ind[indv2[0]], 0] * tz[indv2] + np.log(2.0)) - np.exp(
+                    zt_lq2[indv2] + np.log(wofz(-1j * z1[indv2]).real)
+                )
             upsi2[t1[:, 0] == 0.0, :] = 0.0
 
             # Gradient wrt z

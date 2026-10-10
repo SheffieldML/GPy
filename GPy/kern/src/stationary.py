@@ -8,15 +8,16 @@ from .kern import Kern
 from ...core.parameterization import Param
 from ...util.linalg import tdot
 from ... import util
-from ...util.config import config # for assesing whether to use cython
+from ...util.config import config  # for assesing whether to use cython
 from paramz.caching import Cache_this
 from paramz.transformations import Logexp
 
 try:
     from . import stationary_cython
-    use_stationary_cython = config.getboolean('cython', 'working')
+
+    use_stationary_cython = config.getboolean("cython", "working")
 except ImportError:
-    print('warning in stationary: failed to import cython module: falling back to numpy')
+    print("warning in stationary: failed to import cython module: falling back to numpy")
     use_stationary_cython = False
 
 
@@ -59,7 +60,7 @@ class Stationary(Kern):
     """
 
     def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=False):
-        super(Stationary, self).__init__(input_dim, active_dims, name,useGPU=useGPU)
+        super(Stationary, self).__init__(input_dim, active_dims, name, useGPU=useGPU)
         self.ARD = ARD
         if not ARD:
             if lengthscale is None:
@@ -72,17 +73,17 @@ class Stationary(Kern):
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size in [1, input_dim], "Bad number of lengthscales"
                 if lengthscale.size != input_dim:
-                    lengthscale = np.ones(input_dim)*lengthscale
+                    lengthscale = np.ones(input_dim) * lengthscale
             else:
                 lengthscale = np.ones(self.input_dim)
-        self.lengthscale = Param('lengthscale', lengthscale, Logexp())
-        self.variance = Param('variance', variance, Logexp())
-        assert self.variance.size==1
+        self.lengthscale = Param("lengthscale", lengthscale, Logexp())
+        self.variance = Param("variance", variance, Logexp())
+        assert self.variance.size == 1
         self.link_parameters(self.variance, self.lengthscale)
 
     def _save_to_input_dict(self):
         input_dict = super(Stationary, self)._save_to_input_dict()
-        input_dict["variance"] =  self.variance.values.tolist()
+        input_dict["variance"] = self.variance.values.tolist()
         input_dict["lengthscale"] = self.lengthscale.values.tolist()
         input_dict["ARD"] = self.ARD
         return input_dict
@@ -119,12 +120,12 @@ class Stationary(Kern):
         """
         compute the derivative of K wrt X going through X
         """
-        #a convenience function, so we can cache dK_dr
+        # a convenience function, so we can cache dK_dr
         return self.dK_dr(self._scaled_dist(X, X2))
 
     @Cache_this(limit=3, ignore_args=())
     def dK2_drdr_via_X(self, X, X2):
-        #a convenience function, so we can cache dK_dr
+        # a convenience function, so we can cache dK_dr
         return self.dK2_drdr(self._scaled_dist(X, X2))
 
     def _unscaled_dist(self, X, X2=None):
@@ -132,18 +133,18 @@ class Stationary(Kern):
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
         """
-        #X, = self._slice_X(X)
+        # X, = self._slice_X(X)
         if X2 is None:
-            Xsq = np.sum(np.square(X),1)
-            r2 = -2.*tdot(X) + (Xsq[:,None] + Xsq[None,:])
-            util.diag.view(r2)[:,]= 0. # force diagnoal to be zero: sometime numerically a little negative
+            Xsq = np.sum(np.square(X), 1)
+            r2 = -2.0 * tdot(X) + (Xsq[:, None] + Xsq[None, :])
+            util.diag.view(r2)[:,] = 0.0  # force diagnoal to be zero: sometime numerically a little negative
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
         else:
-            #X2, = self._slice_X(X2)
-            X1sq = np.sum(np.square(X),1)
-            X2sq = np.sum(np.square(X2),1)
-            r2 = -2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:])
+            # X2, = self._slice_X(X2)
+            X1sq = np.sum(np.square(X), 1)
+            X2sq = np.sum(np.square(X2), 1)
+            r2 = -2.0 * np.dot(X, X2.T) + (X1sq[:, None] + X2sq[None, :])
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
@@ -163,9 +164,9 @@ class Stationary(Kern):
         if self.ARD:
             if X2 is not None:
                 X2 = X2 / self.lengthscale
-            return self._unscaled_dist(X/self.lengthscale, X2)
+            return self._unscaled_dist(X / self.lengthscale, X2)
         else:
-            return self._unscaled_dist(X, X2)/self.lengthscale
+            return self._unscaled_dist(X, X2) / self.lengthscale
 
     def Kdiag(self, X):
         ret = np.empty(X.shape[0])
@@ -173,9 +174,9 @@ class Stationary(Kern):
         return ret
 
     def reset_gradients(self):
-        self.variance.gradient = 0.
+        self.variance.gradient = 0.0
         if not self.ARD:
-            self.lengthscale.gradient = 0.
+            self.lengthscale.gradient = 0.0
         else:
             self.lengthscale.gradient = np.zeros(self.input_dim)
 
@@ -188,7 +189,7 @@ class Stationary(Kern):
         See also update_gradients_full
         """
         self.variance.gradient = np.sum(dL_dKdiag)
-        self.lengthscale.gradient = 0.
+        self.lengthscale.gradient = 0.0
 
     def update_gradients_full(self, dL_dK, X, X2=None, reset=True):
         """
@@ -196,21 +197,21 @@ class Stationary(Kern):
         (dL_dK), compute the gradient wrt the parameters of this kernel,
         and store in the parameters object as e.g. self.variance.gradient
         """
-        self.variance.gradient = np.sum(self.K(X, X2)* dL_dK)/self.variance
+        self.variance.gradient = np.sum(self.K(X, X2) * dL_dK) / self.variance
 
-        #now the lengthscale gradient(s)
+        # now the lengthscale gradient(s)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
         if self.ARD:
-
-            tmp = dL_dr*self._inv_dist(X, X2)
-            if X2 is None: X2 = X
+            tmp = dL_dr * self._inv_dist(X, X2)
+            if X2 is None:
+                X2 = X
             if use_stationary_cython:
                 self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
             else:
                 self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
-            self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
+            self.lengthscale.gradient = -np.sum(dL_dr * r) / self.lengthscale
 
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """
@@ -229,18 +230,21 @@ class Stationary(Kern):
         This term appears in derviatives.
         """
         dist = self._scaled_dist(X, X2).copy()
-        return 1./np.where(dist != 0., dist, np.inf)
+        return 1.0 / np.where(dist != 0.0, dist, np.inf)
 
     def _lengthscale_grads_pure(self, tmp, X, X2):
-        return -np.array([np.sum(tmp * np.square(X[:,q:q+1] - X2[:,q:q+1].T)) for q in range(self.input_dim)])/self.lengthscale**3
+        return (
+            -np.array([np.sum(tmp * np.square(X[:, q : q + 1] - X2[:, q : q + 1].T)) for q in range(self.input_dim)])
+            / self.lengthscale**3
+        )
 
     def _lengthscale_grads_cython(self, tmp, X, X2):
-        N,M = tmp.shape
+        N, M = tmp.shape
         Q = self.input_dim
         X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
         grads = np.zeros(self.input_dim)
         stationary_cython.lengthscale_grads(N, M, Q, tmp, X, X2, grads)
-        return -grads/self.lengthscale**3
+        return -grads / self.lengthscale**3
 
     def gradients_X(self, dL_dK, X, X2=None):
         """
@@ -270,24 +274,26 @@ class Stationary(Kern):
         # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
         invdist = self._inv_dist(X, X2)
         invdist2 = invdist**2
-        dL_dr = self.dK_dr_via_X(X, X2) #* dL_dK # we perform this product later
+        dL_dr = self.dK_dr_via_X(X, X2)  # * dL_dK # we perform this product later
         tmp1 = dL_dr * invdist
-        dL_drdr = self.dK2_drdr_via_X(X, X2) #* dL_dK # we perofrm this product later
-        tmp2 = dL_drdr*invdist2
-        l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
+        dL_drdr = self.dK2_drdr_via_X(X, X2)  # * dL_dK # we perofrm this product later
+        tmp2 = dL_drdr * invdist2
+        l2 = np.ones(X.shape[1]) * self.lengthscale**2  # np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
 
         if X2 is None:
             X2 = X
-            tmp1 -= np.eye(X.shape[0])*self.variance
+            tmp1 -= np.eye(X.shape[0]) * self.variance
         else:
-            tmp1[invdist2==0.] -= self.variance
+            tmp1[invdist2 == 0.0] -= self.variance
 
-        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
-        dist = X[:,None,:] - X2[None,:,:]
-        dist = (dist[:,:,:,None]*dist[:,:,None,:])
-        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
-        grad = (((dL_dK*(tmp1*invdist2 - tmp2))[:,:,None,None] * dist)/l2[None,None,:,None]
-                - (dL_dK*tmp1)[:,:,None,None] * I)/l2[None,None,None,:]
+        # grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+        dist = X[:, None, :] - X2[None, :, :]
+        dist = dist[:, :, :, None] * dist[:, :, None, :]
+        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1])) * np.eye((X2.shape[1]))
+        grad = (
+            ((dL_dK * (tmp1 * invdist2 - tmp2))[:, :, None, None] * dist) / l2[None, None, :, None]
+            - (dL_dK * tmp1)[:, :, None, None] * I
+        ) / l2[None, None, None, :]
         return grad
 
     def gradients_XX_diag(self, dL_dK_diag, X):
@@ -301,11 +307,15 @@ class Stationary(Kern):
             dL2_dXdX: [NxQxQ]
         """
         dL_dK_diag = dL_dK_diag.copy().reshape(-1, 1, 1)
-        assert (dL_dK_diag.size == X.shape[0]) or (dL_dK_diag.size == 1), "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+        assert (dL_dK_diag.size == X.shape[0]) or (dL_dK_diag.size == 1), (
+            "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+        )
 
-        l4 =  np.ones(X.shape[1])*self.lengthscale**2
-        return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
-        #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
+        l4 = np.ones(X.shape[1]) * self.lengthscale**2
+        return (
+            dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag() / (l4))[None, :, :]
+        )  # np.zeros(X.shape+(X.shape[1],))
+        # return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def dgradients(self, X, X2):
         g1 = self.dK_dvariance(X, X2)
@@ -330,38 +340,38 @@ class Stationary(Kern):
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
-        tmp = invdist*dL_dr
+        tmp = invdist * dL_dr
         if X2 is None:
             tmp = tmp + tmp.T
             X2 = X
 
-        #The high-memory numpy way:
-        #d =  X[:, None, :] - X2[None, :, :]
-        #grad = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
+        # The high-memory numpy way:
+        # d =  X[:, None, :] - X2[None, :, :]
+        # grad = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
 
-        #the lower memory way with a loop
+        # the lower memory way with a loop
         grad = np.empty(X.shape, dtype=np.float64)
         for q in range(self.input_dim):
-            np.sum(tmp*(X[:,q][:,None]-X2[:,q][None,:]), axis=1, out=grad[:,q])
-        return grad/self.lengthscale**2
+            np.sum(tmp * (X[:, q][:, None] - X2[:, q][None, :]), axis=1, out=grad[:, q])
+        return grad / self.lengthscale**2
 
     def _gradients_X_cython(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
-        tmp = invdist*dL_dr
+        tmp = invdist * dL_dr
         if X2 is None:
             tmp = tmp + tmp.T
             X2 = X
         X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
         grad = np.zeros(X.shape)
         stationary_cython.grad_X(X.shape[0], X.shape[1], X2.shape[0], X, X2, tmp, grad)
-        return grad/self.lengthscale**2
+        return grad / self.lengthscale**2
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
     def input_sensitivity(self, summarize=True):
-        return self.variance*np.ones(self.input_dim)/self.lengthscale**2
+        return self.variance * np.ones(self.input_dim) / self.lengthscale**2
 
     def get_one_dimensional_kernel(self, dimensions):
         """
@@ -373,10 +383,8 @@ class Stationary(Kern):
         raise NotImplementedError("implement one dimensional variation of kernel")
 
 
-
-
 class Exponential(Stationary):
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Exponential'):
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="Exponential"):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
@@ -400,8 +408,9 @@ class Exponential(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return Exponential(**input_dict)
+
 
 #    def sde(self):
 #        """
@@ -427,7 +436,7 @@ class OU(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='OU'):
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="OU"):
         super(OU, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
@@ -444,14 +453,14 @@ class OU(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return OU(**input_dict)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-r)
 
-    def dK_dr(self,r):
-        return -1.*self.variance*np.exp(-r)
+    def dK_dr(self, r):
+        return -1.0 * self.variance * np.exp(-r)
 
 
 class Matern32(Stationary):
@@ -464,7 +473,7 @@ class Matern32(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat32'):
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="Mat32"):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
@@ -482,14 +491,14 @@ class Matern32(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return Matern32(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
+        return self.variance * (1.0 + np.sqrt(3.0) * r) * np.exp(-np.sqrt(3.0) * r)
 
-    def dK_dr(self,r):
-        return -3.*self.variance*r*np.exp(-np.sqrt(3.)*r)
+    def dK_dr(self, r):
+        return -3.0 * self.variance * r * np.exp(-np.sqrt(3.0) * r)
 
     def Gram_matrix(self, F, F1, F2, lower, upper):
         """
@@ -506,16 +515,22 @@ class Matern32(Stationary):
         :type lower,upper: floats
         """
         assert self.input_dim == 1
+
         def L(x, i):
-            return(3. / self.lengthscale ** 2 * F[i](x) + 2 * np.sqrt(3) / self.lengthscale * F1[i](x) + F2[i](x))
+            return 3.0 / self.lengthscale**2 * F[i](x) + 2 * np.sqrt(3) / self.lengthscale * F1[i](x) + F2[i](x)
+
         n = F.shape[0]
         G = np.zeros((n, n))
         for i in range(n):
             for j in range(i, n):
-                G[i, j] = G[j, i] = integrate.quad(lambda x : L(x, i) * L(x, j), lower, upper)[0]
+                G[i, j] = G[j, i] = integrate.quad(lambda x: L(x, i) * L(x, j), lower, upper)[0]
         Flower = np.array([f(lower) for f in F])[:, None]
         F1lower = np.array([f(lower) for f in F1])[:, None]
-        return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
+        return (
+            self.lengthscale**3 / (12.0 * np.sqrt(3) * self.variance) * G
+            + 1.0 / self.variance * np.dot(Flower, Flower.T)
+            + self.lengthscale**2 / (3.0 * self.variance) * np.dot(F1lower, F1lower.T)
+        )
 
     def sde(self):
         """
@@ -523,35 +538,33 @@ class Matern32(Stationary):
         """
         variance = self.variance.item()
         lengthscale = self.lengthscale.item()
-        foo  = np.sqrt(3.)/lengthscale
-        F    = np.array([[0, 1], [-foo**2, -2*foo]])
-        L    = np.array([[0], [1]])
-        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]])
-        H    = np.array([[1, 0]])
-        Pinf = np.array([[variance, 0],
-        [0,              3.*variance/(lengthscale**2)]])
+        foo = np.sqrt(3.0) / lengthscale
+        F = np.array([[0, 1], [-(foo**2), -2 * foo]])
+        L = np.array([[0], [1]])
+        Qc = np.array([[12.0 * np.sqrt(3) / lengthscale**3 * variance]])
+        H = np.array([[1, 0]])
+        Pinf = np.array([[variance, 0], [0, 3.0 * variance / (lengthscale**2)]])
         # Allocate space for the derivatives
-        dF    = np.empty([F.shape[0],F.shape[1],2])
-        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2])
-        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2])
+        dF = np.empty([F.shape[0], F.shape[1], 2])
+        dQc = np.empty([Qc.shape[0], Qc.shape[1], 2])
+        dPinf = np.empty([Pinf.shape[0], Pinf.shape[1], 2])
         # The partial derivatives
-        dFvariance       = np.zeros([2,2])
-        dFlengthscale    = np.array([[0,0],
-        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]])
-        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3])
-        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance])
-        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]])
-        dPinflengthscale = np.array([[0,0],
-        [0,-6*variance/lengthscale**3]])
+        dFvariance = np.zeros([2, 2])
+        dFlengthscale = np.array([[0, 0], [6.0 / lengthscale**3, 2 * np.sqrt(3) / lengthscale**2]])
+        dQcvariance = np.array([12.0 * np.sqrt(3) / lengthscale**3])
+        dQclengthscale = np.array([-3 * 12 * np.sqrt(3) / lengthscale**4 * variance])
+        dPinfvariance = np.array([[1, 0], [0, 3.0 / lengthscale**2]])
+        dPinflengthscale = np.array([[0, 0], [0, -6 * variance / lengthscale**3]])
         # Combine the derivatives
-        dF[:,:,0]    = dFvariance
-        dF[:,:,1]    = dFlengthscale
-        dQc[:,:,0]   = dQcvariance
-        dQc[:,:,1]   = dQclengthscale
-        dPinf[:,:,0] = dPinfvariance
-        dPinf[:,:,1] = dPinflengthscale
+        dF[:, :, 0] = dFvariance
+        dF[:, :, 1] = dFlengthscale
+        dQc[:, :, 0] = dQcvariance
+        dQc[:, :, 1] = dQclengthscale
+        dPinf[:, :, 0] = dPinfvariance
+        dPinf[:, :, 1] = dPinflengthscale
 
         return (F, L, Qc, H, Pinf, dF, dQc, dPinf)
+
 
 class Matern52(Stationary):
     """
@@ -561,7 +574,8 @@ class Matern52(Stationary):
 
        k(r) = \\sigma^2 (1 + \\sqrt{5} r + \\frac53 r^2) \\exp(- \\sqrt{5} r)
     """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
+
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="Mat52"):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
@@ -579,14 +593,14 @@ class Matern52(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return Matern52(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
+        return self.variance * (1 + np.sqrt(5.0) * r + 5.0 / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
 
     def dK_dr(self, r):
-        return self.variance*(10./3*r -5.*r -5.*np.sqrt(5.)/3*r**2)*np.exp(-np.sqrt(5.)*r)
+        return self.variance * (10.0 / 3 * r - 5.0 * r - 5.0 * np.sqrt(5.0) / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
 
     def Gram_matrix(self, F, F1, F2, F3, lower, upper):
         """
@@ -604,20 +618,32 @@ class Matern52(Stationary):
         :type lower,upper: floats
         """
         assert self.input_dim == 1
-        def L(x,i):
-            return(5*np.sqrt(5)/self.lengthscale**3*F[i](x) + 15./self.lengthscale**2*F1[i](x)+ 3*np.sqrt(5)/self.lengthscale*F2[i](x) + F3[i](x))
+
+        def L(x, i):
+            return (
+                5 * np.sqrt(5) / self.lengthscale**3 * F[i](x)
+                + 15.0 / self.lengthscale**2 * F1[i](x)
+                + 3 * np.sqrt(5) / self.lengthscale * F2[i](x)
+                + F3[i](x)
+            )
+
         n = F.shape[0]
-        G = np.zeros((n,n))
+        G = np.zeros((n, n))
         for i in range(n):
-            for j in range(i,n):
-                G[i,j] = G[j,i] = integrate.quad(lambda x : L(x,i)*L(x,j),lower,upper)[0]
-        G_coef = 3.*self.lengthscale**5/(400*np.sqrt(5))
-        Flower = np.array([f(lower) for f in F])[:,None]
-        F1lower = np.array([f(lower) for f in F1])[:,None]
-        F2lower = np.array([f(lower) for f in F2])[:,None]
-        orig = 9./8*np.dot(Flower,Flower.T) + 9.*self.lengthscale**4/200*np.dot(F2lower,F2lower.T)
-        orig2 = 3./5*self.lengthscale**2 * ( np.dot(F1lower,F1lower.T) + 1./8*np.dot(Flower,F2lower.T) + 1./8*np.dot(F2lower,Flower.T))
-        return(1./self.variance* (G_coef*G + orig + orig2))
+            for j in range(i, n):
+                G[i, j] = G[j, i] = integrate.quad(lambda x: L(x, i) * L(x, j), lower, upper)[0]
+        G_coef = 3.0 * self.lengthscale**5 / (400 * np.sqrt(5))
+        Flower = np.array([f(lower) for f in F])[:, None]
+        F1lower = np.array([f(lower) for f in F1])[:, None]
+        F2lower = np.array([f(lower) for f in F2])[:, None]
+        orig = 9.0 / 8 * np.dot(Flower, Flower.T) + 9.0 * self.lengthscale**4 / 200 * np.dot(F2lower, F2lower.T)
+        orig2 = (
+            3.0
+            / 5
+            * self.lengthscale**2
+            * (np.dot(F1lower, F1lower.T) + 1.0 / 8 * np.dot(Flower, F2lower.T) + 1.0 / 8 * np.dot(F2lower, Flower.T))
+        )
+        return 1.0 / self.variance * (G_coef * G + orig + orig2)
 
 
 class ExpQuad(Stationary):
@@ -634,7 +660,8 @@ class ExpQuad(Stationary):
        (the psi-statistics).
 
     """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
+
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="ExpQuad"):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def to_dict(self):
@@ -652,14 +679,15 @@ class ExpQuad(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return ExpQuad(**input_dict)
 
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
     def dK_dr(self, r):
-        return -r*self.K_of_r(r)
+        return -r * self.K_of_r(r)
+
 
 class Cosine(Stationary):
     """
@@ -670,7 +698,8 @@ class Cosine(Stationary):
         k(r) = \\sigma^2 \\cos(r)
 
     """
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Cosine'):
+
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="Cosine"):
         super(Cosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
@@ -678,6 +707,7 @@ class Cosine(Stationary):
 
     def dK_dr(self, r):
         return -self.variance * np.sin(r)
+
 
 class ExpQuadCosine(Stationary):
     """
@@ -689,29 +719,40 @@ class ExpQuadCosine(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, period=1., ARD=False, active_dims=None, name='ExpQuadCosine'):
+    def __init__(
+        self, input_dim, variance=1.0, lengthscale=None, period=1.0, ARD=False, active_dims=None, name="ExpQuadCosine"
+    ):
         super(ExpQuadCosine, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
-        self.period = Param('period', period, Logexp())
+        self.period = Param("period", period, Logexp())
         self.link_parameters(self.period)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-2*np.pi**2*r**2)*np.cos(2*np.pi*r/self.period)
+        return self.variance * np.exp(-2 * np.pi**2 * r**2) * np.cos(2 * np.pi * r / self.period)
 
     def dK_dr(self, r):
-        return -4*np.pi**2*r*self.K_of_r(r) - self.variance * 2*np.pi/self.period*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
+        return -4 * np.pi**2 * r * self.K_of_r(r) - self.variance * 2 * np.pi / self.period * np.exp(
+            -2 * np.pi**2 * r**2
+        ) * np.sin(2 * np.pi * r / self.period)
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(ExpQuadCosine, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
         r2 = np.square(r)
-        dK_dperiod = self.variance * 2*np.pi*r/self.period**2*np.exp(-2*np.pi**2*r**2)*np.sin(2*np.pi*r/self.period)
-        grad = np.sum(dL_dK*dK_dperiod)
+        dK_dperiod = (
+            self.variance
+            * 2
+            * np.pi
+            * r
+            / self.period**2
+            * np.exp(-2 * np.pi**2 * r**2)
+            * np.sin(2 * np.pi * r / self.period)
+        )
+        grad = np.sum(dL_dK * dK_dperiod)
         self.period.gradient = grad
 
     def update_gradients_diag(self, dL_dKdiag, X):
         super(ExpQuadCosine, self).update_gradients_diag(dL_dKdiag, X)
-        self.period.gradient = 0.
-
+        self.period.gradient = 0.0
 
 
 class Sinc(Stationary):
@@ -724,11 +765,11 @@ class Sinc(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Sinc'):
+    def __init__(self, input_dim, variance=1.0, lengthscale=None, ARD=False, active_dims=None, name="Sinc"):
         super(Sinc, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.sinc(2*r)
+        return self.variance * np.sinc(2 * r)
 
     def dK_dr(self, r):
         # small angle approximation to avoid divide by zero errors.
@@ -743,7 +784,6 @@ class Sinc(Stationary):
         return gradient
 
 
-
 class RatQuad(Stationary):
     """
     Rational Quadratic Kernel
@@ -754,9 +794,11 @@ class RatQuad(Stationary):
 
     """
 
-    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None, name='RatQuad'):
+    def __init__(
+        self, input_dim, variance=1.0, lengthscale=None, power=2.0, ARD=False, active_dims=None, name="RatQuad"
+    ):
         super(RatQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
-        self.power = Param('power', power, Logexp())
+        self.power = Param("power", power, Logexp())
         self.link_parameters(self.power)
 
     def to_dict(self):
@@ -775,28 +817,28 @@ class RatQuad(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop('useGPU', None)
+        useGPU = input_dict.pop("useGPU", None)
         return RatQuad(**input_dict)
 
     def K_of_r(self, r):
         r2 = np.square(r)
-#         return self.variance*np.power(1. + r2/2., -self.power)
-        return self.variance*np.exp(-self.power*np.log1p(r2/2.))
+        #         return self.variance*np.power(1. + r2/2., -self.power)
+        return self.variance * np.exp(-self.power * np.log1p(r2 / 2.0))
 
     def dK_dr(self, r):
         r2 = np.square(r)
-#         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
-        return -self.variance*self.power*r*np.exp(-(self.power+1)*np.log1p(r2/2.))
+        #         return -self.variance*self.power*r*np.power(1. + r2/2., - self.power - 1.)
+        return -self.variance * self.power * r * np.exp(-(self.power + 1) * np.log1p(r2 / 2.0))
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(RatQuad, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
         r2 = np.square(r)
-#        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
-        dK_dpow = -self.variance * np.exp(self.power*(np.log(2.)-np.log1p(r2+1)))*np.log1p(r2/2.)
-        grad = np.sum(dL_dK*dK_dpow)
+        #        dK_dpow = -self.variance * np.power(2., self.power) * np.power(r2 + 2., -self.power) * np.log(0.5*(r2+2.))
+        dK_dpow = -self.variance * np.exp(self.power * (np.log(2.0) - np.log1p(r2 + 1))) * np.log1p(r2 / 2.0)
+        grad = np.sum(dL_dK * dK_dpow)
         self.power.gradient = grad
 
     def update_gradients_diag(self, dL_dKdiag, X):
         super(RatQuad, self).update_gradients_diag(dL_dKdiag, X)
-        self.power.gradient = 0.
+        self.power.gradient = 0.0

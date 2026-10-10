@@ -5,6 +5,7 @@
 Classes in this module enhance Matern covariance functions with the
 Stochastic Differential Equation (SDE) functionality.
 """
+
 from .standard_periodic import StdPeriodic
 
 import numpy as np
@@ -107,26 +108,14 @@ class sde_StdPeriodic(StdPeriodic):
         dq2l = 2 * dq2l  # This is because the lengthscale if multiplied by 2.
 
         eps = 1e-12
-        if (
-            np.any(np.isfinite(q2) == False)
-            or np.any(np.abs(q2) > 1.0 / eps)
-        ):
+        if np.any(np.isfinite(q2) == False) or np.any(np.abs(q2) > 1.0 / eps):
             warnings.warn(
-                "sde_Periodic:  Infinite or too large (eps={0:e}) values in q2 :".format(
-                    eps
-                )
-                + q2.__format__("")
+                "sde_Periodic:  Infinite or too large (eps={0:e}) values in q2 :".format(eps) + q2.__format__("")
             )
 
-        if (
-            np.any(np.isfinite(dq2l) == False)
-            or np.any(np.abs(dq2l) > 1.0 / eps)
-        ):
+        if np.any(np.isfinite(dq2l) == False) or np.any(np.abs(dq2l) > 1.0 / eps):
             warnings.warn(
-                "sde_Periodic:  Infinite or too large (eps={0:e}) values in dq2l :".format(
-                    eps
-                )
-                + q2.__format__("")
+                "sde_Periodic:  Infinite or too large (eps={0:e}) values in dq2l :".format(eps) + q2.__format__("")
             )
 
         F = np.kron(np.diag(range(0, N + 1)), np.array(((0, -w0), (w0, 0))))
@@ -147,9 +136,7 @@ class sde_StdPeriodic(StdPeriodic):
         dP_inf[:, :, 0] = P_inf / p_variance
 
         # Derivatives self.period
-        dF[:, :, 1] = np.kron(
-            np.diag(range(0, N + 1)), np.array(((0, w0), (-w0, 0))) / p_period
-        )
+        dF[:, :, 1] = np.kron(np.diag(range(0, N + 1)), np.array(((0, w0), (-w0, 0))) / p_period)
         dQc[:, :, 1] = np.zeros(Qc.shape)
         dP_inf[:, :, 1] = np.zeros(P_inf.shape)
 
@@ -210,13 +197,10 @@ def seriescoeff(m=6, lengthScale=1.0, magnSigma2=1.0, true_covariance=False):
     """
 
     if true_covariance:
-
-        bb = (
-            lambda j, m: (1.0 + np.array((j != 0), dtype=np.float64))
+        bb = lambda j, m: (
+            (1.0 + np.array((j != 0), dtype=np.float64))
             / (2 ** (j))
-            * sp.special.binom(
-                j, sp.floor((j - m) / 2.0 * np.array(m <= j, dtype=np.float64))
-            )
+            * sp.special.binom(j, sp.floor((j - m) / 2.0 * np.array(m <= j, dtype=np.float64)))
             * np.array(m <= j, dtype=np.float64)
             * np.array(sp.mod(j - m, 2) == 0, dtype=np.float64)
         )
@@ -224,26 +208,15 @@ def seriescoeff(m=6, lengthScale=1.0, magnSigma2=1.0, true_covariance=False):
         M, J = np.meshgrid(range(0, m + 1), range(0, m + 1))
 
         coeffs = (
-            bb(J, M)
-            / sp.misc.factorial(J)
-            * np.exp(-(lengthScale ** (-2)))
-            * (lengthScale ** (-2)) ** J
-            * magnSigma2
+            bb(J, M) / sp.misc.factorial(J) * np.exp(-(lengthScale ** (-2))) * (lengthScale ** (-2)) ** J * magnSigma2
         )
 
-        coeffs_dl = np.sum(
-            coeffs * lengthScale ** (-3) * (2.0 - 2.0 * J * lengthScale**2), 0
-        )
+        coeffs_dl = np.sum(coeffs * lengthScale ** (-3) * (2.0 - 2.0 * J * lengthScale**2), 0)
 
         coeffs = np.sum(coeffs, 0)
 
     else:
-        coeffs = (
-            2
-            * magnSigma2
-            * np.exp(-(lengthScale ** (-2)))
-            * special.iv(range(0, m + 1), 1.0 / lengthScale ** (2))
-        )
+        coeffs = 2 * magnSigma2 * np.exp(-(lengthScale ** (-2))) * special.iv(range(0, m + 1), 1.0 / lengthScale ** (2))
         if np.any(np.isfinite(coeffs) == False):
             raise ValueError("sde_standard_periodic: Coefficients are not finite!")
         # import pdb; pdb.set_trace()
@@ -257,9 +230,7 @@ def seriescoeff(m=6, lengthScale=1.0, magnSigma2=1.0, true_covariance=False):
             * np.exp(-(lengthScale ** (-2)))
             * (
                 -4 * special.iv(range(0, m), lengthScale ** (-2))
-                + 4
-                * (1 + np.arange(1, m + 1) * lengthScale ** (2))
-                * special.iv(range(1, m + 1), lengthScale ** (-2))
+                + 4 * (1 + np.arange(1, m + 1) * lengthScale ** (2)) * special.iv(range(1, m + 1), lengthScale ** (-2))
             )
         )
 
@@ -268,10 +239,7 @@ def seriescoeff(m=6, lengthScale=1.0, magnSigma2=1.0, true_covariance=False):
             magnSigma2
             * lengthScale ** (-3)
             * np.exp(-(lengthScale ** (-2)))
-            * (
-                2 * special.iv(0, lengthScale ** (-2))
-                - 2 * special.iv(1, lengthScale ** (-2))
-            )
+            * (2 * special.iv(0, lengthScale ** (-2)) - 2 * special.iv(1, lengthScale ** (-2)))
         )
 
     return coeffs.squeeze(), coeffs_dl.squeeze()

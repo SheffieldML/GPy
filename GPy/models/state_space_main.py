@@ -94,7 +94,7 @@ class Dynamic_Callables_Python(object):
             A_{k}.
         """
 
-        raise NotImplemented("f_a is not implemented!")
+        raise NotImplementedError("f_a is not implemented!")
 
     def Ak(self, k, m, P):  # returns state iteration matrix
         """
@@ -105,14 +105,14 @@ class Dynamic_Callables_Python(object):
             P: parameter for Jacobian, usually covariance matrix.
         """
 
-        raise NotImplemented("Ak is not implemented!")
+        raise NotImplementedError("Ak is not implemented!")
 
     def Qk(self, k):
         """
         function (k). Returns noise matrix of dynamic model on iteration k.
                 k (iteration number). starts at 0
         """
-        raise NotImplemented("Qk is not implemented!")
+        raise NotImplementedError("Qk is not implemented!")
 
     def Q_srk(self, k):
         """
@@ -124,21 +124,21 @@ class Dynamic_Callables_Python(object):
         This function is implemented to use SVD prediction step.
         """
 
-        raise NotImplemented("Q_srk is not implemented!")
+        raise NotImplementedError("Q_srk is not implemented!")
 
     def dAk(self, k):
         """
         function (k). Returns the derivative of A on iteration k.
                 k (iteration number). starts at 0
         """
-        raise NotImplemented("dAk is not implemented!")
+        raise NotImplementedError("dAk is not implemented!")
 
     def dQk(self, k):
         """
         function (k). Returns the derivative of Q on iteration k.
                 k (iteration number). starts at 0
         """
-        raise NotImplemented("dQk is not implemented!")
+        raise NotImplementedError("dQk is not implemented!")
 
     def reset(self, compute_derivatives=False):
         """
@@ -146,7 +146,7 @@ class Dynamic_Callables_Python(object):
         (to k eq. 0).
         """
 
-        raise NotImplemented("reset is not implemented!")
+        raise NotImplementedError("reset is not implemented!")
 
 
 if use_cython:
@@ -165,7 +165,7 @@ class Measurement_Callables_Python(object):
             H_{k}.
         """
 
-        raise NotImplemented("f_a is not implemented!")
+        raise NotImplementedError("f_a is not implemented!")
 
     def Hk(self, k, m_pred, P_pred):  # returns state iteration matrix
         """
@@ -176,7 +176,7 @@ class Measurement_Callables_Python(object):
             P: parameter for Jacobian, usually covariance matrix.
         """
 
-        raise NotImplemented("Hk is not implemented!")
+        raise NotImplementedError("Hk is not implemented!")
 
     def Rk(self, k):
         """
@@ -184,7 +184,7 @@ class Measurement_Callables_Python(object):
             on iteration k.
             k (iteration number). starts at 0
         """
-        raise NotImplemented("Rk is not implemented!")
+        raise NotImplementedError("Rk is not implemented!")
 
     def R_isrk(self, k):
         """
@@ -195,21 +195,21 @@ class Measurement_Callables_Python(object):
         This function is implemented to use SVD prediction step.
         """
 
-        raise NotImplemented("Q_srk is not implemented!")
+        raise NotImplementedError("Q_srk is not implemented!")
 
     def dHk(self, k):
         """
         function (k). Returns the derivative of H on iteration k.
                 k (iteration number). starts at 0
         """
-        raise NotImplemented("dAk is not implemented!")
+        raise NotImplementedError("dAk is not implemented!")
 
     def dRk(self, k):
         """
         function (k). Returns the derivative of R on iteration k.
                 k (iteration number). starts at 0
         """
-        raise NotImplemented("dQk is not implemented!")
+        raise NotImplementedError("dQk is not implemented!")
 
     def reset(self, compute_derivatives=False):
         """
@@ -217,7 +217,7 @@ class Measurement_Callables_Python(object):
         (to k eq. 0)
         """
 
-        raise NotImplemented("reset is not implemented!")
+        raise NotImplementedError("reset is not implemented!")
 
 
 if use_cython:

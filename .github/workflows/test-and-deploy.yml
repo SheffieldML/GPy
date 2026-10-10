@@ -48,10 +48,9 @@ jobs:
       - name: pytest
         run: poetry run pytest GPy/testing
 
-  # CIP-0005 Phase 1: advisory only until the narrow rule set is green.
+  # CIP-0005 Phase 4 (partial): fail CI on configured ruff check (format still later).
   lint:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,7 +63,7 @@ jobs:
       - name: Install ruff
         run: pip install 'ruff==0.9.10'
 
-      - name: Ruff check (narrow select from pyproject.toml)
+      - name: Ruff check (select from pyproject.toml)
         run: ruff check GPy --exclude GPy/old_tests --exclude GPy/testing/mpi_test__.py
 
   build:

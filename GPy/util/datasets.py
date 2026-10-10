@@ -685,7 +685,7 @@ def oil(data_set="three_phase_oil_flow"):
     Yvalid = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
     fid.close()
     return data_details_return(
-        {"X": X, "Y": Y, "Xtest": Xtest, "Ytest": Ytest, "Xtest": Xtest, "Xvalid": Xvalid, "Yvalid": Yvalid}, data_set
+        {"X": X, "Y": Y, "Xtest": Xtest, "Ytest": Ytest, "Xvalid": Xvalid, "Yvalid": Yvalid}, data_set
     )
     # else:
     # throw an error

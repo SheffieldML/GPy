@@ -73,8 +73,6 @@ class SparseGPClassification(SparseGP):
 
     @staticmethod
     def from_sparse_gp(sparse_gp):
-        from copy import deepcopy
-
         sparse_gp = deepcopy(sparse_gp)
         SparseGPClassification(
             sparse_gp.X,
@@ -117,8 +115,6 @@ class SparseGPClassification(SparseGP):
         import GPy
 
         m = GPy.core.model.Model.from_dict(input_dict, data)
-        from copy import deepcopy
-
         sparse_gp = deepcopy(m)
         return SparseGPClassification(
             sparse_gp.X,

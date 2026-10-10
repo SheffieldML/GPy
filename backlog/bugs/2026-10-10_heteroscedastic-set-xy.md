@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_heteroscedastic-set-xy
 title: Fix set_XY for heteroscedastic Gaussian regression
-status: Done
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'

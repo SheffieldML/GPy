@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_plotting-return-api
 title: Clarify plotting return API (plot / add_to_canvas / show)
-status: Done
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'

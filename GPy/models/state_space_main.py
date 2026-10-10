@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Alex Grigorevskiy
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
@@ -84,7 +83,7 @@ def psd_matrix_inverse(k, mat, U, S, p_largest_cond_num, p_regularization_type):
     return (U * S_inv) @ U.T
 
 
-class Dynamic_Callables_Python(object):
+class Dynamic_Callables_Python:
     def f_a(self, k, m, A):
         """
         p_a: function (k, x_{k-1}, A_{k}). Dynamic function.
@@ -155,7 +154,7 @@ else:
     Dynamic_Callables_Class = Dynamic_Callables_Python
 
 
-class Measurement_Callables_Python(object):
+class Measurement_Callables_Python:
     def f_h(self, k, m_pred, Hk):
         """
         function (k, x_{k}, H_{k}). Measurement function.
@@ -540,7 +539,7 @@ else:
     Std_Dynamic_Callables_Class = Std_Dynamic_Callables_Python
 
 
-class AddMethodToClass(object):
+class AddMethodToClass:
     def __init__(self, func=None, tp="staticmethod"):
         """
         Input:
@@ -600,7 +599,7 @@ class DescreteStateSpaceMeta(type):
         return super(DescreteStateSpaceMeta, typeclass).__new__(typeclass, name, bases, attributes)
 
 
-class DescreteStateSpace(object):
+class DescreteStateSpace:
     """
     This class implents state-space inference for linear and non-linear
     state-space models.
@@ -2545,7 +2544,7 @@ class DescreteStateSpace(object):
         return dM
 
 
-class Struct(object):
+class Struct:
     pass
 
 

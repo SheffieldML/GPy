@@ -30,7 +30,7 @@ class TestMF:
 
         X = np.linspace(-1, 10, 50).reshape(-1, 1)
 
-        Y = 3 - np.abs((X - 6))
+        Y = 3 - np.abs(X - 6)
         Y += 0.5 * np.cos(3 * X) + 0.3 * np.random.randn(*X.shape)
 
         mf = GPy.mappings.PiecewiseLinear(1, 1, [-1, 1], [9, 2])

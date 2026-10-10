@@ -29,7 +29,7 @@
 # ===============================================================================
 
 
-class StochasticStorage(object):
+class StochasticStorage:
     """
     This is a container for holding the stochastic parameters,
     such as subset indices or step length and so on.

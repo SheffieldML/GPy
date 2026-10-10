@@ -1,6 +1,5 @@
 # Written by Mike Smith michaeltsmith.org.uk
 
-from __future__ import division
 import numpy as np
 from .kern import Kern
 from ...core.parameterization import Param

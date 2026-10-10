@@ -10,7 +10,7 @@ import warnings
 import weakref
 
 
-class Prior(object):
+class Prior:
     domain = None
     _instance = None
 

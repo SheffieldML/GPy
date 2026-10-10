@@ -53,7 +53,7 @@ class Add(CombinationKernel):
         """
 
         input_dict = super(Add, self)._save_to_input_dict()
-        input_dict["class"] = str("GPy.kern.Add")
+        input_dict["class"] = "GPy.kern.Add"
         return input_dict
 
     @Cache_this(limit=3, force_kwargs=["which_parts"])
@@ -298,7 +298,7 @@ class Add(CombinationKernel):
 
     def input_sensitivity(self, summarize=True):
         if summarize:
-            i_s = np.zeros((self.input_dim))
+            i_s = np.zeros(self.input_dim)
             for k in self.parts:
                 i_s[k._all_dims_active] += k.input_sensitivity(summarize)
             return i_s

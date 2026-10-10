@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # netpbmfile.py
 
 # Copyright (c) 2011-2013, Christoph Gohlke
@@ -62,8 +61,6 @@ Examples
 
 """
 
-from __future__ import division, print_function
-
 import sys
 import re
 import math
@@ -110,7 +107,7 @@ def imsave(filename, data, maxval=None, pam=False):
         netpbm.close()
 
 
-class NetpbmFile(object):
+class NetpbmFile:
     """Read and write Netpbm PAM, PBM, PGM, PPM, files."""
 
     _types = {

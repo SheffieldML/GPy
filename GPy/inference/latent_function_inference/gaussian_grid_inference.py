@@ -82,7 +82,7 @@ class GaussianGridInference(LatentFunctionInference):
         alpha_kron = alpha_kron / (V_kron + noise)
         alpha_kron = self.kron_mvprod(Qs, alpha_kron)
 
-        log_likelihood = -0.5 * (np.dot(Y.T, alpha_kron) + np.sum((np.log(V_kron + noise))) + N * log_2_pi)
+        log_likelihood = -0.5 * (np.dot(Y.T, alpha_kron) + np.sum(np.log(V_kron + noise)) + N * log_2_pi)
 
         # compute derivatives wrt parameters Thete
         derivs = np.zeros(D + 2, dtype="object")

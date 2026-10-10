@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable safe pyupgrade rules (`UP004`/`UP009`/`UP010`/`UP015`/`UP018`/`UP024`/`UP029`/`UP034`)
 * CIP-0005: enable safe simplify rules (`SIM101`/`SIM103`/`SIM118`/`SIM201`/`SIM210`/`SIM300`)
 * CIP-0005: fail CI on `ruff format --check GPy`; document pre-commit as contributor default
 * CIP-0005: enable bugbear `B023` (bind loop variables in closures via default args)

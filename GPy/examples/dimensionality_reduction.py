@@ -191,7 +191,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
-        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show(m.Y[0, :])
         GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean.values[0:1, :],  # @UnusedVariable
             m,
@@ -224,7 +224,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
     if plot:
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
-        data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
+        data_show = GPy.plotting.matplot_dep.visualize.vector_show(m.Y[0, :])
         GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean.values[0:1, :],  # @UnusedVariable
             m,

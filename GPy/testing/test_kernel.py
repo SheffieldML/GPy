@@ -184,7 +184,7 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     if result and verbose:
         print("Check passed.")
     if not result:
-        print(("Positive definite check failed for " + kern.name + " covariance function."))
+        print("Positive definite check failed for " + kern.name + " covariance function.")
         pass_checks = False
 
     if verbose:
@@ -194,11 +194,9 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of K(X, X) wrt theta failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of K(X, X) wrt theta failed for "
+            + kern.name
+            + " covariance function. Gradient values as follows:"
         )
         Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
         pass_checks = False
@@ -210,16 +208,14 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("update_gradients_full, with differing X and X2, not implemented for " + kern.name))
+            print("update_gradients_full, with differing X and X2, not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of K(X, X) wrt theta failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of K(X, X) wrt theta failed for "
+            + kern.name
+            + " covariance function. Gradient values as follows:"
         )
         Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
         pass_checks = False
@@ -231,16 +227,14 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("update_gradients_diag not implemented for " + kern.name))
+            print("update_gradients_diag not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of Kdiag(X) wrt theta failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of Kdiag(X) wrt theta failed for "
+            + kern.name
+            + " covariance function. Gradient values as follows:"
         )
         Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
@@ -255,13 +249,11 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
-        print(
-            ("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
-        )
+        print("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
         testmodel.checkgrad(verbose=True)
         pass_checks = False
 
@@ -275,12 +267,12 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            ("Gradient of K(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+            "Gradient of K(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False
@@ -295,12 +287,12 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            ("Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
+            "Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"
         )
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
@@ -315,16 +307,12 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of dK(X, X2) wrt X failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of dK(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:"
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False
@@ -339,16 +327,14 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of dK(X, X) wrt X with full cov in dimensions failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of dK(X, X) wrt X with full cov in dimensions failed for "
+            + kern.name
+            + " covariance function. Gradient values as follows:"
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False
@@ -363,16 +349,14 @@ def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verb
     except NotImplementedError:
         result = True
         if verbose:
-            print(("gradients_X not implemented for " + kern.name))
+            print("gradients_X not implemented for " + kern.name)
     if result and verbose:
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of dKdiag(X, X) wrt X with cov in dimensions failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            "Gradient of dKdiag(X, X) wrt X with cov in dimensions failed for "
+            + kern.name
+            + " covariance function. Gradient values as follows:"
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False

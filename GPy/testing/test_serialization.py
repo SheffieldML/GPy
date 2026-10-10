@@ -102,7 +102,7 @@ class TestSerialization:
     def test_serialize_deserialize_normalizers(self):
         n1 = GPy.util.normalizer.Standardize()
         n1.scale_by(np.random.rand(10))
-        n1_r = GPy.util.normalizer._Norm.from_dict((n1.to_dict()))
+        n1_r = GPy.util.normalizer._Norm.from_dict(n1.to_dict())
         assert type(n1) == type(n1_r)
         assert np.all(n1.mean == n1_r.mean)
         assert np.all(n1.std == n1_r.std)

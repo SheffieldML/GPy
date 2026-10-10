@@ -7,7 +7,7 @@ from .. import kern
 import numpy as np
 
 
-class OneVsAllClassification(object):
+class OneVsAllClassification:
     """
     Gaussian Process classification: One vs all
 

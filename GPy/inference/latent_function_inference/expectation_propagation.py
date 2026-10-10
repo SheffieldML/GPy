@@ -11,14 +11,14 @@ log_2_pi = np.log(2 * np.pi)
 
 
 # Four wrapper classes to help modularisation of different EP versions
-class marginalMoments(object):
+class marginalMoments:
     def __init__(self, num_data):
         self.Z_hat = np.empty(num_data, dtype=np.float64)
         self.mu_hat = np.empty(num_data, dtype=np.float64)
         self.sigma2_hat = np.empty(num_data, dtype=np.float64)
 
 
-class cavityParams(object):
+class cavityParams:
     def __init__(self, num_data):
         self.tau = np.empty(num_data, dtype=np.float64)
         self.v = np.empty(num_data, dtype=np.float64)
@@ -46,7 +46,7 @@ class cavityParams(object):
         return c
 
 
-class gaussianApproximation(object):
+class gaussianApproximation:
     def __init__(self, v, tau):
         self.tau = tau
         self.v = v
@@ -89,7 +89,7 @@ class gaussianApproximation(object):
         return gaussianApproximation(np.array(input_dict["v"]), np.array(input_dict["tau"]))
 
 
-class posteriorParamsBase(object):
+class posteriorParamsBase:
     def __init__(self, mu, Sigma_diag):
         self.mu = mu
         self.Sigma_diag = Sigma_diag
@@ -196,7 +196,7 @@ class posteriorParamsDTC(posteriorParamsBase):
         return posteriorParamsDTC(mu, Sigma_diag), LLT
 
 
-class EPBase(object):
+class EPBase:
     def __init__(
         self,
         epsilon=1e-6,
@@ -386,19 +386,17 @@ class EP(EPBase, ExactGaussianInference):
         # Z_tilde after removing the terms that can lead to infinite terms due to tau_tilde close to zero.
         # This terms cancel with the coreresponding terms in the marginal loglikelihood
         return np.sum(
-            (
-                np.log(marg_moments.Z_hat)
-                + 0.5 * np.log(2 * np.pi)
-                + 0.5 * np.log(1 + ga_approx.tau / cav_params.tau)
-                - 0.5 * ((ga_approx.v) ** 2 * 1.0 / (cav_params.tau + ga_approx.tau))
-                + 0.5
+            np.log(marg_moments.Z_hat)
+            + 0.5 * np.log(2 * np.pi)
+            + 0.5 * np.log(1 + ga_approx.tau / cav_params.tau)
+            - 0.5 * ((ga_approx.v) ** 2 * 1.0 / (cav_params.tau + ga_approx.tau))
+            + 0.5
+            * (
+                cav_params.v
                 * (
-                    cav_params.v
-                    * (
-                        ((ga_approx.tau / cav_params.tau) * cav_params.v - 2.0 * ga_approx.v)
-                        * 1.0
-                        / (cav_params.tau + ga_approx.tau)
-                    )
+                    ((ga_approx.tau / cav_params.tau) * cav_params.v - 2.0 * ga_approx.v)
+                    * 1.0
+                    / (cav_params.tau + ga_approx.tau)
                 )
             )
         )
@@ -598,12 +596,10 @@ class EPDTC(EPBase, VarDTC):
         sigma2_sigma2tilde = 1.0 / cav_params.tau + 1.0 / ga_approx.tau
 
         return np.sum(
-            (
-                np.log(marg_moments.Z_hat)
-                + 0.5 * np.log(2 * np.pi)
-                + 0.5 * np.log(sigma2_sigma2tilde)
-                + 0.5 * ((mu_cav - mu_tilde) ** 2) / (sigma2_sigma2tilde)
-            )
+            np.log(marg_moments.Z_hat)
+            + 0.5 * np.log(2 * np.pi)
+            + 0.5 * np.log(sigma2_sigma2tilde)
+            + 0.5 * ((mu_cav - mu_tilde) ** 2) / (sigma2_sigma2tilde)
         )
 
     def _init_approximations(self, Kmm, Kmn, num_data):

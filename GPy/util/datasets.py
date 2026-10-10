@@ -1,4 +1,3 @@
-from __future__ import print_function
 import csv
 import os
 import copy
@@ -12,7 +11,6 @@ import json
 import re
 import sys
 from functools import reduce
-from io import open
 from .config import config
 
 import importlib.util
@@ -89,7 +87,7 @@ def prompt_user(prompt):
     elif choice in no:
         return False
     else:
-        print(("Your response was a " + choice))
+        print("Your response was a " + choice)
         print("Please respond with 'yes', 'y' or 'no', 'n'")
         # return prompt_user()
 
@@ -189,32 +187,32 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix="")
 
 def authorize_download(dataset_name=None):
     """Check with the user that the are happy with terms and conditions for the data set."""
-    print(("Acquiring resource: " + dataset_name))
+    print("Acquiring resource: " + dataset_name)
     # TODO, check resource is in dictionary!
     print("")
     dr = data_resources[dataset_name]
     print("Details of data: ")
-    print((dr["details"]))
+    print(dr["details"])
     print("")
     if dr["citation"]:
         print("Please cite:")
-        print((dr["citation"]))
+        print(dr["citation"])
         print("")
     if dr["size"]:
-        print(("After downloading the data will take up " + str(dr["size"]) + " bytes of space."))
+        print("After downloading the data will take up " + str(dr["size"]) + " bytes of space.")
         print("")
-    print(("Data will be stored in " + os.path.join(data_path, dataset_name) + "."))
+    print("Data will be stored in " + os.path.join(data_path, dataset_name) + ".")
     print("")
     if overide_manual_authorize:
         if dr["license"]:
             print("You have agreed to the following license:")
-            print((dr["license"]))
+            print(dr["license"])
             print("")
         return True
     else:
         if dr["license"]:
             print("You must also agree to the following license:")
-            print((dr["license"]))
+            print(dr["license"])
             print("")
         return prompt_user("Do you wish to proceed with the download? [yes/no]")
 
@@ -325,7 +323,7 @@ if gpxpy_available:
 
         X = []
         for file in files:
-            gpx_file = open(os.path.join(data_path, "epomeo_gpx", file + ".gpx"), "r")
+            gpx_file = open(os.path.join(data_path, "epomeo_gpx", file + ".gpx"))
 
             gpx = gpxpy.parse(gpx_file)
             gpx.tracks[0].segments[0]

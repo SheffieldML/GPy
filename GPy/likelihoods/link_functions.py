@@ -7,7 +7,7 @@ from ..util.univariate_Gaussian import std_norm_cdf, std_norm_pdf
 from ..util.misc import safe_exp, safe_square, safe_cube, safe_quad, safe_three_times
 
 
-class GPTransformation(object):
+class GPTransformation:
     """
     Link function class for doing non-Gaussian likelihoods approximation
 

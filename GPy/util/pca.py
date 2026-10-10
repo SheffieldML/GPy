@@ -16,7 +16,7 @@ from operator import setitem
 from functools import reduce
 
 
-class PCA(object):
+class PCA:
     """
     PCA module with automatic primal/dual determination.
     """

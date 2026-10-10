@@ -7,7 +7,7 @@ Created on 24 Jul 2013
 import numpy
 
 
-class AxisEventController(object):
+class AxisEventController:
     def __init__(self, ax):
         self.ax = ax
         self.activate()

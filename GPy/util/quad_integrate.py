@@ -129,7 +129,7 @@ def quadvgk(feval, fmin, fmax, tol1=1e-5, tol2=1e-5):
         Q1 = np.dot(FV.reshape(NF, NK, NM).swapaxes(2, 1), WK) * M
         Q2 = np.dot(FV.reshape(NF, NK, NM).swapaxes(2, 1)[:, :, 1::2], WG) * M
         # ind = np.nonzero(np.logical_or(np.max(np.abs((Q1-Q2)/Q1), 0) < difftol , M < xtol))[0]
-        ind = np.nonzero(np.logical_or(np.max(np.abs((Q1 - Q2)), 0) < tol1, (Subs[1, :] - Subs[0, :]) < tol2))[0]
+        ind = np.nonzero(np.logical_or(np.max(np.abs(Q1 - Q2), 0) < tol1, (Subs[1, :] - Subs[0, :]) < tol2))[0]
         Q = Q + np.sum(Q1[:, ind], axis=1)
         Subs = np.delete(Subs, ind, axis=1)
     return Q

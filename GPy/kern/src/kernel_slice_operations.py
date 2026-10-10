@@ -60,7 +60,7 @@ class KernCallsViaSlicerMeta(ParametersChangedMeta):
         return super(KernCallsViaSlicerMeta, cls).__new__(cls, name, bases, dct)
 
 
-class _Slice_wrap(object):
+class _Slice_wrap:
     def __init__(self, k, X, X2=None, diag=False, ret_shape=None):
         self.k = k
         self.diag = diag

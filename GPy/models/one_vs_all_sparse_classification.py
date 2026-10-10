@@ -5,7 +5,7 @@ import numpy as np
 import GPy
 
 
-class OneVsAllSparseClassification(object):
+class OneVsAllSparseClassification:
     """
     Gaussian Process classification: One vs all
 

@@ -66,7 +66,7 @@ class MultioutputLikelihood(MixedNoise):
     def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode="gk", boost_grad=1.0):
         ind = [self.index_map[i] for i in Y_metadata["output_index"].flatten()]
         slices = index_to_slices(ind)
-        grads = np.zeros((self.size))
+        grads = np.zeros(self.size)
         for i in range(len(slices)):
             if self.likelihoods_list[i].size > 0:
                 ii = self.inverse[i]  ## index in our gradient_sizes and gradient_index -lists
@@ -100,7 +100,7 @@ class MultioutputLikelihood(MixedNoise):
     def predictive_variance(self, mu, sigma, Y_metadata):
         ind = Y_metadata["output_index"].flatten()
         outputs = np.unique(ind)
-        var = np.zeros((sigma.size))
+        var = np.zeros(sigma.size)
         for j in outputs:
             v = self.likelihoods_list[j].predictive_variance(mu[ind == j, :], sigma[ind == j, :], Y_metadata=None)
             var[ind == j, :] = np.hstack(v)

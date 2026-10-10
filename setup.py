@@ -211,8 +211,8 @@ setup(
             "mpi4py",
             "ipython>=4.0.0",
         ],
-        # matplotlib Version see github issue #955
-        "plotting": ["matplotlib >= 3.3.4", "plotly >= 1.8.6"],
+        # matplotlib >= 3.4 for Axes._process_unit_info API (#953 / #960)
+        "plotting": ["matplotlib >= 3.4", "plotly >= 1.8.6"],
         "notebook": [
             "jupyter_client >= 4.0.6",
             "ipywidgets >= 4.0.3",

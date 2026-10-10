@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix `GPMultioutRegression` when `num_inducing[1]` exceeds the number of outputs: cap Mr and size `qU_var_r_*` / `qU_mean` from the actual `Z_row` so init no longer broadcast-fails (#733)
 * `GPHeteroscedasticRegression` accepts `mean_function=` like `GPRegression` (#875)
 * fix `set_XY` for heteroscedastic Gaussian regression when the number of observations changes: refresh `Y_metadata['output_index']` and resize `het_Gauss.variance` (#959, #858)
 * matplotlib `GPy.plotting.show` accepts the plots `dict` from `model.plot()` / `add_to_canvas`, as well as Axes/Figure (#920; alternative to #989)

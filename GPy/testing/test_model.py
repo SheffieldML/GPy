@@ -465,7 +465,7 @@ class TestMisc:
             initz="random",
             kernel=[GPy.kern.RBF(Q, ARD=1) for _ in range(3)],
             inference_method=InferenceMethodList([VarDTC() for _ in range(3)]),
-            likelihoods=[Gaussian(name="Gaussian_noise_{i}".format(i)) for i in range(3)],
+            likelihoods=[Gaussian(name=f"Gaussian_noise_{i}") for i in range(3)],
         )
         m.randomize()
         assert m.checkgrad()

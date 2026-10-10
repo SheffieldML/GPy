@@ -97,7 +97,7 @@ class SparseGPClassification(SparseGP):
         :param boolean save_data: if true, it serializes the training data
             (self.X and self.Y)
         """
-        self._save_model(output_filename, compress=True, save_data=True)
+        self._save_model(output_filename, compress=compress, save_data=save_data)
 
 
 class SparseGPClassificationUncertainInput(SparseGP):

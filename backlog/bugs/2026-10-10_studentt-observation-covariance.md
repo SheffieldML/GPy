@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_studentt-observation-covariance
 title: Fix negative observation covariance with Student-t likelihood
-status: In Progress
+status: Completed
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -43,7 +43,7 @@ observation noise is constant in f*, so Cov(y*) = Cov(f*) + noise·I.
 - [x] Confirm whether #1145 already fixes the symptom; if yes, close #993
 - [x] If not: predictive observation covariance is PSD (or documented limitation)
 - [x] Unit test covering the failing path
-- [ ] Comment / close #993
+- [x] Comment / close #993
 
 ## Implementation Notes
 
@@ -70,3 +70,4 @@ Task created from open-issue triage.
 - Reproduced: `predict(..., full_cov=True, include_likelihood=True)` with
   Student-t + Laplace yields NaN full cov after #1145.
 - Implementing identity-link Cov(y*) = Cov(f*) + σ² ν/(ν−2) I.
+- Rebased fix merged as #1160; closed #993.

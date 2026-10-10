@@ -83,9 +83,9 @@ class Symbolic(Kern, Symbolic_core):
             gradients = self.eval_update_gradients("k", dL_dK, X=X, Z=X2)
 
         for name, val in gradients:
-            setattr(getattr(self, name), "gradient", val)
+            getattr(self, name).gradient = val
 
     def update_gradients_diag(self, dL_dKdiag, X):
         gradients = self.eval_update_gradients("kdiag", dL_dKdiag, X)
         for name, val in gradients:
-            setattr(getattr(self, name), "gradient", val)
+            getattr(self, name).gradient = val

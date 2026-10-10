@@ -133,7 +133,7 @@ def ICM(input_dim, num_outputs, kernel, W_rank=1, W=None, kappa=None, name="ICM"
     """
     if kernel.input_dim != input_dim:
         kernel.input_dim = input_dim
-        warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.")
+        warnings.warn("kernel's input dimension overwritten to fit input_dim parameter.", stacklevel=2)
 
     K = kernel.prod(
         GPy.kern.Coregionalize(

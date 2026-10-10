@@ -656,7 +656,7 @@ def stick(kernel=None, optimize=True, verbose=True, plot=True):
     if optimize:
         m.optimize("bfgs", messages=verbose, max_f_eval=10000)
     if plot:
-        plt.clf
+        plt.clf()
         ax = m.plot_latent()
         y = m.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
@@ -679,7 +679,7 @@ def bcgplvm_linear_stick(kernel=None, optimize=True, verbose=True, plot=True):
     if optimize:
         m.optimize(messages=verbose, max_f_eval=10000)
     if plot and GPy.plotting.matplot_dep.visualize.visual_available:
-        plt.clf
+        plt.clf()
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])
@@ -702,7 +702,7 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
     if optimize:
         m.optimize(messages=verbose, max_f_eval=10000)
     if plot and GPy.plotting.matplot_dep.visualize.visual_available:
-        plt.clf
+        plt.clf()
         ax = m.plot_latent()
         y = m.likelihood.Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])

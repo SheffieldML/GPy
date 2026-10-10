@@ -22,8 +22,10 @@ def oil(num_inducing=50, max_iters=100, kernel=None, optimize=True, plot=True):
     """
     try:
         import pods
-    except ImportError:
-        raise ImportWarning("Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.")
+    except ImportError as err:
+        raise ImportWarning(
+            "Need pods for example datasets. See https://github.com/sods/ods, or pip install pods."
+        ) from err
     data = pods.datasets.oil()
     X = data["X"]
     Xtest = data["Xtest"]
@@ -61,8 +63,10 @@ def toy_linear_1d_classification(seed=default_seed, optimize=True, plot=True):
     """
     try:
         import pods
-    except ImportError:
-        raise ImportWarning("Need pods for example datasets. See https://github.com/sods/ods, or pip install pods.")
+    except ImportError as err:
+        raise ImportWarning(
+            "Need pods for example datasets. See https://github.com/sods/ods, or pip install pods."
+        ) from err
     data = pods.datasets.toy_linear_1d_classification(seed=seed)
     Y = data["Y"][:, 0:1]
     Y[Y.flatten() == -1] = 0

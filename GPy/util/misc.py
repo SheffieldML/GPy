@@ -141,7 +141,7 @@ def param_to_array(*param):
     import warnings
 
     warnings.warn(
-        "Please use param.values, as this function will be deprecated in the next release.", DeprecationWarning
+        "Please use param.values, as this function will be deprecated in the next release.", DeprecationWarning, stacklevel=2
     )
     assert len(param) > 0, "At least one parameter needed"
     if len(param) == 1:

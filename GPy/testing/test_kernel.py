@@ -488,8 +488,8 @@ class TestKernelGradientContinuous:
         # assert it runs:
         try:
             k.K(self.X)
-        except AssertionError:
-            raise AssertionError("k.K(X) should run on self.D-1 dimension")
+        except AssertionError as err:
+            raise AssertionError("k.K(X) should run on self.D-1 dimension") from err
 
     def test_Matern52(self):
         self.setup_method()

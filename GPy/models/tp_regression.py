@@ -60,7 +60,7 @@ class TPRegression(Model):
             # function values
             warnings.warn(
                 "There are more rows in your input data X, \
-                                 than in your output data Y, be VERY sure this is what you want"
+                                 than in your output data Y, be VERY sure this is what you want", stacklevel=2
             )
         self.output_dim = self.Y.shape[1]
 
@@ -75,7 +75,7 @@ class TPRegression(Model):
                 "Your kernel has a different input dimension {} then the given X dimension {}. Be very sure this is "
                 "what you want and you have not forgotten to set the right input dimenion in your kernel".format(
                     self.kern._effective_input_dim, self.X.shape[1]
-                )
+                ), stacklevel=2
             )
 
         # Mean function

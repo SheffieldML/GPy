@@ -75,7 +75,7 @@ def change_plotting_library(lib, **kwargs):
                 "You spevified {} in your configuration, but is not available. Install newest version of {} for plotting".format(
                     lib, lib
                 )
-            )
+            ), stacklevel=2
         )
 
 
@@ -164,7 +164,7 @@ def inject_plotting():
             warnings.warn(
                 DeprecationWarning(
                     "Kern.plot is being deprecated and will not be available in the 1.0 release. Use Kern.plot_covariance instead"
-                )
+                ), stacklevel=2
             )
             return self.plot_covariance(*args, **kwargs)
 

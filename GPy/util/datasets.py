@@ -141,9 +141,13 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix="")
             raise
         response = e
         if response.code > 399 and response.code < 500:
-            raise ValueError("Tried url " + url + suffix + " and received client error " + str(response.code))
+            raise ValueError(
+                "Tried url " + url + suffix + " and received client error " + str(response.code)
+            ) from e
         elif response.code > 499:
-            raise ValueError("Tried url " + url + suffix + " and received server error " + str(response.code))
+            raise ValueError(
+                "Tried url " + url + suffix + " and received server error " + str(response.code)
+            ) from e
     with open(save_name, "wb") as f:
         meta = response.info()
         content_length_str = meta.get("Content-Length")
@@ -956,10 +960,10 @@ def hapmap3(data_set="hapmap3"):
         from pandas import read_pickle, DataFrame
         from sys import stdout
         import bz2
-    except ImportError as i:
-        raise i(
+    except ImportError as err:
+        raise ImportError(
             "Need pandas for hapmap dataset, make sure to install pandas (http://pandas.pydata.org/) before loading the hapmap dataset"
-        )
+        ) from err
 
     dir_path = os.path.join(data_path, "hapmap3")
     hapmap_file_name = "hapmap3_r2_b36_fwd.consensus.qc.poly"

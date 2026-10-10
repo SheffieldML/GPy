@@ -143,9 +143,7 @@ if not os.path.exists(baseline_dir):
     baseline_dir = None
 
 
-def _image_comparison(
-    baseline_images, extensions=["pdf", "svg", "png"], tol=11, rtol=1e-3, **kwargs
-):
+def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11, rtol=1e-3, **kwargs):
     for num, base in zip(plt.get_fignums(), baseline_images):
         for ext in extensions:
             fig = plt.figure(num)
@@ -158,9 +156,7 @@ def _image_comparison(
             # fig.set_frameon(False)
             if ext in ["npz"]:
                 figdict = flatten_axis(fig)
-                np.savez_compressed(
-                    os.path.join(result_dir, "{}.{}".format(base, ext)), **figdict
-                )
+                np.savez_compressed(os.path.join(result_dir, "{}.{}".format(base, ext)), **figdict)
                 try:
                     fig.savefig(
                         os.path.join(result_dir, "{}.{}".format(base, "png")),
@@ -194,11 +190,7 @@ def _image_comparison(
 
                             shutil.copy2(actual, expected)
                             # shutil.copy2(os.path.join(result_dir, "{}.{}".format(base, 'png')), os.path.join(baseline_dir, "{}.{}".format(base, 'png')))
-                            raise IOError(
-                                "Baseline file {} not found, copying result {}".format(
-                                    expected, actual
-                                )
-                            )
+                            raise IOError("Baseline file {} not found, copying result {}".format(expected, actual))
                         else:
                             exp_dict = dict(np.load(expected).items())
                             act_dict = dict(np.load(actual).items())
@@ -208,11 +200,9 @@ def _image_comparison(
                                         np.testing.assert_allclose(
                                             exp_dict[name],
                                             act_dict[name],
-                                            err_msg="Mismatch in {}.{}".format(
-                                                base, name
-                                            ),
+                                            err_msg="Mismatch in {}.{}".format(base, name),
                                             rtol=rtol,
-                                            **kwargs
+                                            **kwargs,
                                         )
                                     except AssertionError as e:
                                         pass
@@ -288,9 +278,7 @@ def compare_axis_dicts(x, y, decimal=6):
         pass
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_figure():
     np.random.seed(1239847)
     from GPy.plotting import plotting_library as pl
@@ -318,9 +306,7 @@ def legacy_image_comparison_figure():
             anno = np.argmax(x, axis=1).reshape(3, 3)
             return y, anno
 
-        pl().annotation_heatmap_interact(
-            ax, test_func_2, extent=(-1, 1, -1, 1), resolution=3
-        )
+        pl().annotation_heatmap_interact(ax, test_func_2, extent=(-1, 1, -1, 1), resolution=3)
         pl().annotation_heatmap_interact(
             ax,
             test_func_2,
@@ -333,9 +319,7 @@ def legacy_image_comparison_figure():
         x = np.linspace(0, 1, 100)
         y = [0, 1, 2]
         array = np.array([0.4, 0.5])
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-            "WhToColor", ("r", "b"), N=array.size
-        )
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("WhToColor", ("r", "b"), N=array.size)
 
         pl().fill_gradient(ax, x, y, facecolors=["r", "g"], array=array, cmap=cmap)
 
@@ -352,9 +336,7 @@ def legacy_image_comparison_figure():
             zlim=(-3, 3),
         )
         z = 2 - np.abs(np.linspace(-2, 2, (100))) + 1
-        x, y = z * np.sin(np.linspace(-2 * np.pi, 2 * np.pi, (100))), z * np.cos(
-            np.linspace(-np.pi, np.pi, (100))
-        )
+        x, y = z * np.sin(np.linspace(-2 * np.pi, 2 * np.pi, (100))), z * np.cos(np.linspace(-np.pi, np.pi, (100)))
 
         pl().plot(ax, x, y, z, linewidth=2)
 
@@ -373,9 +355,7 @@ def legacy_image_comparison_figure():
             do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_kernel():
     np.random.seed(1239847)
     # import matplotlib
@@ -386,13 +366,10 @@ def legacy_image_comparison_kernel():
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        k = GPy.kern.RBF(5, ARD=True) * GPy.kern.Linear(
-            3, active_dims=[0, 2, 4], ARD=True
-        ) + GPy.kern.Bias(2)
+        k = GPy.kern.RBF(5, ARD=True) * GPy.kern.Linear(3, active_dims=[0, 2, 4], ARD=True) + GPy.kern.Bias(2)
         k.randomize()
         k2 = (
-            GPy.kern.RBF(5, ARD=True)
-            * GPy.kern.Linear(3, active_dims=[0, 2, 4], ARD=True)
+            GPy.kern.RBF(5, ARD=True) * GPy.kern.Linear(3, active_dims=[0, 2, 4], ARD=True)
             + GPy.kern.Bias(2)
             + GPy.kern.White(4)
         )
@@ -409,18 +386,13 @@ def legacy_image_comparison_kernel():
         )
         k2.plot_covariance(visible_dims=[1, 4])
         for do_test in _image_comparison(
-            baseline_images=[
-                "kern_{}".format(sub)
-                for sub in ["ARD", "cov_2d", "cov_1d", "cov_3d", "cov_no_lim"]
-            ],
+            baseline_images=["kern_{}".format(sub) for sub in ["ARD", "cov_2d", "cov_1d", "cov_3d", "cov_no_lim"]],
             extensions=extensions,
         ):
             do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_plot():
     np.random.seed(111)
     import matplotlib
@@ -462,9 +434,7 @@ def legacy_image_comparison_plot():
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_twod():
     np.random.seed(11111)
     import matplotlib
@@ -498,9 +468,7 @@ def legacy_image_comparison_twod():
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_threed():
     np.random.seed(11111)
     import matplotlib
@@ -535,9 +503,7 @@ def legacy_image_comparison_threed():
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_sparse():
     np.random.seed(11111)
     import matplotlib
@@ -561,9 +527,7 @@ def legacy_image_comparison_sparse():
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_classification():
     np.random.seed(11111)
     import matplotlib
@@ -586,17 +550,13 @@ def legacy_image_comparison_classification():
     m.plot(plot_raw=True, apply_link=True, ax=ax, samples=3)
     m.plot_errorbars_trainset(plot_raw=True, apply_link=True, ax=ax)
     for do_test in _image_comparison(
-        baseline_images=[
-            "gp_class_{}".format(sub) for sub in ["likelihood", "raw", "raw_link"]
-        ],
+        baseline_images=["gp_class_{}".format(sub) for sub in ["likelihood", "raw", "raw_link"]],
         extensions=extensions,
     ):
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_sparse_classification():
     np.random.seed(11111)
     import matplotlib
@@ -615,19 +575,14 @@ def legacy_image_comparison_sparse_classification():
     np.random.seed(111)
     m.plot(plot_raw=True, apply_link=True, samples=3)
     for do_test in _image_comparison(
-        baseline_images=[
-            "sparse_gp_class_{}".format(sub)
-            for sub in ["likelihood", "raw", "raw_link"]
-        ],
+        baseline_images=["sparse_gp_class_{}".format(sub) for sub in ["likelihood", "raw", "raw_link"]],
         extensions=extensions,
         rtol=2,
     ):
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_gplvm():
     from GPy.models import GPLVM
 
@@ -673,19 +628,14 @@ def legacy_image_comparison_gplvm():
     m.plot_magnification(labels=labels)
     m.plot_steepest_gradient_map(resolution=10, data_labels=labels)
     for do_test in _image_comparison(
-        baseline_images=[
-            "gplvm_{}".format(sub)
-            for sub in ["latent", "latent_3d", "magnification", "gradient"]
-        ],
+        baseline_images=["gplvm_{}".format(sub) for sub in ["latent", "latent_3d", "magnification", "gradient"]],
         extensions=extensions,
         tol=12,
     ):
         do_test()
 
 
-@pytest.mark.skipif(
-    matplotlib is None or baseline_dir is None, reason="Matplotlib not installed"
-)
+@pytest.mark.skipif(matplotlib is None or baseline_dir is None, reason="Matplotlib not installed")
 def legacy_image_comparison_bayesian_gplvm():
     from ..models import BayesianGPLVM
 

@@ -49,9 +49,7 @@ def test_models():
         print(inspect.getmembers(module_examples, predicate=inspect.isfunction))
         functions = [
             func
-            for func in inspect.getmembers(
-                module_examples, predicate=inspect.isfunction
-            )
+            for func in inspect.getmembers(module_examples, predicate=inspect.isfunction)
             if func[0].startswith("_") is False
         ][::-1]
         print("After")

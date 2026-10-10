@@ -4,6 +4,7 @@
 """
 Testing state space related functions.
 """
+
 import numpy as np
 import GPy
 import GPy.models.state_space_model as SS_model
@@ -68,24 +69,12 @@ class TestStateSpaceKernels:
             x_pred_reg_2 = m2.predict(predict_X)
             x_quant_reg_2 = m2.predict_quantiles(predict_X)
 
-            np.testing.assert_array_almost_equal(
-                x_pred_reg_1[0], x_pred_reg_2[0], mean_compare_decimal
-            )
-            np.testing.assert_array_almost_equal(
-                x_pred_reg_1[1], x_pred_reg_2[1], var_compare_decimal
-            )
-            np.testing.assert_array_almost_equal(
-                x_quant_reg_1[0], x_quant_reg_2[0], mean_compare_decimal
-            )
-            np.testing.assert_array_almost_equal(
-                x_quant_reg_1[1], x_quant_reg_2[1], mean_compare_decimal
-            )
-            np.testing.assert_array_almost_equal(
-                m1.gradient, m2.gradient, var_compare_decimal
-            )
-            np.testing.assert_almost_equal(
-                m1.log_likelihood(), m2.log_likelihood(), var_compare_decimal
-            )
+            np.testing.assert_array_almost_equal(x_pred_reg_1[0], x_pred_reg_2[0], mean_compare_decimal)
+            np.testing.assert_array_almost_equal(x_pred_reg_1[1], x_pred_reg_2[1], var_compare_decimal)
+            np.testing.assert_array_almost_equal(x_quant_reg_1[0], x_quant_reg_2[0], mean_compare_decimal)
+            np.testing.assert_array_almost_equal(x_quant_reg_1[1], x_quant_reg_2[1], mean_compare_decimal)
+            np.testing.assert_array_almost_equal(m1.gradient, m2.gradient, var_compare_decimal)
+            np.testing.assert_almost_equal(m1.log_likelihood(), m2.log_likelihood(), var_compare_decimal)
 
     def test_matern32_kernel(
         self,
@@ -482,9 +471,7 @@ class TestStateSpaceKernels:
         Y = Y.reshape((Y.shape[0], 1))
 
         def get_new_kernels():
-            ss_kernel = GPy.kern.sde_Linear(
-                1, X, variances=1
-            ) + GPy.kern.sde_StdPeriodic(
+            ss_kernel = GPy.kern.sde_Linear(1, X, variances=1) + GPy.kern.sde_StdPeriodic(
                 1,
                 period=5.0,
                 variance=300,
@@ -576,9 +563,7 @@ class TestStateSpaceKernels:
         Y = Y.reshape((Y.shape[0], 1))
 
         def get_new_kernels():
-            ss_kernel = GPy.kern.sde_Linear(
-                1, X, variances=1
-            ) + GPy.kern.sde_StdPeriodic(
+            ss_kernel = GPy.kern.sde_Linear(1, X, variances=1) + GPy.kern.sde_StdPeriodic(
                 1,
                 period=5.0,
                 variance=300,

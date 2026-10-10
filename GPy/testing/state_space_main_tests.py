@@ -34,9 +34,7 @@ def generate_x_points(points_num=100, x_interval=(0, 20), random=True):
     x_interval = np.asarray(x_interval)
 
     if random:
-        x_points = (
-            np.random.rand(points_num) * (x_interval[1] - x_interval[0]) + x_interval[0]
-        )
+        x_points = np.random.rand(points_num) * (x_interval[1] - x_interval[0]) + x_interval[0]
         x_points = np.sort(x_points)
     else:
         x_points = np.linspace(x_interval[0], x_interval[1], num=points_num)
@@ -86,9 +84,7 @@ def generate_sine_data(
     if x_points is None:
         x_points = generate_x_points(points_num, x_interval, random)
 
-    y_points = sin_function(x_points) + np.random.randn(len(x_points)) * np.sqrt(
-        noise_var
-    )
+    y_points = sin_function(x_points) + np.random.randn(len(x_points)) * np.sqrt(noise_var)
 
     if plot:
         pass
@@ -138,9 +134,7 @@ def generate_linear_data(
     if x_points is None:
         x_points = generate_x_points(points_num, x_interval, random)
 
-    y_points = linear_function(x_points) + np.random.randn(len(x_points)) * np.sqrt(
-        noise_var
-    )
+    y_points = linear_function(x_points) + np.random.randn(len(x_points)) * np.sqrt(noise_var)
 
     if plot:
         pass
@@ -188,9 +182,7 @@ def generate_brownian_data(
 
     y_points = np.zeros((points_num,))
     for i in range(1, points_num):
-        noise = np.random.randn() * np.sqrt(
-            kernel_var * (x_points[i] - x_points[i - 1])
-        )
+        noise = np.random.randn() * np.sqrt(kernel_var * (x_points[i] - x_points[i - 1]))
         y_points[i] = y_points[i - 1] + noise
 
     y_points += np.random.randn(len(x_points)) * np.sqrt(noise_var)
@@ -337,12 +329,8 @@ class TestStateSpaceKernels:
                 decimal=mean_compare_decimal,
             )
 
-        np.testing.assert_equal(
-            f_mean.shape, (measurements.shape[0] + 1, state_dim, ts_no)
-        )
-        np.testing.assert_equal(
-            f_var.shape, (measurements.shape[0] + 1, state_dim, state_dim)
-        )
+        np.testing.assert_equal(f_mean.shape, (measurements.shape[0] + 1, state_dim, ts_no))
+        np.testing.assert_equal(f_var.shape, (measurements.shape[0] + 1, state_dim, state_dim))
 
         (_M_smooth, _P_smooth) = ssm.DescreteStateSpace.rts_smoother(
             state_dim, dynamic_callables_smoother, f_mean, f_var
@@ -411,9 +399,7 @@ class TestStateSpaceKernels:
         _f_var_squeezed = np.squeeze(f_var[1:, :])  # exclude initial value
 
         np.testing.assert_equal(f_mean.shape, (Y_data.shape[0] + 1, state_dim, ts_no))
-        np.testing.assert_equal(
-            f_var.shape, (Y_data.shape[0] + 1, state_dim, state_dim)
-        )
+        np.testing.assert_equal(f_var.shape, (Y_data.shape[0] + 1, state_dim, state_dim))
 
         (_M_smooth, _P_smooth) = ssm.ContDescrStateSpace.cont_discr_rts_smoother(
             state_dim, f_mean, f_var, dynamic_callables_smoother
@@ -455,9 +441,7 @@ class TestStateSpaceKernels:
 
         state_trans_matrix = np.empty((d_num, d_num))
         for i in range(d_num):
-            state_trans_matrix[:, i] = norm.pdf(
-                state_discr, loc=A * state_discr[i], scale=np.sqrt(Q)
-            )
+            state_trans_matrix[:, i] = norm.pdf(state_discr, loc=A * state_discr[i], scale=np.sqrt(Q))
 
         m_prev = norm.pdf(state_discr, loc=m_init, scale=np.sqrt(P_init))
         # m_prev / np.sum(m_prev)
@@ -474,9 +458,7 @@ class TestStateSpaceKernels:
             # meas_ind = np.argmin(np.abs(state_discr - measurements[s])
             y_vec = np.zeros((d_num,))
             for i in range(d_num):
-                y_vec[i] = norm.pdf(
-                    measurements[s], loc=H * state_discr[i], scale=np.sqrt(R)
-                )
+                y_vec[i] = norm.pdf(measurements[s], loc=H * state_discr[i], scale=np.sqrt(R))
             norm_const = np.dot(y_vec, m[:, s])
             m[:, s] = y_vec * m[:, s] / norm_const
 
@@ -720,15 +702,9 @@ class TestStateSpaceKernels:
             # plotting ->
             plt.figure()
             plt.plot(np.squeeze(data[:, :, 1]), "g.-", label="measurements")
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates"
-            )
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]) + np.squeeze(H * f_var[1:] * H), "b--"
-            )
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]) - np.squeeze(H * f_var[1:] * H), "b--"
-            )
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates")
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]) + np.squeeze(H * f_var[1:] * H), "b--")
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]) - np.squeeze(H * f_var[1:] * H), "b--")
             #            plt.plot( np.squeeze(M_sm[1:,0,1]), 'r.-',label='Smoother Estimates')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])+H*np.squeeze(P_sm[1:])*H, 'r--')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])-H*np.squeeze(P_sm[1:])*H, 'r--')
@@ -800,26 +776,20 @@ class TestStateSpaceKernels:
             # plotting ->
             plt.figure()
             plt.plot(np.squeeze(data[:, 0, 1]), "g.-", label="measurements")
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates")
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates"
-            )
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,0,1]), 'r.-',label='Smoother Estimates')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])+np.einsum('ij,ajk,kl', H, P_sm[1:], H.T)[:,0,0], 'r--')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])-np.einsum('ij,ajk,kl', H, P_sm[1:], H.T)[:,0,0], 'r--')
             plt.legend()
-            plt.title(
-                "1D state-space, 2D measurements, 3 ts_no. 1-st measurement, 2-nd ts ploted"
-            )
+            plt.title("1D state-space, 2D measurements, 3 ts_no. 1-st measurement, 2-nd ts ploted")
             plt.show()
             # plotting <-
         # 2D measurement, 3 ts_no <-
@@ -921,13 +891,11 @@ class TestStateSpaceKernels:
             plt.plot(np.squeeze(data), "g.-", label="measurements")
             plt.plot(np.squeeze(f_mean[1:, 0]), "b.-", label="Kalman filter estimates")
             plt.plot(
-                np.squeeze(f_mean[1:, 0])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
-                np.squeeze(f_mean[1:, 0])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,0]), 'r.-',label='Smoother Estimates')
@@ -1004,17 +972,13 @@ class TestStateSpaceKernels:
             # plotting ->
             plt.figure()
             plt.plot(np.squeeze(data[:, :, 1]), "g.-", label="measurements")
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates")
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates"
-            )
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,0,1]), 'r.-',label='Smoother Estimates')
@@ -1090,26 +1054,20 @@ class TestStateSpaceKernels:
             # plotting ->
             plt.figure()
             plt.plot(np.squeeze(data[:, 0, 1]), "g.-", label="measurements")
+            plt.plot(np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates")
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1]), "b.-", label="Kalman filter estimates"
-            )
-            plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
-                np.squeeze(f_mean[1:, 0, 1])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 0, 1]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,0,1]), 'r.-',label='Smoother Estimates')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])+np.einsum('ij,ajk,kl', H, P_sm[1:], H.T)[:,0,0], 'r--')
             #            plt.plot( np.squeeze(M_sm[1:,0,1])-np.einsum('ij,ajk,kl', H, P_sm[1:], H.T)[:,0,0], 'r--')
             plt.legend()
-            plt.title(
-                "2D state-space, 2D measurements, 3 ts_no. 1-st measurement, 2-nd ts ploted"
-            )
+            plt.title("2D state-space, 2D measurements, 3 ts_no. 1-st measurement, 2-nd ts ploted")
             plt.show()
             # plotting <-
         # 2D measurement, 3 ts_no <-
@@ -1221,14 +1179,12 @@ class TestStateSpaceKernels:
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #        plt.plot( np.squeeze(M_sm[1:,15]), 'r.-',label='Smoother Estimates')
@@ -1337,14 +1293,12 @@ class TestStateSpaceKernels:
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15, 1])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15, 1]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15, 1])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15, 1]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,15,1]), 'r.-',label='Smoother Estimates')
@@ -1442,14 +1396,12 @@ class TestStateSpaceKernels:
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15, 1])
-                + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15, 1]) + np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             plt.plot(
                 X_data,
-                np.squeeze(f_mean[1:, 15, 1])
-                - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
+                np.squeeze(f_mean[1:, 15, 1]) - np.einsum("ij,ajk,kl", H, f_var[1:], H.T)[:, 0, 0],
                 "b--",
             )
             #            plt.plot( np.squeeze(M_sm[1:,15,1]), 'r.-',label='Smoother Estimates')

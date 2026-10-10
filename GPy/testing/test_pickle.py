@@ -3,6 +3,7 @@ Created on 13 Mar 2014
 
 @author: maxz
 """
+
 # import cPickle as pickle
 import pickle
 import pytest
@@ -38,11 +39,7 @@ class TestPickleSupport(ListDictTestCase):
     def test_load_pickle(self):
         import os
 
-        m = GPy.load(
-            os.path.join(
-                os.path.abspath(os.path.split(__file__)[0]), "pickle_test.pickle"
-            )
-        )
+        m = GPy.load(os.path.join(os.path.abspath(os.path.split(__file__)[0]), "pickle_test.pickle"))
         assert m.checkgrad()
         assert m.log_likelihood(), -4.7351019830022087
 

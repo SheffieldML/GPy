@@ -3,6 +3,7 @@ Created on 14 Jul 2017, based on gp_tests
 
 @author: javdrher
 """
+
 import numpy as np
 import GPy
 
@@ -66,9 +67,7 @@ class TestTP:
         p.randomize()
         Y = (
             p.f(X)
-            + np.random.multivariate_normal(
-                np.zeros(X.shape[0]), k.K(X) + np.eye(X.shape[0]) * 1e-8
-            )[:, None]
+            + np.random.multivariate_normal(np.zeros(X.shape[0]), k.K(X) + np.eye(X.shape[0]) * 1e-8)[:, None]
             + np.random.normal(0, 0.1, (X.shape[0], 1))
         )
         m = GPy.models.TPRegression(X, Y, kernel=k, mean_function=p)

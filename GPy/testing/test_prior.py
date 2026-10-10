@@ -277,9 +277,7 @@ def test_priors() -> None:
         try:
             check_prior(prior_getter)
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to initialize {prior_name} prior"
-            ) from e  # noqa E501
+            raise RuntimeError(f"Failed to initialize {prior_name} prior") from e  # noqa E501
 
 
 def test_halft_matches_half_student_t() -> None:
@@ -288,9 +286,7 @@ def test_halft_matches_half_student_t() -> None:
     prior = HalfT(2.0, 4.0)
     theta = np.array([0.3, 1.2, 2.7])
     # Twice the Student-t density with scale A and nu degrees of freedom
-    np.testing.assert_allclose(
-        prior.lnpdf(theta), np.log(2.0) + stats.t(4.0, scale=2.0).logpdf(theta)
-    )
+    np.testing.assert_allclose(prior.lnpdf(theta), np.log(2.0) + stats.t(4.0, scale=2.0).logpdf(theta))
     total, _ = integrate.quad(lambda t: np.exp(prior.lnpdf(np.array([t]))[0]), 0, np.inf)
     np.testing.assert_allclose(total, 1.0)
 
@@ -311,4 +307,3 @@ def test_exponential_rvs_uses_the_rate() -> None:
     assert prior.l == 1.5
     np.random.seed(0)
     np.testing.assert_allclose(prior.rvs(40000).mean(), 1 / 1.5, rtol=0.02)
-

@@ -39,9 +39,7 @@ def test_import_closes_config_and_dataset_files():
     import sys
 
     code = "import gc, GPy.util.config, GPy.util.datasets; gc.collect()"
-    result = subprocess.run(
-        [sys.executable, "-X", "dev", "-c", code], capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, "-X", "dev", "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "ResourceWarning" not in result.stderr
 
@@ -90,9 +88,7 @@ class UtilTest:
         fixed = fixed_inputs(m, [1], fix_routine="median", as_list=True, X_all=False)
         assert (0, np.median(X[:, 0])) in fixed
         assert (2, np.median(X[:, 2])) in fixed
-        assert (
-            len([t for t in fixed if t[0] == 1]) == 0
-        )  # Unfixed input should not be in fixed
+        assert len([t for t in fixed if t[0] == 1]) == 0  # Unfixed input should not be in fixed
 
     def test_fixed_inputs_mean(self):
         from GPy.plotting.matplot_dep.util import fixed_inputs
@@ -104,9 +100,7 @@ class UtilTest:
         fixed = fixed_inputs(m, [1], fix_routine="mean", as_list=True, X_all=False)
         assert (0, np.mean(X[:, 0])) in fixed
         assert (2, np.mean(X[:, 2])) in fixed
-        assert (
-            len([t for t in fixed if t[0] == 1]) == 0
-        )  # Unfixed input should not be in fixed
+        assert len([t for t in fixed if t[0] == 1]) == 0  # Unfixed input should not be in fixed
 
     def test_fixed_inputs_zero(self):
         from GPy.plotting.matplot_dep.util import fixed_inputs
@@ -118,9 +112,7 @@ class UtilTest:
         fixed = fixed_inputs(m, [1], fix_routine="zero", as_list=True, X_all=False)
         assert (0, 0.0) in fixed
         assert (2, 0.0) in fixed
-        assert (
-            len([t for t in fixed if t[0] == 1]) == 0
-        )  # Unfixed input should not be in fixed
+        assert len([t for t in fixed if t[0] == 1]) == 0  # Unfixed input should not be in fixed
 
     def test_fixed_inputs_uncertain(self):
         from GPy.plotting.matplot_dep.util import fixed_inputs
@@ -135,9 +127,7 @@ class UtilTest:
         fixed = fixed_inputs(m, [1], fix_routine="median", as_list=True, X_all=False)
         assert (0, np.median(X.mean.values[:, 0])) in fixed
         assert (2, np.median(X.mean.values[:, 2])) in fixed
-        assert (
-            len([t for t in fixed if t[0] == 1]) == 0
-        )  # Unfixed input should not be in fixed
+        assert len([t for t in fixed if t[0] == 1]) == 0  # Unfixed input should not be in fixed
 
     def test_DSYR(self):
         from GPy.util.linalg import DSYR, DSYR_numpy

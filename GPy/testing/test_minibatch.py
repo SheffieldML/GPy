@@ -3,6 +3,7 @@ Created on 4 Sep 2015
 
 @author: maxz
 """
+
 import pytest
 import numpy as np
 import GPy
@@ -31,9 +32,7 @@ class TestBGPLVM:
             self.Y, self.Q, missing_data=True, stochastic=False
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -47,9 +46,7 @@ class TestBGPLVM:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
 
         with pytest.raises(NotImplementedError):
@@ -82,9 +79,7 @@ class TestBGPLVM:
             stochastic=False,
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -100,9 +95,7 @@ class TestBGPLVM:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -118,9 +111,7 @@ class TestBGPLVM:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -169,9 +160,7 @@ class TestBGPLVM:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -184,9 +173,7 @@ class TestSparseGPMinibatch:
         self.inan = np.random.binomial(1, 0.1, Y.shape).astype(bool)
         self.X, self.W, self.Y = X, W, Y
         self.Q = 3
-        self.m_full = GPy.models.SparseGPLVM(
-            Y, self.Q, kernel=GPy.kern.RBF(self.Q, ARD=True)
-        )
+        self.m_full = GPy.models.SparseGPLVM(Y, self.Q, kernel=GPy.kern.RBF(self.Q, ARD=True))
 
     def test_lik_comparisons_m1_s0(self):
         self.setup_method()
@@ -196,9 +183,7 @@ class TestSparseGPMinibatch:
             self.Y, self.Q, X_variance=False, missing_data=True, stochastic=False
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -273,9 +258,7 @@ class TestSparseGPMinibatch:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
 
         mu1, var1 = m.predict(m.X, full_cov=False)
@@ -298,9 +281,7 @@ class TestSparseGPMinibatch:
             self.Y, self.Q, X_variance=False, missing_data=False, stochastic=False
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -317,9 +298,7 @@ class TestSparseGPMinibatch:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -336,9 +315,7 @@ class TestSparseGPMinibatch:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()
 
@@ -409,8 +386,6 @@ class TestSparseGPMinibatch:
             batchsize=self.Y.shape[1],
         )
         m[:] = self.m_full[:]
-        np.testing.assert_almost_equal(
-            m.log_likelihood(), self.m_full.log_likelihood(), 7
-        )
+        np.testing.assert_almost_equal(m.log_likelihood(), self.m_full.log_likelihood(), 7)
         np.testing.assert_allclose(m.gradient, self.m_full.gradient)
         assert m.checkgrad()

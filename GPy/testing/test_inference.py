@@ -16,9 +16,7 @@ import GPy
 class TestInferenceXCase:
     def get_data(self):
         np.random.seed(1111)
-        Ylist = GPy.examples.dimensionality_reduction._simulate_matern(
-            5, 1, 1, 10, 3, False
-        )[0]
+        Ylist = GPy.examples.dimensionality_reduction._simulate_matern(5, 1, 1, 10, 3, False)[0]
         return Ylist[0]
 
     def test_inferenceX_BGPLVM_Linear(self):
@@ -61,9 +59,7 @@ class TestInferenceGPEP:
         np.random.seed(1)
         k = GPy.kern.RBF(1, variance=7.0, lengthscale=0.2)
         X = np.random.rand(200, 1)
-        f = np.random.multivariate_normal(
-            np.zeros(200), k.K(X) + 1e-5 * np.eye(X.shape[0])
-        )
+        f = np.random.multivariate_normal(np.zeros(200), k.K(X) + 1e-5 * np.eye(X.shape[0]))
         lik = GPy.likelihoods.Bernoulli()
         _p = lik.gp_link.transf(f)  # squash the latent function
         Y = lik.samples(f).reshape(-1, 1)
@@ -87,12 +83,8 @@ class TestInferenceGPEP:
         X, Y = self.get_data()
         lik = GPy.likelihoods.Bernoulli()
         k = GPy.kern.RBF(1, variance=7.0, lengthscale=0.2)
-        inf = GPy.inference.latent_function_inference.expectation_propagation.EP(
-            max_iters=30, delta=0.5
-        )
-        self.model = GPy.core.GP(
-            X=X, Y=Y, kernel=k, inference_method=inf, likelihood=lik
-        )
+        inf = GPy.inference.latent_function_inference.expectation_propagation.EP(max_iters=30, delta=0.5)
+        self.model = GPy.core.GP(X=X, Y=Y, kernel=k, inference_method=inf, likelihood=lik)
         K = self.model.kern.K(X)
         mean_prior = np.zeros(K.shape[0])
         (
@@ -100,9 +92,7 @@ class TestInferenceGPEP:
             ga_approx,
             cav_params,
             log_Z_tilde,
-        ) = self.model.inference_method.expectation_propagation(
-            mean_prior, K, ObsAr(Y), lik, None
-        )
+        ) = self.model.inference_method.expectation_propagation(mean_prior, K, ObsAr(Y), lik, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
         p, m, d = self.model.inference_method._inference(
@@ -115,9 +105,7 @@ class TestInferenceGPEP:
             Y_metadata=None,
             Z_tilde=log_Z_tilde,
         )
-        p0, m0, d0 = super(
-            GPy.inference.latent_function_inference.expectation_propagation.EP, inf
-        ).inference(
+        p0, m0, d0 = super(GPy.inference.latent_function_inference.expectation_propagation.EP, inf).inference(
             k,
             X,
             lik,
@@ -126,10 +114,7 @@ class TestInferenceGPEP:
             variance=1.0 / ga_approx.tau,
             K=K,
             Z_tilde=log_Z_tilde
-            + np.sum(
-                -0.5 * np.log(ga_approx.tau)
-                + 0.5 * (ga_approx.v * ga_approx.v * 1.0 / ga_approx.tau)
-            ),
+            + np.sum(-0.5 * np.log(ga_approx.tau) + 0.5 * (ga_approx.v * ga_approx.v * 1.0 / ga_approx.tau)),
         )
 
         assert (
@@ -156,16 +141,14 @@ class TestInferenceGPEP:
         Y = np.array([0, 0, 1, 1]).reshape(-1, 1)
 
         # Some classification model
-        inf = GPy.inference.latent_function_inference.expectation_propagation.EP(
-            max_iters=30, delta=0.5
-        )
+        inf = GPy.inference.latent_function_inference.expectation_propagation.EP(max_iters=30, delta=0.5)
         m = GPy.core.GP(
             X=X,
             Y=Y,
             kernel=GPy.kern.RBF(input_dim=1, variance=1.0, lengthscale=1.0),
-            inference_method = inf,
+            inference_method=inf,
             likelihood=GPy.likelihoods.Bernoulli(),
-            mean_function=None
+            mean_function=None,
         )
         m.optimize()
 
@@ -188,14 +171,10 @@ class TestInferenceGPEP:
         X, _Y, Y_extra_noisy = self.get_noisy_data()
         deg_freedom = 5.0
         init_noise_var = 0.08
-        lik_studentT = GPy.likelihoods.StudentT(
-            deg_free=deg_freedom, sigma2=init_noise_var
-        )
+        lik_studentT = GPy.likelihoods.StudentT(deg_free=deg_freedom, sigma2=init_noise_var)
         # like_gaussian_noise = GPy.likelihoods.MixedNoise()
         k = GPy.kern.RBF(1, variance=2.0, lengthscale=1.1)
-        ep_inf_alt = GPy.inference.latent_function_inference.expectation_propagation.EP(
-            max_iters=4, delta=0.5
-        )
+        ep_inf_alt = GPy.inference.latent_function_inference.expectation_propagation.EP(max_iters=4, delta=0.5)
         # ep_inf_nested = GPy.inference.latent_function_inference.expectation_propagation.EP(ep_mode='nested', max_iters=100, delta=0.5)
         m = GPy.core.GP(
             X=X,
@@ -211,9 +190,7 @@ class TestInferenceGPEP:
             ga_approx,
             cav_params,
             log_Z_tilde,
-        ) = m.inference_method.expectation_propagation(
-            mean_prior, K, ObsAr(Y_extra_noisy), lik_studentT, None
-        )
+        ) = m.inference_method.expectation_propagation(mean_prior, K, ObsAr(Y_extra_noisy), lik_studentT, None)
 
         mu_tilde = ga_approx.v / ga_approx.tau.astype(float)
         p, m, d = m.inference_method._inference(
@@ -238,10 +215,7 @@ class TestInferenceGPEP:
             variance=1.0 / ga_approx.tau,
             K=K,
             Z_tilde=log_Z_tilde
-            + np.sum(
-                -0.5 * np.log(ga_approx.tau)
-                + 0.5 * (ga_approx.v * ga_approx.v * 1.0 / ga_approx.tau)
-            ),
+            + np.sum(-0.5 * np.log(ga_approx.tau) + 0.5 * (ga_approx.v * ga_approx.v * 1.0 / ga_approx.tau)),
         )
 
         assert (
@@ -267,9 +241,7 @@ class TestVarDtc:
         np.random.seed(1)
         x = np.linspace(0.0, 2 * np.pi, 100)[:, None]
         y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
-        m = GPy.models.SparseGPRegression(
-            x, y, mean_function=GPy.mappings.Linear(input_dim=1, output_dim=1)
-        )
+        m = GPy.models.SparseGPRegression(x, y, mean_function=GPy.mappings.Linear(input_dim=1, output_dim=1))
         assert m.checkgrad()
 
 

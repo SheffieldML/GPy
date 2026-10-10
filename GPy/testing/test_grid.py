@@ -46,15 +46,9 @@ class TestGridModel:
         kernel2 = GPy.kern.RBF(input_dim=self.dim, variance=1, ARD=True)
         m2 = GPy.models.GPRegression(self.X, self.Y, kernel2)
 
-        np.testing.assert_almost_equal(
-            kernel.variance.gradient, kernel2.variance.gradient
-        )
-        np.testing.assert_almost_equal(
-            kernel.lengthscale.gradient, kernel2.lengthscale.gradient
-        )
-        np.testing.assert_almost_equal(
-            m.likelihood.variance.gradient, m2.likelihood.variance.gradient
-        )
+        np.testing.assert_almost_equal(kernel.variance.gradient, kernel2.variance.gradient)
+        np.testing.assert_almost_equal(kernel.lengthscale.gradient, kernel2.lengthscale.gradient)
+        np.testing.assert_almost_equal(m.likelihood.variance.gradient, m2.likelihood.variance.gradient)
 
     def test_prediction_match(self):
         self.setup_method()
@@ -85,4 +79,3 @@ class TestGridModel:
         np.testing.assert_allclose(m.gradient, m2.gradient)
         test = np.array([[0.1, 0.2], [0.75, 0.4]])
         np.testing.assert_allclose(m.predict(test), m2.predict(test))
-

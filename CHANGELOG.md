@@ -2,6 +2,7 @@
 
 ## Unreleased
 * switch packaging to Poetry (CIP-0003 Option A): `pyproject.toml` + `build_extension.py` Cython hook, committed contributor `poetry.lock`, NumPy ≥ 2 / SciPy in the build env / Cython build-only / optional `tables`; supersedes #1080 (@MartinBubel)
+* refresh latent inference after `optimize_restarts` restores the best hyperparameters, so EP site approximations match that restart instead of the last one (#1109)
 * fix Student-t full observation predictive covariance (`full_cov=True`): add constant observation noise on the diagonal for the identity link, and stop the base likelihood from silently ravelling a latent covariance through 1D quadrature (#993)
 * add a 1D Wiener Velocity kernel (once-integrated Brownian motion; Solin 2016) with serialization and gradient checks (#1003, @Duncan10)
 * add `to_dict` / `from_dict` for `PeriodicExponential`, `PeriodicMatern32` and `PeriodicMatern52`, and persist `Coregionalize.rank` so multi-rank coregionalization round-trips (idea from #976)

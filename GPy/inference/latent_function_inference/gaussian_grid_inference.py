@@ -5,7 +5,7 @@
 
 # This implementation of converting GPs to state space models is based on the article:
 
-#@article{Gilboa:2015,
+# @article{Gilboa:2015,
 #  title={Scaling multidimensional inference for structured Gaussian processes},
 #  author={Gilboa, Elad and Saat{\c{c}}i, Yunus and Cunningham, John P},
 #  journal={Pattern Analysis and Machine Intelligence, IEEE Transactions on},
@@ -14,12 +14,14 @@
 #  pages={424--436},
 #  year={2015},
 #  publisher={IEEE}
-#}
+# }
 
 from .grid_posterior import GridPosterior
 import numpy as np
 from . import LatentFunctionInference
-log_2_pi = np.log(2*np.pi)
+
+log_2_pi = np.log(2 * np.pi)
+
 
 class GaussianGridInference(LatentFunctionInference):
     """
@@ -29,6 +31,7 @@ class GaussianGridInference(LatentFunctionInference):
     the posterior.
 
     """
+
     def __init__(self):
         pass
 
@@ -40,31 +43,30 @@ class GaussianGridInference(LatentFunctionInference):
         for d in range(0, D):
             G[d] = len(A[d])
         N = np.prod(G)
-        for d in range(D-1, -1, -1):
-            X = np.reshape(x, (G[d], int(np.round(N/G[d]))), order='F')
+        for d in range(D - 1, -1, -1):
+            X = np.reshape(x, (G[d], int(np.round(N / G[d]))), order="F")
             Z = np.dot(A[d], X)
             Z = Z.T
-            x = np.reshape(Z, (-1, 1), order='F')
+            x = np.reshape(Z, (-1, 1), order="F")
         return x
 
     def inference(self, kern, X, likelihood, Y, Y_metadata=None):
-
         """
         Returns a GridPosterior class containing essential quantities of the posterior
         """
-        N = X.shape[0] #number of training points
-        D = X.shape[1] #number of dimensions
+        N = X.shape[0]  # number of training points
+        D = X.shape[1]  # number of dimensions
 
-        Kds = np.zeros(D, dtype=object) #vector for holding covariance per dimension
-        Qs = np.zeros(D, dtype=object) #vector for holding eigenvectors of covariance per dimension
-        QTs = np.zeros(D, dtype=object) #vector for holding transposed eigenvectors of covariance per dimension
-        V_kron = 1 # kronecker product of eigenvalues
+        Kds = np.zeros(D, dtype=object)  # vector for holding covariance per dimension
+        Qs = np.zeros(D, dtype=object)  # vector for holding eigenvectors of covariance per dimension
+        QTs = np.zeros(D, dtype=object)  # vector for holding transposed eigenvectors of covariance per dimension
+        V_kron = 1  # kronecker product of eigenvalues
 
         # retrieve the one-dimensional variation of the designated kernel
         oneDkernel = kern.get_one_dimensional_kernel(D)
 
         for d in range(D):
-            xg = np.unique(X[:,d]) #extract unique values for a dimension, sorted as in the grid
+            xg = np.unique(X[:, d])  # extract unique values for a dimension, sorted as in the grid
             xg = np.reshape(xg, (len(xg), 1))
             oneDkernel.lengthscale = kern.lengthscale[d]
             Kds[d] = oneDkernel.K(xg)
@@ -80,35 +82,40 @@ class GaussianGridInference(LatentFunctionInference):
         alpha_kron = alpha_kron / (V_kron + noise)
         alpha_kron = self.kron_mvprod(Qs, alpha_kron)
 
-        log_likelihood = -0.5 * (np.dot(Y.T, alpha_kron) + np.sum((np.log(V_kron + noise))) + N*log_2_pi)
+        log_likelihood = -0.5 * (np.dot(Y.T, alpha_kron) + np.sum((np.log(V_kron + noise))) + N * log_2_pi)
 
         # compute derivatives wrt parameters Thete
-        derivs = np.zeros(D+2, dtype='object')
+        derivs = np.zeros(D + 2, dtype="object")
         for t in range(len(derivs)):
-            dKd_dTheta = np.zeros(D, dtype='object')
-            gamma = np.zeros(D, dtype='object')
+            dKd_dTheta = np.zeros(D, dtype="object")
+            gamma = np.zeros(D, dtype="object")
             gam = 1
             for d in range(D):
-                xg = np.unique(X[:,d])
+                xg = np.unique(X[:, d])
                 xg = np.reshape(xg, (len(xg), 1))
                 oneDkernel.lengthscale = kern.lengthscale[d]
                 if t < D:
-                    dKd_dTheta[d] = oneDkernel.dKd_dLen(xg, (t==d), lengthscale=kern.lengthscale[t]) #derivative wrt lengthscale
-                elif (t == D):
-                    dKd_dTheta[d] = oneDkernel.dKd_dVar(xg) #derivative wrt variance
+                    dKd_dTheta[d] = oneDkernel.dKd_dLen(
+                        xg, (t == d), lengthscale=kern.lengthscale[t]
+                    )  # derivative wrt lengthscale
+                elif t == D:
+                    dKd_dTheta[d] = oneDkernel.dKd_dVar(xg)  # derivative wrt variance
                 else:
-                    dKd_dTheta[d] = np.identity(len(xg)) #derivative wrt noise
+                    dKd_dTheta[d] = np.identity(len(xg))  # derivative wrt noise
                 gamma[d] = np.diag(np.dot(np.dot(QTs[d], dKd_dTheta[d].T), Qs[d]))
                 gam = np.kron(gam, gamma[d])
 
-            gam = gam.reshape(-1,1)
+            gam = gam.reshape(-1, 1)
             kappa = self.kron_mvprod(dKd_dTheta, alpha_kron)
-            derivs[t] = 0.5*np.dot(alpha_kron.T,kappa) - 0.5*np.sum(gam / (V_kron + noise))
+            derivs[t] = 0.5 * np.dot(alpha_kron.T, kappa) - 0.5 * np.sum(gam / (V_kron + noise))
 
         # separate derivatives
         dL_dLen = np.asarray([np.real(np.asarray(derivative)).item() for derivative in derivs[:D]])
         dL_dVar = np.real(np.asarray(derivs[D])).item()
-        dL_dThetaL = np.real(np.asarray(derivs[D+1])).item()
+        dL_dThetaL = np.real(np.asarray(derivs[D + 1])).item()
 
-        return GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron), \
-                log_likelihood, {'dL_dLen':dL_dLen, 'dL_dVar':dL_dVar, 'dL_dthetaL':dL_dThetaL}
+        return (
+            GridPosterior(alpha_kron=alpha_kron, QTs=QTs, Qs=Qs, V_kron=V_kron),
+            log_likelihood,
+            {"dL_dLen": dL_dLen, "dL_dVar": dL_dVar, "dL_dthetaL": dL_dThetaL},
+        )

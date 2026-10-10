@@ -211,7 +211,7 @@ def boston_example(optimize=True, plot=True):
 
         for stu_num, df in enumerate(degrees_freedoms):
             # Student T
-            print(f"Student-T GP {df}df")
+            print(f"Student-t GP {df}df")
             t_distribution = GPy.likelihoods.noise_model_constructors.student_t(deg_free=df, sigma2=noise)
             stu_t_likelihood = GPy.likelihoods.Laplace(Y_train.copy(), t_distribution)
             mstu_t = GPy.models.GPRegression(

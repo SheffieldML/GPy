@@ -48,6 +48,42 @@ if print_verbose:
 tmp_buffer = None
 
 
+def psd_matrix_inverse(k, mat, U, S, p_largest_cond_num, p_regularization_type):
+    """
+    Invert a PSD matrix from its SVD factors, with optional regularization.
+
+    Regularization types follow Q_inverse docstring:
+      1: 1/(S + r)
+      2: S/(S^2 + r)
+    where r is chosen so the effective condition number is at most p_largest_cond_num.
+    """
+    S = np.asarray(S, dtype=float).copy()
+    S[S < 0] = 0.0
+    positive = S > 0
+    if not np.any(positive):
+        return np.zeros_like(mat)
+
+    smax = S[positive].max()
+    smin = S[positive].min()
+    if smin > 0 and (smax / smin) > p_largest_cond_num and p_largest_cond_num > 1:
+        if p_regularization_type == 1:
+            r = (smax - p_largest_cond_num * smin) / (p_largest_cond_num - 1.0)
+            r = max(r, 0.0)
+            S_inv = np.zeros_like(S)
+            S_inv[positive] = 1.0 / (S[positive] + r)
+        else:
+            r = (smax * smax - p_largest_cond_num * smin * smin) / (p_largest_cond_num - 1.0)
+            r = max(r, 0.0)
+            S_inv = np.zeros_like(S)
+            S_inv[positive] = S[positive] / (S[positive] * S[positive] + r)
+    else:
+        S_inv = np.zeros_like(S)
+        S_inv[positive] = 1.0 / S[positive]
+
+    # Symmetric PSD: A ≈ U diag(S) U.T → A^{-1} ≈ U diag(S_inv) U.T
+    return (U * S_inv) @ U.T
+
+
 class Dynamic_Callables_Python(object):
     def f_a(self, k, m, A):
         """
@@ -1082,7 +1118,7 @@ class DescreteStateSpace(object):
                 raise ValueError("p_f_Q function returns matrix of wrong size")
 
         if p_h is None:
-            lambda k, m, H: np.dot(H, m)
+            p_h = lambda k, m, H: np.dot(H, m)
 
         old_H_shape = None
         if not isinstance(p_f_H, types.FunctionType):  # not a function but array
@@ -1113,8 +1149,8 @@ class DescreteStateSpace(object):
             def __init__(self, R, index, R_time_var_index, unique_R_number):
                 super(measurement_callables_class, self).__init__(R, index, R_time_var_index, unique_R_number)
 
-            Hk = AddMethodToClass(f_H)
-            f_h = AddMethodToClass(f_hl)
+            Hk = AddMethodToClass(p_f_H)
+            f_h = AddMethodToClass(p_h)
 
         (M, P, log_likelihood, grad_log_likelihood) = cls._kalman_algorithm_raw(
             p_state_dim,

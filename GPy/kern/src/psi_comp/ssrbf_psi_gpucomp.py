@@ -510,7 +510,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
             dL_dpsi2_gpu = dL_dpsi2
-            dL_dpsi0_sum = gpuarray.sum(dL_dpsi0).get()
+            dL_dpsi0_sum = dL_dpsi0.get().sum()
         else:
             dL_dpsi1_gpu = self.gpuCache["dL_dpsi1_gpu"]
             dL_dpsi2_gpu = self.gpuCache["dL_dpsi2_gpu"]
@@ -578,7 +578,7 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
             np.int32(Q),
         )
 
-        dL_dvar = dL_dpsi0_sum + gpuarray.sum(dvar_gpu).get()
+        dL_dvar = dL_dpsi0_sum + dvar_gpu.get().sum()
         sum_axis(grad_mu_gpu, dmu_gpu, N * Q, self.blocknum)
         dL_dmu = grad_mu_gpu.get()
         sum_axis(grad_S_gpu, dS_gpu, N * Q, self.blocknum)
@@ -590,6 +590,6 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
             sum_axis(grad_l_gpu, dl_gpu, Q, self.blocknum)
             dL_dlengscale = grad_l_gpu.get()
         else:
-            dL_dlengscale = gpuarray.sum(dl_gpu).get()
+            dL_dlengscale = dl_gpu.get().sum()
 
         return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS, dL_dgamma

@@ -86,7 +86,7 @@ class Bernoulli(Likelihood):
             phi_div_Phi = derivLogCdfNormal(z)
             log_Z_hat = logCdfNormal(z)
             mu_hat = v_i / tau_i + sign * phi_div_Phi / np.sqrt(tau_i)
-            sigma2_hat = (1.0 - a * phi_div_Phi - np.square(phi_div_Phi)) / tau_i
+            sigma2_hat = (1.0 - z * phi_div_Phi - np.square(phi_div_Phi)) / tau_i
         else:
             # TODO: do we want to revert to numerical quadrature here?
             raise ValueError("Exact moment matching not available for link {}".format(self.gp_link.__name__))
@@ -222,7 +222,7 @@ class Bernoulli(Likelihood):
         arg = np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
         ret = -1.0 / np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
-            stop
+            raise FloatingPointError("Inf values in Bernoulli d2log_pdf")
         return ret
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):

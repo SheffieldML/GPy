@@ -33,7 +33,7 @@ class Brownian(Kern):
         :return dict: json serializable dictionary containing the needed information to instantiate the object
         """
 
-        input_dict = super(RBF, self)._save_to_input_dict()
+        input_dict = super(Brownian, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.Brownian"
         return input_dict
 

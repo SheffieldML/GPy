@@ -78,17 +78,19 @@ def plot_mapping(
         for i, v in fixed_inputs:
             Xgrid[:, i] = v
 
-        f = self.predict(Xgrid, which_parts=which_parts)
-        for d in range(y.shape[1]):
+        f = np.asarray(self.predict(Xgrid, which_parts=which_parts))
+        if f.ndim == 1:
+            f = f[:, None]
+        for d in range(f.shape[1]):
             ax.plot(Xnew, f[:, d], edgecol=linecol)
 
     elif self.X.shape[1] == 2:
         resolution = resolution or 50
         Xnew, _, _, xmin, xmax = x_frame2D(self.X, plot_limits, resolution)
         x, y = np.linspace(xmin[0], xmax[0], resolution), np.linspace(xmin[1], xmax[1], resolution)
-        f = self.predict(Xnew, which_parts=which_parts)
-        m = m.reshape(resolution, resolution).T
-        ax.contour(x, y, f, levels, vmin=m.min(), vmax=m.max(), cmap=pb.cm.jet)  # @UndefinedVariable
+        f = np.asarray(self.predict(Xnew, which_parts=which_parts))
+        f = f.reshape(resolution, resolution).T
+        ax.contour(x, y, f, levels, vmin=f.min(), vmax=f.max(), cmap=pb.cm.jet)  # @UndefinedVariable
         ax.set_xlim(xmin[0], xmax[0])
         ax.set_ylim(xmin[1], xmax[1])
 

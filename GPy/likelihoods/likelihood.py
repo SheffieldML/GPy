@@ -430,9 +430,9 @@ class Likelihood(Parameterized):
         dF_dv /= 2.0
 
         if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
-            stop
+            raise FloatingPointError("NaN/Inf in dF_dv during variational expectations")
         if np.any(np.isnan(dF_dm)) or np.any(np.isinf(dF_dm)):
-            stop
+            raise FloatingPointError("NaN/Inf in dF_dm during variational expectations")
 
         if self.size:
             dF_dtheta = self.dlogpdf_dtheta(

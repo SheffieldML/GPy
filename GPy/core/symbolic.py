@@ -3,6 +3,7 @@
 
 import sys
 import re
+from functools import reduce
 from ..core.parameterization import Parameterized
 import numpy as np
 import sympy as sym
@@ -11,6 +12,7 @@ from sympy.utilities.lambdify import lambdastr, _imp_namespace, _get_namespace
 from sympy.utilities.iterables import numbered_symbols
 import scipy
 import GPy
+from ..util import functions as gpy_functions
 
 
 def getFromDict(dataDict, mapList):
@@ -417,11 +419,11 @@ class Symbolic_core:
         substitutes.update(user_substitutes)
 
         function_substitutes = {
-            normcdfln: lambda arg: sym.log(normcdf(arg)),
-            logisticln: lambda arg: -sym.log(1 + sym.exp(-arg)),
-            logistic: lambda arg: 1 / (1 + sym.exp(-arg)),
-            erfcx: lambda arg: erfc(arg) / sym.exp(arg * arg),
-            gammaln: lambda arg: sym.log(sym.gamma(arg)),
+            gpy_functions.normcdfln: lambda arg: sym.log(gpy_functions.normcdf(arg)),
+            gpy_functions.logisticln: lambda arg: -sym.log(1 + sym.exp(-arg)),
+            gpy_functions.logistic: lambda arg: 1 / (1 + sym.exp(-arg)),
+            scipy.special.erfcx: lambda arg: scipy.special.erfc(arg) / sym.exp(arg * arg),
+            scipy.special.gammaln: lambda arg: sym.log(sym.gamma(arg)),
         }
         expr = getFromDict(self.expressions, keys)
         for var_name, sub in self.variable_sort(self.expressions["update_cache"], reverse=True):

@@ -43,7 +43,7 @@ def _wait_for_updates(view, updates):
     if view is not None:
         try:
             if updates:
-                clear = raw_input(
+                clear = input(
                     "yes or enter to deactivate updates - otherwise still do updates - use plots[imshow].deactivate() to clear"
                 )
                 if clear.lower() in "yes" or clear == "":

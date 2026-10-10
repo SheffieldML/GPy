@@ -23,7 +23,7 @@ class DTC(LatentFunctionInference):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, X_variance=None):
         assert mean_function is None, "inference with a mean function not implemented"
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
@@ -105,7 +105,7 @@ class vDTC(object):
     def __init__(self):
         self.const_jitter = 1e-6
 
-    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
+    def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None, X_variance=None):
         assert mean_function is None, "inference with a mean function not implemented"
         assert X_variance is None, "cannot use X_variance with DTC. Try varDTC."
 
@@ -142,7 +142,6 @@ class vDTC(object):
         v, _ = dtrtrs(L, tmp, lower=1, trans=1)
         tmp, _ = dtrtrs(LA, Li, lower=1, trans=0)
         P = tdot(tmp.T)
-        stop
 
         # compute log marginal
         log_marginal = (

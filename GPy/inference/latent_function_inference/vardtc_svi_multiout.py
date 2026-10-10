@@ -278,7 +278,7 @@ class PosteriorMultioutput(object):
         )[0].T.reshape(D, Mr, Mr)
 
         tr_LrInvPsi2_r_nLrInvT = LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).sum(1)
-        tr_LrInvPsi2_r_nLrInvT_LrInvSrLrInvT = LrInvPsi2_r_nLrInvT.reshape(D, Mr * mr).dot(self.LrInvSrLrInvT.flat)
+        tr_LrInvPsi2_r_nLrInvT_LrInvSrLrInvT = LrInvPsi2_r_nLrInvT.reshape(D, Mr * Mr).dot(self.LrInvSrLrInvT.flat)
 
         tmp = LrInvPsi2_r_nLrInvT - LrInvPsi1_rT.T[:, :, None] * LrInvPsi1_rT.T[:, None, :]
         tmp = (

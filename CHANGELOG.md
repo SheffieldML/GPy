@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005 Phase 3: clear undefined-name / syntax lint (E9/F821) so narrow `ruff check` is green
 * CIP-0005 Phase 2: `ruff format` on `GPy/kern` (format-only; completes Phase 2 package slices)
 * CIP-0005 Phase 2: `ruff format` on `GPy/models` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/plotting` (format-only; no behaviour change)

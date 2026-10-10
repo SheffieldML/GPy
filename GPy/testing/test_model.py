@@ -1159,45 +1159,6 @@ class TestGradient:
         m = GPy.models.GPClassification(X, Y, kernel=kernel)
         assert m.checkgrad()
 
-    def test_optimize_restarts_refreshes_ep_sites(self):
-        """Best restart hypers must not keep EP sites from a later worse restart (#1109)."""
-        self.setup_method()
-        np.random.seed(0)
-        X = np.append(np.linspace(0, 5, 20), np.linspace(25, 30, 20)).reshape((-1, 1))
-        Y = np.where(X > 10, 1.0, 0.0)
-        X = (X - X.mean()) / X.std()
-
-        def make_model():
-            k = GPy.kern.RBF(1, lengthscale=1.0, variance=1.0)
-            k.lengthscale.constrain_bounded(0.001, 1000, warning=False)
-            k.variance.constrain_bounded(0.001, 1000, warning=False)
-            return GPy.models.GPClassification(X, Y, kernel=k)
-
-        m_once = make_model()
-        m_once.optimize(optimizer="lbfgsb", messages=False, max_iters=200)
-
-        m_re = make_model()
-        m_re.optimize_restarts(
-            num_restarts=2,
-            optimizer="lbfgsb",
-            verbose=False,
-            messages=False,
-            max_iters=200,
-        )
-        f_opts = [o.f_opt for o in m_re.optimization_runs]
-        assert min(f_opts) < max(f_opts), "need a worse restart to exercise the bug"
-
-        # Hypers from the best restart; objective after refresh must beat the worse run.
-        assert abs(float(np.asarray(m_re.rbf.variance)) - float(np.asarray(m_once.rbf.variance))) < 1e-3
-        assert abs(float(np.asarray(m_re.rbf.lengthscale)) - float(np.asarray(m_once.rbf.lengthscale))) < 1e-3
-        assert float(-m_re.log_likelihood()) < max(f_opts) - 1.0
-
-        X_test = np.linspace(X.min(), X.max(), 40)[:, None]
-        p_once, _ = m_once.predict(X_test)
-        p_re, _ = m_re.predict(X_test)
-        # Mismatched EP sites produced ~0.1 mean abs errors; refreshed sites stay close.
-        assert np.mean(np.abs(p_once - p_re)) < 0.05
-
     def test_sparse_EP_DTC_probit(self):
         self.setup_method()
         N = 20

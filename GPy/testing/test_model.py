@@ -1188,9 +1188,12 @@ class TestGradient:
         assert min(f_opts) < max(f_opts), "need a worse restart to exercise the bug"
 
         # Hypers from the best restart; objective after refresh must beat the worse run.
-        assert abs(float(np.asarray(m_re.rbf.variance)) - float(np.asarray(m_once.rbf.variance))) < 1e-3
-        assert abs(float(np.asarray(m_re.rbf.lengthscale)) - float(np.asarray(m_once.rbf.lengthscale))) < 1e-3
-        assert float(-m_re.log_likelihood()) < max(f_opts) - 1.0
+        def _scalar(x):
+            return float(np.asarray(x).reshape(-1)[0])
+
+        assert abs(_scalar(m_re.rbf.variance) - _scalar(m_once.rbf.variance)) < 1e-3
+        assert abs(_scalar(m_re.rbf.lengthscale) - _scalar(m_once.rbf.lengthscale)) < 1e-3
+        assert _scalar(-m_re.log_likelihood()) < max(f_opts) - 1.0
 
         X_test = np.linspace(X.min(), X.max(), 40)[:, None]
         p_once, _ = m_once.predict(X_test)

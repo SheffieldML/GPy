@@ -32,7 +32,7 @@ which is used to specify non-default optimization schemes.
 
 Various plotting functions can be called against :py:class:`GPy.core.gp.GP`.
 
-.. inheritance-diagram:: GPy.core.gp_grid.GpGrid GPy.core.sparse_gp.SparseGP GPy.core.sparse_gp_mpi.SparseGP_MPI GPy.core.svgp.SVGP 
+.. inheritance-diagram:: GPy.core.gp_grid.GpGrid GPy.core.sparse_gp.SparseGP GPy.core.sparse_gp_mpi.SparseGP_MPI GPy.core.svgp.SVGP
     :top-classes: GPy.core.gp.GP
 
 :py:class:`GPy.core.gp.GP` is used as the basis for classes supporting
@@ -53,10 +53,10 @@ from .gp_grid import GpGrid
 from .mapping import *
 
 
-#===========================================================================
+# ===========================================================================
 # Handle priors, this needs to be
 # cleaned up at some point
-#===========================================================================
+# ===========================================================================
 def randomize(self, rand_gen=None, *args, **kwargs):
     """
     Randomize the model.
@@ -72,17 +72,21 @@ def randomize(self, rand_gen=None, *args, **kwargs):
     # first take care of all parameters (from N(0,1))
     x = rand_gen(size=self._size_transformed(), *args, **kwargs)
     updates = self.update_model()
-    self.update_model(False) # Switch off the updates
-    self.optimizer_array = x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+    self.update_model(False)  # Switch off the updates
+    self.optimizer_array = (
+        x  # makes sure all of the tied parameters get the same init (since there's only one prior object...)
+    )
     # now draw from prior where possible
     x = self.param_array.copy()
     [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.items() if not p is None]
-    unfixlist = np.ones((self.size,),dtype=bool)
+    unfixlist = np.ones((self.size,), dtype=bool)
     from paramz.transformations import __fixed__
+
     unfixlist[self.constraints[__fixed__]] = False
     self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]
     self.update_model(updates)
-    
+
+
 Model.randomize = randomize
 Param.randomize = randomize
 Parameterized.randomize = randomize

@@ -1,16 +1,17 @@
-'''
+"""
 Created on 6 Nov 2013
 
 @author: maxz
-'''
+"""
 
 import numpy as np
 from .parameterized import Parameterized
 from .param import Param
-from paramz.transformations import Logexp, Logistic,__fixed__
+from paramz.transformations import Logexp, Logistic, __fixed__
+
 
 class VariationalPrior(Parameterized):
-    def __init__(self, name='latent prior', **kw):
+    def __init__(self, name="latent prior", **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
 
     def KL_divergence(self, variational_posterior):
@@ -22,8 +23,9 @@ class VariationalPrior(Parameterized):
         """
         raise NotImplementedError("override this for variational inference of latent space")
 
+
 class NormalPrior(VariationalPrior):
-    def __init__(self, name='normal_prior', **kw):
+    def __init__(self, name="normal_prior", **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
 
     def KL_divergence(self, variational_posterior):
@@ -34,20 +36,20 @@ class NormalPrior(VariationalPrior):
     def update_gradients_KL(self, variational_posterior):
         # dL:
         variational_posterior.mean.gradient -= variational_posterior.mean
-        variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
+        variational_posterior.variance.gradient -= (1.0 - (1.0 / (variational_posterior.variance))) * 0.5
+
 
 class SpikeAndSlabPrior(VariationalPrior):
-    def __init__(self, pi=None, learnPi=False, variance = 1.0, group_spike=False, name='SpikeAndSlabPrior', **kw):
+    def __init__(self, pi=None, learnPi=False, variance=1.0, group_spike=False, name="SpikeAndSlabPrior", **kw):
         super(SpikeAndSlabPrior, self).__init__(name=name, **kw)
         self.group_spike = group_spike
-        self.variance = Param('variance',variance)
+        self.variance = Param("variance", variance)
         self.learnPi = learnPi
         if learnPi:
-            self.pi = Param('Pi', pi, Logistic(1e-10,1.-1e-10))
+            self.pi = Param("Pi", pi, Logistic(1e-10, 1.0 - 1e-10))
         else:
-            self.pi = Param('Pi', pi, __fixed__)
+            self.pi = Param("Pi", pi, __fixed__)
         self.link_parameter(self.pi)
-
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
@@ -56,16 +58,16 @@ class SpikeAndSlabPrior(VariationalPrior):
             gamma = variational_posterior.gamma.values[0]
         else:
             gamma = variational_posterior.gamma.values
-        if len(self.pi.shape)==2:
-            idx = np.unique(variational_posterior.gamma._raveled_index()/gamma.shape[-1])
+        if len(self.pi.shape) == 2:
+            idx = np.unique(variational_posterior.gamma._raveled_index() / gamma.shape[-1])
             pi = self.pi[idx]
         else:
             pi = self.pi
 
-        var_mean = np.square(mu)/self.variance
-        var_S = (S/self.variance - np.log(S))
-        var_gamma = (gamma*np.log(gamma/pi)).sum()+((1-gamma)*np.log((1-gamma)/(1-pi))).sum()
-        return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
+        var_mean = np.square(mu) / self.variance
+        var_S = S / self.variance - np.log(S)
+        var_gamma = (gamma * np.log(gamma / pi)).sum() + ((1 - gamma) * np.log((1 - gamma) / (1 - pi))).sum()
+        return var_gamma + (gamma * (np.log(self.variance) - 1.0 + var_mean + var_S)).sum() / 2.0
 
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
@@ -74,29 +76,32 @@ class SpikeAndSlabPrior(VariationalPrior):
             gamma = variational_posterior.gamma.values[0]
         else:
             gamma = variational_posterior.gamma.values
-        if len(self.pi.shape)==2:
-            idx = np.unique(variational_posterior.gamma._raveled_index()/gamma.shape[-1])
+        if len(self.pi.shape) == 2:
+            idx = np.unique(variational_posterior.gamma._raveled_index() / gamma.shape[-1])
             pi = self.pi[idx]
         else:
             pi = self.pi
 
         if self.group_spike:
-            dgamma = np.log((1-pi)/pi*gamma/(1.-gamma))/variational_posterior.num_data
+            dgamma = np.log((1 - pi) / pi * gamma / (1.0 - gamma)) / variational_posterior.num_data
         else:
-            dgamma = np.log((1-pi)/pi*gamma/(1.-gamma))
-        variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
-        mu.gradient -= gamma*mu/self.variance
-        S.gradient -= (1./self.variance - 1./S) * gamma /2.
+            dgamma = np.log((1 - pi) / pi * gamma / (1.0 - gamma))
+        variational_posterior.binary_prob.gradient -= (
+            dgamma + ((np.square(mu) + S) / self.variance - np.log(S) + np.log(self.variance) - 1.0) / 2.0
+        )
+        mu.gradient -= gamma * mu / self.variance
+        S.gradient -= (1.0 / self.variance - 1.0 / S) * gamma / 2.0
         if self.learnPi:
-            if len(self.pi)==1:
-                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum()
-            elif len(self.pi.shape)==1:
-                self.pi.gradient = (gamma/self.pi - (1.-gamma)/(1.-self.pi)).sum(axis=0)
+            if len(self.pi) == 1:
+                self.pi.gradient = (gamma / self.pi - (1.0 - gamma) / (1.0 - self.pi)).sum()
+            elif len(self.pi.shape) == 1:
+                self.pi.gradient = (gamma / self.pi - (1.0 - gamma) / (1.0 - self.pi)).sum(axis=0)
             else:
-                self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))
+                self.pi[idx].gradient = gamma / self.pi[idx] - (1.0 - gamma) / (1.0 - self.pi[idx])
+
 
 class VariationalPosterior(Parameterized):
-    def __init__(self, means=None, variances=None, name='latent space', *a, **kw):
+    def __init__(self, means=None, variances=None, name="latent space", *a, **kw):
         super(VariationalPosterior, self).__init__(name=name, *a, **kw)
         self.mean = Param("mean", means)
         self.variance = Param("variance", variances, Logexp())
@@ -115,8 +120,8 @@ class VariationalPosterior(Parameterized):
         index = np.empty(dtype=int, shape=0)
         size = 0
         for p in self.parameters:
-            index = np.hstack((index, p._raveled_index()+size))
-            size += p._realsize_ if hasattr(p, '_realsize_') else p.size
+            index = np.hstack((index, p._raveled_index() + size))
+            size += p._realsize_ if hasattr(p, "_realsize_") else p.size
         return index
 
     def has_uncertain_inputs(self):
@@ -125,14 +130,15 @@ class VariationalPosterior(Parameterized):
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):
             import copy
+
             n = self.__new__(self.__class__, self.name)
             dc = self.__dict__.copy()
-            dc['mean'] = self.mean[s]
-            dc['variance'] = self.variance[s]
-            dc['parameters'] = copy.copy(self.parameters)
+            dc["mean"] = self.mean[s]
+            dc["variance"] = self.variance[s]
+            dc["parameters"] = copy.copy(self.parameters)
             n.__dict__.update(dc)
-            n.parameters[dc['mean']._parent_index_] = dc['mean']
-            n.parameters[dc['variance']._parent_index_] = dc['variance']
+            n.parameters[dc["mean"]._parent_index_] = dc["mean"]
+            n.parameters[dc["variance"]._parent_index_] = dc["variance"]
             n._gradient_array_ = None
             oversize = self.size - self.mean.size - self.variance.size
             n.size = n.mean.size + n.variance.size + oversize
@@ -144,12 +150,13 @@ class VariationalPosterior(Parameterized):
         else:
             return super(VariationalPosterior, self).__getitem__(s)
 
+
 class NormalPosterior(VariationalPosterior):
-    '''
+    """
     NormalPosterior distribution for variational approximations.
 
     holds the means and variances for a factorizing multivariate normal distribution
-    '''
+    """
 
     def plot(self, *args, **kwargs):
         """
@@ -158,25 +165,29 @@ class NormalPosterior(VariationalPosterior):
         See  GPy.plotting.matplot_dep.variational_plots
         """
         import sys
+
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import variational_plots
+
         return variational_plots.plot(self, *args, **kwargs)
 
     def KL(self, other):
-        """Compute the KL divergence to another NormalPosterior Object. This only holds, if the two NormalPosterior objects have the same shape, as we do computational tricks for the multivariate normal KL divergence.
-        """
-        return .5*(
-            np.sum(self.variance/other.variance)
-            + ((other.mean-self.mean)**2/other.variance).sum()
+        """Compute the KL divergence to another NormalPosterior Object. This only holds, if the two NormalPosterior objects have the same shape, as we do computational tricks for the multivariate normal KL divergence."""
+        return 0.5 * (
+            np.sum(self.variance / other.variance)
+            + ((other.mean - self.mean) ** 2 / other.variance).sum()
             - self.num_data * self.input_dim
-            + np.sum(np.log(other.variance)) - np.sum(np.log(self.variance))
-            )
+            + np.sum(np.log(other.variance))
+            - np.sum(np.log(self.variance))
+        )
+
 
 class SpikeAndSlabPosterior(VariationalPosterior):
-    '''
+    """
     The SpikeAndSlab distribution for variational approximations.
-    '''
-    def __init__(self, means, variances, binary_prob, group_spike=False, sharedX=False, name='latent space'):
+    """
+
+    def __init__(self, means, variances, binary_prob, group_spike=False, sharedX=False, name="latent space"):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
@@ -187,11 +198,11 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             self.mean.fix(warning=False)
             self.variance.fix(warning=False)
         if group_spike:
-            self.gamma_group = Param("binary_prob_group",binary_prob.mean(axis=0),Logistic(1e-10,1.-1e-10))
-            self.gamma = Param("binary_prob",binary_prob, __fixed__)
-            self.link_parameters(self.gamma_group,self.gamma)
+            self.gamma_group = Param("binary_prob_group", binary_prob.mean(axis=0), Logistic(1e-10, 1.0 - 1e-10))
+            self.gamma = Param("binary_prob", binary_prob, __fixed__)
+            self.link_parameters(self.gamma_group, self.gamma)
         else:
-            self.gamma = Param("binary_prob",binary_prob,Logistic(1e-10,1.-1e-10))
+            self.gamma = Param("binary_prob", binary_prob, Logistic(1e-10, 1.0 - 1e-10))
             self.link_parameter(self.gamma)
 
     def propogate_val(self):
@@ -208,16 +219,17 @@ class SpikeAndSlabPosterior(VariationalPosterior):
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):
             import copy
+
             n = self.__new__(self.__class__, self.name)
             dc = self.__dict__.copy()
-            dc['mean'] = self.mean[s]
-            dc['variance'] = self.variance[s]
-            dc['binary_prob'] = self.binary_prob[s]
-            dc['parameters'] = copy.copy(self.parameters)
+            dc["mean"] = self.mean[s]
+            dc["variance"] = self.variance[s]
+            dc["binary_prob"] = self.binary_prob[s]
+            dc["parameters"] = copy.copy(self.parameters)
             n.__dict__.update(dc)
-            n.parameters[dc['mean']._parent_index_] = dc['mean']
-            n.parameters[dc['variance']._parent_index_] = dc['variance']
-            n.parameters[dc['binary_prob']._parent_index_] = dc['binary_prob']
+            n.parameters[dc["mean"]._parent_index_] = dc["mean"]
+            n.parameters[dc["variance"]._parent_index_] = dc["variance"]
+            n.parameters[dc["binary_prob"]._parent_index_] = dc["binary_prob"]
             n._gradient_array_ = None
             oversize = self.size - self.mean.size - self.variance.size - self.gamma.size
             n.size = n.mean.size + n.variance.size + n.gamma.size + oversize
@@ -236,6 +248,8 @@ class SpikeAndSlabPosterior(VariationalPosterior):
         See  GPy.plotting.matplot_dep.variational_plots
         """
         import sys
+
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
         from ...plotting.matplot_dep import variational_plots
-        return variational_plots.plot_SpikeSlab(self,*args, **kwargs)
+
+        return variational_plots.plot_SpikeSlab(self, *args, **kwargs)

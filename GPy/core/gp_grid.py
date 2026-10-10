@@ -3,9 +3,9 @@
 
 # Kurt Cutajar
 
-#This implementation of converting GPs to state space models is based on the article:
+# This implementation of converting GPs to state space models is based on the article:
 
-#@article{Gilboa:2015,
+# @article{Gilboa:2015,
 #  title={Scaling multidimensional inference for structured Gaussian processes},
 #  author={Gilboa, Elad and Saat{\c{c}}i, Yunus and Cunningham, John P},
 #  journal={Pattern Analysis and Machine Intelligence, IEEE Transactions on},
@@ -14,7 +14,7 @@
 #  pages={424--436},
 #  year={2015},
 #  publisher={IEEE}
-#}
+# }
 
 import numpy as np
 import scipy.linalg as sp
@@ -25,7 +25,9 @@ from .. import likelihoods
 
 import logging
 from GPy.inference.latent_function_inference.posterior import Posterior
+
 logger = logging.getLogger("gp grid")
+
 
 class GpGrid(GP):
     """
@@ -40,13 +42,23 @@ class GpGrid(GP):
 
     """
 
-    def __init__(self, X, Y, kernel, likelihood, inference_method=None,
-                 name='gp grid', Y_metadata=None, normalizer=False):
-        #pick a sensible inference method
+    def __init__(
+        self, X, Y, kernel, likelihood, inference_method=None, name="gp grid", Y_metadata=None, normalizer=False
+    ):
+        # pick a sensible inference method
 
         inference_method = gaussian_grid_inference.GaussianGridInference()
 
-        super(GpGrid, self).__init__(X, Y, kernel, likelihood, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        super(GpGrid, self).__init__(
+            X,
+            Y,
+            kernel,
+            likelihood,
+            inference_method=inference_method,
+            name=name,
+            Y_metadata=Y_metadata,
+            normalizer=normalizer,
+        )
         self.posterior = None
 
     def parameters_changed(self):
@@ -58,30 +70,32 @@ class GpGrid(GP):
             This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
             this method yourself, there may be unexpected consequences.
         """
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata)
-        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
-        self.kern.update_gradients_direct(self.grad_dict['dL_dVar'], self.grad_dict['dL_dLen'])
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(
+            self.kern, self.X, self.likelihood, self.Y_normalized, self.Y_metadata
+        )
+        self.likelihood.update_gradients(self.grad_dict["dL_dthetaL"])
+        self.kern.update_gradients_direct(self.grad_dict["dL_dVar"], self.grad_dict["dL_dLen"])
 
     def kron_mmprod(self, A, B):
         count = 0
         D = len(A)
-        for b in (B.T):
+        for b in B.T:
             x = b
             N = 1
             G = np.zeros(D, dtype=np.int_)
             for d in range(D):
                 G[d] = len(A[d])
             N = np.prod(G)
-            for d in range(D-1, -1, -1):
-                X = np.reshape(x, (G[d], int(np.round(N/G[d]))), order='F')
+            for d in range(D - 1, -1, -1):
+                X = np.reshape(x, (G[d], int(np.round(N / G[d]))), order="F")
                 Z = np.dot(A[d], X)
                 Z = Z.T
-                x = np.reshape(Z, (-1, 1), order='F')
-            if (count == 0):
+                x = np.reshape(Z, (-1, 1), order="F")
+            if count == 0:
                 result = x
             else:
                 result = np.column_stack((result, x))
-            count+=1
+            count += 1
         return result
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
@@ -95,10 +109,10 @@ class GpGrid(GP):
         Kmn = kern.K(Xnew, self.X)
         alpha_kron = self.posterior.alpha
         mu = np.dot(Kmn, alpha_kron)
-        mu = mu.reshape(-1,1)
+        mu = mu.reshape(-1, 1)
 
         # compute variance of predictions
-        Knm = Kmn.T        
+        Knm = Kmn.T
         noise = self.likelihood.variance
         V_kron = self.posterior.V_kron
         Qs = self.posterior.Qs
@@ -110,7 +124,7 @@ class GpGrid(GP):
 
         Kmm = kern.K(Xnew)
         var = np.diag(Kmm - np.dot(Kmn, A)).copy()
-        #var = np.zeros((Xnew.shape[0]))
+        # var = np.zeros((Xnew.shape[0]))
         var = var.reshape(-1, 1)
 
         return mu, var

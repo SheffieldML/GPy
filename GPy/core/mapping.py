@@ -6,12 +6,13 @@ import sys
 from .parameterization import Parameterized
 import numpy as np
 
+
 class Mapping(Parameterized):
     """
     Base model for shared mapping behaviours
     """
 
-    def __init__(self, input_dim, output_dim, name='mapping'):
+    def __init__(self, input_dim, output_dim, name="mapping"):
         self.input_dim = input_dim
         self.output_dim = output_dim
         super(Mapping, self).__init__(name=name)
@@ -49,10 +50,12 @@ class Mapping(Parameterized):
            instantiate the object.
         """
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        mapping_class = input_dict.pop('class')
+        mapping_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
         import GPy
+
         mapping_class = eval(mapping_class)
         return mapping_class._build_from_input_dict(mapping_class, input_dict)
 
@@ -66,7 +69,8 @@ class Bijective_mapping(Mapping):
     This is a mapping that is bijective, i.e. you can go from X to f and
     also back from f to X. The inverse mapping is called g().
     """
-    def __init__(self, input_dim, output_dim, name='bijective_mapping'):
+
+    def __init__(self, input_dim, output_dim, name="bijective_mapping"):
         super(Bijective_mapping, self).__init__(name=name)
 
     def g(self, f):

@@ -183,11 +183,7 @@ class LogGaussian(Gaussian):
         return "lnN({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
-        return (
-            self.constant
-            - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2
-            - np.log(x)
-        )
+        return self.constant - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2 - np.log(x)
 
     def lnpdf_grad(self, x):
         return -((np.log(x) - self.mu) / self.sigma2 + 1.0) / x
@@ -228,9 +224,7 @@ class MultivariateGaussian(Prior):
         self.mu = np.array(mu).flatten()
         self.var = np.array(var)
         assert len(self.var.shape) == 2, "Covariance must be a matrix"
-        assert (
-            self.var.shape[0] == self.var.shape[1]
-        ), "Covariance must be a square matrix"
+        assert self.var.shape[0] == self.var.shape[1], "Covariance must be a square matrix"
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
         self.inv, _, self.hld, _ = pdinv(self.var)
@@ -274,9 +268,7 @@ class MultivariateGaussian(Prior):
         self.mu = np.array(state[0]).flatten()
         self.var = state[1]
         assert len(self.var.shape) == 2, "Covariance must be a matrix"
-        assert (
-            self.var.shape[0] == self.var.shape[1]
-        ), "Covariance must be a square matrix"
+        assert self.var.shape[0] == self.var.shape[1], "Covariance must be a square matrix"
         assert self.var.shape[0] == self.mu.size
         self.input_dim = self.mu.size
         self.inv, _, self.hld, _ = pdinv(self.var)
@@ -337,10 +329,7 @@ class Gamma(Prior):
             "E[x]": self.a / self.b,
             "E[ln x]": digamma(self.a) - np.log(self.b),
             "var[x]": self.a / self.b / self.b,
-            "Entropy": gammaln(self.a)
-            - (self.a - 1.0) * digamma(self.a)
-            - np.log(self.b)
-            + self.a,
+            "Entropy": gammaln(self.a) - (self.a - 1.0) * digamma(self.a) - np.log(self.b) + self.a,
         }
         if self.a > 1:
             ret["Mode"] = (self.a - 1.0) / self.b
@@ -509,11 +498,7 @@ class DGPLVM_KFDA(Prior):
         A = np.zeros((self.datanum, self.datanum))
         idx = 0
         for N_i in lst_ni:
-            B = (
-                float(1)
-                / np.sqrt(N_i)
-                * (np.eye(N_i) - ((float(1) / N_i) * np.ones((N_i, N_i))))
-            )
+            B = float(1) / np.sqrt(N_i) * (np.eye(N_i) - ((float(1) / N_i) * np.ones((N_i, N_i))))
             A[idx : idx + N_i, idx : idx + N_i] = B
             idx += N_i
         return A
@@ -525,9 +510,7 @@ class DGPLVM_KFDA(Prior):
         a_trans = np.transpose(self.a)
         paran = self.lambdaa * np.eye(x.shape[0]) + self.A.dot(K).dot(self.A)
         inv_part = pdinv(paran)[0]
-        J = a_trans.dot(K).dot(self.a) - a_trans.dot(K).dot(self.A).dot(inv_part).dot(
-            self.A
-        ).dot(K).dot(self.a)
+        J = a_trans.dot(K).dot(self.a) - a_trans.dot(K).dot(self.A).dot(inv_part).dot(self.A).dot(K).dot(self.a)
         J_star = (1.0 / self.lambdaa) * J
         return (-1.0 / self.sigma2) * J_star
 
@@ -1305,10 +1288,7 @@ class HalfT(Prior):
 
     def lnpdf(self, theta):
         return (theta > 0) * (
-            self.constant
-            - 0.5
-            * (self.nu + 1)
-            * np.log(1.0 + (1.0 / self.nu) * (theta / self.A) ** 2)
+            self.constant - 0.5 * (self.nu + 1) * np.log(1.0 + (1.0 / self.nu) * (theta / self.A) ** 2)
         )
 
         # theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
@@ -1330,9 +1310,7 @@ class HalfT(Prior):
         grad = np.zeros_like(theta)
         above_zero = theta > 1e-6
         v = self.nu
-        grad[above_zero] = (
-            -(v + 1) * theta[above_zero] / (v * self.A**2 + theta[above_zero] ** 2)
-        )
+        grad[above_zero] = -(v + 1) * theta[above_zero] / (v * self.A**2 + theta[above_zero] ** 2)
         return grad
 
     def rvs(self, n):
@@ -1415,11 +1393,7 @@ class StudentT(Prior):
         if cls._instances:
             cls._instances[:] = [instance for instance in cls._instances if instance()]
             for instance in cls._instances:
-                if (
-                    instance().mu == mu
-                    and instance().sigma == sigma
-                    and instance().nu == nu
-                ):
+                if instance().mu == mu and instance().sigma == sigma and instance().nu == nu:
                     return instance()
         newfunc = super(Prior, cls).__new__
         if newfunc is object.__new__:
@@ -1444,11 +1418,7 @@ class StudentT(Prior):
         return t.logpdf(x, self.nu, self.mu, self.sigma)
 
     def lnpdf_grad(self, x):
-        return (
-            -(self.nu + 1.0)
-            * (x - self.mu)
-            / (self.nu * self.sigma2 + np.square(x - self.mu))
-        )
+        return -(self.nu + 1.0) * (x - self.mu) / (self.nu * self.sigma2 + np.square(x - self.mu))
 
     def rvs(self, n):
         from scipy.stats import t

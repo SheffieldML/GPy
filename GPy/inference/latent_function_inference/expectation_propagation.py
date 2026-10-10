@@ -367,7 +367,7 @@ class EP(EPBase, ExactGaussianInference):
             if Y_metadata is not None:
                 # Pick out the relavent metadata for Yi
                 Y_metadata_i = {}
-                for key in Y_metadata.keys():
+                for key in Y_metadata:
                     Y_metadata_i[key] = Y_metadata[key][i, :]
             else:
                 Y_metadata_i = None
@@ -661,7 +661,7 @@ class EPDTC(EPBase, VarDTC):
             if Y_metadata is not None:
                 # Pick out the relavent metadata for Yi
                 Y_metadata_i = {}
-                for key in Y_metadata.keys():
+                for key in Y_metadata:
                     Y_metadata_i[key] = Y_metadata[key][i, :]
             else:
                 Y_metadata_i = None

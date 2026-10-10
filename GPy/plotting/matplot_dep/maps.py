@@ -96,14 +96,14 @@ def bbox_match(sf, bbox, inside_only=True):
     for rec in enumerate(sf.shapeRecords()):
         a, b, c, d = rec[1].shape.bbox
         if inside_only:
-            if A <= a and B <= b and C >= c and D >= d:
+            if a >= A and b >= B and c <= C and d <= D:
                 index.append(rec[0])
                 shape_records.append(rec[1])
         else:
-            cond1 = A <= a and B <= b and C >= a and D >= b
-            cond2 = A <= c and B <= d and C >= c and D >= d
-            cond3 = A <= a and D >= d and C >= a and B <= d
-            cond4 = A <= c and D >= b and C >= c and B <= b
+            cond1 = a >= A and b >= B and a <= C and b <= D
+            cond2 = c >= A and d >= B and c <= C and d <= D
+            cond3 = a >= A and d <= D and a <= C and d >= B
+            cond4 = c >= A and b <= D and c <= C and b >= B
             cond5 = a <= C and b <= B and d >= D
             cond6 = c <= A and b <= B and d >= D
             cond7 = d <= B and a <= A and c >= C

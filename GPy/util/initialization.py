@@ -14,7 +14,7 @@ def initialize_latent(init, input_dim, Y):
     :param init: initialization method for the latent space, 'PCA' or 'random'
     """
     Xr = np.asfortranarray(np.random.normal(0, 1, (Y.shape[0], input_dim)))
-    if "PCA" == init:
+    if init == "PCA":
         p = PCA(Y)
         PC = p.project(Y, min(input_dim, Y.shape[1]))
         Xr[: PC.shape[0], : PC.shape[1]] = PC

@@ -361,9 +361,9 @@ class PSICOMP_SSRBF_GPU(PSICOMP_RBF):
                 ),
             }
         else:
-            assert N == self.gpuCache["mu_gpu"].shape[0]
-            assert M == self.gpuCache["Z_gpu"].shape[0]
-            assert Q == self.gpuCache["l_gpu"].shape[0]
+            assert self.gpuCache["mu_gpu"].shape[0] == N
+            assert self.gpuCache["Z_gpu"].shape[0] == M
+            assert self.gpuCache["l_gpu"].shape[0] == Q
 
     def sync_params(self, lengthscale, Z, mu, S, gamma):
         if len(lengthscale) == 1:

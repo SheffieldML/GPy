@@ -394,7 +394,7 @@ class SkewChecker(HessianChecker):
             check_passed = [False] * numeric_hess.shape[2]
             for block_ind in range(numeric_hess.shape[2]):
                 # Unless super_plot is set, just plot the first one
-                p = True if (plot and block_ind == numeric_hess.shape[2] - 1) or super_plot else False
+                p = bool(plot and block_ind == numeric_hess.shape[2] - 1 or super_plot)
                 if verbose:
                     print("Checking derivative of hessian wrt parameter number {}".format(block_ind))
                 check_passed[block_ind] = self.checkgrad_block(

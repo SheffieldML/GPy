@@ -154,7 +154,7 @@ class LinearSlopeBasisFuncKernel(BasisFuncKernel):
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        phi = np.where(X < self.start, self.start, X)
+        phi = np.where(self.start > X, self.start, X)
         phi = np.where(phi > self.stop, self.stop, phi)
         return phi - (self.stop + self.start) / 2.0  # /(.5*(self.stop-self.start)))-1.
 
@@ -173,7 +173,7 @@ class ChangePointBasisFuncKernel(BasisFuncKernel):
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        return np.where((X < self.changepoint), -1, 1)
+        return np.where((self.changepoint > X), -1, 1)
 
 
 class DomainKernel(LinearSlopeBasisFuncKernel):
@@ -188,7 +188,7 @@ class DomainKernel(LinearSlopeBasisFuncKernel):
 
     @Cache_this(limit=3, ignore_args=())
     def _phi(self, X):
-        phi = np.where((X > self.start) * (X < self.stop), 1, 0)
+        phi = np.where((self.start < X) * (self.stop > X), 1, 0)
         return phi  # ((phi-self.start)/(self.stop-self.start))-.5
 
 

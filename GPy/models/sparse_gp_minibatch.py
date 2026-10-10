@@ -163,7 +163,7 @@ class SparseGPMiniBatch(SparseGP):
             if the key exists the update rule is:def df(x):
             full_values[key][value_indices[key]] += current_values[key]
         """
-        for key in current_values.keys():
+        for key in current_values:
             if value_indices is not None and key in value_indices:
                 index = value_indices[key]
             else:

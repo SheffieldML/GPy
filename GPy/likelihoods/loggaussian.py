@@ -56,7 +56,7 @@ class LogGaussian(Likelihood):
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         uncensored = (1 - c) * (
@@ -81,7 +81,7 @@ class LogGaussian(Likelihood):
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         val = np.log(y) - link_f
@@ -119,7 +119,7 @@ class LogGaussian(Likelihood):
         # c = Y_metadata['censored']
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         val = np.log(y) - link_f
@@ -149,7 +149,7 @@ class LogGaussian(Likelihood):
         :rtype: float
         """
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         val = np.log(y) - link_f
@@ -185,7 +185,7 @@ class LogGaussian(Likelihood):
         """
 
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         val = np.log(y) - link_f
@@ -211,7 +211,7 @@ class LogGaussian(Likelihood):
         :rtype: Nx1 array
         """
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
 
         val = np.log(y) - link_f
@@ -240,7 +240,7 @@ class LogGaussian(Likelihood):
         :rtype: Nx1 array
         """
         c = np.zeros_like(y)
-        if Y_metadata is not None and "censored" in Y_metadata.keys():
+        if Y_metadata is not None and "censored" in Y_metadata:
             c = Y_metadata["censored"]
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)

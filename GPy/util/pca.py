@@ -74,7 +74,7 @@ class PCA(object):
         """
         if Q is None:
             Q = self.Q
-        if Q > X.shape[1]:
+        if X.shape[1] < Q:
             raise IndexError("requested dimension larger then input dimension")
         X = self.center(X)
         return X.dot(self.eigvectors[:, :Q])

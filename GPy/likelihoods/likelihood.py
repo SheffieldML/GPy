@@ -311,7 +311,7 @@ class Likelihood(Parameterized):
             for index in range(len(Y)):
                 Y_metadata_i = {}
                 if Y_metadata is not None:
-                    for key in Y_metadata.keys():
+                    for key in Y_metadata:
                         Y_metadata_i[key] = Y_metadata[key][index, :]
                     Y_metadata_list.append(Y_metadata_i)
 

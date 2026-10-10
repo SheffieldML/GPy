@@ -91,11 +91,11 @@ def nextLight():
 
 
 def reset():
-    while not darkList[0] == colorsHex["darkBlue"]:
+    while darkList[0] != colorsHex["darkBlue"]:
         darkList.append(darkList.pop(0))
-    while not mediumList[0] == colorsHex["mediumBlue"]:
+    while mediumList[0] != colorsHex["mediumBlue"]:
         mediumList.append(mediumList.pop(0))
-    while not lightList[0] == colorsHex["lightBlue"]:
+    while lightList[0] != colorsHex["lightBlue"]:
         lightList.append(lightList.pop(0))
 
 

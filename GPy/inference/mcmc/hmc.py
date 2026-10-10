@@ -183,10 +183,7 @@ class HMC_shortcut:
 
     def _testH(self, Hlist):
         Hstd = np.std(Hlist)
-        if Hstd < self.Hstd_th[0] or Hstd > self.Hstd_th[1]:
-            return False
-        else:
-            return True
+        return not (Hstd < self.Hstd_th[0] or Hstd > self.Hstd_th[1])
 
     def _computeH(
         self,

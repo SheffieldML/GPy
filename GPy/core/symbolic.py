@@ -385,7 +385,7 @@ class Symbolic_core:
         def match_key(expr):
             if type(expr) is dict:
                 code = {}
-                for key in expr.keys():
+                for key in expr:
                     code[key] = match_key(expr[key])
             else:
                 arg_list = [e for e in expr.atoms() if e.is_Symbol]
@@ -406,7 +406,7 @@ class Symbolic_core:
     def _print_code(self, code):
         """Prepare code for string writing."""
         # This needs a rewrite --- it doesn't check for match clashes! So sub11 would be replaced by sub1 before being replaced with sub11!!
-        for key in self.variables.keys():
+        for key in self.variables:
             for arg in self.variables[key]:
                 code = code.replace(arg.name, "self." + arg.name)
         return code

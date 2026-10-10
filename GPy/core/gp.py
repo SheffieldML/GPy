@@ -118,7 +118,7 @@ class GP(Model):
         # find a sensible inference method
         logger.info("initializing inference method")
         if inference_method is None:
-            if isinstance(likelihood, likelihoods.Gaussian) or isinstance(likelihood, likelihoods.MixedNoise):
+            if isinstance(likelihood, (likelihoods.Gaussian, likelihoods.MixedNoise)):
                 inference_method = exact_gaussian_inference.ExactGaussianInference()
             else:
                 inference_method = expectation_propagation.EP()
@@ -160,7 +160,7 @@ class GP(Model):
         # TODO: We should create a Metadata class
         if self.Y_metadata is not None:
             # make Y_metadata serializable
-            input_dict["Y_metadata"] = {k: self.Y_metadata[k].tolist() for k in self.Y_metadata.keys()}
+            input_dict["Y_metadata"] = {k: self.Y_metadata[k].tolist() for k in self.Y_metadata}
         if self.normalizer is not None:
             input_dict["normalizer"] = self.normalizer.to_dict()
         return input_dict
@@ -194,7 +194,7 @@ class GP(Model):
         # converts Y_metadata from serializable to array. We should create a Metadata class
         Y_metadata = input_dict.get("Y_metadata")
         if isinstance(Y_metadata, dict):
-            input_dict["Y_metadata"] = {k: np.array(Y_metadata[k]) for k in Y_metadata.keys()}
+            input_dict["Y_metadata"] = {k: np.array(Y_metadata[k]) for k in Y_metadata}
         else:
             input_dict["Y_metadata"] = Y_metadata
 

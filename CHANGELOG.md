@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable safe simplify rules (`SIM101`/`SIM103`/`SIM118`/`SIM201`/`SIM210`/`SIM300`)
 * CIP-0005: fail CI on `ruff format --check GPy`; document pre-commit as contributor default
 * CIP-0005: enable bugbear `B023` (bind loop variables in closures via default args)
 * CIP-0005: enable bugbear `B006`/`B026` (mutable arg defaults; reorder `*args` after keywords)

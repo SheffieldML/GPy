@@ -41,10 +41,7 @@ class Add(CombinationKernel):
         n_bias = len([k for k in self.parts if isinstance(k, Bias)])
         n_white = len([k for k in self.parts if isinstance(k, White)])
         n_others = n_kerns - n_rbf - n_linear - n_bias - n_white
-        if n_rbf + n_linear <= 1 and n_bias <= 1 and n_white <= 1 and n_others == 0:
-            return True
-        else:
-            return False
+        return bool(n_rbf + n_linear <= 1 and n_bias <= 1 and n_white <= 1 and n_others == 0)
 
     def to_dict(self):
         """

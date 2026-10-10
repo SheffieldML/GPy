@@ -1,10 +1,12 @@
-'''
+"""
 Created on Aug 27, 2014
 
 @author: Max Zwiessele
-'''
+"""
+
 import numpy as np
 import warnings
+
 
 class _Norm(object):
     def __init__(self):
@@ -71,9 +73,11 @@ class _Norm(object):
         """
 
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        normalizer_class = input_dict.pop('class')
+        normalizer_class = input_dict.pop("class")
         import GPy
+
         normalizer_class = eval(normalizer_class)
         return normalizer_class._build_from_input_dict(normalizer_class, input_dict)
 
@@ -91,22 +95,24 @@ class Standardize(_Norm):
         self.mean = Y.mean(0).view(np.ndarray)
         self.std = Y.std(0).view(np.ndarray)
         if np.any(self.std == 0):
-            warnings.warn("Some values of Y have standard deviation of zero. Resetting to 1.0 to avoid divide by zero errors.")
-           # Choice of setting to 1.0 is somewhat arbitrary. It avoids a divide by zero error, but setting to EPS would also do this. Don't have strong reasons for choosing 1.0, it was just first instinct 
-            self.std[np.where(self.std==0)]=1. 
+            warnings.warn(
+                "Some values of Y have standard deviation of zero. Resetting to 1.0 to avoid divide by zero errors."
+            )
+            # Choice of setting to 1.0 is somewhat arbitrary. It avoids a divide by zero error, but setting to EPS would also do this. Don't have strong reasons for choosing 1.0, it was just first instinct
+            self.std[np.where(self.std == 0)] = 1.0
 
     def normalize(self, Y):
         super(Standardize, self).normalize(Y)
-        return (Y-self.mean)/self.std
+        return (Y - self.mean) / self.std
 
     def inverse_mean(self, X):
-        return (X*self.std)+self.mean
+        return (X * self.std) + self.mean
 
     def inverse_variance(self, var):
-        return (var*(self.std**2))
+        return var * (self.std**2)
 
     def inverse_covariance(self, covariance):
-        return (covariance[..., np.newaxis]*(self.std**2))
+        return covariance[..., np.newaxis] * (self.std**2)
 
     def scaled(self):
         return self.mean is not None

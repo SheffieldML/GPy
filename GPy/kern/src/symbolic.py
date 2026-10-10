@@ -1,5 +1,4 @@
 # Check Matthew Rocklin's blog post.
-import sympy as sym
 import numpy as np
 from GPy.kern.src import Kern
 from ...core.symbolic import Symbolic_core

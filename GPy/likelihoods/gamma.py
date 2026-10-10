@@ -3,8 +3,7 @@
 
 
 import numpy as np
-from scipy import stats, special
-import scipy as sp
+from scipy import special
 from ..core.parameterization import Param
 from . import link_functions
 from .likelihood import Likelihood

@@ -1,9 +1,8 @@
 # Copyright (c) 2018, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from .kern import Kern, CombinationKernel
+from .kern import Kern
 from .multioutput_kern import MultioutputKern, ZeroKern
-import numpy as np
 from functools import partial
 
 

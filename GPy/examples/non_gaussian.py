@@ -132,7 +132,6 @@ def student_t_approx(optimize=True, plot=True):
 
 def boston_example(optimize=True, plot=True):
     raise NotImplementedError("Needs updating")
-    import sklearn
     from sklearn.cross_validation import KFold
 
     optimizer = "bfgs"

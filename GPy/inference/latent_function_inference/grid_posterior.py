@@ -3,7 +3,6 @@
 
 # Kurt Cutajar
 
-import numpy as np
 
 
 class GridPosterior(object):

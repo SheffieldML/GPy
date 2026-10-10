@@ -3,8 +3,6 @@
 
 from paramz import Param
 from .priorizable import Priorizable
-from paramz.transformations import __fixed__
-import logging, numpy as np
 
 
 class Param(Param, Priorizable):

@@ -42,6 +42,8 @@ inhereted by members of the :py:class:`GPy.models` package.
 
 """
 
+import numpy as np
+
 from GPy.core.model import Model
 from .parameterization import Param, Parameterized
 from . import parameterization

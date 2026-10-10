@@ -8,13 +8,15 @@ try:
     import ConfigParser
 
     config = ConfigParser.ConfigParser()
-    from ConfigParser import NoOptionError
+    from ConfigParser import NoOptionError as NoOptionError
 except ImportError:
     # Attempt Python 3 ConfigParser setup
     import configparser
 
     config = configparser.ConfigParser()
-    from configparser import NoOptionError
+    from configparser import NoOptionError as NoOptionError
+
+__all__ = ["config", "NoOptionError"]
 
 # This is the default configuration file that always needs to be present.
 default_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "defaults.cfg"))

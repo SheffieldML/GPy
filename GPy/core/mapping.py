@@ -2,9 +2,7 @@
 # Copyright (c) 2015, James Hensman
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import sys
 from .parameterization import Parameterized
-import numpy as np
 
 
 class Mapping(Parameterized):
@@ -54,7 +52,7 @@ class Mapping(Parameterized):
         input_dict = copy.deepcopy(input_dict)
         mapping_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
-        import GPy
+        import GPy  # noqa: F401 — needed for eval of serialized class paths
 
         mapping_class = eval(mapping_class)
         return mapping_class._build_from_input_dict(mapping_class, input_dict)

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable `F401` (unused import); ignore re-exports in `**/__init__.py`
 * CIP-0005: enable `F841` (unused variable) and clear findings
 * CIP-0005: widen pyflakes (`F901`/`F523`/`F601`/`F811`), fix findings, and fail CI on configured `ruff check`
 * docs: close CIP-0003/0004/0006/0007 as verified; CIP-0005 remains In Progress (Phase 3 widen / Phase 4)

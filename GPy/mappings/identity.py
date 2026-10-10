@@ -1,7 +1,6 @@
 # Copyright (c) 2015, James Hensman
 
 from ..core.mapping import Mapping
-from ..core import Param
 
 
 class Identity(Mapping):

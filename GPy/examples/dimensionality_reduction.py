@@ -136,7 +136,6 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4
 
     if plot:
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D  # @UnusedImport
 
         fig = plt.figure("Swiss Roll Data")
         ax = fig.add_subplot(121, projection="3d")
@@ -172,7 +171,6 @@ def swiss_roll(optimize=True, verbose=1, plot=True, N=1000, num_inducing=25, Q=4
 def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40, max_iters=1000, **k):
     import GPy
     from matplotlib import pyplot as plt
-    import numpy as np
 
     _np.random.seed(0)
     try:
@@ -264,7 +262,6 @@ def _simulate_matern(D1, D2, D3, N, num_inducing, plot_sim=False):
     if plot_sim:
         from matplotlib import pyplot as plt
         import matplotlib.cm as cm
-        import itertools
 
         fig = plt.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
@@ -316,7 +313,6 @@ def _simulate_sincos(D1, D2, D3, N, num_inducing, plot_sim=False):
     if plot_sim:
         from matplotlib import pyplot as plt
         import matplotlib.cm as cm
-        import itertools
 
         fig = plt.figure("MRD Simulation Data", figsize=(8, 6))
         fig.clf()
@@ -717,7 +713,6 @@ def bcgplvm_stick(kernel=None, optimize=True, verbose=True, plot=True):
 
 
 def robot_wireless(optimize=True, verbose=True, plot=True):
-    from matplotlib import pyplot as plt
     import GPy
     import pods
 
@@ -814,7 +809,6 @@ def cmu_mocap(subject="35", motion=["01"], in_place=True, optimize=True, verbose
 
 def ssgplvm_simulation_linear():
     import numpy as np
-    import GPy
 
     N, D, Q = 1000, 20, 5
     pi = 0.2

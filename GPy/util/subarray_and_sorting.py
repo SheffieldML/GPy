@@ -7,7 +7,6 @@
 
 __updated__ = "2014-05-21"
 
-import numpy as np, logging
 
 
 def common_subarrays(X, axis=0):

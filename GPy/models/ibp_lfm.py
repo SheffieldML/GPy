@@ -5,7 +5,7 @@ import numpy as np
 
 from ..core.sparse_gp_mpi import SparseGP_MPI
 from .. import kern
-from ..util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, pdinv
+from ..util.linalg import jitchol, backsub_both_sides, tdot, dtrtri
 from ..util import diag
 from ..core.parameterization import Param
 from ..likelihoods import Gaussian

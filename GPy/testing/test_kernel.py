@@ -10,7 +10,7 @@ from ..util.config import config
 verbose = 0
 
 try:
-    from ..kern.src import coregionalize_cython
+    from ..kern.src import coregionalize_cython as coregionalize_cython
 
     cython_coregionalize_working = config.getboolean("cython", "working")
 except ImportError:

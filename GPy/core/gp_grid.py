@@ -17,14 +17,10 @@
 # }
 
 import numpy as np
-import scipy.linalg as sp
 from .gp import GP
-from .parameterization.param import Param
 from ..inference.latent_function_inference import gaussian_grid_inference
-from .. import likelihoods
 
 import logging
-from GPy.inference.latent_function_inference.posterior import Posterior
 
 logger = logging.getLogger("gp grid")
 

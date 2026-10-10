@@ -130,7 +130,7 @@ class UtilTest:
         assert len([t for t in fixed if t[0] == 1]) == 0  # Unfixed input should not be in fixed
 
     def test_DSYR(self):
-        from GPy.util.linalg import DSYR, DSYR_numpy
+        from GPy.util.linalg import DSYR
 
         A = np.arange(9.0).reshape(3, 3)
         A = np.dot(A.T, A)

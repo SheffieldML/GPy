@@ -2,23 +2,17 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import itertools
-from ..core.model import Model
-from ..core.parameterization.variational import VariationalPosterior
-from ..core.mapping import Mapping
 from .. import likelihoods
 from ..likelihoods.gaussian import Gaussian
 from .. import kern
 from ..kern import DiffKern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
-from ..util.normalizer import Standardize
 from .. import util
 from paramz import ObsAr
 from ..core.gp import GP
 
 from ..util.multioutput import index_to_slices
 import logging
-import warnings
 
 logger = logging.getLogger("GP")
 

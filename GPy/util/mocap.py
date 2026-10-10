@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import math
-from GPy.util import datasets as dat
 
 
 class vertex:

@@ -5,6 +5,16 @@
 import numpy as np
 from scipy.special import ndtr as std_norm_cdf
 
+__all__ = [
+    "std_norm_cdf",
+    "std_norm_pdf",
+    "inv_std_norm_cdf",
+    "logPdfNormal",
+    "cdfNormal",
+    "logCdfNormal",
+    "derivLogCdfNormal",
+]
+
 # define a standard normal pdf
 _sqrt_2pi = np.sqrt(2 * np.pi)
 

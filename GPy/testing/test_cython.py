@@ -13,7 +13,7 @@ except ImportError:
     choleskies_cython_working = False
 
 try:
-    from ..kern.src import stationary_cython
+    from ..kern.src import stationary_cython as stationary_cython
 
     stationary_cython_working = config.getboolean("cython", "working")
 except ImportError:

@@ -14,11 +14,9 @@ import sys
 from io import open
 from .config import *
 
-ipython_available = True
-try:
-    import IPython
-except ImportError:
-    ipython_available = False
+import importlib.util
+
+ipython_available = importlib.util.find_spec("IPython") is not None
 
 try:
     # In Python 2, cPickle is faster. It does not exist in Python 3 but the underlying code is always used
@@ -496,7 +494,6 @@ def lee_yeast_ChIP(data_set="lee_yeast_ChIP"):
     if not data_available(data_set):
         download_data(data_set)
     from pandas import read_csv
-    import zipfile
 
     dir_path = os.path.join(data_path, data_set)
     filename = os.path.join(dir_path, "binding_by_gene.tsv")
@@ -632,7 +629,6 @@ def google_trends(
 
     columns = df.columns
     terms = len(query_terms)
-    import datetime
 
     X = np.asarray([(row, i) for i in range(terms) for row in df.index])
     Y = np.asarray([[df.ix[row][query_terms[i]]] for i in range(terms) for row in df.index])

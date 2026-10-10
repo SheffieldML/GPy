@@ -4,7 +4,6 @@
 from . import SparseGPClassification
 from .. import likelihoods
 from .. import kern
-from ..inference.latent_function_inference.expectation_propagation import EP
 import numpy as np
 
 

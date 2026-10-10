@@ -1,7 +1,6 @@
 # Copyright (c) 2013, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
 from ..core import Mapping
 
 

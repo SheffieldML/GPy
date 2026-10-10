@@ -12,7 +12,7 @@ James 11/12/13
 """
 
 import numpy as np
-from scipy import stats, special
+from scipy import stats
 from . import link_functions
 from .likelihood import Likelihood
 from ..core.parameterization import Param

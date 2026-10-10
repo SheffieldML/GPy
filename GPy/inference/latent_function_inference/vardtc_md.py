@@ -1,7 +1,7 @@
 # Copyright (c) 2017, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, pdinv, dpotri
+from GPy.util.linalg import jitchol, backsub_both_sides, tdot, dtrtrs, dpotri
 from GPy.util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np

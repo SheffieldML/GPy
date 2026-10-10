@@ -6,7 +6,6 @@ import numpy as np
 from ..core.parameterization.param import Param
 from GPy.core.parameterization.variational import VariationalPosterior
 from ..core.sparse_gp import SparseGP
-from ..core.gp import GP
 from ..inference.latent_function_inference import var_dtc
 from .. import likelihoods
 

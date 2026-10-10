@@ -3,7 +3,6 @@
 import GPy
 import pytest
 import numpy as np
-from ..util.config import config
 
 verbose = 0
 

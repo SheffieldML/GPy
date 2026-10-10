@@ -7,7 +7,7 @@ np = numpy
 
 from ..core.parameterization import Param
 from GPy.core.model import Model
-from ..util.block_matrices import get_blocks, get_block_shapes, unblock, get_blocks_3d, get_block_shapes_3d
+from ..util.block_matrices import get_blocks, get_block_shapes, unblock, get_block_shapes_3d
 
 
 def get_shape(x):

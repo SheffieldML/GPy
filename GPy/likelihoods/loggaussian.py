@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats, special
+from scipy import stats
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 from . import link_functions

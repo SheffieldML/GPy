@@ -1,7 +1,6 @@
 # Copyright (c) 2012 - 2014 the GPy Austhors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-import numpy as np
 from ..core import GP
 from .. import likelihoods
 from .. import kern

@@ -5,7 +5,6 @@ import numpy as np
 from ..core import SparseGP
 from .. import likelihoods
 from .. import kern
-from .. import util
 from GPy.core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization.param import Param
 from paramz.transformations import Logexp
@@ -98,7 +97,7 @@ class GPMultioutRegressionMD(SparseGP):
             raise ValueError(msg.format(num_inducing[1], self.output_dim))
 
         if init == "GP":
-            from . import SparseGPRegression, BayesianGPLVM
+            from . import BayesianGPLVM
             from ..util.linalg import jitchol
 
             Mc, Mr = num_inducing

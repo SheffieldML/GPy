@@ -2,4 +2,3 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from paramz.transformations import *
-from paramz.transformations import __fixed__

@@ -11,7 +11,7 @@
 # http://gaussianprocess.org/gpml/code.
 
 import numpy as np
-from ...util.linalg import mdot, jitchol, dpotrs, dtrtrs, dpotri, symmetrify, pdinv
+from ...util.linalg import mdot, jitchol, dtrtrs
 from .posterior import Posterior
 import warnings
 

@@ -6,16 +6,10 @@
 # check GPstuff project.
 
 import numpy as np
-from scipy import stats, special
-from . import link_functions
 from .likelihood import Likelihood
 from .mixed_noise import MixedNoise
 from .gaussian import Gaussian
-from ..core.parameterization import Param
-from paramz.transformations import Logexp
-from ..core.parameterization import Parameterized
 from ..util.multioutput import index_to_slices
-import itertools
 
 
 class MultioutputLikelihood(MixedNoise):

@@ -9,7 +9,7 @@ import numpy as np
 from . import LatentFunctionInference
 
 log_2_pi = np.log(2 * np.pi)
-import logging, itertools
+import logging
 
 logger = logging.getLogger("vardtc")
 

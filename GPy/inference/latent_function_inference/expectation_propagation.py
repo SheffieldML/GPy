@@ -1,13 +1,11 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 import numpy as np
-from ...util.linalg import jitchol, DSYR, dtrtrs, dtrtri, pdinv, dpotrs, tdot, symmetrify
+from ...util.linalg import jitchol, DSYR, dtrtrs, dpotrs, tdot, symmetrify
 from paramz import ObsAr
 from . import ExactGaussianInference, VarDTC
 from ...util import diag
 from .posterior import PosteriorEP as Posterior
-from ...likelihoods import Gaussian
-from . import LatentFunctionInference
 
 log_2_pi = np.log(2 * np.pi)
 

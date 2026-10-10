@@ -32,9 +32,7 @@ if comm.rank==0:
             with open("mpi_test__.py", "w") as f:
                 f.write(code)
                 f.close()
-            p = subprocess.Popen(
-                "mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True
-            )
+            p = subprocess.Popen("mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True)
             (stdout, _stderr) = p.communicate()
             L1 = float(stdout.splitlines()[-2])
             L2 = float(stdout.splitlines()[-1])
@@ -68,9 +66,7 @@ if comm.rank==0:
             with open("mpi_test__.py", "w") as f:
                 f.write(code)
                 f.close()
-            p = subprocess.Popen(
-                "mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True
-            )
+            p = subprocess.Popen("mpirun -n 4 python mpi_test__.py", stdout=subprocess.PIPE, shell=True)
             (stdout, stderr) = p.communicate()
             L1 = float(stdout.splitlines()[-2])
             L2 = float(stdout.splitlines()[-1])

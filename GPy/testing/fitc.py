@@ -20,10 +20,7 @@ class FITCtest:
 
         # sample inputs and outputs
         self.X2D = np.random.uniform(-3.0, 3.0, (N, 2))
-        self.Y2D = (
-            np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2])
-            + np.random.randn(N, 1) * 0.05
-        )
+        self.Y2D = np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2]) + np.random.randn(N, 1) * 0.05
 
         ######################################
         # # 2 dimensional example with 2 dimensional output

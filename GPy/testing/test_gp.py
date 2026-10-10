@@ -3,6 +3,7 @@ Created on 4 Sep 2015
 
 @author: maxz
 """
+
 import numpy as np
 import GPy
 from GPy.core.parameterization.variational import NormalPosterior
@@ -110,9 +111,7 @@ class TestGP:
         p.randomize()
         Y = (
             p.f(X)
-            + np.random.multivariate_normal(
-                np.zeros(X.shape[0]), k.K(X) + np.eye(X.shape[0]) * 1e-8
-            )[:, None]
+            + np.random.multivariate_normal(np.zeros(X.shape[0]), k.K(X) + np.eye(X.shape[0]) * 1e-8)[:, None]
             + np.random.normal(0, 0.1, (X.shape[0], 1))
         )
         m = GPy.models.GPRegression(X, Y, mean_function=p)

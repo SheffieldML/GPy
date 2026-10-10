@@ -21,10 +21,7 @@ class TestPEPgradient:
 
         # sample inputs and outputs
         self.X2D = np.random.uniform(-3.0, 3.0, (N, 2))
-        self.Y2D = (
-            np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2])
-            + np.random.randn(N, 1) * 0.05
-        )
+        self.Y2D = np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2]) + np.random.randn(N, 1) * 0.05
 
         #######################################
         # # more datapoints, check in alpha limits, the log marginal likelihood
@@ -40,59 +37,39 @@ class TestPEPgradient:
     def test_pep_1d_gradients(self):
         self.setup_method()
         m = GPy.models.SparseGPRegression(self.X1D, self.Y1D)
-        m.inference_method = GPy.inference.latent_function_inference.PEP(
-            alpha=np.random.rand()
-        )
+        m.inference_method = GPy.inference.latent_function_inference.PEP(alpha=np.random.rand())
         assert m.checkgrad()
 
     def test_pep_2d_gradients(self):
         self.setup_method()
         m = GPy.models.SparseGPRegression(self.X2D, self.Y2D)
-        m.inference_method = GPy.inference.latent_function_inference.PEP(
-            alpha=np.random.rand()
-        )
+        m.inference_method = GPy.inference.latent_function_inference.PEP(alpha=np.random.rand())
         assert m.checkgrad()
 
     def test_pep_vfe_consistency(self):
         self.setup_method()
-        vfe_model = GPy.models.SparseGPRegression(
-            self.X1, self.Y1, kernel=self.kernel, Z=self.Z
-        )
+        vfe_model = GPy.models.SparseGPRegression(self.X1, self.Y1, kernel=self.kernel, Z=self.Z)
         vfe_model.inference_method = GPy.inference.latent_function_inference.VarDTC()
         vfe_model.Gaussian_noise.variance = self.lik_noise_var
         vfe_lml = vfe_model.log_likelihood()
 
-        pep_model = GPy.models.SparseGPRegression(
-            self.X1, self.Y1, kernel=self.kernel, Z=self.Z
-        )
-        pep_model.inference_method = GPy.inference.latent_function_inference.PEP(
-            alpha=1e-5
-        )
+        pep_model = GPy.models.SparseGPRegression(self.X1, self.Y1, kernel=self.kernel, Z=self.Z)
+        pep_model.inference_method = GPy.inference.latent_function_inference.PEP(alpha=1e-5)
         pep_model.Gaussian_noise.variance = self.lik_noise_var
         pep_lml = pep_model.log_likelihood()
 
-        np.testing.assert_almost_equal(
-            vfe_lml[0, 0], pep_lml[0], decimal=abs(0.01 * pep_lml[0])
-        )
+        np.testing.assert_almost_equal(vfe_lml[0, 0], pep_lml[0], decimal=abs(0.01 * pep_lml[0]))
 
     def test_pep_fitc_consistency(self):
         self.setup_method()
-        fitc_model = GPy.models.SparseGPRegression(
-            self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z
-        )
+        fitc_model = GPy.models.SparseGPRegression(self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z)
         fitc_model.inference_method = GPy.inference.latent_function_inference.FITC()
         fitc_model.Gaussian_noise.variance = self.lik_noise_var
         fitc_lml = fitc_model.log_likelihood()
 
-        pep_model = GPy.models.SparseGPRegression(
-            self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z
-        )
-        pep_model.inference_method = GPy.inference.latent_function_inference.PEP(
-            alpha=1
-        )
+        pep_model = GPy.models.SparseGPRegression(self.X1D, self.Y1D, kernel=self.kernel, Z=self.Z)
+        pep_model.inference_method = GPy.inference.latent_function_inference.PEP(alpha=1)
         pep_model.Gaussian_noise.variance = self.lik_noise_var
         pep_lml = pep_model.log_likelihood()
 
-        np.testing.assert_almost_equal(
-            fitc_lml, pep_lml[0], decimal=abs(0.001 * pep_lml[0])
-        )
+        np.testing.assert_almost_equal(fitc_lml, pep_lml[0], decimal=abs(0.001 * pep_lml[0]))

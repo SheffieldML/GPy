@@ -47,9 +47,7 @@ class TestMF:
         """
         mf = GPy.mappings.PiecewiseLinear(1, 1, [0.0, 1.0], [0.5, 2.0])
         X = np.array([[-1.0], [0.5], [1.0], [2.0], [3.0]])
-        np.testing.assert_allclose(
-            mf.f(X), np.array([[-1.5], [0.0], [1.0 / 3.0], [1.0], [2.0]])
-        )
+        np.testing.assert_allclose(mf.f(X), np.array([[-1.5], [0.0], [1.0 / 3.0], [1.0], [2.0]]))
 
         X = np.array([[-1.0], [0.7], [1.3], [2.5]])
         dL_dF = np.array([[0.3], [-1.2], [0.8], [2.0]])

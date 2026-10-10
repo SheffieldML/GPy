@@ -61,9 +61,7 @@ class Kern_check_dK_dtheta(Kern_check_model):
     """
 
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        super(Kern_check_dK_dtheta, self).__init__(
-            kernel=kernel, dL_dK=dL_dK, X=X, X2=X2
-        )
+        super(Kern_check_dK_dtheta, self).__init__(kernel=kernel, dL_dK=dL_dK, X=X, X2=X2)
         self.link_parameter(self.kernel)
 
     def parameters_changed(self):
@@ -77,9 +75,7 @@ class Kern_check_dKdiag_dtheta(Kern_check_model):
     """
 
     def __init__(self, kernel=None, dL_dK=None, X=None):
-        super(Kern_check_dKdiag_dtheta, self).__init__(
-            kernel=kernel, dL_dK=dL_dK, X=X, X2=None
-        )
+        super(Kern_check_dKdiag_dtheta, self).__init__(kernel=kernel, dL_dK=dL_dK, X=X, X2=None)
         self.link_parameter(self.kernel)
 
     def log_likelihood(self):
@@ -105,9 +101,7 @@ class Kern_check_dKdiag_dX(Kern_check_dK_dX):
     """This class allows gradient checks for the gradient of a kernel diagonal with respect to X."""
 
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        super(Kern_check_dKdiag_dX, self).__init__(
-            kernel=kernel, dL_dK=dL_dK, X=X, X2=None
-        )
+        super(Kern_check_dKdiag_dX, self).__init__(kernel=kernel, dL_dK=dL_dK, X=X, X2=None)
 
     def log_likelihood(self):
         return (np.diag(self.dL_dK) * self.kernel.Kdiag(self.X)).sum()
@@ -120,9 +114,7 @@ class Kern_check_d2K_dXdX(Kern_check_model):
     """This class allows gradient checks for the secondderivative of a kernel with respect to X."""
 
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
-        super(Kern_check_d2K_dXdX, self).__init__(
-            kernel=kernel, dL_dK=dL_dK, X=X, X2=X2
-        )
+        super(Kern_check_d2K_dXdX, self).__init__(kernel=kernel, dL_dK=dL_dK, X=X, X2=X2)
         self.X = Param("X", X.copy())
         self.link_parameter(self.X)
         self.Xc = X.copy()
@@ -138,9 +130,7 @@ class Kern_check_d2K_dXdX(Kern_check_model):
         if self.X2 is None:
             grads = -self.kernel.gradients_XX(self.dL_dK, self.X).sum(1).sum(1)
         else:
-            grads = (
-                -self.kernel.gradients_XX(self.dL_dK.T, self.X2, self.X).sum(0).sum(1)
-            )
+            grads = -self.kernel.gradients_XX(self.dL_dK.T, self.X2, self.X).sum(0).sum(1)
         self.X.gradient[:] = grads
 
 
@@ -156,9 +146,7 @@ class Kern_check_d2Kdiag_dXdX(Kern_check_model):
     def log_likelihood(self):
         l = 0.0
         for i in range(self.X.shape[0]):
-            l += self.kernel.gradients_X(
-                self.dL_dK[[i], [i]], self.X[[i]], self.Xc[[i]]
-            ).sum()
+            l += self.kernel.gradients_X(self.dL_dK[[i], [i]], self.X[[i]], self.Xc[[i]]).sum()
         return l
 
     def parameters_changed(self):
@@ -166,9 +154,7 @@ class Kern_check_d2Kdiag_dXdX(Kern_check_model):
         self.X.gradient[:] = grads.sum(-1)
 
 
-def check_kernel_gradient_functions(
-    kern, X=None, X2=None, output_ind=None, verbose=False, fixed_X_dims=None
-):
+def check_kernel_gradient_functions(kern, X=None, X2=None, output_ind=None, verbose=False, fixed_X_dims=None):
     """
     This function runs on kernels to check the correctness of their
     implementation. It checks that the covariance function is positive definite
@@ -198,13 +184,7 @@ def check_kernel_gradient_functions(
     if result and verbose:
         print("Check passed.")
     if not result:
-        print(
-            (
-                "Positive definite check failed for "
-                + kern.name
-                + " covariance function."
-            )
-        )
+        print(("Positive definite check failed for " + kern.name + " covariance function."))
         pass_checks = False
 
     if verbose:
@@ -230,12 +210,7 @@ def check_kernel_gradient_functions(
     except NotImplementedError:
         result = True
         if verbose:
-            print(
-                (
-                    "update_gradients_full, with differing X and X2, not implemented for "
-                    + kern.name
-                )
-            )
+            print(("update_gradients_full, with differing X and X2, not implemented for " + kern.name))
     if result and verbose:
         print("Check passed.")
     if not result:
@@ -285,11 +260,7 @@ def check_kernel_gradient_functions(
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of K(X, X) wrt X failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            ("Gradient of K(X, X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False
@@ -309,11 +280,7 @@ def check_kernel_gradient_functions(
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of K(X, X2) wrt X failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            ("Gradient of K(X, X2) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
         )
         testmodel.checkgrad(verbose=True)
         pass_checks = False
@@ -333,11 +300,7 @@ def check_kernel_gradient_functions(
         print("Check passed.")
     if not result:
         print(
-            (
-                "Gradient of Kdiag(X) wrt X failed for "
-                + kern.name
-                + " covariance function. Gradient values as follows:"
-            )
+            ("Gradient of Kdiag(X) wrt X failed for " + kern.name + " covariance function. Gradient values as follows:")
         )
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
@@ -432,7 +395,7 @@ class TestKernelParameterLinking:
         if parameter_count == 2:
             assert kernel.parameters[1] is kernel.delta
         assert kernel.size == parameter_count * (2 if ARD else 1)
-        X = np.array([[-3., -2.], [-2., -3.], [2., 3.], [3., 2.]])
+        X = np.array([[-3.0, -2.0], [-2.0, -3.0], [2.0, 3.0], [3.0, 2.0]])
         np.testing.assert_allclose(kernel.Kdiag(X), np.diag(kernel.K(X)))
         assert Kern_check_dK_dtheta(kernel, X=X).checkgrad()
         assert Kern_check_dK_dtheta(kernel, X=X, X2=X[:2]).checkgrad()
@@ -440,10 +403,10 @@ class TestKernelParameterLinking:
 
     @pytest.mark.parametrize("idx_p", [0, 1])
     def test_detime(self, idx_p):
-        kernel = GPy.kern.DEtime(GPy.kern.RBF(1), idx_p=idx_p, Xp=0.)
+        kernel = GPy.kern.DEtime(GPy.kern.RBF(1), idx_p=idx_p, Xp=0.0)
         assert kernel.parameters[0] is kernel.kern
         assert kernel.size == kernel.kern.kern.size
-        X = np.array([[-1., 0.], [1., 0.], [-1., 1.], [1., 1.]])
+        X = np.array([[-1.0, 0.0], [1.0, 0.0], [-1.0, 1.0], [1.0, 1.0]])
         np.testing.assert_allclose(kernel.Kdiag(X), np.diag(kernel.K(X)))
         assert Kern_check_dK_dtheta(kernel, X=X).checkgrad()
 
@@ -471,9 +434,7 @@ class TestKernelGradientContinuous:
 
     def test_Prod(self):
         self.setup_method()
-        k = GPy.kern.Matern32(2, active_dims=[2, 3]) * GPy.kern.RBF(
-            2, active_dims=[0, 4]
-        ) + GPy.kern.Linear(self.D)
+        k = GPy.kern.Matern32(2, active_dims=[2, 3]) * GPy.kern.RBF(2, active_dims=[0, 4]) + GPy.kern.Linear(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
@@ -497,26 +458,14 @@ class TestKernelGradientContinuous:
 
     def test_Prod4(self):
         self.setup_method()
-        k = (
-            GPy.kern.RBF(2, active_dims=[0, 4])
-            * GPy.kern.Linear(self.D)
-            * GPy.kern.Matern32(2, active_dims=[0, 1])
-        )
+        k = GPy.kern.RBF(2, active_dims=[0, 4]) * GPy.kern.Linear(self.D) * GPy.kern.Matern32(2, active_dims=[0, 1])
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_Add(self):
         self.setup_method()
-        k = (
-            GPy.kern.Matern32(2, active_dims=[2, 3])
-            + GPy.kern.RBF(2, active_dims=[0, 4])
-            + GPy.kern.Linear(self.D)
-        )
-        k += (
-            GPy.kern.Matern32(2, active_dims=[2, 3])
-            + GPy.kern.RBF(2, active_dims=[0, 4])
-            + GPy.kern.Linear(self.D)
-        )
+        k = GPy.kern.Matern32(2, active_dims=[2, 3]) + GPy.kern.RBF(2, active_dims=[0, 4]) + GPy.kern.Linear(self.D)
+        k += GPy.kern.Matern32(2, active_dims=[2, 3]) + GPy.kern.RBF(2, active_dims=[0, 4]) + GPy.kern.Linear(self.D)
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
@@ -698,9 +647,7 @@ class TestKernelGradientContinuous:
         k = GPy.kern.MultioutputKern([k1, k2])
         Xt, _, _ = GPy.util.multioutput.build_XY([self.X, self.X])
         X2t, _, _ = GPy.util.multioutput.build_XY([self.X2, self.X2])
-        assert check_kernel_gradient_functions(
-            k, X=Xt, X2=X2t, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(k, X=Xt, X2=X2t, verbose=verbose, fixed_X_dims=-1)
 
     def test_Precomputed(self):
         self.setup_method()
@@ -710,24 +657,16 @@ class TestKernelGradientContinuous:
         X2 = np.arange(self.N, 2 * self.N + 10).reshape(self.N + 10, 1)
         k = GPy.kern.Precomputed(1, cov)
         k.randomize()
-        assert check_kernel_gradient_functions(
-            k, X=X, X2=X2, verbose=verbose, fixed_X_dims=[0]
-        )
+        assert check_kernel_gradient_functions(k, X=X, X2=X2, verbose=verbose, fixed_X_dims=[0])
 
     def test_basis_func_linear_slope(self):
         self.setup_method()
-        start_stop = np.random.uniform(
-            self.X.min(0), self.X.max(0), (4, self.X.shape[1])
-        ).T
+        start_stop = np.random.uniform(self.X.min(0), self.X.max(0), (4, self.X.shape[1])).T
         start_stop.sort(axis=1)
         ks = []
         for i in range(start_stop.shape[0]):
             start, stop = np.split(start_stop[i], 2)
-            ks.append(
-                GPy.kern.LinearSlopeBasisFuncKernel(
-                    1, start, stop, ARD=i % 2 == 0, active_dims=[i]
-                )
-            )
+            ks.append(GPy.kern.LinearSlopeBasisFuncKernel(1, start, stop, ARD=i % 2 == 0, active_dims=[i]))
         k = GPy.kern.Add(ks)
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
@@ -736,11 +675,7 @@ class TestKernelGradientContinuous:
         points = np.random.uniform(self.X.min(0), self.X.max(0), (self.X.shape[1]))
         ks = []
         for i in range(points.shape[0]):
-            ks.append(
-                GPy.kern.ChangePointBasisFuncKernel(
-                    1, points[i], ARD=i % 2 == 0, active_dims=[i]
-                )
-            )
+            ks.append(GPy.kern.ChangePointBasisFuncKernel(1, points[i], ARD=i % 2 == 0, active_dims=[i]))
         k = GPy.kern.Add(ks)
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
@@ -748,26 +683,18 @@ class TestKernelGradientContinuous:
         self.setup_method()
         ks = []
         for i in range(self.X.shape[1]):
-            ks.append(
-                GPy.kern.PolynomialBasisFuncKernel(
-                    1, 5, ARD=i % 2 == 0, active_dims=[i]
-                )
-            )
+            ks.append(GPy.kern.PolynomialBasisFuncKernel(1, 5, ARD=i % 2 == 0, active_dims=[i]))
         k = GPy.kern.Add(ks)
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
     def test_basis_func_domain(self):
         self.setup_method()
-        start_stop = np.random.uniform(
-            self.X.min(0), self.X.max(0), (4, self.X.shape[1])
-        ).T
+        start_stop = np.random.uniform(self.X.min(0), self.X.max(0), (4, self.X.shape[1])).T
         start_stop.sort(axis=1)
         ks = []
         for i in range(start_stop.shape[0]):
             start, stop = np.split(start_stop[i], 2)
-            ks.append(
-                GPy.kern.DomainKernel(1, start, stop, ARD=i % 2 == 0, active_dims=[i])
-            )
+            ks.append(GPy.kern.DomainKernel(1, start, stop, ARD=i % 2 == 0, active_dims=[i]))
         k = GPy.kern.Add(ks)
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
@@ -854,18 +781,14 @@ class TestKernelNonContinuous:
         self.setup_method()
         k = GPy.kern.RBF(self.D, active_dims=range(self.D))
         kern = GPy.kern.IndependentOutputs(k, -1, "ind_single")
-        assert check_kernel_gradient_functions(
-            kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1)
         k = [
             GPy.kern.RBF(1, active_dims=[1], name="rbf1"),
             GPy.kern.RBF(self.D, active_dims=range(self.D), name="rbf012"),
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf02"),
         ]
         kern = GPy.kern.IndependentOutputs(k, -1, name="ind_split")
-        assert check_kernel_gradient_functions(
-            kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1)
 
     def test_Hierarchical(self):
         self.setup_method()
@@ -884,25 +807,19 @@ class TestKernelNonContinuous:
             GPy.kern.RBF(2, active_dims=[0, 2], name="rbf2"),
         ]
         kern = GPy.kern.IndependentOutputs(k, -1, name="ind_split")
-        assert check_kernel_gradient_functions(
-            kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1)
 
     def test_ODE_UY(self):
         self.setup_method()
         kern = GPy.kern.ODE_UY(2, active_dims=[0, self.D])
         X = self.X[self.X[:, -1] != 2]
         X2 = self.X2[self.X2[:, -1] != 2]
-        assert check_kernel_gradient_functions(
-            kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1)
 
     def test_Coregionalize(self):
         self.setup_method()
         kern = GPy.kern.Coregionalize(1, output_dim=3, active_dims=[-1])
-        assert check_kernel_gradient_functions(
-            kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1
-        )
+        assert check_kernel_gradient_functions(kern, X=self.X, X2=self.X2, verbose=verbose, fixed_X_dims=-1)
 
 
 @pytest.mark.skipif(
@@ -971,9 +888,7 @@ class TestKernelProductWithZeroValues:
     def test_zero_valued_kernel_full(self):
         self.setup_method()
         self.k.update_gradients_full(1, self.X)
-        assert not np.isnan(
-            self.k["linear.variances"].gradient
-        ), "Gradient resulted in NaN"
+        assert not np.isnan(self.k["linear.variances"].gradient), "Gradient resulted in NaN"
 
     def test_zero_valued_kernel_gradients_X(self):
         self.setup_method()
@@ -1030,25 +945,15 @@ class TestKernelPsiStatisticsGradient:
             psi1 = kernel.psi1(self.Z, self.qX)
             if not psi2n:
                 psi2 = kernel.psi2(self.Z, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3 * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3 * psi2).sum()
             else:
                 psi2 = kernel.psi2n(self.Z, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3n * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3n * psi2).sum()
 
         def df(p):
             kernel.param_array[:] = p
             kernel.trigger_update()
-            kernel.update_gradients_expectations(
-                self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX
-            )
+            kernel.update_gradients_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX)
             return kernel.gradient.copy()
 
         from GPy.models import GradientChecker
@@ -1064,23 +969,13 @@ class TestKernelPsiStatisticsGradient:
             psi2 = kernel.psi2(p, self.qX)
             if not psi2n:
                 psi2 = kernel.psi2(p, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3 * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3 * psi2).sum()
             else:
                 psi2 = kernel.psi2n(p, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3n * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3n * psi2).sum()
 
         def df(p):
-            return kernel.gradients_Z_expectations(
-                self.w1, self.w2, self.w3 if not psi2n else self.w3n, p, self.qX
-            )
+            return kernel.gradients_Z_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, p, self.qX)
 
         from GPy.models import GradientChecker
 
@@ -1095,18 +990,10 @@ class TestKernelPsiStatisticsGradient:
             psi1 = kernel.psi1(self.Z, self.qX)
             if not psi2n:
                 psi2 = kernel.psi2(self.Z, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3 * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3 * psi2).sum()
             else:
                 psi2 = kernel.psi2n(self.Z, self.qX)
-                return (
-                    (self.w1 * psi0).sum()
-                    + (self.w2 * psi1).sum()
-                    + (self.w3n * psi2).sum()
-                )
+                return (self.w1 * psi0).sum() + (self.w2 * psi1).sum() + (self.w3n * psi2).sum()
 
         def df(p):
             self.qX.param_array[:] = p

@@ -68,17 +68,13 @@ class TestRVTransformation:
     def test_Logexp(self):
         self._test_trans(GPy.constraints.Logexp())
 
-    @pytest.mark.skip(
-        "Gradient not checking right, @jameshensman what is going on here?"
-    )
+    @pytest.mark.skip("Gradient not checking right, @jameshensman what is going on here?")
     def test_Logexp_grad(self):
         self._test_grad(GPy.constraints.Logexp())
 
     def test_Exponent(self):
         self._test_trans(GPy.constraints.Exponent())
 
-    @pytest.mark.skip(
-        "Gradient not checking right, @jameshensman what is going on here?"
-    )
+    @pytest.mark.skip("Gradient not checking right, @jameshensman what is going on here?")
     def test_Exponent_grad(self):
         self._test_grad(GPy.constraints.Exponent())

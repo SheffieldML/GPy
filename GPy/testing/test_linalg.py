@@ -26,9 +26,7 @@ class TestLinalg:
         L = jitchol(self.A_corrupt, maxtries=5)
         A_new = L.dot(L.T)
         diff = A_new - self.A_corrupt
-        np.testing.assert_allclose(
-            diff, np.eye(A_new.shape[0]) * np.diag(diff).mean(), atol=1e-13
-        )
+        np.testing.assert_allclose(diff, np.eye(A_new.shape[0]) * np.diag(diff).mean(), atol=1e-13)
 
     def test_jitchol_failure(self):
         self.setup_method()

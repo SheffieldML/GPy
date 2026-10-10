@@ -50,9 +50,7 @@ class TestMapping:
         np.random.seed(42)
         X = np.random.randn(100, 3)
         for activation in ["tanh", "relu", "sigmoid"]:
-            mapping = GPy.mappings.MLPext(
-                input_dim=3, hidden_dims=[5, 5], output_dim=2, activation=activation
-            )
+            mapping = GPy.mappings.MLPext(input_dim=3, hidden_dims=[5, 5], output_dim=2, activation=activation)
             assert MappingGradChecker(mapping, X).checkgrad()
 
     def test_addmapping(self):

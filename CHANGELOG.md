@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005 Phase 2: `ruff format` on `GPy/testing` (format-only; no behaviour change)
 * document multi-output / coregionalized regression (ICM/LCM, predict `Y_metadata`, list `set_XY`) and let `GPCoregionalizedRegression.predict` accept per-output list inputs like `MultioutputGP` (#1099, #1016)
 * fix `GPMultioutRegression` when `num_inducing[1]` exceeds the number of outputs: cap Mr and size `qU_var_r_*` / `qU_mean` from the actual `Z_row` so init no longer broadcast-fails (#733)
 * `GPHeteroscedasticRegression` accepts `mean_function=` like `GPRegression` (#875)

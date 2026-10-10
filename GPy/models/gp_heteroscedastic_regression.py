@@ -36,3 +36,14 @@ class GPHeteroscedasticRegression(GP):
 
         super(GPHeteroscedasticRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata=Y_metadata)
 
+    def set_XY(self, X=None, Y=None, Y_metadata=None):
+        """
+        Set input / output data, refreshing per-point noise metadata.
+
+        When the number of observations changes, ``Y_metadata['output_index']``
+        and ``het_Gauss.variance`` are resized to match (see #959, #858).
+        Pass ``Y_metadata`` (and optionally set variance afterwards) to control
+        the mapping explicitly.
+        """
+        super(GPHeteroscedasticRegression, self).set_XY(X=X, Y=Y, Y_metadata=Y_metadata)
+

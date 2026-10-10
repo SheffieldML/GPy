@@ -209,7 +209,7 @@ class GP(Model):
     def input_dim(self):
         return self.X.shape[1]
 
-    def set_XY(self, X=None, Y=None):
+    def set_XY(self, X=None, Y=None, Y_metadata=None):
         """
         Set the input / output data of the model
         This is useful if we wish to change our existing data but maintain the same model
@@ -218,6 +218,10 @@ class GP(Model):
         :type X: np.ndarray
         :param Y: output observations
         :type Y: np.ndarray
+        :param Y_metadata: optional metadata; for
+            :class:`~GPy.likelihoods.HeteroscedasticGaussian` this is refreshed
+            automatically when the number of rows changes (#959, #858)
+        :type Y_metadata: dict or None
         """
         self.update_model(False)
         if Y is not None:
@@ -246,7 +250,26 @@ class GP(Model):
             else:
                 self.X = ObsAr(X)
 
+        if Y_metadata is not None:
+            self.Y_metadata = Y_metadata
+        self._sync_heteroscedastic_noise()
+
         self.update_model(True)
+
+    def _sync_heteroscedastic_noise(self):
+        """Align heteroscedastic per-point noise with the current data size."""
+        if not isinstance(self.likelihood, likelihoods.HeteroscedasticGaussian):
+            return
+        num_data = self.Y_normalized.shape[0]
+        if self.Y_metadata is None:
+            self.Y_metadata = {}
+        output_index = self.Y_metadata.get('output_index', None)
+        if output_index is None or np.asarray(output_index).shape[0] != num_data:
+            self.Y_metadata['output_index'] = np.arange(num_data)[:, None]
+            output_index = self.Y_metadata['output_index']
+        target = int(np.max(np.asarray(output_index))) + 1
+        if self.likelihood.variance.shape[0] != target:
+            self.likelihood.resize_for_data(target)
 
     def set_X(self,X):
         """

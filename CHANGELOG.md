@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix `set_XY` for heteroscedastic Gaussian regression when the number of observations changes: refresh `Y_metadata['output_index']` and resize `het_Gauss.variance` (#959, #858)
 * matplotlib `GPy.plotting.show` accepts the plots `dict` from `model.plot()` / `add_to_canvas`, as well as Axes/Figure (#920; alternative to #989)
 * switch packaging to Poetry (CIP-0003 Option A): `pyproject.toml` + `build_extension.py` Cython hook, committed contributor `poetry.lock`, NumPy ≥ 2 / SciPy in the build env / Cython build-only / optional `tables`; supersedes #1080 (@MartinBubel)
 * pickle kernels (and other parameterized subtrees) after they have been linked into a GP: omit the parent link from the memento so load no longer fails with missing `_name` (#605, #932; paramz ≥ 0.10.1 preferred)

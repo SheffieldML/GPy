@@ -1475,6 +1475,33 @@ class TestGradient:
         m = GPy.models.GPHeteroscedasticRegression(X, Y, kern)
         assert m.checkgrad()
 
+    def test_gp_heteroscedastic_set_XY_resize(self):
+        """set_XY with a new data size refreshes per-point noise (#959, #858)."""
+        self.setup_method()
+        np.random.seed(0)
+        X = np.linspace(0, 1, 30)[:, None]
+        Y = np.sin(X) + 0.05 * np.random.randn(30, 1)
+        m = GPy.models.GPHeteroscedasticRegression(X, Y)
+        m.optimize(max_iters=20)
+        X2, Y2 = X[:10], Y[:10]
+        m.set_XY(X2, Y2)
+        assert m.X.shape[0] == 10
+        assert m.Y.shape[0] == 10
+        assert m.Y_metadata["output_index"].shape[0] == 10
+        assert m.likelihood.variance.shape[0] == 10
+        mu, var = m.predict(X2)
+        assert mu.shape == (10, 1)
+        assert np.all(np.isfinite(mu))
+        assert np.all(np.isfinite(var))
+        # Grow again with an explicit noise vector
+        X3 = np.linspace(0, 1, 15)[:, None]
+        Y3 = np.cos(X3)
+        noise = 0.2 * np.ones((15, 1))
+        m.set_XY(X3, Y3, Y_metadata={"output_index": np.arange(15)[:, None]})
+        m.likelihood.resize_for_data(15, variance=noise)
+        assert m.likelihood.variance.shape[0] == 15
+        np.testing.assert_allclose(m.likelihood.variance.values, noise)
+
     def test_sparse_gp_heteroscedastic_regression(self):
         self.setup_method()
         num_obs = 25

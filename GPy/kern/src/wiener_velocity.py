@@ -36,6 +36,9 @@ class WienerVelocity(Kern):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
+        input_dict.pop("useGPU", None)
+        if "variance" in input_dict:
+            input_dict["variance"] = float(np.asarray(input_dict["variance"]).squeeze())
         return WienerVelocity(**input_dict)
 
     def K(self, X, X2=None):

@@ -296,6 +296,42 @@ class StudentT(Likelihood):
                 mu, variance, predictive_mean, Y_metadata
             )
 
+    def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
+        """
+        Predictive mean and variance of y* (observation space).
+
+        For the identity link and nu > 2, Var(y*|f*) is constant in f*, so
+        full observation covariance is the latent covariance plus that constant
+        on the diagonal. The base Likelihood path ignores ``full_cov`` and would
+        ravel a covariance matrix through 1D quadrature (#993).
+        """
+        if not full_cov:
+            return super(StudentT, self).predictive_values(
+                mu, var, full_cov=False, Y_metadata=Y_metadata
+            )
+
+        if not isinstance(self.gp_link, link_functions.Identity):
+            raise NotImplementedError(
+                "StudentT full_cov predictive covariance is only implemented "
+                "for the identity link"
+            )
+        if self.deg_free <= 2.0:
+            pred_mean = self.gp_link.transf(mu)
+            return pred_mean, np.empty(var.shape) * np.nan
+
+        nu = self.deg_free.item()
+        noise = self.sigma2.item() * nu / (nu - 2.0)
+        pred_mean = self.gp_link.transf(mu)
+        pred_var = np.array(var, copy=True, dtype=float)
+        if pred_var.ndim == 2:
+            pred_var.flat[:: pred_var.shape[0] + 1] += noise
+        elif pred_var.ndim == 3:
+            for i in range(pred_var.shape[-1]):
+                pred_var[:, :, i].flat[:: pred_var.shape[0] + 1] += noise
+        else:
+            raise ValueError("Unexpected latent covariance shape %s" % (pred_var.shape,))
+        return pred_mean, pred_var
+
     def conditional_mean(self, gp):
         return self.gp_link.transf(gp)
 

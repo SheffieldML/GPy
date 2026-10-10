@@ -750,6 +750,14 @@ class Likelihood(Parameterized):
         :param full_cov: whether to use the full covariance or just the diagonal
         :type full_cov: Boolean
         """
+        if full_cov:
+            # Default quadrature assumes a vector of marginal variances. Passing a
+            # full latent covariance here silently produces nonsense (#993).
+            raise NotImplementedError(
+                "%s does not implement full observation covariance; "
+                "use full_cov=False, include_likelihood=False, or override "
+                "predictive_values." % self.__class__.__name__
+            )
         try:
             pred_mean = self.predictive_mean(mu, var, Y_metadata=Y_metadata)
             pred_var = self.predictive_variance(mu, var, pred_mean, Y_metadata=Y_metadata)

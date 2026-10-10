@@ -129,5 +129,19 @@ class TestPickleSupport(ListDictTestCase):
         assert str(par) == str(pcopy)
         assert pcopy.checkgrad()
 
+    def test_pickle_kernel_after_gp_use(self):
+        """Kernels must round-trip after being linked into a GP (#605, #932)."""
+        X = np.linspace(0, 1, 5)[:, None]
+        Y = np.sin(X)
+        k = GPy.kern.RBF(1)
+        m = GPRegression(X, Y, kernel=k)
+        m.optimize(max_iters=5)
+        k2 = pickle.loads(pickle.dumps(k))
+        np.testing.assert_allclose(k2.param_array, k.param_array)
+        np.testing.assert_allclose(k2.K(X), k.K(X))
+        m2 = pickle.loads(pickle.dumps(m))
+        np.testing.assert_allclose(m2.param_array, m.param_array)
+        assert k2._parent_ is None
+
     def _callback(self, what, which):
         what.count += 1

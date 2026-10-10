@@ -127,3 +127,37 @@ class SparseGPCoregionalizedRegression(SparseGP):
             self.Y_metadata = {}
         self.Y_metadata["output_index"] = self.output_index
         super(SparseGPCoregionalizedRegression, self).set_XY(X=X, Y=Y)
+
+    def predict(
+        self,
+        Xnew,
+        full_cov=False,
+        Y_metadata=None,
+        kern=None,
+        likelihood=None,
+        include_likelihood=True,
+    ):
+        """``Xnew`` may be stacked or a list of per-output arrays (#1099)."""
+        Xnew, Y_metadata = util.multioutput.prepare_Xnew(Xnew, Y_metadata)
+        return super(SparseGPCoregionalizedRegression, self).predict(
+            Xnew,
+            full_cov=full_cov,
+            Y_metadata=Y_metadata,
+            kern=kern,
+            likelihood=likelihood,
+            include_likelihood=include_likelihood,
+        )
+
+    def predict_noiseless(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
+        Xnew, Y_metadata = util.multioutput.prepare_Xnew(Xnew, Y_metadata)
+        return super(SparseGPCoregionalizedRegression, self).predict_noiseless(
+            Xnew, full_cov=full_cov, Y_metadata=Y_metadata, kern=kern
+        )
+
+    def predict_quantiles(
+        self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None
+    ):
+        X, Y_metadata = util.multioutput.prepare_Xnew(X, Y_metadata)
+        return super(SparseGPCoregionalizedRegression, self).predict_quantiles(
+            X, quantiles=quantiles, Y_metadata=Y_metadata, kern=kern, likelihood=likelihood
+        )

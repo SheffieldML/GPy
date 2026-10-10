@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* document multi-output / coregionalized regression (ICM/LCM, predict `Y_metadata`, list `set_XY`) and let `GPCoregionalizedRegression.predict` accept per-output list inputs like `MultioutputGP` (#1099, #1016)
 * fix `GPMultioutRegression` when `num_inducing[1]` exceeds the number of outputs: cap Mr and size `qU_var_r_*` / `qU_mean` from the actual `Z_row` so init no longer broadcast-fails (#733)
 * `GPHeteroscedasticRegression` accepts `mean_function=` like `GPRegression` (#875)
 * fix `set_XY` for heteroscedastic Gaussian regression when the number of observations changes: refresh `Y_metadata['output_index']` and resize `het_Gauss.variance` (#959, #858)

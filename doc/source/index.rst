@@ -64,6 +64,12 @@ GPy is a big, powerful package, with many features. The concept of how to use GP
 
 .. toctree::
    :maxdepth: 1
+   :caption: For users
+
+   tuto_coregionalized
+
+.. toctree::
+   :maxdepth: 1
    :caption: For developers
 
    tuto_creating_new_models

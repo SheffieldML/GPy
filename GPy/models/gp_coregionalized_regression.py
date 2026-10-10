@@ -9,9 +9,13 @@ from .. import util
 
 class GPCoregionalizedRegression(GP):
     """
-    Gaussian Process model for heteroscedastic multioutput regression
+    Gaussian Process model for correlated multi-output regression.
 
-    This is a thin wrapper around the models.GP class, with a set of sensible defaults
+    Thin wrapper around :class:`~GPy.core.gp.GP` with list-of-outputs data,
+    mixed-noise likelihoods, and (by default) an ICM kernel. Prefer this over
+    :class:`~GPy.models.multioutput_gp.MultioutputGP` for standard multi-task
+    regression; use ``MultioutputGP`` when outputs need different likelihoods
+    or a custom multi-kernel layout. See ``doc/source/tuto_coregionalized.rst``.
 
     :param X_list: list of input observations corresponding to each output
     :type X_list: list of numpy arrays
@@ -79,3 +83,40 @@ class GPCoregionalizedRegression(GP):
             self.Y_metadata = {}
         self.Y_metadata["output_index"] = self.output_index
         super(GPCoregionalizedRegression, self).set_XY(X=X, Y=Y)
+
+    def predict(
+        self,
+        Xnew,
+        full_cov=False,
+        Y_metadata=None,
+        kern=None,
+        likelihood=None,
+        include_likelihood=True,
+    ):
+        """
+        Posterior predictive. ``Xnew`` may be a stacked array (with output-index
+        column) or a list of per-output arrays, matching the constructor (#1099).
+        """
+        Xnew, Y_metadata = util.multioutput.prepare_Xnew(Xnew, Y_metadata)
+        return super(GPCoregionalizedRegression, self).predict(
+            Xnew,
+            full_cov=full_cov,
+            Y_metadata=Y_metadata,
+            kern=kern,
+            likelihood=likelihood,
+            include_likelihood=include_likelihood,
+        )
+
+    def predict_noiseless(self, Xnew, full_cov=False, Y_metadata=None, kern=None):
+        Xnew, Y_metadata = util.multioutput.prepare_Xnew(Xnew, Y_metadata)
+        return super(GPCoregionalizedRegression, self).predict_noiseless(
+            Xnew, full_cov=full_cov, Y_metadata=Y_metadata, kern=kern
+        )
+
+    def predict_quantiles(
+        self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None
+    ):
+        X, Y_metadata = util.multioutput.prepare_Xnew(X, Y_metadata)
+        return super(GPCoregionalizedRegression, self).predict_quantiles(
+            X, quantiles=quantiles, Y_metadata=Y_metadata, kern=kern, likelihood=likelihood
+        )

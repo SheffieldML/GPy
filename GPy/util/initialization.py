@@ -23,8 +23,7 @@ def initialize_latent(init, input_dim, Y):
         # dealing with depcrecated initialization method
         # should be remove along the next major release
         warnings.warn(
-            "Deprecated initialization method 'empirical_samples'. "
-            "Use 'random' instead.",
+            "Deprecated initialization method 'empirical_samples'. Use 'random' instead.",
             DeprecationWarning,
         )
 
@@ -33,11 +32,7 @@ def initialize_latent(init, input_dim, Y):
 
         YYT = tdot(Y)
         diag.add(YYT, 1e-6)
-        EMP = np.asfortranarray(
-            np.random.multivariate_normal(
-                np.zeros(Y.shape[0]), YYT, min(input_dim, Y.shape[1])
-            ).T
-        )
+        EMP = np.asfortranarray(np.random.multivariate_normal(np.zeros(Y.shape[0]), YYT, min(input_dim, Y.shape[1])).T)
         Xr[: EMP.shape[0], : EMP.shape[1]] = EMP
         var = np.random.uniform(0.5, 1.5, input_dim)
     elif init == "random":
@@ -51,7 +46,6 @@ def initialize_latent(init, input_dim, Y):
             DeprecationWarning,
         )
         var = Xr.var(0)
-        
 
     Xr -= Xr.mean(0)
     Xr /= Xr.std(0)

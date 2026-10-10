@@ -51,7 +51,7 @@ class WarpingFunction(Parameterized):
             update = (fy - z) / fgrady
             y -= self.rate * update
             it += 1
-        #if it == max_iterations:
+        # if it == max_iterations:
         #    print("WARNING!!! Maximum number of iterations reached in f_inv ")
         #    print("Sum of roots: %.4f" % np.sum(fy - z))
         return y
@@ -69,9 +69,11 @@ class WarpingFunction(Parameterized):
            instantiate the object.
         """
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        warping_class = input_dict.pop('class')
+        warping_class = input_dict.pop("class")
         import GPy
+
         warping_class = eval(warping_class)
         return warping_class._build_from_input_dict(warping_class, input_dict)
 
@@ -83,11 +85,12 @@ class WarpingFunction(Parameterized):
         y = np.arange(xmin, xmax, 0.01)
         f_y = self.f(y)
         from matplotlib import pyplot as plt
+
         plt.figure()
         plt.plot(y, f_y)
-        plt.xlabel('y')
-        plt.ylabel('f(y)')
-        plt.title('warping function')
+        plt.xlabel("y")
+        plt.ylabel("f(y)")
+        plt.title("warping function")
         plt.show()
 
 
@@ -98,6 +101,7 @@ class TanhFunction(WarpingFunction):
     the range. Notice the term 'd', which scales the
     linear trend.
     """
+
     def __init__(self, n_terms=3, initial_y=None):
         """
         n_terms specifies the number of tanh terms to be used
@@ -105,10 +109,10 @@ class TanhFunction(WarpingFunction):
         self.n_terms = n_terms
         self.num_parameters = 3 * self.n_terms + 1
         self.psi = np.ones((self.n_terms, 3))
-        super(TanhFunction, self).__init__(name='warp_tanh')
-        self.psi = Param('psi', self.psi)
+        super(TanhFunction, self).__init__(name="warp_tanh")
+        self.psi = Param("psi", self.psi)
         self.psi[:, :2].constrain_positive()
-        self.d = Param('%s' % ('d'), 1.0, Logexp())
+        self.d = Param("%s" % ("d"), 1.0, Logexp())
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
         self.initial_y = initial_y
@@ -150,18 +154,18 @@ class TanhFunction(WarpingFunction):
         """
         gradient of f w.r.t to y ([N x 1])
 
-        :returns: Nx1 vector of derivatives, unless return_precalc is true, 
+        :returns: Nx1 vector of derivatives, unless return_precalc is true,
         then it also returns the precomputed stuff
         """
         d = self.d
         mpsi = self.psi
 
         # vectorized version
-        S = (mpsi[:,1] * (y[:,:,None] + mpsi[:,2])).T
+        S = (mpsi[:, 1] * (y[:, :, None] + mpsi[:, 2])).T
         R = np.tanh(S)
-        D = 1 - (R ** 2)
+        D = 1 - (R**2)
 
-        GRAD = (d + (mpsi[:,0:1][:,:,None] * mpsi[:,1:2][:,:,None] * D).sum(axis=0)).T
+        GRAD = (d + (mpsi[:, 0:1][:, :, None] * mpsi[:, 1:2][:, :, None] * D).sum(axis=0)).T
 
         if return_precalc:
             return GRAD, S, R, D
@@ -179,18 +183,18 @@ class TanhFunction(WarpingFunction):
         w, s, r, d = self.fgrad_y(y, return_precalc=True)
         gradients = np.zeros((y.shape[0], y.shape[1], len(mpsi), 4))
         for i in range(len(mpsi)):
-            a,b,c  = mpsi[i]
-            gradients[:, :, i, 0] = (b * (1.0/np.cosh(s[i])) ** 2).T
-            gradients[:, :, i, 1] = a * (d[i] - 2.0 * s[i] * r[i] * (1.0/np.cosh(s[i])) ** 2).T
-            gradients[:, :, i, 2] = (-2.0 * a * (b ** 2) * r[i] * ((1.0 / np.cosh(s[i])) ** 2)).T
+            a, b, c = mpsi[i]
+            gradients[:, :, i, 0] = (b * (1.0 / np.cosh(s[i])) ** 2).T
+            gradients[:, :, i, 1] = a * (d[i] - 2.0 * s[i] * r[i] * (1.0 / np.cosh(s[i])) ** 2).T
+            gradients[:, :, i, 2] = (-2.0 * a * (b**2) * r[i] * ((1.0 / np.cosh(s[i])) ** 2)).T
         gradients[:, :, 0, 3] = 1.0
 
         if return_covar_chain:
             covar_grad_chain = np.zeros((y.shape[0], y.shape[1], len(mpsi), 4))
             for i in range(len(mpsi)):
-                a,b,c = mpsi[i]
+                a, b, c = mpsi[i]
                 covar_grad_chain[:, :, i, 0] = (r[i]).T
-                covar_grad_chain[:, :, i, 1] = (a * (y + c) * ((1.0 / np.cosh(s[i])) ** 2).T)
+                covar_grad_chain[:, :, i, 1] = a * (y + c) * ((1.0 / np.cosh(s[i])) ** 2).T
                 covar_grad_chain[:, :, i, 2] = a * b * ((1.0 / np.cosh(s[i])) ** 2).T
             covar_grad_chain[:, :, 0, 3] = y
             return gradients, covar_grad_chain
@@ -199,8 +203,7 @@ class TanhFunction(WarpingFunction):
 
     def update_grads(self, Y_untransformed, Kiy):
         grad_y = self.fgrad_y(Y_untransformed)
-        grad_y_psi, grad_psi = self.fgrad_y_psi(Y_untransformed,
-                                                return_covar_chain=True)
+        grad_y_psi, grad_psi = self.fgrad_y_psi(Y_untransformed, return_covar_chain=True)
         djac_dpsi = ((1.0 / grad_y[:, :, None, None]) * grad_y_psi).sum(axis=0).sum(axis=0)
         dquad_dpsi = (Kiy[:, None, None, None] * grad_psi).sum(axis=0).sum(axis=0)
 
@@ -217,9 +220,10 @@ class LogFunction(WarpingFunction):
     The closed_inverse flag should only be set to False for
     debugging and testing purposes.
     """
+
     def __init__(self, closed_inverse=True):
         self.num_parameters = 0
-        super(LogFunction, self).__init__(name='log')
+        super(LogFunction, self).__init__(name="log")
         self.closed_inverse = closed_inverse
         if closed_inverse:
             self.f_inv = self._f_inv
@@ -234,7 +238,7 @@ class LogFunction(WarpingFunction):
         return np.log(y)
 
     def fgrad_y(self, y):
-        return 1. / y
+        return 1.0 / y
 
     def update_grads(self, Y_untransformed, Kiy):
         pass
@@ -255,9 +259,10 @@ class IdentityFunction(WarpingFunction):
     The closed_inverse flag should only be set to False for
     debugging and testing purposes.
     """
+
     def __init__(self, closed_inverse=True):
         self.num_parameters = 0
-        super(IdentityFunction, self).__init__(name='identity')
+        super(IdentityFunction, self).__init__(name="identity")
         self.closed_inverse = closed_inverse
         if closed_inverse:
             self.f_inv = self._f_inv
@@ -267,7 +272,7 @@ class IdentityFunction(WarpingFunction):
         input_dict["class"] = "GPy.util.warping_functions.IdentityFunction"
         input_dict["closed_inverse"] = self.closed_inverse
         return input_dict
-        
+
     def f(self, y):
         return y
 
@@ -281,7 +286,6 @@ class IdentityFunction(WarpingFunction):
         if return_covar_chain:
             return 0, 0
         return 0
-        
+
     def _f_inv(self, z, y=None):
         return z
-

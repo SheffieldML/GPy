@@ -417,6 +417,37 @@ def check_kernel_gradient_functions(
     return pass_checks
 
 
+class TestKernelParameterLinking:
+    @pytest.mark.parametrize("ARD", [False, True])
+    @pytest.mark.parametrize(
+        "kernel_class, kwargs, parameter_count",
+        [
+            (GPy.kern.TruncLinear, {}, 2),
+            (GPy.kern.TruncLinear_inf, {"interval": [0, 1]}, 1),
+        ],
+    )
+    def test_truncated_linear(self, kernel_class, kwargs, parameter_count, ARD):
+        kernel = kernel_class(2, ARD=ARD, **kwargs)
+        assert kernel.parameters[0] is kernel.variances
+        if parameter_count == 2:
+            assert kernel.parameters[1] is kernel.delta
+        assert kernel.size == parameter_count * (2 if ARD else 1)
+        X = np.array([[-3., -2.], [-2., -3.], [2., 3.], [3., 2.]])
+        np.testing.assert_allclose(kernel.Kdiag(X), np.diag(kernel.K(X)))
+        assert Kern_check_dK_dtheta(kernel, X=X).checkgrad()
+        assert Kern_check_dK_dtheta(kernel, X=X, X2=X[:2]).checkgrad()
+        assert Kern_check_dKdiag_dtheta(kernel, X=X).checkgrad()
+
+    @pytest.mark.parametrize("idx_p", [0, 1])
+    def test_detime(self, idx_p):
+        kernel = GPy.kern.DEtime(GPy.kern.RBF(1), idx_p=idx_p, Xp=0.)
+        assert kernel.parameters[0] is kernel.kern
+        assert kernel.size == kernel.kern.kern.size
+        X = np.array([[-1., 0.], [1., 0.], [-1., 1.], [1., 1.]])
+        np.testing.assert_allclose(kernel.Kdiag(X), np.diag(kernel.K(X)))
+        assert Kern_check_dK_dtheta(kernel, X=X).checkgrad()
+
+
 class TestKernelGradientContinuous:
     def setup_method(self):
         self.N, self.D = 10, 5

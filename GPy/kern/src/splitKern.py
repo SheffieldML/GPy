@@ -14,7 +14,7 @@ class DEtime(Kern):
         self.index_dim=index_dim
         self.kern = SplitKern(kernel,Xp, index_dim=index_dim)
         super(DEtime, self).__init__(input_dim=kernel.input_dim+1, active_dims=None, name=name)
-        self.add_parameter(self.kern)
+        self.link_parameter(self.kern)
     
     def K(self, X, X2=None):
         assert X2==None

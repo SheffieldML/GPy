@@ -67,6 +67,24 @@ def build_XY(input_list, output_list=None, index=None):
     return X, Y, I[:, None]  # slices
 
 
+def prepare_Xnew(Xnew, Y_metadata=None):
+    """
+    Prepare test inputs for multi-output / coregionalized prediction.
+
+    If ``Xnew`` is a list of per-output arrays (same convention as the
+    constructors), stack them and append an output-index column via
+    :func:`build_XY`. When ``Y_metadata`` is omitted, it is filled with
+    ``{'output_index': ...}`` matching that column.
+
+    Returns ``(Xnew, Y_metadata)``.
+    """
+    if isinstance(Xnew, list):
+        Xnew, _, ind = build_XY(Xnew, None)
+        if Y_metadata is None:
+            Y_metadata = {"output_index": ind}
+    return Xnew, Y_metadata
+
+
 def coerce_coregionalized_XY(X, Y, output_index=None):
     """
     Coerce list-of-arrays or stacked arrays for coregionalized ``set_XY``.

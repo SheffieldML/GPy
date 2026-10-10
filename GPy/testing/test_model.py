@@ -1303,6 +1303,21 @@ class TestGradient:
         np.testing.assert_allclose(mu1, (mu2 * std) + mu)
         np.testing.assert_allclose(var1, var2 * std**2)
 
+    def test_gp_coregionalized_predict_list_Xnew(self):
+        """predict accepts per-output list Xnew and fills Y_metadata (#1099)."""
+        self.setup_method()
+        X1 = np.linspace(0, 1, 20)[:, None]
+        X2 = np.linspace(0, 1, 15)[:, None]
+        Y1 = np.sin(X1)
+        Y2 = np.cos(X2)
+        m = GPy.models.GPCoregionalizedRegression([X1, X2], [Y1, Y2])
+        X_star = np.linspace(0, 1, 5)[:, None]
+        mu, var = m.predict([X_star, np.empty((0, 1))])
+        assert mu.shape == (5, 1)
+        assert var.shape == (5, 1)
+        mu_both, _ = m.predict([X_star, X_star])
+        assert mu_both.shape == (10, 1)
+
     def test_gp_coregionalized_set_XY_lists(self):
         """set_XY accepts per-output lists and refreshes output_index metadata."""
         np.random.seed(1)

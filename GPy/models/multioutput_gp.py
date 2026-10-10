@@ -23,7 +23,13 @@ logger = logging.getLogger("GP")
 
 class MultioutputGP(GP):
     """
-    Gaussian process model for using observations from multiple likelihoods and different kernels
+    Gaussian process model for observations from multiple likelihoods and kernels.
+
+    Prefer :class:`~GPy.models.gp_coregionalized_regression.GPCoregionalizedRegression`
+    for standard correlated multi-output regression (ICM/LCM). Use this class when
+    outputs need different likelihoods or a custom multi-kernel layout. See
+    ``doc/source/tuto_coregionalized.rst``.
+
     :param X_list: input observations in a list for each likelihood
     :param Y: output observations in a list for each likelihood
     :param kernel_list: kernels in a list for each likelihood

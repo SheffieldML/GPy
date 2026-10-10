@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_matplotlib-process-unit-info
 title: Fix _process_unit_info for matplotlib ≥ 3.4
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -43,7 +43,7 @@ own design note / backlog task.
 
 - [x] Both call sites use the matplotlib ≥ 3.4 `_process_unit_info` API
 - [x] Plotting extra requires `matplotlib >= 3.4`
-- [ ] Credits #960 / @timovwb; close #960 (and #953 if fixed) when the PR merges
+- [x] Credits #960 / @timovwb; close #960 (and #953 if fixed) when the PR merges
 
 ## Implementation Notes
 
@@ -58,7 +58,7 @@ ax._process_unit_info([("y", y2)], convert=False)
 
 - CIP: 0004
 - Contributor: timovwb (@timovwb)
-- PRs: #960 (source idea)
+- PRs: #1153 (merged); #960 (superseded)
 - Issues: #953
 
 ## Progress Updates
@@ -68,3 +68,4 @@ ax._process_unit_info([("y", y2)], convert=False)
 - Confirmed both call sites still broken on `devel`.
 - Backlog created; maintainer PR updates both sites and bumps plotting extra to ≥3.4.
 - Local smoke + `test_plotting` passed.
+- [#1153](https://github.com/SheffieldML/GPy/pull/1153) merged; #960 closed; #953 closed.

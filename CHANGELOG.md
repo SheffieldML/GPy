@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix plotting for matplotlib ≥ 3.4: call `_process_unit_info` with the new datasets API in `plot_definitions` and `base_plots`, and require `matplotlib >= 3.4` in the plotting extra (#953 / idea from #960)
 * keep running remaining kernel gradient sub-checks in `check_kernel_gradient_functions` after the first failure, so later failures are not hidden (idea from #867)
 * add `normalizer` and list-aware `set_XY` to `GPCoregionalizedRegression` and `SparseGPCoregionalizedRegression` (API parity with `GPRegression`; idea from #859)
 * implement `Gamma.conditional_mean`, `conditional_variance` and `samples`, so `predict` works for Gamma + Laplace (mean-rate form: E[y|f] = link(f), Var[y|f] = link(f)/beta)

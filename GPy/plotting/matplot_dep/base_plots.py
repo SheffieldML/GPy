@@ -89,9 +89,9 @@ def gradient_fill(x, percentiles, ax=None, fignum=None, **kwargs):
     for y1, y2 in pairwise(percentiles):
         import matplotlib.mlab as mlab
 
-        # Handle united data, such as dates
-        ax._process_unit_info(xdata=x, ydata=y1)
-        ax._process_unit_info(ydata=y2)
+        # Handle united data, such as dates (matplotlib >= 3.4 API)
+        ax._process_unit_info([("x", x), ("y", y1)], convert=False)
+        ax._process_unit_info([("y", y2)], convert=False)
 
         # Convert the arrays so we can work with them
         from numpy import ma

@@ -132,8 +132,8 @@ class TestObservationModels:
         laplace_inf = GPy.inference.latent_function_inference.Laplace()
 
         ep_inf_alt = GPy.inference.latent_function_inference.EP(ep_mode="alternated")
-        ep_inf_nested = GPy.inference.latent_function_inference.EP(ep_mode="nested")
-        ep_inf_frac = GPy.inference.latent_function_inference.EP(ep_mode="nested", eta=0.7)
+        GPy.inference.latent_function_inference.EP(ep_mode="nested")
+        GPy.inference.latent_function_inference.EP(ep_mode="nested", eta=0.7)
 
         m1 = GPy.core.GP(
             self.X.copy(),

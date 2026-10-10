@@ -166,7 +166,7 @@ class Coregionalize(Kern):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         # W and kappa must be converted back to numpy arrays
         input_dict["W"] = np.array(input_dict["W"])
         input_dict["kappa"] = np.array(input_dict["kappa"])

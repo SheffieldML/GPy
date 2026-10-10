@@ -61,7 +61,7 @@ class Linear(Kern):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return Linear(**input_dict)
 
     @Cache_this(limit=3)

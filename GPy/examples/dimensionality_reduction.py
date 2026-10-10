@@ -194,7 +194,7 @@ def bgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40,
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(
+        GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean.values[0:1, :],  # @UnusedVariable
             m,
             data_show,
@@ -227,7 +227,7 @@ def ssgplvm_oil(optimize=True, verbose=1, plot=True, N=200, Q=7, num_inducing=40
         fig, (latent_axes, sense_axes) = plt.subplots(1, 2)
         m.plot_latent(ax=latent_axes, labels=m.data_labels)
         data_show = GPy.plotting.matplot_dep.visualize.vector_show((m.Y[0, :]))
-        lvm_visualizer = GPy.plotting.matplot_dep.visualize.lvm_dimselect(
+        GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean.values[0:1, :],  # @UnusedVariable
             m,
             data_show,
@@ -600,7 +600,7 @@ def brendan_faces(optimize=True, verbose=True, plot=True):
             invert=False,
             scale=False,
         )
-        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
+        GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         input("Press enter to finish")
 
     return m
@@ -626,7 +626,7 @@ def olivetti_faces(optimize=True, verbose=True, plot=True):
         data_show = GPy.plotting.matplot_dep.visualize.image_show(
             y[None, :], dimensions=(112, 92), transpose=False, invert=False, scale=False
         )
-        lvm = GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
+        GPy.plotting.matplot_dep.visualize.lvm(m.X.mean[0, :].copy(), m, data_show, ax)
         input("Press enter to finish")
 
     return m
@@ -761,7 +761,7 @@ def stick_bgplvm(model=None, optimize=True, verbose=True, plot=True):
         m.plot_latent(ax=latent_axes)
         y = m.Y[:1, :].copy()
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y, connect=data["connect"])
-        dim_select = GPy.plotting.matplot_dep.visualize.lvm_dimselect(
+        GPy.plotting.matplot_dep.visualize.lvm_dimselect(
             m.X.mean[:1, :].copy(),
             m,
             data_show,

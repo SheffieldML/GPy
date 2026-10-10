@@ -24,12 +24,12 @@ try:
         S = variational_posterior.variance
         gamma = variational_posterior.binary_prob
 
-        N, M, Q = mu.shape[0], Z.shape[0], mu.shape[1]
+        N, M, _Q = mu.shape[0], Z.shape[0], mu.shape[1]
         l2 = np.square(lengthscale)
-        log_denom1 = np.log(S / l2 + 1)
-        log_denom2 = np.log(2 * S / l2 + 1)
-        log_gamma = np.log(gamma)
-        log_gamma1 = np.log(1.0 - gamma)
+        np.log(S / l2 + 1)
+        np.log(2 * S / l2 + 1)
+        np.log(gamma)
+        np.log(1.0 - gamma)
         variance = float(variance)
         psi0 = np.empty(N)
         psi0[:] = variance
@@ -123,10 +123,10 @@ try:
         gamma = variational_posterior.binary_prob
         N, M, Q = mu.shape[0], Z.shape[0], mu.shape[1]
         l2 = np.square(lengthscale)
-        log_denom1 = np.log(S / l2 + 1)
-        log_denom2 = np.log(2 * S / l2 + 1)
-        log_gamma = np.log(gamma)
-        log_gamma1 = np.log(1.0 - gamma)
+        np.log(S / l2 + 1)
+        np.log(2 * S / l2 + 1)
+        np.log(gamma)
+        np.log(1.0 - gamma)
         variance = float(variance)
 
         dvar = np.zeros(1)

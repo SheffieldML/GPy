@@ -53,7 +53,7 @@ class GPKroneckerGaussianRegression(Model):
         return self._log_marginal_likelihood
 
     def parameters_changed(self):
-        (N1, D1), (N2, D2) = self.X1.shape, self.X2.shape
+        (N1, _D1), (N2, _D2) = self.X1.shape, self.X2.shape
         K1, K2 = self.kern1.K(self.X1), self.kern2.K(self.X2)
 
         # eigendecompositon

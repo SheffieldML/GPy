@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable `F841` (unused variable) and clear findings
 * CIP-0005: widen pyflakes (`F901`/`F523`/`F601`/`F811`), fix findings, and fail CI on configured `ruff check`
 * docs: close CIP-0003/0004/0006/0007 as verified; CIP-0005 remains In Progress (Phase 3 widen / Phase 4)
 * CIP-0005 Phase 3: clear undefined-name / syntax lint (E9/F821) so narrow `ruff check` is green

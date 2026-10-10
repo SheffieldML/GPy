@@ -149,7 +149,7 @@ def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11,
             fig = plt.figure(num)
             try:
                 fig.canvas.draw()
-            except Exception as e:
+            except Exception:
                 logging.error(base)
                 # raise SkipTest(e)
             # fig.axes[0].set_axis_off()
@@ -204,7 +204,7 @@ def _image_comparison(baseline_images, extensions=["pdf", "svg", "png"], tol=11,
                                             rtol=rtol,
                                             **kwargs,
                                         )
-                                    except AssertionError as e:
+                                    except AssertionError:
                                         pass
 
             else:
@@ -611,7 +611,7 @@ def legacy_image_comparison_gplvm():
 
     import warnings
 
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")  # always print
         m = GPLVM(Y, Q, initialize=False)
     m.update_model(False)
@@ -665,7 +665,7 @@ def legacy_image_comparison_bayesian_gplvm():
 
     import warnings
 
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")  # always print
         m = BayesianGPLVM(Y, Q, initialize=False)
     m.update_model(False)

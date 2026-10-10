@@ -37,8 +37,6 @@ class ODE_t(Kern):
 
         lyt = 1 / (2 * self.lengthscale_Yt)
 
-        a = -self.a
-        c = self.c
 
         kyy = lambda tdist: np.exp(-lyt * (tdist))
 
@@ -68,8 +66,6 @@ class ODE_t(Kern):
         vyt = self.variance_Yt
         lyt = 1.0 / (2 * self.lengthscale_Yt)
 
-        a = -self.a
-        c = self.c
 
         k1 = (2 * lyt) * vyt
 
@@ -94,7 +90,7 @@ class ODE_t(Kern):
         X, slices = X[:, :-1], index_to_slices(X[:, -1])
         if X2 is None:
             X2, slices2 = X, slices
-            K = np.zeros((X.shape[0], X.shape[0]))
+            np.zeros((X.shape[0], X.shape[0]))
         else:
             X2, slices2 = X2[:, :-1], index_to_slices(X2[:, -1])
 
@@ -108,8 +104,8 @@ class ODE_t(Kern):
 
         rd = tdist.shape[0]
 
-        dka = np.zeros([rd, rd])
-        dkc = np.zeros([rd, rd])
+        np.zeros([rd, rd])
+        np.zeros([rd, rd])
         dkYdvart = np.zeros([rd, rd])
         dkYdlent = np.zeros([rd, rd])
 

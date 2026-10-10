@@ -275,7 +275,7 @@ class HessianChecker(GradientChecker):
                 fig, axes = pb.subplots(2, 2)
                 max_lim = numpy.max(numpy.vstack((analytic_hess, numeric_hess)))
                 min_lim = numpy.min(numpy.vstack((analytic_hess, numeric_hess)))
-                msa = axes[0, 0].matshow(analytic_hess, vmin=min_lim, vmax=max_lim)
+                axes[0, 0].matshow(analytic_hess, vmin=min_lim, vmax=max_lim)
                 axes[0, 0].set_title("Analytic hessian")
                 axes[0, 0].xaxis.set_ticklabels([None])
                 axes[0, 0].yaxis.set_ticklabels([None])

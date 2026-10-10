@@ -36,7 +36,7 @@ def index_to_slices(index):
 
 
 def get_slices(input_list):
-    num_outputs = len(input_list)
+    len(input_list)
     _s = [0] + [_x.shape[0] for _x in input_list]
     _s = np.cumsum(_s)
     slices = [slice(a, b) for a, b in zip(_s[:-1], _s[1:])]
@@ -161,7 +161,7 @@ def LCM(input_dim, num_outputs, kernels_list, W_rank=1, name="ICM"):
     :param W_rank: number tuples of the corregionalization parameters 'W'
     :type W_rank: integer
     """
-    Nk = len(kernels_list)
+    len(kernels_list)
     K = ICM(input_dim, num_outputs, kernels_list[0], W_rank, name="%s%s" % (name, 0))
     j = 1
     for kernel in kernels_list[1:]:

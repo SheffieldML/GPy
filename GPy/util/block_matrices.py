@@ -19,7 +19,6 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
         pagesizes = range(A.shape[2])  # [0]*A.shape[2]
     num_pages = len(pagesizes)
     B = np.empty(shape=(num_blocks, num_blocks, num_pages), dtype=object)
-    count_k = 0
     # for Bk, k in enumerate(pagesizes):
     for Bk in pagesizes:
         count_i = 0

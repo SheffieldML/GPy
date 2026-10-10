@@ -276,7 +276,7 @@ class TestSerialization:
         D = 1
         X = np.random.uniform(-3.0, 3.0, (N, 1))
         Y = np.sin(X) + np.random.randn(N, D) * 0.05
-        X_new = np.random.uniform(-3.0, 3.0, (N_new, 1))
+        np.random.uniform(-3.0, 3.0, (N_new, 1))
         k = GPy.kern.RBF(input_dim=1, lengthscale=10)
         m = GPy.models.GPRegression(X, Y, k)
         m.optimize()
@@ -352,7 +352,7 @@ class TestSerialization:
 
         var = m.predict(X)[0]
         var1_r = m1_r.predict(X)[0]
-        var2_r = m2_r.predict(X)[0]
+        m2_r.predict(X)[0]
         np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
         np.testing.assert_array_equal(np.array(var).flatten(), np.array(var1_r).flatten())
 

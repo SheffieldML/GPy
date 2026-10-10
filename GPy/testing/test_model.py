@@ -192,7 +192,7 @@ class TestMisc:
         m = GPy.models.GPRegression(X, Y, normalizer=True)
         m.optimize(messages=True)
         assert m.checkgrad()
-        k = GPy.kern.RBF(1)
+        GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(X, (Y - mu) / std, normalizer=False)
         m2[:] = m[:]
 
@@ -1024,7 +1024,7 @@ class TestGradient:
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
         self.setup_method()
-        N, input_dim, D = 50, 1, 2
+        N, input_dim, _D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
             GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,)))
@@ -1041,7 +1041,7 @@ class TestGradient:
     def test_SparseGPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
         self.setup_method()
-        N, input_dim, D = 50, 1, 2
+        N, input_dim, _D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
             GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,)))
@@ -1058,7 +1058,7 @@ class TestGradient:
     def test_BCGPLVM_rbf_bias_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
         self.setup_method()
-        N, input_dim, D = 50, 1, 2
+        N, input_dim, _D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = (
             GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,)))
@@ -1073,7 +1073,7 @@ class TestGradient:
     def test_GPLVM_rbf_linear_white_kern_2D(self):
         """Testing GPLVM with rbf + bias kernel"""
         self.setup_method()
-        N, input_dim, D = 50, 1, 2
+        N, input_dim, _D = 50, 1, 2
         X = np.random.rand(N, input_dim)
         k = GPy.kern.Linear(input_dim) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
         K = k.K(X)
@@ -1160,10 +1160,10 @@ class TestGradient:
         self.setup_method()
         X1 = np.random.rand(50, 1) * 8
         X2 = np.random.rand(30, 1) * 5
-        X = np.vstack((X1, X2))
+        np.vstack((X1, X2))
         Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
         Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
-        Y = np.vstack((Y1, Y2))
+        np.vstack((Y1, Y2))
 
         k1 = GPy.kern.RBF(1)
         m = GPy.models.GPCoregionalizedRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel=k1)
@@ -1371,10 +1371,10 @@ class TestGradient:
         self.setup_method()
         X1 = np.random.rand(500, 1) * 8
         X2 = np.random.rand(300, 1) * 5
-        X = np.vstack((X1, X2))
+        np.vstack((X1, X2))
         Y1 = np.sin(X1) + np.random.randn(*X1.shape) * 0.05
         Y2 = -np.sin(X2) + np.random.randn(*X2.shape) * 0.05
-        Y = np.vstack((Y1, Y2))
+        np.vstack((Y1, Y2))
 
         k1 = GPy.kern.RBF(1)
         m = GPy.models.SparseGPCoregionalizedRegression(X_list=[X1, X2], Y_list=[Y1, Y2], kernel=k1)
@@ -1547,15 +1547,15 @@ class TestGradient:
 
         y_latent = L.dot(np.random.randn(N * D)).reshape(D, N).T
 
-        x_test = x[N_train:]
-        y_test = y_latent[N_train:]
+        x[N_train:]
+        y_latent[N_train:]
         x = x[:N_train]
         y = y_latent[:N_train] + np.random.randn(N_train, D) * np.sqrt(noise_var)
 
         Mr = D
         Mc = x.shape[0]
         Qr = 5
-        Qc = x.shape[1]
+        x.shape[1]
 
         m_mr = GPy.models.GPMultioutRegression(
             x,
@@ -1664,12 +1664,12 @@ class TestGradient:
             offset_test += D_test
             offset_all += D_train + D_test
 
-        y_noisefree = y.copy()
+        y.copy()
         y += np.random.randn(*y.shape) * np.sqrt(noise_var)
         x_flat = x.flatten()[:, None]
         y_flat = y.flatten()[:, None]
 
-        Mr, Mc, Qr, Qc = 4, 3, 2, 1
+        Mr, Mc, Qr, _Qc = 4, 3, 2, 1
 
         m = GPy.models.GPMultioutRegressionMD(
             x_flat,
@@ -1727,7 +1727,6 @@ class TestGradient:
         fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x**2
         N = 10
         sigma = 0.05
-        sigmader = 0.05
         x = np.array([np.linspace(1, 10, N)]).T
         y = f(x) + np.array(sigma * np.random.normal(0, 1, (N, 1)))
 
@@ -1816,7 +1815,7 @@ class TestGradient:
         self.setup_method()
 
         np.random.seed(3)
-        N, M, Q = 10, 15, 3
+        _N, M, Q = 10, 15, 3
         X = np.random.rand(M, Q)
         Y = np.random.rand(M, 1)
         x = np.random.rand(2, Q)

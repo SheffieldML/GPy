@@ -124,7 +124,7 @@ class LogGaussian(Likelihood):
 
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)
-        val_scaled2 = val / self.variance
+        val / self.variance
         a = 1 - stats.norm.cdf(val_scaled)
         uncensored = (1 - c) * (-1) / self.variance
         censored = c * (
@@ -154,7 +154,7 @@ class LogGaussian(Likelihood):
 
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)
-        val_scaled2 = val / self.variance
+        val / self.variance
         a = 1 - stats.norm.cdf(val_scaled)
         uncensored = 0
         censored = c * (
@@ -190,7 +190,7 @@ class LogGaussian(Likelihood):
 
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)
-        val_scaled2 = val / self.variance
+        val / self.variance
         a = 1 - stats.norm.cdf(val_scaled)
         uncensored = (1 - c) * (-0.5 / self.variance + (val**2) / (2 * (self.variance**2)))
         censored = c * (
@@ -216,7 +216,7 @@ class LogGaussian(Likelihood):
 
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)
-        val_scaled2 = val / self.variance
+        val / self.variance
         a = 1 - stats.norm.cdf(val_scaled)
         uncensored = (1 - c) * (-val / (self.variance**2))
         censored = c * (
@@ -244,7 +244,7 @@ class LogGaussian(Likelihood):
             c = Y_metadata["censored"]
         val = np.log(y) - link_f
         val_scaled = val / np.sqrt(self.variance)
-        val_scaled2 = val / self.variance
+        val / self.variance
         a = 1 - stats.norm.cdf(val_scaled)
         uncensored = (1 - c) * (1.0 / (self.variance**2))
         censored = c * (
@@ -319,5 +319,4 @@ class LogGaussian(Likelihood):
 
         :param gp: latent variable
         """
-        orig_shape = gp.shape
         gp = gp.flatten()

@@ -281,11 +281,9 @@ def cmu_urls_files(subj_motions, messages=True):
                 curMot = "0" + curMot
             motions[i].append(curMot)
 
-    all_skels = []
 
     assert len(subjects) == len(motions)
 
-    all_motions = []
 
     for i in range(len(subjects)):
         skel_dir = os.path.join(data_path, "cmu_mocap")
@@ -333,7 +331,7 @@ if gpxpy_available:
             gpx_file = open(os.path.join(data_path, "epomeo_gpx", file + ".gpx"), "r")
 
             gpx = gpxpy.parse(gpx_file)
-            segment = gpx.tracks[0].segments[0]
+            gpx.tracks[0].segments[0]
             points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
             data = [
                 [
@@ -414,7 +412,7 @@ def football_data(season="1314", data_set="football_data"):
     data_resources[data_set_season] = copy.deepcopy(data_resources[data_set])
     data_resources[data_set_season]["urls"][0] += season + "/"
     start_year = int(season[0:2])
-    end_year = int(season[2:4])
+    int(season[2:4])
     files = ["E0.csv", "E1.csv", "E2.csv", "E3.csv"]
     if start_year > 4 and start_year < 93:
         files += ["EC.csv"]
@@ -455,9 +453,6 @@ def sod1_mouse(data_set="sod1_mouse"):
     dir_path = os.path.join(data_path, data_set)
     filename = os.path.join(dir_path, "sod1_C57_129_exprs.csv")
     Y = read_csv(filename, header=0, index_col=0)
-    num_repeats = 4
-    num_time = 4
-    num_cond = 4
     X = 1
     return data_details_return({"X": X, "Y": Y}, data_set)
 
@@ -748,7 +743,6 @@ def robot_wireless(data_set="robot_wireless"):
     allY = np.zeros((len(times), len(addresses)))
     allX = np.zeros((len(times), 2))
     allY[:] = -92.0
-    strengths = {}
     for address, j in zip(addresses, range(len(addresses))):
         ind = np.nonzero(address == macaddress)
         temp_strengths = strength[ind]
@@ -829,7 +823,7 @@ def ripley_synth(data_set="ripley_prnn_data"):
 
 
 def global_average_temperature(data_set="global_temperature", num_train=1000, refresh_data=False):
-    path = os.path.join(data_path, data_set)
+    os.path.join(data_path, data_set)
     if data_available(data_set) and not refresh_data:
         print("Using cached version of the data set, to use latest version set refresh_data to True")
     else:
@@ -855,7 +849,7 @@ def global_average_temperature(data_set="global_temperature", num_train=1000, re
 
 
 def mauna_loa(data_set="mauna_loa", num_train=545, refresh_data=False):
-    path = os.path.join(data_path, data_set)
+    os.path.join(data_path, data_set)
     if data_available(data_set) and not refresh_data:
         print("Using cached version of the data set, to use latest version set refresh_data to True")
     else:
@@ -881,7 +875,7 @@ def mauna_loa(data_set="mauna_loa", num_train=545, refresh_data=False):
 
 
 def boxjenkins_airline(data_set="boxjenkins_airline", num_train=96):
-    path = os.path.join(data_path, data_set)
+    os.path.join(data_path, data_set)
     if not data_available(data_set):
         download_data(data_set)
     data = np.loadtxt(os.path.join(data_path, data_set, "boxjenkins_airline.csv"), delimiter=",")

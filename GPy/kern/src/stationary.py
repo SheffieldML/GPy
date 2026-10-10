@@ -408,7 +408,7 @@ class Exponential(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return Exponential(**input_dict)
 
 
@@ -453,7 +453,7 @@ class OU(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return OU(**input_dict)
 
     def K_of_r(self, r):
@@ -491,7 +491,7 @@ class Matern32(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return Matern32(**input_dict)
 
     def K_of_r(self, r):
@@ -593,7 +593,7 @@ class Matern52(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return Matern52(**input_dict)
 
     def K_of_r(self, r):
@@ -679,7 +679,7 @@ class ExpQuad(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return ExpQuad(**input_dict)
 
     def K_of_r(self, r):
@@ -737,7 +737,7 @@ class ExpQuadCosine(Stationary):
     def update_gradients_full(self, dL_dK, X, X2=None):
         super(ExpQuadCosine, self).update_gradients_full(dL_dK, X, X2)
         r = self._scaled_dist(X, X2)
-        r2 = np.square(r)
+        np.square(r)
         dK_dperiod = (
             self.variance
             * 2
@@ -817,7 +817,7 @@ class RatQuad(Stationary):
 
     @staticmethod
     def _build_from_input_dict(kernel_class, input_dict):
-        useGPU = input_dict.pop("useGPU", None)
+        input_dict.pop("useGPU", None)
         return RatQuad(**input_dict)
 
     def K_of_r(self, r):

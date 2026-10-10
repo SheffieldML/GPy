@@ -161,7 +161,6 @@ class ODE_UY(Kern):
 
         # dk dtheta for UU
         UUdtheta1 = lambda dist: np.exp(-lu * dist) * dist + (-dist) * np.exp(-lu * dist) * (1 + lu * dist)
-        UUdtheta2 = lambda dist: 0
         # UUdvar = lambda dist: (1 + lu*dist)*np.exp(-lu*dist)
         UUdvar = lambda dist: (1 + lu * np.abs(dist)) * np.exp(-lu * np.abs(dist))
 

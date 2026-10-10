@@ -42,7 +42,7 @@ class Weibull(Likelihood):
         :rtype: float
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        c = np.zeros((link_f.shape[0],))
+        np.zeros((link_f.shape[0],))
 
         # log_objective = np.log(self.r) + (self.r - 1) * np.log(y) - link_f - (np.exp(-link_f) * (y ** self.r))
         # log_objective = stats.weibull_min.pdf(y,c=self.beta,loc=link_f,scale=1.)

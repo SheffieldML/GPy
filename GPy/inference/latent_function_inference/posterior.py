@@ -272,7 +272,7 @@ class Posterior(object):
                     "Full covariance for Sparse GP predicted with uncertain inputs not implemented yet."
                 )
                 var = np.zeros((Xnew.shape[0], la.shape[1], la.shape[1]))
-                di = np.diag_indices(la.shape[1])
+                np.diag_indices(la.shape[1])
             else:
                 tmp = psi2_star - psi1_star[:, :, None] * psi1_star[:, None, :]
                 var = (tmp.reshape(-1, M).dot(la).reshape(N, M, D) * la[None, :, :]).sum(1) + psi0_star[:, None]

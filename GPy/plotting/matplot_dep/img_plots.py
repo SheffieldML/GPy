@@ -32,7 +32,7 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
     if pad == None:
         pad = max(int(min(y_size, x_size) / 10), 1)
 
-    figsize = _calculateFigureSize(x_size, y_size, fig_ncols, fig_nrows, pad)
+    _calculateFigureSize(x_size, y_size, fig_ncols, fig_nrows, pad)
     # figure.set_size_inches(figsize,forward=True)
     # figure.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
 
@@ -60,5 +60,5 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
                 buf[
                     y * y_size + y * pad : (y + 1) * y_size + y * pad, x * x_size + x * pad : (x + 1) * x_size + x * pad
                 ] = arr_color[y * fig_ncols + x, :, :, :3]
-    img_plot = ax.imshow(buf, interpolation=interpolation)
+    ax.imshow(buf, interpolation=interpolation)
     ax.axis("off")

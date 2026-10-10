@@ -87,7 +87,7 @@ class Likelihood(Parameterized):
         input_dict = copy.deepcopy(input_dict)
         likelihood_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
-        name = input_dict.pop("name")
+        input_dict.pop("name")
         import GPy
 
         likelihood_class = eval(likelihood_class)
@@ -307,7 +307,7 @@ class Likelihood(Parameterized):
             sigma2 = 1.0 / tau
 
             # assert Y.shape == v.shape
-            dlik_dtheta = np.empty((self.size, Y.shape[0]))
+            np.empty((self.size, Y.shape[0]))
             # for j in range(self.size):
             Y_metadata_list = []
             for index in range(len(Y)):
@@ -330,7 +330,7 @@ class Likelihood(Parameterized):
             else:
                 raise Exception("no other quadrature mode available")
             #     do a gaussian-hermite integration
-            dL_dtheta_avg = boost_grad * np.nanmean(quads, axis=1)
+            boost_grad * np.nanmean(quads, axis=1)
             dL_dtheta = boost_grad * np.nansum(quads, axis=1)
             # dL_dtheta = boost_grad * np.nansum(dlik_dtheta, axis=1)
         else:
@@ -368,7 +368,7 @@ class Likelihood(Parameterized):
         # "writing it explicitly "
         # use them for gaussian-hermite quadrature
 
-        SQRT_2PI = np.sqrt(2.0 * np.pi)
+        np.sqrt(2.0 * np.pi)
         if gh_points is None:
             gh_x, gh_w = self._gh_points(32)
         else:
@@ -807,7 +807,6 @@ class Likelihood(Parameterized):
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         # compute the quantiles by sampling!!!
         Nf_samp = 300
-        Ny_samp = 1
         s = np.random.randn(mu.shape[0], Nf_samp) * np.sqrt(var) + mu
         ss_y = self.samples(s, Y_metadata)  # , samples=Ny_samp)
         # ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)

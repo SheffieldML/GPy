@@ -691,7 +691,7 @@ def parse_text(file_name):
 
     # Read the matrix data
     S = np.loadtxt(file_name, skiprows=1)
-    field = np.uint(S[:, 0])
+    np.uint(S[:, 0])
     times = S[:, 1]
     S = S[:, 2:]
 

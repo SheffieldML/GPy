@@ -18,6 +18,7 @@ from paramz.transformations import Logexp
 
 import numpy as np
 
+
 class StdPeriodic(Kern):
     """
     Standart periodic kernel
@@ -53,10 +54,21 @@ class StdPeriodic(Kern):
     :type Boolean
     """
 
-    def __init__(self, input_dim, variance=1., period=None, lengthscale=None, ARD1=False, ARD2=False, active_dims=None, name='std_periodic',useGPU=False):
+    def __init__(
+        self,
+        input_dim,
+        variance=1.0,
+        period=None,
+        lengthscale=None,
+        ARD1=False,
+        ARD2=False,
+        active_dims=None,
+        name="std_periodic",
+        useGPU=False,
+    ):
         super(StdPeriodic, self).__init__(input_dim, active_dims, name, useGPU=useGPU)
-        self.ARD1 = ARD1 # correspond to periods
-        self.ARD2 = ARD2 # correspond to lengthscales
+        self.ARD1 = ARD1  # correspond to periods
+        self.ARD2 = ARD2  # correspond to lengthscales
 
         self.name = name
 
@@ -86,12 +98,12 @@ class StdPeriodic(Kern):
             else:
                 lengthscale = np.ones(input_dim)
 
-        self.variance = Param('variance', variance, Logexp())
-        assert self.variance.size==1, "Variance size must be one"
-        self.period =  Param('period', period, Logexp())
-        self.lengthscale =  Param('lengthscale', lengthscale, Logexp())
+        self.variance = Param("variance", variance, Logexp())
+        assert self.variance.size == 1, "Variance size must be one"
+        self.period = Param("period", period, Logexp())
+        self.lengthscale = Param("lengthscale", lengthscale, Logexp())
 
-        self.link_parameters(self.variance,  self.period, self.lengthscale)
+        self.link_parameters(self.variance, self.period, self.lengthscale)
 
     def to_dict(self):
         """
@@ -111,7 +123,6 @@ class StdPeriodic(Kern):
         input_dict["ARD2"] = self.ARD2
         return input_dict
 
-
     def parameters_changed(self):
         """
         This functions deals as a callback for each optimization iteration.
@@ -128,7 +139,7 @@ class StdPeriodic(Kern):
             X2 = X
 
         base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
-        exp_dist = np.exp( -0.5* np.sum( np.square(  np.sin( base ) / self.lengthscale ), axis = -1 ) )
+        exp_dist = np.exp(-0.5 * np.sum(np.square(np.sin(base) / self.lengthscale), axis=-1))
 
         return self.variance * exp_dist
 
@@ -143,15 +154,15 @@ class StdPeriodic(Kern):
         Compute the derivative of K with respect to:
             dimension dimX of set X.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX]
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
-        dist = X[:,None,dimX] - X2[None,:,dimX]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX] - X2[None, :, dimX]
+        base = np.pi * periodinv * dist
 
-        return -F*np.sin(2*base)*self._clean_K(X, X2)
+        return -F * np.sin(2 * base) * self._clean_K(X, X2)
 
     def dK_dXdiag(self, X, dimX):
         """
@@ -184,18 +195,18 @@ class StdPeriodic(Kern):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
-        dist = X[:,None,dimX2] - X2[None,:,dimX2]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX2] - X2[None, :, dimX2]
+        base = np.pi * periodinv * dist
 
-        term = np.sin(2*base)*self._clean_dK_dX(X, X2, dimX)
+        term = np.sin(2 * base) * self._clean_dK_dX(X, X2, dimX)
         if dimX == dimX2:
-            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_K(X, X2)
-        return F*term
+            term += 2 * np.pi * periodinv * np.cos(2 * base) * self._clean_K(X, X2)
+        return F * term
 
     def dK2_dXdX2diag(self, X, dimX, dimX2):
         """
@@ -206,9 +217,9 @@ class StdPeriodic(Kern):
         Returns only diagonal elements.
         """
         if dimX == dimX2:
-            lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
-            periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
-            return (np.pi**2)*(lengthscaleinv**2)*(periodinv**2)*self.variance*np.ones(X.shape[0])
+            lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+            periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
+            return (np.pi**2) * (lengthscaleinv**2) * (periodinv**2) * self.variance * np.ones(X.shape[0])
         else:
             return np.zeros(X.shape[0])
 
@@ -237,22 +248,22 @@ class StdPeriodic(Kern):
             dimension dimX_1 of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
-        dist = X[:,None,dimX2] - X2[None,:,dimX2]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX2] - X2[None, :, dimX2]
+        base = np.pi * periodinv * dist
 
-        term = np.sin(2*base)*self._clean_dK2_dXdX(X, X2, dimX_0, dimX_1)
+        term = np.sin(2 * base) * self._clean_dK2_dXdX(X, X2, dimX_0, dimX_1)
         if dimX_0 == dimX2:
-            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_dK_dX(X, X2, dimX_1)
+            term += 2 * np.pi * periodinv * np.cos(2 * base) * self._clean_dK_dX(X, X2, dimX_1)
         if dimX_1 == dimX2:
-            term += 2*np.pi*periodinv*np.cos(2*base)*self._clean_dK_dX(X, X2, dimX_0)
+            term += 2 * np.pi * periodinv * np.cos(2 * base) * self._clean_dK_dX(X, X2, dimX_0)
         if dimX_0 == dimX_1 == dimX2:
-            term -= 4*(np.pi**2)*(periodinv**2)*np.sin(2*base)*self._clean_K(X, X2)
-        return F*term
+            term -= 4 * (np.pi**2) * (periodinv**2) * np.sin(2 * base) * self._clean_K(X, X2)
+        return F * term
 
     def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1, dimX2):
         """
@@ -269,46 +280,46 @@ class StdPeriodic(Kern):
         """
         Compute the derivative of K with respect to variance.
         """
-        return self._clean_K(X, X2)/self.variance
+        return self._clean_K(X, X2) / self.variance
 
     def dK_dlengthscale(self, X, X2):
         """
         Compute the derivative(s) of K with respect to lengthscale(s).
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))
-        periodinv = (np.ones(X.shape[1])/(self.period))
+        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        periodinv = np.ones(X.shape[1]) / (self.period)
 
-        dist = np.rollaxis(X[:,None,:] - X2[None,:,:], 2, 0)
-        base = np.pi*periodinv[:,None,None]*dist
+        dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
+        base = np.pi * periodinv[:, None, None] * dist
 
         K = self._clean_K(X, X2)
 
         if self.ARD2:
             g = []
             for diml in range(self.input_dim):
-                g += [(lengthscaleinv[diml]**3)*np.square(np.sin(base[diml]))*K]
+                g += [(lengthscaleinv[diml] ** 3) * np.square(np.sin(base[diml])) * K]
         else:
-            g = (lengthscaleinv[0]**3)*np.sum(np.square(np.sin(base)), axis=0)*K
+            g = (lengthscaleinv[0] ** 3) * np.sum(np.square(np.sin(base)), axis=0) * K
         return g
 
     def dK_dperiod(self, X, X2):
         """
         Compute the derivative(s) of K with respect to period(s).
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))
-        periodinv = (np.ones(X.shape[1])/(self.period))
+        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        periodinv = np.ones(X.shape[1]) / (self.period)
 
-        dist = np.rollaxis(X[:,None,:] - X2[None,:,:], 2, 0)
-        base = np.pi*periodinv[:,None,None]*dist
+        dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
+        base = np.pi * periodinv[:, None, None] * dist
 
         K = self._clean_K(X, X2)
 
         if self.ARD1:
             g = []
             for diml in range(self.input_dim):
-                g += [0.5*base[diml]*(lengthscaleinv[diml]**2)*periodinv[diml]*np.sin(2*base[diml])*K]
+                g += [0.5 * base[diml] * (lengthscaleinv[diml] ** 2) * periodinv[diml] * np.sin(2 * base[diml]) * K]
         else:
-            g = 0.5*periodinv[0]*np.sum(base*(lengthscaleinv**2)[:,None,None]*np.sin(2*base), axis=0)*K
+            g = 0.5 * periodinv[0] * np.sum(base * (lengthscaleinv**2)[:, None, None] * np.sin(2 * base), axis=0) * K
         return g
 
     def dK2_dvariancedX(self, X, X2, dimX):
@@ -317,7 +328,7 @@ class StdPeriodic(Kern):
             variance, and
             dimension dimX of set X.
         """
-        return self._clean_dK_dX(X, X2, dimX)/self.variance
+        return self._clean_dK_dX(X, X2, dimX) / self.variance
 
     def dK2_dvariancedX2(self, X, X2, dimX2):
         """
@@ -333,13 +344,13 @@ class StdPeriodic(Kern):
             lengthscale(s), and
             dimension dimX of set X.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX]
 
-        dist = X[:,None,dimX] - X2[None,:,dimX]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX] - X2[None, :, dimX]
+        base = np.pi * periodinv * dist
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
         K = self._clean_K(X, X2)
         dK_dl = self.dK_dlengthscale(X, X2)
@@ -349,10 +360,10 @@ class StdPeriodic(Kern):
             for diml in range(self.input_dim):
                 term = dK_dl[diml]
                 if diml == dimX:
-                    term -= 2*lengthscaleinv*K
-                g += [-F*np.sin(2*base)*term]
+                    term -= 2 * lengthscaleinv * K
+                g += [-F * np.sin(2 * base) * term]
         else:
-            g = -F*np.sin(2*base)*(dK_dl - 2*lengthscaleinv*K)
+            g = -F * np.sin(2 * base) * (dK_dl - 2 * lengthscaleinv * K)
         return g
 
     def dK2_dlengthscaledX2(self, X, X2, dimX2):
@@ -363,9 +374,9 @@ class StdPeriodic(Kern):
         """
         dK2_dldX = self.dK2_dlengthscaledX(X, X2, dimX2)
         if self.ARD2:
-            return [-1*g for g in dK2_dldX]
+            return [-1 * g for g in dK2_dldX]
         else:
-            return -1*dK2_dldX
+            return -1 * dK2_dldX
 
     def dK2_dperioddX(self, X, X2, dimX):
         """
@@ -373,13 +384,13 @@ class StdPeriodic(Kern):
             period(s), and
             dimension dimX of set X.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX]
 
-        dist = X[:,None,dimX] - X2[None,:,dimX]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX] - X2[None, :, dimX]
+        base = np.pi * periodinv * dist
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
         K = self._clean_K(X, X2)
         dK_dT = self.dK_dperiod(X, X2)
@@ -387,14 +398,14 @@ class StdPeriodic(Kern):
         if self.ARD1:
             g = []
             for dimT in range(self.input_dim):
-                term = np.sin(2*base)*dK_dT[dimT]
+                term = np.sin(2 * base) * dK_dT[dimT]
                 if dimT == dimX:
-                    term -= periodinv*(np.sin(2*base)+2*base*np.cos(2*base))*K
-                g += [-F*term]
+                    term -= periodinv * (np.sin(2 * base) + 2 * base * np.cos(2 * base)) * K
+                g += [-F * term]
         else:
-            term = np.sin(2*base)*dK_dT
-            term -= periodinv*(np.sin(2*base)+2*base*np.cos(2*base))*K
-            g = -F*term
+            term = np.sin(2 * base) * dK_dT
+            term -= periodinv * (np.sin(2 * base) + 2 * base * np.cos(2 * base)) * K
+            g = -F * term
         return g
 
     def dK2_dperioddX2(self, X, X2, dimX2):
@@ -405,9 +416,9 @@ class StdPeriodic(Kern):
         """
         dK2_dperioddX = self.dK2_dperioddX(X, X2, dimX2)
         if self.ARD1:
-            return [-1*g for g in dK2_dperioddX]
+            return [-1 * g for g in dK2_dperioddX]
         else:
-            return -1*dK2_dperioddX
+            return -1 * dK2_dperioddX
 
     def dK3_dvariancedXdX2(self, X, X2, dimX, dimX2):
         """
@@ -416,7 +427,7 @@ class StdPeriodic(Kern):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        return self._clean_dK2_dXdX2(X, X2, dimX, dimX2)/self.variance
+        return self._clean_dK2_dXdX2(X, X2, dimX, dimX2) / self.variance
 
     def dK3_dlengthscaledXdX2(self, X, X2, dimX, dimX2):
         """
@@ -425,13 +436,13 @@ class StdPeriodic(Kern):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
 
-        dist = X[:,None,dimX2] - X2[None,:,dimX2]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX2] - X2[None, :, dimX2]
+        base = np.pi * periodinv * dist
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
         dK2_dXdX2 = self._clean_dK2_dXdX2(X, X2, dimX, dimX2)
         dK_dl = self.dK_dlengthscale(X, X2)
@@ -440,19 +451,19 @@ class StdPeriodic(Kern):
         if self.ARD2:
             g = []
             for diml in range(self.input_dim):
-                term = np.sin(2*base)*dK2_dldX[diml]
+                term = np.sin(2 * base) * dK2_dldX[diml]
                 if dimX == dimX2:
-                    term += 2*np.pi*periodinv*np.cos(2*base)*dK_dl[diml]
+                    term += 2 * np.pi * periodinv * np.cos(2 * base) * dK_dl[diml]
                 term *= F
                 if diml == dimX2:
-                    term -= 2*lengthscaleinv*dK2_dXdX2
+                    term -= 2 * lengthscaleinv * dK2_dXdX2
                 g += [term]
         else:
-            term = np.sin(2*base)*dK2_dldX
+            term = np.sin(2 * base) * dK2_dldX
             if dimX == dimX2:
-                term += 2*np.pi*periodinv*np.cos(2*base)*dK_dl
+                term += 2 * np.pi * periodinv * np.cos(2 * base) * dK_dl
             term *= F
-            term -= 2*lengthscaleinv*dK2_dXdX2
+            term -= 2 * lengthscaleinv * dK2_dXdX2
             g = term
         return g
 
@@ -463,13 +474,13 @@ class StdPeriodic(Kern):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = (np.ones(X.shape[1])/(self.lengthscale))[dimX2]
-        periodinv = (np.ones(X.shape[1])/(self.period))[dimX2]
+        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+        periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
 
-        dist = X[:,None,dimX2] - X2[None,:,dimX2]
-        base = np.pi*periodinv*dist
+        dist = X[:, None, dimX2] - X2[None, :, dimX2]
+        base = np.pi * periodinv * dist
 
-        F = 0.5*np.pi*(lengthscaleinv**2)*periodinv # multiplicative factor
+        F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
 
         K = self._clean_K(X, X2)
         dK_dX = self._clean_dK_dX(X, X2, dimX)
@@ -480,22 +491,27 @@ class StdPeriodic(Kern):
         if self.ARD1:
             g = []
             for dimT in range(self.input_dim):
-                term = np.sin(2*base)*dK2_dTdX[dimT]
+                term = np.sin(2 * base) * dK2_dTdX[dimT]
                 if dimT == dimX2:
-                    term -= 2*periodinv*np.cos(2*base)*base*dK_dX
+                    term -= 2 * periodinv * np.cos(2 * base) * base * dK_dX
                 if dimX == dimX2:
-                    term += 2*np.pi*periodinv*np.cos(2*base)*dK_dT[dimT]
+                    term += 2 * np.pi * periodinv * np.cos(2 * base) * dK_dT[dimT]
                 if dimX == dimX2 == dimT:
-                    term += 2*np.pi*(periodinv**2)*(2*base*np.sin(2*base)-np.cos(2*base))*K
+                    term += 2 * np.pi * (periodinv**2) * (2 * base * np.sin(2 * base) - np.cos(2 * base)) * K
                 term *= F
                 if dimT == dimX2:
-                    term -= periodinv*dK2_dXdX2
+                    term -= periodinv * dK2_dXdX2
                 g += [term]
         else:
-            term = np.sin(2*base)*dK2_dTdX-2*periodinv*base*np.cos(2*base)*dK_dX
+            term = np.sin(2 * base) * dK2_dTdX - 2 * periodinv * base * np.cos(2 * base) * dK_dX
             if dimX == dimX2:
-                term += 2*np.pi*periodinv*(np.cos(2*base)*dK_dT+periodinv*(2*base*np.sin(2*base)-np.cos(2*base))*K)
-            g = F*term-periodinv*dK2_dXdX2
+                term += (
+                    2
+                    * np.pi
+                    * periodinv
+                    * (np.cos(2 * base) * dK_dT + periodinv * (2 * base * np.sin(2 * base) - np.cos(2 * base)) * K)
+                )
+            g = F * term - periodinv * dK2_dXdX2
         return g
 
     def update_gradients_full(self, dL_dK, X, X2=None):
@@ -505,24 +521,24 @@ class StdPeriodic(Kern):
 
         base = np.pi * (X[:, None, :] - X2[None, :, :]) / self.period
 
-        sin_base = np.sin( base )
-        exp_dist = np.exp( -0.5* np.sum( np.square(  sin_base / self.lengthscale ), axis = -1 ) )
+        sin_base = np.sin(base)
+        exp_dist = np.exp(-0.5 * np.sum(np.square(sin_base / self.lengthscale), axis=-1))
 
-        dwl = self.variance * (1.0/np.square(self.lengthscale)) * sin_base*np.cos(base) * (base / self.period)
+        dwl = self.variance * (1.0 / np.square(self.lengthscale)) * sin_base * np.cos(base) * (base / self.period)
 
-        dl = self.variance * np.square( sin_base) / np.power( self.lengthscale, 3)
+        dl = self.variance * np.square(sin_base) / np.power(self.lengthscale, 3)
 
         self.variance.gradient = np.sum(exp_dist * dL_dK)
-        #target[0] += np.sum( exp_dist * dL_dK)
+        # target[0] += np.sum( exp_dist * dL_dK)
 
-        if self.ARD1: # different periods
-            self.period.gradient = (dwl * exp_dist[:,:,None] * dL_dK[:, :, None]).sum(0).sum(0)
+        if self.ARD1:  # different periods
+            self.period.gradient = (dwl * exp_dist[:, :, None] * dL_dK[:, :, None]).sum(0).sum(0)
         else:  # same period
             self.period.gradient = np.sum(dwl.sum(-1) * exp_dist * dL_dK)
 
-        if self.ARD2: # different lengthscales
-            self.lengthscale.gradient = (dl * exp_dist[:,:,None] * dL_dK[:, :, None]).sum(0).sum(0)
-        else: # same lengthscales
+        if self.ARD2:  # different lengthscales
+            self.lengthscale.gradient = (dl * exp_dist[:, :, None] * dL_dK[:, :, None]).sum(0).sum(0)
+        else:  # same lengthscales
             self.lengthscale.gradient = np.sum(dl.sum(-1) * exp_dist * dL_dK)
 
     def update_gradients_direct(self, dL_dVar, dL_dPer, dL_dLen):
@@ -531,13 +547,13 @@ class StdPeriodic(Kern):
         self.lengthscale.gradient = dL_dLen
 
     def reset_gradients(self):
-        self.variance.gradient = 0.
+        self.variance.gradient = 0.0
         if not self.ARD1:
-            self.period.gradient = 0.
+            self.period.gradient = 0.0
         else:
             self.period.gradient = np.zeros(self.input_dim)
         if not self.ARD2:
-            self.lengthscale.gradient = 0.
+            self.lengthscale.gradient = 0.0
         else:
             self.lengthscale.gradient = np.zeros(self.input_dim)
 
@@ -574,13 +590,17 @@ class StdPeriodic(Kern):
     def gradients_X(self, dL_dK, X, X2=None):
         K = self.K(X, X2)
         if X2 is None:
-            dL_dK = dL_dK+dL_dK.T
+            dL_dK = dL_dK + dL_dK.T
             X2 = X
-        dX = -np.pi*((dL_dK*K)[:,:,None]*np.sin(2*np.pi/self.period*(X[:,None,:] - X2[None,:,:]))/(2.*np.square(self.lengthscale)*self.period)).sum(1)
+        dX = -np.pi * (
+            (dL_dK * K)[:, :, None]
+            * np.sin(2 * np.pi / self.period * (X[:, None, :] - X2[None, :, :]))
+            / (2.0 * np.square(self.lengthscale) * self.period)
+        ).sum(1)
         return dX
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
     def input_sensitivity(self, summarize=True):
-        return self.variance*np.ones(self.input_dim)/self.lengthscale**2
+        return self.variance * np.ones(self.input_dim) / self.lengthscale**2

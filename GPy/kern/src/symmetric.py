@@ -50,15 +50,15 @@ class Symmetric(Kern):
     :param symmetry_type: 'odd' or 'even' depending on the symmetry needed
     """
 
-    def __init__(self, base_kernel, transform, symmetry_type='even'):
+    def __init__(self, base_kernel, transform, symmetry_type="even"):
         n_dims = max(base_kernel.active_dims) + 1
-        super(Symmetric, self).__init__(n_dims, list(range(n_dims)), name='symmetric_kernel')
-        if symmetry_type == 'odd':
-            self.symmetry_sign = -1.
-        elif symmetry_type == 'even':
-            self.symmetry_sign = 1.
+        super(Symmetric, self).__init__(n_dims, list(range(n_dims)), name="symmetric_kernel")
+        if symmetry_type == "odd":
+            self.symmetry_sign = -1.0
+        elif symmetry_type == "even":
+            self.symmetry_sign = 1.0
         else:
-            raise ValueError('symmetry_type input must be ''odd'' or ''even''')
+            raise ValueError("symmetry_type input must be odd or even")
         self.transform = transform
         self.base_kernel = base_kernel
         self.param_names = base_kernel.parameter_names()
@@ -78,11 +78,9 @@ class Symmetric(Kern):
         if X2 is None:
             cross_term_ax_x = cross_term_x_ax.T
         else:
-            cross_term_ax_x = self.symmetry_sign * \
-                self.base_kernel.K(X_sym, X2)
+            cross_term_ax_x = self.symmetry_sign * self.base_kernel.K(X_sym, X2)
 
-        return (self.base_kernel.K(X, X2) + cross_term_x_ax + cross_term_ax_x
-                + self.base_kernel.K(X_sym, X2_sym))
+        return self.base_kernel.K(X, X2) + cross_term_x_ax + cross_term_ax_x + self.base_kernel.K(X_sym, X2_sym)
 
     def Kdiag(self, X):
         n_points = X.shape[0]
@@ -96,8 +94,7 @@ class Symmetric(Kern):
         for i in range(n_batches):
             i_start = i * batch_size
             i_end = np.min([(i + 1) * batch_size, n_points])
-            cross_term[i_start:i_end] = np.diag(self.base_kernel.K(
-                X_sym[i_start:i_end, :], X[i_start:i_end, :]))
+            cross_term[i_start:i_end] = np.diag(self.base_kernel.K(X_sym[i_start:i_end, :], X[i_start:i_end, :]))
 
         return self.base_kernel.Kdiag(X) + 2 * self.symmetry_sign * cross_term + self.base_kernel.Kdiag(X_sym)
 
@@ -147,8 +144,7 @@ class Symmetric(Kern):
             dL_dK_part = dL_dK_full[i_start:i_end, i_start:i_end]
             X_part = X[i_start:i_end, :]
             X_sym_part = X_sym[i_start:i_end, :]
-            self.base_kernel.update_gradients_full(
-                dL_dK_part, X_part, X_sym_part)
+            self.base_kernel.update_gradients_full(dL_dK_part, X_part, X_sym_part)
             gradient_part += self.base_kernel.gradient.copy()
 
         gradient += 2 * self.symmetry_sign * gradient_part
@@ -164,10 +160,12 @@ class Symmetric(Kern):
         else:
             X2_sym = X2.dot(self.transform)
 
-        return (self.base_kernel.gradients_X(dL_dK, X, X2)
-                + self.base_kernel.gradients_X(dL_dK, X_sym, X2_sym).dot(self.transform.T)
-                + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X, X2_sym)
-                + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X_sym, X2).dot(self.transform.T))
+        return (
+            self.base_kernel.gradients_X(dL_dK, X, X2)
+            + self.base_kernel.gradients_X(dL_dK, X_sym, X2_sym).dot(self.transform.T)
+            + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X, X2_sym)
+            + self.symmetry_sign * self.base_kernel.gradients_X(dL_dK, X_sym, X2).dot(self.transform.T)
+        )
 
     def gradients_X_diag(self, dL_dKdiag, X):
         """
@@ -181,15 +179,11 @@ class Symmetric(Kern):
         dL_dK = np.diag(np.asarray(dL_dKdiag).reshape(-1))
         return (
             self.base_kernel.gradients_X_diag(dL_dKdiag, X)
-            + self.base_kernel.gradients_X_diag(dL_dKdiag, X_sym).dot(
-                self.transform.T
-            )
+            + self.base_kernel.gradients_X_diag(dL_dKdiag, X_sym).dot(self.transform.T)
             + 2
             * self.symmetry_sign
             * (
                 self.base_kernel.gradients_X(dL_dK, X, X_sym)
-                + self.base_kernel.gradients_X(dL_dK, X_sym, X).dot(
-                    self.transform.T
-                )
+                + self.base_kernel.gradients_X(dL_dK, X_sym, X).dot(self.transform.T)
             )
         )

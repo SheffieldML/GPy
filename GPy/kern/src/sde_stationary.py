@@ -5,6 +5,7 @@
 Classes in this module enhance several stationary covariance functions with the
 Stochastic Differential Equation (SDE) functionality.
 """
+
 from .rbf import RBF
 from .stationary import Exponential
 from .stationary import RatQuad
@@ -104,26 +105,18 @@ class sde_RBF(RBF):
         if (Qc.item() > 1.0 / eps) or (Qc.item() < eps):
             warnings.warn(
                 """sde_RBF kernel: the noise variance Qc is either very large or very small.
-                                It influece conditioning of P_inf: {0:e}""".format(
-                    Qc.item()
-                )
+                                It influece conditioning of P_inf: {0:e}""".format(Qc.item())
             )
 
-        pp1 = np.zeros(
-            (2 * N + 1,)
-        )  # array of polynomial coefficients from higher power to lower
+        pp1 = np.zeros((2 * N + 1,))  # array of polynomial coefficients from higher power to lower
 
         for n in range(0, N + 1):  # (2N+1) - number of polynomial coefficients
-            pp1[2 * (N - n)] = (
-                fn * (4.0 * kappa) ** (N - n) / math.factorial(n) * (-1) ** n
-            )
+            pp1[2 * (N - n)] = fn * (4.0 * kappa) ** (N - n) / math.factorial(n) * (-1) ** n
 
         pp = np.poly1d(pp1)
         roots = np.roots(pp)
 
-        neg_real_part_roots = roots[
-            np.round(np.real(roots), roots_rounding_decimals) < 0
-        ]
+        neg_real_part_roots = roots[np.round(np.real(roots), roots_rounding_decimals) < 0]
         aa = np.poly1d(neg_real_part_roots, r=True).coeffs
 
         F = np.diag(np.ones((N - 1,)), 1)
@@ -150,26 +143,13 @@ class sde_RBF(RBF):
 
         dQcvariance = Qc / p_variance
         dQclengthscale = np.array(
-            (
-                (
-                    p_variance
-                    * np.sqrt(2 * np.pi)
-                    * fn
-                    * 2**N
-                    * p_lengthscale ** (-2 * N)
-                    * (1 - 2 * N),
-                ),
-            )
+            ((p_variance * np.sqrt(2 * np.pi) * fn * 2**N * p_lengthscale ** (-2 * N) * (1 - 2 * N),),)
         )
 
         dPinf_variance = Pinf / p_variance
 
         lp = Pinf.shape[0]
-        coeff = (
-            np.arange(1, lp + 1).reshape(lp, 1)
-            + np.arange(1, lp + 1).reshape(1, lp)
-            - 2
-        )
+        coeff = np.arange(1, lp + 1).reshape(lp, 1) + np.arange(1, lp + 1).reshape(1, lp) - 2
         coeff[np.mod(coeff, 2) != 0] = 0
         dPinf_lengthscale = -1 / p_lengthscale * Pinf * coeff
 

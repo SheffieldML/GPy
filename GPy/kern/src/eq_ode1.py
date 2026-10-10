@@ -12,21 +12,21 @@ from paramz.caching import Cache_this
 class EQ_ODE1(Kern):
     """
     Latent Force Model (LFM) kernel for first-order differential equations (Single Input Motif - SIM).
-    
-    This kernel implements the covariance function for first-order differential equations driven by 
+
+    This kernel implements the covariance function for first-order differential equations driven by
     an exponentiated quadratic (RBF) covariance, which is the foundation of Latent Force Models.
-    
+
     The outputs of this kernel have the form:
     .. math::
        \\frac{\\text{d}y_j}{\\text{d}t} = \\sum_{i=1}^R w_{j,i} u_i(t-\\delta_j) - d_jy_j(t)
 
-    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output 
-    to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and 
+    where :math:`R` is the rank of the system, :math:`w_{j,i}` is the sensitivity of the :math:`j`th output
+    to the :math:`i`th latent function, :math:`d_j` is the decay rate of the :math:`j`th output and
     :math:`u_i(t)` are independent latent Gaussian processes governed by an exponentiated quadratic covariance.
 
-    This kernel is equivalent to the SIM (Single Input Motif) kernel from the GPmat toolbox and 
+    This kernel is equivalent to the SIM (Single Input Motif) kernel from the GPmat toolbox and
     implements the mathematical framework described in:
-    
+
     - Lawrence et al. (2006): "Modelling transcriptional regulation using Gaussian Processes"
 
     :param input_dim: Input dimension (must be 2: time + output index)
@@ -62,9 +62,7 @@ class EQ_ODE1(Kern):
         name="eq_ode1",
     ):
         assert input_dim == 2, "only defined for 1 input dims"
-        super(EQ_ODE1, self).__init__(
-            input_dim=input_dim, active_dims=active_dims, name=name
-        )
+        super(EQ_ODE1, self).__init__(input_dim=input_dim, active_dims=active_dims, name=name)
 
         self.rank = rank
         self.output_dim = output_dim
@@ -217,9 +215,7 @@ class EQ_ODE1(Kern):
         upm = np.exp(nu2[index, :] + lnDifErf(nu[index, :], t_lq + nu[index, :]))
         upm[t[:, 0] == 0, :] = 0.0
 
-        upv = np.exp(
-            nu2[index, :] + gamt + lnDifErf(-t_lq + nu[index, :], nu[index, :])
-        )
+        upv = np.exp(nu2[index, :] + gamt + lnDifErf(-t_lq + nu[index, :], nu[index, :]))
         upv[t[:, 0] == 0, :] = 0.0
 
         # Covariance calculation
@@ -435,11 +431,7 @@ class EQ_ODE1(Kern):
         # Upsilon Calculations
         fullind = np.ix_(index, index2)
 
-        upsi = np.exp(
-            nu2[fullind]
-            - B[index] * tz
-            + lnDifErf(-tz_lq + nu[fullind], z_lq + nu[fullind])
-        )
+        upsi = np.exp(nu2[fullind] - B[index] * tz + lnDifErf(-tz_lq + nu[fullind], z_lq + nu[fullind]))
         upsi[t[:, 0] == 0, :] = 0.0
         # Covariance calculation
         kfu = c0[fullind] * upsi
@@ -559,9 +551,7 @@ class EQ_ODE1(Kern):
         upm = np.exp(nu2[index, :] + lnDifErf(nu[index, :], t_lq + nu[index, :]))
         upm[t[:, 0] == 0, :] = 0.0
 
-        upv = np.exp(
-            nu2[index, :] + 2.0 * gamt + lnDifErf(-t_lq + nu[index, :], nu[index, :])
-        )  # egamt*upv
+        upv = np.exp(nu2[index, :] + 2.0 * gamt + lnDifErf(-t_lq + nu[index, :], nu[index, :]))  # egamt*upv
         upv[t[:, 0] == 0, :] = 0.0
 
         # Gradient wrt S
@@ -575,10 +565,7 @@ class EQ_ODE1(Kern):
         CB2 = 2.0 * etlq2gamt - e2gamt - 1.0  # NxQ
 
         # gradient wrt B NxZ
-        gB = (
-            c0[index, :] * (CB1[index, :] * upm - (CB1[index, :] - t / B[index]) * upv)
-            + lq2_2B[index, :] * CB2
-        )
+        gB = c0[index, :] * (CB1[index, :] * upm - (CB1[index, :] - t / B[index]) * upv) + lq2_2B[index, :] * CB2
 
         # Gradient wrt lengthscale
         # DxQ terms
@@ -636,11 +623,7 @@ class EQ_ODE1(Kern):
 
         # Upsilon calculations
         fullind = np.ix_(index, index2)
-        upsi = np.exp(
-            nu2[fullind]
-            - B[index] * tz
-            + lnDifErf(-tz_lq + nu[fullind], z_lq + nu[fullind])
-        )
+        upsi = np.exp(nu2[fullind] - B[index] * tz + lnDifErf(-tz_lq + nu[fullind], z_lq + nu[fullind]))
         upsi[t[:, 0] == 0.0, :] = 0.0
 
         # Gradient wrt S
@@ -720,9 +703,7 @@ class EQ_ODE1(Kern):
         # Gradient wrt z
         za1 = c0 * B
         # za2 = S_w
-        gz = za1[fullind] * upsi + S[fullind] * (
-            np.exp(z_lq2 - B[index] * t) - np.exp(zt_lq2)
-        )
+        gz = za1[fullind] * upsi + S[fullind] * (np.exp(z_lq2 - B[index] * t) - np.exp(zt_lq2))
 
         return gz
 
@@ -731,18 +712,18 @@ def lnDifErf(z1, z2):
     """
     Compute log of difference of two erfs in a numerically stable manner.
     Based on MATLAB implementation by Antti Honkela and David Luengo.
-    
+
     Args:
         z1: First argument (scalar or array)
         z2: Second argument (scalar or array, assumed to be positive)
-    
+
     Returns:
         log(abs(erf(z1) - erf(z2)))
     """
     # Convert to numpy arrays if scalars
     z1 = np.asarray(z1)
     z2 = np.asarray(z2)
-    
+
     # Handle scalar inputs
     if z1.ndim == 0 and z2.ndim == 0:
         # Scalar case
@@ -764,11 +745,11 @@ def lnDifErf(z1, z2):
             # One or both zero
             diff = np.abs(erf(z1) - erf(z2))
             return np.log(np.maximum(diff, 1e-300))
-    
+
     # Array case
     # Initialize result
     logdiferf = np.zeros(z1.shape)
-    
+
     # Case 1: Arguments of different signs, no problems with loss of accuracy
     I1 = (z1 * z2) < 0
     if np.any(I1):
@@ -776,30 +757,30 @@ def lnDifErf(z1, z2):
         # Add safeguard for very small differences
         diff = np.maximum(diff, 1e-300)
         logdiferf[I1] = np.log(diff)
-    
+
     # Case 2: z1 = z2
     I2 = z1 == z2  # Use exact equality
     if np.any(I2):
         logdiferf[I2] = -np.inf
-    
+
     # Case 3: Both arguments are positive
     I3 = (z1 > 0) & (z2 > 0) & ~I1 & ~I2
     if np.any(I3):
         # Use erfcx for numerical stability
-        diff = erfcx(z2[I3]) - erfcx(z1[I3]) * np.exp(z2[I3]**2 - z1[I3]**2)
+        diff = erfcx(z2[I3]) - erfcx(z1[I3]) * np.exp(z2[I3] ** 2 - z1[I3] ** 2)
         # Add safeguard for very small differences
         diff = np.maximum(diff, 1e-300)
-        logdiferf[I3] = np.log(diff) - z2[I3]**2
-    
+        logdiferf[I3] = np.log(diff) - z2[I3] ** 2
+
     # Case 4: Both arguments are negative
     I4 = (z1 < 0) & (z2 < 0) & ~I1 & ~I2
     if np.any(I4):
         # Use erfcx with negative arguments
-        diff = erfcx(-z1[I4]) - erfcx(-z2[I4]) * np.exp(z1[I4]**2 - z2[I4]**2)
+        diff = erfcx(-z1[I4]) - erfcx(-z2[I4]) * np.exp(z1[I4] ** 2 - z2[I4] ** 2)
         # Add safeguard for very small differences
         diff = np.maximum(diff, 1e-300)
-        logdiferf[I4] = np.log(diff) - z1[I4]**2
-    
+        logdiferf[I4] = np.log(diff) - z1[I4] ** 2
+
     # Case 5: Other cases (one or both zero, mixed signs)
     I5 = ~I1 & ~I2 & ~I3 & ~I4
     if np.any(I5):
@@ -808,5 +789,5 @@ def lnDifErf(z1, z2):
         # Add safeguard for very small differences
         diff = np.maximum(diff, 1e-300)
         logdiferf[I5] = np.log(diff)
-    
+
     return logdiferf

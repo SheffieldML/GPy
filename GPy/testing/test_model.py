@@ -486,7 +486,7 @@ class TestMisc:
             X=np.random.normal(0, 1, size=(40, Q)),
             X_variance=False,
             kernel=GPy.kern.RBF(Q, ARD=1),
-            likelihoods=[Gaussian(name="Gaussian_noise") for i in range(3)],
+            likelihoods=[Gaussian(name=f"Gaussian_noise_{i}") for i in range(3)],
         )
         m.randomize()
         assert m.checkgrad()

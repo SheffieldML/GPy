@@ -134,7 +134,7 @@ class MRD(BayesianGPLVMMiniBatch):
         # self.X = NormalPosterior(X, X_variance)
 
         if likelihoods is None:
-            likelihoods = [Gaussian(name="Gaussian_noise_{i}".format(i)) for i in range(len(Ylist))]
+            likelihoods = [Gaussian(name=f"Gaussian_noise_{i}") for i in range(len(Ylist))]
         else:
             likelihoods = likelihoods
 

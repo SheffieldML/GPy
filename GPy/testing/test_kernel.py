@@ -206,8 +206,6 @@ def check_kernel_gradient_functions(
             )
         )
         pass_checks = False
-        assert result
-        return False
 
     if verbose:
         print("Checking gradients of K(X, X) wrt theta.")
@@ -224,8 +222,6 @@ def check_kernel_gradient_functions(
         )
         Kern_check_dK_dtheta(kern, X=X, X2=None).checkgrad(verbose=True)
         pass_checks = False
-        assert result
-        return False
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt theta.")
@@ -252,8 +248,6 @@ def check_kernel_gradient_functions(
         )
         Kern_check_dK_dtheta(kern, X=X, X2=X2).checkgrad(verbose=True)
         pass_checks = False
-        assert result
-        return False
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt theta.")
@@ -275,8 +269,6 @@ def check_kernel_gradient_functions(
         )
         Kern_check_dKdiag_dtheta(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
-        assert result
-        return False
 
     if verbose:
         print("Checking gradients of K(X, X) wrt X.")
@@ -300,9 +292,7 @@ def check_kernel_gradient_functions(
             )
         )
         testmodel.checkgrad(verbose=True)
-        assert result
         pass_checks = False
-        return False
 
     if verbose:
         print("Checking gradients of K(X, X2) wrt X.")
@@ -326,9 +316,7 @@ def check_kernel_gradient_functions(
             )
         )
         testmodel.checkgrad(verbose=True)
-        assert result
         pass_checks = False
-        return False
 
     if verbose:
         print("Checking gradients of Kdiag(X) wrt X.")
@@ -353,8 +341,6 @@ def check_kernel_gradient_functions(
         )
         Kern_check_dKdiag_dX(kern, X=X).checkgrad(verbose=True)
         pass_checks = False
-        assert result
-        return False
 
     if verbose:
         print("Checking gradients of dK(X, X2) wrt X2 with full cov in dimensions")
@@ -378,9 +364,7 @@ def check_kernel_gradient_functions(
             )
         )
         testmodel.checkgrad(verbose=True)
-        assert result
         pass_checks = False
-        return False
 
     if verbose:
         print("Checking gradients of dK(X, X) wrt X with full cov in dimensions")
@@ -404,9 +388,7 @@ def check_kernel_gradient_functions(
             )
         )
         testmodel.checkgrad(verbose=True)
-        assert result
         pass_checks = False
-        return False
 
     if verbose:
         print("Checking gradients of dKdiag(X, X) wrt X with cov in dimensions")
@@ -430,9 +412,7 @@ def check_kernel_gradient_functions(
             )
         )
         testmodel.checkgrad(verbose=True)
-        assert result
         pass_checks = False
-        return False
 
     return pass_checks
 

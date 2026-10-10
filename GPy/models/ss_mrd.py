@@ -45,16 +45,11 @@ class SSMRD(Model):
         self._PROPAGATE_ = False
 
         # initialize X for individual models
-        X, X_variance, Gammas, fracs = self._init_X(
-            Ylist, input_dim, X, X_variance, Gammas, initx
-        )
+        X, X_variance, Gammas, fracs = self._init_X(Ylist, input_dim, X, X_variance, Gammas, initx)
         self.X = NormalPosterior(means=X, variances=X_variance)
 
         if kernels is None:
-            kernels = [
-                RBF(input_dim, lengthscale=1.0 / fracs, ARD=True)
-                for i in range(len(Ylist))
-            ]
+            kernels = [RBF(input_dim, lengthscale=1.0 / fracs, ARD=True) for i in range(len(Ylist))]
         if Zs is None:
             Zs = [None] * len(Ylist)
         if likelihoods is None:
@@ -63,15 +58,10 @@ class SSMRD(Model):
             inference_methods = [None] * len(Ylist)
 
         if IBP:
-            self.var_priors = [
-                IBPPrior_SSMRD(len(Ylist), input_dim, alpha=alpha)
-                for i in range(len(Ylist))
-            ]
+            self.var_priors = [IBPPrior_SSMRD(len(Ylist), input_dim, alpha=alpha) for i in range(len(Ylist))]
         else:
             self.var_priors = [
-                SpikeAndSlabPrior_SSMRD(
-                    nModels=len(Ylist), pi=pi, learnPi=False, group_spike=group_spike
-                )
+                SpikeAndSlabPrior_SSMRD(nModels=len(Ylist), pi=pi, learnPi=False, group_spike=group_spike)
                 for i in range(len(Ylist))
             ]
         self.models = [
@@ -120,17 +110,13 @@ class SSMRD(Model):
     def parameters_changed(self):
         super(SSMRD, self).parameters_changed()
         [m.parameters_changed() for m in self.models]
-        self._log_marginal_likelihood = sum(
-            [m._log_marginal_likelihood for m in self.models]
-        )
+        self._log_marginal_likelihood = sum([m._log_marginal_likelihood for m in self.models])
         self._collate_X_gradient()
 
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _init_X(
-        self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx="PCA_concat"
-    ):
+    def _init_X(self, Ylist, input_dim, X=None, X_variance=None, Gammas=None, initx="PCA_concat"):
         # Divide latent dimensions
         idx = np.empty((input_dim,), dtype=int)
         residue = (input_dim) % (len(Ylist))
@@ -218,25 +204,11 @@ class SSMRD(Model):
 
 
 class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
-    def __init__(
-        self,
-        nModels,
-        pi=0.5,
-        learnPi=False,
-        group_spike=True,
-        variance=1.0,
-        name="SSMRDPrior",
-        **kw
-    ):
+    def __init__(self, nModels, pi=0.5, learnPi=False, group_spike=True, variance=1.0, name="SSMRDPrior", **kw):
         self.nModels = nModels
         self._b_prob_all = 0.5
         super(SpikeAndSlabPrior_SSMRD, self).__init__(
-            pi=pi,
-            learnPi=learnPi,
-            group_spike=group_spike,
-            variance=variance,
-            name=name,
-            **kw
+            pi=pi, learnPi=learnPi, group_spike=group_spike, variance=variance, name=name, **kw
         )
 
     def _update_inernal(self, varp_list):
@@ -244,16 +216,10 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
         # The probability for the binary variable for the same latent dimension of any of the models is on.
         if self.group_spike:
             self._b_prob_all = 1.0 - param_to_array(varp_list[0].gamma_group)
-            [
-                np.multiply(self._b_prob_all, 1.0 - vp.gamma_group, self._b_prob_all)
-                for vp in varp_list[1:]
-            ]
+            [np.multiply(self._b_prob_all, 1.0 - vp.gamma_group, self._b_prob_all) for vp in varp_list[1:]]
         else:
             self._b_prob_all = 1.0 - param_to_array(varp_list[0].binary_prob)
-            [
-                np.multiply(self._b_prob_all, 1.0 - vp.binary_prob, self._b_prob_all)
-                for vp in varp_list[1:]
-            ]
+            [np.multiply(self._b_prob_all, 1.0 - vp.binary_prob, self._b_prob_all) for vp in varp_list[1:]]
 
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
@@ -270,12 +236,10 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
 
         var_mean = np.square(mu) / self.variance
         var_S = S / self.variance - np.log(S)
-        var_gamma = (gamma * np.log(gamma / pi)).sum() + (
-            (1 - gamma) * np.log((1 - gamma) / (1 - pi))
-        ).sum()
-        return var_gamma + (
-            (1.0 - self._b_prob_all) * (np.log(self.variance) - 1.0 + var_mean + var_S)
-        ).sum() / (2.0 * self.nModels)
+        var_gamma = (gamma * np.log(gamma / pi)).sum() + ((1 - gamma) * np.log((1 - gamma) / (1 - pi))).sum()
+        return var_gamma + ((1.0 - self._b_prob_all) * (np.log(self.variance) - 1.0 + var_mean + var_S)).sum() / (
+            2.0 * self.nModels
+        )
 
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
@@ -295,32 +259,15 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
             tmp = self._b_prob_all / (1.0 - gamma)
             variational_posterior.binary_prob.gradient -= (
                 np.log((1 - pi) / pi * gamma / (1.0 - gamma)) / N
-                + tmp
-                * (
-                    (np.square(mu) + S) / self.variance
-                    - np.log(S)
-                    + np.log(self.variance)
-                    - 1.0
-                )
-                / 2.0
+                + tmp * ((np.square(mu) + S) / self.variance - np.log(S) + np.log(self.variance) - 1.0) / 2.0
             )
         else:
             variational_posterior.binary_prob.gradient -= (
                 np.log((1 - pi) / pi * gamma / (1.0 - gamma))
-                + (
-                    (np.square(mu) + S) / self.variance
-                    - np.log(S)
-                    + np.log(self.variance)
-                    - 1.0
-                )
-                / 2.0
+                + ((np.square(mu) + S) / self.variance - np.log(S) + np.log(self.variance) - 1.0) / 2.0
             )
         mu.gradient -= (1.0 - self._b_prob_all) * mu / (self.variance * self.nModels)
-        S.gradient -= (
-            (1.0 / self.variance - 1.0 / S)
-            * (1.0 - self._b_prob_all)
-            / (2.0 * self.nModels)
-        )
+        S.gradient -= (1.0 / self.variance - 1.0 / S) * (1.0 - self._b_prob_all) / (2.0 * self.nModels)
         if self.learnPi:
             raise "Not Supported!"
 
@@ -341,10 +288,7 @@ class IBPPrior_SSMRD(VariationalPrior):
         """Make an update of the internal status by gathering the variational posteriors for all the individual models."""
         # The probability for the binary variable for the same latent dimension of any of the models is on.
         self._b_prob_all = 1.0 - param_to_array(varp_list[0].gamma_group)
-        [
-            np.multiply(self._b_prob_all, 1.0 - vp.gamma_group, self._b_prob_all)
-            for vp in varp_list[1:]
-        ]
+        [np.multiply(self._b_prob_all, 1.0 - vp.gamma_group, self._b_prob_all) for vp in varp_list[1:]]
 
     def KL_divergence(self, variational_posterior):
         mu, S, gamma, tau = (
@@ -356,9 +300,9 @@ class IBPPrior_SSMRD(VariationalPrior):
 
         var_mean = np.square(mu) / self.variance
         var_S = S / self.variance - np.log(S)
-        part1 = (
-            (1.0 - self._b_prob_all) * (np.log(self.variance) - 1.0 + var_mean + var_S)
-        ).sum() / (2.0 * self.nModels)
+        part1 = ((1.0 - self._b_prob_all) * (np.log(self.variance) - 1.0 + var_mean + var_S)).sum() / (
+            2.0 * self.nModels
+        )
 
         ad = self.alpha / self.input_dim
         from scipy.special import betaln, digamma
@@ -366,16 +310,10 @@ class IBPPrior_SSMRD(VariationalPrior):
         part2 = (
             (gamma * np.log(gamma)).sum()
             + ((1.0 - gamma) * np.log(1.0 - gamma)).sum()
-            + (betaln(ad, 1.0) * self.input_dim - betaln(tau[:, 0], tau[:, 1]).sum())
-            / self.nModels
+            + (betaln(ad, 1.0) * self.input_dim - betaln(tau[:, 0], tau[:, 1]).sum()) / self.nModels
             + (((tau[:, 0] - ad) / self.nModels - gamma) * digamma(tau[:, 0])).sum()
-            + (
-                ((tau[:, 1] - 1.0) / self.nModels + gamma - 1.0) * digamma(tau[:, 1])
-            ).sum()
-            + (
-                ((1.0 + ad - tau[:, 0] - tau[:, 1]) / self.nModels + 1.0)
-                * digamma(tau.sum(axis=1))
-            ).sum()
+            + (((tau[:, 1] - 1.0) / self.nModels + gamma - 1.0) * digamma(tau[:, 1])).sum()
+            + (((1.0 + ad - tau[:, 0] - tau[:, 1]) / self.nModels + 1.0) * digamma(tau.sum(axis=1))).sum()
         )
         return part1 + part2
 
@@ -387,13 +325,9 @@ class IBPPrior_SSMRD(VariationalPrior):
             variational_posterior.tau.values,
         )
 
-        variational_posterior.mean.gradient -= (
-            (1.0 - self._b_prob_all) * mu / (self.variance * self.nModels)
-        )
+        variational_posterior.mean.gradient -= (1.0 - self._b_prob_all) * mu / (self.variance * self.nModels)
         variational_posterior.variance.gradient -= (
-            (1.0 / self.variance - 1.0 / S)
-            * (1.0 - self._b_prob_all)
-            / (2.0 * self.nModels)
+            (1.0 / self.variance - 1.0 / S) * (1.0 - self._b_prob_all) / (2.0 * self.nModels)
         )
         from scipy.special import digamma, polygamma
 
@@ -402,24 +336,13 @@ class IBPPrior_SSMRD(VariationalPrior):
             np.log(gamma / (1.0 - gamma)) + digamma(tau[:, 1]) - digamma(tau[:, 0])
         ) / variational_posterior.num_data
         variational_posterior.binary_prob.gradient -= (
-            dgamma
-            + tmp
-            * (
-                (np.square(mu) + S) / self.variance
-                - np.log(S)
-                + np.log(self.variance)
-                - 1.0
-            )
-            / 2.0
+            dgamma + tmp * ((np.square(mu) + S) / self.variance - np.log(S) + np.log(self.variance) - 1.0) / 2.0
         )
         ad = self.alpha / self.input_dim
-        common = ((1.0 + ad - tau[:, 0] - tau[:, 1]) / self.nModels + 1.0) * polygamma(
-            1, tau.sum(axis=1)
-        )
+        common = ((1.0 + ad - tau[:, 0] - tau[:, 1]) / self.nModels + 1.0) * polygamma(1, tau.sum(axis=1))
         variational_posterior.tau.gradient[:, 0] = -(
             ((tau[:, 0] - ad) / self.nModels - gamma) * polygamma(1, tau[:, 0]) + common
         )
         variational_posterior.tau.gradient[:, 1] = -(
-            ((tau[:, 1] - 1.0) / self.nModels + gamma - 1.0) * polygamma(1, tau[:, 1])
-            + common
+            ((tau[:, 1] - 1.0) / self.nModels + gamma - 1.0) * polygamma(1, tau[:, 1]) + common
         )

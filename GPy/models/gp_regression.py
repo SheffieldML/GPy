@@ -6,6 +6,7 @@ from ..core import GP
 from .. import likelihoods
 from .. import kern
 
+
 class GPRegression(GP):
     """
     Gaussian Process model for regression
@@ -26,23 +27,35 @@ class GPRegression(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None, noise_var=1., mean_function=None):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None, noise_var=1.0, mean_function=None):
 
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
         likelihood = likelihoods.Gaussian(variance=noise_var)
 
-        super(GPRegression, self).__init__(X, Y, kernel, likelihood, name='GP regression', Y_metadata=Y_metadata, normalizer=normalizer, mean_function=mean_function)
+        super(GPRegression, self).__init__(
+            X,
+            Y,
+            kernel,
+            likelihood,
+            name="GP regression",
+            Y_metadata=Y_metadata,
+            normalizer=normalizer,
+            mean_function=mean_function,
+        )
 
     @staticmethod
     def from_gp(gp):
         from copy import deepcopy
+
         gp = deepcopy(gp)
-        return GPRegression(gp.X, gp.Y, gp.kern, gp.Y_metadata, gp.normalizer, gp.likelihood.variance.values, gp.mean_function)
+        return GPRegression(
+            gp.X, gp.Y, gp.kern, gp.Y_metadata, gp.normalizer, gp.likelihood.variance.values, gp.mean_function
+        )
 
     def to_dict(self, save_data=True):
-        model_dict = super(GPRegression,self).to_dict(save_data)
+        model_dict = super(GPRegression, self).to_dict(save_data)
         model_dict["class"] = "GPy.models.GPRegression"
         return model_dict
 

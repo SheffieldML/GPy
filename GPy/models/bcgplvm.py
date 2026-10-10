@@ -20,16 +20,14 @@ class BCGPLVM(GPLVM):
     :type mapping: GPy.core.Mapping object
 
     """
+
     def __init__(self, Y, input_dim, kernel=None, mapping=None):
 
-
         if mapping is None:
-            mapping = mappings.MLP(input_dim=Y.shape[1],
-                                   output_dim=input_dim,
-                                   hidden_dim=10)
+            mapping = mappings.MLP(input_dim=Y.shape[1], output_dim=input_dim, hidden_dim=10)
         else:
-            assert mapping.input_dim==Y.shape[1], "mapping input dim does not work for Y dimension"
-            assert mapping.output_dim==input_dim, "mapping output dim does not work for self.input_dim"
+            assert mapping.input_dim == Y.shape[1], "mapping input dim does not work for Y dimension"
+            assert mapping.output_dim == input_dim, "mapping output dim does not work for self.input_dim"
         super(BCGPLVM, self).__init__(Y, input_dim, X=mapping.f(Y), kernel=kernel, name="bcgplvm")
         self.unlink_parameter(self.X)
         self.mapping = mapping
@@ -40,7 +38,5 @@ class BCGPLVM(GPLVM):
     def parameters_changed(self):
         self.X = self.mapping.f(self.Y)
         GP.parameters_changed(self)
-        Xgradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
+        Xgradient = self.kern.gradients_X(self.grad_dict["dL_dK"], self.X, None)
         self.mapping.update_gradients(Xgradient, self.Y)
-
-

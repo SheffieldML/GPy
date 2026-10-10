@@ -14,8 +14,8 @@ class GPLVM(GP):
 
 
     """
-    def __init__(self, Y, input_dim, init='PCA', X=None, kernel=None, name="gplvm", Y_metadata=None, normalizer=False):
 
+    def __init__(self, Y, input_dim, init="PCA", X=None, kernel=None, name="gplvm", Y_metadata=None, normalizer=False):
         """
         :param Y: observed data
         :type Y: np.ndarray
@@ -31,6 +31,7 @@ class GPLVM(GP):
         """
         if X is None:
             from ..util.initialization import initialize_latent
+
             X, fracs = initialize_latent(init, input_dim, Y)
         else:
             fracs = np.ones(input_dim)
@@ -39,11 +40,13 @@ class GPLVM(GP):
 
         likelihood = Gaussian()
 
-        super(GPLVM, self).__init__(X, Y, kernel, likelihood, name='GPLVM', Y_metadata=Y_metadata, normalizer=normalizer)
+        super(GPLVM, self).__init__(
+            X, Y, kernel, likelihood, name="GPLVM", Y_metadata=Y_metadata, normalizer=normalizer
+        )
 
-        self.X = Param('latent_mean', X)
+        self.X = Param("latent_mean", X)
         self.link_parameter(self.X, index=0)
 
     def parameters_changed(self):
         super(GPLVM, self).parameters_changed()
-        self.X.gradient = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X, None)
+        self.X.gradient = self.kern.gradients_X(self.grad_dict["dL_dK"], self.X, None)

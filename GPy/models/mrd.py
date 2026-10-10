@@ -14,6 +14,7 @@ from ..likelihoods import Gaussian
 from ..util.initialization import initialize_latent
 from ..models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 
+
 class MRD(BayesianGPLVMMiniBatch):
     """
     !WARNING: This is bleeding edge code and still in development.
@@ -56,11 +57,26 @@ class MRD(BayesianGPLVMMiniBatch):
     :param bool stochastic: Should this model be using stochastic gradient descent over the dimensions?
     :param bool|[bool] batchsize: either one batchsize for all, or one batchsize per dataset.
     """
-    def __init__(self, Ylist, input_dim, X=None, X_variance=None,
-                 initx = 'PCA', initz = 'permute',
-                 num_inducing=10, Z=None, kernel=None,
-                 inference_method=None, likelihoods=None, name='mrd',
-                 Ynames=None, normalizer=False, stochastic=False, batchsize=10):
+
+    def __init__(
+        self,
+        Ylist,
+        input_dim,
+        X=None,
+        X_variance=None,
+        initx="PCA",
+        initz="permute",
+        num_inducing=10,
+        Z=None,
+        kernel=None,
+        inference_method=None,
+        likelihoods=None,
+        name="mrd",
+        Ynames=None,
+        normalizer=False,
+        stochastic=False,
+        batchsize=10,
+    ):
 
         self.logger = logging.getLogger(self.__class__.__name__)
         self.num_inducing = num_inducing
@@ -70,35 +86,40 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.logger.debug("creating observable arrays")
         self.Ylist = [ObsAr(Y) for Y in Ylist]
-        #The next line is a fix for Python 3. It replicates the python 2 behaviour from the above comprehension
+        # The next line is a fix for Python 3. It replicates the python 2 behaviour from the above comprehension
         Y = Ylist[-1]
 
         if Ynames is None:
             self.logger.debug("creating Ynames")
-            Ynames = ['Y{}'.format(i) for i in range(len(Ylist))]
+            Ynames = ["Y{}".format(i) for i in range(len(Ylist))]
         self.names = Ynames
         assert len(self.names) == len(self.Ylist), "one name per dataset, or None if Ylist is a dict"
 
         if inference_method is None:
             self.inference_method = InferenceMethodList([VarDTC() for _ in range(len(self.Ylist))])
         else:
-            assert isinstance(inference_method, InferenceMethodList), "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(inference_method)
+            assert isinstance(inference_method, InferenceMethodList), (
+                "please provide one inference method per Y in the list and provide it as InferenceMethodList, inference_method given: {}".format(
+                    inference_method
+                )
+            )
             self.inference_method = inference_method
 
         if X is None:
             X, fracs = self._init_X(input_dim, initx, Ylist)
         else:
-            fracs = [X.var(0)]*len(Ylist)
+            fracs = [X.var(0)] * len(Ylist)
 
         Z = self._init_Z(initz, X, input_dim)
-        self.Z = Param('inducing inputs', Z)
-        self.num_inducing = self.Z.shape[0] # ensure M==N if M>N
+        self.Z = Param("inducing inputs", Z)
+        self.num_inducing = self.Z.shape[0]  # ensure M==N if M>N
 
         # sort out the kernels
         self.logger.info("building kernels")
         if kernel is None:
             from ..kern import RBF
-            kernels = [RBF(input_dim, ARD=1, lengthscale=1./fracs[i]) for i in range(len(Ylist))]
+
+            kernels = [RBF(input_dim, ARD=1, lengthscale=1.0 / fracs[i]) for i in range(len(Ylist))]
         elif isinstance(kernel, Kern):
             kernels = []
             for i in range(len(Ylist)):
@@ -110,17 +131,30 @@ class MRD(BayesianGPLVMMiniBatch):
             kernels = kernel
 
         self.variational_prior = NormalPrior()
-        #self.X = NormalPosterior(X, X_variance)
+        # self.X = NormalPosterior(X, X_variance)
 
         if likelihoods is None:
-            likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(len(Ylist))]
-        else: likelihoods = likelihoods
+            likelihoods = [Gaussian(name="Gaussian_noise".format(i)) for i in range(len(Ylist))]
+        else:
+            likelihoods = likelihoods
 
         self.logger.info("adding X and Z")
-        super(MRD, self).__init__(Y, input_dim, X=X, X_variance=X_variance, num_inducing=num_inducing,
-                 Z=self.Z, kernel=None, inference_method=self.inference_method, likelihood=Gaussian(),
-                 name='manifold relevance determination', normalizer=None,
-                 missing_data=False, stochastic=False, batchsize=1)
+        super(MRD, self).__init__(
+            Y,
+            input_dim,
+            X=X,
+            X_variance=X_variance,
+            num_inducing=num_inducing,
+            Z=self.Z,
+            kernel=None,
+            inference_method=self.inference_method,
+            likelihood=Gaussian(),
+            name="manifold relevance determination",
+            normalizer=None,
+            missing_data=False,
+            stochastic=False,
+            batchsize=1,
+        )
 
         self._log_marginal_likelihood = 0
 
@@ -132,24 +166,36 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.bgplvms = []
 
-        for i, n, k, l, Y, im, bs in zip(itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize):
-            assert Y.shape[0] == self.num_data, "All datasets need to share the number of datapoints, and those have to correspond to one another"
+        for i, n, k, l, Y, im, bs in zip(
+            itertools.count(), Ynames, kernels, likelihoods, Ylist, self.inference_method, batchsize
+        ):
+            assert Y.shape[0] == self.num_data, (
+                "All datasets need to share the number of datapoints, and those have to correspond to one another"
+            )
             md = np.isnan(Y).any()
-            spgp = BayesianGPLVMMiniBatch(Y, input_dim, X, X_variance,
-                                          Z=Z, kernel=k, likelihood=l,
-                                          inference_method=im, name=n,
-                                          normalizer=normalizer,
-                                          missing_data=md,
-                                          stochastic=stochastic,
-                                          batchsize=bs)
-            spgp.kl_factr = 1./len(Ynames)
+            spgp = BayesianGPLVMMiniBatch(
+                Y,
+                input_dim,
+                X,
+                X_variance,
+                Z=Z,
+                kernel=k,
+                likelihood=l,
+                inference_method=im,
+                name=n,
+                normalizer=normalizer,
+                missing_data=md,
+                stochastic=stochastic,
+                batchsize=bs,
+            )
+            spgp.kl_factr = 1.0 / len(Ynames)
             spgp.unlink_parameter(spgp.Z)
             spgp.unlink_parameter(spgp.X)
             del spgp.Z
             del spgp.X
             spgp.Z = self.Z
             spgp.X = self.X
-            self.link_parameter(spgp, i+2)
+            self.link_parameter(spgp, i + 2)
             self.bgplvms.append(spgp)
 
         b = self.bgplvms[0]
@@ -161,22 +207,22 @@ class MRD(BayesianGPLVMMiniBatch):
 
     def parameters_changed(self):
         self._log_marginal_likelihood = 0
-        self.Z.gradient[:] = 0.
-        self.X.gradient[:] = 0.
+        self.Z.gradient[:] = 0.0
+        self.X.gradient[:] = 0.0
         for b, i in zip(self.bgplvms, self.inference_method):
             self._log_marginal_likelihood += b._log_marginal_likelihood
 
-            self.logger.info('working on im <{}>'.format(hex(id(i))))
+            self.logger.info("working on im <{}>".format(hex(id(i))))
             self.Z.gradient[:] += b._Zgrad  # b.Z.gradient  # full_values['Zgrad']
 
-            #grad_dict = b.full_values
+            # grad_dict = b.full_values
 
             if self.has_uncertain_inputs():
                 self.X.gradient += b._Xgrad
             else:
                 self.X.gradient += b._Xgrad
 
-        #if self.has_uncertain_inputs():
+        # if self.has_uncertain_inputs():
         #    # update for the KL divergence
         #    self.variational_prior.update_gradients_KL(self.X)
         #    self._log_marginal_likelihood -= self.variational_prior.KL_divergence(self.X)
@@ -185,30 +231,30 @@ class MRD(BayesianGPLVMMiniBatch):
     def log_likelihood(self):
         return self._log_marginal_likelihood
 
-    def _init_X(self, input_dim, init='PCA', Ylist=None):
+    def _init_X(self, input_dim, init="PCA", Ylist=None):
         if Ylist is None:
             Ylist = self.Ylist
         if init in "PCA_concat":
-            X, fracs = initialize_latent('PCA', input_dim, np.hstack(Ylist))
-            fracs = [fracs]*len(Ylist)
+            X, fracs = initialize_latent("PCA", input_dim, np.hstack(Ylist))
+            fracs = [fracs] * len(Ylist)
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], input_dim))
             fracs = np.empty((len(Ylist), input_dim))
             for qs, Y in zip(np.array_split(np.arange(input_dim), len(Ylist)), Ylist):
-                x, frcs = initialize_latent('PCA', len(qs), Y)
+                x, frcs = initialize_latent("PCA", len(qs), Y)
                 X[:, qs] = x
                 fracs[:, qs] = frcs
-        else: # init == 'random':
+        else:  # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], input_dim)
             fracs = X.var(0)
-            fracs = [fracs]*len(Ylist)
+            fracs = [fracs] * len(Ylist)
         X -= X.mean()
         X /= X.std()
         return X, fracs
 
     def _init_Z(self, init, X, input_dim):
         if init in "permute":
-            Z = np.random.permutation(X.copy())[:self.num_inducing]
+            Z = np.random.permutation(X.copy())[: self.num_inducing]
         elif init in "random":
             Z = np.random.randn(self.num_inducing, input_dim) * X.var()
         return Z
@@ -224,9 +270,9 @@ class MRD(BayesianGPLVMMiniBatch):
         self.likelihood = b.likelihood
         return super(MRD, self).predict(Xnew, full_cov, Y_metadata, kern)
 
-    #===============================================================================
+    # ===============================================================================
     # TODO: Predict! Maybe even change to several bgplvms, which share an X?
-    #===============================================================================
+    # ===============================================================================
     #     def plot_predict(self, fignum=None, ax=None, sharex=False, sharey=False, **kwargs):
     #         fig = self._handle_plotting(fignum,
     #                                     ax,
@@ -246,22 +292,30 @@ class MRD(BayesianGPLVMMiniBatch):
         from ..plotting import plotting_library as pl
 
         if titles is None:
-            titles = [r'${}$'.format(name) for name in self.names]
+            titles = [r"${}$".format(name) for name in self.names]
 
         M = len(self.bgplvms)
         fig = pl().figure(rows=1, cols=M, **fig_kwargs)
         for c in range(M):
-            canvas = self.bgplvms[c].kern.plot_ARD(title=titles[c], figure=fig, col=c+1, **kwargs)
+            canvas = self.bgplvms[c].kern.plot_ARD(title=titles[c], figure=fig, col=c + 1, **kwargs)
         return canvas
 
-    def plot_latent(self, labels=None, which_indices=None,
-                resolution=60, legend=True,
-                plot_limits=None,
-                updates=False,
-                kern=None, marker='<>^vsd',
-                num_samples=1000, projection='2d',
-                predict_kwargs={},
-                scatter_kwargs=None, **imshow_kwargs):
+    def plot_latent(
+        self,
+        labels=None,
+        which_indices=None,
+        resolution=60,
+        legend=True,
+        plot_limits=None,
+        updates=False,
+        kern=None,
+        marker="<>^vsd",
+        num_samples=1000,
+        projection="2d",
+        predict_kwargs={},
+        scatter_kwargs=None,
+        **imshow_kwargs,
+    ):
         """
         see plotting.matplot_dep.dim_reduction_plots.plot_latent
         if predict_kwargs is None, will plot latent spaces for 0th dataset (and kernel), otherwise give
@@ -270,21 +324,34 @@ class MRD(BayesianGPLVMMiniBatch):
         from ..plotting.gpy_plot.latent_plots import plot_latent
 
         if "Yindex" not in predict_kwargs:
-            predict_kwargs['Yindex'] = 0
+            predict_kwargs["Yindex"] = 0
 
-        Yindex = predict_kwargs['Yindex']
+        Yindex = predict_kwargs["Yindex"]
 
         self.kern = self.bgplvms[Yindex].kern
         self.likelihood = self.bgplvms[Yindex].likelihood
 
-        return plot_latent(self, labels, which_indices, resolution, legend, plot_limits, updates, kern, marker, num_samples, projection, scatter_kwargs)
+        return plot_latent(
+            self,
+            labels,
+            which_indices,
+            resolution,
+            legend,
+            plot_limits,
+            updates,
+            kern,
+            marker,
+            num_samples,
+            projection,
+            scatter_kwargs,
+        )
 
     def __getstate__(self):
         state = super(MRD, self).__getstate__()
-        if 'kern' in state:
-            del state['kern']
-        if 'likelihood' in state:
-            del state['likelihood']
+        if "kern" in state:
+            del state["kern"]
+        if "likelihood" in state:
+            del state["likelihood"]
         return state
 
     def __setstate__(self, state):
@@ -313,7 +380,7 @@ class MRD(BayesianGPLVMMiniBatch):
             infMod = views[1]
 
         scObs = [None] * len(obsMod)
-        for i in range(0,len(obsMod)):
+        for i in range(0, len(obsMod)):
             # WARNING: the [0] in the end assumes that the ARD kernel (if there's addition) is the 1st one
             scObs[i] = np.atleast_2d(self.bgplvms[obsMod[i]].kern.input_sensitivity(summarize=False))[0]
             # Normalise to have max 1
@@ -321,30 +388,30 @@ class MRD(BayesianGPLVMMiniBatch):
         scInf = np.atleast_2d(self.bgplvms[infMod].kern.input_sensitivity(summarize=False))[0]
         scInf /= np.max(scInf)
 
-        retainedScales = [None]*(len(obsMod)+1)
-        for i in range(0,len(obsMod)):
+        retainedScales = [None] * (len(obsMod) + 1)
+        for i in range(0, len(obsMod)):
             retainedScales[obsMod[i]] = np.where(scObs[i] > threshold)[0]
         retainedScales[infMod] = np.where(scInf > threshold)[0]
 
         for i in range(len(retainedScales)):
-            retainedScales[i] = [k for k in retainedScales[i]] # Transform array to list
+            retainedScales[i] = [k for k in retainedScales[i]]  # Transform array to list
 
         sharedDims = set(retainedScales[obsMod[0]]).intersection(set(retainedScales[infMod]))
-        for i in range(1,len(obsMod)):
+        for i in range(1, len(obsMod)):
             sharedDims = sharedDims.intersection(set(retainedScales[obsMod[i]]))
-        privateDims = [None]*M
-        for i in range(0,len(retainedScales)):
+        privateDims = [None] * M
+        for i in range(0, len(retainedScales)):
             privateDims[i] = set(retainedScales[i]).difference(sharedDims)
-            privateDims[i] = [k for k in privateDims[i]]        # Transform set to list
-        sharedDims = [k for k in sharedDims]                    # Transform set to list
+            privateDims[i] = [k for k in privateDims[i]]  # Transform set to list
+        sharedDims = [k for k in sharedDims]  # Transform set to list
 
         sharedDims.sort()
         for i in range(len(privateDims)):
             privateDims[i].sort()
 
         if printOut:
-            print('# Shared dimensions: ' + str(sharedDims))
+            print("# Shared dimensions: " + str(sharedDims))
             for i in range(len(retainedScales)):
-                print('# Private dimensions model ' + str(i) + ':' + str(privateDims[i]))
+                print("# Private dimensions model " + str(i) + ":" + str(privateDims[i]))
 
         return sharedDims, privateDims

@@ -70,13 +70,25 @@ class InputWarpedGP(GP):
     Input Warping for Bayesian Optimization of Non-stationary Functions
     preprint arXiv:1402.0929, 2014
     """
-    def __init__(self, X, Y, kernel=None, normalizer=False, warping_function=None, warping_indices=None, Xmin=None, Xmax=None, epsilon=None):
+
+    def __init__(
+        self,
+        X,
+        Y,
+        kernel=None,
+        normalizer=False,
+        warping_function=None,
+        warping_indices=None,
+        Xmin=None,
+        Xmax=None,
+        epsilon=None,
+    ):
         if X.ndim == 1:
             X = X.reshape(-1, 1)
         self.X_untransformed = X.copy()
 
         if kernel is None:
-            kernel = kern.sde_Matern32(X.shape[1], variance=1.)
+            kernel = kern.sde_Matern32(X.shape[1], variance=1.0)
         self.kernel = kernel
 
         if warping_function is None:
@@ -86,7 +98,9 @@ class InputWarpedGP(GP):
 
         self.X_warped = self.transform_data(self.X_untransformed)
         likelihood = likelihoods.Gaussian()
-        super(InputWarpedGP, self).__init__(self.X_warped, Y, likelihood=likelihood, kernel=kernel, normalizer=normalizer)
+        super(InputWarpedGP, self).__init__(
+            self.X_warped, Y, likelihood=likelihood, kernel=kernel, normalizer=normalizer
+        )
 
         # Add the parameters in the warping function to the model parameters hierarchy
         self.link_parameter(self.warping_function)
@@ -101,7 +115,7 @@ class InputWarpedGP(GP):
         self.X = self.transform_data(self.X_untransformed)
         super(InputWarpedGP, self).parameters_changed()
         # the gradient of log likelihood w.r.t. input AFTER warping is a product of dL_dK and dK_dX
-        dL_dX = self.kern.gradients_X(self.grad_dict['dL_dK'], self.X)
+        dL_dX = self.kern.gradients_X(self.grad_dict["dL_dK"], self.X)
         self.warping_function.update_grads(self.X_untransformed, dL_dX)
 
     def transform_data(self, X, test_data=False):
@@ -143,7 +157,8 @@ class InputWarpedGP(GP):
         mean, var = super(InputWarpedGP, self).predict(Xnew_warped, kern=self.kernel, full_cov=False)
         return mean, var
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     X = np.random.randn(100, 1)
-    Y = np.sin(X) + np.random.randn(100, 1)*0.05
+    Y = np.sin(X) + np.random.randn(100, 1) * 0.05
     m = InputWarpedGP(X, Y)

@@ -9,6 +9,7 @@ from .. import kern
 from ..inference.latent_function_inference import VarDTC
 from GPy.core.parameterization.variational import NormalPosterior
 
+
 class SparseGPRegression(SparseGP_MPI):
     """
     Gaussian Process model for regression
@@ -30,16 +31,28 @@ class SparseGPRegression(SparseGP_MPI):
 
     """
 
-    def __init__(self, X, Y, kernel=None, Z=None, num_inducing=10, X_variance=None, mean_function=None, normalizer=None, mpi_comm=None, name='sparse_gp'):
+    def __init__(
+        self,
+        X,
+        Y,
+        kernel=None,
+        Z=None,
+        num_inducing=10,
+        X_variance=None,
+        mean_function=None,
+        normalizer=None,
+        mpi_comm=None,
+        name="sparse_gp",
+    ):
         num_data, input_dim = X.shape
 
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.RBF(input_dim)#  + kern.white(input_dim, variance=1e-3)
+            kernel = kern.RBF(input_dim)  #  + kern.white(input_dim, variance=1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
-            i = np.random.permutation(num_data)[:min(num_inducing, num_data)]
+            i = np.random.permutation(num_data)[: min(num_inducing, num_data)]
             Z = X.view(np.ndarray)[i].copy()
         else:
             assert Z.shape[1] == input_dim
@@ -47,16 +60,27 @@ class SparseGPRegression(SparseGP_MPI):
         likelihood = likelihoods.Gaussian()
 
         if not (X_variance is None):
-            X = NormalPosterior(X,X_variance)
+            X = NormalPosterior(X, X_variance)
 
         if mpi_comm is not None:
             from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_minibatch
+
             infr = VarDTC_minibatch(mpi_comm=mpi_comm)
         else:
             infr = VarDTC()
 
-        super(SparseGPRegression, self).__init__(X, Y, Z, kernel, likelihood, mean_function=mean_function,
-        inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
+        super(SparseGPRegression, self).__init__(
+            X,
+            Y,
+            Z,
+            kernel,
+            likelihood,
+            mean_function=mean_function,
+            inference_method=infr,
+            normalizer=normalizer,
+            mpi_comm=mpi_comm,
+            name=name,
+        )
 
     def to_dict(self, save_data=True):
         """
@@ -66,7 +90,9 @@ class SparseGPRegression(SparseGP_MPI):
         :return dict: json serializable dictionary containing the needed information to instantiate the object
         """
         if self.has_uncertain_inputs():
-            raise NotImplementedError("Saving a SparseGPRegression with uncertain inputs (X_variance) is not supported.")
+            raise NotImplementedError(
+                "Saving a SparseGPRegression with uncertain inputs (X_variance) is not supported."
+            )
         input_dict = super(SparseGPRegression, self).to_dict(save_data)
         input_dict["class"] = "GPy.models.SparseGPRegression"
         return input_dict
@@ -74,16 +100,24 @@ class SparseGPRegression(SparseGP_MPI):
     @staticmethod
     def _build_from_input_dict(input_dict, data=None):
         from ..core import SparseGP
+
         input_dict = SparseGP._format_input_dict(input_dict, data)
-        m = SparseGPRegression(input_dict["X"], input_dict["Y"], kernel=input_dict["kernel"], Z=input_dict["Z"],
-                               mean_function=input_dict["mean_function"], normalizer=input_dict["normalizer"],
-                               name=input_dict["name"])
+        m = SparseGPRegression(
+            input_dict["X"],
+            input_dict["Y"],
+            kernel=input_dict["kernel"],
+            Z=input_dict["Z"],
+            mean_function=input_dict["mean_function"],
+            normalizer=input_dict["normalizer"],
+            name=input_dict["name"],
+        )
         m.likelihood.variance[:] = input_dict["likelihood"].variance.values
         return m
 
     def parameters_changed(self):
-        from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp,VarDTC_minibatch
-        if isinstance(self.inference_method,VarDTC_minibatch):
+        from ..inference.latent_function_inference.var_dtc_parallel import update_gradients_sparsegp, VarDTC_minibatch
+
+        if isinstance(self.inference_method, VarDTC_minibatch):
             update_gradients_sparsegp(self, mpi_comm=self.mpi_comm)
         else:
             super(SparseGPRegression, self).parameters_changed()

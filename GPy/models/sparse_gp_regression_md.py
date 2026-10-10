@@ -9,6 +9,7 @@ from .. import kern
 from ..inference.latent_function_inference.vardtc_md import VarDTC_MD
 from GPy.core.parameterization.variational import NormalPosterior
 
+
 class SparseGPRegressionMD(SparseGP_MPI):
     """Sparse Gaussian Process Regression with Missing Data
 
@@ -40,48 +41,68 @@ class SparseGPRegressionMD(SparseGP_MPI):
 
     """
 
-    def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10,  normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):
+    def __init__(
+        self,
+        X,
+        Y,
+        indexD,
+        kernel=None,
+        Z=None,
+        num_inducing=10,
+        normalizer=None,
+        mpi_comm=None,
+        individual_Y_noise=False,
+        name="sparse_gp",
+    ):
 
-        assert len(Y.shape)==1 or Y.shape[1]==1
+        assert len(Y.shape) == 1 or Y.shape[1] == 1
         self.individual_Y_noise = individual_Y_noise
         self.indexD = indexD
-        output_dim = int(np.max(indexD))+1
+        output_dim = int(np.max(indexD)) + 1
 
         num_data, input_dim = X.shape
 
         # kern defaults to rbf (plus white for stability)
         if kernel is None:
-            kernel = kern.RBF(input_dim)#  + kern.white(input_dim, variance=1e-3)
+            kernel = kern.RBF(input_dim)  #  + kern.white(input_dim, variance=1e-3)
 
         # Z defaults to a subset of the data
         if Z is None:
-            i = np.random.permutation(num_data)[:min(num_inducing, num_data)]
+            i = np.random.permutation(num_data)[: min(num_inducing, num_data)]
             Z = X.view(np.ndarray)[i].copy()
         else:
             assert Z.shape[1] == input_dim
 
         if individual_Y_noise:
-            likelihood = likelihoods.Gaussian(variance=np.array([np.var(Y[indexD==d]) for d in range(output_dim)])*0.01)
+            likelihood = likelihoods.Gaussian(
+                variance=np.array([np.var(Y[indexD == d]) for d in range(output_dim)]) * 0.01
+            )
         else:
-            likelihood = likelihoods.Gaussian(variance=np.var(Y)*0.01)
+            likelihood = likelihoods.Gaussian(variance=np.var(Y) * 0.01)
 
         infr = VarDTC_MD()
 
-        super(SparseGPRegressionMD, self).__init__(X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name)
+        super(SparseGPRegressionMD, self).__init__(
+            X, Y, Z, kernel, likelihood, inference_method=infr, normalizer=normalizer, mpi_comm=mpi_comm, name=name
+        )
         self.output_dim = output_dim
 
     def parameters_changed(self):
 
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood, self.Y, self.indexD, self.output_dim, self.Y_metadata)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(
+            self.kern, self.X, self.Z, self.likelihood, self.Y, self.indexD, self.output_dim, self.Y_metadata
+        )
 
-        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'] if self.individual_Y_noise else self.grad_dict['dL_dthetaL'].sum())
+        self.likelihood.update_gradients(
+            self.grad_dict["dL_dthetaL"] if self.individual_Y_noise else self.grad_dict["dL_dthetaL"].sum()
+        )
 
-        self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
+        self.kern.update_gradients_diag(self.grad_dict["dL_dKdiag"], self.X)
         kerngrad = self.kern.gradient.copy()
-        self.kern.update_gradients_full(self.grad_dict['dL_dKnm'], self.X, self.Z)
+        self.kern.update_gradients_full(self.grad_dict["dL_dKnm"], self.X, self.Z)
         kerngrad += self.kern.gradient
-        self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
+        self.kern.update_gradients_full(self.grad_dict["dL_dKmm"], self.Z, None)
         self.kern.gradient += kerngrad
-        #gradients wrt Z
-        self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-        self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+        # gradients wrt Z
+        self.Z.gradient = self.kern.gradients_X(self.grad_dict["dL_dKmm"], self.Z)
+        self.Z.gradient += self.kern.gradients_X(self.grad_dict["dL_dKnm"].T, self.Z, self.X)

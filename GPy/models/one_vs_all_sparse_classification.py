@@ -4,6 +4,7 @@
 import numpy as np
 import GPy
 
+
 class OneVsAllSparseClassification(object):
     """
     Gaussian Process classification: One vs all
@@ -18,24 +19,26 @@ class OneVsAllSparseClassification(object):
 
     """
 
-    def __init__(self, X, Y, kernel=None,Y_metadata=None,messages=True,num_inducing=10):
+    def __init__(self, X, Y, kernel=None, Y_metadata=None, messages=True, num_inducing=10):
         if kernel is None:
             kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1]) + GPy.kern.Bias(X.shape[1])
 
         likelihood = GPy.likelihoods.Bernoulli()
 
-        assert Y.shape[1] == 1, 'Y should be 1 column vector'
+        assert Y.shape[1] == 1, "Y should be 1 column vector"
 
         labels = np.unique(Y.flatten())
 
         self.results = {}
         for yj in labels:
-            print('Class %s vs all' %yj)
+            print("Class %s vs all" % yj)
             Ynew = Y.copy()
-            Ynew[Y.flatten()!=yj] = 0
-            Ynew[Y.flatten()==yj] = 1
+            Ynew[Y.flatten() != yj] = 0
+            Ynew[Y.flatten() == yj] = 1
 
-            m = GPy.models.SparseGPClassification(X,Ynew,kernel=kernel.copy(),Y_metadata=Y_metadata,num_inducing=num_inducing)
+            m = GPy.models.SparseGPClassification(
+                X, Ynew, kernel=kernel.copy(), Y_metadata=Y_metadata, num_inducing=num_inducing
+            )
             m.optimize(messages=messages)
             self.results[yj] = m.predict(X)[0]
             del m

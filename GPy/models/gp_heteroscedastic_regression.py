@@ -7,6 +7,7 @@ from .. import likelihoods
 from .. import kern
 from .. import util
 
+
 class GPHeteroscedasticRegression(GP):
     """
     Gaussian Process model for heteroscedastic regression
@@ -20,19 +21,20 @@ class GPHeteroscedasticRegression(GP):
 
     NB: This model does not make inference on the noise outside the training set
     """
+
     def __init__(self, X, Y, kernel=None, Y_metadata=None, mean_function=None):
 
         Ny = Y.shape[0]
 
         if Y_metadata is None:
-            Y_metadata = {'output_index':np.arange(Ny)[:,None]}
+            Y_metadata = {"output_index": np.arange(Ny)[:, None]}
         else:
-            assert Y_metadata['output_index'].shape[0] == Ny
+            assert Y_metadata["output_index"].shape[0] == Ny
 
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
-        #Likelihood
+        # Likelihood
         likelihood = likelihoods.HeteroscedasticGaussian(Y_metadata)
 
         super(GPHeteroscedasticRegression, self).__init__(
@@ -49,4 +51,3 @@ class GPHeteroscedasticRegression(GP):
         the mapping explicitly.
         """
         super(GPHeteroscedasticRegression, self).set_XY(X=X, Y=Y, Y_metadata=Y_metadata)
-

@@ -701,6 +701,22 @@ class GP(Model):
             raise
         return ret
 
+    def optimize_restarts(self, num_restarts=10, **kwargs):
+        """
+        Random restarts via :meth:`paramz.Model.optimize_restarts`, then refresh
+        latent inference so cached site approximations match the restored
+        hyperparameters.
+
+        ``paramz`` restores only ``optimizer_array`` from the best run. Inference
+        methods that cache state across an optimization (notably EP in
+        ``alternated`` mode) can otherwise keep sites from the *last* restart
+        while hyperparameters come from the best one — see #1109.
+        """
+        runs = super(GP, self).optimize_restarts(num_restarts=num_restarts, **kwargs)
+        self.inference_method.on_optimization_start()
+        self.parameters_changed()
+        return runs
+
     def infer_newX(self, Y_new, optimize=True):
         """
         Infer X for the new observed data *Y_new*.

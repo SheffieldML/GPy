@@ -23,7 +23,7 @@ include = [
 
 [tool.poetry.build]
 script = "build_extension.py"
-generate-setup-file = false
+generate-setup-file = true  # required for Cython build script / ext_modules
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"

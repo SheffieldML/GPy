@@ -7,6 +7,7 @@ from ..util.univariate_Gaussian import std_norm_pdf, std_norm_cdf, derivLogCdfNo
 from . import link_functions
 from .likelihood import Likelihood
 
+
 class Bernoulli(Likelihood):
     """
     Bernoulli likelihood
@@ -21,13 +22,14 @@ class Bernoulli(Likelihood):
     .. See also::
         likelihood.py, for the parent class
     """
+
     def __init__(self, gp_link=None):
         if gp_link is None:
             gp_link = link_functions.Probit()
 
-        super(Bernoulli, self).__init__(gp_link, 'Bernoulli')
+        super(Bernoulli, self).__init__(gp_link, "Bernoulli")
 
-        if isinstance(gp_link , (link_functions.Heaviside, link_functions.Probit)):
+        if isinstance(gp_link, (link_functions.Heaviside, link_functions.Probit)):
             self.log_concave = True
 
     def to_dict(self):
@@ -51,9 +53,9 @@ class Bernoulli(Likelihood):
         ..Note:: Binary classification algorithm works better with classes {-1, 1}
         """
         Y_prep = Y.copy()
-        Y1 = Y[Y.flatten()==1].size
-        Y2 = Y[Y.flatten()==0].size
-        assert Y1 + Y2 == Y.size, 'Bernoulli likelihood is meant to be used only with outputs in {0, 1}.'
+        Y1 = Y[Y.flatten() == 1].size
+        Y2 = Y[Y.flatten() == 0].size
+        assert Y1 + Y2 == Y.size, "Bernoulli likelihood is meant to be used only with outputs in {0, 1}."
         Y_prep[Y.flatten() == 0] = -1
         return Y_prep
 
@@ -66,27 +68,27 @@ class Bernoulli(Likelihood):
         :param v_i: mean/variance of the cavity distribution (float)
         """
         if Y_i == 1:
-            sign = 1.
+            sign = 1.0
         elif Y_i == 0 or Y_i == -1:
             sign = -1
         else:
             raise ValueError("bad value for Bernoulli observation (0, 1)")
         if isinstance(self.gp_link, link_functions.Probit):
-            z = sign*v_i/np.sqrt(tau_i**2 + tau_i)
+            z = sign * v_i / np.sqrt(tau_i**2 + tau_i)
             phi_div_Phi = derivLogCdfNormal(z)
             log_Z_hat = logCdfNormal(z)
 
-            mu_hat = v_i/tau_i + sign*phi_div_Phi/np.sqrt(tau_i**2 + tau_i)
-            sigma2_hat = 1./tau_i - (phi_div_Phi/(tau_i**2+tau_i))*(z+phi_div_Phi)
+            mu_hat = v_i / tau_i + sign * phi_div_Phi / np.sqrt(tau_i**2 + tau_i)
+            sigma2_hat = 1.0 / tau_i - (phi_div_Phi / (tau_i**2 + tau_i)) * (z + phi_div_Phi)
 
         elif isinstance(self.gp_link, link_functions.Heaviside):
-            z = sign*v_i/np.sqrt(tau_i)
+            z = sign * v_i / np.sqrt(tau_i)
             phi_div_Phi = derivLogCdfNormal(z)
             log_Z_hat = logCdfNormal(z)
-            mu_hat = v_i/tau_i + sign*phi_div_Phi/np.sqrt(tau_i)
-            sigma2_hat = (1. - a*phi_div_Phi - np.square(phi_div_Phi))/tau_i
+            mu_hat = v_i / tau_i + sign * phi_div_Phi / np.sqrt(tau_i)
+            sigma2_hat = (1.0 - a * phi_div_Phi - np.square(phi_div_Phi)) / tau_i
         else:
-            #TODO: do we want to revert to numerical quadrature here?
+            # TODO: do we want to revert to numerical quadrature here?
             raise ValueError("Exact moment matching not available for link {}".format(self.gp_link.__name__))
 
         # TODO: Output log_Z_hat instead of Z_hat (needs to be change in all others likelihoods)
@@ -94,37 +96,34 @@ class Bernoulli(Likelihood):
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         if isinstance(self.gp_link, link_functions.Probit):
-
             if gh_points is None:
                 gh_x, gh_w = self._gh_points()
             else:
                 gh_x, gh_w = gh_points
 
-
             gh_w = gh_w / np.sqrt(np.pi)
             shape = m.shape
-            m,v,Y = m.flatten(), v.flatten(), Y.flatten()
-            Ysign = np.where(Y==1,1,-1)
-            X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + (m*Ysign)[:,None]
+            m, v, Y = m.flatten(), v.flatten(), Y.flatten()
+            Ysign = np.where(Y == 1, 1, -1)
+            X = gh_x[None, :] * np.sqrt(2.0 * v[:, None]) + (m * Ysign)[:, None]
             # log Phi(X) and phi(X)/Phi(X) computed in log space, so that they
             # stay accurate where Phi(X) underflows (large variances)
             log_p = special.log_ndtr(X)
             F = log_p.dot(gh_w)
             NoverP = np.exp(-0.5 * X**2 - 0.5 * np.log(2 * np.pi) - log_p)
-            dF_dm = (NoverP*Ysign[:,None]).dot(gh_w)
-            dF_dv = -0.5*(NoverP**2 + NoverP*X).dot(gh_w)
+            dF_dm = (NoverP * Ysign[:, None]).dot(gh_w)
+            dF_dv = -0.5 * (NoverP**2 + NoverP * X).dot(gh_w)
             return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), None
         else:
             raise NotImplementedError
 
-
     def predictive_mean(self, mu, variance, Y_metadata=None):
 
         if isinstance(self.gp_link, link_functions.Probit):
-            return std_norm_cdf(mu/np.sqrt(1+variance))
+            return std_norm_cdf(mu / np.sqrt(1 + variance))
 
         elif isinstance(self.gp_link, link_functions.Heaviside):
-            return std_norm_cdf(mu/np.sqrt(variance))
+            return std_norm_cdf(mu / np.sqrt(variance))
 
         else:
             raise NotImplementedError
@@ -132,7 +131,7 @@ class Bernoulli(Likelihood):
     def predictive_variance(self, mu, variance, pred_mean, Y_metadata=None):
 
         if isinstance(self.gp_link, link_functions.Heaviside):
-            return 0.
+            return 0.0
         else:
             return np.nan
 
@@ -154,8 +153,8 @@ class Bernoulli(Likelihood):
         .. Note:
             Each y_i must be in {0, 1}
         """
-        #objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
-        return np.where(y==1, inv_link_f, 1.-inv_link_f)
+        # objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
+        return np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
@@ -172,9 +171,9 @@ class Bernoulli(Likelihood):
         :returns: log likelihood evaluated at points inverse link of f.
         :rtype: float
         """
-        #objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
-        p = np.where(y==1, inv_link_f, 1.-inv_link_f)
-        return np.log(np.clip(p, 1e-9 ,np.inf))
+        # objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
+        p = np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
+        return np.log(np.clip(p, 1e-9, np.inf))
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -191,11 +190,11 @@ class Bernoulli(Likelihood):
         :returns: gradient of log likelihood evaluated at points inverse link of f.
         :rtype: Nx1 array
         """
-        #grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
-        #grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
-        ff = np.clip(inv_link_f, 1e-9, 1-1e-9)
-        denom = np.where(y==1, ff, -(1-ff))
-        return 1./denom
+        # grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
+        # grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
+        ff = np.clip(inv_link_f, 1e-9, 1 - 1e-9)
+        denom = np.where(y == 1, ff, -(1 - ff))
+        return 1.0 / denom
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
@@ -218,10 +217,10 @@ class Bernoulli(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
-        #d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
-        #d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
-        arg = np.where(y==1, inv_link_f, 1.-inv_link_f)
-        ret =  -1./np.square(np.clip(arg, 1e-9, 1e9))
+        # d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
+        # d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
+        arg = np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
+        ret = -1.0 / np.square(np.clip(arg, 1e-9, 1e9))
         if np.any(np.isinf(ret)):
             stop
         return ret
@@ -242,10 +241,10 @@ class Bernoulli(Likelihood):
         :rtype: Nx1 array
         """
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
-        #d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
-        state = np.seterr(divide='ignore')
+        # d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
+        state = np.seterr(divide="ignore")
         # TODO check y \\in {0, 1} or {-1, 1}
-        d3logpdf_dlink3 = np.where(y==1, 2./(inv_link_f**3), -2./((1.-inv_link_f)**3))
+        d3logpdf_dlink3 = np.where(y == 1, 2.0 / (inv_link_f**3), -2.0 / ((1.0 - inv_link_f) ** 3))
         np.seterr(**state)
         return d3logpdf_dlink3
 
@@ -256,7 +255,7 @@ class Bernoulli(Likelihood):
         draw can take!
         """
         p = self.predictive_mean(mu, var)
-        return [np.asarray(p>(q/100.), dtype=np.int32) for q in quantiles]
+        return [np.asarray(p > (q / 100.0), dtype=np.int32) for q in quantiles]
 
     def samples(self, gp, Y_metadata=None):
         """
@@ -270,5 +269,5 @@ class Bernoulli(Likelihood):
         Ysim = np.random.binomial(ns, self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)
 
-    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
         return np.zeros(self.size)

@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats,special
+from scipy import stats, special
 import scipy as sp
 from . import link_functions
 from ..util.misc import chain_1, chain_2, chain_3, blockify_dhess_dtheta, blockify_third, blockify_hessian, safe_exp
@@ -24,6 +24,7 @@ def _quad_limits(m, v):
     """
     s = 8 * np.sqrt(v)
     return m - s, m + s
+
 
 class Likelihood(Parameterized):
     """
@@ -49,9 +50,10 @@ class Likelihood(Parameterized):
     For exact Gaussian inference, define *JH TODO*
 
     """
+
     def __init__(self, gp_link, name):
         super(Likelihood, self).__init__(name)
-        assert isinstance(gp_link,link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
+        assert isinstance(gp_link, link_functions.GPTransformation), "gp_link is not a valid GPTransformation."
         self.gp_link = gp_link
         self.log_concave = False
         self.not_block_really = False
@@ -81,20 +83,24 @@ class Likelihood(Parameterized):
         """
 
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        likelihood_class = input_dict.pop('class')
+        likelihood_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
-        name = input_dict.pop('name')
+        name = input_dict.pop("name")
         import GPy
+
         likelihood_class = eval(likelihood_class)
         return likelihood_class._build_from_input_dict(likelihood_class, input_dict)
 
     @staticmethod
     def _build_from_input_dict(likelihood_class, input_dict):
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        gp_link_dict = input_dict.pop('gp_link_dict')
+        gp_link_dict = input_dict.pop("gp_link_dict")
         import GPy
+
         gp_link = GPy.likelihoods.link_functions.GPTransformation.from_dict(gp_link_dict)
         input_dict["gp_link"] = gp_link
         return likelihood_class(**input_dict)
@@ -107,14 +113,14 @@ class Likelihood(Parameterized):
         """
         return Y.shape[1]
 
-    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
         return np.zeros(self.size)
 
     def update_gradients(self, partial):
         if self.size > 0:
-            raise NotImplementedError('Must be implemented for likelihoods with parameters to be optimized')
+            raise NotImplementedError("Must be implemented for likelihoods with parameters to be optimized")
 
-    def _preprocess_values(self,Y):
+    def _preprocess_values(self, Y):
         """
         In case it is needed, this function assess the output values or makes any pertinent transformation on them.
 
@@ -150,8 +156,8 @@ class Likelihood(Parameterized):
         :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
         :type var_star: (Nx1) array
         """
-        assert y_test.shape==mu_star.shape
-        assert y_test.shape==var_star.shape
+        assert y_test.shape == mu_star.shape
+        assert y_test.shape == var_star.shape
         assert y_test.shape[1] == 1
 
         flat_y_test = y_test.flatten()
@@ -159,11 +165,11 @@ class Likelihood(Parameterized):
         flat_var_star = var_star.flatten()
 
         if Y_metadata is not None:
-            #Need to zip individual elements of Y_metadata aswell
+            # Need to zip individual elements of Y_metadata aswell
             Y_metadata_flat = {}
             if Y_metadata is not None:
                 for key, val in Y_metadata.items():
-                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1,1)
+                    Y_metadata_flat[key] = np.atleast_1d(val).reshape(-1, 1)
 
             zipped_values = []
 
@@ -173,26 +179,27 @@ class Likelihood(Parameterized):
                     if np.isscalar(val) or val.shape[0] == 1:
                         y_m[key] = val
                     else:
-                        #Won't broadcast yet
+                        # Won't broadcast yet
                         y_m[key] = val[i]
                 zipped_values.append((flat_y_test[i], flat_mu_star[i], flat_var_star[i], y_m))
         else:
-            #Otherwise just pass along None's
-            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None]*y_test.shape[0])
+            # Otherwise just pass along None's
+            zipped_values = zip(flat_y_test, flat_mu_star, flat_var_star, [None] * y_test.shape[0])
 
         def integral_generator(yi, mi, vi, yi_m):
             """Generate a function which can be integrated
             to give p(Y*|Y) = int p(Y*|f*)p(f*|Y) df*"""
-            def f(fi_star):
-                #exponent = np.exp(-(1./(2*vi))*np.square(mi-fi_star))
-                #from GPy.util.misc import safe_exp
-                #exponent = safe_exp(exponent)
-                #res = safe_exp(self.logpdf(fi_star, yi, yi_m))*exponent
 
-                #More stable in the log space
-                res = np.exp(self.logpdf(fi_star, yi, yi_m)
-                              - 0.5*np.log(2*np.pi*vi)
-                              - 0.5*np.square(fi_star-mi)/vi)
+            def f(fi_star):
+                # exponent = np.exp(-(1./(2*vi))*np.square(mi-fi_star))
+                # from GPy.util.misc import safe_exp
+                # exponent = safe_exp(exponent)
+                # res = safe_exp(self.logpdf(fi_star, yi, yi_m))*exponent
+
+                # More stable in the log space
+                res = np.exp(
+                    self.logpdf(fi_star, yi, yi_m) - 0.5 * np.log(2 * np.pi * vi) - 0.5 * np.square(fi_star - mi) / vi
+                )
                 # quad needs a scalar; logpdf can return a one-element array
                 return float(np.squeeze(res))
 
@@ -201,9 +208,12 @@ class Likelihood(Parameterized):
         # Integrate over 20 standard deviations around the mean: the Gaussian
         # weight outside is negligible, and far from it the link function can
         # overflow and make logpdf nan
-        p_ystar, _ = zip(*[quad(integral_generator(yi, mi, vi, yi_m),
-                                mi - 20*np.sqrt(vi), mi + 20*np.sqrt(vi))
-                           for yi, mi, vi, yi_m in zipped_values])
+        p_ystar, _ = zip(
+            *[
+                quad(integral_generator(yi, mi, vi, yi_m), mi - 20 * np.sqrt(vi), mi + 20 * np.sqrt(vi))
+                for yi, mi, vi, yi_m in zipped_values
+            ]
+        )
         p_ystar = np.array(p_ystar).reshape(*y_test.shape)
         return np.log(p_ystar)
 
@@ -224,20 +234,21 @@ class Likelihood(Parameterized):
         :param num_samples: num samples of p(f_{*}|mu_{*}, var_{*}) to take
         :type num_samples: int
         """
-        assert y_test.shape==mu_star.shape
-        assert y_test.shape==var_star.shape
+        assert y_test.shape == mu_star.shape
+        assert y_test.shape == var_star.shape
         assert y_test.shape[1] == 1
 
-        #Take samples of p(f*|y)
-        #fi_samples = np.random.randn(num_samples)*np.sqrt(var_star) + mu_star
+        # Take samples of p(f*|y)
+        # fi_samples = np.random.randn(num_samples)*np.sqrt(var_star) + mu_star
         fi_samples = np.random.normal(mu_star, np.sqrt(var_star), size=(mu_star.shape[0], num_samples))
 
         from scipy.special import logsumexp
+
         log_p_ystar = -np.log(num_samples) + logsumexp(self.logpdf(fi_samples, y_test, Y_metadata=Y_metadata), axis=1)
         log_p_ystar = np.array(log_p_ystar).reshape(*y_test.shape)
         return log_p_ystar
 
-    def moments_match_ep(self,obs,tau,v,Y_metadata_i=None):
+    def moments_match_ep(self, obs, tau, v, Y_metadata_i=None):
         """
         Calculation of moments using quadrature
 
@@ -245,51 +256,55 @@ class Likelihood(Parameterized):
         :param tau: cavity distribution 1st natural parameter (precision)
         :param v: cavity distribution 2nd natural paramenter (mu*precision)
         """
-        #Compute first integral for zeroth moment.
-        #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
-        mu = v/tau
-        sigma2 = 1./tau
-        #Lets do these for now based on the same idea as Gaussian quadrature
+        # Compute first integral for zeroth moment.
+        # NOTE constant np.sqrt(2*pi/tau) added at the end of the function
+        mu = v / tau
+        sigma2 = 1.0 / tau
+        # Lets do these for now based on the same idea as Gaussian quadrature
         # i.e. multiply anything by close to zero, and its zero.
-        f_min = mu - 20*np.sqrt(sigma2)
-        f_max = mu + 20*np.sqrt(sigma2)
+        f_min = mu - 20 * np.sqrt(sigma2)
+        f_max = mu + 20 * np.sqrt(sigma2)
 
         def int_1(f):
-            return self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
+            return self.pdf(f, obs, Y_metadata=Y_metadata_i) * np.exp(-0.5 * tau * np.square(mu - f))
+
         z_scaled, accuracy = quad(int_1, f_min, f_max)
 
-        #Compute second integral for first moment
+        # Compute second integral for first moment
         def int_2(f):
-            return f*self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
+            return f * self.pdf(f, obs, Y_metadata=Y_metadata_i) * np.exp(-0.5 * tau * np.square(mu - f))
+
         mean, accuracy = quad(int_2, f_min, f_max)
         mean /= z_scaled
 
-        #Compute integral for variance
+        # Compute integral for variance
         def int_3(f):
-            return (f**2)*self.pdf(f, obs, Y_metadata=Y_metadata_i)*np.exp(-0.5*tau*np.square(mu-f))
+            return (f**2) * self.pdf(f, obs, Y_metadata=Y_metadata_i) * np.exp(-0.5 * tau * np.square(mu - f))
+
         Ef2, accuracy = quad(int_3, f_min, f_max)
         Ef2 /= z_scaled
         variance = Ef2 - mean**2
 
-        #Add constant to the zeroth moment
-        #NOTE: this constant is not needed in the other moments because it cancells out.
-        z = z_scaled/np.sqrt(2*np.pi/tau)
+        # Add constant to the zeroth moment
+        # NOTE: this constant is not needed in the other moments because it cancells out.
+        z = z_scaled / np.sqrt(2 * np.pi / tau)
 
         return z, mean, variance
 
-    #only compute gh points if required
+    # only compute gh points if required
     __gh_points = None
+
     def _gh_points(self, T=20):
         if self.__gh_points is None:
             self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
 
-    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode='gk', boost_grad=1.):
+    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode="gk", boost_grad=1.0):
         if self.size > 0:
             shape = Y.shape
-            tau,v,Y = cav_tau.flatten(), cav_v.flatten(),Y.flatten()
-            mu = v/tau
-            sigma2 = 1./tau
+            tau, v, Y = cav_tau.flatten(), cav_v.flatten(), Y.flatten()
+            mu = v / tau
+            sigma2 = 1.0 / tau
 
             # assert Y.shape == v.shape
             dlik_dtheta = np.empty((self.size, Y.shape[0]))
@@ -299,15 +314,15 @@ class Likelihood(Parameterized):
                 Y_metadata_i = {}
                 if Y_metadata is not None:
                     for key in Y_metadata.keys():
-                        Y_metadata_i[key] = Y_metadata[key][index,:]
+                        Y_metadata_i[key] = Y_metadata[key][index, :]
                     Y_metadata_list.append(Y_metadata_i)
 
-            if quad_mode == 'gk':
+            if quad_mode == "gk":
                 f = partial(self.integrate_gk)
                 quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten()), Y_metadata_list))
                 quads = np.vstack(quads)
                 quads.reshape(self.size, shape[0], shape[1])
-            elif quad_mode == 'gh':
+            elif quad_mode == "gh":
                 f = partial(self.integrate_gh)
                 quads = zip(*map(f, Y.flatten(), mu.flatten(), np.sqrt(sigma2.flatten())))
                 quads = np.hstack(list(quads))
@@ -322,15 +337,18 @@ class Likelihood(Parameterized):
             dL_dtheta = np.zeros(self.num_params)
         return dL_dtheta
 
-
     def integrate_gk(self, Y, mu, sigma, Y_metadata_i=None):
         # gaussian-kronrod integration.
         fmin = -np.inf
         fmax = np.inf
-        SQRT_2PI = np.sqrt(2.*np.pi)
+        SQRT_2PI = np.sqrt(2.0 * np.pi)
+
         def generate_integral(f):
-            a = np.exp(self.logpdf_link(f, Y, Y_metadata_i)) * np.exp(-0.5 * np.square((f - mu) / sigma)) / (
-                SQRT_2PI * sigma)
+            a = (
+                np.exp(self.logpdf_link(f, Y, Y_metadata_i))
+                * np.exp(-0.5 * np.square((f - mu) / sigma))
+                / (SQRT_2PI * sigma)
+            )
             fn1 = a * self.dlogpdf_dtheta(f, Y, Y_metadata_i)
             fn = fn1
             return fn
@@ -350,23 +368,23 @@ class Likelihood(Parameterized):
         # "writing it explicitly "
         # use them for gaussian-hermite quadrature
 
-        SQRT_2PI = np.sqrt(2.*np.pi)
+        SQRT_2PI = np.sqrt(2.0 * np.pi)
         if gh_points is None:
             gh_x, gh_w = self._gh_points(32)
         else:
             gh_x, gh_w = gh_points
 
-        X = gh_x[None,:]*np.sqrt(2.)*sigma + mu
+        X = gh_x[None, :] * np.sqrt(2.0) * sigma + mu
 
         # Here X is a grid vector of possible fi values, while Y is just a single value which will be broadcasted.
         a = np.exp(self.logpdf_link(X, Y, Y_metadata_i))
-        a = a.repeat(self.num_params,0)
+        a = a.repeat(self.num_params, 0)
         b = self.dlogpdf_dtheta(X, Y, Y_metadata_i)
         old_shape = b.shape
-        fn = np.array([i*j for i,j in zip(a.flatten(), b.flatten())])
+        fn = np.array([i * j for i, j in zip(a.flatten(), b.flatten())])
         fn = fn.reshape(old_shape)
 
-        dF_dtheta_i = np.dot(fn, gh_w)/np.sqrt(np.pi)
+        dF_dtheta_i = np.dot(fn, gh_w) / np.sqrt(np.pi)
         return dF_dtheta_i
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
@@ -388,28 +406,28 @@ class Likelihood(Parameterized):
             gh_x, gh_w = gh_points
 
         shape = m.shape
-        m,v,Y = m.flatten(), v.flatten(), Y.flatten()
+        m, v, Y = m.flatten(), v.flatten(), Y.flatten()
 
-        #make a grid of points
-        X = gh_x[None,:]*np.sqrt(2.*v[:,None]) + m[:,None]
+        # make a grid of points
+        X = gh_x[None, :] * np.sqrt(2.0 * v[:, None]) + m[:, None]
 
-        #evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
+        # evaluate the likelhood for the grid. First ax indexes the data (and mu, var) and the second indexes the grid.
         # broadcast needs to be handled carefully.
-        logp = self.logpdf(X,Y[:,None], Y_metadata=Y_metadata)
-        dlogp_dx = self.dlogpdf_df(X, Y[:,None], Y_metadata=Y_metadata)
-        d2logp_dx2 = self.d2logpdf_df2(X, Y[:,None], Y_metadata=Y_metadata)
+        logp = self.logpdf(X, Y[:, None], Y_metadata=Y_metadata)
+        dlogp_dx = self.dlogpdf_df(X, Y[:, None], Y_metadata=Y_metadata)
+        d2logp_dx2 = self.d2logpdf_df2(X, Y[:, None], Y_metadata=Y_metadata)
 
-        #clipping for numerical stability
-        #logp = np.clip(logp,-1e9,1e9)
-        #dlogp_dx = np.clip(dlogp_dx,-1e9,1e9)
-        #d2logp_dx2 = np.clip(d2logp_dx2,-1e9,1e9)
+        # clipping for numerical stability
+        # logp = np.clip(logp,-1e9,1e9)
+        # dlogp_dx = np.clip(dlogp_dx,-1e9,1e9)
+        # d2logp_dx2 = np.clip(d2logp_dx2,-1e9,1e9)
 
-        #average over the gird to get derivatives of the Gaussian's parameters
-        #division by pi comes from fact that for each quadrature we need to scale by 1/sqrt(pi)
-        F = np.dot(logp, gh_w)/np.sqrt(np.pi)
-        dF_dm = np.dot(dlogp_dx, gh_w)/np.sqrt(np.pi)
-        dF_dv = np.dot(d2logp_dx2, gh_w)/np.sqrt(np.pi)
-        dF_dv /= 2.
+        # average over the gird to get derivatives of the Gaussian's parameters
+        # division by pi comes from fact that for each quadrature we need to scale by 1/sqrt(pi)
+        F = np.dot(logp, gh_w) / np.sqrt(np.pi)
+        dF_dm = np.dot(dlogp_dx, gh_w) / np.sqrt(np.pi)
+        dF_dv = np.dot(d2logp_dx2, gh_w) / np.sqrt(np.pi)
+        dF_dv /= 2.0
 
         if np.any(np.isnan(dF_dv)) or np.any(np.isinf(dF_dv)):
             stop
@@ -417,11 +435,13 @@ class Likelihood(Parameterized):
             stop
 
         if self.size:
-            dF_dtheta = self.dlogpdf_dtheta(X, Y[:,None], Y_metadata=Y_metadata) # Ntheta x (orig size) x N_{quad_points}
-            dF_dtheta = np.dot(dF_dtheta, gh_w)/np.sqrt(np.pi)
+            dF_dtheta = self.dlogpdf_dtheta(
+                X, Y[:, None], Y_metadata=Y_metadata
+            )  # Ntheta x (orig size) x N_{quad_points}
+            dF_dtheta = np.dot(dF_dtheta, gh_w) / np.sqrt(np.pi)
             dF_dtheta = dF_dtheta.reshape(self.size, shape[0], shape[1])
         else:
-            dF_dtheta = None # Not yet implemented
+            dF_dtheta = None  # Not yet implemented
         return F.reshape(*shape), dF_dm.reshape(*shape), dF_dv.reshape(*shape), dF_dtheta
 
     def predictive_mean(self, mu, variance, Y_metadata=None):
@@ -432,25 +452,29 @@ class Likelihood(Parameterized):
         :param sigma: standard deviation of posterior
 
         """
-        #conditional_mean: the edpected value of y given some f, under this likelihood
-        def int_mean(f,m,v):
-            exponent = -(0.5/v)*np.square(f - m)
-            #If exponent is under -30 then exp(exponent) will be very small, so don't exp it!)
-            #If p is zero then conditional_mean will overflow
+
+        # conditional_mean: the edpected value of y given some f, under this likelihood
+        def int_mean(f, m, v):
+            exponent = -(0.5 / v) * np.square(f - m)
+            # If exponent is under -30 then exp(exponent) will be very small, so don't exp it!)
+            # If p is zero then conditional_mean will overflow
             assert v > 0
             p = safe_exp(exponent)
 
-            #If p is zero then conditional_variance will overflow
+            # If p is zero then conditional_variance will overflow
             if p < 1e-10:
-                return 0.
+                return 0.0
             else:
-                return self.conditional_mean(f)*p
-        scaled_mean = [quad(int_mean, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
-                       for mj, s2j in zip(np.ravel(mu), np.ravel(variance))]
-        mean = np.array(scaled_mean)[:,None] / np.sqrt(2*np.pi*(variance))
+                return self.conditional_mean(f) * p
+
+        scaled_mean = [
+            quad(int_mean, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
+            for mj, s2j in zip(np.ravel(mu), np.ravel(variance))
+        ]
+        mean = np.array(scaled_mean)[:, None] / np.sqrt(2 * np.pi * (variance))
         return mean
 
-    def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
+    def predictive_variance(self, mu, variance, predictive_mean=None, Y_metadata=None):
         """
         Approximation to the predictive variance: V(Y_star)
 
@@ -462,43 +486,49 @@ class Likelihood(Parameterized):
         :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
 
         """
-        #sigma2 = sigma**2
-        normalizer = np.sqrt(2*np.pi*variance)
+        # sigma2 = sigma**2
+        normalizer = np.sqrt(2 * np.pi * variance)
 
         from ..util.misc import safe_exp
+
         # E( V(Y_star|f_star) )
-        def int_var(f,m,v):
-            exponent = -(0.5/v)*np.square(f - m)
+        def int_var(f, m, v):
+            exponent = -(0.5 / v) * np.square(f - m)
             p = safe_exp(exponent)
-            #If p is zero then conditional_variance will overflow
+            # If p is zero then conditional_variance will overflow
             if p < 1e-10:
-                return 0.
+                return 0.0
             else:
-                return self.conditional_variance(f)*p
-        scaled_exp_variance = [quad(int_var, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
-                               for mj, s2j in zip(np.ravel(mu), np.ravel(variance))]
-        exp_var = np.array(scaled_exp_variance)[:,None] / normalizer
+                return self.conditional_variance(f) * p
 
-        #V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
+        scaled_exp_variance = [
+            quad(int_var, *_quad_limits(mj, s2j), args=(mj, s2j))[0]
+            for mj, s2j in zip(np.ravel(mu), np.ravel(variance))
+        ]
+        exp_var = np.array(scaled_exp_variance)[:, None] / normalizer
 
-        #E( E(Y_star|f_star) )**2
+        # V( E(Y_star|f_star) ) =  E( E(Y_star|f_star)**2 ) - E( E(Y_star|f_star) )**2
+
+        # E( E(Y_star|f_star) )**2
         if predictive_mean is None:
-            predictive_mean = self.predictive_mean(mu,variance)
+            predictive_mean = self.predictive_mean(mu, variance)
         predictive_mean_sq = predictive_mean**2
 
-        #E( E(Y_star|f_star)**2 )
-        def int_pred_mean_sq(f,m,v,predictive_mean_sq):
-            exponent = -(0.5/v)*np.square(f - m)
+        # E( E(Y_star|f_star)**2 )
+        def int_pred_mean_sq(f, m, v, predictive_mean_sq):
+            exponent = -(0.5 / v) * np.square(f - m)
             p = np.exp(exponent)
-            #If p is zero then conditional_mean**2 will overflow
+            # If p is zero then conditional_mean**2 will overflow
             if p < 1e-10:
-                return 0.
+                return 0.0
             else:
-                return self.conditional_mean(f)**2*p
+                return self.conditional_mean(f) ** 2 * p
 
-        scaled_exp_exp2 = [quad(int_pred_mean_sq, *_quad_limits(mj, s2j), args=(mj, s2j, pm2j))[0]
-                           for mj, s2j, pm2j in zip(np.ravel(mu), np.ravel(variance), np.ravel(predictive_mean_sq))]
-        exp_exp2 = np.array(scaled_exp_exp2)[:,None] / normalizer
+        scaled_exp_exp2 = [
+            quad(int_pred_mean_sq, *_quad_limits(mj, s2j), args=(mj, s2j, pm2j))[0]
+            for mj, s2j, pm2j in zip(np.ravel(mu), np.ravel(variance), np.ravel(predictive_mean_sq))
+        ]
+        exp_exp2 = np.array(scaled_exp_exp2)[:, None] / normalizer
 
         var_exp = exp_exp2 - predictive_mean_sq
 
@@ -661,7 +691,6 @@ class Likelihood(Parameterized):
             d3logpdf_df3 = chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
         return d3logpdf_df3
 
-
     def dlogpdf_dtheta(self, f, y, Y_metadata=None):
         """
         TODO: Doc strings
@@ -693,11 +722,11 @@ class Likelihood(Parameterized):
                 dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
 
                 dlogpdf_df_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
-                #Chain each parameter of hte likelihood seperately
+                # Chain each parameter of hte likelihood seperately
                 for p in range(self.size):
-                    dlogpdf_df_dtheta[p, :, :] = chain_1(dlogpdf_dlink_dtheta[p,:,:], dlink_df)
+                    dlogpdf_df_dtheta[p, :, :] = chain_1(dlogpdf_dlink_dtheta[p, :, :], dlink_df)
                 return dlogpdf_df_dtheta
-                #return chain_1(dlogpdf_dlink_dtheta, dlink_df)
+                # return chain_1(dlogpdf_dlink_dtheta, dlink_df)
         else:
             # There are no parameters so return an empty array for derivatives
             return np.zeros((0, f.shape[0], f.shape[1]))
@@ -719,11 +748,13 @@ class Likelihood(Parameterized):
                 dlogpdf_dlink_dtheta = self.dlogpdf_dlink_dtheta(inv_link_f, y, Y_metadata=Y_metadata)
 
                 d2logpdf_df2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
-                #Chain each parameter of hte likelihood seperately
+                # Chain each parameter of hte likelihood seperately
                 for p in range(self.size):
-                    d2logpdf_df2_dtheta[p, :, :] = chain_2(d2logpdf_dlink2_dtheta[p,:,:], dlink_df, dlogpdf_dlink_dtheta[p,:,:], d2link_df2)
+                    d2logpdf_df2_dtheta[p, :, :] = chain_2(
+                        d2logpdf_dlink2_dtheta[p, :, :], dlink_df, dlogpdf_dlink_dtheta[p, :, :], d2link_df2
+                    )
                 return d2logpdf_df2_dtheta
-                #return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
+                # return chain_2(d2logpdf_dlink2_dtheta, dlink_df, dlogpdf_dlink_dtheta, d2link_df2)
         else:
             # There are no parameters so return an empty array for derivatives
             return np.zeros((0, f.shape[0], f.shape[1]))
@@ -733,11 +764,13 @@ class Likelihood(Parameterized):
         dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, Y_metadata=Y_metadata)
         d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, Y_metadata=Y_metadata)
 
-        #Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
+        # Parameters are stacked vertically. Must be listed in same order as 'get_param_names'
         # ensure we have gradients for every parameter we want to optimize
-        assert dlogpdf_dtheta.shape[0] == self.size #num_param array x f, d
-        assert dlogpdf_df_dtheta.shape[0] == self.size #num_param x f x d x matrix or just num_param x f
-        assert d2logpdf_df2_dtheta.shape[0] == self.size #num_param x f matrix or num_param x f x d x matrix, num_param x f x f or num_param x f x f x d
+        assert dlogpdf_dtheta.shape[0] == self.size  # num_param array x f, d
+        assert dlogpdf_df_dtheta.shape[0] == self.size  # num_param x f x d x matrix or just num_param x f
+        assert (
+            d2logpdf_df2_dtheta.shape[0] == self.size
+        )  # num_param x f matrix or num_param x f x d x matrix, num_param x f x f or num_param x f x f x d
 
         return dlogpdf_dtheta, dlogpdf_df_dtheta, d2logpdf_df2_dtheta
 
@@ -764,7 +797,7 @@ class Likelihood(Parameterized):
         except NotImplementedError:
             print("Finding predictive mean and variance via sampling rather than quadrature")
             Nf_samp = 300
-            s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
+            s = np.random.randn(mu.shape[0], Nf_samp) * np.sqrt(var) + mu
             ss_y = self.samples(s, Y_metadata=Y_metadata)
             pred_mean = np.mean(ss_y, axis=1)[:, None]
             pred_var = np.var(ss_y, axis=1)[:, None]
@@ -772,14 +805,14 @@ class Likelihood(Parameterized):
         return pred_mean, pred_var
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
-        #compute the quantiles by sampling!!!
+        # compute the quantiles by sampling!!!
         Nf_samp = 300
         Ny_samp = 1
-        s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
-        ss_y = self.samples(s, Y_metadata)#, samples=Ny_samp)
-        #ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
+        s = np.random.randn(mu.shape[0], Nf_samp) * np.sqrt(var) + mu
+        ss_y = self.samples(s, Y_metadata)  # , samples=Ny_samp)
+        # ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
 
-        pred_quantiles = [np.percentile(ss_y, q, axis=1)[:,None] for q in quantiles]
+        pred_quantiles = [np.percentile(ss_y, q, axis=1)[:, None] for q in quantiles]
         return pred_quantiles
 
     def samples(self, gp, Y_metadata=None, samples=1):
@@ -812,57 +845,58 @@ class Likelihood(Parameterized):
         if starting_loc is None:
             starting_loc = fNew
         from functools import partial
+
         logpdf = partial(self.logpdf, f=fNew, Y_metadata=Y_metadata)
         pdf = lambda y_star: np.exp(logpdf(y=y_star[:, None]))
-        #Should be the link function of f is a good starting point
-        #(i.e. the point before you corrupt it with the likelihood)
+        # Should be the link function of f is a good starting point
+        # (i.e. the point before you corrupt it with the likelihood)
         par_chains = starting_loc.shape[0]
         chain_values = np.zeros((par_chains, num_samples))
-        chain_values[:, 0][:,None] = starting_loc
-        #Use same stepsize for all par_chains
-        stepsize = np.ones(par_chains)*stepsize
-        accepted = np.zeros((par_chains, num_samples+burn_in))
-        accept_ratio = np.zeros(num_samples+burn_in)
-        #Whilst burning in, only need to keep the previous lot
+        chain_values[:, 0][:, None] = starting_loc
+        # Use same stepsize for all par_chains
+        stepsize = np.ones(par_chains) * stepsize
+        accepted = np.zeros((par_chains, num_samples + burn_in))
+        accept_ratio = np.zeros(num_samples + burn_in)
+        # Whilst burning in, only need to keep the previous lot
         burnin_cache = np.zeros(par_chains)
         burnin_cache[:] = starting_loc.flatten()
         burning_in = True
-        for i in range(burn_in+num_samples):
-            next_ind = i-burn_in
+        for i in range(burn_in + num_samples):
+            next_ind = i - burn_in
             if burning_in:
                 old_y = burnin_cache
             else:
-                old_y = chain_values[:,next_ind-1]
+                old_y = chain_values[:, next_ind - 1]
 
             old_lik = pdf(old_y)
-            #Propose new y from Gaussian proposal
+            # Propose new y from Gaussian proposal
             new_y = np.random.normal(loc=old_y, scale=stepsize)
             new_lik = pdf(new_y)
-            #Accept using Metropolis (not hastings) acceptance
-            #Always accepts if new_lik > old_lik
-            accept_probability = np.minimum(1, new_lik/old_lik)
-            u = np.random.uniform(0,1,par_chains)
-            #print "Accept prob: ", accept_probability
+            # Accept using Metropolis (not hastings) acceptance
+            # Always accepts if new_lik > old_lik
+            accept_probability = np.minimum(1, new_lik / old_lik)
+            u = np.random.uniform(0, 1, par_chains)
+            # print "Accept prob: ", accept_probability
             accepts = u < accept_probability
             if burning_in:
                 burnin_cache[accepts] = new_y[accepts]
                 burnin_cache[~accepts] = old_y[~accepts]
                 if i == burn_in:
                     burning_in = False
-                    chain_values[:,0] = burnin_cache
+                    chain_values[:, 0] = burnin_cache
             else:
-                #If it was accepted then new_y becomes the latest sample
+                # If it was accepted then new_y becomes the latest sample
                 chain_values[accepts, next_ind] = new_y[accepts]
-                #Otherwise use old y as the sample
+                # Otherwise use old y as the sample
                 chain_values[~accepts, next_ind] = old_y[~accepts]
 
             accepted[~accepts, i] = 0
             accepted[accepts, i] = 1
-            accept_ratio[i] = np.sum(accepted[:,i])/float(par_chains)
+            accept_ratio[i] = np.sum(accepted[:, i]) / float(par_chains)
 
-            #Show progress
-            if i % int((burn_in+num_samples)*0.1) == 0:
-                print("{}% of samples taken ({})".format((i/int((burn_in+num_samples)*0.1)*10), i))
+            # Show progress
+            if i % int((burn_in + num_samples) * 0.1) == 0:
+                print("{}% of samples taken ({})".format((i / int((burn_in + num_samples) * 0.1) * 10), i))
                 print("Last run accept ratio: ", accept_ratio[i])
 
         print("Average accept ratio: ", np.mean(accept_ratio))

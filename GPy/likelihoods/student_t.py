@@ -65,12 +65,8 @@ class StudentT(Likelihood):
         e = y - inv_link_f
         # Careful gamma(big_number) is infinity!
         objective = (
-            np.exp(gammaln((self.v + 1) * 0.5) - gammaln(self.v * 0.5))
-            / (np.sqrt(self.v * np.pi * self.sigma2))
-        ) * (
-            (1 + (1.0 / self.v.item()) * ((e**2) / self.sigma2.item()))
-            ** (-0.5 * (self.v + 1))
-        )
+            np.exp(gammaln((self.v + 1) * 0.5) - gammaln(self.v * 0.5)) / (np.sqrt(self.v * np.pi * self.sigma2))
+        ) * ((1 + (1.0 / self.v.item()) * ((e**2) / self.sigma2.item())) ** (-0.5 * (self.v + 1)))
         return np.prod(objective)
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
@@ -144,9 +140,7 @@ class StudentT(Likelihood):
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
         e = y - inv_link_f
-        hess = ((self.v + 1) * (e**2 - self.v * self.sigma2)) / (
-            (self.sigma2 * self.v + e**2) ** 2
-        )
+        hess = ((self.v + 1) * (e**2 - self.v * self.sigma2)) / ((self.sigma2 * self.v + e**2) ** 2)
         return hess
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
@@ -165,9 +159,9 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        d3lik_dlink3 = -(
-            2 * (self.v + 1) * (-e) * (e**2 - 3 * self.v * self.sigma2)
-        ) / ((e**2 + self.sigma2 * self.v) ** 3)
+        d3lik_dlink3 = -(2 * (self.v + 1) * (-e) * (e**2 - 3 * self.v * self.sigma2)) / (
+            (e**2 + self.sigma2 * self.v) ** 3
+        )
         return d3lik_dlink3
 
     def dlogpdf_link_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -187,11 +181,7 @@ class StudentT(Likelihood):
         """
         e = y - inv_link_f
         e2 = np.square(e)
-        dlogpdf_dvar = (
-            self.v
-            * (e2 - self.sigma2)
-            / (2 * self.sigma2 * (self.sigma2 * self.v + e2))
-        )
+        dlogpdf_dvar = self.v * (e2 - self.sigma2) / (2 * self.sigma2 * (self.sigma2 * self.v + e2))
         return dlogpdf_dvar
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -210,9 +200,7 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        dlogpdf_dlink_dvar = (self.v * (self.v + 1) * (-e)) / (
-            (self.sigma2 * self.v + e**2) ** 2
-        )
+        dlogpdf_dlink_dvar = (self.v * (self.v + 1) * (-e)) / ((self.sigma2 * self.v + e**2) ** 2)
         return dlogpdf_dlink_dvar
 
     def d2logpdf_dlink2_dvar(self, inv_link_f, y, Y_metadata=None):
@@ -231,9 +219,9 @@ class StudentT(Likelihood):
         :rtype: Nx1 array
         """
         e = y - inv_link_f
-        d2logpdf_dlink2_dvar = (
-            self.v * (self.v + 1) * (self.sigma2 * self.v - 3 * (e**2))
-        ) / ((self.sigma2 * self.v + (e**2)) ** 3)
+        d2logpdf_dlink2_dvar = (self.v * (self.v + 1) * (self.sigma2 * self.v - 3 * (e**2))) / (
+            (self.sigma2 * self.v + (e**2)) ** 3
+        )
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dv(self, inv_link_f, y, Y_metadata=None):
@@ -241,9 +229,7 @@ class StudentT(Likelihood):
         e2 = np.square(e)
         df = self.v.item()
         s2 = self.sigma2.item()
-        dlogpdf_dv = (
-            0.5 * digamma(0.5 * (df + 1)) - 0.5 * digamma(0.5 * df) - 1.0 / (2 * df)
-        )
+        dlogpdf_dv = 0.5 * digamma(0.5 * (df + 1)) - 0.5 * digamma(0.5 * df) - 1.0 / (2 * df)
         dlogpdf_dv += 0.5 * (df + 1) * e2 / (df * (e2 + s2 * df))
         dlogpdf_dv -= 0.5 * np.log1p(e2 / (s2 * df))
         return dlogpdf_dv
@@ -262,9 +248,7 @@ class StudentT(Likelihood):
         df = self.v.item()
         s2 = self.sigma2.item()
         e2_s2v = e**2 + s2 * df
-        d2logpdf_df2_dv = (-s2 * (df + 1) + e2 - s2 * df) / e2_s2v**2 - 2 * s2 * (
-            df + 1
-        ) * (e2 - s2 * df) / e2_s2v**3
+        d2logpdf_df2_dv = (-s2 * (df + 1) + e2 - s2 * df) / e2_s2v**2 - 2 * s2 * (df + 1) * (e2 - s2 * df) / e2_s2v**3
         return d2logpdf_df2_dv
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
@@ -288,13 +272,9 @@ class StudentT(Likelihood):
 
     def predictive_variance(self, mu, variance, predictive_mean=None, Y_metadata=None):
         if self.deg_free <= 2.0:
-            return (
-                np.empty(mu.shape) * np.nan
-            )  # does not exist for degrees of freedom <= 2.
+            return np.empty(mu.shape) * np.nan  # does not exist for degrees of freedom <= 2.
         else:
-            return super(StudentT, self).predictive_variance(
-                mu, variance, predictive_mean, Y_metadata
-            )
+            return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         """
@@ -306,14 +286,11 @@ class StudentT(Likelihood):
         ravel a covariance matrix through 1D quadrature (#993).
         """
         if not full_cov:
-            return super(StudentT, self).predictive_values(
-                mu, var, full_cov=False, Y_metadata=Y_metadata
-            )
+            return super(StudentT, self).predictive_values(mu, var, full_cov=False, Y_metadata=Y_metadata)
 
         if not isinstance(self.gp_link, link_functions.Identity):
             raise NotImplementedError(
-                "StudentT full_cov predictive covariance is only implemented "
-                "for the identity link"
+                "StudentT full_cov predictive covariance is only implemented for the identity link"
             )
         if self.deg_free <= 2.0:
             pred_mean = self.gp_link.transf(mu)

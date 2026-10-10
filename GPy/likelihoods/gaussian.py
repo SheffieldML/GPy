@@ -1,6 +1,6 @@
 # Copyright (c) 2012-2014 The GPy authors (see AUTHORS.txt)
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-#TODO
+# TODO
 """
 A lot of this code assumes that the link function is the identity.
 
@@ -19,6 +19,7 @@ from ..core.parameterization import Param
 from paramz.transformations import Logexp
 from scipy import stats
 
+
 class Gaussian(Likelihood):
     """
     Gaussian likelihood
@@ -30,17 +31,20 @@ class Gaussian(Likelihood):
     :param N: Number of data points
     :type N: int
     """
-    def __init__(self, gp_link=None, variance=1., name='Gaussian_noise'):
+
+    def __init__(self, gp_link=None, variance=1.0, name="Gaussian_noise"):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
         if not isinstance(gp_link, link_functions.Identity):
-            print("Warning, Exact inference is not implemeted for non-identity link functions,\
-            if you are not already, ensure Laplace inference_method is used")
+            print(
+                "Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used"
+            )
 
         super(Gaussian, self).__init__(gp_link, name=name)
 
-        self.variance = Param('variance', variance, Logexp())
+        self.variance = Param("variance", variance, Logexp())
         self.link_parameter(self.variance)
 
         if isinstance(gp_link, link_functions.Identity):
@@ -60,11 +64,10 @@ class Gaussian(Likelihood):
         input_dict["variance"] = self.variance.values.tolist()
         return input_dict
 
-
-    def betaY(self,Y,Y_metadata=None):
-        #TODO: ~Ricardo this does not live here
+    def betaY(self, Y, Y_metadata=None):
+        # TODO: ~Ricardo this does not live here
         raise RuntimeError("Please notify the GPy developers, this should not happen")
-        return Y/self.gaussian_variance(Y_metadata)
+        return Y / self.gaussian_variance(Y_metadata)
 
     def gaussian_variance(self, Y_metadata=None):
         return self.variance
@@ -72,7 +75,7 @@ class Gaussian(Likelihood):
     def update_gradients(self, grad):
         self.variance.gradient = grad
 
-    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode='gk', boost_grad=1.):
+    def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode="gk", boost_grad=1.0):
         return self.exact_inference_gradients(dL_dKdiag)
 
     def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
@@ -93,18 +96,18 @@ class Gaussian(Likelihood):
         :param tau_i: precision of the cavity distribution (float)
         :param v_i: mean/variance of the cavity distribution (float)
         """
-        sigma2_hat = 1./(1./self.variance + tau_i)
-        mu_hat = sigma2_hat*(data_i/self.variance + v_i)
-        sum_var = self.variance + 1./tau_i
-        Z_hat = 1./np.sqrt(2.*np.pi*sum_var)*np.exp(-.5*(data_i - v_i/tau_i)**2./sum_var)
+        sigma2_hat = 1.0 / (1.0 / self.variance + tau_i)
+        mu_hat = sigma2_hat * (data_i / self.variance + v_i)
+        sum_var = self.variance + 1.0 / tau_i
+        Z_hat = 1.0 / np.sqrt(2.0 * np.pi * sum_var) * np.exp(-0.5 * (data_i - v_i / tau_i) ** 2.0 / sum_var)
         return Z_hat, mu_hat, sigma2_hat
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         if full_cov:
             if var.ndim == 2:
-                var += np.eye(var.shape[0])*self.variance
+                var += np.eye(var.shape[0]) * self.variance
             if var.ndim == 3:
-                var += np.atleast_3d(np.eye(var.shape[0])*self.variance)
+                var += np.atleast_3d(np.eye(var.shape[0]) * self.variance)
         else:
             var += self.variance
         return mu, var
@@ -116,7 +119,7 @@ class Gaussian(Likelihood):
         return self.variance + sigma**2
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
-        return  [stats.norm.ppf(q/100.)*np.sqrt(var + self.variance) + mu for q in quantiles]
+        return [stats.norm.ppf(q / 100.0) * np.sqrt(var + self.variance) + mu for q in quantiles]
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -133,7 +136,7 @@ class Gaussian(Likelihood):
         :returns: likelihood evaluated for this point
         :rtype: float
         """
-        #Assumes no covariance, exp, sum, log for numerical stability
+        # Assumes no covariance, exp, sum, log for numerical stability
         return np.exp(np.sum(np.log(stats.norm.pdf(y, link_f, np.sqrt(self.variance)))))
 
     def logpdf_link(self, link_f, y, Y_metadata=None):
@@ -152,7 +155,7 @@ class Gaussian(Likelihood):
         :rtype: float
         """
         ln_det_cov = np.log(self.variance)
-        return -(1.0/(2*self.variance))*((y-link_f)**2) - 0.5*ln_det_cov - 0.5*np.log(2.*np.pi)
+        return -(1.0 / (2 * self.variance)) * ((y - link_f) ** 2) - 0.5 * ln_det_cov - 0.5 * np.log(2.0 * np.pi)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -169,8 +172,8 @@ class Gaussian(Likelihood):
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        s2_i = 1.0/self.variance
-        grad = s2_i*y - s2_i*link_f
+        s2_i = 1.0 / self.variance
+        grad = s2_i * y - s2_i * link_f
         return grad
 
     def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
@@ -197,7 +200,7 @@ class Gaussian(Likelihood):
         """
         N = y.shape[0]
         D = link_f.shape[1]
-        hess = -(1.0/self.variance)*np.ones((N, D))
+        hess = -(1.0 / self.variance) * np.ones((N, D))
         return hess
 
     def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
@@ -217,7 +220,7 @@ class Gaussian(Likelihood):
         """
         N = y.shape[0]
         D = link_f.shape[1]
-        d3logpdf_dlink3 = np.zeros((N,D))
+        d3logpdf_dlink3 = np.zeros((N, D))
         return d3logpdf_dlink3
 
     def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
@@ -236,8 +239,8 @@ class Gaussian(Likelihood):
         :rtype: float
         """
         e = y - link_f
-        s_4 = 1.0/(self.variance**2)
-        dlik_dsigma = -0.5/self.variance + 0.5*s_4*np.square(e)
+        s_4 = 1.0 / (self.variance**2)
+        dlik_dsigma = -0.5 / self.variance + 0.5 * s_4 * np.square(e)
         return dlik_dsigma
 
     def dlogpdf_dlink_dvar(self, link_f, y, Y_metadata=None):
@@ -255,8 +258,8 @@ class Gaussian(Likelihood):
         :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        s_4 = 1.0/(self.variance**2)
-        dlik_grad_dsigma = -s_4*y + s_4*link_f
+        s_4 = 1.0 / (self.variance**2)
+        dlik_grad_dsigma = -s_4 * y + s_4 * link_f
         return dlik_grad_dsigma
 
     def d2logpdf_dlink2_dvar(self, link_f, y, Y_metadata=None):
@@ -274,20 +277,20 @@ class Gaussian(Likelihood):
         :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter
         :rtype: Nx1 array
         """
-        s_4 = 1.0/(self.variance**2)
+        s_4 = 1.0 / (self.variance**2)
         N = y.shape[0]
         D = link_f.shape[1]
-        d2logpdf_dlink2_dvar = np.ones((N, D))*s_4
+        d2logpdf_dlink2_dvar = np.ones((N, D)) * s_4
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
-        dlogpdf_dtheta[0,:,:] = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
+        dlogpdf_dtheta[0, :, :] = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
         return dlogpdf_dtheta
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
         dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
-        dlogpdf_dlink_dtheta[0, :, :]= self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
+        dlogpdf_dlink_dtheta[0, :, :] = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
         return dlogpdf_dlink_dtheta
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
@@ -321,9 +324,11 @@ class Gaussian(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        #orig_shape = gp.shape
+        # orig_shape = gp.shape
         gp = gp.flatten()
-        Ysim = np.array([np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp])
+        Ysim = np.array(
+            [np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp]
+        )
         return Ysim.reshape(orig_shape)
 
     def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
@@ -331,29 +336,40 @@ class Gaussian(Likelihood):
         assumes independence
         """
         v = var_star + self.variance
-        return -0.5*np.log(2*np.pi) -0.5*np.log(v) - 0.5*np.square(y_test - mu_star)/v
+        return -0.5 * np.log(2 * np.pi) - 0.5 * np.log(v) - 0.5 * np.square(y_test - mu_star) / v
 
     def variational_expectations(self, Y, m, v, gh_points=None, Y_metadata=None):
         if not isinstance(self.gp_link, link_functions.Identity):
-            return super(Gaussian, self).variational_expectations(Y=Y, m=m, v=v, gh_points=gh_points, Y_metadata=Y_metadata)
+            return super(Gaussian, self).variational_expectations(
+                Y=Y, m=m, v=v, gh_points=gh_points, Y_metadata=Y_metadata
+            )
 
         lik_var = self.variance.item()
-        F = -0.5*np.log(2*np.pi) -0.5*np.log(lik_var) - 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/lik_var
-        dF_dmu = (Y - m)/lik_var
-        dF_dv = np.ones_like(v)*(-0.5/lik_var)
-        dF_dtheta = -0.5/lik_var + 0.5*(np.square(Y) + np.square(m) + v - 2*m*Y)/(lik_var**2)
+        F = (
+            -0.5 * np.log(2 * np.pi)
+            - 0.5 * np.log(lik_var)
+            - 0.5 * (np.square(Y) + np.square(m) + v - 2 * m * Y) / lik_var
+        )
+        dF_dmu = (Y - m) / lik_var
+        dF_dv = np.ones_like(v) * (-0.5 / lik_var)
+        dF_dtheta = -0.5 / lik_var + 0.5 * (np.square(Y) + np.square(m) + v - 2 * m * Y) / (lik_var**2)
         return F, dF_dmu, dF_dv, dF_dtheta.reshape(1, Y.shape[0], Y.shape[1])
 
+
 class HeteroscedasticGaussian(Gaussian):
-    def __init__(self, Y_metadata, gp_link=None, variance=1., name='het_Gauss'):
+    def __init__(self, Y_metadata, gp_link=None, variance=1.0, name="het_Gauss"):
         if gp_link is None:
             gp_link = link_functions.Identity()
 
         if not isinstance(gp_link, link_functions.Identity):
-            print("Warning, Exact inference is not implemeted for non-identity link functions,\
-            if you are not already, ensure Laplace inference_method is used")
+            print(
+                "Warning, Exact inference is not implemeted for non-identity link functions,\
+            if you are not already, ensure Laplace inference_method is used"
+            )
 
-        super(HeteroscedasticGaussian, self).__init__(gp_link, np.ones(Y_metadata['output_index'].shape)*variance, name)
+        super(HeteroscedasticGaussian, self).__init__(
+            gp_link, np.ones(Y_metadata["output_index"].shape) * variance, name
+        )
 
     def resize_for_data(self, num_data, variance=None):
         """
@@ -373,35 +389,31 @@ class HeteroscedasticGaussian(Gaussian):
         else:
             new_vals = np.asarray(variance, dtype=float).reshape(-1, 1)
             if new_vals.shape[0] != num_data:
-                raise ValueError(
-                    "variance has %d rows but num_data=%d"
-                    % (new_vals.shape[0], num_data)
-                )
+                raise ValueError("variance has %d rows but num_data=%d" % (new_vals.shape[0], num_data))
         if self.variance.shape == new_vals.shape:
             self.variance[:] = new_vals
             return
         index = self.variance._parent_index_
         self.unlink_parameter(self.variance)
-        self.variance = Param('variance', new_vals, Logexp())
+        self.variance = Param("variance", new_vals, Logexp())
         self.link_parameter(self.variance, index=index)
 
-    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
-        return dL_dKdiag[Y_metadata['output_index']]
+    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
+        return dL_dKdiag[Y_metadata["output_index"]]
 
     def gaussian_variance(self, Y_metadata=None):
-        return self.variance[Y_metadata['output_index'].flatten()]
+        return self.variance[Y_metadata["output_index"].flatten()]
 
     def _noise_for_points(self, mu, Y_metadata=None):
-        if Y_metadata is not None and 'output_index' in Y_metadata:
-            idx = np.asarray(Y_metadata['output_index']).flatten()
+        if Y_metadata is not None and "output_index" in Y_metadata:
+            idx = np.asarray(Y_metadata["output_index"]).flatten()
         else:
             n = mu.shape[0]
             if self.variance.shape[0] != n:
                 raise ValueError(
                     "HeteroscedasticGaussian needs Y_metadata['output_index'] "
                     "when the number of test points (%d) differs from the "
-                    "noise parameter length (%d)"
-                    % (n, self.variance.shape[0])
+                    "noise parameter length (%d)" % (n, self.variance.shape[0])
                 )
             idx = np.arange(n)
         return self.variance[idx]
@@ -410,13 +422,13 @@ class HeteroscedasticGaussian(Gaussian):
         _s = self._noise_for_points(mu, Y_metadata)
         if full_cov:
             if var.ndim == 2:
-                var += np.eye(var.shape[0])*_s
+                var += np.eye(var.shape[0]) * _s
             if var.ndim == 3:
-                var += np.atleast_3d(np.eye(var.shape[0])*_s)
+                var += np.atleast_3d(np.eye(var.shape[0]) * _s)
         else:
             var += _s
         return mu, var
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         _s = self._noise_for_points(mu, Y_metadata)
-        return  [stats.norm.ppf(q/100.)*np.sqrt(var + _s) + mu for q in quantiles]
+        return [stats.norm.ppf(q / 100.0) * np.sqrt(var + _s) + mu for q in quantiles]

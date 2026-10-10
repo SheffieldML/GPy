@@ -3,13 +3,14 @@ from __future__ import division
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy import stats,special
+from scipy import stats, special
 import scipy as sp
 from ..core.parameterization import Param
 from ..core.parameterization.transformations import Logexp
 from . import link_functions
 from .likelihood import Likelihood
 from .link_functions import Log
+
 
 class LogLogistic(Likelihood):
     """
@@ -22,15 +23,13 @@ class LogLogistic(Likelihood):
 
     def __init__(self, gp_link=None, r=1.0):
         if gp_link is None:
-            #Parameterised not as link_f but as f
+            # Parameterised not as link_f but as f
             gp_link = Log()
 
-        super(LogLogistic, self).__init__(gp_link, name='LogLogistic')
-        self.r = Param('r_log_shape', float(r), Logexp())
+        super(LogLogistic, self).__init__(gp_link, name="LogLogistic")
+        self.r = Param("r_log_shape", float(r), Logexp())
         self.link_parameter(self.r)
         # self.censored = 'censored'
-
-
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -47,7 +46,6 @@ class LogLogistic(Likelihood):
         :rtype: float
         """
         return np.exp(self.logpdf_link(link_f, y, Y_metadata=Y_metadata))
-
 
     def logpdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -67,8 +65,8 @@ class LogLogistic(Likelihood):
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
-        if Y_metadata is not None and  'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
 
         link_f = np.clip(link_f, 1e-150, 1e100)
         # y_link_f = y/link_f
@@ -78,12 +76,14 @@ class LogLogistic(Likelihood):
         y_r = np.clip(y**self.r, 1e-150, 1e200)
         link_f_r = np.clip(link_f**self.r, 1e-150, 1e200)
         y_link_f_r = np.clip(y_r / link_f_r, 1e-150, 1e200)
-        #uncensored = (1-c)*(np.log(self.r) + (self.r+1)*np.log(y) - self.r*np.log(link_f) - 2*np.log1p(y_link_f_r))
-        #uncensored = (1-c)*(np.log((self.r/link_f)*y_link_f**(self.r-1)) - 2*np.log1p(y_link_f_r))
+        # uncensored = (1-c)*(np.log(self.r) + (self.r+1)*np.log(y) - self.r*np.log(link_f) - 2*np.log1p(y_link_f_r))
+        # uncensored = (1-c)*(np.log((self.r/link_f)*y_link_f**(self.r-1)) - 2*np.log1p(y_link_f_r))
 
         # clever way tp break it into censored and uncensored-parts ..
-        uncensored = (1-c)*(np.log(self.r) + (self.r-1)*np.log(y) - self.r*np.log(link_f) - 2*np.log1p(y_link_f_r))
-        censored = (c)*(-np.log1p(y_link_f_r))
+        uncensored = (1 - c) * (
+            np.log(self.r) + (self.r - 1) * np.log(y) - self.r * np.log(link_f) - 2 * np.log1p(y_link_f_r)
+        )
+        censored = (c) * (-np.log1p(y_link_f_r))
         #
         return uncensored + censored
         # return uncensored
@@ -108,17 +108,17 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
 
-        #y_link_f = y/link_f
-        #y_link_f_r = y_link_f**self.r
+        # y_link_f = y/link_f
+        # y_link_f_r = y_link_f**self.r
         y_link_f_r = np.clip(y**self.r, 1e-150, 1e200) / np.clip(link_f**self.r, 1e-150, 1e200)
 
-        #In terms of link_f
+        # In terms of link_f
         # uncensored = (1-c)*( (2*self.r*y**r)/(link_f**self.r + y**self.r) - link_f*self.r)
-        uncensored = (1-c)*self.r*(y_link_f_r - 1)/(link_f*(1 + y_link_f_r))
-        censored = c*(self.r*y_link_f_r/(link_f*y_link_f_r + link_f))
+        uncensored = (1 - c) * self.r * (y_link_f_r - 1) / (link_f * (1 + y_link_f_r))
+        censored = c * (self.r * y_link_f_r / (link_f * y_link_f_r + link_f))
         return uncensored + censored
         # return uncensored
 
@@ -147,15 +147,17 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
 
-        y_link_f = y/link_f
+        y_link_f = y / link_f
         y_link_f_r = y_link_f**self.r
 
-        #In terms of link_f
-        censored = c*(-self.r*y_link_f_r*(y_link_f_r + self.r + 1)/((link_f**2)*(y_link_f_r + 1)**2))
-        uncensored = (1-c)*(-self.r*(2*self.r*y_link_f_r + y_link_f**(2*self.r) - 1) / ((link_f**2)*(1+ y_link_f_r)**2))
+        # In terms of link_f
+        censored = c * (-self.r * y_link_f_r * (y_link_f_r + self.r + 1) / ((link_f**2) * (y_link_f_r + 1) ** 2))
+        uncensored = (1 - c) * (
+            -self.r * (2 * self.r * y_link_f_r + y_link_f ** (2 * self.r) - 1) / ((link_f**2) * (1 + y_link_f_r) ** 2)
+        )
         hess = censored + uncensored
         return hess
 
@@ -179,16 +181,28 @@ class LogLogistic(Likelihood):
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
 
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
-        y_link_f = y/link_f
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
+        y_link_f = y / link_f
         y_link_f_r = y_link_f**self.r
 
-        #In terms of link_f
-        censored = c*(self.r*y_link_f_r*(((self.r**2)*(-(y_link_f_r - 1))) + 3*self.r*(y_link_f_r + 1) + 2*(y_link_f_r + 1)**2)
-                      / ((link_f**3)*(y_link_f_r + 1)**3))
-        uncensored = (1-c)*(2*self.r*(-(self.r**2)*(y_link_f_r -1)*y_link_f_r + 3*self.r*(y_link_f_r + 1)*y_link_f_r + (y_link_f_r - 1)*(y_link_f_r + 1)**2)
-                            / ((link_f**3)*(y_link_f_r + 1)**3))
+        # In terms of link_f
+        censored = c * (
+            self.r
+            * y_link_f_r
+            * (((self.r**2) * (-(y_link_f_r - 1))) + 3 * self.r * (y_link_f_r + 1) + 2 * (y_link_f_r + 1) ** 2)
+            / ((link_f**3) * (y_link_f_r + 1) ** 3)
+        )
+        uncensored = (1 - c) * (
+            2
+            * self.r
+            * (
+                -(self.r**2) * (y_link_f_r - 1) * y_link_f_r
+                + 3 * self.r * (y_link_f_r + 1) * y_link_f_r
+                + (y_link_f_r - 1) * (y_link_f_r + 1) ** 2
+            )
+            / ((link_f**3) * (y_link_f_r + 1) ** 3)
+        )
 
         d3lik_dlink3 = censored + uncensored
         return d3lik_dlink3
@@ -210,17 +224,19 @@ class LogLogistic(Likelihood):
         # c = Y_metadata['censored']
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
 
-        link_f = inv_link_f #FIXME: Change names consistently...
-        y_link_f = y/link_f
+        link_f = inv_link_f  # FIXME: Change names consistently...
+        y_link_f = y / link_f
         log_y_link_f = np.log(y) - np.log(link_f)
         y_link_f_r = y_link_f**self.r
 
-        #In terms of link_f
-        censored = c*(-y_link_f_r*log_y_link_f/(1 + y_link_f_r))
-        uncensored = (1-c)*(1./self.r + np.log(y) - np.log(link_f) - (2*y_link_f_r*log_y_link_f) / (1 + y_link_f_r))
+        # In terms of link_f
+        censored = c * (-y_link_f_r * log_y_link_f / (1 + y_link_f_r))
+        uncensored = (1 - c) * (
+            1.0 / self.r + np.log(y) - np.log(link_f) - (2 * y_link_f_r * log_y_link_f) / (1 + y_link_f_r)
+        )
 
         dlogpdf_dr = censored + uncensored
         return dlogpdf_dr
@@ -241,16 +257,20 @@ class LogLogistic(Likelihood):
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
         link_f = inv_link_f
-        y_link_f = y/link_f
+        y_link_f = y / link_f
         y_link_f_r = y_link_f**self.r
         log_y_link_f = np.log(y) - np.log(link_f)
 
-        #In terms of link_f
-        censored = c*(y_link_f_r*(y_link_f_r + self.r*log_y_link_f + 1)/(link_f*(y_link_f_r + 1)**2))
-        uncensored = (1-c)*(y_link_f**(2*self.r) + 2*self.r*y_link_f_r*log_y_link_f - 1) / (link_f*(1 + y_link_f_r)**2)
+        # In terms of link_f
+        censored = c * (y_link_f_r * (y_link_f_r + self.r * log_y_link_f + 1) / (link_f * (y_link_f_r + 1) ** 2))
+        uncensored = (
+            (1 - c)
+            * (y_link_f ** (2 * self.r) + 2 * self.r * y_link_f_r * log_y_link_f - 1)
+            / (link_f * (1 + y_link_f_r) ** 2)
+        )
 
         # dlogpdf_dlink_dr = uncensored
         dlogpdf_dlink_dr = censored + uncensored
@@ -274,28 +294,34 @@ class LogLogistic(Likelihood):
 
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
-        if Y_metadata is not None and 'censored' in Y_metadata.keys():
-            c = Y_metadata['censored']
+        if Y_metadata is not None and "censored" in Y_metadata.keys():
+            c = Y_metadata["censored"]
         link_f = inv_link_f
-        y_link_f = y/link_f
+        y_link_f = y / link_f
         y_link_f_r = y_link_f**self.r
         log_y_link_f = np.log(y) - np.log(link_f)
 
-        #In terms of link_f
-        y_link_f_2r = y_link_f**(2*self.r)
-        denom2 = (link_f**2)*(1 + y_link_f_r)**2
-        denom3 = (link_f**2)*(1 + y_link_f_r)**3
+        # In terms of link_f
+        y_link_f_2r = y_link_f ** (2 * self.r)
+        denom2 = (link_f**2) * (1 + y_link_f_r) ** 2
+        denom3 = (link_f**2) * (1 + y_link_f_r) ** 3
 
-        censored = c*(-((y_link_f_r + self.r + 1)*y_link_f_r)/denom2
-                      -(self.r*(y_link_f_r + self.r + 1)*y_link_f_r*log_y_link_f)/denom2
-                      -(self.r*y_link_f_r*(y_link_f_r*log_y_link_f + 1))/denom2
-                      +(2*self.r*(y_link_f_r + self.r + 1)*y_link_f_2r*log_y_link_f)/denom3
-                      )
+        censored = c * (
+            -((y_link_f_r + self.r + 1) * y_link_f_r) / denom2
+            - (self.r * (y_link_f_r + self.r + 1) * y_link_f_r * log_y_link_f) / denom2
+            - (self.r * y_link_f_r * (y_link_f_r * log_y_link_f + 1)) / denom2
+            + (2 * self.r * (y_link_f_r + self.r + 1) * y_link_f_2r * log_y_link_f) / denom3
+        )
 
-        uncensored = (1-c)*(-(2*self.r*y_link_f_r + y_link_f_2r - 1)/denom2
-                            -(self.r*(2*y_link_f_r + 2*self.r*y_link_f_r*log_y_link_f + 2*y_link_f_2r*log_y_link_f)/denom2)
-                            +(2*self.r*(2*self.r*y_link_f_r + y_link_f_2r - 1)*y_link_f_r*log_y_link_f)/denom3
-                            )
+        uncensored = (1 - c) * (
+            -(2 * self.r * y_link_f_r + y_link_f_2r - 1) / denom2
+            - (
+                self.r
+                * (2 * y_link_f_r + 2 * self.r * y_link_f_r * log_y_link_f + 2 * y_link_f_2r * log_y_link_f)
+                / denom2
+            )
+            + (2 * self.r * (2 * self.r * y_link_f_r + y_link_f_2r - 1) * y_link_f_r * log_y_link_f) / denom3
+        )
         d2logpdf_dlink2_dr = censored + uncensored
 
         return d2logpdf_dlink2_dr
@@ -312,7 +338,7 @@ class LogLogistic(Likelihood):
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
         d2logpdf_dlink2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
-        d2logpdf_dlink2_dtheta[0,:, :] = self.d2logpdf_dlink2_dr(f, y, Y_metadata=Y_metadata)
+        d2logpdf_dlink2_dtheta[0, :, :] = self.d2logpdf_dlink2_dr(f, y, Y_metadata=Y_metadata)
         return d2logpdf_dlink2_dtheta
 
     def update_gradients(self, grads):
@@ -330,10 +356,9 @@ class LogLogistic(Likelihood):
         """
         orig_shape = gp.shape
         gp = gp.flatten()
-        #rs = np.ones_like(gp)*self.r
-        #scales = np.ones_like(gp)*np.sqrt(self.sigma2)
-        #Ysim = sp.stats.fisk.rvs(rs, scale=self.gp_link.transf(gp))
+        # rs = np.ones_like(gp)*self.r
+        # scales = np.ones_like(gp)*np.sqrt(self.sigma2)
+        # Ysim = sp.stats.fisk.rvs(rs, scale=self.gp_link.transf(gp))
         Ysim = np.array([sp.stats.fisk.rvs(self.r, loc=0, scale=self.gp_link.transf(f)) for f in gp])
-        #np.random.fisk(self.gp_link.transf(gp), c=self.r)
+        # np.random.fisk(self.gp_link.transf(gp), c=self.r)
         return Ysim.reshape(orig_shape)
-

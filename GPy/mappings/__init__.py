@@ -10,4 +10,3 @@ from .compound import Compound
 from .constant import Constant
 from .identity import Identity
 from .piecewise_linear import PiecewiseLinear
-

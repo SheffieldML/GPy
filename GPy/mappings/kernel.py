@@ -6,6 +6,7 @@ import numpy as np
 from ..core.mapping import Mapping
 from ..core import Param
 
+
 class Kernel(Mapping):
     """
     Mapping based on a kernel/covariance function.
@@ -32,13 +33,13 @@ class Kernel(Mapping):
 
     """
 
-    def __init__(self, input_dim, output_dim, Z, kernel, name='kernmap'):
+    def __init__(self, input_dim, output_dim, Z, kernel, name="kernmap"):
         super(Kernel, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         self.kern = kernel
         self.Z = Z
         self.num_bases, Zdim = Z.shape
         assert Zdim == self.input_dim
-        self.A = Param('A', np.random.randn(self.num_bases, self.output_dim))
+        self.A = Param("A", np.random.randn(self.num_bases, self.output_dim))
         self.link_parameter(self.A)
 
     def f(self, X):
@@ -46,7 +47,7 @@ class Kernel(Mapping):
 
     def update_gradients(self, dL_dF, X):
         self.kern.update_gradients_full(np.dot(dL_dF, self.A.T), X, self.Z)
-        self.A.gradient = np.dot( self.kern.K(self.Z, X), dL_dF)
+        self.A.gradient = np.dot(self.kern.K(self.Z, X), dL_dF)
 
     def gradients_X(self, dL_dF, X):
         return self.kern.gradients_X(np.dot(dL_dF, self.A.T), X, self.Z)

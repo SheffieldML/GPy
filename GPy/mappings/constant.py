@@ -3,6 +3,7 @@ import numpy as np
 from ..core.mapping import Mapping
 from ..core.parameterization import Param
 
+
 class Constant(Mapping):
     """
     A Linear mapping.
@@ -20,18 +21,18 @@ class Constant(Mapping):
 
     """
 
-    def __init__(self, input_dim, output_dim, value=0., name='constmap'):
+    def __init__(self, input_dim, output_dim, value=0.0, name="constmap"):
         super(Constant, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         value = np.atleast_1d(value)
-        if not len(value.shape) ==1:
+        if not len(value.shape) == 1:
             raise ValueError("bad constant values: pass a float or flat vectoor")
-        elif value.size==1:
-            value = np.ones(self.output_dim)*value
-        self.C = Param('C', value)
+        elif value.size == 1:
+            value = np.ones(self.output_dim) * value
+        self.C = Param("C", value)
         self.link_parameter(self.C)
 
     def f(self, X):
-        return np.tile(self.C.values[None,:], (X.shape[0], 1))
+        return np.tile(self.C.values[None, :], (X.shape[0], 1))
 
     def update_gradients(self, dL_dF, X):
         self.C.gradient = dL_dF.sum(0)

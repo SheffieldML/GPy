@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005 Phase 2: `ruff format` on `GPy/mappings` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/examples` (format-only; no behaviour change)
 * CIP-0005 Phase 2: `ruff format` on `GPy/testing` (format-only; no behaviour change)
 * document multi-output / coregionalized regression (ICM/LCM, predict `Y_metadata`, list `set_XY`) and let `GPCoregionalizedRegression.predict` accept per-output list inputs like `MultioutputGP` (#1099, #1016)

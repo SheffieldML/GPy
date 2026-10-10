@@ -1228,6 +1228,152 @@ class TestGradient:
         with pytest.raises(ValueError, match="output_index"):
             m.log_predictive_density(X_test, Y_test)
 
+    def test_gp_coregionalized_normalizer(self):
+        """normalizer=True on GPCoregionalizedRegression matches manual standardize."""
+        np.random.seed(0)
+        X1 = np.random.rand(25, 1) * 8
+        X2 = np.random.rand(20, 1) * 5
+        Y1 = 40 + 5 * np.sin(X1) + np.random.randn(*X1.shape) * 0.1
+        Y2 = -20 + 3 * np.cos(X2) + np.random.randn(*X2.shape) * 0.1
+        Y = np.vstack([Y1, Y2])
+        mu, std = Y.mean(0), Y.std(0)
+
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1), normalizer=True
+        )
+        m2 = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2],
+            Y_list=[(Y1 - mu) / std, (Y2 - mu) / std],
+            kernel=GPy.kern.RBF(1),
+            normalizer=False,
+        )
+        m2[:] = m[:]
+
+        X_test = np.vstack(
+            [
+                np.hstack([X1[:4], np.zeros((4, 1))]),
+                np.hstack([X2[:4], np.ones((4, 1))]),
+            ]
+        )
+        Y_metadata = {"output_index": X_test[:, 1:].astype(int)}
+        mu1, var1 = m.predict(X_test, Y_metadata=Y_metadata)
+        mu2, var2 = m2.predict(X_test, Y_metadata=Y_metadata)
+        np.testing.assert_allclose(mu1, (mu2 * std) + mu)
+        np.testing.assert_allclose(var1, var2 * std**2)
+
+    def test_gp_coregionalized_set_XY_lists(self):
+        """set_XY accepts per-output lists and refreshes output_index metadata."""
+        np.random.seed(1)
+        X1 = np.random.rand(12, 1) * 4
+        X2 = np.random.rand(10, 1) * 3
+        Y1 = np.sin(X1)
+        Y2 = -np.sin(X2)
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1)
+        )
+
+        X1n = np.random.rand(8, 1) * 4
+        X2n = np.random.rand(6, 1) * 3
+        Y1n = np.cos(X1n)
+        Y2n = -np.cos(X2n)
+        m.set_XY([X1n, X2n], [Y1n, Y2n])
+
+        assert m.X.shape[0] == 14
+        assert m.Y.shape[0] == 14
+        np.testing.assert_array_equal(
+            m.output_index.flatten(),
+            np.hstack([np.zeros(8), np.ones(6)]),
+        )
+        np.testing.assert_array_equal(
+            m.Y_metadata["output_index"].flatten(), m.output_index.flatten()
+        )
+        assert m.checkgrad()
+
+    def test_gp_coregionalized_set_XY_stacked_and_normalizer(self):
+        """set_XY with stacked arrays and normalizer rescales Y."""
+        np.random.seed(2)
+        X1 = np.random.rand(10, 1)
+        X2 = np.random.rand(10, 1)
+        Y1 = 30 + np.sin(X1)
+        Y2 = -10 + np.cos(X2)
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1), normalizer=True
+        )
+        X_new, Y_new, index = GPy.util.multioutput.build_XY(
+            [X1[:5], X2[:7]], [Y1[:5] + 1.0, Y2[:7] - 2.0]
+        )
+        m.set_XY(X_new, Y_new)
+        np.testing.assert_array_equal(m.output_index, index)
+        np.testing.assert_allclose(m.Y_normalized.mean(), 0.0, atol=1e-10)
+        np.testing.assert_allclose(m.Y_normalized.std(), 1.0, atol=1e-10)
+
+    def test_gp_coregionalized_set_XY_mixed_types_raises(self):
+        np.random.seed(3)
+        X1 = np.random.rand(5, 1)
+        X2 = np.random.rand(5, 1)
+        Y1 = np.sin(X1)
+        Y2 = -np.sin(X2)
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1)
+        )
+        X_stacked, _, _ = GPy.util.multioutput.build_XY([X1, X2], [Y1, Y2])
+        with pytest.raises(TypeError, match="list"):
+            m.set_XY(X_stacked, [Y1, Y2])
+        with pytest.raises(TypeError, match="list"):
+            m.set_XY([X1, X2], np.vstack([Y1, Y2]))
+
+    def test_gp_coregionalized_set_XY_one_sided_lists(self):
+        """Same-size one-sided list updates work; resizing one side alone raises."""
+        np.random.seed(5)
+        X1 = np.random.rand(6, 1)
+        X2 = np.random.rand(6, 1)
+        Y1 = np.sin(X1)
+        Y2 = -np.sin(X2)
+        m = GPy.models.GPCoregionalizedRegression(
+            X_list=[X1, X2], Y_list=[Y1, Y2], kernel=GPy.kern.RBF(1)
+        )
+        X1b = X1 + 0.1
+        X2b = X2 - 0.1
+        m.set_XY(X=[X1b, X2b])
+        np.testing.assert_allclose(m.X[:, :1], np.vstack([X1b, X2b]))
+        np.testing.assert_array_equal(
+            m.output_index.flatten(), np.hstack([np.zeros(6), np.ones(6)])
+        )
+
+        Y1b = Y1 + 1.0
+        Y2b = Y2 - 1.0
+        m.set_XY(Y=[Y1b, Y2b])
+        np.testing.assert_allclose(np.asarray(m.Y), np.vstack([Y1b, Y2b]))
+
+        with pytest.raises(ValueError, match="same number of rows"):
+            m.set_XY(X=[X1[:4], X2[:3]])
+        with pytest.raises(ValueError, match="same number of rows"):
+            m.set_XY(Y=[Y1[:5], Y2[:4]])
+
+    def test_sparse_gp_coregionalized_normalizer_and_set_XY(self):
+        """Sparse coregionalized gets normalizer and list set_XY."""
+        np.random.seed(4)
+        X1 = np.random.rand(40, 1) * 8
+        X2 = np.random.rand(30, 1) * 5
+        Y1 = 15 + np.sin(X1) + np.random.randn(*X1.shape) * 0.05
+        Y2 = -8 + np.cos(X2) + np.random.randn(*X2.shape) * 0.05
+        m = GPy.models.SparseGPCoregionalizedRegression(
+            X_list=[X1, X2],
+            Y_list=[Y1, Y2],
+            kernel=GPy.kern.RBF(1),
+            num_inducing=5,
+            normalizer=True,
+        )
+        assert m.normalizer is not None
+        np.testing.assert_allclose(m.Y_normalized.mean(), 0.0, atol=1e-10)
+
+        m.set_XY([X1[:20], X2[:15]], [Y1[:20], Y2[:15]])
+        assert m.X.shape[0] == 35
+        np.testing.assert_array_equal(
+            m.Y_metadata["output_index"].flatten(),
+            np.hstack([np.zeros(20), np.ones(15)]),
+        )
+
     def test_simple_MultivariateGaussian_prior(self):
         self.setup_method()
         X = np.random.multivariate_normal(

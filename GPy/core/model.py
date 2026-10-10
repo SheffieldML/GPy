@@ -4,8 +4,8 @@ from .parameterization.priorizable import Priorizable
 from paramz import Model as ParamzModel
 import numpy as np
 
-class Model(ParamzModel, Priorizable):
 
+class Model(ParamzModel, Priorizable):
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
 
@@ -34,10 +34,12 @@ class Model(ParamzModel, Priorizable):
            instantiate the object.
         """
         import copy
+
         input_dict = copy.deepcopy(input_dict)
-        model_class = input_dict.pop('class')
+        model_class = input_dict.pop("class")
         input_dict["name"] = str(input_dict["name"])
         import GPy
+
         model_class = eval(model_class)
         return model_class._build_from_input_dict(input_dict, data)
 
@@ -60,39 +62,43 @@ class Model(ParamzModel, Priorizable):
 
     def _save_model(self, output_filename, compress=True, save_data=True):
         import json
+
         output_dict = self.to_dict(save_data)
         if compress:
             import gzip
-            with gzip.GzipFile(output_filename + ".zip", 'w') as outfile:
+
+            with gzip.GzipFile(output_filename + ".zip", "w") as outfile:
                 json_str = json.dumps(output_dict)
-                json_bytes = json_str.encode('utf-8')
+                json_bytes = json_str.encode("utf-8")
                 outfile.write(json_bytes)
         else:
-            with open(output_filename + ".json", 'w') as outfile:
+            with open(output_filename + ".json", "w") as outfile:
                 json.dump(output_dict, outfile)
 
     @staticmethod
     def load_model(output_filename, data=None):
         compress = output_filename.split(".")[-1] == "zip"
         import json
+
         if compress:
             import gzip
-            with gzip.GzipFile(output_filename, 'r') as json_data:
+
+            with gzip.GzipFile(output_filename, "r") as json_data:
                 json_bytes = json_data.read()
-                json_str = json_bytes.decode('utf-8')
+                json_str = json_bytes.decode("utf-8")
                 output_dict = json.loads(json_str)
         else:
             with open(output_filename) as json_data:
                 output_dict = json.load(json_data)
         import GPy
-        return GPy.core.model.Model.from_dict(output_dict, data)
 
+        return GPy.core.model.Model.from_dict(output_dict, data)
 
     def log_likelihood(self):
         raise NotImplementedError("this needs to be implemented to use the model class")
 
     def _log_likelihood_gradients(self):
-        return self.gradient#.copy()
+        return self.gradient  # .copy()
 
     def objective_function(self):
         """

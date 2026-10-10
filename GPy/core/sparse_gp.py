@@ -9,7 +9,9 @@ from .. import likelihoods
 from GPy.core.parameterization.variational import VariationalPosterior
 
 import logging
+
 logger = logging.getLogger("sparse gp")
+
 
 class SparseGP(GP):
     """
@@ -38,22 +40,44 @@ class SparseGP(GP):
 
     """
 
-    def __init__(self, X, Y, Z, kernel, likelihood, mean_function=None, X_variance=None, inference_method=None,
-                 name='sparse gp', Y_metadata=None, normalizer=False):
+    def __init__(
+        self,
+        X,
+        Y,
+        Z,
+        kernel,
+        likelihood,
+        mean_function=None,
+        X_variance=None,
+        inference_method=None,
+        name="sparse gp",
+        Y_metadata=None,
+        normalizer=False,
+    ):
 
-        #pick a sensible inference method
+        # pick a sensible inference method
         if inference_method is None:
             if isinstance(likelihood, likelihoods.Gaussian):
                 inference_method = var_dtc.VarDTC(limit=3)
             else:
-                #inference_method = ??
+                # inference_method = ??
                 raise NotImplementedError("what to do what to do?")
             print(("defaulting to ", inference_method, "for latent function inference"))
 
-        self.Z = Param('inducing inputs', Z)
+        self.Z = Param("inducing inputs", Z)
         self.num_inducing = Z.shape[0]
 
-        super(SparseGP, self).__init__(X, Y, kernel, likelihood, mean_function, inference_method=inference_method, name=name, Y_metadata=Y_metadata, normalizer=normalizer)
+        super(SparseGP, self).__init__(
+            X,
+            Y,
+            kernel,
+            likelihood,
+            mean_function,
+            inference_method=inference_method,
+            name=name,
+            Y_metadata=Y_metadata,
+            normalizer=normalizer,
+        )
 
         logger.info("Adding Z as parameter")
         self.link_parameter(self.Z, index=0)
@@ -67,55 +91,65 @@ class SparseGP(GP):
         return isinstance(self.X, VariationalPosterior)
 
     def set_Z(self, Z, trigger_update=True):
-        if trigger_update: self.update_model(False)
+        if trigger_update:
+            self.update_model(False)
         self.unlink_parameter(self.Z)
-        self.Z = Param('inducing inputs',Z)
+        self.Z = Param("inducing inputs", Z)
         self.link_parameter(self.Z, index=0)
-        if trigger_update: self.update_model(True)
+        if trigger_update:
+            self.update_model(True)
 
     def parameters_changed(self):
-        self.posterior, self._log_marginal_likelihood, self.grad_dict = \
-        self.inference_method.inference(self.kern, self.X, self.Z, self.likelihood,
-                                        self.Y_normalized, Y_metadata=self.Y_metadata,
-                                        mean_function=self.mean_function)
+        self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(
+            self.kern,
+            self.X,
+            self.Z,
+            self.likelihood,
+            self.Y_normalized,
+            Y_metadata=self.Y_metadata,
+            mean_function=self.mean_function,
+        )
         self._update_gradients()
 
     def _update_gradients(self):
-        self.likelihood.update_gradients(self.grad_dict['dL_dthetaL'])
+        self.likelihood.update_gradients(self.grad_dict["dL_dthetaL"])
         if self.mean_function is not None:
-            self.mean_function.update_gradients(self.grad_dict['dL_dm'], self.X)
+            self.mean_function.update_gradients(self.grad_dict["dL_dm"], self.X)
 
         if isinstance(self.X, VariationalPosterior):
-            #gradients wrt kernel
-            dL_dKmm = self.grad_dict['dL_dKmm']
+            # gradients wrt kernel
+            dL_dKmm = self.grad_dict["dL_dKmm"]
             self.kern.update_gradients_full(dL_dKmm, self.Z, None)
             kerngrad = self.kern.gradient.copy()
-            self.kern.update_gradients_expectations(variational_posterior=self.X,
-                                                    Z=self.Z,
-                                                    dL_dpsi0=self.grad_dict['dL_dpsi0'],
-                                                    dL_dpsi1=self.grad_dict['dL_dpsi1'],
-                                                    dL_dpsi2=self.grad_dict['dL_dpsi2'])
+            self.kern.update_gradients_expectations(
+                variational_posterior=self.X,
+                Z=self.Z,
+                dL_dpsi0=self.grad_dict["dL_dpsi0"],
+                dL_dpsi1=self.grad_dict["dL_dpsi1"],
+                dL_dpsi2=self.grad_dict["dL_dpsi2"],
+            )
             self.kern.gradient += kerngrad
 
-            #gradients wrt Z
+            # gradients wrt Z
             self.Z.gradient = self.kern.gradients_X(dL_dKmm, self.Z)
             self.Z.gradient += self.kern.gradients_Z_expectations(
-                               self.grad_dict['dL_dpsi0'],
-                               self.grad_dict['dL_dpsi1'],
-                               self.grad_dict['dL_dpsi2'],
-                               Z=self.Z,
-                               variational_posterior=self.X)
+                self.grad_dict["dL_dpsi0"],
+                self.grad_dict["dL_dpsi1"],
+                self.grad_dict["dL_dpsi2"],
+                Z=self.Z,
+                variational_posterior=self.X,
+            )
         else:
-            #gradients wrt kernel
-            self.kern.update_gradients_diag(self.grad_dict['dL_dKdiag'], self.X)
+            # gradients wrt kernel
+            self.kern.update_gradients_diag(self.grad_dict["dL_dKdiag"], self.X)
             kerngrad = self.kern.gradient.copy()
-            self.kern.update_gradients_full(self.grad_dict['dL_dKnm'], self.X, self.Z)
+            self.kern.update_gradients_full(self.grad_dict["dL_dKnm"], self.X, self.Z)
             kerngrad += self.kern.gradient
-            self.kern.update_gradients_full(self.grad_dict['dL_dKmm'], self.Z, None)
+            self.kern.update_gradients_full(self.grad_dict["dL_dKmm"], self.Z, None)
             self.kern.gradient += kerngrad
-            #gradients wrt Z
-            self.Z.gradient = self.kern.gradients_X(self.grad_dict['dL_dKmm'], self.Z)
-            self.Z.gradient += self.kern.gradients_X(self.grad_dict['dL_dKnm'].T, self.Z, self.X)
+            # gradients wrt Z
+            self.Z.gradient = self.kern.gradients_X(self.grad_dict["dL_dKmm"], self.Z)
+            self.Z.gradient += self.kern.gradients_X(self.grad_dict["dL_dKnm"].T, self.Z, self.X)
         self._Zgrad = self.Z.gradient.copy()
 
     def to_dict(self, save_data=True):

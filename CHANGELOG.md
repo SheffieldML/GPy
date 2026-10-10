@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* add `to_dict` / `from_dict` for `PeriodicExponential`, `PeriodicMatern32` and `PeriodicMatern52`, and persist `Coregionalize.rank` so multi-rank coregionalization round-trips (idea from #976)
 * add CIP-0005 Phase 1 Ruff tooling: narrow `ruff check` config, optional pre-commit hooks, and a non-blocking CI lint job (does not enforce format or widen rules yet)
 * implement `Symmetric.gradients_X_diag` consistent with `Kdiag` (missing method identified in #1002; cross-term gradients included)
 * use `link_parameter` in leftover `splitKern` / `TruncLinear` kernels after the paramz rename (#978)

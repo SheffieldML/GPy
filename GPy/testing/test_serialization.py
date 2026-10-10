@@ -55,6 +55,37 @@ class TestSerialization:
                 np.array(kk.active_dims), np.array(kk_r.active_dims)
             )
 
+    def test_serialize_deserialize_periodic_kernels(self):
+        """Periodic* kernels and Coregionalize rank round-trip (#976)."""
+        for cls in (
+            GPy.kern.PeriodicExponential,
+            GPy.kern.PeriodicMatern32,
+            GPy.kern.PeriodicMatern52,
+        ):
+            k = cls(
+                input_dim=1,
+                variance=1.5,
+                lengthscale=0.7,
+                period=np.pi,
+                n_freq=4,
+                lower=0.0,
+                upper=2 * np.pi,
+            )
+            k_r = GPy.kern.Kern.from_dict(k.to_dict())
+            assert type(k_r) is cls
+            np.testing.assert_allclose(k[:], k_r[:])
+            assert k_r.n_freq == 4
+            assert k_r.lower == 0.0
+            assert k_r.upper == 2 * np.pi
+            X = np.linspace(0, 2 * np.pi, 5)[:, None]
+            np.testing.assert_allclose(k.K(X), k_r.K(X))
+
+        coreg = GPy.kern.Coregionalize(input_dim=1, output_dim=3, rank=2)
+        coreg_r = GPy.kern.Kern.from_dict(coreg.to_dict())
+        assert coreg_r.rank == 2
+        np.testing.assert_allclose(coreg.W, coreg_r.W)
+        np.testing.assert_allclose(coreg.kappa, coreg_r.kappa)
+
     def test_serialize_deserialize_mappings(self):
         m1 = GPy.mappings.Identity(3, 2)
         m2 = GPy.mappings.Constant(3, 2, 1)

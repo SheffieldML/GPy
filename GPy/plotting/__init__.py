@@ -141,8 +141,13 @@ def plotting_library():
 
 def show(figure, **kwargs):
     """
-    Show the specific plotting library figure, returned by
-    add_to_canvas().
+    Show / draw what ``plot()`` / ``add_to_canvas()`` returned.
+
+    For the matplotlib backend, *figure* may be:
+
+    - a matplotlib ``Axes`` or ``Figure``, or
+    - the plots ``dict`` returned by ``add_to_canvas()`` / ``model.plot()``
+      (artists are used to resolve the underlying figure; see #920).
 
     kwargs are the plotting library specific options
     for showing/drawing a figure.

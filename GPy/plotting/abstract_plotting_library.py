@@ -115,6 +115,9 @@ class AbstractPlottingLibrary(object):
     def show_canvas(self, canvas, **kwargs):
         """
         Draw/Plot the canvas given.
+
+        Backends may accept either their native canvas object or the plots
+        structure returned by :meth:`add_to_canvas` (matplotlib accepts both).
         """
         raise NotImplementedError
 

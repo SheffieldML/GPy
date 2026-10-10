@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_plotting-return-api
 title: Clarify plotting return API (plot / add_to_canvas / show)
-status: Proposed
+status: Done
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -30,17 +30,25 @@ plots, not a matplotlib `Figure`.
 [#1153](https://github.com/SheffieldML/GPy/pull/1153) fixed matplotlib ≥ 3.4
 `_process_unit_info` only — it does not change return types.
 
-Open-issue triage (2026-10-10): design + tests; do not merge #989 without an
-API note.
+## Design note (chosen: Option B)
+
+Keep `add_to_canvas` / `model.plot()` returning the **plots dict** (callers may
+need artists). Teach matplotlib `show_canvas` / `GPy.plotting.show` to accept:
+
+1. matplotlib `Axes`
+2. matplotlib `Figure`
+3. the plots `dict` (resolve `.axes.figure` from nested artists)
+
+Do **not** change the return type of `add_to_canvas` to `ax` (#989 approach), to
+avoid breaking code that uses the plots dict.
 
 ## Acceptance Criteria
 
-- [ ] Short design note in this task (or CIP update): return type of `plot` /
-      `add_to_canvas` / `show` for matplotlib backend
-- [ ] Either restore Figure-compatible behaviour or document dict return and fix
-      tutorials / `show`
-- [ ] Tests for the chosen API
-- [ ] Disposition on #989 (rebase vs re-implement vs close) and #920
+- [x] Short design note: return type of `plot` / `add_to_canvas` stays dict;
+      `show` resolves Figure from dict/Axes/Figure
+- [x] `show` accepts dict return (tutorials / #920)
+- [x] Tests for the chosen API (`TestShowAcceptsPlotDict`)
+- [x] Disposition: close #989 as superseded; close #920 when fix lands
 - [ ] Optional: Plotly deprecation path for [#968](https://github.com/SheffieldML/GPy/issues/968)
       as a follow-up checklist item
 
@@ -54,7 +62,7 @@ API note.
 
 - CIP: 0004
 - Issues: #920, #968 (follow-up)
-- PRs: #989 (source idea); #1153 (orthogonal matplotlib fix)
+- PRs: #989 (source idea, superseded); #1153 (orthogonal matplotlib fix)
 - Open-issue triage: 2026-10-10
 
 ## Progress Updates
@@ -62,3 +70,6 @@ API note.
 ### 2026-10-10
 
 Task created from open-issue triage / CIP-0004 leftover.
+
+Option B implemented: `MatplotlibPlots._resolve_figure` +
+`TestShowAcceptsPlotDict`; close #989/#920 with the landing PR.

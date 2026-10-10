@@ -115,9 +115,72 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             ax.figure.suptitle(title)
         return plots
 
-    def show_canvas(self, ax, **kwargs):
-        ax.figure.canvas.draw()
-        return ax.figure
+    @staticmethod
+    def _iter_plot_items(plots):
+        """Yield artists (and nested dict/list values) from an add_to_canvas plots dict."""
+        for value in plots.values():
+            if isinstance(value, dict):
+                for item in MatplotlibPlots._iter_plot_items(value):
+                    yield item
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    yield item
+            else:
+                yield value
+
+    def _resolve_figure(self, canvas):
+        """
+        Resolve a matplotlib Figure from what plot()/add_to_canvas()/show may receive.
+
+        Accepted forms:
+        - matplotlib Figure
+        - matplotlib Axes (or anything with a .figure that is a Figure)
+        - plots dict returned by add_to_canvas (artists → .axes.figure)
+        """
+        from matplotlib.axes import Axes
+        from matplotlib.figure import Figure
+
+        if isinstance(canvas, Figure):
+            return canvas
+        if isinstance(canvas, Axes):
+            return canvas.figure
+        figure = getattr(canvas, "figure", None)
+        if isinstance(figure, Figure):
+            return figure
+        if isinstance(canvas, dict):
+            for item in self._iter_plot_items(canvas):
+                if item is None:
+                    continue
+                if isinstance(item, Figure):
+                    return item
+                if isinstance(item, Axes):
+                    return item.figure
+                ax = getattr(item, "axes", None)
+                if isinstance(ax, Axes):
+                    return ax.figure
+                fig = getattr(item, "figure", None)
+                if isinstance(fig, Figure):
+                    return fig
+            raise TypeError(
+                "Could not resolve a matplotlib Figure from the plots dict "
+                "returned by plot()/add_to_canvas(); expected artists with "
+                ".axes or nested Axes/Figure values."
+            )
+        raise TypeError(
+            "show_canvas expected a matplotlib Axes, Figure, or plots dict "
+            "from plot()/add_to_canvas(); got {!r}".format(type(canvas).__name__)
+        )
+
+    def show_canvas(self, canvas, **kwargs):
+        """
+        Draw the figure for *canvas*.
+
+        *canvas* may be a matplotlib Axes, a Figure, or the plots dict
+        returned by :meth:`add_to_canvas` / ``model.plot()`` (see #920).
+        """
+        fig = self._resolve_figure(canvas)
+        fig.canvas.draw()
+        return fig
 
     def scatter(
         self,

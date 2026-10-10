@@ -1248,3 +1248,24 @@ class TestStudentTPredictive:
         np.testing.assert_allclose(mean, mu)
         np.testing.assert_allclose(variance, var + 0.1 * 5 / 3, rtol=1e-6)
 
+    def test_full_cov_observation_psd(self):
+        # #993: full observation cov must stay PSD (identity link)
+        np.random.seed(fixed_seed)
+        X = np.linspace(0, 1, 15)[:, None]
+        Y = np.sin(2 * np.pi * X) + 0.2 * np.random.randn(15, 1)
+        model = GPy.core.GP(
+            X,
+            Y,
+            GPy.kern.RBF(1),
+            GPy.likelihoods.StudentT(deg_free=5, sigma2=0.5),
+            inference_method=GPy.inference.latent_function_inference.Laplace(),
+        )
+        Xtest = np.linspace(0, 1, 8)[:, None]
+        mu_f, cov_f = model.predict(Xtest, full_cov=True, include_likelihood=False)
+        mean, cov = model.predict(Xtest, full_cov=True, include_likelihood=True)
+        np.testing.assert_allclose(mean, mu_f)
+        noise = 0.5 * 5 / 3
+        np.testing.assert_allclose(cov, cov_f + np.eye(8) * noise, rtol=1e-6)
+        eigs = np.linalg.eigvalsh(0.5 * (cov + cov.T))
+        assert eigs.min() > -1e-10
+

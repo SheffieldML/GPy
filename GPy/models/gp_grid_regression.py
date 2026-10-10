@@ -7,6 +7,7 @@ from ..core import GpGrid
 from .. import likelihoods
 from .. import kern
 
+
 class GPRegressionGrid(GpGrid):
     """
     Gaussian Process model for grid inputs using Kronecker products
@@ -29,8 +30,9 @@ class GPRegressionGrid(GpGrid):
     def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None):
 
         if kernel is None:
-            kernel = kern.RBF(1)   # no other kernels implemented so far
+            kernel = kern.RBF(1)  # no other kernels implemented so far
 
         likelihood = likelihoods.Gaussian()
-        super(GPRegressionGrid, self).__init__(X, Y, kernel, likelihood, name='GP Grid regression', Y_metadata=Y_metadata, normalizer=normalizer)
-
+        super(GPRegressionGrid, self).__init__(
+            X, Y, kernel, likelihood, name="GP Grid regression", Y_metadata=Y_metadata, normalizer=normalizer
+        )

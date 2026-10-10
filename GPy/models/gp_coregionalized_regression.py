@@ -7,6 +7,7 @@ from .. import likelihoods
 from .. import kern
 from .. import util
 
+
 class GPCoregionalizedRegression(GP):
     """
     Gaussian Process model for correlated multi-output regression.
@@ -35,20 +36,33 @@ class GPCoregionalizedRegression(GP):
         ``Standardize``. Note this standardizes the stacked multi-output ``Y``
         as a single column (all outputs together).
     """
-    def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='coreg', normalizer=False):
 
-        #Input and Output
-        X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)
+    def __init__(
+        self,
+        X_list,
+        Y_list,
+        kernel=None,
+        likelihoods_list=None,
+        name="GPCR",
+        W_rank=1,
+        kernel_name="coreg",
+        normalizer=False,
+    ):
+
+        # Input and Output
+        X, Y, self.output_index = util.multioutput.build_XY(X_list, Y_list)
         Ny = len(Y_list)
 
-        #Kernel
+        # Kernel
         if kernel is None:
-            kernel = kern.RBF(X.shape[1]-1)
-            
-            kernel = util.multioutput.ICM(input_dim=X.shape[1]-1, num_outputs=Ny, kernel=kernel, W_rank=W_rank,name=kernel_name)
+            kernel = kern.RBF(X.shape[1] - 1)
 
-        #Likelihood
-        likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)
+            kernel = util.multioutput.ICM(
+                input_dim=X.shape[1] - 1, num_outputs=Ny, kernel=kernel, W_rank=W_rank, name=kernel_name
+            )
+
+        # Likelihood
+        likelihood = util.multioutput.build_likelihood(Y_list, self.output_index, likelihoods_list)
 
         super(GPCoregionalizedRegression, self).__init__(
             X,
@@ -66,9 +80,7 @@ class GPCoregionalizedRegression(GP):
         ``X`` and ``Y`` may be stacked arrays (as stored on the model) or
         lists of per-output arrays, matching the constructor.
         """
-        X, Y, self.output_index = util.multioutput.coerce_coregionalized_XY(
-            X, Y, self.output_index
-        )
+        X, Y, self.output_index = util.multioutput.coerce_coregionalized_XY(X, Y, self.output_index)
         if X is not None and Y is None and X.shape[0] != self.Y.shape[0]:
             raise ValueError(
                 "set_XY with X only requires the same number of rows as current Y; "
@@ -113,9 +125,7 @@ class GPCoregionalizedRegression(GP):
             Xnew, full_cov=full_cov, Y_metadata=Y_metadata, kern=kern
         )
 
-    def predict_quantiles(
-        self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None
-    ):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         X, Y_metadata = util.multioutput.prepare_Xnew(X, Y_metadata)
         return super(GPCoregionalizedRegression, self).predict_quantiles(
             X, quantiles=quantiles, Y_metadata=Y_metadata, kern=kern, likelihood=likelihood

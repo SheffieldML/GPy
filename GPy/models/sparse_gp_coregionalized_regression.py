@@ -69,22 +69,16 @@ class SparseGPCoregionalizedRegression(SparseGP):
             )
 
         # Likelihood
-        likelihood = util.multioutput.build_likelihood(
-            Y_list, self.output_index, likelihoods_list
-        )
+        likelihood = util.multioutput.build_likelihood(Y_list, self.output_index, likelihoods_list)
 
         # Inducing inputs list
         if len(Z_list):
-            assert (
-                len(Z_list) == Ny
-            ), "Number of outputs do not match length of inducing inputs list."
+            assert len(Z_list) == Ny, "Number of outputs do not match length of inducing inputs list."
         else:
             if isinstance(num_inducing, int):
                 num_inducing = [num_inducing] * Ny
             num_inducing = np.asarray(num_inducing)
-            assert (
-                num_inducing.size == Ny
-            ), "Number of outputs do not match length of inducing inputs list."
+            assert num_inducing.size == Ny, "Number of outputs do not match length of inducing inputs list."
             for ni, Xi in zip(num_inducing, X_list):
                 i = np.random.permutation(Xi.shape[0])[:ni]
                 Z_list.append(Xi[i].copy())
@@ -110,9 +104,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
         ``X`` and ``Y`` may be stacked arrays (as stored on the model) or
         lists of per-output arrays, matching the constructor.
         """
-        X, Y, self.output_index = util.multioutput.coerce_coregionalized_XY(
-            X, Y, self.output_index
-        )
+        X, Y, self.output_index = util.multioutput.coerce_coregionalized_XY(X, Y, self.output_index)
         if X is not None and Y is None and X.shape[0] != self.Y.shape[0]:
             raise ValueError(
                 "set_XY with X only requires the same number of rows as current Y; "
@@ -154,9 +146,7 @@ class SparseGPCoregionalizedRegression(SparseGP):
             Xnew, full_cov=full_cov, Y_metadata=Y_metadata, kern=kern
         )
 
-    def predict_quantiles(
-        self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None
-    ):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         X, Y_metadata = util.multioutput.prepare_Xnew(X, Y_metadata)
         return super(SparseGPCoregionalizedRegression, self).predict_quantiles(
             X, quantiles=quantiles, Y_metadata=Y_metadata, kern=kern, likelihood=likelihood

@@ -6,6 +6,7 @@ from ..core import Model
 from paramz import ObsAr
 from .. import likelihoods
 
+
 class GPKroneckerGaussianRegression(Model):
     """
     Kronecker GP regression
@@ -25,7 +26,8 @@ class GPKroneckerGaussianRegression(Model):
     .. [stegle_et_al_2011] Stegle, O.; Lippert, C.; Mooij, J.M.; Lawrence, N.D.; Borgwardt, K.:Efficient inference in matrix-variate Gaussian models with \\iid observation noise. In: Advances in Neural Information Processing Systems, 2011, Pages 630-638
 
     """
-    def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
+
+    def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1.0, name="KGPR"):
         super(GPKroneckerGaussianRegression, self).__init__(name=name)
 
         # accept the construction arguments
@@ -62,32 +64,34 @@ class GPKroneckerGaussianRegression(Model):
         Y_ = U1.T.dot(self.Y).dot(U2)
 
         # store these quantities: needed for prediction
-        Wi = 1./W
-        Ytilde = Y_.flatten(order='F')*Wi
+        Wi = 1.0 / W
+        Ytilde = Y_.flatten(order="F") * Wi
 
-        self._log_marginal_likelihood = -0.5*self.num_data1*self.num_data2*np.log(2*np.pi)\
-                                        -0.5*np.sum(np.log(W))\
-                                        -0.5*np.dot(Y_.flatten(order='F'), Ytilde)
+        self._log_marginal_likelihood = (
+            -0.5 * self.num_data1 * self.num_data2 * np.log(2 * np.pi)
+            - 0.5 * np.sum(np.log(W))
+            - 0.5 * np.dot(Y_.flatten(order="F"), Ytilde)
+        )
 
         # gradients for data fit part
-        Yt_reshaped = Ytilde.reshape(N1, N2, order='F')
+        Yt_reshaped = Ytilde.reshape(N1, N2, order="F")
         tmp = U1.dot(Yt_reshaped)
-        dL_dK1 = .5*(tmp*S2).dot(tmp.T)
+        dL_dK1 = 0.5 * (tmp * S2).dot(tmp.T)
         tmp = U2.dot(Yt_reshaped.T)
-        dL_dK2 = .5*(tmp*S1).dot(tmp.T)
+        dL_dK2 = 0.5 * (tmp * S1).dot(tmp.T)
 
         # gradients for logdet
-        Wi_reshaped = Wi.reshape(N1, N2, order='F')
+        Wi_reshaped = Wi.reshape(N1, N2, order="F")
         tmp = np.dot(Wi_reshaped, S2)
-        dL_dK1 += -0.5*(U1*tmp).dot(U1.T)
+        dL_dK1 += -0.5 * (U1 * tmp).dot(U1.T)
         tmp = np.dot(Wi_reshaped.T, S1)
-        dL_dK2 += -0.5*(U2*tmp).dot(U2.T)
+        dL_dK2 += -0.5 * (U2 * tmp).dot(U2.T)
 
         self.kern1.update_gradients_full(dL_dK1, self.X1)
         self.kern2.update_gradients_full(dL_dK2, self.X2)
 
         # gradients for noise variance
-        dL_dsigma2 = -0.5*Wi.sum() + 0.5*np.sum(np.square(Ytilde))
+        dL_dsigma2 = -0.5 * Wi.sum() + 0.5 * np.sum(np.square(Ytilde))
         self.likelihood.variance.gradient = dL_dsigma2
 
         # store these quantities for prediction:
@@ -108,10 +112,10 @@ class GPKroneckerGaussianRegression(Model):
         k2xf = self.kern2.K(X2new, self.X2)
         A = k1xf.dot(self.U1)
         B = k2xf.dot(self.U2)
-        mu = A.dot(self.Ytilde.reshape(self.num_data1, self.num_data2, order='F')).dot(B.T).flatten(order='F')
+        mu = A.dot(self.Ytilde.reshape(self.num_data1, self.num_data2, order="F")).dot(B.T).flatten(order="F")
         k1xx = self.kern1.Kdiag(X1new)
         k2xx = self.kern2.Kdiag(X2new)
         BA = np.kron(B, A)
-        var = np.kron(k2xx, k1xx) - np.sum(BA**2*self.Wi, 1) + self.likelihood.variance
+        var = np.kron(k2xx, k1xx) - np.sum(BA**2 * self.Wi, 1) + self.likelihood.variance
 
         return mu[:, None], var[:, None]

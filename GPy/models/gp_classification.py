@@ -7,6 +7,7 @@ from .. import kern
 import numpy as np
 from ..inference.latent_function_inference.expectation_propagation import EP
 
+
 class GPClassification(GP):
     """
     Gaussian Process classification
@@ -24,8 +25,17 @@ class GPClassification(GP):
 
     """
 
-    def __init__(self, X, Y, kernel=None,Y_metadata=None, mean_function=None, inference_method=None,
-                 likelihood=None, normalizer=False):
+    def __init__(
+        self,
+        X,
+        Y,
+        kernel=None,
+        Y_metadata=None,
+        mean_function=None,
+        inference_method=None,
+        likelihood=None,
+        normalizer=False,
+    ):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
 
@@ -35,25 +45,42 @@ class GPClassification(GP):
         if inference_method is None:
             inference_method = EP()
 
-        super(GPClassification, self).__init__(X=X, Y=Y,  kernel=kernel, likelihood=likelihood, inference_method=inference_method,
-                                               mean_function=mean_function, name='gp_classification', normalizer=normalizer)
+        super(GPClassification, self).__init__(
+            X=X,
+            Y=Y,
+            kernel=kernel,
+            likelihood=likelihood,
+            inference_method=inference_method,
+            mean_function=mean_function,
+            name="gp_classification",
+            normalizer=normalizer,
+        )
 
     @staticmethod
     def from_gp(gp):
         from copy import deepcopy
+
         gp = deepcopy(gp)
-        return GPClassification(gp.X, gp.Y, kernel=gp.kern, Y_metadata=gp.Y_metadata,
-                                mean_function=gp.mean_function, inference_method=gp.inference_method,
-                                likelihood=gp.likelihood, normalizer=gp.normalizer)
+        return GPClassification(
+            gp.X,
+            gp.Y,
+            kernel=gp.kern,
+            Y_metadata=gp.Y_metadata,
+            mean_function=gp.mean_function,
+            inference_method=gp.inference_method,
+            likelihood=gp.likelihood,
+            normalizer=gp.normalizer,
+        )
 
     def to_dict(self, save_data=True):
-        model_dict = super(GPClassification,self).to_dict(save_data)
+        model_dict = super(GPClassification, self).to_dict(save_data)
         model_dict["class"] = "GPy.models.GPClassification"
         return model_dict
 
     @staticmethod
     def from_dict(input_dict, data=None):
         import GPy
+
         m = GPy.core.model.Model.from_dict(input_dict, data)
         return GPClassification.from_gp(m)
 
@@ -63,5 +90,5 @@ class GPClassification(GP):
     @staticmethod
     def _build_from_input_dict(input_dict, data=None):
         input_dict = GPClassification._format_input_dict(input_dict, data)
-        input_dict.pop('name', None)  # Name parameter not required by GPClassification
+        input_dict.pop("name", None)  # Name parameter not required by GPClassification
         return GPClassification(**input_dict)

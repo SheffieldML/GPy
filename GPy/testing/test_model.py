@@ -1672,6 +1672,26 @@ class TestGradient:
         m_mr.randomize()
         assert m_mr.checkgrad()
 
+    def test_multiout_regression_default_inducing_caps_Mr(self):
+        """Mr > D must not leave qU_var_r_diag at the wrong size (#733)."""
+        import warnings
+
+        self.setup_method()
+        np.random.seed(0)
+        X = np.random.randn(20, 2)
+        Y = np.random.randn(20, 4)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            m = GPy.models.GPMultioutRegression(
+                X, Y, Xr_dim=3, num_inducing=(10, 10), init="rand"
+            )
+        assert any("#733" in str(w.message) for w in caught)
+        assert m.Z_row.shape[0] == 4
+        assert m.qU_var_r_W.shape[0] == 4
+        assert m.qU_var_r_diag.shape[0] == 4
+        assert m.qU_mean.shape == (m.Z.shape[0], 4)
+        assert np.isfinite(m.log_likelihood())
+
     def test_multiout_regression_md(self):
         import GPy
 

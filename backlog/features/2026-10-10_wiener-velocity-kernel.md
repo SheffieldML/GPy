@@ -1,7 +1,7 @@
 ---
 id: 2026-10-10_wiener-velocity-kernel
 title: Land Wiener Velocity kernel from #1003
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-10'
 last_updated: '2026-10-10'
@@ -36,8 +36,8 @@ rebase onto current `devel` and relocate the gradient test into
 - [x] `GPy.kern.WienerVelocity` exported from `GPy.kern`
 - [x] `K` / `Kdiag` / `update_gradients_full` + `to_dict` / `from_dict`
 - [x] Gradient check in `test_kernel.py` (`test_WienerVelocity`)
-- [ ] CI green on #1003 after rebase
-- [ ] CHANGELOG entry; credit @Duncan10
+- [x] CI green on #1003 after rebase
+- [x] CHANGELOG entry; credit @Duncan10
 
 ## Implementation Notes
 
@@ -58,3 +58,4 @@ rebase onto current `devel` and relocate the gradient test into
 
 - Assessed #1003; backlog created; rebasing original PR onto `devel` with
   test relocated to `test_kernel.py`.
+- Rebased in place; CI green; merged #1003.

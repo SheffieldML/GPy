@@ -1,12 +1,13 @@
 ---
 id: 2026-10-10_optimize-restarts-ep-state
 title: Diagnose optimize_restarts worse than optimize under EP
-status: Proposed
+status: Ready
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
 category: bugs
-related_cips: []
+related_cips:
+- '0007'
 owner: Neil Lawrence
 contributor: olamarre (@olamarre)
 dependencies: []
@@ -58,3 +59,6 @@ Open-issue triage (2026-10-10): high-priority backlog bug.
 ### 2026-10-10
 
 Task created from open-issue triage.
+
+- CIP-0007 High-backlog order: **next code fix after links** (Student-t #993
+  already merged as #1160). Marked Ready.

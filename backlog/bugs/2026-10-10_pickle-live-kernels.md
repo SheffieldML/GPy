@@ -1,13 +1,14 @@
 ---
 id: 2026-10-10_pickle-live-kernels
 title: Make used kernels and models pickleable for multiprocessing
-status: Proposed
+status: Ready
 priority: High
 created: '2026-10-10'
 last_updated: '2026-10-10'
 category: bugs
 related_cips:
 - '0006'
+- '0007'
 owner: Neil Lawrence
 dependencies: []
 tags:
@@ -62,3 +63,6 @@ by CIP-0006.
 ### 2026-10-10
 
 Task created from open-issue triage against October correctness batch.
+
+- CIP-0007 High-backlog order: **after** optimize_restarts (#1109) — larger
+  surface (observers / Cython / multiprocessing). Marked Ready.

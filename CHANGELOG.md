@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* fix README and packaging project URLs: https homepage, nbviewer.org tutorials, Read the Docs documentation links, and a stable PyPI `url` pointing at the GitHub repo (#899, #979)
 * add a 1D Wiener Velocity kernel (once-integrated Brownian motion; Solin 2016) with serialization and gradient checks (#1003, @Duncan10)
 * add `to_dict` / `from_dict` for `PeriodicExponential`, `PeriodicMatern32` and `PeriodicMatern52`, and persist `Coregionalize.rank` so multi-rank coregionalization round-trips (idea from #976)
 * add CIP-0005 Phase 1 Ruff tooling: narrow `ruff check` config, optional pre-commit hooks, and a non-blocking CI lint job (does not enforce format or widen rules yet)

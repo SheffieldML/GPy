@@ -163,7 +163,7 @@ setup(
     license="BSD 3-clause",
     python_requires=">=3.9",
     keywords="machine-learning gaussian-processes kernels",
-    url="https://sheffieldml.github.io/GPy/",
+    url="https://github.com/SheffieldML/GPy",
     download_url="https://github.com/SheffieldML/GPy/archive/refs/heads/devel.zip",
     ext_modules=ext_mods,
     packages=[
@@ -239,6 +239,9 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     project_urls={
+        "Homepage": "https://sheffieldml.github.io/GPy/",
+        "Documentation": "https://gpy.readthedocs.io/en/deploy/",
+        "Tutorials": "https://nbviewer.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb",
         "Source Code": "https://github.com/SheffieldML/GPy",
         "Bug Tracker": "https://github.com/SheffieldML/GPy/issues",
     },

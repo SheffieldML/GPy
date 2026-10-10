@@ -27,8 +27,11 @@ class GPCoregionalizedRegression(GP):
     :type W_rank: integer
     :param kernel_name: name of the kernel
     :type kernel_name: string
+    :param normalizer: normalize ``Y``. ``False`` disables; ``True`` uses
+        ``Standardize``. Note this standardizes the stacked multi-output ``Y``
+        as a single column (all outputs together).
     """
-    def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='coreg'):
+    def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='coreg', normalizer=False):
 
         #Input and Output
         X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)
@@ -43,4 +46,36 @@ class GPCoregionalizedRegression(GP):
         #Likelihood
         likelihood = util.multioutput.build_likelihood(Y_list,self.output_index,likelihoods_list)
 
-        super(GPCoregionalizedRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata={'output_index':self.output_index})
+        super(GPCoregionalizedRegression, self).__init__(
+            X,
+            Y,
+            kernel,
+            likelihood,
+            Y_metadata={"output_index": self.output_index},
+            normalizer=normalizer,
+        )
+
+    def set_XY(self, X=None, Y=None):
+        """
+        Set the input / output data of the model.
+
+        ``X`` and ``Y`` may be stacked arrays (as stored on the model) or
+        lists of per-output arrays, matching the constructor.
+        """
+        X, Y, self.output_index = util.multioutput.coerce_coregionalized_XY(
+            X, Y, self.output_index
+        )
+        if X is not None and Y is None and X.shape[0] != self.Y.shape[0]:
+            raise ValueError(
+                "set_XY with X only requires the same number of rows as current Y; "
+                "pass Y as well when changing the number of observations"
+            )
+        if Y is not None and X is None and Y.shape[0] != self.X.shape[0]:
+            raise ValueError(
+                "set_XY with Y only requires the same number of rows as current X; "
+                "pass X as well when changing the number of observations"
+            )
+        if self.Y_metadata is None:
+            self.Y_metadata = {}
+        self.Y_metadata["output_index"] = self.output_index
+        super(GPCoregionalizedRegression, self).set_XY(X=X, Y=Y)

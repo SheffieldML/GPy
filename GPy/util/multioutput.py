@@ -67,6 +67,34 @@ def build_XY(input_list, output_list=None, index=None):
     return X, Y, I[:, None]  # slices
 
 
+def coerce_coregionalized_XY(X, Y, output_index=None):
+    """
+    Coerce list-of-arrays or stacked arrays for coregionalized ``set_XY``.
+
+    Returns ``(X, Y, output_index)``. Either ``X`` or ``Y`` may be ``None``
+    (leave that side unchanged). Mixing a list with a non-list for the
+    arguments being updated raises ``TypeError``.
+    """
+    x_list = isinstance(X, list)
+    y_list = isinstance(Y, list)
+    if x_list and y_list:
+        return build_XY(X, Y)
+    if x_list and Y is not None and not y_list:
+        raise TypeError("If X is a list, Y must be a list or None")
+    if y_list and X is not None and not x_list:
+        raise TypeError("If Y is a list, X must be a list or None")
+    if x_list:
+        X, _, output_index = build_XY(X, None)
+        return X, Y, output_index
+    if y_list:
+        dummy = [np.zeros((y.shape[0], 1)) for y in Y]
+        _, Y, output_index = build_XY(dummy, Y)
+        return X, Y, output_index
+    if X is not None:
+        output_index = np.asarray(X[:, -1:], dtype=int)
+    return X, Y, output_index
+
+
 def build_likelihood(Y_list, noise_index, likelihoods_list=None):
     Ny = len(Y_list)
     if likelihoods_list is None:

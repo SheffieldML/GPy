@@ -4,6 +4,7 @@
 """
 Gaussian Processes regression examples
 """
+
 MPL_AVAILABLE = True
 try:
     import matplotlib.pyplot as plt
@@ -72,7 +73,7 @@ def coregionalization_toy(optimize=True, plot=True):
 
 def coregionalization_sparse(optimize=True, plot=True):
     """A simple demonstration of coregionalization on two sinusoidal
-    functions using sparse approximations. """
+    functions using sparse approximations."""
     # build a design matrix with a column of integers indicating the output
     X1 = np.random.rand(50, 1) * 8
     X2 = np.random.rand(30, 1) * 5
@@ -99,7 +100,9 @@ def coregionalization_sparse(optimize=True, plot=True):
             Y_metadata={"output_index": 1},
             ax=plt.gca(),
         )
-        plt.ylim(-3,)
+        plt.ylim(
+            -3,
+        )
 
     return m
 
@@ -127,9 +130,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
     start = 0
     for Xpart, index in zip(data["X"], range(len(data["X"]))):
         end = start + Xpart.shape[0]
-        t[start:end, :] = np.hstack(
-            (Xpart[:, 0:1], index * np.ones((Xpart.shape[0], 1)))
-        )
+        t[start:end, :] = np.hstack((Xpart[:, 0:1], index * np.ones((Xpart.shape[0], 1))))
         Y[start:end, :] = Xpart[:, 1:3]
 
     num_inducing = 200
@@ -142,7 +143,7 @@ def epomeo_gpx(max_iters=200, optimize=True, plot=True):
 
     k1 = GPy.kern.RBF(1)
     k2 = GPy.kern.Coregionalize(output_dim=5, rank=5)
-    k = k1 ** k2
+    k = k1**k2
 
     m = GPy.models.SparseGPRegression(t, Y, kernel=k, Z=Z, normalize_Y=True)
     m.constrain_fixed(".*variance", 1.0)
@@ -177,17 +178,13 @@ def multiple_optima(
     except ImportError:
         print("pods unavailable, see https://github.com/sods/ods for example datasets")
         return
-    data = pods.datasets.della_gatta_TRP63_gene_expression(
-        data_set="della_gatta", gene_number=gene_number
-    )
+    data = pods.datasets.della_gatta_TRP63_gene_expression(data_set="della_gatta", gene_number=gene_number)
     # data['Y'] = data['Y'][0::2, :]
     # data['X'] = data['X'][0::2, :]
 
     data["Y"] = data["Y"] - np.mean(data["Y"])
 
-    lls = GPy.examples.regression._contour_data(
-        data, length_scales, log_SNRs, GPy.kern.RBF
-    )
+    lls = GPy.examples.regression._contour_data(data, length_scales, log_SNRs, GPy.kern.RBF)
     if MPL_AVAILABLE and plot:
         plt.contour(length_scales, log_SNRs, np.exp(lls), 20, cmap=plt.cm.jet)
         ax = plt.gca()
@@ -206,9 +203,7 @@ def multiple_optima(
         # kern = GPy.kern.RBF(
         #     1, variance=np.random.exponential(1.), lengthscale=np.random.exponential(50.)
         # )
-        kern = GPy.kern.RBF(
-            1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50)
-        )
+        kern = GPy.kern.RBF(1, variance=np.random.uniform(1e-3, 1), lengthscale=np.random.uniform(5, 50))
 
         m = GPy.models.GPRegression(data["X"], data["Y"], kernel=kern)
         m.likelihood.variance = np.random.uniform(1e-3, 1)
@@ -258,7 +253,7 @@ def _contour_data(data, length_scales, log_SNRs, kernel_call=GPy.kern.RBF):
     kernel = kernel_call(1, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(data["X"], data["Y"], kernel=kernel)
     for log_SNR in log_SNRs:
-        SNR = 10.0 ** log_SNR
+        SNR = 10.0**log_SNR
         noise_var = total_var / (1.0 + SNR)
         signal_var = total_var - noise_var
         model.kern[".*variance"] = signal_var
@@ -319,7 +314,7 @@ def toy_rbf_1d(optimize=True, plot=True):
 
 def toy_rbf_1d_50(optimize=True, plot=True):
     """Run a simple demonstration of a standard Gaussian process fitting
-it to data sampled from an RBF covariance."""
+    it to data sampled from an RBF covariance."""
 
     try:
         import pods
@@ -352,9 +347,7 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     laplace_inf = GPy.inference.latent_function_inference.Laplace()
 
     # create simple GP Model
-    m = GPy.core.GP(
-        X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf
-    )
+    m = GPy.core.GP(X, Y, kernel=kern, likelihood=poisson_lik, inference_method=laplace_inf)
 
     if optimize:
         m.optimize(optimizer)
@@ -366,9 +359,7 @@ def toy_poisson_rbf_1d_laplace(optimize=True, plot=True):
     return m
 
 
-def toy_ARD(
-    max_iters=1000, kernel_type="linear", num_samples=300, D=4, optimize=True, plot=True
-):
+def toy_ARD(max_iters=1000, kernel_type="linear", num_samples=300, D=4, optimize=True, plot=True):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
@@ -407,9 +398,7 @@ def toy_ARD(
     return m
 
 
-def toy_ARD_sparse(
-    max_iters=1000, kernel_type="linear", num_samples=300, D=4, optimize=True, plot=True
-):
+def toy_ARD_sparse(max_iters=1000, kernel_type="linear", num_samples=300, D=4, optimize=True, plot=True):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
@@ -528,9 +517,7 @@ def sparse_GP_regression_1D(
     return m
 
 
-def sparse_GP_regression_2D(
-    num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True, nan=False
-):
+def sparse_GP_regression_2D(num_samples=400, num_inducing=50, max_iters=100, optimize=True, plot=True, nan=False):
     """Run a 2D example of a sparse GP regression."""
     np.random.seed(1234)
     X = np.random.uniform(-3.0, 3.0, (num_samples, 2))
@@ -660,12 +647,8 @@ def warped_gp_cubic_sine(max_iters=100, plot=True):
     warp_m = GPy.models.WarpedGP(X, Y, kernel=warp_k, warping_function=warp_f)
     warp_m[".*\\.d"].constrain_fixed(1.0)
     m = GPy.models.GPRegression(X, Y)
-    m.optimize_restarts(
-        parallel=False, robust=True, num_restarts=5, max_iters=max_iters
-    )
-    warp_m.optimize_restarts(
-        parallel=False, robust=True, num_restarts=5, max_iters=max_iters
-    )
+    m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
+    warp_m.optimize_restarts(parallel=False, robust=True, num_restarts=5, max_iters=max_iters)
     # m.optimize(max_iters=max_iters)
     # warp_m.optimize(max_iters=max_iters)
 
@@ -685,8 +668,8 @@ def warped_gp_cubic_sine(max_iters=100, plot=True):
 
 def multioutput_gp_with_derivative_observations(plot=True):
 
-    f = lambda x: np.sin(x) + 0.1 * (x - 2.0) ** 2 - 0.005 * x ** 3
-    fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x ** 2
+    f = lambda x: np.sin(x) + 0.1 * (x - 2.0) ** 2 - 0.005 * x**3
+    fd = lambda x: np.cos(x) + 0.2 * (x - 2.0) - 0.015 * x**2
     N = 10  # Number of observations
     M = 10  # Number of derivative observations
     Npred = 100  # Number of prediction points
@@ -708,8 +691,8 @@ def multioutput_gp_with_derivative_observations(plot=True):
     se_der = GPy.kern.DiffKern(se, 0)
 
     # Then
-    gauss = GPy.likelihoods.Gaussian(variance=sigma ** 2)
-    gauss_der = GPy.likelihoods.Gaussian(variance=sigma_der ** 2)
+    gauss = GPy.likelihoods.Gaussian(variance=sigma**2)
+    gauss_der = GPy.likelihoods.Gaussian(variance=sigma_der**2)
 
     # Then create the model, we give everything in lists, the order of the inputs indicates the order of the outputs
     # Now we have the regular observations first and derivative observations second, meaning that the kernels and
@@ -721,21 +704,17 @@ def multioutput_gp_with_derivative_observations(plot=True):
         likelihood_list=[gauss, gauss_der],
     )
 
-
     # Optimize the model
     m.optimize(messages=0, ipython_notebook=False)
 
     if MPL_AVAILABLE and plot:
-        def plot_gp_vs_real(
-            m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0, 11], ylim=[-1.5, 3]
-        ):
+
+        def plot_gp_vs_real(m, x, yreal, size_inputs, title, fixed_input=1, xlim=[0, 11], ylim=[-1.5, 3]):
             fig, ax = plt.subplots()
             ax.set_title(title)
             plt.plot(x, yreal, "r", label="Real function")
             rows = (
-                slice(0, size_inputs[0])
-                if fixed_input == 0
-                else slice(size_inputs[0], size_inputs[0] + size_inputs[1])
+                slice(0, size_inputs[0]) if fixed_input == 0 else slice(size_inputs[0], size_inputs[0] + size_inputs[1])
             )
             m.plot(
                 fixed_inputs=[(1, fixed_input)],
@@ -744,7 +723,7 @@ def multioutput_gp_with_derivative_observations(plot=True):
                 ylim=ylim,
                 ax=ax,
             )
-        
+
         # Plot the model, the syntax is same as for multioutput models:
         plot_gp_vs_real(
             m,
@@ -772,22 +751,23 @@ def multioutput_gp_with_derivative_observations(plot=True):
 
     return m
 
+
 def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
-    '''
+    """
     This in an example on how to use a MultioutputGP model with gradient
     observations and multiple single-dimensional kernels of differing types.
-    '''
+    """
 
     period = 3
-    w = 2*np.pi/period # angular frequency
+    w = 2 * np.pi / period  # angular frequency
     bounds = (-period, period)
 
     # latent function and gradient
-    f = lambda x: (np.exp(-x[:,0]**2) + np.cos(w*x[:,1]))[:,None]
-    df = lambda x: np.array([-2*np.exp(-x[:,0]**2)*x[:,0], -w*np.sin(w*x[:,1])]).T
+    f = lambda x: (np.exp(-(x[:, 0] ** 2)) + np.cos(w * x[:, 1]))[:, None]
+    df = lambda x: np.array([-2 * np.exp(-(x[:, 0] ** 2)) * x[:, 0], -w * np.sin(w * x[:, 1])]).T
 
     # 2D input grid
-    ppa = 25 # points per axis
+    ppa = 25  # points per axis
     x = np.linspace(*bounds, ppa)
     xx, yy = np.meshgrid(x, x)
     grid = np.array([xx.reshape(-1), yy.reshape(-1)]).T
@@ -796,18 +776,20 @@ def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
     dfgrid = df(grid)
 
     # 10 random training points generated with a space-filling sobol sequence
-    X = np.array([
-        [ 0.50421399,  2.1331483 ],
-        [-2.15717152, -1.70295936],
-        [-1.46704334,  1.37111521],
-        [ 2.79064536, -0.9649018 ],
-        [ 1.60728264,  0.27702713],
-        [-0.30712366, -0.57372129],
-        [-2.6140632 ,  2.49192488],
-        [ 0.89078772, -2.85873686],
-        [ 1.15813136,  0.96910322],
-        [-2.83307021, -1.38155383]
-    ])
+    X = np.array(
+        [
+            [0.50421399, 2.1331483],
+            [-2.15717152, -1.70295936],
+            [-1.46704334, 1.37111521],
+            [2.79064536, -0.9649018],
+            [1.60728264, 0.27702713],
+            [-0.30712366, -0.57372129],
+            [-2.6140632, 2.49192488],
+            [0.89078772, -2.85873686],
+            [1.15813136, 0.96910322],
+            [-2.83307021, -1.38155383],
+        ]
+    )
 
     # Note!
     # This example uses the same inputs for function and gradient observations.
@@ -822,7 +804,7 @@ def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
     X_list = [X, X, X]
     # once for function observations, and once for each partial derivative
     # make sure all arrays are of shape (N x dims), where N is # of training points
-    Y_list = [Y, dY[:,0,None], dY[:,1,None]]
+    Y_list = [Y, dY[:, 0, None], dY[:, 1, None]]
 
     # create a kernel that is the product of two one-dimensional kernels
     # the first kernel is an RBF kernel
@@ -842,7 +824,7 @@ def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
     kern_list = [kern, diffkern0, diffkern1]
 
     # define a likelihood and repeat it in a list
-    likelihood_list = [GPy.likelihoods.Gaussian(variance=noise_std**2)]*3
+    likelihood_list = [GPy.likelihoods.Gaussian(variance=noise_std**2)] * 3
 
     # create the MultioutputGP model and optimize
     model = GPy.models.MultioutputGP(X_list, Y_list, kern_list, likelihood_list)
@@ -852,36 +834,38 @@ def multioutput_gp_with_derivative_observations_2D(optimize=True, plot=False):
 
     # make function predictions
     Xnew, _, ind = GPy.util.multioutput.build_XY([grid], index=[0])
-    Y_metadata={'output_index': ind, 'trials': np.ones(ind.shape)}
+    Y_metadata = {"output_index": ind, "trials": np.ones(ind.shape)}
 
     mu, var = model.predict(Xnew, Y_metadata=Y_metadata)
 
     # make gradient predictions
-    Xnew, _, ind = GPy.util.multioutput.build_XY([grid]*2, index=[1, 2])
-    Y_metadata={'output_index': ind, 'trials': np.ones(ind.shape)}
+    Xnew, _, ind = GPy.util.multioutput.build_XY([grid] * 2, index=[1, 2])
+    Y_metadata = {"output_index": ind, "trials": np.ones(ind.shape)}
 
     mu_d, var_d = model.predict(Xnew, Y_metadata=Y_metadata)
 
-    mu_d = np.array([mu_d[:len(grid)], mu_d[len(grid):]]).T[0]
-    var_d = np.array([var_d[:len(grid)], var_d[len(grid):]]).T[0]
+    mu_d = np.array([mu_d[: len(grid)], mu_d[len(grid) :]]).T[0]
+    var_d = np.array([var_d[: len(grid)], var_d[len(grid) :]]).T[0]
 
     if plot and MPL_AVAILABLE:
         fig, axs = plt.subplots(1, 3)
-        for ax in axs: ax.set_box_aspect(1)
-        axs[0].set_title('true f')
+        for ax in axs:
+            ax.set_box_aspect(1)
+        axs[0].set_title("true f")
         axs[0].contourf(xx, yy, fgrid.reshape(ppa, ppa), levels=25)
-        axs[1].set_title('true df1')
-        axs[1].contourf(xx, yy, dfgrid[:,0].reshape(ppa, ppa), levels=25)
-        axs[2].set_title('true df2')
-        axs[2].contourf(xx, yy, dfgrid[:,1].reshape(ppa, ppa), levels=25)
+        axs[1].set_title("true df1")
+        axs[1].contourf(xx, yy, dfgrid[:, 0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title("true df2")
+        axs[2].contourf(xx, yy, dfgrid[:, 1].reshape(ppa, ppa), levels=25)
 
         fig, axs = plt.subplots(1, 3)
-        for ax in axs: ax.set_box_aspect(1)
-        axs[0].set_title('pred f')
+        for ax in axs:
+            ax.set_box_aspect(1)
+        axs[0].set_title("pred f")
         axs[0].contourf(xx, yy, mu.reshape(ppa, ppa), levels=25)
-        axs[1].set_title('pred df1')
-        axs[1].contourf(xx, yy, mu_d[:,0].reshape(ppa, ppa), levels=25)
-        axs[2].set_title('pred df2')
-        axs[2].contourf(xx, yy, mu_d[:,1].reshape(ppa, ppa), levels=25)
+        axs[1].set_title("pred df1")
+        axs[1].contourf(xx, yy, mu_d[:, 0].reshape(ppa, ppa), levels=25)
+        axs[2].set_title("pred df2")
+        axs[2].contourf(xx, yy, mu_d[:, 1].reshape(ppa, ppa), levels=25)
 
     return model

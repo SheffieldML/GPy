@@ -238,7 +238,7 @@ class Laplace(LatentFunctionInference):
                 warnings.warn(
                     "Not perfect mode found (f_hat). difference: {}, iteration: {} out of max {}".format(
                         difference, iteration, self._mode_finding_max_iter
-                    )
+                    ), stacklevel=2
                 )
             self.bad_fhat = True
         elif self.bad_fhat:
@@ -246,7 +246,7 @@ class Laplace(LatentFunctionInference):
             warnings.warn(
                 "f_hat now fine again. difference: {}, iteration: {} out of max {}".format(
                     difference, iteration, self._mode_finding_max_iter
-                )
+                ), stacklevel=2
             )
 
         return f, Ki_f
@@ -434,14 +434,14 @@ class LaplaceBlock(Laplace):
         # Warn of bad fits
         if difference > self._mode_finding_tolerance:
             if not self.bad_fhat:
-                warnings.warn("Not perfect f_hat fit difference: {}".format(difference))
+                warnings.warn("Not perfect f_hat fit difference: {}".format(difference), stacklevel=2)
             self._previous_Ki_fhat = np.zeros_like(Y)
             self.bad_fhat = True
         elif self.bad_fhat:
             self.bad_fhat = False
-            warnings.warn("f_hat now fine again")
+            warnings.warn("f_hat now fine again", stacklevel=2)
         if iteration > self._mode_finding_max_iter:
-            warnings.warn("didn't find the best")
+            warnings.warn("didn't find the best", stacklevel=2)
 
         return f, Ki_f
 

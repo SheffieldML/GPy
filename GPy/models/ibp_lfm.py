@@ -363,7 +363,7 @@ def update_gradients(model, mpi_comm=None):
         from mpi4py import MPI
 
         if het_noise:
-            raise "het_noise not implemented!"
+            raise NotImplementedError("het_noise not implemented!")
         kern_grad_all = kern_grad.copy()
         Z_grad_all = model.Z.gradient.copy()
         gamma_grad_all = gamma_gradient.copy()

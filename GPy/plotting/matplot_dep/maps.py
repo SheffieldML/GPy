@@ -9,7 +9,7 @@ try:
 
     # from matplotlib import cm
     try:
-        __IPYTHON__
+        _ = __IPYTHON__  # present when running under IPython
         pb.ion()
     except NameError:
         pass

@@ -4080,7 +4080,7 @@ def matrix_exponent(M):
         try:
             Mexp = linalg.expm(M)
             method = 1
-        except (Exception,):
+        except Exception:
             Mexp = linalg.expm3(M)
             method = 2
         finally:

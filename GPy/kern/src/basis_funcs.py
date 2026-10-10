@@ -82,13 +82,17 @@ class BasisFuncKernel(Kern):
         if X is None:
             try:
                 X = self._highest_parent_.X
-            except NameError:
-                raise RuntimeError("This kernel is not part of a model and cannot be used for posterior inference")
+            except NameError as err:
+                raise RuntimeError(
+                    "This kernel is not part of a model and cannot be used for posterior inference"
+                ) from err
         if posterior is None:
             try:
                 posterior = self._highest_parent_.posterior
-            except NameError:
-                raise RuntimeError("This kernel is not part of a model and cannot be used for posterior inference")
+            except NameError as err:
+                raise RuntimeError(
+                    "This kernel is not part of a model and cannot be used for posterior inference"
+                ) from err
         phi_alpha = self.phi(X) * self.variance
         return (phi_alpha).T.dot(posterior.woodbury_vector), (
             np.eye(phi_alpha.shape[1]) * self.variance - mdot(phi_alpha.T, posterior.woodbury_inv, phi_alpha)

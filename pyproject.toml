@@ -79,8 +79,8 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# CIP-0005 Phase 3: full pyflakes. Next: bugbear (B), then format CI.
-select = ["E9", "F"]
+# CIP-0005 Phase 3: full pyflakes + safe bugbear. Next: B007/B006/B023/B905, format CI.
+select = ["E9", "F", "B010", "B011", "B013", "B016", "B018", "B028", "B904"]
 
 [tool.ruff.lint.per-file-ignores]
 # Public API re-exports (from .foo import Bar) are intentional in package inits.

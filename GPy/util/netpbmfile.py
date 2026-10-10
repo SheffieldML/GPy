@@ -190,8 +190,8 @@ class NetpbmFile(object):
         except Exception:
             try:
                 self._read_pnm_header(data)
-            except Exception:
-                raise ValueError("Not a Netpbm file:\n%s" % data[:32])
+            except Exception as err:
+                raise ValueError("Not a Netpbm file:\n%s" % data[:32]) from err
 
     def _read_pam_header(self, data):
         """Read PAM header and initialize instance."""

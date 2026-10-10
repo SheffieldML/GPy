@@ -276,7 +276,7 @@ class MultivariateGaussian(Prior):
 
 
 def gamma_from_EV(E, V):
-    warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning)
+    warnings.warn("use Gamma.from_EV to create Gamma Prior", FutureWarning, stacklevel=2)
     return Gamma.from_EV(E, V)
 
 

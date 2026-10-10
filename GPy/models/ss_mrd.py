@@ -269,7 +269,7 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
         mu.gradient -= (1.0 - self._b_prob_all) * mu / (self.variance * self.nModels)
         S.gradient -= (1.0 / self.variance - 1.0 / S) * (1.0 - self._b_prob_all) / (2.0 * self.nModels)
         if self.learnPi:
-            raise "Not Supported!"
+            raise NotImplementedError("Not Supported!")
 
 
 class IBPPrior_SSMRD(VariationalPrior):

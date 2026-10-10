@@ -164,10 +164,10 @@ class HessianChecker(GradientChecker):
         """
         try:
             import numdifftools as nd
-        except:
+        except Exception as err:
             raise ImportError(
                 "Don't have numdifftools package installed, it is not a GPy dependency as of yet, it is only used for hessian tests"
-            )
+            ) from err
 
         if target_param:
             raise NotImplementedError("Only basic functionality is provided with this gradchecker")
@@ -347,10 +347,10 @@ class SkewChecker(HessianChecker):
         """
         try:
             import numdifftools as nd
-        except:
+        except Exception as err:
             raise ImportError(
                 "Don't have numdifftools package installed, it is not a GPy dependency as of yet, it is only used for hessian tests"
-            )
+            ) from err
 
         if target_param:
             raise NotImplementedError("Only basic functionality is provided with this gradchecker")

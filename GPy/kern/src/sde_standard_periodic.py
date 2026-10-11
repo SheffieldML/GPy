@@ -104,13 +104,13 @@ class sde_StdPeriodic(StdPeriodic):
         dq2l = 2 * dq2l  # This is because the lengthscale if multiplied by 2.
 
         eps = 1e-12
-        if np.any(np.isfinite(q2) is False) or np.any(np.abs(q2) > 1.0 / eps):
+        if (not np.all(np.isfinite(q2))) or np.any(np.abs(q2) > 1.0 / eps):
             warnings.warn(
                 f"sde_Periodic:  Infinite or too large (eps={eps:e}) values in q2 :" + q2.__format__(""),
                 stacklevel=2,
             )
 
-        if np.any(np.isfinite(dq2l) is False) or np.any(np.abs(dq2l) > 1.0 / eps):
+        if (not np.all(np.isfinite(dq2l))) or np.any(np.abs(dq2l) > 1.0 / eps):
             warnings.warn(
                 f"sde_Periodic:  Infinite or too large (eps={eps:e}) values in dq2l :" + q2.__format__(""),
                 stacklevel=2,
@@ -215,7 +215,7 @@ def seriescoeff(m=6, lengthScale=1.0, magnSigma2=1.0, true_covariance=False):
 
     else:
         coeffs = 2 * magnSigma2 * np.exp(-(lengthScale ** (-2))) * special.iv(range(0, m + 1), 1.0 / lengthScale ** (2))
-        if np.any(np.isfinite(coeffs) is False):
+        if not np.all(np.isfinite(coeffs)):
             raise ValueError("sde_standard_periodic: Coefficients are not finite!")
         # import pdb; pdb.set_trace()
         coeffs[0] = 0.5 * coeffs[0]

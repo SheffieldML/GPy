@@ -81,7 +81,7 @@ class GridRBF(GridKern):
         Computation of derivative changes when lengthscale corresponds to
         the dimension of the kernel whose derivate is being computed.
         """
-        if dimCheck is True:
+        if dimCheck:
             return (
                 (self.variance ** (float(1) / self.originalDimensions))
                 * np.exp(-0.5 * r**2)

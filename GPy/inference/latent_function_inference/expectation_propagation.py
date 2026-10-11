@@ -376,7 +376,7 @@ class EP(EPBase, ExactGaussianInference):
             # Site parameters update
             delta_tau, delta_v = ga_approx._update_i(self.eta, self.delta, post_params, marg_moments, i)
 
-            if self.parallel_updates is False:
+            if not self.parallel_updates:
                 post_params._update_rank1(delta_tau, delta_v, ga_approx, i)
 
     def _log_Z_tilde(self, marg_moments, ga_approx, cav_params):
@@ -667,7 +667,7 @@ class EPDTC(EPBase, VarDTC):
             delta_tau, delta_v = ga_approx._update_i(self.eta, self.delta, post_params, marg_moments, i)
 
             # Posterior distribution parameters update
-            if self.parallel_updates is False:
+            if not self.parallel_updates:
                 post_params._update_rank1(LLT, Kmn, delta_v, delta_tau, i)
 
     def to_dict(self):

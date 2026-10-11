@@ -1355,7 +1355,7 @@ class DescreteStateSpace:
 
             k_measurment = Y[k, :, :]
 
-            if np.any(np.isnan(k_measurment)) is False:
+            if not np.any(np.isnan(k_measurment)):
                 if p_kalman_filter_type == "svd":
                     (
                         m_upd,
@@ -2618,7 +2618,7 @@ class ContDescrStateSpace(DescreteStateSpace):
                 Ak,Qk, dAk, dQk: matrices and/or 3D arrays
                     A, Q, dA dQ on step k
             """
-            if (self.last_k != k) or (self.last_k_computed is False):
+            if (self.last_k != k) or (not self.last_k_computed):
                 v_Ak, v_Qk, tmp, v_dAk, v_dQk = ContDescrStateSpace.lti_sde_to_descrete(
                     self.F,
                     self.L,
@@ -2692,7 +2692,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             Square root of the noise matrix Q
             """
 
-            if (self.last_k == k) and (self.last_k_computed is True):
+            if (self.last_k == k) and self.last_k_computed:
                 if not self.Q_square_root_computed:
                     if not self.Q_svd_computed:
                         (U, S, Vh) = sp.linalg.svd(
@@ -2743,7 +2743,7 @@ class ContDescrStateSpace(DescreteStateSpace):
 
             # import pdb; pdb.set_trace()
 
-            if (self.last_k == k) and (self.last_k_computed is True):
+            if (self.last_k == k) and self.last_k_computed:
                 if not self.Q_inverse_computed:
                     if not self.Q_svd_computed:
                         (U, S, Vh) = sp.linalg.svd(
@@ -3498,7 +3498,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             # import pdb; pdb.set_trace()
             k_measurment = Y[k, :, :]
 
-            if np.any(np.isnan(k_measurment)) is False:
+            if not np.any(np.isnan(k_measurment)):
                 if p_kalman_filter_type == "svd":
                     (
                         m_upd,

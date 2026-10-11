@@ -71,7 +71,7 @@ class StdPeriodic(Kern):
 
         self.name = name
 
-        if self.ARD1 is False:
+        if not self.ARD1:
             if period is not None:
                 period = np.asarray(period)
                 assert period.size == 1, "Only one period needed for non-ARD kernel"
@@ -84,7 +84,7 @@ class StdPeriodic(Kern):
             else:
                 period = np.ones(input_dim)
 
-        if self.ARD2 is False:
+        if not self.ARD2:
             if lengthscale is not None:
                 lengthscale = np.asarray(lengthscale)
                 assert lengthscale.size == 1, "Only one lengthscale needed for non-ARD kernel"

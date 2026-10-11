@@ -29,7 +29,7 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
     x_size = arr.shape[2]
     fig_ncols = int(np.ceil(np.sqrt(fig_num)))
     fig_nrows = int(np.ceil((float)(fig_num) / fig_ncols))
-    if pad == None:
+    if pad is None:
         pad = max(int(min(y_size, x_size) / 10), 1)
 
     _calculateFigureSize(x_size, y_size, fig_ncols, fig_nrows, pad)
@@ -47,7 +47,7 @@ def plot_2D_images(figure, arr, symmetric=False, pad=None, zoom=None, mode=None,
     if mode == "L":
         arr_color = np.empty(arr.shape + (3,))
         arr_color[:] = arr.reshape(*(arr.shape + (1,)))
-    elif mode == None or mode == "jet":
+    elif mode is None or mode == "jet":
         arr_color = jet(arr)
 
     buf = np.ones(

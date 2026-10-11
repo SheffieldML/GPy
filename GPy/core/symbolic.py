@@ -112,7 +112,7 @@ class Symbolic_core:
                 )
 
         # things that aren't cacheable are assumed to be parameters.
-        self.variables["theta"] = sorted([e for e in vars if not e in self.cacheable_vars], key=lambda e: e.name)
+        self.variables["theta"] = sorted([e for e in vars if e not in self.cacheable_vars], key=lambda e: e.name)
 
     def _set_derivatives(self, derivatives):
         # these are arguments for computing derivatives.

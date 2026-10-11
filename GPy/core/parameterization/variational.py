@@ -119,7 +119,7 @@ class VariationalPosterior(Parameterized):
         return index
 
     def has_uncertain_inputs(self):
-        return not self.variance is None
+        return self.variance is not None
 
     def __getitem__(self, s):
         if isinstance(s, (int, slice, tuple, list, np.ndarray)):

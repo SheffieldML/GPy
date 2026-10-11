@@ -2,7 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-import itertools, logging
+import itertools
+import logging
 
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPrior

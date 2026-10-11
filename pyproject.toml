@@ -80,7 +80,8 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# CIP-0005: pyflakes + bugbear + SIM + pyupgrade (partial). Format enforced in CI.
+# CIP-0005: pyflakes + bugbear + full SIM + pyupgrade (partial) + safe pycodestyle.
+# Format enforced in CI. Deferred: UP008 (paramz), UP038 (needs Python >=3.10).
 select = [
     "E9",
     "F",
@@ -96,12 +97,7 @@ select = [
     "B006",
     "B026",
     "B023",
-    "SIM101",
-    "SIM103",
-    "SIM118",
-    "SIM201",
-    "SIM210",
-    "SIM300",
+    "SIM",
     "UP004",
     "UP009",
     "UP010",
@@ -113,13 +109,15 @@ select = [
     "UP030",
     "UP035",
     "UP036",
-    "SIM102",
-    "SIM105",
-    "SIM113",
     "UP032",
     "UP031",
-    "SIM115",
-    "SIM108",
+    "E401",
+    "E711",
+    "E712",
+    "E713",
+    "E714",
+    "W291",
+    "W293",
 ]
 
 [tool.ruff.lint.per-file-ignores]

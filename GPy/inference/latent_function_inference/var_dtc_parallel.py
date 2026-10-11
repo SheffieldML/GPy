@@ -336,7 +336,7 @@ class VarDTC_minibatch(LatentFunctionInference):
 
 
 def update_gradients(model, mpi_comm=None):
-    if mpi_comm == None:
+    if mpi_comm is None:
         Y = model.Y
         X = model.X
     else:
@@ -363,7 +363,7 @@ def update_gradients(model, mpi_comm=None):
         if isinstance(model.X, VariationalPosterior):
             if (n_range[1] - n_range[0]) == X.shape[0]:
                 X_slice = X
-            elif mpi_comm == None:
+            elif mpi_comm is None:
                 X_slice = model.X[n_range[0] : n_range[1]]
             else:
                 X_slice = model.X[model.N_range[0] + n_range[0] : model.N_range[0] + n_range[1]]
@@ -448,7 +448,7 @@ def update_gradients(model, mpi_comm=None):
 
 
 def update_gradients_sparsegp(model, mpi_comm=None):
-    if mpi_comm == None:
+    if mpi_comm is None:
         Y = model.Y
         X = model.X
     else:
@@ -475,7 +475,7 @@ def update_gradients_sparsegp(model, mpi_comm=None):
 
         if (n_range[1] - n_range[0]) == X.shape[0]:
             X_slice = X
-        elif mpi_comm == None:
+        elif mpi_comm is None:
             X_slice = model.X[n_range[0] : n_range[1]]
         else:
             X_slice = model.X[model.N_range[0] + n_range[0] : model.N_range[0] + n_range[1]]

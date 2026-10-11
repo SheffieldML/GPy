@@ -115,7 +115,7 @@ class SparseGP_MPI(SparseGP):
 
     def optimize(self, optimizer=None, start=None, **kwargs):
         self._IN_OPTIMIZATION_ = True
-        if self.mpi_comm == None:
+        if self.mpi_comm is None:
             ret = super(SparseGP_MPI, self).optimize(optimizer, start, **kwargs)
         elif self.mpi_comm.rank == 0:
             ret = super(SparseGP_MPI, self).optimize(optimizer, start, **kwargs)

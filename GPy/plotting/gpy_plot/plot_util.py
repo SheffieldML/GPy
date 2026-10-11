@@ -146,7 +146,7 @@ def helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resol
 def scatter_label_generator(labels, X, visible_dims, marker=None):
     ulabels = []
     for lab in labels:
-        if not lab in ulabels:
+        if lab not in ulabels:
             ulabels.append(lab)
     if marker is not None:
         marker = itertools.cycle(list(marker))

@@ -57,7 +57,7 @@ class RBF(Stationary):
         input_dict = super(RBF, self)._save_to_input_dict()
         input_dict["class"] = "GPy.kern.RBF"
         input_dict["inv_l"] = self.use_invLengthscale
-        if input_dict["inv_l"] == True:
+        if input_dict["inv_l"]:
             input_dict["lengthscale"] = np.sqrt(1 / float(self.inv_l))
         return input_dict
 

@@ -177,7 +177,7 @@ class SSMRD(Model):
 
     def optimize(self, optimizer=None, start=None, **kwargs):
         self._IN_OPTIMIZATION_ = True
-        if self.mpi_comm == None:
+        if self.mpi_comm is None:
             super(SSMRD, self).optimize(optimizer, start, **kwargs)
         elif self.mpi_comm.rank == 0:
             super(SSMRD, self).optimize(optimizer, start, **kwargs)

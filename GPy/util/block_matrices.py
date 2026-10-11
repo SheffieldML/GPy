@@ -14,7 +14,7 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
     N = np.sum(blocksizes)
     assert A.shape[0] == N, "bad blocksizes"
     num_blocks = len(blocksizes)
-    if pagesizes == None:
+    if pagesizes is None:
         # Assume each page of A should be its own dimension
         pagesizes = range(A.shape[2])  # [0]*A.shape[2]
     num_pages = len(pagesizes)

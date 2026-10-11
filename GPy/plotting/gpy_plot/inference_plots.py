@@ -9,7 +9,7 @@ from . import plotting_library as pl
 
 
 def plot_optimizer(optimizer, **kwargs):
-    if optimizer.trace == None:
+    if optimizer.trace is None:
         print("No trace present so I can't plot it. Please check that the optimizer actually supplies a trace.")
     else:
         canvas, kwargs = pl().new_canvas(**kwargs)

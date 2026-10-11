@@ -26,7 +26,7 @@ class Kern_check_model(GPy.core.Model):
 
     def __init__(self, kernel=None, dL_dK=None, X=None, X2=None):
         super(Kern_check_model, self).__init__("kernel_test_model")
-        if kernel == None:
+        if kernel is None:
             kernel = GPy.kern.RBF(1)
         kernel.randomize(loc=1, scale=0.1)
         if X is None:

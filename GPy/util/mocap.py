@@ -86,7 +86,7 @@ class tree:
         """Order vertices in the graph such that parents always have a lower index than children."""
 
         ordered = False
-        while ordered == False:
+        while not ordered:
             for i in range(len(self.vertices)):
                 ordered = True
                 for parent in self.vertices[i].parents:

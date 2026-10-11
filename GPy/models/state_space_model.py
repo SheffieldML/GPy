@@ -175,11 +175,11 @@ class StateSpace(Model):
             )
         )
 
-        if np.any(np.isfinite(log_likelihood) == False):
+        if not np.all(np.isfinite(log_likelihood)):
             # import pdb; pdb.set_trace()
             print("State-Space: NaN valkues in the log_likelihood")
 
-        if np.any(np.isfinite(grad_log_likelihood) == False):
+        if not np.all(np.isfinite(grad_log_likelihood)):
             # import pdb; pdb.set_trace()
             print("State-Space: NaN values in the grad_log_likelihood")
         # print(grad_log_likelihood)
@@ -250,7 +250,7 @@ class StateSpace(Model):
         state_dim = F.shape[0]
 
         # Balancing
-        if p_balance == True:
+        if p_balance:
             (F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf, dP0) = ssm.balance_ss_model(
                 F, L, Qc, H, P_inf, P0, dF, dQc, dP_inf, dP0
             )

@@ -29,10 +29,7 @@ class Poly(Kern):
 
     @Cache_this(limit=3)
     def _AB(self, X, X2=None):
-        if X2 is None:
-            dot_prod = np.dot(X, X.T)
-        else:
-            dot_prod = np.dot(X, X2.T)
+        dot_prod = np.dot(X, X.T) if X2 is None else np.dot(X, X2.T)
         A = (self.scale * dot_prod) + self.bias
         B = A**self.order
         return dot_prod, A, B

@@ -118,6 +118,7 @@ select = [
     "UP032",
     "UP031",
     "SIM115",
+    "SIM108",
 ]
 
 [tool.ruff.lint.per-file-ignores]

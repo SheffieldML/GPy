@@ -163,10 +163,7 @@ class SparseGPMiniBatch(SparseGP):
             full_values[key][value_indices[key]] += current_values[key]
         """
         for key in current_values:
-            if value_indices is not None and key in value_indices:
-                index = value_indices[key]
-            else:
-                index = slice(None)
+            index = value_indices[key] if value_indices is not None and key in value_indices else slice(None)
             if key in full_values:
                 try:
                     full_values[key][index] += current_values[key]

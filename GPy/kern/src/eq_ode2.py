@@ -144,10 +144,7 @@ class EQ_ODE2(Kern):
 
     # Calculate the covariance function for diag(Kff(X,X))
     def Kdiag(self, X):
-        if hasattr(X, "values"):
-            index = np.int_(np.round(X[:, 1].values))
-        else:
-            index = np.int_(np.round(X[:, 1]))
+        index = np.int_(np.round(X[:, 1].values)) if hasattr(X, "values") else np.int_(np.round(X[:, 1]))
         index = index.reshape(
             index.size,
         )

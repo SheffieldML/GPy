@@ -188,10 +188,7 @@ class StateSpace(Model):
 
         # Optionally plot some samples
         if samples:
-            if plot_raw:
-                Ysim = self.posterior_samples_f(Xgrid, samples)
-            else:
-                Ysim = self.posterior_samples(Xgrid, samples)
+            Ysim = self.posterior_samples_f(Xgrid, samples) if plot_raw else self.posterior_samples(Xgrid, samples)
             for yi in Ysim.T:
                 ax.plot(Xgrid, yi, Tango.colorsHex["darkBlue"], linewidth=0.25)
 
@@ -415,10 +412,7 @@ class StateSpace(Model):
             # The previous time step
             dt_old = dt
             # The time discretization step length
-            if k > 0:
-                dt = t[k] - t[k - 1]
-            else:
-                dt = 0
+            dt = t[k] - t[k - 1] if k > 0 else 0
 
             # Loop through all parameters (Kalman filter prediction step)
             for j in range(0, nparam):
@@ -542,10 +536,7 @@ class StateSpace(Model):
             # The previous time step
             dt_old = dt
             # The time discretization step length
-            if k > 0:
-                dt = t[k] - t[k - 1]
-            else:
-                dt = t[1] - t[0]
+            dt = t[k] - t[k - 1] if k > 0 else t[1] - t[0]
 
             # Loop through all parameters (Kalman filter prediction step)
             for j in range(0, nparam):

@@ -75,10 +75,7 @@ class Symmetric(Kern):
 
         cross_term_x_ax = self.symmetry_sign * self.base_kernel.K(X, X2_sym)
 
-        if X2 is None:
-            cross_term_ax_x = cross_term_x_ax.T
-        else:
-            cross_term_ax_x = self.symmetry_sign * self.base_kernel.K(X_sym, X2)
+        cross_term_ax_x = cross_term_x_ax.T if X2 is None else self.symmetry_sign * self.base_kernel.K(X_sym, X2)
 
         return self.base_kernel.K(X, X2) + cross_term_x_ax + cross_term_ax_x + self.base_kernel.K(X_sym, X2_sym)
 

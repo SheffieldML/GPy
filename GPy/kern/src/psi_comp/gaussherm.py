@@ -50,10 +50,7 @@ class PSICOMP_GH(PSICOMP):
         psi1 = np.zeros((N, M))
         psi2 = np.zeros((N, M, M)) if return_psi2_n else np.zeros((M, M))
         for i in range(self.degree):
-            if self.cache_K:
-                X = Xs[i]
-            else:
-                X = self.locs[i] * S_sq + mu
+            X = Xs[i] if self.cache_K else self.locs[i] * S_sq + mu
             psi0 += self.weights[i] * kern.Kdiag(X)
             Kfu = kern.K(X, Z)
             psi1 += self.weights[i] * Kfu
@@ -72,17 +69,11 @@ class PSICOMP_GH(PSICOMP):
 
         dtheta_old = kern.gradient.copy()
         dtheta = np.zeros_like(kern.gradient)
-        if isinstance(Z, Param):
-            dZ = np.zeros_like(Z.values)
-        else:
-            dZ = np.zeros_like(Z)
+        dZ = np.zeros_like(Z.values) if isinstance(Z, Param) else np.zeros_like(Z)
         dmu = np.zeros_like(mu)
         dS = np.zeros_like(S)
         for i in range(self.degree):
-            if self.cache_K:
-                X = Xs[i]
-            else:
-                X = self.locs[i] * S_sq + mu
+            X = Xs[i] if self.cache_K else self.locs[i] * S_sq + mu
             dL_dpsi0_i = dL_dpsi0 * self.weights[i]
             kern.update_gradients_diag(dL_dpsi0_i, X)
             dtheta += kern.gradient

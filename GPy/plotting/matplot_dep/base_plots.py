@@ -88,10 +88,7 @@ def gradient_fill(x, percentiles, ax=None, fignum=None, **kwargs):
         if y2.ndim == 0:
             y2 = np.ones_like(x) * y2
 
-        if where is None:
-            where = np.ones(len(x), bool)
-        else:
-            where = np.asarray(where, bool)
+        where = np.ones(len(x), bool) if where is None else np.asarray(where, bool)
 
         if not (x.shape == y1.shape == y2.shape == where.shape):
             raise ValueError("Argument dimensions are incompatible")

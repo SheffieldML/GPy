@@ -84,10 +84,8 @@ class sde_RBF(RBF):
         The above facts do not take into accout regularization.
         """
         # import pdb; pdb.set_trace()
-        if self.approx_order is not None:
-            N = self.approx_order
-        else:
-            N = 10  # approximation order ( number of terms in exponent series expansion)
+        # Approximation order (number of terms in exponent series expansion).
+        N = self.approx_order if self.approx_order is not None else 10
 
         roots_rounding_decimals = 6
 

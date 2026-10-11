@@ -131,10 +131,7 @@ class BufferedAxisChangedController(AxisChangedController):
         raise NotImplementedError("update view given in here")
 
     def get_grid(self, buffered=True):
-        if buffered:
-            comp = self._compute_buffered
-        else:
-            comp = lambda a, b: (a, b)
+        comp = self._compute_buffered if buffered else lambda a, b: (a, b)
         xmin, xmax = comp(*self._x_lim)
         ymin, ymax = comp(*self._y_lim)
         x, y = numpy.mgrid[xmin : xmax : 1j * self.resolution, ymin : ymax : 1j * self.resolution]

@@ -155,10 +155,7 @@ def fixed_inputs(model, non_fixed_inputs, fix_routine="median", as_list=True, X_
     elif isinstance(model.X, VariationalPosterior):
         X = model.X.values.copy()
     else:
-        if X_all:
-            X = model.X_all.copy()
-        else:
-            X = model.X.copy()
+        X = model.X_all.copy() if X_all else model.X.copy()
     for i in range(X.shape[1]):
         if i not in non_fixed_inputs:
             if fix_routine == "mean":

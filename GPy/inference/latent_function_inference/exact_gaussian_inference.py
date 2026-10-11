@@ -44,10 +44,7 @@ class ExactGaussianInference(LatentFunctionInference):
         Returns a Posterior class containing essential quantities of the posterior
         """
 
-        if mean_function is None:
-            m = 0
-        else:
-            m = mean_function.f(X)
+        m = 0 if mean_function is None else mean_function.f(X)
 
         if variance is None:
             variance = likelihood.gaussian_variance(Y_metadata)

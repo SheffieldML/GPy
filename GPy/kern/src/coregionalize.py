@@ -103,10 +103,7 @@ class Coregionalize(Kern):
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         index = np.asarray(X, dtype=int)
-        if X2 is None:
-            index2 = index
-        else:
-            index2 = np.asarray(X2, dtype=int)
+        index2 = index if X2 is None else np.asarray(X2, dtype=int)
 
         # attempt to use cython for a nasty double indexing loop: fall back to numpy
         if use_coregionalize_cython:

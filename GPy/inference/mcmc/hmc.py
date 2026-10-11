@@ -49,10 +49,7 @@ class HMC:
             self._update(hmc_iters)
             H_new = self._computeH()
 
-            if H_old > H_new:
-                k = 1.0
-            else:
-                k = np.exp(H_old - H_new)
+            k = 1.0 if H_old > H_new else np.exp(H_old - H_new)
             if np.random.rand() < k:
                 params[i] = self.model.unfixed_param_array
             else:
@@ -112,10 +109,7 @@ class HMC_shortcut:
             self._update(hmc_iters, stepsize)
             H_new = self._computeH()
 
-            if H_old > H_new:
-                k = 1.0
-            else:
-                k = np.exp(H_old - H_new)
+            k = 1.0 if H_old > H_new else np.exp(H_old - H_new)
             if np.random.rand() < k:
                 params[i] = self.model.unfixed_param_array
             else:
@@ -173,10 +167,7 @@ class HMC_shortcut:
                     else:
                         # Reverse the trajectory for the 2nd time
                         r = (hmc_iters - i) % ((reversal[0] - pos) * 2)
-                        if r > (reversal[0] - pos):
-                            pos_new = 2 * reversal[0] - r - pos
-                        else:
-                            pos_new = pos + r
+                        pos_new = 2 * reversal[0] - r - pos if r > reversal[0] - pos else pos + r
                         self.model.optimizer_array = theta_buf[hmc_iters + pos_new]
                         self.p[:] = p_buf[hmc_iters + pos_new]  # the sign of momentum might be wrong!
                         break

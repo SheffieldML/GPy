@@ -90,10 +90,7 @@ class sde_StdPeriodic(StdPeriodic):
         # self.variance
         # self.period
         # self.lengthscale
-        if self.approx_order is not None:
-            N = int(self.approx_order)
-        else:
-            N = 7  # approximation order
+        N = int(self.approx_order) if self.approx_order is not None else 7  # approximation order
 
         p_period = self.period.item()
         p_lengthscale = 2 * self.lengthscale.item()

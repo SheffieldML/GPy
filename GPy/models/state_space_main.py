@@ -148,10 +148,7 @@ class Dynamic_Callables_Python:
         raise NotImplementedError("reset is not implemented!")
 
 
-if use_cython:
-    Dynamic_Callables_Class = state_space_cython.Dynamic_Callables_Cython
-else:
-    Dynamic_Callables_Class = Dynamic_Callables_Python
+Dynamic_Callables_Class = state_space_cython.Dynamic_Callables_Cython if use_cython else Dynamic_Callables_Python
 
 
 class Measurement_Callables_Python:
@@ -317,10 +314,7 @@ class R_handling_Python(Measurement_Callables_Class):
         return inv_square_root
 
 
-if use_cython:
-    R_handling_Class = state_space_cython.R_handling_Cython
-else:
-    R_handling_Class = R_handling_Python
+R_handling_Class = state_space_cython.R_handling_Cython if use_cython else R_handling_Python
 
 
 class Std_Measurement_Callables_Python(R_handling_Class):
@@ -473,10 +467,7 @@ class Q_handling_Python(Dynamic_Callables_Class):
         return square_root
 
 
-if use_cython:
-    Q_handling_Class = state_space_cython.Q_handling_Cython
-else:
-    Q_handling_Class = Q_handling_Python
+Q_handling_Class = state_space_cython.Q_handling_Cython if use_cython else Q_handling_Python
 
 
 class Std_Dynamic_Callables_Python(Q_handling_Class):
@@ -884,10 +875,7 @@ class DescreteStateSpace:
         (p_R, old_R_shape) = cls._check_SS_matrix(p_R, state_dim, measurement_dim, which="R")
 
         # m_init
-        if m_init is None:
-            m_init = np.zeros((state_dim, time_series_no))
-        else:
-            m_init = np.atleast_2d(m_init).T
+        m_init = np.zeros((state_dim, time_series_no)) if m_init is None else np.atleast_2d(m_init).T
 
         # P_init
         if P_init is None:
@@ -1082,10 +1070,7 @@ class DescreteStateSpace:
         Y = Y.reshape(Y_shape)
 
         # m_init
-        if m_init is None:
-            m_init = np.zeros((p_state_dim, 1))
-        else:
-            m_init = np.atleast_2d(m_init).T
+        m_init = np.zeros((p_state_dim, 1)) if m_init is None else np.atleast_2d(m_init).T
 
         # P_init
         if P_init is None:
@@ -1820,13 +1805,8 @@ class DescreteStateSpace:
                 dP_upd[:, :, param] += dP_pred - np.dot(K, np.dot(dS, K.T))
 
                 dP_upd[:, :, param] = 0.5 * (dP_upd[:, :, param] + dP_upd[:, :, param].T)  # symmetrize
-                # computing the likelihood change for each parameter:
-                if LL is not None:  # the state vector is not 1D
-                    # tmp4 = linalg.cho_solve((LL,islower), dv)
-                    tmp5 = linalg.cho_solve((LL, islower), v)
-                else:  # the state vector is a scalar
-                    # tmp4 = dv / S
-                    tmp5 = v / S
+                # Likelihood change: cho_solve for vector state, scalar divide otherwise.
+                tmp5 = linalg.cho_solve((LL, islower), v) if LL is not None else v / S
 
                 d_log_likelihood_update[param, :] = -(
                     0.5 * np.sum(np.diag(tmp3))
@@ -2058,11 +2038,8 @@ class DescreteStateSpace:
                 dP_upd[:, :, param] += dP_pred - np.dot(K, np.dot(dS, K.T))
 
                 dP_upd[:, :, param] = 0.5 * (dP_upd[:, :, param] + dP_upd[:, :, param].T)  # symmetrize
-                # computing the likelihood change for each parameter:
-                if LL is not None:  # the state vector is not 1D
-                    tmp5 = linalg.cho_solve((LL, islower), v)
-                else:  # the state vector is a scalar
-                    tmp5 = v / S
+                # Likelihood change: cho_solve for vector state, scalar divide otherwise.
+                tmp5 = linalg.cho_solve((LL, islower), v) if LL is not None else v / S
 
                 d_log_likelihood_update[param, :] = -(
                     0.5 * np.sum(np.diag(tmp3))
@@ -2299,30 +2276,21 @@ class DescreteStateSpace:
         try:
             P_init_inv = sp.linalg.inv(P_init)
 
-            if np.max(np.abs(P_init_inv)) > 10e13:
-                compute_P_init_terms = False
-            else:
-                compute_P_init_terms = True
+            compute_P_init_terms = False if np.max(np.abs(P_init_inv)) > 100000000000000.0 else True
         except np.linalg.LinAlgError:
             compute_P_init_terms = False
 
         try:
             Q_inv = sp.linalg.inv(Q)
 
-            if np.max(np.abs(Q_inv)) > 10e13:
-                compute_Q_terms = False
-            else:
-                compute_Q_terms = True
+            compute_Q_terms = False if np.max(np.abs(Q_inv)) > 100000000000000.0 else True
         except np.linalg.LinAlgError:
             compute_Q_terms = False
 
         try:
             R_inv = sp.linalg.inv(R)
 
-            if np.max(np.abs(R_inv)) > 10e13:
-                compute_R_terms = False
-            else:
-                compute_R_terms = True
+            compute_R_terms = False if np.max(np.abs(R_inv)) > 100000000000000.0 else True
         except np.linalg.LinAlgError:
             compute_R_terms = False
 
@@ -3247,10 +3215,7 @@ class ContDescrStateSpace(DescreteStateSpace):
         (p_H, old_H_shape) = cls._check_SS_matrix(p_H, state_dim, measurement_dim, which="H")
         (p_R, old_R_shape) = cls._check_SS_matrix(p_R, state_dim, measurement_dim, which="R")
 
-        if m_init is None:
-            m_init = np.zeros((state_dim, time_series_no))
-        else:
-            m_init = np.atleast_2d(m_init).T
+        m_init = np.zeros((state_dim, time_series_no)) if m_init is None else np.atleast_2d(m_init).T
 
         if P_init is None:
             P_init = P_inf.copy()

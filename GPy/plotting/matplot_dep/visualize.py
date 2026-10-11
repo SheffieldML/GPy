@@ -107,10 +107,7 @@ class lvm(matplotlib_show):
         if latent_index is None:
             latent_index = [0, 1]
         if vals is None:
-            if isinstance(model.X, VariationalPosterior):
-                vals = model.X.mean.values
-            else:
-                vals = model.X.values
+            vals = model.X.mean.values if isinstance(model.X, VariationalPosterior) else model.X.values
         if len(vals.shape) == 1:
             vals = vals[None, :]
         super(lvm, self).__init__(vals, axes=latent_axes)

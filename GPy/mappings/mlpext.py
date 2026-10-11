@@ -101,12 +101,8 @@ class MLPext(Mapping):
             reversed(np.arange(len(self.W_list))),
             strict=False,
         ):
-            if i > 0:
-                # Apply activation function to linear preactivations to get input from previous layer
-                # (except for first layer where input is X)
-                activation = self.act(preactivation)
-            else:
-                activation = preactivation
+            # Apply activation to preactivations except first layer (input is X).
+            activation = self.act(preactivation) if i > 0 else preactivation
             W.gradient = np.dot(activation.T, d_dlayer)
             b.gradient = np.sum(d_dlayer, 0)
 

@@ -86,7 +86,8 @@ class GpGrid(GP):
                 Z = np.dot(A[d], X)
                 Z = Z.T
                 x = np.reshape(Z, (-1, 1), order="F")
-            if count == 0:
+            # Accumulator: ternary would trip F821 on the else-branch read of result.
+            if count == 0:  # noqa: SIM108
                 result = x
             else:
                 result = np.column_stack((result, x))

@@ -566,13 +566,10 @@ class GP(Model):
         for i in range(self._predictive_variable.shape[0]):
             dK_dXnew_full[i] = kern.gradients_X(one, Xnew, self._predictive_variable[[i]])
 
-        if full_cov:
-            dK2_dXdX = kern.gradients_XX(one, Xnew)
-        else:
-            dK2_dXdX = kern.gradients_XX_diag(one, Xnew)
-            # dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
-            # for i in range(Xnew.shape[0]):
-            #    dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])
+        dK2_dXdX = kern.gradients_XX(one, Xnew) if full_cov else kern.gradients_XX_diag(one, Xnew)
+        # dK2_dXdX = np.zeros((Xnew.shape[0], Xnew.shape[1], Xnew.shape[1]))
+        # for i in range(Xnew.shape[0]):
+        #    dK2_dXdX[i:i+1,:,:] = kern.gradients_XX(one, Xnew[i:i+1,:])
 
         def compute_cov_inner(wi):
             if full_cov:
@@ -614,11 +611,8 @@ class GP(Model):
 
         mu_jac, var_jac = self.predict_jacobian(Xnew, kern, full_cov=False)
         mumuT = np.einsum("iqd,ipd->iqp", mu_jac, mu_jac)
-        Sigma = np.zeros(mumuT.shape)
-        if var_jac.ndim == 4:  # Missing data
-            Sigma = var_jac.sum(-1)
-        else:
-            Sigma = self.output_dim * var_jac
+        # Missing data: var_jac is 4D and summed over the last axis.
+        Sigma = var_jac.sum(-1) if var_jac.ndim == 4 else self.output_dim * var_jac
 
         G = 0.0
         if mean:

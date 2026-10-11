@@ -273,10 +273,7 @@ class EP(EPBase, ExactGaussianInference):
         num_data, output_dim = Y.shape
         assert output_dim == 1, "ep in 1D only (for now!)"
 
-        if mean_function is None:
-            mean_prior = np.zeros(X.shape[0])
-        else:
-            mean_prior = mean_function.f(X).flatten()
+        mean_prior = np.zeros(X.shape[0]) if mean_function is None else mean_function.f(X).flatten()
 
         if K is None:
             K = kern.K(X)

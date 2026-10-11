@@ -46,10 +46,7 @@ class VarGauss(LatentFunctionInference):
         var = np.diag(Sigma).reshape(-1, 1)
 
         F, dF_dm, dF_dv, dF_dthetaL = likelihood.variational_expectations(Y, m, var, Y_metadata=Y_metadata)
-        if dF_dthetaL is not None:
-            dL_dthetaL = dF_dthetaL.sum(1).sum(1)
-        else:
-            dL_dthetaL = np.array([])
+        dL_dthetaL = dF_dthetaL.sum(1).sum(1) if dF_dthetaL is not None else np.array([])
         dF_da = np.dot(K, dF_dm)
         Sigma * self.beta
         # dF_db_ = -np.diag(Sigma.dot(np.diag(dF_dv.flatten())).dot(SigmaB))*2

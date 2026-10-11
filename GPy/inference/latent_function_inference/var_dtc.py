@@ -103,10 +103,7 @@ class VarDTC(LatentFunctionInference):
 
         uncertain_inputs = isinstance(X, VariationalPosterior)
 
-        if mean_function is not None:
-            mean = mean_function.f(X)
-        else:
-            mean = 0
+        mean = mean_function.f(X) if mean_function is not None else 0
 
         if precision is None:
             # assume Gaussian likelihood
@@ -155,10 +152,7 @@ class VarDTC(LatentFunctionInference):
                 psi0 = kern.Kdiag(X)
             if psi1 is None:
                 psi1 = kern.K(X, Z)
-            if het_noise:
-                tmp = psi1 * (np.sqrt(precision))
-            else:
-                tmp = psi1 * (np.sqrt(precision))
+            tmp = psi1 * np.sqrt(precision) if het_noise else psi1 * np.sqrt(precision)
             tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
             A = tdot(tmp)  # print A.sum()
 

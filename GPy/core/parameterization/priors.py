@@ -59,10 +59,7 @@ class Gaussian(Prior):
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, mu, sigma)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, mu, sigma)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -105,10 +102,7 @@ class Uniform(Prior):
                 if instance().lower == lower and instance().upper == upper:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, lower, upper)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, lower, upper)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -166,10 +160,7 @@ class LogGaussian(Gaussian):
                 if instance().mu == mu and instance().sigma == sigma:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, mu, sigma)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, mu, sigma)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -213,10 +204,7 @@ class MultivariateGaussian(Prior):
                 if np.all(instance().mu == mu) and np.all(instance().var == var):
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, mu, var)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, mu, var)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -301,10 +289,7 @@ class Gamma(Prior):
                 if instance().a == a and instance().b == b:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, a, b)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, a, b)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -1264,10 +1249,7 @@ class HalfT(Prior):
                     return instance()
 
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, A, nu)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, A, nu)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -1340,10 +1322,7 @@ class Exponential(Prior):
                 if instance().l == l:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, l)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, l)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 
@@ -1396,10 +1375,7 @@ class StudentT(Prior):
                 if instance().mu == mu and instance().sigma == sigma and instance().nu == nu:
                     return instance()
         newfunc = super(Prior, cls).__new__
-        if newfunc is object.__new__:
-            o = newfunc(cls)
-        else:
-            o = newfunc(cls, mu, sigma, nu)
+        o = newfunc(cls) if newfunc is object.__new__ else newfunc(cls, mu, sigma, nu)
         cls._instances.append(weakref.ref(o))
         return cls._instances[-1]()
 

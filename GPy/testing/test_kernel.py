@@ -32,10 +32,7 @@ class Kern_check_model(GPy.core.Model):
         if X is None:
             X = np.random.randn(20, kernel.input_dim)
         if dL_dK is None:
-            if X2 is None:
-                dL_dK = np.random.rand(X.shape[0], X.shape[0])
-            else:
-                dL_dK = np.random.rand(X.shape[0], X2.shape[0])
+            dL_dK = np.random.rand(X.shape[0], X.shape[0]) if X2 is None else np.random.rand(X.shape[0], X2.shape[0])
 
         self.kernel = kernel
         self.X = X

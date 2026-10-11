@@ -862,10 +862,7 @@ class Likelihood(Parameterized):
         burning_in = True
         for i in range(burn_in + num_samples):
             next_ind = i - burn_in
-            if burning_in:
-                old_y = burnin_cache
-            else:
-                old_y = chain_values[:, next_ind - 1]
+            old_y = burnin_cache if burning_in else chain_values[:, next_ind - 1]
 
             old_lik = pdf(old_y)
             # Propose new y from Gaussian proposal

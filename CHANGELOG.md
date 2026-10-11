@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable simplify `SIM108` (if/else assignments → ternary)
 * CIP-0005: enable simplify `SIM115` (prefer `with open(...)` / `with tarfile.open(...)`)
 * CIP-0005: add targeted tests for dataset/mocap/netpbm file-IO paths ahead of SIM115
 * fix `np.NaN` → `np.nan` for NumPy 2 (mocap / plotting visualize)

@@ -153,10 +153,7 @@ class StateSpace(Model):
         # The following code is required because sometimes the shapes of self.Y
         # becomes 3D even though is must be 2D. The reason is undiscovered.
         Y = self.Y
-        if self.ts_number is None:
-            Y = Y.reshape((self.num_data, 1))
-        else:
-            Y = Y.reshape((self.num_data, 1, self.ts_number))
+        Y = Y.reshape((self.num_data, 1)) if self.ts_number is None else Y.reshape((self.num_data, 1, self.ts_number))
 
         (filter_means, filter_covs, log_likelihood, grad_log_likelihood, SmootherMatrObject) = (
             ssm.ContDescrStateSpace.cont_discr_kalman_filter(
@@ -328,10 +325,7 @@ class StateSpace(Model):
 
         """
 
-        if balance is None:
-            p_balance = self.balance
-        else:
-            p_balance = balance
+        p_balance = self.balance if balance is None else balance
 
         # Run the Kalman filter to get the state
         (m, V) = self._raw_predict(Xnew, filteronly=filteronly, p_balance=p_balance)
@@ -356,10 +350,7 @@ class StateSpace(Model):
         Whether to balance or not the model as a whole
 
         """
-        if balance is None:
-            p_balance = self.balance
-        else:
-            p_balance = balance
+        p_balance = self.balance if balance is None else balance
 
         mu, var = self._raw_predict(Xnew, p_balance=p_balance)
         # import pdb; pdb.set_trace()

@@ -224,10 +224,7 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
-        if self.group_spike:
-            gamma = variational_posterior.binary_prob[0]
-        else:
-            gamma = variational_posterior.binary_prob
+        gamma = variational_posterior.binary_prob[0] if self.group_spike else variational_posterior.binary_prob
         if len(self.pi.shape) == 2:
             idx = np.unique(gamma._raveled_index() / gamma.shape[-1])
             pi = self.pi[idx]

@@ -134,10 +134,7 @@ class PCA:
             if not lab in ulabels:
                 ulabels.append(lab)
         nlabels = len(ulabels)
-        if colors is None:
-            colors = iter([cmap(float(i) / nlabels) for i in range(nlabels)])
-        else:
-            colors = iter(colors)
+        colors = iter([cmap(float(i) / nlabels) for i in range(nlabels)]) if colors is None else iter(colors)
         X_ = self.project(X, self.Q)[:, dimensions]
         kwargs.update(dict(s=s))
         plots = list()

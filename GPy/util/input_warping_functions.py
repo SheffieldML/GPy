@@ -187,10 +187,7 @@ class KumarWarping(InputWarpingFunction):
         f(x) = 1 - (1 - x^a)^b
         """
         X_warped = X.copy()
-        if test_data:
-            X_normalized = (X - self.Xmin) / (self.Xmax - self.Xmin)
-        else:
-            X_normalized = self.X_normalized
+        X_normalized = (X - self.Xmin) / (self.Xmax - self.Xmin) if test_data else self.X_normalized
 
         for i_seq, i_fea in enumerate(self.warping_indices):
             a, b = self.params[i_seq][0], self.params[i_seq][1]

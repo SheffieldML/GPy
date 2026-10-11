@@ -19,10 +19,7 @@ class Multidimensional_Integral_Limits(Kern):  # todo do I need to inherit from 
     def __init__(self, input_dim, variances=None, lengthscale=None, ARD=False, active_dims=None, name="integral"):
         super(Multidimensional_Integral_Limits, self).__init__(input_dim, active_dims, name)
 
-        if lengthscale is None:
-            lengthscale = np.ones(1)
-        else:
-            lengthscale = np.asarray(lengthscale)
+        lengthscale = np.ones(1) if lengthscale is None else np.asarray(lengthscale)
 
         self.lengthscale = Param(
             "lengthscale", lengthscale, Logexp()

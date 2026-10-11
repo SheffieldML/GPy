@@ -176,10 +176,7 @@ def _slice_dK_dX(f):
     def wrap(self, X, X2, dim, *a, **kw):
         with _Slice_wrap(self, X, X2) as s:
             d = s.k._project_dim(dim)
-            if d is None:
-                ret = np.zeros((X.shape[0], X2.shape[0]))
-            else:
-                ret = f(self, s.X, s.X2, d, *a, **kw)
+            ret = np.zeros((X.shape[0], X2.shape[0])) if d is None else f(self, s.X, s.X2, d, *a, **kw)
         return ret
 
     return wrap
@@ -190,10 +187,7 @@ def _slice_dK_dXdiag(f):
     def wrap(self, X, dim, *a, **kw):
         with _Slice_wrap(self, X, None) as s:
             d = s.k._project_dim(dim)
-            if d is None:
-                ret = np.zeros(X.shape[0])
-            else:
-                ret = f(self, s.X, dim, *a, **kw)
+            ret = np.zeros(X.shape[0]) if d is None else f(self, s.X, dim, *a, **kw)
         return ret
 
     return wrap
@@ -220,10 +214,7 @@ def _slice_dK2_dXdX2diag(f):
         with _Slice_wrap(self, X, None) as s:
             d = s.k._project_dim(dimX)
             d2 = s.k._project_dim(dimX2)
-            if (d is None) or (d2 is None):
-                ret = np.zeros(X.shape[0])
-            else:
-                ret = f(self, s.X, d, d2, *a, **kw)
+            ret = np.zeros(X.shape[0]) if d is None or d2 is None else f(self, s.X, d, d2, *a, **kw)
         return ret
 
     return wrap
@@ -252,10 +243,7 @@ def _slice_dK3_dXdXdX2diag(f):
             D = s.k._project_dim(dim)
             d = s.k._project_dim(dimX)
             d2 = s.k._project_dim(dimX2)
-            if (D is None) or (d is None) or (d2 is None):
-                ret = np.zeros(X.shape[0])
-            else:
-                ret = f(self, s.X, D, d, d2, *a, **kw)
+            ret = np.zeros(X.shape[0]) if D is None or d is None or d2 is None else f(self, s.X, D, d, d2, *a, **kw)
         return ret
 
     return wrap
@@ -299,10 +287,7 @@ def _slice_partial_gradients_list_X(f):
             N, M = X.shape[0], X2.shape[0]
         with _Slice_wrap(self, X, X2, ret_shape=(N, M)) as s:
             d = s.k._project_dim(dim)
-            if d is None:
-                ret = [np.zeros((N, M)) for i in range(s.k.size)]
-            else:
-                ret = f(self, s.X, s.X2, d)
+            ret = [np.zeros((N, M)) for i in range(s.k.size)] if d is None else f(self, s.X, s.X2, d)
         return ret
 
     return wrap
@@ -334,10 +319,7 @@ def _slice_partial_gradients_list_XX(f):
         with _Slice_wrap(self, X, X2, ret_shape=(N, M)) as s:
             d = s.k._project_dim(dimX)
             d2 = s.k._project_dim(dimX2)
-            if (d is None) or (d2 is None):
-                ret = [np.zeros((N, M)) for i in range(s.k.size)]
-            else:
-                ret = f(self, s.X, s.X2, d, d2)
+            ret = [np.zeros((N, M)) for i in range(s.k.size)] if d is None or d2 is None else f(self, s.X, s.X2, d, d2)
         return ret
 
     return wrap

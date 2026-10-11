@@ -121,10 +121,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix="")
     print(file)
     dir_name = os.path.join(data_path, store_directory)
 
-    if save_name is None:
-        save_name = os.path.join(dir_name, file)
-    else:
-        save_name = os.path.join(dir_name, save_name)
+    save_name = os.path.join(dir_name, file) if save_name is None else os.path.join(dir_name, save_name)
 
     if suffix is None:
         suffix = ""
@@ -145,10 +142,7 @@ def download_url(url, store_directory, save_name=None, messages=True, suffix="")
     with open(save_name, "wb") as f:
         meta = response.info()
         content_length_str = meta.get("Content-Length")
-        if content_length_str:
-            file_size = int(content_length_str)
-        else:
-            file_size = None
+        file_size = int(content_length_str) if content_length_str else None
         status = ""
         file_size_dl = 0
         block_sz = 8192

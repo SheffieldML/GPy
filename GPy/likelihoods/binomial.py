@@ -190,10 +190,7 @@ class Binomial(Likelihood):
         if (isinstance(self.gp_link, (link_functions.Probit, link_functions.ScaledProbit))) and (
             Y_metadata_i is None or np.asarray(Y_metadata_i.get("trials", 1)).item() == 1
         ):  # Special case for probit likelihood. Can be found from Riihimaki et Vehtari 2010
-            if isinstance(self.gp_link, link_functions.ScaledProbit):
-                nu = self.gp_link.nu
-            else:
-                nu = 1.0
+            nu = self.gp_link.nu if isinstance(self.gp_link, link_functions.ScaledProbit) else 1.0
             nu = np.asarray(self.gp_link.nu).item()
             obs, tau, v = (np.asarray(value).item() for value in (obs, tau, v))
             mu = v / tau

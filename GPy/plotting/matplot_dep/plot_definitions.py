@@ -315,10 +315,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
         else:
             array = 1.0 - np.abs(np.linspace(-0.97, 0.97, len(percentiles) - 1))
 
-        if "alpha" in kwargs:
-            alpha = kwargs.pop("alpha")
-        else:
-            alpha = 0.8
+        alpha = kwargs.pop("alpha") if "alpha" in kwargs else 0.8
 
         if "cmap" in kwargs:
             cmap = kwargs.pop("cmap")
@@ -368,10 +365,7 @@ class MatplotlibPlots(AbstractPlottingLibrary):
             if y2.ndim == 0:
                 y2 = np.ones_like(x) * y2
 
-            if where is None:
-                where = np.ones(len(x), bool)
-            else:
-                where = np.asarray(where, bool)
+            where = np.ones(len(x), bool) if where is None else np.asarray(where, bool)
 
             if not (x.shape == y1.shape == y2.shape == where.shape):
                 raise ValueError("Argument dimensions are incompatible")

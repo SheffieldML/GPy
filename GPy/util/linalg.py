@@ -199,15 +199,9 @@ def mdot(*args):
 def _mdot_r(a, b):
     """Recursive helper for mdot"""
     if type(a) == tuple:
-        if len(a) > 1:
-            a = mdot(*a)
-        else:
-            a = a[0]
+        a = mdot(*a) if len(a) > 1 else a[0]
     if type(b) == tuple:
-        if len(b) > 1:
-            b = mdot(*b)
-        else:
-            b = b[0]
+        b = mdot(*b) if len(b) > 1 else b[0]
     return np.dot(a, b)
 
 

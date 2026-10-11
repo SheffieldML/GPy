@@ -157,10 +157,7 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
         # ======================================================================
         # Compute log-likelihood
         # ======================================================================
-        if het_noise:
-            logL_R = -np.sum(np.log(beta))
-        else:
-            logL_R = -num_data * np.log(beta)
+        logL_R = -np.sum(np.log(beta)) if het_noise else -num_data * np.log(beta)
         logL = (
             -(output_dim * (num_data * log_2_pi + logL_R + psi0_full - np.trace(LmInvPsi2LmInvT)) + YRY_full - bbt)
             * 0.5
@@ -215,10 +212,7 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
         het_noise = beta.size > 1
         # VVT_factor is a matrix such that tdot(VVT_factor) = VVT...this is for efficiency!
         # self.YYTfactor = beta*self.get_YYTfactor(Y)
-        if self.Y_speedup and not het_noise:
-            YYT_factor = self.get_YYTfactor(Y)
-        else:
-            YYT_factor = Y
+        YYT_factor = self.get_YYTfactor(Y) if self.Y_speedup and not het_noise else Y
 
         n_start = self.batch_pos
         batchsize = num_data if self.batchsize is None else self.batchsize
@@ -291,10 +285,7 @@ class VarDTC_minibatch_IBPLFM(VarDTC_minibatch):
         # ======================================================================
         # Compute dL_dthetaL
         # ======================================================================
-        if isEnd:
-            dL_dthetaL = self.midRes["dL_dthetaL"]
-        else:
-            dL_dthetaL = 0.0
+        dL_dthetaL = self.midRes["dL_dthetaL"] if isEnd else 0.0
 
         grad_dict = {"dL_dKdiag": dL_dpsi0, "dL_dKnm": dL_dpsi1, "dL_dthetaL": dL_dthetaL, "dL_dgamma": dL_dgamma}
 
@@ -315,10 +306,7 @@ def update_gradients(model, mpi_comm=None):
 
     het_noise = model.likelihood.variance.size > 1
 
-    if het_noise:
-        dL_dthetaL = np.empty((model.Y.shape[0],))
-    else:
-        dL_dthetaL = np.float64(0.0)
+    dL_dthetaL = np.empty((model.Y.shape[0],)) if het_noise else np.float64(0.0)
 
     kern_grad = model.kern.gradient.copy()
     kern_grad[:] = 0.0

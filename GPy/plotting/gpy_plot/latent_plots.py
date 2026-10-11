@@ -61,10 +61,7 @@ def _wait_for_updates(view, updates):
 def _new_canvas(self, projection, kwargs, which_indices):
     input_1, input_2, input_3 = sig_dims = self.get_most_significant_input_dimensions(which_indices)
 
-    if input_3 is None:
-        zlabel = None
-    else:
-        zlabel = f"latent dimension {input_3}"
+    zlabel = None if input_3 is None else f"latent dimension {input_3}"
     canvas, kwargs = pl().new_canvas(
         projection=projection,
         xlabel=f"latent dimension {input_1}",
@@ -144,10 +141,7 @@ def plot_latent_inducing(
     """
     canvas, projection, kwargs, sig_dims = _new_canvas(self, projection, kwargs, which_indices)
 
-    if legend:
-        label = "inducing"
-    else:
-        label = None
+    label = "inducing" if legend else None
     if marker is not None:
         kwargs["marker"] = marker
     update_not_existing_kwargs(kwargs, pl().defaults.inducing_2d)  # @UndefinedVariable

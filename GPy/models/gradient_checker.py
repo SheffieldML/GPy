@@ -261,10 +261,7 @@ class HessianChecker(GradientChecker):
             min_d = f"{float(numpy.min(difference)):.6f}"
             cols = [max_r, min_r, min_d, max_d]
 
-            if check_passed:
-                checked = "\033[92m  True \033[0m"
-            else:
-                checked = "\033[91m  False \033[0m"
+            checked = "\x1b[92m  True \x1b[0m" if check_passed else "\x1b[91m  False \x1b[0m"
 
             grad_string = f"{checked} | {cols[0]}  | {cols[1]} |    {cols[2]}    |   {cols[3]} "
             print(grad_string)

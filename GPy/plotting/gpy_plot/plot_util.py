@@ -80,10 +80,7 @@ def helper_predict_with_model(self, Xgrid, plot_raw, apply_link, percentiles, wh
 
     mu, _ = self.predict(Xgrid, **predict_kw)
 
-    if percentiles is not None:
-        percentiles = self.predict_quantiles(Xgrid, quantiles=percentiles, **predict_kw)
-    else:
-        percentiles = []
+    percentiles = self.predict_quantiles(Xgrid, quantiles=percentiles, **predict_kw) if percentiles is not None else []
 
     if samples > 0:
         fsamples = self.posterior_samples(Xgrid, size=samples, **predict_kw)

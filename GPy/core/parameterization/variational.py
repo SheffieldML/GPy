@@ -54,10 +54,7 @@ class SpikeAndSlabPrior(VariationalPrior):
     def KL_divergence(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
-        if self.group_spike:
-            gamma = variational_posterior.gamma.values[0]
-        else:
-            gamma = variational_posterior.gamma.values
+        gamma = variational_posterior.gamma.values[0] if self.group_spike else variational_posterior.gamma.values
         if len(self.pi.shape) == 2:
             idx = np.unique(variational_posterior.gamma._raveled_index() / gamma.shape[-1])
             pi = self.pi[idx]
@@ -72,10 +69,7 @@ class SpikeAndSlabPrior(VariationalPrior):
     def update_gradients_KL(self, variational_posterior):
         mu = variational_posterior.mean
         S = variational_posterior.variance
-        if self.group_spike:
-            gamma = variational_posterior.gamma.values[0]
-        else:
-            gamma = variational_posterior.gamma.values
+        gamma = variational_posterior.gamma.values[0] if self.group_spike else variational_posterior.gamma.values
         if len(self.pi.shape) == 2:
             idx = np.unique(variational_posterior.gamma._raveled_index() / gamma.shape[-1])
             pi = self.pi[idx]

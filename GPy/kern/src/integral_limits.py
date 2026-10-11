@@ -18,10 +18,7 @@ class Integral_Limits(Kern):
         """ """
         super(Integral_Limits, self).__init__(input_dim, active_dims, name)
 
-        if lengthscale is None:
-            lengthscale = np.ones(1)
-        else:
-            lengthscale = np.asarray(lengthscale)
+        lengthscale = np.ones(1) if lengthscale is None else np.asarray(lengthscale)
 
         self.lengthscale = Param(
             "lengthscale", lengthscale, Logexp()

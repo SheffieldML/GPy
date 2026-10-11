@@ -37,7 +37,7 @@ def reporthook(a, b, c):
     # ',' at the end of the line is important!
     # print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
     # you can also use sys.stdout.write
-    sys.stdout.write("\r% 3.1f%% of %d bytes" % (min(100, float(a * b) / c * 100), c))
+    sys.stdout.write(f"\r{min(100, float(a * b) / c * 100): 3.1f}% of {c} bytes")
     sys.stdout.flush()
 
 
@@ -594,8 +594,8 @@ def google_trends(query_terms=None, data_set="google_trends", refresh_data=False
         print("Query terms: ", ", ".join(query_terms))
 
         print("Fetching query:")
-        query = "http://www.google.com/trends/fetchComponent?q=%s&cid=TIMESERIES_GRAPH_0&export=3" % ",".join(
-            quoted_terms
+        query = "http://www.google.com/trends/fetchComponent?q={}&cid=TIMESERIES_GRAPH_0&export=3".format(
+            ",".join(quoted_terms)
         )
 
         data = urlopen(query).read()
@@ -605,7 +605,7 @@ def google_trends(query_terms=None, data_set="google_trends", refresh_data=False
         data = data[len(header) : -2]
         data = re.sub(
             r"new Date\((\d+),(\d+),(\d+)\)",
-            (lambda m: '"%s-%02d-%02d"' % (m.group(1).strip(), 1 + int(m.group(2)), int(m.group(3)))),
+            (lambda m: f'"{m.group(1).strip()}-{1 + int(m.group(2)):02d}-{int(m.group(3)):02d}"'),
             data,
         )
         timeseries = json.loads(data)

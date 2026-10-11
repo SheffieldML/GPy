@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: enable pyupgrade `UP031` (convert printf-style `%` formatting to f-strings)
 * CIP-0005: enable pyupgrade `UP032` (convert `.format(...)` to f-strings)
 * CIP-0005: enable `SIM102`/`SIM105`/`SIM113` and `UP030`/`UP035`/`UP036` (note: `UP008` unsafe with paramz metaclass)
 * CIP-0005: enable safe pyupgrade rules (`UP004`/`UP009`/`UP010`/`UP015`/`UP018`/`UP024`/`UP029`/`UP034`)

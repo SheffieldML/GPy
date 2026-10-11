@@ -71,7 +71,7 @@ def test_models():
                 failing_models[example[0]] = f"Cannot make model: \n{e}"
             else:
                 print(models)
-                model_checkgrads.description = "test_checkgrads_%s" % example[0]
+                model_checkgrads.description = f"test_checkgrads_{example[0]}"
                 try:
                     for model in models:
                         if not model_checkgrads(model):
@@ -79,7 +79,7 @@ def test_models():
                 except Exception as e:
                     failing_models[model_checkgrads.description] = e
 
-                model_instance.description = "test_instance_%s" % example[0]
+                model_instance.description = f"test_instance_{example[0]}"
                 try:
                     for model in models:
                         if not model_instance(model):

@@ -380,7 +380,7 @@ class HeteroscedasticGaussian(Gaussian):
         """
         num_data = int(num_data)
         if num_data < 1:
-            raise ValueError("num_data must be positive, got %s" % num_data)
+            raise ValueError(f"num_data must be positive, got {num_data}")
         old = np.asarray(self.variance.values, dtype=float).reshape(-1)
         if variance is None:
             fill = float(np.mean(old)) if old.size else 1.0
@@ -388,7 +388,7 @@ class HeteroscedasticGaussian(Gaussian):
         else:
             new_vals = np.asarray(variance, dtype=float).reshape(-1, 1)
             if new_vals.shape[0] != num_data:
-                raise ValueError("variance has %d rows but num_data=%d" % (new_vals.shape[0], num_data))
+                raise ValueError(f"variance has {new_vals.shape[0]} rows but num_data={num_data}")
         if self.variance.shape == new_vals.shape:
             self.variance[:] = new_vals
             return
@@ -411,8 +411,8 @@ class HeteroscedasticGaussian(Gaussian):
             if self.variance.shape[0] != n:
                 raise ValueError(
                     "HeteroscedasticGaussian needs Y_metadata['output_index'] "
-                    "when the number of test points (%d) differs from the "
-                    "noise parameter length (%d)" % (n, self.variance.shape[0])
+                    f"when the number of test points ({n}) differs from the "
+                    f"noise parameter length ({self.variance.shape[0]})"
                 )
             idx = np.arange(n)
         return self.variance[idx]

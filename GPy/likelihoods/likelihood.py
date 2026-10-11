@@ -787,9 +787,9 @@ class Likelihood(Parameterized):
             # Default quadrature assumes a vector of marginal variances. Passing a
             # full latent covariance here silently produces nonsense (#993).
             raise NotImplementedError(
-                "%s does not implement full observation covariance; "
+                f"{self.__class__.__name__} does not implement full observation covariance; "
                 "use full_cov=False, include_likelihood=False, or override "
-                "predictive_values." % self.__class__.__name__
+                "predictive_values."
             )
         try:
             pred_mean = self.predictive_mean(mu, var, Y_metadata=Y_metadata)

@@ -436,7 +436,7 @@ class TestSerialization:
         ]
         with tempfile.TemporaryDirectory() as tmp:
             for i, m in enumerate(models):
-                base = os.path.join(tmp, "model_%d" % i)
+                base = os.path.join(tmp, f"model_{i}")
                 m.save_model(base, compress=False, save_data=False)
                 json_path = base + ".json"
                 zip_path = base + ".zip"

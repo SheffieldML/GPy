@@ -153,7 +153,7 @@ class KumarWarping(InputWarpingFunction):
         self.num_parameters = 2 * self.warping_dim
 
         # create parameters
-        self.params = [[Param("a%d" % i, 1.0), Param("b%d" % i, 1.0)] for i in range(self.warping_dim)]
+        self.params = [[Param(f"a{i}", 1.0), Param(f"b{i}", 1.0)] for i in range(self.warping_dim)]
 
         # add constraints
         for i in range(self.warping_dim):

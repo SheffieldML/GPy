@@ -29,8 +29,8 @@ def conf_matrix(p, labels, names=None, threshold=0.5, show=True):
     error = (false_1 + false_0) / float(labels.size)
     if show:
         print(100.0 - error * 100, "% instances correctly classified")
-        print("%-10s|  %-10s|  %-10s| " % ("", names[0], names[1]))
+        print(f"{'':<10}|  {names[0]:<10}|  {names[1]:<10}| ")
         print("----------|------------|------------|")
-        print("%-10s|  %-10s|  %-10s| " % (names[0], true_1, false_0))
-        print("%-10s|  %-10s|  %-10s| " % (names[1], false_1, true_0))
+        print(f"{names[0]:<10}|  {true_1:<10}|  {false_0:<10}| ")
+        print(f"{names[1]:<10}|  {false_1:<10}|  {true_0:<10}| ")
     return error, true_1, false_1, true_0, false_0

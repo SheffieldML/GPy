@@ -255,10 +255,10 @@ class HessianChecker(GradientChecker):
             header_string = map(lambda x: " | ".join(header), [header])
             separator = "-" * len(header_string[0])
             print("\n".join([header_string[0], separator]))
-            min_r = "%.6f" % float(numpy.min(ratio))
-            max_r = "%.6f" % float(numpy.max(ratio))
-            max_d = "%.6f" % float(numpy.max(difference))
-            min_d = "%.6f" % float(numpy.min(difference))
+            min_r = f"{float(numpy.min(ratio)):.6f}"
+            max_r = f"{float(numpy.max(ratio)):.6f}"
+            max_d = f"{float(numpy.max(difference)):.6f}"
+            min_d = f"{float(numpy.min(difference)):.6f}"
             cols = [max_r, min_r, min_d, max_d]
 
             if check_passed:

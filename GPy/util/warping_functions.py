@@ -111,7 +111,7 @@ class TanhFunction(WarpingFunction):
         super(TanhFunction, self).__init__(name="warp_tanh")
         self.psi = Param("psi", self.psi)
         self.psi[:, :2].constrain_positive()
-        self.d = Param("%s" % ("d"), 1.0, Logexp())
+        self.d = Param("{}".format("d"), 1.0, Logexp())
         self.link_parameter(self.psi)
         self.link_parameter(self.d)
         self.initial_y = initial_y

@@ -717,8 +717,7 @@ class TestMisc:
         assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
         m.optimize()
         assert np.abs(m.offset[0] - offset) < 0.1, (
-            "GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)"
-            % (m.offset[0], offset)
+            f"GPOffsetRegression model failing to estimate correct offset (value estimated = {m.offset[0]:0.2f} instead of {offset:0.2f})"
         )
 
     def test_logistic_basis_func_gradients(self):
@@ -1445,7 +1444,7 @@ class TestGradient:
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         Y_metadata = {"output_index": np.arange(num_obs)[:, None]}
         noise_terms = np.unique(Y_metadata["output_index"].flatten())
-        likelihoods_list = [GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for j in noise_terms]
+        likelihoods_list = [GPy.likelihoods.Gaussian(name=f"Gaussian_noise_{j}") for j in noise_terms]
         likelihood = GPy.likelihoods.MixedNoise(likelihoods_list=likelihoods_list)
         m = GPy.core.SparseGP(
             X,

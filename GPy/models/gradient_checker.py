@@ -71,7 +71,7 @@ class GradientChecker(Model):
         super(GradientChecker, self).__init__(name="GradientChecker")
         if isinstance(x0, (list, tuple)) and names is None:
             self.shapes = [get_shape(xi) for xi in x0]
-            self.names = ["X{i}".format(i=i) for i in range(len(x0))]
+            self.names = [f"X{i}" for i in range(len(x0))]
         elif isinstance(x0, (list, tuple)) and names is not None:
             self.shapes = [get_shape(xi) for xi in x0]
             self.names = names
@@ -247,7 +247,7 @@ class HessianChecker(GradientChecker):
 
         if verbose:
             if block_indices:
-                print("\nBlock {}".format(block_indices))
+                print(f"\nBlock {block_indices}")
             else:
                 print("\nAll blocks")
 
@@ -266,7 +266,7 @@ class HessianChecker(GradientChecker):
             else:
                 checked = "\033[91m  False \033[0m"
 
-            grad_string = "{} | {}  | {} |    {}    |   {} ".format(checked, cols[0], cols[1], cols[2], cols[3])
+            grad_string = f"{checked} | {cols[0]}  | {cols[1]} |    {cols[2]}    |   {cols[3]} "
             print(grad_string)
 
             if plot:
@@ -303,7 +303,7 @@ class HessianChecker(GradientChecker):
                 axes[1, 1].xaxis.set_ticks([None])
                 axes[1, 1].yaxis.set_ticks([None])
                 if block_indices:
-                    fig.suptitle("Block: {}".format(block_indices))
+                    fig.suptitle(f"Block: {block_indices}")
                 pb.show()
 
         return check_passed
@@ -396,7 +396,7 @@ class SkewChecker(HessianChecker):
                 # Unless super_plot is set, just plot the first one
                 p = bool(plot and block_ind == numeric_hess.shape[2] - 1 or super_plot)
                 if verbose:
-                    print("Checking derivative of hessian wrt parameter number {}".format(block_ind))
+                    print(f"Checking derivative of hessian wrt parameter number {block_ind}")
                 check_passed[block_ind] = self.checkgrad_block(
                     analytic_hess[:, :, block_ind],
                     numeric_hess[:, :, block_ind],

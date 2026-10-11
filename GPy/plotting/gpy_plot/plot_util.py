@@ -141,9 +141,7 @@ def helper_for_plot_data(self, X, plot_limits, visible_dims, fixed_inputs, resol
             Xgrid[:, i] = v
     else:
         raise TypeError(
-            "calculated free_dims {} from visible_dims {} and fixed_dims {} is neither 1D nor 2D".format(
-                free_dims, visible_dims, fixed_dims
-            )
+            f"calculated free_dims {free_dims} from visible_dims {visible_dims} and fixed_dims {fixed_dims} is neither 1D nor 2D"
         )
     return fixed_dims, free_dims, Xgrid, x, y, xmin, xmax, resolution
 
@@ -179,7 +177,7 @@ def scatter_label_generator(labels, X, visible_dims, marker=None):
                 # python3
                 this_label = ul
         elif isinstance(ul, Number):
-            this_label = "class {!s}".format(ul)
+            this_label = f"class {ul!s}"
         else:
             this_label = ul
 
@@ -211,7 +209,7 @@ def subsample_X(X, labels, num_samples=1000):
     num_samples and the returned subsampled X.
     """
     if X.shape[0] > num_samples:
-        print("Warning: subsampling X, as it has more samples then {}. X.shape={!s}".format(int(num_samples), X.shape))
+        print(f"Warning: subsampling X, as it has more samples then {int(num_samples)}. X.shape={X.shape!s}")
         if labels is not None:
             subsample = []
             for _, _, _, _, index, _ in scatter_label_generator(labels, X, (0, None, None)):

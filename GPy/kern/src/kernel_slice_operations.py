@@ -15,7 +15,7 @@ from paramz.parameterized import ParametersChangedMeta
 
 def put_clean(dct, name, func):
     if name in dct:
-        dct["_clean_{}".format(name)] = dct[name]
+        dct[f"_clean_{name}"] = dct[name]
         dct[name] = func(dct[name])
 
 
@@ -68,12 +68,10 @@ class _Slice_wrap:
             self.shape = X.shape
         else:
             self.shape = ret_shape
-        assert X.ndim == 2, "need at least column vectors as inputs to kernels for now, given X.shape={!s}".format(
-            X.shape
-        )
+        assert X.ndim == 2, f"need at least column vectors as inputs to kernels for now, given X.shape={X.shape!s}"
         if X2 is not None:
             assert X2.ndim == 2, (
-                "need at least column vectors as inputs to kernels for now, given X2.shape={!s}".format(X2.shape)
+                f"need at least column vectors as inputs to kernels for now, given X2.shape={X2.shape!s}"
             )
         if (self.k._all_dims_active is not None) and (self.k._sliced_X == 0):
             self.k._check_active_dims(X)

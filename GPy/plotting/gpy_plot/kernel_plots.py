@@ -83,7 +83,7 @@ def plot_ARD(kernel, filtering=None, legend=False, canvas=None, **kwargs):
             last_bottom = ard_params[i, :]
             bottom += last_bottom
         else:
-            print("filtering out {}".format(parts[i].name))
+            print(f"filtering out {parts[i].name}")
 
     # add_bar_labels(fig, ax, [bars[-1]], bottom=bottom-last_bottom)
 
@@ -131,10 +131,10 @@ def plot_covariance(
     if projection == "3d":
         xlabel = "X[:,0]"
         ylabel = "X[:,1]"
-        zlabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
+        zlabel = f"k(X, {np.asanyarray(x).tolist()!s})"
     else:
         xlabel = "X"
-        ylabel = "k(X, {!s})".format(np.asanyarray(x).tolist())
+        ylabel = f"k(X, {np.asanyarray(x).tolist()!s})"
         zlabel = None
 
     canvas, kwargs = pl().new_canvas(projection=projection, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel, **kwargs)

@@ -101,9 +101,7 @@ class GP(Model):
 
         if self.kern._effective_input_dim != self.X.shape[1]:
             warnings.warn(
-                "Your kernel has a different input dimension {} then the given X dimension {}. Be very sure this is what you want and you have not forgotten to set the right input dimenion in your kernel".format(
-                    self.kern._effective_input_dim, self.X.shape[1]
-                ),
+                f"Your kernel has a different input dimension {self.kern._effective_input_dim} then the given X dimension {self.X.shape[1]}. Be very sure this is what you want and you have not forgotten to set the right input dimenion in your kernel",
                 stacklevel=2,
             )
 

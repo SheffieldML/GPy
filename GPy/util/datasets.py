@@ -1202,7 +1202,7 @@ def singlecell_rna_seq_deng(dataset="singlecell_deng"):
     # Extract the tar file
     filename = os.path.join(dir_path, "GSE45719_Raw.tar")
     with tarfile.open(filename, "r") as files:
-        print("Extracting Archive {}...".format(files.name))
+        print(f"Extracting Archive {files.name}...")
         data = None
         gene_info = None
         message = ""
@@ -1242,7 +1242,7 @@ def singlecell_rna_seq_deng(dataset="singlecell_deng"):
     sys.stdout.write(" " * len(message) + "\r")
     sys.stdout.flush()
     print()
-    print("Read Archive {}".format(files.name))
+    print(f"Read Archive {files.name}")
 
     return data_details_return(
         {

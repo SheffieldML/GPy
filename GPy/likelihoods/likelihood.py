@@ -895,7 +895,7 @@ class Likelihood(Parameterized):
 
             # Show progress
             if i % int((burn_in + num_samples) * 0.1) == 0:
-                print("{}% of samples taken ({})".format((i / int((burn_in + num_samples) * 0.1) * 10), i))
+                print(f"{i / int((burn_in + num_samples) * 0.1) * 10}% of samples taken ({i})")
                 print("Last run accept ratio: ", accept_ratio[i])
 
         print("Average accept ratio: ", np.mean(accept_ratio))

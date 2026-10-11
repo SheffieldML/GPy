@@ -109,13 +109,13 @@ class sde_StdPeriodic(StdPeriodic):
         eps = 1e-12
         if np.any(np.isfinite(q2) == False) or np.any(np.abs(q2) > 1.0 / eps):
             warnings.warn(
-                "sde_Periodic:  Infinite or too large (eps={:e}) values in q2 :".format(eps) + q2.__format__(""),
+                f"sde_Periodic:  Infinite or too large (eps={eps:e}) values in q2 :" + q2.__format__(""),
                 stacklevel=2,
             )
 
         if np.any(np.isfinite(dq2l) == False) or np.any(np.abs(dq2l) > 1.0 / eps):
             warnings.warn(
-                "sde_Periodic:  Infinite or too large (eps={:e}) values in dq2l :".format(eps) + q2.__format__(""),
+                f"sde_Periodic:  Infinite or too large (eps={eps:e}) values in dq2l :" + q2.__format__(""),
                 stacklevel=2,
             )
 

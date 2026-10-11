@@ -86,8 +86,8 @@ class vector_show(matplotlib_show):
     def modify(self, vals):
         self.vals = vals.copy()
         xdata, ydata = self.handle.get_data()
-        assert vals.size == self.size, "values passed into modify changed size! vals.size:{} != in.size:{}".format(
-            vals.size, self.size
+        assert vals.size == self.size, (
+            f"values passed into modify changed size! vals.size:{vals.size} != in.size:{self.size}"
         )
         self.handle.set_data(xdata, self.vals)
         self.axes.figure.canvas.draw()
@@ -525,13 +525,13 @@ class mocap_data_show(matplotlib_show):
         #         self.axes.set_zlim(self.z_lim)
         #         self.axes.auto_scale_xyz([-1., 1.], [-1., 1.], [-1., 1.])
 
-        extents = np.array([getattr(self.axes, "get_{}lim".format(dim))() for dim in "xyz"])
+        extents = np.array([getattr(self.axes, f"get_{dim}lim")() for dim in "xyz"])
         sz = extents[:, 1] - extents[:, 0]
         centers = np.mean(extents, axis=1)
         maxsize = max(abs(sz))
         r = maxsize / 2
         for ctr, dim in zip(centers, "xyz", strict=False):
-            getattr(self.axes, "set_{}lim".format(dim))(ctr - r, ctr + r)
+            getattr(self.axes, f"set_{dim}lim")(ctr - r, ctr + r)
 
     #         self.axes.set_aspect('equal')
     #         self.axes.autoscale(enable=False)

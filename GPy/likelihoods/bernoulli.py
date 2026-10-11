@@ -89,7 +89,7 @@ class Bernoulli(Likelihood):
             sigma2_hat = (1.0 - z * phi_div_Phi - np.square(phi_div_Phi)) / tau_i
         else:
             # TODO: do we want to revert to numerical quadrature here?
-            raise ValueError("Exact moment matching not available for link {}".format(self.gp_link.__name__))
+            raise ValueError(f"Exact moment matching not available for link {self.gp_link.__name__}")
 
         # TODO: Output log_Z_hat instead of Z_hat (needs to be change in all others likelihoods)
         return np.exp(log_Z_hat), mu_hat, sigma2_hat

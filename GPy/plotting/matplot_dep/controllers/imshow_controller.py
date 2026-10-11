@@ -57,7 +57,7 @@ class ImAnnotateController(ImshowController):
         xlin = numpy.linspace(xmin, xmax, self.resolution, endpoint=False)
         ylin = numpy.linspace(ymin, ymax, self.resolution, endpoint=False)
         for [i, x], [j, y] in itertools.product(enumerate(xlin), enumerate(ylin)):
-            view.append(ax.text(x + xoffset, y + yoffset, "{}".format(X[1][j, i]), ha="center", va="center", **kwargs))
+            view.append(ax.text(x + xoffset, y + yoffset, f"{X[1][j, i]}", ha="center", va="center", **kwargs))
         return view
 
     def update_view(self, view, X, xmin, xmax, ymin, ymax):
@@ -68,5 +68,5 @@ class ImAnnotateController(ImshowController):
         for [[i, x], [j, y]], text in zip(itertools.product(enumerate(xlin), enumerate(ylin)), view[1:], strict=False):
             text.set_x(x + xoffset)
             text.set_y(y + yoffset)
-            text.set_text("{}".format(X[1][j, i]))
+            text.set_text(f"{X[1][j, i]}")
         return view

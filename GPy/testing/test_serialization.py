@@ -310,9 +310,9 @@ class TestSerialization:
         m.save_model("temp_test_gp_classifier_with_data.json", compress=True, save_data=True)
         m.save_model("temp_test_gp_classifier_without_data.json", compress=True, save_data=False)
         m1_r = GPy.models.GPClassification.load_model("temp_test_gp_classifier_with_data.json.zip")
-        assert type(m) == type(m1_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m1_r))
+        assert type(m) == type(m1_r), f"Incorrect model type. Expected: {type(m)} Actual: {type(m1_r)}"
         m2_r = GPy.models.GPClassification.load_model("temp_test_gp_classifier_without_data.json.zip", (X, Y))
-        assert type(m) == type(m2_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m2_r))
+        assert type(m) == type(m2_r), f"Incorrect model type. Expected: {type(m)} Actual: {type(m2_r)}"
         os.remove("temp_test_gp_classifier_with_data.json.zip")
         os.remove("temp_test_gp_classifier_without_data.json.zip")
 
@@ -342,11 +342,11 @@ class TestSerialization:
             save_data=False,
         )
         m1_r = GPy.models.SparseGPClassification.load_model("temp_test_sparse_gp_classifier_with_data.json.zip")
-        assert type(m) == type(m1_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m1_r))
+        assert type(m) == type(m1_r), f"Incorrect model type. Expected: {type(m)} Actual: {type(m1_r)}"
         m2_r = GPy.models.SparseGPClassification.load_model(
             "temp_test_sparse_gp_classifier_without_data.json.zip", (X, Y)
         )
-        assert type(m) == type(m2_r), "Incorrect model type. Expected: {} Actual: {}".format(type(m), type(m2_r))
+        assert type(m) == type(m2_r), f"Incorrect model type. Expected: {type(m)} Actual: {type(m2_r)}"
         os.remove("temp_test_sparse_gp_classifier_with_data.json.zip")
         os.remove("temp_test_sparse_gp_classifier_without_data.json.zip")
 

@@ -5,7 +5,7 @@ The Gaussian processes framework in Python.
 * GPy [homepage](http://sheffieldml.github.io/GPy/)
 * Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
 * Multi-output / coregionalized regression notes: [`doc/source/tuto_coregionalized.rst`](doc/source/tuto_coregionalized.rst) (also on [Read the Docs](https://gpy.readthedocs.io/en/devel/tuto_coregionalized.html) after the next docs build)
-* User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
+* Community Q&A: [GitHub Discussions](https://github.com/SheffieldML/GPy/discussions)
 * Developer [documentation](http://gpy.readthedocs.io/) [documentation (devel branch)](https://gpy.readthedocs.io/en/devel/)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
   [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)

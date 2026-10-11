@@ -59,7 +59,7 @@ class SparseGPRegression(SparseGP_MPI):
 
         likelihood = likelihoods.Gaussian()
 
-        if not (X_variance is None):
+        if X_variance is not None:
             X = NormalPosterior(X, X_variance)
 
         if mpi_comm is not None:

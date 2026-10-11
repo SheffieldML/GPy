@@ -17,7 +17,7 @@ class DEtime(Kern):
         self.link_parameter(self.kern)
 
     def K(self, X, X2=None):
-        assert X2 == None
+        assert X2 is None
         K = self.kern.K(X, X2)
 
         if self.idx_p <= 0 or self.idx_p > X.shape[0] / 2:
@@ -47,7 +47,7 @@ class DEtime(Kern):
         return Kdiag
 
     def update_gradients_full(self, dL_dK, X, X2=None):
-        assert X2 == None
+        assert X2 is None
         if self.idx_p <= 0 or self.idx_p > X.shape[0] / 2:
             self.kern.update_gradients_full(dL_dK, X)
             return

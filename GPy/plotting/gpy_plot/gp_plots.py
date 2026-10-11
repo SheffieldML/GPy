@@ -399,9 +399,9 @@ def plot(
     xmin, xmax = helper_data[5:7]
     free_dims = helper_data[1]
 
-    if not "xlim" in kwargs:
+    if "xlim" not in kwargs:
         kwargs["xlim"] = (xmin[0], xmax[0])
-    if not "ylim" in kwargs and len(free_dims) == 2:
+    if "ylim" not in kwargs and len(free_dims) == 2:
         kwargs["ylim"] = (xmin[1], xmax[1])
 
     canvas, _ = pl().new_canvas(projection=projection, **kwargs)

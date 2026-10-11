@@ -60,7 +60,7 @@ try:
         "double *out, double *in, int size_1, int size_2",
         "out[i] += sum_axis_element(in, size_1, size_2, i)",
         "sum_axis",
-        preamble="""        
+        preamble="""
         __device__ double sum_axis_element(double *in, int size_1, int size_2, int idx)
         {
             int k = idx/size_1;

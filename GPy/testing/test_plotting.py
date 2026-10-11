@@ -48,7 +48,8 @@ except ImportError:
 
 import pytest
 import numpy as np
-import GPy, os
+import GPy
+import os
 import logging
 
 from GPy.plotting import change_plotting_library, plotting_library

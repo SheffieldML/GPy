@@ -21,7 +21,7 @@ class WarpedGP(GP):
     def __init__(self, X, Y, kernel=None, warping_function=None, warping_terms=3, normalizer=False):
         if kernel is None:
             kernel = kern.RBF(X.shape[1])
-        if warping_function == None:
+        if warping_function is None:
             self.warping_function = TanhFunction(warping_terms)
             self.warping_params = np.random.randn(self.warping_function.n_terms * 3 + 1) * 1
         else:

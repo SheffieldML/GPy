@@ -139,7 +139,7 @@ class MultioutputGP(GP):
             predicted partial derivatives.
 
             In this case the resulting arrays are sized [N*, Q].
-            
+
             :param Xnew: points at which to compute predictive gradients
             :type Xnew: list
             :type Xnew[i]: np.darray (sum_i^D : N_i*, Q)

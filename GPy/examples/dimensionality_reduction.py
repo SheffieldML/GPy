@@ -634,7 +634,7 @@ def stick_play(range=None, frame_rate=15, optimize=False, verbose=True, plot=Tru
 
     data = pods.datasets.osu_run1()
     # optimize
-    Y = data["Y"].copy() if range == None else data["Y"][range[0] : range[1], :].copy()
+    Y = data["Y"].copy() if range is None else data["Y"][range[0] : range[1], :].copy()
     if plot:
         y = Y[0, :]
         data_show = GPy.plotting.matplot_dep.visualize.stick_show(y[None, :], connect=data["connect"])

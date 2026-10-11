@@ -31,7 +31,7 @@ gpu_code = """
             *end = *start+size;
         }
     }
-    
+
     __device__ void reduce_sum(double* array, int array_size) {
         int s;
         if(array_size >= blockDim.x) {
@@ -54,7 +54,7 @@ gpu_code = """
     {
         int n_start, n_end;
         divide_data(N, gridDim.x, blockIdx.x, &n_start, &n_end);
-        
+
         for(int i=n_start*Q+threadIdx.x; i<n_end*Q; i+=blockDim.x) {
             int n=i/Q;
             int q=i%Q;
@@ -70,9 +70,9 @@ gpu_code = """
     {
         int m_start, m_end;
         divide_data(M, gridDim.x, blockIdx.x, &m_start, &m_end);
-        
+
         for(int m=m_start; m<m_end; m++) {
-            for(int n=threadIdx.x; n<N; n+= blockDim.x) {            
+            for(int n=threadIdx.x; n<N; n+= blockDim.x) {
                 double log_psi1 = 0;
                 for(int q=0;q<Q;q++) {
                     double muZ = mu[IDX_NQ(n,q)]-Z[IDX_MQ(m,q)];
@@ -84,17 +84,17 @@ gpu_code = """
             }
         }
     }
-    
+
     __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int psi2_idx_start, psi2_idx_end;
         __shared__ double psi2_local[THREADNUM];
         divide_data((M+1)*M/2, gridDim.x, blockIdx.x, &psi2_idx_start, &psi2_idx_end);
-        
+
         for(int psi2_idx=psi2_idx_start; psi2_idx<psi2_idx_end; psi2_idx++) {
             int m1 = int((sqrt(8.*psi2_idx+1.)-1.)/2.);
             int m2 = psi2_idx - (m1+1)*m1/2;
-            
+
             psi2_local[threadIdx.x] = 0;
             for(int n=threadIdx.x;n<N;n+=blockDim.x) {
                 double log_psi2_n = 0;
@@ -119,7 +119,7 @@ gpu_code = """
             __syncthreads();
         }
     }
-    
+
     __global__ void psi1compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi1, double *psi1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
@@ -142,11 +142,11 @@ gpu_code = """
                     if(n<N) {
                         double lpsi1 = psi1[IDX_NM(n,m)]*dL_dpsi1[IDX_NM(n,m)];
                         if(q==0) {dvar_local += lpsi1;}
-                        
+
                         double Zmu = Z[IDX_MQ(m,q)] - mu_nq;
                         double denom = Snq+lq;
                         double Zmu2_denom = Zmu*Zmu/denom;
-                        
+
                         dmu_local += lpsi1*Zmu/denom;
                         dS_local += lpsi1*(Zmu2_denom-1.)/denom;
                         dl_local += lpsi1*(Zmu2_denom+Snq/lq)/denom;
@@ -170,9 +170,9 @@ gpu_code = """
         g_local[threadIdx.x] = dvar_local;
         __syncthreads();
         reduce_sum(g_local, THREADNUM);
-        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}        
+        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}
     }
-    
+
     __global__ void psi2compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi2, double *psi2n, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
@@ -197,12 +197,12 @@ gpu_code = """
                         if(n<N) {
                             double lpsi2 = psi2n[IDX_NMM(n,m1,m2)]*dL_dpsi2[IDX_MM(m1,m2)];
                             if(q==0) {dvar_local += lpsi2;}
-                            
+
                             double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];
                             double muZhat =  mu_nq - (Z[IDX_MQ(m1,q)] + Z[IDX_MQ(m2,q)])/2.;
                             double denom = 2.*Snq+lq;
                             double muZhat2_denom = muZhat*muZhat/denom;
-                            
+
                             dmu_local += lpsi2*muZhat/denom;
                             dS_local += lpsi2*(2.*muZhat2_denom-1.)/denom;
                             dl_local += lpsi2*((Snq/lq+muZhat2_denom)/denom+dZ*dZ/(4.*lq*lq));
@@ -263,7 +263,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
     def _initGPUCache(self, N, M, Q):
         import pycuda.gpuarray as gpuarray
 
-        if self.gpuCache == None:
+        if self.gpuCache is None:
             self.gpuCache = {
                 "l_gpu": gpuarray.empty((Q,), np.float64, order="F"),
                 "Z_gpu": gpuarray.empty((M, Q), np.float64, order="F"),

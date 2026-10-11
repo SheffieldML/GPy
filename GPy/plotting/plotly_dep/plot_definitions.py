@@ -323,7 +323,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         )
 
     def imshow(self, ax, X, extent=None, label=None, vmin=None, vmax=None, **imshow_kwargs):
-        if not "showscale" in imshow_kwargs:
+        if "showscale" not in imshow_kwargs:
             imshow_kwargs["showscale"] = False
         return Heatmap(
             z=X,
@@ -395,7 +395,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
     def fill_between(
         self, ax, X, lower, upper, color=Tango.colorsHex["mediumBlue"], label=None, line_kwargs=None, **kwargs
     ):
-        if not "line" in kwargs:
+        if "line" not in kwargs:
             kwargs["line"] = Line(**line_kwargs or {})
         else:
             kwargs["line"].update(line_kwargs or {})

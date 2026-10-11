@@ -131,7 +131,7 @@ class PCA:
             labels = numpy.zeros(X.shape[0])
         ulabels = []
         for lab in labels:
-            if not lab in ulabels:
+            if lab not in ulabels:
                 ulabels.append(lab)
         nlabels = len(ulabels)
         colors = iter([cmap(float(i) / nlabels) for i in range(nlabels)]) if colors is None else iter(colors)

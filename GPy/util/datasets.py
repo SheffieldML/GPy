@@ -372,7 +372,7 @@ def della_gatta_TRP63_gene_expression(data_set="della_gatta", gene_number=None):
         download_data(data_set)
     mat_data = scipy.io.loadmat(os.path.join(data_path, data_set, "DellaGattadata.mat"))
     X = np.double(mat_data["timepoints"])
-    if gene_number == None:
+    if gene_number is None:
         Y = mat_data["exprs_tp53_RMA"]
     else:
         Y = mat_data["exprs_tp53_RMA"][:, gene_number]

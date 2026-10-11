@@ -1355,7 +1355,7 @@ class DescreteStateSpace:
 
             k_measurment = Y[k, :, :]
 
-            if np.any(np.isnan(k_measurment)) == False:
+            if np.any(np.isnan(k_measurment)) is False:
                 if p_kalman_filter_type == "svd":
                     (
                         m_upd,
@@ -2276,21 +2276,21 @@ class DescreteStateSpace:
         try:
             P_init_inv = sp.linalg.inv(P_init)
 
-            compute_P_init_terms = False if np.max(np.abs(P_init_inv)) > 100000000000000.0 else True
+            compute_P_init_terms = not np.max(np.abs(P_init_inv)) > 100000000000000.0
         except np.linalg.LinAlgError:
             compute_P_init_terms = False
 
         try:
             Q_inv = sp.linalg.inv(Q)
 
-            compute_Q_terms = False if np.max(np.abs(Q_inv)) > 100000000000000.0 else True
+            compute_Q_terms = not np.max(np.abs(Q_inv)) > 100000000000000.0
         except np.linalg.LinAlgError:
             compute_Q_terms = False
 
         try:
             R_inv = sp.linalg.inv(R)
 
-            compute_R_terms = False if np.max(np.abs(R_inv)) > 100000000000000.0 else True
+            compute_R_terms = not np.max(np.abs(R_inv)) > 100000000000000.0
         except np.linalg.LinAlgError:
             compute_R_terms = False
 
@@ -2618,7 +2618,7 @@ class ContDescrStateSpace(DescreteStateSpace):
                 Ak,Qk, dAk, dQk: matrices and/or 3D arrays
                     A, Q, dA dQ on step k
             """
-            if (self.last_k != k) or (self.last_k_computed == False):
+            if (self.last_k != k) or (self.last_k_computed is False):
                 v_Ak, v_Qk, tmp, v_dAk, v_dQk = ContDescrStateSpace.lti_sde_to_descrete(
                     self.F,
                     self.L,
@@ -2692,7 +2692,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             Square root of the noise matrix Q
             """
 
-            if (self.last_k == k) and (self.last_k_computed == True):
+            if (self.last_k == k) and (self.last_k_computed is True):
                 if not self.Q_square_root_computed:
                     if not self.Q_svd_computed:
                         (U, S, Vh) = sp.linalg.svd(
@@ -2743,7 +2743,7 @@ class ContDescrStateSpace(DescreteStateSpace):
 
             # import pdb; pdb.set_trace()
 
-            if (self.last_k == k) and (self.last_k_computed == True):
+            if (self.last_k == k) and (self.last_k_computed is True):
                 if not self.Q_inverse_computed:
                     if not self.Q_svd_computed:
                         (U, S, Vh) = sp.linalg.svd(
@@ -3498,7 +3498,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             # import pdb; pdb.set_trace()
             k_measurment = Y[k, :, :]
 
-            if np.any(np.isnan(k_measurment)) == False:
+            if np.any(np.isnan(k_measurment)) is False:
                 if p_kalman_filter_type == "svd":
                     (
                         m_upd,

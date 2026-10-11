@@ -401,13 +401,13 @@ class TestNoiseModels:
                 param_vals = []
                 param_names = []
                 param_constraints = []
-            link_f_constraints = attributes["link_f_constraints"] if "link_f_constraints" in attributes else []
+            link_f_constraints = attributes.get("link_f_constraints", [])
             Y = attributes["Y"].copy() if "Y" in attributes else self.Y.copy()
             f = attributes["f"].copy() if "f" in attributes else self.f.copy()
             Y_metadata = attributes["Y_metadata"].copy() if "Y_metadata" in attributes else None
-            laplace = attributes["laplace"] if "laplace" in attributes else False
-            ep = attributes["ep"] if "ep" in attributes else False
-            var_exp = attributes["variational_expectations"] if "variational_expectations" in attributes else False
+            laplace = attributes.get("laplace", False)
+            ep = attributes.get("ep", False)
+            var_exp = attributes.get("variational_expectations", False)
 
             # if len(param_vals) > 1:
             # raise NotImplementedError("Cannot support multiple params in likelihood yet!")

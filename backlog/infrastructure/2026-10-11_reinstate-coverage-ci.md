@@ -1,7 +1,7 @@
 ---
 id: 2026-10-11_reinstate-coverage-ci
 title: Reinstate coverage reporting on GitHub Actions
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-11'
 last_updated: '2026-10-11'
@@ -33,14 +33,14 @@ badges, and keep status informational until a trustworthy baseline exists.
 
 ## Acceptance Criteria
 
-- [ ] `pytest-cov` (or equivalent) available in the Poetry `dev` group
-- [ ] One GHA job (single OS/Python) runs `pytest --cov=GPy --cov-report=xml`
+- [x] `pytest-cov` (or equivalent) available in the Poetry `dev` group
+- [x] One GHA job (single OS/Python) runs `pytest --cov=GPy --cov-report=xml`
       and uploads to Codecov (or Coveralls — pick one)
-- [ ] README status table updated: drop dead Travis/AppVeyor badges; show live
+- [x] README status table updated: drop dead Travis/AppVeyor badges; show live
       coverage badge for `devel`
-- [ ] Coverage status starts informational (no hard fail on % drop), or uses a
+- [x] Coverage status starts informational (no hard fail on % drop), or uses a
       soft `target: auto` with documented rationale
-- [ ] Review `.coveragerc` excludes (`raise` / `except` / `pass` currently
+- [x] Review `.coveragerc` excludes (`raise` / `except` / `pass` currently
       inflate reported coverage) and document intentional omissions
 
 ## Implementation Notes
@@ -51,6 +51,8 @@ badges, and keep status informational until a trustworthy baseline exists.
 - Local HTML reports (`coverage html`) can stay documented for contributors.
 - Related motivation: SIM115 / file-IO work (#1202) showed how little of
   `datasets`/`mocap` was covered; a live report makes that visible on PRs.
+- Repo secret `CODECOV_TOKEN` must be set for uploads from protected branches
+  (`fail_ci_if_error: false` so missing token does not red the suite).
 
 ## Related
 
@@ -65,3 +67,7 @@ badges, and keep status informational until a trustworthy baseline exists.
 
 Backlog created after noting stale README badges and no coverage upload on the
 current `test-and-deploy.yml` workflow.
+
+Implemented on branch `infra/reinstate-coverage-ci`: dedicated `coverage` job
+(Ubuntu / 3.12), `pytest-cov` in Poetry, soft `codecov.yml`, README badges.
+Mark **Done** after merge and a successful Codecov upload on `devel`.

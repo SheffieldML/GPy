@@ -1,7 +1,8 @@
 # Changelog
 
 ## Unreleased
-* CIP-0005: enable full `SIM` + safe pycodestyle (`E401`/`E711`–`E714`/`W291`/`W293`); mark CIP Implemented
+* CIP-0007: completion wave — dispose 193 legacy issues into summary trackers #1209–#1214 and Discussion #1215
+* CIP-0005: Closed after full `SIM` + safe pycodestyle (#1208)
 * CI: upload coverage from one GHA job (Ubuntu / Python 3.12) to Codecov; refresh README badges
 * CIP-0005: enable simplify `SIM108` (if/else assignments → ternary)
 * CIP-0005: enable simplify `SIM115` (prefer `with open(...)` / `with tarfile.open(...)`)

@@ -115,7 +115,7 @@ def build_likelihood(Y_list, noise_index, likelihoods_list=None):
     Ny = len(Y_list)
     if likelihoods_list is None:
         likelihoods_list = [
-            GPy.likelihoods.Gaussian(name="Gaussian_noise_%s" % j) for y, j in zip(Y_list, range(Ny), strict=False)
+            GPy.likelihoods.Gaussian(name=f"Gaussian_noise_{j}") for y, j in zip(Y_list, range(Ny), strict=False)
         ]
     else:
         assert len(likelihoods_list) == Ny
@@ -166,10 +166,10 @@ def LCM(input_dim, num_outputs, kernels_list, W_rank=1, name="ICM"):
     :type W_rank: integer
     """
     len(kernels_list)
-    K = ICM(input_dim, num_outputs, kernels_list[0], W_rank, name="%s%s" % (name, 0))
+    K = ICM(input_dim, num_outputs, kernels_list[0], W_rank, name=f"{name}{0}")
     j = 1
     for kernel in kernels_list[1:]:
-        K += ICM(input_dim, num_outputs, kernel, W_rank, name="%s%s" % (name, j))
+        K += ICM(input_dim, num_outputs, kernel, W_rank, name=f"{name}{j}")
         j += 1
     return K
 

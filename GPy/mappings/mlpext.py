@@ -35,8 +35,8 @@ class MLPext(Mapping):
         for i in np.arange(len(hidden_dims) + 1):
             in_dim = input_dim if i == 0 else hidden_dims[i - 1]
             out_dim = output_dim if i == len(hidden_dims) else hidden_dims[i]
-            self.W_list.append(Param("W%d" % i, np.random.randn(in_dim, out_dim)))
-            self.b_list.append(Param("b%d" % i, np.random.randn(out_dim)))
+            self.W_list.append(Param(f"W{i}", np.random.randn(in_dim, out_dim)))
+            self.b_list.append(Param(f"b{i}", np.random.randn(out_dim)))
 
         if prior is not None:
             for W, b in zip(self.W_list, self.b_list, strict=False):

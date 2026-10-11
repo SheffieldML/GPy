@@ -1749,7 +1749,7 @@ class DescreteStateSpace:
         S = H.dot(P_pred).dot(H.T) + R
         if measurement.shape[0] == 1:  # measurements are one dimensional
             if S < 0:
-                raise ValueError("Kalman Filter Update: S is negative step %i" % k)
+                raise ValueError(f"Kalman Filter Update: S is negative step {k}")
                 # import pdb; pdb.set_trace()
 
             K = P_pred.dot(H.T) / S
@@ -1981,7 +1981,7 @@ class DescreteStateSpace:
         S = H.dot(P_pred).dot(H.T) + R
         if measurement.shape[0] == 1:  # measurements are one dimensional
             if S < 0:
-                raise ValueError("Kalman Filter Update: S is negative step %i" % k)
+                raise ValueError(f"Kalman Filter Update: S is negative step {k}")
                 # import pdb; pdb.set_trace()
 
             K = P_pred.dot(H.T) / S
@@ -2415,12 +2415,12 @@ class DescreteStateSpace:
                     p_M = p_M.reshape((1, 1, 1))
 
         if ((which == "A") or (which == "Q")) and ((p_M.shape[0] != state_dim) or (p_M.shape[1] != state_dim)):
-            raise ValueError("%s must be a square matrix of size (%i,%i)" % (which, state_dim, state_dim))
+            raise ValueError(f"{which} must be a square matrix of size ({state_dim},{state_dim})")
         if which == "H" and ((p_M.shape[0] != measurement_dim) or (p_M.shape[1] != state_dim)):
-            raise ValueError("H must be of shape (measurement_dim, state_dim) (%i,%i)" % (measurement_dim, state_dim))
+            raise ValueError(f"H must be of shape (measurement_dim, state_dim) ({measurement_dim},{state_dim})")
         if which == "R" and ((p_M.shape[0] != measurement_dim) or (p_M.shape[1] != measurement_dim)):
             raise ValueError(
-                "R must be of shape (measurement_dim, measurement_dim) (%i,%i)" % (measurement_dim, measurement_dim)
+                f"R must be of shape (measurement_dim, measurement_dim) ({measurement_dim},{measurement_dim})"
             )
 
         return (p_M, old_M_shape)
@@ -2465,7 +2465,7 @@ class DescreteStateSpace:
                     dM = dM.reshape((state_dim, state_dim, 1))
         elif isinstance(dM, int):
             if state_dim > 1:
-                raise ValueError("When computing likelihood gradient wrong %s dimension." % which)
+                raise ValueError(f"When computing likelihood gradient wrong {which} dimension.")
             else:
                 dM = np.ones((1, 1, 1)) * dM
 
@@ -3843,7 +3843,7 @@ class ContDescrStateSpace(DescreteStateSpace):
             )
             if print_verbose:
                 print("CDO:  Continue-to-discrete INSTANTANEOUS object is created.")
-                print("CDO:  Number of different time steps: %i" % (number_unique_indices,))
+                print(f"CDO:  Number of different time steps: {number_unique_indices}")
 
         else:
             AQcomp = AQcompute_batch(
@@ -3860,8 +3860,8 @@ class ContDescrStateSpace(DescreteStateSpace):
             )
             if print_verbose:
                 print("CDO:  Continue-to-discrete BATCH object is created.")
-                print("CDO:  Number of different time steps: %i" % (number_unique_indices,))
-                print("CDO:  Total size if its data: %i" % (AQcomp.total_size_of_data,))
+                print(f"CDO:  Number of different time steps: {number_unique_indices}")
+                print(f"CDO:  Total size if its data: {AQcomp.total_size_of_data}")
 
         return AQcomp
 
@@ -4125,7 +4125,7 @@ def balance_matrix(A):
     gebal = sp.linalg.lapack.get_lapack_funcs("gebal", (A,))
     bA, lo, hi, pivscale, info = gebal(A, permute=True, scale=True, overwrite_a=False)
     if info < 0:
-        raise ValueError("balance_matrix: Illegal value in %d-th argument of internal gebal " % -info)
+        raise ValueError(f"balance_matrix: Illegal value in {-info}-th argument of internal gebal ")
 
     # calculating the similarity transforamtion:
     def perm_matr(D, c1, c2):

@@ -31,7 +31,7 @@ class OneVsAllSparseClassification:
 
         self.results = {}
         for yj in labels:
-            print("Class %s vs all" % yj)
+            print(f"Class {yj} vs all")
             Ynew = Y.copy()
             Ynew[Y.flatten() != yj] = 0
             Ynew[Y.flatten() == yj] = 1

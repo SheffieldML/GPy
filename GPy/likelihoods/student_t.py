@@ -304,7 +304,7 @@ class StudentT(Likelihood):
             for i in range(pred_var.shape[-1]):
                 pred_var[:, :, i].flat[:: pred_var.shape[0] + 1] += noise
         else:
-            raise ValueError("Unexpected latent covariance shape %s" % (pred_var.shape,))
+            raise ValueError(f"Unexpected latent covariance shape {pred_var.shape}")
         return pred_mean, pred_var
 
     def conditional_mean(self, gp):

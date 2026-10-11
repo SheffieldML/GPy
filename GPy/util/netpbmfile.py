@@ -181,14 +181,14 @@ class NetpbmFile:
         fh.seek(0)
         data = fh.read(4096)
         if (len(data) < 7) or not (b"0" < data[1:2] < b"8"):
-            raise ValueError("Not a Netpbm file:\n%s" % data[:32])
+            raise ValueError(f"Not a Netpbm file:\n{data[:32]}")
         try:
             self._read_pam_header(data)
         except Exception:
             try:
                 self._read_pnm_header(data)
             except Exception as err:
-                raise ValueError("Not a Netpbm file:\n%s" % data[:32]) from err
+                raise ValueError(f"Not a Netpbm file:\n{data[:32]}") from err
 
     def _read_pam_header(self, data):
         """Read PAM header and initialize instance."""
@@ -263,14 +263,14 @@ class NetpbmFile:
         """Initialize instance from numpy array."""
         data = numpy.array(data, ndmin=2, copy=True)
         if data.dtype.kind not in "uib":
-            raise ValueError("not an integer type: %s" % data.dtype)
+            raise ValueError(f"not an integer type: {data.dtype}")
         if data.dtype.kind == "i" and numpy.min(data) < 0:
-            raise ValueError("data out of range: %i" % numpy.min(data))
+            raise ValueError(f"data out of range: {numpy.min(data)}")
         if maxval is None:
             maxval = numpy.max(data)
             maxval = 255 if maxval < 256 else 65535
         if maxval < 0 or maxval > 65535:
-            raise ValueError("data out of range: %i" % maxval)
+            raise ValueError(f"data out of range: {maxval}")
         data = data.astype("u1" if maxval < 256 else ">u2")
         self._data = data
         if data.ndim > 2 and data.shape[-1] in (3, 4):
@@ -302,20 +302,20 @@ class NetpbmFile:
             header = "\n".join(
                 (
                     "P7",
-                    "HEIGHT %i" % self.height,
-                    "WIDTH %i" % self.width,
-                    "DEPTH %i" % self.depth,
-                    "MAXVAL %i" % self.maxval,
-                    "\n".join("TUPLTYPE %s" % unicode(i) for i in self.tupltypes),
+                    f"HEIGHT {self.height}",
+                    f"WIDTH {self.width}",
+                    f"DEPTH {self.depth}",
+                    f"MAXVAL {self.maxval}",
+                    "\n".join(f"TUPLTYPE {unicode(i)}" for i in self.tupltypes),
                     "ENDHDR\n",
                 )
             )
         elif self.maxval == 1:
-            header = "P4 %i %i\n" % (self.width, self.height)
+            header = f"P4 {self.width} {self.height}\n"
         elif self.depth == 1:
-            header = "P5 %i %i %i\n" % (self.width, self.height, self.maxval)
+            header = f"P5 {self.width} {self.height} {self.maxval}\n"
         else:
-            header = "P6 %i %i %i\n" % (self.width, self.height, self.maxval)
+            header = f"P6 {self.width} {self.height} {self.maxval}\n"
         header = bytes(header, "ascii")
         return header
 
@@ -353,5 +353,5 @@ if __name__ == "__main__":
             img = img[0]
         cmap = "gray" if pam.maxval > 1 else "binary"
         pyplot.imshow(img, cmap, interpolation="nearest")
-        pyplot.title("%s %s %s %s" % (fname, unicode(pam.magicnum), _shape, img.dtype))
+        pyplot.title(f"{fname} {unicode(pam.magicnum)} {_shape} {img.dtype}")
         pyplot.show()

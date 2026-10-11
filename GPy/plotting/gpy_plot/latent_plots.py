@@ -64,11 +64,11 @@ def _new_canvas(self, projection, kwargs, which_indices):
     if input_3 is None:
         zlabel = None
     else:
-        zlabel = "latent dimension %i" % input_3
+        zlabel = f"latent dimension {input_3}"
     canvas, kwargs = pl().new_canvas(
         projection=projection,
-        xlabel="latent dimension %i" % input_1,
-        ylabel="latent dimension %i" % input_2,
+        xlabel=f"latent dimension {input_1}",
+        ylabel=f"latent dimension {input_2}",
         zlabel=zlabel,
         **kwargs,
     )
@@ -238,8 +238,8 @@ def plot_magnification(
     canvas, imshow_kwargs = pl().new_canvas(
         xlim=(xmin[0], xmax[0]),
         ylim=(xmin[1], xmax[1]),
-        xlabel="latent dimension %i" % input_1,
-        ylabel="latent dimension %i" % input_2,
+        xlabel=f"latent dimension {input_1}",
+        ylabel=f"latent dimension {input_2}",
         **imshow_kwargs,
     )
     plots = {}
@@ -336,8 +336,8 @@ def plot_latent(
     canvas, imshow_kwargs = pl().new_canvas(
         xlim=(xmin[0], xmax[0]),
         ylim=(xmin[1], xmax[1]),
-        xlabel="latent dimension %i" % input_1,
-        ylabel="latent dimension %i" % input_2,
+        xlabel=f"latent dimension {input_1}",
+        ylabel=f"latent dimension {input_2}",
         **imshow_kwargs,
     )
     if legend:
@@ -453,8 +453,8 @@ def plot_steepest_gradient_map(
     canvas, imshow_kwargs = pl().new_canvas(
         xlim=(xmin[0], xmax[0]),
         ylim=(xmin[1], xmax[1]),
-        xlabel="latent dimension %i" % input_1,
-        ylabel="latent dimension %i" % input_2,
+        xlabel=f"latent dimension {input_1}",
+        ylabel=f"latent dimension {input_2}",
         **imshow_kwargs,
     )
     if data_labels is not None:

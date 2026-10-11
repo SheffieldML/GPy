@@ -111,8 +111,8 @@ class GPMultioutRegression(SparseGP):
         Mc, Mr = int(num_inducing[0]), int(num_inducing[1])
         if Mr > D:
             warnings.warn(
-                "num_inducing[1]=%d exceeds the number of outputs D=%d; "
-                "capping Mr to D so q(U) row covariance matches Z_row (#733)." % (Mr, D),
+                f"num_inducing[1]={Mr} exceeds the number of outputs D={D}; "
+                "capping Mr to D so q(U) row covariance matches Z_row (#733).",
                 UserWarning,
                 stacklevel=2,
             )

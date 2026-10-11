@@ -31,7 +31,7 @@ class Metropolis_Hastings:
         fcurrent = self.model.log_likelihood() + self.model.log_prior()
         accepted = np.zeros(Ntotal, dtype=bool)
         for it in range(Ntotal):
-            print("sample %d of %d\r" % (it + 1, Ntotal), end="")
+            print(f"sample {it + 1} of {Ntotal}\r", end="")
             sys.stdout.flush()
             prop = np.random.multivariate_normal(current, self.cov * self.scale * self.scale)
             self.model.optimizer_array = prop

@@ -1,4 +1,8 @@
 # .coveragerc to control coverage.py
+#
+# Note: exclude_lines below (raise / except / pass / …) inflate reported % vs a
+# strict line count. Leave as-is for continuity with the historical Coveralls
+# baseline; tightening excludes is a follow-up once Codecov uploads are live.
 [run]
 branch = True
 source = GPy

@@ -7,18 +7,20 @@ coverage:
   range: "40...100"
 
   status:
+    # Informational until a post-GHA baseline is trusted; do not block merges on %.
     project:
       default:
         target: auto
-        if_no_uploads: error
+        informational: true
+        if_no_uploads: success
 
     patch:
       default:
-        if_no_uploads: error
+        informational: true
+        if_no_uploads: success
 
-    changes: true
-
+    changes: false
 
 comment:
-  layout: "header, diff, changes, suggestions"
+  layout: "header, diff, flags"
   behavior: default

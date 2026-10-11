@@ -7,16 +7,15 @@ The Gaussian processes framework in Python.
 * Multi-output / coregionalized regression notes: [`doc/source/tuto_coregionalized.rst`](doc/source/tuto_coregionalized.rst) (also on [Read the Docs](https://gpy.readthedocs.io/en/devel/tuto_coregionalized.html) after the next docs build)
 * User [mailing-list](https://lists.shef.ac.uk/sympa/subscribe/gpy-users)
 * Developer [documentation](http://gpy.readthedocs.io/) [documentation (devel branch)](https://gpy.readthedocs.io/en/devel/)
-* Travis-CI [unit-tests](https://travis-ci.org/SheffieldML/GPy)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
   [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
 
 ## Status
 
-| Branch | travis-ci.org | ci.appveyor.com | coveralls.io | codecov.io |
-| --- | --- | --- | --- | --- |
-| Default branch (`devel`) | [![travis-devel](https://travis-ci.org/SheffieldML/GPy.svg?branch=devel)](https://travis-ci.org/SheffieldML/GPy/branches) | [![appveyor-devel](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/devel?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/devel) | [![coveralls-devel](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=devel)](https://coveralls.io/github/SheffieldML/GPy?branch=devel) | [![codecov-devel](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=devel)](http://codecov.io/github/SheffieldML/GPy?branch=devel) |
-| Deployment branch (`deploy`) | [![travis-deploy](https://travis-ci.org/SheffieldML/GPy.svg?branch=deploy)](https://travis-ci.org/SheffieldML/GPy/branches) | [![appveyor-deploy](https://ci.appveyor.com/api/projects/status/662o6tha09m2jix3/branch/deploy?svg=true)](https://ci.appveyor.com/project/mzwiessele/gpy/branch/deploy) | [![coveralls-deploy](https://coveralls.io/repos/github/SheffieldML/GPy/badge.svg?branch=deploy)](https://coveralls.io/github/SheffieldML/GPy?branch=deploy) | [![codecov-deploy](http://codecov.io/github/SheffieldML/GPy/coverage.svg?branch=deploy)](http://codecov.io/github/SheffieldML/GPy?branch=deploy) |
+| Branch | GitHub Actions | Codecov |
+| --- | --- | --- |
+| Default branch (`devel`) | [![gha-devel](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=devel)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adevel) | [![codecov-devel](https://codecov.io/gh/SheffieldML/GPy/branch/devel/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/devel) |
+| Deployment branch (`deploy`) | [![gha-deploy](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=deploy)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adeploy) | [![codecov-deploy](https://codecov.io/gh/SheffieldML/GPy/branch/deploy/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/deploy) |
 
 ## What's new:
 
@@ -187,35 +186,15 @@ print(m_load)
 
 ### Running unit tests:
 
-New way of running tests is using coverage:
+With Poetry (recommended for contributors):
 
-Ensure pytest and coverage is installed:
+    poetry install --with dev
+    poetry run pytest GPy/testing
 
-    pip install pytest
+Coverage (uses `.coveragerc`; also uploaded from CI on Ubuntu / Python 3.12):
 
-Run nosetests from root directory of repository:
-
-    python travis_tests.py
-
-Create coverage report in htmlcov/
-
-    coverage html
-
-The coverage report is located in htmlcov/index.html
-
-##### Legacy: using nosetests
-
-Ensure nose is installed via pip:
-
-    pip install nose
-
-Run nosetests from the root directory of the repository:
-
-    nosetests -v GPy/testing
-
-or from within IPython
-
-    import GPy; GPy.tests()
+    poetry run pytest GPy/testing --cov=GPy --cov-report=html --cov-report=term
+    # open htmlcov/index.html
 
 or using setuptools
 

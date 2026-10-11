@@ -44,10 +44,13 @@ Community Q&A now lives on GitHub Discussions for this repository.
 ## Related
 
 - Discussion: #934
+- Issue: #1219
+- PR: #1218
 - CIP: 0007
 
 ## Progress Updates
 
 ### 2026-10-11
 
-Task created and completed in the same change.
+Task created and completed in the same change. Converted Discussion #934 →
+Issue #1219 for PR tracking (same pattern as #958 → #1217).

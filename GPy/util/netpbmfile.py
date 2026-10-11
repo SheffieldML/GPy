@@ -139,7 +139,8 @@ class NetpbmFile:
         if arg is None:
             self._fromdata([], **kwargs)
         elif isinstance(arg, basestring):
-            self._fh = open(arg, "rb")
+            # Kept open for asarray()/lazy reads; closed via NetpbmFile.close().
+            self._fh = open(arg, "rb")  # noqa: SIM115
             self._filename = arg
             self._fromfile(self._fh, **kwargs)
         elif hasattr(arg, "seek"):

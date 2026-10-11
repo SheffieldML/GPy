@@ -486,13 +486,13 @@ class mocap_data_show(matplotlib_show):
             for i, j in zip(self.I, self.J, strict=False):
                 x.append(self.vals[i, 0])
                 x.append(self.vals[j, 0])
-                x.append(np.NaN)
+                x.append(np.nan)
                 y.append(self.vals[i, 1])
                 y.append(self.vals[j, 1])
-                y.append(np.NaN)
+                y.append(np.nan)
                 z.append(self.vals[i, 2])
                 z.append(self.vals[j, 2])
-                z.append(np.NaN)
+                z.append(np.nan)
             self.line_handle = self.axes.plot(np.array(x), np.array(y), np.array(z), "-", color=self.color)
 
     def modify(self, vals):

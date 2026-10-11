@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+* CIP-0005: add targeted tests for dataset/mocap/netpbm file-IO paths ahead of SIM115
+* fix `np.NaN` → `np.nan` for NumPy 2 (mocap / plotting visualize)
+* backlog: reinstate coverage reporting on GitHub Actions
 * CIP-0005: enable pyupgrade `UP031` (convert printf-style `%` formatting to f-strings)
 * CIP-0005: enable pyupgrade `UP032` (convert `.format(...)` to f-strings)
 * CIP-0005: enable `SIM102`/`SIM105`/`SIM113` and `UP030`/`UP035`/`UP036` (note: `UP008` unsafe with paramz metaclass)

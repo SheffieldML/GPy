@@ -347,7 +347,7 @@ class acclaim_skeleton(skeleton):
                 self.vertices.append(
                     vertex(
                         name="",
-                        id=np.NaN,
+                        id=np.nan,
                         meta={
                             "name": [],
                             "id": [],
@@ -699,7 +699,7 @@ def parse_text(file_name):
     S = S[:, 2:]
 
     # Set the -9999.99 markers to be not present
-    S[S == -9999.99] = np.NaN
+    S[S == -9999.99] = np.nan
 
     # Store x, y and z in different arrays
     points = []

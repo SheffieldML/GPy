@@ -312,15 +312,12 @@ class acclaim_skeleton(skeleton):
             self.get_child_xyz(cind, channels)
 
     def load_channels(self, file_name):
-        fid = open(file_name)
-        channels = self.read_channels(fid)
-        fid.close()
-        return channels
+        with open(file_name) as fid:
+            return self.read_channels(fid)
 
     def save_channels(self, file_name, channels):
         with open(file_name, "w") as fid:
             self.writ_channels(fid, channels)
-            fid.close()
 
     def load_skel(self, file_name):
         """
@@ -330,9 +327,8 @@ class acclaim_skeleton(skeleton):
 
         """
 
-        fid = open(file_name)
-        self.read_skel(fid)
-        fid.close()
+        with open(file_name) as fid:
+            self.read_skel(fid)
         self.name = file_name
 
     def read_bonedata(self, fid):
@@ -686,9 +682,8 @@ def parse_text(file_name):
     """Parse data from Ohio State University text mocap files (http://accad.osu.edu/research/mocap/mocap_data.htm)."""
 
     # Read the header
-    fid = open(file_name)
-    point_names = np.array(fid.readline().split())[2:-1:3]
-    fid.close()
+    with open(file_name) as fid:
+        point_names = np.array(fid.readline().split())[2:-1:3]
     for i in range(len(point_names)):
         point_names[i] = point_names[i][0:-2]
 
@@ -714,13 +709,13 @@ def read_connections(file_name, point_names):
     """Read a file detailing which markers should be connected to which for motion capture data."""
 
     connections = []
-    fid = open(file_name)
-    line = fid.readline()
-    while line:
-        connections.append(np.array(line.split(",")))
-        connections[-1][0] = connections[-1][0].strip()
-        connections[-1][1] = connections[-1][1].strip()
+    with open(file_name) as fid:
         line = fid.readline()
+        while line:
+            connections.append(np.array(line.split(",")))
+            connections[-1][0] = connections[-1][0].strip()
+            connections[-1][1] = connections[-1][1].strip()
+            line = fid.readline()
     connect = np.zeros((len(point_names), len(point_names)), dtype=bool)
     for i in range(len(point_names)):
         for j in range(len(point_names)):

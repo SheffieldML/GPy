@@ -323,22 +323,20 @@ if gpxpy_available:
 
         X = []
         for file in files:
-            gpx_file = open(os.path.join(data_path, "epomeo_gpx", file + ".gpx"))
-
-            gpx = gpxpy.parse(gpx_file)
-            gpx.tracks[0].segments[0]
-            points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
-            data = [
-                [
-                    (point.time - datetime.datetime(2013, 8, 21)).total_seconds(),
-                    point.latitude,
-                    point.longitude,
-                    point.elevation,
+            with open(os.path.join(data_path, "epomeo_gpx", file + ".gpx")) as gpx_file:
+                gpx = gpxpy.parse(gpx_file)
+                gpx.tracks[0].segments[0]
+                points = [point for track in gpx.tracks for segment in track.segments for point in segment.points]
+                data = [
+                    [
+                        (point.time - datetime.datetime(2013, 8, 21)).total_seconds(),
+                        point.latitude,
+                        point.longitude,
+                        point.elevation,
+                    ]
+                    for point in points
                 ]
-                for point in points
-            ]
-            X.append(np.asarray(data)[::sample_every, :])
-            gpx_file.close()
+                X.append(np.asarray(data)[::sample_every, :])
         return data_details_return(
             {
                 "X": X,
@@ -420,14 +418,11 @@ def football_data(season="1314", data_set="football_data"):
         filename = os.path.join(data_path, data_set_season, file)
         # rewrite files removing blank rows.
         writename = os.path.join(data_path, data_set_season, "temp.csv")
-        input = open(filename, "rb")
-        output = open(writename, "wb")
-        writer = csv.writer(output)
-        for row in csv.reader(input):
-            if any(field.strip() for field in row):
-                writer.writerow(row)
-        input.close()
-        output.close()
+        with open(filename, "rb") as input, open(writename, "wb") as output:
+            writer = csv.writer(output)
+            for row in csv.reader(input):
+                if any(field.strip() for field in row):
+                    writer.writerow(row)
         table = np.loadtxt(
             writename,
             skiprows=1,
@@ -654,24 +649,18 @@ def oil(data_set="three_phase_oil_flow"):
     oil_testlbls_file = os.path.join(data_path, data_set, "DataTstLbls.txt")
     oil_valid_file = os.path.join(data_path, data_set, "DataVdn.txt")
     oil_validlbls_file = os.path.join(data_path, data_set, "DataVdnLbls.txt")
-    fid = open(oil_train_file)
-    X = np.fromfile(fid, sep="\t").reshape((-1, 12))
-    fid.close()
-    fid = open(oil_test_file)
-    Xtest = np.fromfile(fid, sep="\t").reshape((-1, 12))
-    fid.close()
-    fid = open(oil_valid_file)
-    Xvalid = np.fromfile(fid, sep="\t").reshape((-1, 12))
-    fid.close()
-    fid = open(oil_trainlbls_file)
-    Y = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
-    fid.close()
-    fid = open(oil_testlbls_file)
-    Ytest = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
-    fid.close()
-    fid = open(oil_validlbls_file)
-    Yvalid = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
-    fid.close()
+    with open(oil_train_file) as fid:
+        X = np.fromfile(fid, sep="\t").reshape((-1, 12))
+    with open(oil_test_file) as fid:
+        Xtest = np.fromfile(fid, sep="\t").reshape((-1, 12))
+    with open(oil_valid_file) as fid:
+        Xvalid = np.fromfile(fid, sep="\t").reshape((-1, 12))
+    with open(oil_trainlbls_file) as fid:
+        Y = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
+    with open(oil_testlbls_file) as fid:
+        Ytest = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
+    with open(oil_validlbls_file) as fid:
+        Yvalid = np.fromfile(fid, sep="\t").reshape((-1, 3)) * 2.0 - 1.0
     return data_details_return(
         {"X": X, "Y": Y, "Xtest": Xtest, "Ytest": Ytest, "Xvalid": Xvalid, "Yvalid": Yvalid}, data_set
     )
@@ -701,10 +690,9 @@ def pumadyn(seed=default_seed, data_set="pumadyn-32nm"):
     if not data_available(data_set):
         download_data(data_set)
         path = os.path.join(data_path, data_set)
-        tar = tarfile.open(os.path.join(path, "pumadyn-32nm.tar.gz"))
         print("Extracting file.")
-        tar.extractall(path=path)
-        tar.close()
+        with tarfile.open(os.path.join(path, "pumadyn-32nm.tar.gz")) as tar:
+            tar.extractall(path=path)
     # Data is variance 1, no need to normalize.
     data = np.loadtxt(os.path.join(data_path, data_set, "pumadyn-32nm", "Dataset.data.gz"))
     indices = np.random.permutation(data.shape[0])
@@ -1431,10 +1419,9 @@ def download_rogers_girolami_data(data_set="rogers_girolami_data"):
         download_data(data_set)
         path = os.path.join(data_path, data_set)
         tar_file = os.path.join(path, "firstcoursemldata.tar.gz")
-        tar = tarfile.open(tar_file)
         print("Extracting file.")
-        tar.extractall(path=path)
-        tar.close()
+        with tarfile.open(tar_file) as tar:
+            tar.extractall(path=path)
 
 
 def olympic_100m_men(data_set="rogers_girolami_data"):
@@ -1667,10 +1654,9 @@ def creep_data(data_set="creep_rupture"):
         download_data(data_set)
         path = os.path.join(data_path, data_set)
         tar_file = os.path.join(path, "creeprupt.tar")
-        tar = tarfile.open(tar_file)
         print("Extracting file.")
-        tar.extractall(path=path)
-        tar.close()
+        with tarfile.open(tar_file) as tar:
+            tar.extractall(path=path)
     all_data = np.loadtxt(os.path.join(data_path, data_set, "taka"))
     y = all_data[:, 1:2].copy()
     features = [0]
@@ -1689,8 +1675,8 @@ def cifar10_patches(data_set="cifar-10"):
 
         # This code is from Boris Babenko's blog post.
         # http://bbabenko.tumblr.com/post/86756017649/learning-low-level-vision-feautres-in-10-lines-of-code
-        tfile = tarfile.open(filename, "r:gz")
-        tfile.extractall(dir_path)
+        with tarfile.open(filename, "r:gz") as tfile:
+            tfile.extractall(dir_path)
 
     with open(os.path.join(dir_path, "cifar-10-batches-py", "data_batch_1"), "rb") as f:
         data = pickle.load(f)

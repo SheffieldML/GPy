@@ -146,7 +146,11 @@ class lvm(matplotlib_show):
         self.vals = vals.view(np.ndarray).copy()
         y = self.model.predict(self.vals)[0]
         self.data_visualize.modify(y)
-        self.latent_handle.set_data(self.vals[0, self.latent_index[0]], self.vals[0, self.latent_index[1]])
+        # Matplotlib requires sequences for set_xdata/set_ydata (scalars raise RuntimeError).
+        self.latent_handle.set_data(
+            [self.vals[0, self.latent_index[0]]],
+            [self.vals[0, self.latent_index[1]]],
+        )
         self.axes.figure.canvas.draw()
 
     def on_enter(self, event):

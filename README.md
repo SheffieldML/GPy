@@ -138,6 +138,31 @@ poetry build
 pip install dist/gpy-*.whl
 ```
 
+### Plotting (optional)
+
+Matplotlib and plotly are **optional**. Core modelling works with a plain
+`pip install gpy`. For plots:
+
+```bash
+pip install 'gpy[plotting]'
+```
+
+If the configured library is missing, GPy imports successfully and continues
+without plotting (see [#1209](https://github.com/SheffieldML/GPy/issues/1209)).
+
+### Wheels and Apple Silicon / Linux aarch64
+
+Release CI publishes:
+
+- **manylinux** wheels for **x86_64** and **aarch64** (Cython extensions built in)
+- **macOS** wheels from `macos-latest` (Apple Silicon)
+- **Windows** wheels
+
+If no wheel matches your platform, `pip` builds from the sdist (needs a C
+compiler and Cython). Contributor installs via Poetry compile extensions locally
+on any architecture CI already tests (`ubuntu`, `windows`, `macos` including
+arm64).
+
 ### Troubleshooting installation problems
 
 If you're having trouble installing GPy via `pip install gpy` here is a probable solution:

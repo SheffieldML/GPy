@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* packaging: missing matplotlib/plotly no longer breaks `import GPy`; use `pip install gpy[plotting]` for plots (#1209, #873)
+* CI/release: build manylinux **aarch64** wheels alongside x86_64; document optional plotting and arm64 wheel story (#1209, #1114)
 * `build_XY`: clear `ValueError` when X_list/Y_list lengths or per-output row counts disagree (#942, #1211)
 * `Stationary` cannot be instantiated directly; point users at concrete kernels / heteroscedastic regression (#866, #1211)
 * Fixed kernel: clear ValueError when `K`/`Kdiag` is evaluated on a different number of points than the stored matrix; point users at heteroscedastic regression (#1039, #1211)

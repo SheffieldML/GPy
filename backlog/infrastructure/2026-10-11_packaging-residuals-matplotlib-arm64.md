@@ -1,10 +1,10 @@
 ---
 id: 2026-10-11_packaging-residuals-matplotlib-arm64
 title: Packaging residuals — matplotlib import coupling and arm64 Cython wheels
-status: Proposed
+status: In Progress
 priority: High
 created: '2026-10-11'
-last_updated: '2026-10-11'
+last_updated: '2026-10-17'
 category: infrastructure
 related_cips:
 - '0003'
@@ -31,11 +31,24 @@ After CIP-0003, two packaging gaps remain (GitHub tracking #1209):
 
 ## Acceptance Criteria
 
-- [ ] Decide lazy-import vs hard matplotlib dependency; implement + document
-- [ ] Document and, where feasible, ship arm64 / aarch64 wheels aligned with CI
+- [x] Decide lazy-import vs hard matplotlib dependency; implement + document
+- [x] Document and, where feasible, ship arm64 / aarch64 wheels aligned with CI
 - [ ] Close #1209 when done
+
+## Decision
+
+Keep matplotlib/plotly as **optional extras** (`gpy[plotting]`). Soft-fail
+`change_plotting_library` when the backend is missing so core `import GPy`
+succeeds. Ship Linux **aarch64** manylinux wheels on release (native ARM
+runners); macOS arm64 already covered by `macos-latest` release builds.
 
 ## Related
 
 - Issue: [#1209](https://github.com/SheffieldML/GPy/issues/1209)
 - CIP: 0003, 0007
+
+## Progress Updates
+
+### 2026-10-17
+In Progress. Soft-fail plotting import; README wheel/plotting notes; CI
+`build-linux` matrix adds aarch64.

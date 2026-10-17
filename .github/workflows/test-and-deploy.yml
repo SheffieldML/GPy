@@ -145,7 +145,15 @@ jobs:
     strategy:
       matrix:
         python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
-    runs-on: ubuntu-latest
+        # x86_64 + aarch64 (#1114 / #1209). aarch64 uses native ARM runners.
+        platform:
+          - arch: x86_64
+            runner: ubuntu-latest
+            image: quay.io/pypa/manylinux_2_28_x86_64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            image: quay.io/pypa/manylinux_2_28_aarch64
+    runs-on: ${{ matrix.platform.runner }}
 
     steps:
       - name: Checkout
@@ -159,7 +167,7 @@ jobs:
           docker run --rm \
             -v "$PWD":/io \
             -w /io \
-            quay.io/pypa/manylinux_2_28_x86_64 \
+            ${{ matrix.platform.image }} \
             bash -euo pipefail -c "
               PY=/opt/python/${{ matrix.python }}/bin/python
               \"\$PY\" -m pip install --upgrade pip
@@ -181,7 +189,7 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-artifacts-manylinux-${{ matrix.python }}
+          name: dist-artifacts-manylinux-${{ matrix.platform.arch }}-${{ matrix.python }}
           path: dist
 
   deploy:

@@ -653,11 +653,15 @@ class ExpQuad(Stationary):
     .. math::
 
        k(r) = \\sigma^2 \\exp(- 0.5 r^2)
+       \\quad\\text{where}\\quad
+       r = \\sqrt{\\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\\ell_i^2}}
 
     notes::
      - This is exactly the same as the RBF covariance function, but the
        RBF implementation also has some features for doing variational kernels
        (the psi-statistics).
+     - ``r`` already includes lengthscales (same convention as other Stationary
+       kernels); see #828.
 
     """
 

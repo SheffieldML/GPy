@@ -156,6 +156,37 @@ class TestGP:
         mu_trig, _ = m_trig.predict(self.X)
         np.testing.assert_allclose(mu_trig, mu0)
 
+    def test_fixed_kernel_predict_shape_error(self):
+        """Fixed kernel Kdiag on new X raises a clear ValueError (#1039)."""
+        self.setup_method()
+        n = self.X.shape[0]
+        cov = np.eye(n) * 0.1
+        k = GPy.kern.RBF(1) + GPy.kern.Fixed(1, covariance_matrix=cov)
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
+        try:
+            m.predict_noiseless(self.X_new)
+        except ValueError as err:
+            msg = str(err)
+            assert "Fixed kernel" in msg
+            assert "GPHeteroscedasticRegression" in msg
+        else:
+            raise AssertionError("Expected ValueError from Fixed.Kdiag on new X")
+
+    def test_gpclassification_rejects_multi_column_y(self):
+        """Default EP classification rejects multi-column Y with a clear error (#839)."""
+        self.setup_method()
+        X = np.random.randn(30, 2)
+        Y = np.random.randn(30, 2)
+        try:
+            GPy.models.GPClassification(X, Y)
+        except ValueError as err:
+            assert "single output" in str(err)
+        else:
+            raise AssertionError("Expected ValueError for multi-column classification Y")
+        Y1 = (np.random.rand(30, 1) > 0.5).astype(float)
+        m = GPy.models.GPClassification(X, Y1)
+        assert m.Y.shape == (30, 1)
+
     def test_xy_row_mismatch_raises(self):
         """Mismatched X/Y row counts raise a clear ValueError (#871)."""
         self.setup_method()

@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+* Fixed kernel: clear ValueError when `K`/`Kdiag` is evaluated on a different number of points than the stored matrix; point users at heteroscedastic regression (#1039, #1211)
+* GPClassification: clear ValueError for multi-column Y with default EP instead of `ep in 1D only` (#839, #1211)
+* docs: ExpQuad/RBF math shows lengthscale-scaled ``r`` (same convention as other Stationary kernels) (#828, #1211)
 * fix Uniform prior `lnpdf` to return proper log-density (was 0/1), so HMC respects support (#639, #1211)
 * raise a clear `ValueError` when X and Y row counts mismatch instead of an obscure LAPACK failure (#871, #1211)
 * stop attaching `plot_inducing` to plain `GPLVM` (no inducing inputs `Z`); use `plot_latent` / `plot_scatter` (#752, #1211)

@@ -201,21 +201,42 @@ class Bias(Static):
 class Fixed(Static):
     def __init__(self, input_dim, covariance_matrix, variance=1.0, active_dims=None, name="fixed"):
         """
+        Kernel with a fixed covariance matrix on a specific training set.
+
+        Cross-covariances ``K(X, X2)`` with ``X2 is not None`` are zero. Diagonal /
+        full covariances are only defined when ``X`` has the same number of rows as
+        the stored matrix. For known *observation* noise on a GP, prefer
+        ``GPHeteroscedasticRegression`` instead of embedding noise in a Fixed kernel
+        (see #1039 / #196).
+
         :param input_dim: the number of input dimensions
         :type input_dim: int
-        :param variance: the variance of the kernel
+        :param covariance_matrix: fixed covariance for the training points
+        :param variance: scalar multiplier of the fixed matrix
         :type variance: float
         """
         super(Fixed, self).__init__(input_dim, variance, active_dims, name)
-        self.fixed_K = covariance_matrix
+        self.fixed_K = np.asarray(covariance_matrix, dtype=float)
+
+    def _check_training_shape(self, X, where):
+        n = self.fixed_K.shape[0]
+        if X.shape[0] != n:
+            raise ValueError(
+                f"Fixed kernel {where}: covariance is {n}x{self.fixed_K.shape[1]} but "
+                f"X has {X.shape[0]} rows. Fixed only applies on the training set it was "
+                "built for. For known observation noise use GPHeteroscedasticRegression "
+                "rather than a Fixed kernel (#1039)."
+            )
 
     def K(self, X, X2):
         if X2 is None:
+            self._check_training_shape(X, "K(X)")
             return self.variance * self.fixed_K
         else:
             return np.zeros((X.shape[0], X2.shape[0]))
 
     def Kdiag(self, X):
+        self._check_training_shape(X, "Kdiag(X)")
         return self.variance * self.fixed_K.diagonal()
 
     def update_gradients_full(self, dL_dK, X, X2=None):

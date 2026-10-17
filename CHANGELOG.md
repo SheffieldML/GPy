@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* docs/tests: README model reload must use `m[:] = loaded` (not bare `param_array[:] =`); bare buffer writes skip paramz observers (#1217, Discussion #958)
 * CIP-0007: completion wave — dispose 193 legacy issues into summary trackers #1209–#1214 and Discussion #1215
 * CIP-0005: Closed after full `SIM` + safe pycodestyle (#1208)
 * CI: upload coverage from one GHA job (Ubuntu / Python 3.12) to Codecov; refresh README badges

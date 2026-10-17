@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* `build_XY`: clear `ValueError` when X_list/Y_list lengths or per-output row counts disagree (#942, #1211)
+* `Stationary` cannot be instantiated directly; point users at concrete kernels / heteroscedastic regression (#866, #1211)
 * fix Uniform prior `lnpdf` to return proper log-density (was 0/1), so HMC respects support (#639, #1211)
 * raise a clear `ValueError` when X and Y row counts mismatch instead of an obscure LAPACK failure (#871, #1211)
 * stop attaching `plot_inducing` to plain `GPLVM` (no inducing inputs `Z`); use `plot_latent` / `plot_scatter` (#752, #1211)

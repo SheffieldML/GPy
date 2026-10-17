@@ -1294,6 +1294,15 @@ class TestGradient:
         with pytest.raises(TypeError, match="list"):
             m.set_XY([X1, X2], np.vstack([Y1, Y2]))
 
+    def test_build_XY_mismatched_lists_raise(self):
+        """Clear errors when X_list/Y_list lengths or row counts disagree (#942)."""
+        X = np.random.randn(20, 2)
+        Ys = [np.random.randn(20, 1) for _ in range(4)]
+        with pytest.raises(ValueError, match="len\\(X_list\\)"):
+            GPy.util.multioutput.build_XY([X], Ys)
+        with pytest.raises(ValueError, match="per-output row counts"):
+            GPy.util.multioutput.build_XY([X, X[:10]], [np.random.randn(20, 1), np.random.randn(20, 1)])
+
     def test_gp_coregionalized_set_XY_one_sided_lists(self):
         """Same-size one-sided list updates work; resizing one side alone raises."""
         np.random.seed(5)

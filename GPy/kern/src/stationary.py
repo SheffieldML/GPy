@@ -60,6 +60,12 @@ class Stationary(Kern):
     """
 
     def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=False):
+        if type(self) is Stationary:
+            raise TypeError(
+                "GPy.kern.Stationary is abstract; use a concrete kernel such as "
+                "GPy.kern.RBF. For known observation noise in y, prefer "
+                "GPHeteroscedasticRegression rather than subclassing Stationary (#866)."
+            )
         super(Stationary, self).__init__(input_dim, active_dims, name, useGPU=useGPU)
         self.ARD = ARD
         if not ARD:

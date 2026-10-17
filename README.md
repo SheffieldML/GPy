@@ -159,12 +159,12 @@ If you're having trouble installing GPy via `pip install gpy` here is a probable
 As pickle is inconsistent across python versions and heavily dependent on class structure, it behaves inconsistent across versions.
 Pickling as meant to serialize models within the same environment, and not to store models on disk to be used later on.
 
-To save a model it is best to save the m.param_array of it to disk (using numpy’s np.save).
-Additionally, you save the script, which creates the model.
-In this script you can create the model using initialize=False as a keyword argument and with the data loaded as normal.
-You then set the model parameters by setting m.param_array[:] = loaded_params as the previously saved parameters.
-Then you initialize the model by m.initialize_parameter(), which will make the model usable.
-Be aware that up to this point the model is in an inconsistent state and cannot be used to produce any results.
+To save a model it is best to save the `m.param_array` of it to disk (using numpy’s `np.save`).
+Additionally, you save the script which creates the model.
+In this script you can create the model using `initialize=False` as a keyword argument and with the data loaded as normal.
+Then call `m.initialize_parameter()` and load the saved values with **model slice assignment** `m[:] = loaded_params` (not `m.param_array[:] = …`).
+Bare writes into `param_array` skip paramz observers, so lengthscales, predictions and the objective can stay at their defaults even though `m.param_array` prints the loaded numbers (see [#1217](https://github.com/SheffieldML/GPy/issues/1217)).
+Be aware that up to the final `update_model(True)` the model is in an inconsistent state and cannot be used to produce any results.
 
 ```python
 # let X, Y be data loaded above

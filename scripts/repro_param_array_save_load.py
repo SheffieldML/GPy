@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Reproduce Discussion #958: param_array save/load prediction mismatch.
+"""Reproduce Discussion #958 / issue #1217: param_array save/load mismatch.
 
-Shows that the README *prose* pattern::
+Bare::
 
     m.param_array[:] = loaded
 
 does not notify paramz observers, so predictions stay at default hyperparameters
 even though ``m.param_array`` prints the loaded values.
 
-The README *code block* (``initialize=False`` + ``m[:] = loaded``) and a plain
+The README load recipe (``initialize=False`` + ``m[:] = loaded``) and a plain
 ``m[:] = loaded`` assignment both restore the original predictions.
 
 Also reproduces on ``GPy.util.datasets.olympic_100m_men`` when a local dataset

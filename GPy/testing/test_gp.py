@@ -118,3 +118,36 @@ class TestGP:
         m.randomize()
         assert m.checkgrad()
         _ = m.predict(m.X)
+
+    def test_param_array_reload_via_model_slice(self):
+        """README load recipe: m[:] restores predictions; bare param_array[:] does not (#1217)."""
+        self.setup_method()
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=GPy.kern.RBF(1))
+        m.optimize(messages=False, max_iters=50)
+        params = m.param_array.copy()
+        mu0, _ = m.predict(self.X)
+        ls0 = float(m.rbf.lengthscale)
+
+        # Official README path (initialize=False + model slice assignment)
+        m_load = GPy.models.GPRegression(self.X.copy(), self.Y.copy(), kernel=GPy.kern.RBF(1), initialize=False)
+        m_load.update_model(False)
+        m_load.initialize_parameter()
+        m_load[:] = params
+        m_load.update_model(True)
+        mu_load, _ = m_load.predict(self.X)
+        np.testing.assert_allclose(mu_load, mu0)
+        np.testing.assert_allclose(float(m_load.rbf.lengthscale), ls0)
+
+        # Footgun: writing the shared buffer without notifying observers
+        m_bad = GPy.models.GPRegression(self.X.copy(), self.Y.copy(), kernel=GPy.kern.RBF(1))
+        m_bad.param_array[:] = params
+        mu_bad, _ = m_bad.predict(self.X)
+        assert abs(float(m_bad.rbf.lengthscale) - 1.0) < 1e-12
+        assert np.max(np.abs(mu0 - mu_bad)) > 1e-6
+
+        # Same buffer write is fine if observers are triggered explicitly
+        m_trig = GPy.models.GPRegression(self.X.copy(), self.Y.copy(), kernel=GPy.kern.RBF(1))
+        m_trig.param_array[:] = params
+        m_trig._trigger_params_changed()
+        mu_trig, _ = m_trig.predict(self.X)
+        np.testing.assert_allclose(mu_trig, mu0)

@@ -65,15 +65,17 @@ def change_plotting_library(lib, **kwargs):
             current_lib[0] = None
         inject_plotting()
         # ===========================================================================
-    except (ImportError, NameError):
-        config.set("plotting", "library", "none")
-        raise
+    except (ImportError, NameError) as err:
+        # Matplotlib/plotly stay optional extras; core `import GPy` must succeed (#1209).
         import warnings
 
+        config.set("plotting", "library", "none")
+        current_lib[0] = None
         warnings.warn(
-            ImportWarning(
-                f"You spevified {lib} in your configuration, but is not available. Install newest version of {lib} for plotting"
-            ),
+            f"Plotting library '{lib}' is not available ({err}). "
+            "Install with `pip install gpy[plotting]` (or plotly) to enable plots. "
+            "Continuing without plotting.",
+            ImportWarning,
             stacklevel=2,
         )
 

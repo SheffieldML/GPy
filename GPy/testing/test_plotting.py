@@ -58,7 +58,10 @@ import contextlib
 
 class TestConfig:
     def teardown_method(self):
-        change_plotting_library("matplotlib")
+        if matplotlib is not None:
+            change_plotting_library("matplotlib")
+        else:
+            change_plotting_library("none")
 
     @pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
     def test_change_plotting(self):
@@ -68,6 +71,25 @@ class TestConfig:
         with pytest.raises(RuntimeError):
             plotting_library()
         self.teardown_method()
+
+    def test_missing_matplotlib_falls_back_to_none(self, monkeypatch):
+        """Optional matplotlib must not break core import / plotting init (#1209)."""
+        import builtins
+        import GPy.plotting as plotting
+
+        real_import = builtins.__import__
+
+        def block_matplotlib(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "matplotlib" or name.startswith("matplotlib."):
+                raise ImportError("blocked for #1209 test")
+            return real_import(name, globals, locals, fromlist, level)
+
+        monkeypatch.setattr(builtins, "__import__", block_matplotlib)
+        with pytest.warns(ImportWarning, match="gpy\\[plotting\\]"):
+            plotting.change_plotting_library("matplotlib")
+        assert plotting.current_lib[0] is None
+        with pytest.raises(RuntimeError):
+            plotting.plotting_library()
 
 
 @pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")

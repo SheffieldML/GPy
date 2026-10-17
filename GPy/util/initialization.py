@@ -36,14 +36,12 @@ def initialize_latent(init, input_dim, Y):
         EMP = np.asfortranarray(np.random.multivariate_normal(np.zeros(Y.shape[0]), YYT, min(input_dim, Y.shape[1])).T)
         Xr[: EMP.shape[0], : EMP.shape[1]] = EMP
         var = np.random.uniform(0.5, 1.5, input_dim)
-    elif init == "random":
+    elif init in ("random", "rand"):
+        # 'rand' is a long-standing alias used by SSGPLVM / examples (#1210).
         var = Xr.var(0)
     else:
-        # dealing with depcrecated initialization method
-        # should be remove along the next major release
         warnings.warn(
-            f"{init} is not a valid initialization method."
-            "Supoprt for anything else than 'PCA' or 'random' will be removed in the next major release.",
+            f"{init!r} is not a valid initialization method; use 'PCA' or 'random'. Falling back to random.",
             DeprecationWarning,
             stacklevel=2,
         )

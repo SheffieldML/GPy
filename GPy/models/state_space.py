@@ -21,7 +21,7 @@ from .. import kern
 from GPy.plotting.matplot_dep.models_plots import gpplot
 from GPy.plotting.matplot_dep.base_plots import x_frame1D
 from GPy.plotting.matplot_dep import Tango
-import pylab as pb
+from matplotlib import pyplot as plt
 from GPy.core.parameterization.param import Param
 
 
@@ -165,7 +165,7 @@ class StateSpace(Model):
     ):
         # Deal with optional parameters
         if ax is None:
-            fig = pb.figure(num=fignum)
+            fig = plt.figure(num=fignum)
             ax = fig.add_subplot(111)
 
         # Define the frame on which to plot

@@ -34,24 +34,20 @@ from ..abstract_plotting_library import AbstractPlottingLibrary
 from .. import Tango
 from . import defaults
 import plotly
-from plotly import tools
+from plotly.basedatatypes import BaseTraceType
+from plotly.subplots import make_subplots
 from plotly.graph_objs import (
     Scatter,
     Scatter3d,
-    Line,
-    Marker,
     ErrorX,
     ErrorY,
     Bar,
     Heatmap,
-    Trace,
-    Annotations,
-    Annotation,
     Contour,
-    Font,
     Surface,
 )
-from plotly.exceptions import PlotlyDictKeyError
+from plotly.graph_objs.layout import Annotation
+from plotly.exceptions import PlotlyError
 
 SYMBOL_MAP = {
     "o": "circle-dot",
@@ -77,7 +73,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
     def figure(self, rows=1, cols=1, specs=None, is_3d=False, **kwargs):
         if specs is None:
             specs = [[{"is_3d": is_3d}] * cols] * rows
-        figure = tools.make_subplots(rows, cols, specs=specs, **kwargs)
+        figure = make_subplots(rows, cols, specs=specs, **kwargs)
         return figure
 
     def new_canvas(
@@ -102,7 +98,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         #    filename = kwargs.pop('filename')
         if figure is None:
             figure = self.figure(is_3d=projection == "3d")
-            figure.layout.font = Font(family="Raleway, sans-serif")
+            figure.layout.font = dict(family="Raleway, sans-serif")
         if projection == "3d":
             figure.layout.legend.x = 0.5
             figure.layout.legend.bgcolor = "#DCDCDC"
@@ -112,27 +108,41 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         figure, row, col = canvas
 
         def append_annotation(a, xref, yref):
-            if "xref" not in a:
-                a["xref"] = xref
-            if "yref" not in a:
-                a["yref"] = yref
-            figure.layout.annotations.append(a)
+            # Plotly layout.annotations is an immutable tuple in recent versions.
+            if isinstance(a, dict):
+                payload = dict(a)
+            elif hasattr(a, "to_plotly_json"):
+                payload = a.to_plotly_json()
+            else:
+                payload = dict(a)
+            payload.setdefault("xref", xref)
+            payload.setdefault("yref", yref)
+            existing = list(figure.layout.annotations or ())
+            existing.append(payload)
+            figure.layout.annotations = existing
 
         def append_trace(t, row, col):
-            figure.append_trace(t, row, col)
+            figure.add_trace(t, row=row, col=col)
 
         def recursive_append(traces):
-            if isinstance(traces, Annotations):
-                xref, yref = figure._grid_ref[row - 1][col - 1]
-                for a in traces:
-                    append_annotation(a, xref, yref)
-            # elif isinstance(traces, (Trace)):  # doesn't work
-            # elif type(traces) in [v for k,v in go.__dict__.iteritems()]:
-            elif isinstance(traces, (Scatter, Scatter3d, ErrorX, ErrorY, Bar, Heatmap, Trace, Contour, Surface)):
+            if isinstance(traces, Annotation):
+                cell = figure._grid_ref[row - 1][col - 1]
+                # Plotly ≥5 wraps SubplotRef in a 1-tuple; older returned (xref, yref).
+                if isinstance(cell, tuple) and len(cell) == 1 and hasattr(cell[0], "trace_kwargs"):
+                    cell = cell[0]
+                if hasattr(cell, "trace_kwargs"):
+                    xref = cell.trace_kwargs.get("xaxis", "x")
+                    yref = cell.trace_kwargs.get("yaxis", "y")
+                else:
+                    xref, yref = cell
+                append_annotation(traces, xref, yref)
+            elif isinstance(
+                traces, (Scatter, Scatter3d, ErrorX, ErrorY, Bar, Heatmap, Contour, Surface, BaseTraceType)
+            ):
                 try:
                     append_trace(traces, row, col)
-                except PlotlyDictKeyError:
-                    # Its a dictionary of plots:
+                except (PlotlyError, TypeError, ValueError):
+                    # Dictionary of plots rather than a single trace:
                     for t in traces:
                         recursive_append(traces[t])
             elif isinstance(traces, (dict)):
@@ -177,7 +187,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=Z,
                 mode="markers",
                 showlegend=label is not None,
-                marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
+                marker=dict(color=color, colorscale=cmap, **marker_kwargs),
                 name=label,
                 **kwargs,
             )
@@ -186,7 +196,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             y=Y,
             mode="markers",
             showlegend=label is not None,
-            marker=Marker(color=color, colorscale=cmap, **marker_kwargs),
+            marker=dict(color=color, colorscale=cmap, **marker_kwargs),
             name=label,
             **kwargs,
         )
@@ -202,17 +212,17 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 y=Y,
                 z=Z,
                 showlegend=label is not None,
-                line=Line(color=color, **line_kwargs or {}),
+                line=dict(color=color, **line_kwargs or {}),
                 name=label,
                 **kwargs,
             )
         return Scatter(
-            x=X, y=Y, showlegend=label is not None, line=Line(color=color, **line_kwargs or {}), name=label, **kwargs
+            x=X, y=Y, showlegend=label is not None, line=dict(color=color, **line_kwargs or {}), name=label, **kwargs
         )
 
     def plot_axis_lines(self, ax, X, color=Tango.colorsHex["mediumBlue"], label=None, marker_kwargs=None, **kwargs):
         if X.shape[1] == 1:
-            annotations = Annotations()
+            annotations = []
             for _i, row in enumerate(X):
                 annotations.append(
                     Annotation(
@@ -241,7 +251,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=np.zeros(X.shape[0]),
                 mode="markers",
                 projection=dict(z=dict(show=True, opacity=opacity)),
-                marker=Marker(color=color, **marker_kwargs or {}),
+                marker=dict(color=color, **marker_kwargs or {}),
                 opacity=0,
                 name=label,
                 showlegend=label is not None,
@@ -254,7 +264,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         figure, _, _ = canvas
         if "barmode" in kwargs:
             figure.layout["barmode"] = kwargs.pop("barmode")
-        return Bar(x=x, y=height, marker=Marker(color=color), name=label)
+        return Bar(x=x, y=height, marker=dict(color=color), name=label)
 
     def xerrorbar(
         self, ax, X, Y, error, Z=None, color=Tango.colorsHex["mediumBlue"], label=None, error_kwargs=None, **kwargs
@@ -273,7 +283,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=Z,
                 mode="markers",
                 error_x=ErrorX(color=color, **error_kwargs or {}),
-                marker=Marker(size="0"),
+                marker=dict(size="0"),
                 name=label,
                 showlegend=label is not None,
                 **kwargs,
@@ -283,7 +293,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             y=Y,
             mode="markers",
             error_x=ErrorX(color=color, **error_kwargs or {}),
-            marker=Marker(size="0"),
+            marker=dict(size="0"),
             name=label,
             showlegend=label is not None,
             **kwargs,
@@ -306,7 +316,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=Z,
                 mode="markers",
                 error_y=ErrorY(color=color, **error_kwargs or {}),
-                marker=Marker(size="0"),
+                marker=dict(size="0"),
                 name=label,
                 showlegend=label is not None,
                 **kwargs,
@@ -316,7 +326,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             y=Y,
             mode="markers",
             error_y=ErrorY(color=color, **error_kwargs or {}),
-            marker=Marker(size="0"),
+            marker=dict(size="0"),
             name=label,
             showlegend=label is not None,
             **kwargs,
@@ -356,7 +366,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         X -= 1
         x = np.linspace(extent[0], extent[1], X.shape[0])
         y = np.linspace(extent[2], extent[3], X.shape[1])
-        annotations = Annotations()
+        annotations = []
         for n, row in enumerate(annotation):
             for m, val in enumerate(row):
                 var = X[n][m]
@@ -396,7 +406,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         self, ax, X, lower, upper, color=Tango.colorsHex["mediumBlue"], label=None, line_kwargs=None, **kwargs
     ):
         if "line" not in kwargs:
-            kwargs["line"] = Line(**line_kwargs or {})
+            kwargs["line"] = dict(**line_kwargs or {})
         else:
             kwargs["line"].update(line_kwargs or {})
         if color.startswith("#"):
@@ -457,7 +467,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                         fillcolor=fcolor,
                         showlegend=True,
                         name=label,
-                        line=Line(width=0, smoothing=0),
+                        line=dict(width=0, smoothing=0),
                         mode="none",
                         fill="tonextx",
                         legendgroup="density",
@@ -473,7 +483,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                         fillcolor=fcolor,
                         showlegend=False,
                         name=None,
-                        line=Line(width=1, smoothing=0, color=fcolor),
+                        line=dict(width=1, smoothing=0, color=fcolor),
                         mode="none",
                         fill="tonextx",
                         legendgroup="density",
@@ -492,7 +502,7 @@ class PlotlyPlotsOnline(PlotlyPlotsBase):
         figure, _, _ = canvas
         if len(figure.data) == 0:
             # add mock data
-            figure.append_trace(Scatter(x=[], y=[], name="", showlegend=False), 1, 1)
+            figure.add_trace(Scatter(x=[], y=[], name="", showlegend=False), row=1, col=1)
         from ..gpy_plot.plot_util import in_ipynb
 
         if in_ipynb():
@@ -511,7 +521,7 @@ class PlotlyPlotsOffline(PlotlyPlotsBase):
         figure, _, _ = canvas
         if len(figure.data) == 0:
             # add mock data
-            figure.append_trace(Scatter(x=[], y=[], name="", showlegend=False), 1, 1)
+            figure.add_trace(Scatter(x=[], y=[], name="", showlegend=False), row=1, col=1)
         from ..gpy_plot.plot_util import in_ipynb
 
         if in_ipynb():

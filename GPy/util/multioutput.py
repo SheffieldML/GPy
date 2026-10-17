@@ -48,7 +48,20 @@ def get_slices(input_list):
 def build_XY(input_list, output_list=None, index=None):
     num_outputs = len(input_list)
     if output_list is not None:
-        assert num_outputs == len(output_list)
+        if num_outputs != len(output_list):
+            raise ValueError(
+                f"build_XY: len(X_list)={num_outputs} != len(Y_list)={len(output_list)}. "
+                "Pass one array per output for both lists (#942)."
+            )
+        x_rows = [_x.shape[0] for _x in input_list]
+        y_rows = [_y.shape[0] for _y in output_list]
+        if x_rows != y_rows:
+            raise ValueError(
+                f"build_XY: per-output row counts must match between X_list and Y_list "
+                f"(X rows={x_rows}, Y rows={y_rows}). "
+                "GPCoregionalizedRegression expects a list of arrays per output, not a "
+                "single stacked multi-column matrix (#942)."
+            )
         Y = np.vstack(output_list)
     else:
         Y = None
@@ -60,6 +73,11 @@ def build_XY(input_list, output_list=None, index=None):
         I = np.hstack([np.repeat(j, _x.shape[0]) for _x, j in zip(input_list, range(num_outputs), strict=False)])
 
     X = np.vstack(input_list)
+    if X.shape[0] != I.shape[0]:
+        raise ValueError(
+            f"build_XY: stacked X has {X.shape[0]} rows but output-index has {I.shape[0]}. "
+            "Pass X_list/Y_list as lists with one array per output (#942)."
+        )
     X = np.hstack([X, I[:, None]])
 
     return X, Y, I[:, None]  # slices

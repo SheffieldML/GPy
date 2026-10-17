@@ -989,3 +989,11 @@ class TestKernelPsiStatisticsGradient:
 
         m = GradientChecker(f, df, self.qX.param_array.copy())
         assert m.checkgrad()
+
+
+def test_stationary_is_abstract():
+    """Stationary base class cannot be constructed directly (#866)."""
+    with pytest.raises(TypeError, match="abstract"):
+        GPy.kern.src.stationary.Stationary(
+            1, variance=1.0, lengthscale=1.0, ARD=False, active_dims=None, name="stationary"
+        )

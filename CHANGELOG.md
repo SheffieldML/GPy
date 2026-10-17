@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* `build_XY`: clear `ValueError` when X_list/Y_list lengths or per-output row counts disagree (#942, #1211)
+* `Stationary` cannot be instantiated directly; point users at concrete kernels / heteroscedastic regression (#866, #1211)
 * Fixed kernel: clear ValueError when `K`/`Kdiag` is evaluated on a different number of points than the stored matrix; point users at heteroscedastic regression (#1039, #1211)
 * GPClassification: clear ValueError for multi-column Y with default EP instead of `ep in 1D only` (#839, #1211)
 * docs: ExpQuad/RBF math shows lengthscale-scaled ``r`` (same convention as other Stationary kernels) (#828, #1211)

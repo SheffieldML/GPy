@@ -1,10 +1,10 @@
 ---
 id: 2026-10-11_correctness-reproduce-queue
 title: Reproduce historical correctness reports on current devel
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-11'
-last_updated: '2026-10-11'
+last_updated: '2026-10-17'
 category: bugs
 related_cips:
 - '0006'
@@ -35,3 +35,13 @@ current Poetry / NumPy 2 `devel`: fix, spawn focused tasks, or mark abandoned.
 
 - Issue: #1211
 - CIP: 0006, 0007
+
+
+## Progress Updates
+
+### 2026-10-17
+Moved to In Progress. Working #1211 checklist on current `devel`.
+
+First fix slice: #752 (no `plot_inducing` on GPLVM), #871 (clear X/Y mismatch
+`ValueError`), #639 (Uniform `lnpdf` log-density). Smoke also cleared as OK on
+current `devel`: #728, #738, #510, #641 (simple), #919, #734.

@@ -142,6 +142,16 @@ class TestPrior:
         m.randomize()
         assert m.checkgrad()
 
+    def test_uniform_lnpdf_support(self):
+        """Uniform.lnpdf is log-density on the interval and -inf outside (#639)."""
+        prior = Uniform(0.0, 1.0)
+        x = np.array([-0.5, 0.0, 0.5, 1.0, 1.5])
+        logp = prior.lnpdf(x)
+        np.testing.assert_allclose(logp[1:4], -np.log(1.0))
+        assert np.isneginf(logp[0]) and np.isneginf(logp[4])
+        np.testing.assert_allclose(prior.pdf(x[1:4]), 1.0)
+        assert prior.pdf(x[0]) == 0.0
+
     def test_set_gaussian_for_reals(self):
         xmin, xmax = 1, 2.5 * np.pi
         b, C, _SNR = 1, 0, 0.1

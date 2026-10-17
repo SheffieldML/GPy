@@ -122,7 +122,7 @@ def inject_plotting():
 
         GPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
         GPLVM.plot_scatter = gpy_plot.latent_plots.plot_latent_scatter
-        GPLVM.plot_inducing = gpy_plot.latent_plots.plot_latent_inducing
+        # Plain GPLVM has no inducing inputs (Z); use plot_latent / plot_scatter (#752).
         GPLVM.plot_steepest_gradient_map = gpy_plot.latent_plots.plot_steepest_gradient_map
         BayesianGPLVM.plot_latent = gpy_plot.latent_plots.plot_latent
         BayesianGPLVM.plot_scatter = gpy_plot.latent_plots.plot_latent_scatter

@@ -44,6 +44,17 @@ class GPClassification(GP):
         if inference_method is None:
             inference_method = EP()
 
+        # Default EP + Bernoulli is single-output; multi-column Y triggers an
+        # obscure "ep in 1D only" assert later (#839). A 1-d vector of length n
+        # is fine (treated as one output).
+        if isinstance(inference_method, EP) and Y is not None and getattr(Y, "ndim", None) == 2 and Y.shape[1] != 1:
+            raise ValueError(
+                f"GPClassification with the default EP inference expects a single output "
+                f"column of class labels (got Y.shape={tuple(Y.shape)}). "
+                "For multi-output classification use an appropriate inference method "
+                "or fit one binary classifier per output (#839)."
+            )
+
         super(GPClassification, self).__init__(
             X=X,
             Y=Y,

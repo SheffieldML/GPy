@@ -1,10 +1,10 @@
 ---
 id: 2026-10-11_correctness-reproduce-queue
 title: Reproduce historical correctness reports on current devel
-status: Proposed
+status: In Progress
 priority: Medium
 created: '2026-10-11'
-last_updated: '2026-10-11'
+last_updated: '2026-10-17'
 category: bugs
 related_cips:
 - '0006'
@@ -35,3 +35,11 @@ current Poetry / NumPy 2 `devel`: fix, spawn focused tasks, or mark abandoned.
 
 - Issue: #1211
 - CIP: 0006, 0007
+
+## Progress Updates
+
+### 2026-10-17
+- Slice 1 (PR #1222): #639 Uniform `lnpdf`, #871 X/Y mismatch, #752 GPLVM `plot_inducing`
+- Slice 2: #1039 Fixed kernel predict shape error, #839 GPClassification multi-column Y,
+  #828 ExpQuad/RBF docstring lengthscale-scaled ``r``
+- Smoke OK / abandon later: #728, #738, #510, #641, #919, #734; usage: #866, #942, #772

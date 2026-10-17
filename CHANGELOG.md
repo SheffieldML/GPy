@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+* Fixed kernel: clear ValueError when `K`/`Kdiag` is evaluated on a different number of points than the stored matrix; point users at heteroscedastic regression (#1039, #1211)
+* GPClassification: clear ValueError for multi-column Y with default EP instead of `ep in 1D only` (#839, #1211)
+* docs: ExpQuad/RBF math shows lengthscale-scaled ``r`` (same convention as other Stationary kernels) (#828, #1211)
 * docs/tests: README model reload must use `m[:] = loaded` (not bare `param_array[:] =`); bare buffer writes skip paramz observers (#1217, Discussion #958)
 * CIP-0007: completion wave — dispose 193 legacy issues into summary trackers #1209–#1214 and Discussion #1215
 * CIP-0005: Closed after full `SIM` + safe pycodestyle (#1208)

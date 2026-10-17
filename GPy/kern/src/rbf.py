@@ -18,6 +18,8 @@ class RBF(Stationary):
     .. math::
 
        k(r) = \\sigma^2 \\exp \\bigg(- \\frac{1}{2} r^2 \\bigg)
+       \\quad\\text{where}\\quad
+       r = \\sqrt{\\sum_{i=1}^{\\text{input_dim}} \\frac{(x_i-y_i)^2}{\\ell_i^2}}
 
     """
 

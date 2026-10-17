@@ -155,3 +155,25 @@ class TestGP:
         m_trig._trigger_params_changed()
         mu_trig, _ = m_trig.predict(self.X)
         np.testing.assert_allclose(mu_trig, mu0)
+
+    def test_xy_row_mismatch_raises(self):
+        """Mismatched X/Y row counts raise a clear ValueError (#871)."""
+        self.setup_method()
+        X = np.random.randn(100, 3)
+        Y = np.random.randn(500, 1)
+        try:
+            GPy.models.GPRegression(X, Y)
+        except ValueError as err:
+            msg = str(err)
+            assert "100" in msg and "500" in msg
+        else:
+            raise AssertionError("Expected ValueError for X/Y row mismatch")
+
+    def test_gplvm_has_no_plot_inducing(self):
+        """Plain GPLVM has no inducing inputs; plot_inducing is not attached (#752)."""
+        self.setup_method()
+        Y = np.random.randn(20, 4)
+        m = GPy.models.GPLVM(Y, 2)
+        assert not hasattr(m, "plot_inducing")
+        m_b = GPy.models.BayesianGPLVM(Y, 2, num_inducing=5)
+        assert hasattr(m_b, "plot_inducing")

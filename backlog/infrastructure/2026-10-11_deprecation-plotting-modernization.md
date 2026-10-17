@@ -1,7 +1,7 @@
 ---
 id: 2026-10-11_deprecation-plotting-modernization
 title: Deprecation warnings and plotting modernization
-status: In Progress
+status: Completed
 priority: Medium
 created: '2026-10-11'
 last_updated: '2026-10-17'
@@ -30,7 +30,7 @@ fix deprecation noise (`#1072`, `#865`, `#968`) and retire `pylab` (`#913`).
 - [x] Capture top `pytest` warning categories on current `devel`
 - [x] Fix or document intentional silences
 - [x] Remove/replace `pylab` where practical
-- [ ] Close #1210 when done
+- [x] Close #1210 when done
 
 ## Inventory (2026-10-17, `pytest GPy/testing`)
 
@@ -46,9 +46,10 @@ nose-era reports:
 
 - Issue: #1210
 - CIP: 0005, 0007
+- PRs: #1229
+- Follow-on: CIP-0009 (plotting / hotspot coverage)
 
 ## Progress Updates
 
 ### 2026-10-17
-In Progress. Replace pylab in `ssgplvm` / `pca` / `state_space`; modernize
-plotly_dep for Plotly 6; alias `rand`→`random`; pytest filterwarnings.
+Completed via #1229; #1210 closed. Coverage follow-up tracked in CIP-0009.

@@ -136,7 +136,9 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 else:
                     xref, yref = cell
                 append_annotation(traces, xref, yref)
-            elif isinstance(traces, (Scatter, Scatter3d, ErrorX, ErrorY, Bar, Heatmap, Contour, Surface, BaseTraceType)):
+            elif isinstance(
+                traces, (Scatter, Scatter3d, ErrorX, ErrorY, Bar, Heatmap, Contour, Surface, BaseTraceType)
+            ):
                 try:
                     append_trace(traces, row, col)
                 except (PlotlyError, TypeError, ValueError):

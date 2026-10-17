@@ -41,8 +41,7 @@ def initialize_latent(init, input_dim, Y):
         var = Xr.var(0)
     else:
         warnings.warn(
-            f"{init!r} is not a valid initialization method; "
-            "use 'PCA' or 'random'. Falling back to random.",
+            f"{init!r} is not a valid initialization method; use 'PCA' or 'random'. Falling back to random.",
             DeprecationWarning,
             stacklevel=2,
         )

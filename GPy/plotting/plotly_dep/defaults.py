@@ -29,6 +29,7 @@
 # ===============================================================================
 
 from .. import Tango
+
 """
 This file is for defaults for the gpy plot, specific to the plotting library.
 

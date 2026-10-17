@@ -121,11 +121,17 @@ class Uniform(Prior):
         return f"[{self.lower:.2g}, {self.upper:.2g}]"
 
     def lnpdf(self, x):
-        region = (x >= self.lower) * (x <= self.upper)
-        return region
+        # Log-density is constant on [lower, upper] and -inf outside.
+        # (Previously returned 0/1, i.e. density e^0 outside and e^1 inside — #639.)
+        x = np.asarray(x, dtype=float)
+        log_height = -np.log(self.upper - self.lower)
+        out = np.full(np.shape(x), -np.inf, dtype=float)
+        inside = (x >= self.lower) & (x <= self.upper)
+        out[inside] = log_height
+        return out
 
     def lnpdf_grad(self, x):
-        return np.zeros(x.shape)
+        return np.zeros(np.shape(x))
 
     def rvs(self, n):
         return np.random.uniform(self.lower, self.upper, size=n)

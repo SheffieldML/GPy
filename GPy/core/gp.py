@@ -80,12 +80,9 @@ class GP(Model):
             self.Y_normalized = self.Y
 
         if Y.shape[0] != self.num_data:
-            # There can be cases where we want inputs than outputs, for example if we have multiple latent
-            # function values
-            warnings.warn(
-                "There are more rows in your input data X, \
-                         than in your output data Y, be VERY sure this is what you want",
-                stacklevel=2,
+            raise ValueError(
+                f"Number of rows in X ({self.num_data}) and Y ({Y.shape[0]}) must match "
+                f"(got X.shape={tuple(np.asarray(self.X).shape)}, Y.shape={tuple(np.asarray(Y).shape)})."
             )
         _, self.output_dim = self.Y.shape
 

@@ -123,3 +123,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # Public API re-exports (from .foo import Bar) are intentional in package inits.
 "**/__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+# #1210: keep suite readable; silence known third-party noise only.
+filterwarnings = [
+    "ignore:Passing unrecognized arguments to super\\(HTML\\):DeprecationWarning",
+]

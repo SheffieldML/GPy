@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* plotting: replace `pylab` with `matplotlib.pyplot`; modernize plotly (subplots, dict styles, add_trace) (#1210, #913, #968)
+* init: treat latent `init='rand'` as alias for `'random'` (no deprecation) (#1210)
 * packaging: missing matplotlib/plotly no longer breaks `import GPy`; use `pip install gpy[plotting]` for plots (#1209, #873)
 * CI/release: build manylinux **aarch64** wheels alongside x86_64; document optional plotting and arm64 wheel story (#1209, #1114)
 * `build_XY`: clear `ValueError` when X_list/Y_list lengths or per-output row counts disagree (#942, #1211)

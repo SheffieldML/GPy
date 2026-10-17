@@ -8,10 +8,11 @@ Created on 10 Sep 2012
 import numpy
 
 try:
-    import pylab
     import matplotlib
-except:
-    pass
+    from matplotlib import pyplot as plt
+except ImportError:
+    matplotlib = None
+    plt = None
 from operator import setitem
 from functools import reduce
 import contextlib
@@ -84,12 +85,14 @@ class PCA:
         """
         Plot fractions of Eigenvalues sorted in descending order.
         """
+        if plt is None:
+            raise ImportError("matplotlib is required for PCA.plot_fracs; pip install gpy[plotting]")
         from ..plotting import Tango
 
         Tango.reset()
         col = Tango.nextMedium()
         if ax is None:
-            fig = pylab.figure(fignum)
+            fig = plt.figure(fignum)
             ax = fig.add_subplot(111)
         if Q is None:
             Q = self.Q
@@ -101,7 +104,7 @@ class PCA:
         ax.set_ylim(0, ax.get_ylim()[1])
         ax.set_xlim(ticks.min() - 0.5, ticks.max() + 0.5)
         with contextlib.suppress(Exception):
-            pylab.tight_layout()
+            plt.tight_layout()
         return bar
 
     def plot_2d(
@@ -122,10 +125,12 @@ class PCA:
         PC space. Labels can be any sequence of labels of dimensions X.shape[0].
         Labels can be drawn with a subsequent call to legend()
         """
+        if plt is None or matplotlib is None:
+            raise ImportError("matplotlib is required for PCA.plot_2d; pip install gpy[plotting]")
         if cmap is None:
             cmap = matplotlib.cm.jet
         if ax is None:
-            fig = pylab.figure(fignum)
+            fig = plt.figure(fignum)
             ax = fig.add_subplot(111)
         if labels is None:
             labels = numpy.zeros(X.shape[0])
@@ -144,5 +149,5 @@ class PCA:
         ax.set_xlabel(r"PC$_1$")
         ax.set_ylabel(r"PC$_2$")
         with contextlib.suppress(Exception):
-            pylab.tight_layout()
+            plt.tight_layout()
         return plots

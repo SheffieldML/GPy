@@ -91,6 +91,21 @@ class TestConfig:
         with pytest.raises(RuntimeError):
             plotting.plotting_library()
 
+    def test_plotly_offline_loads_without_deprecation(self):
+        """Plotly backend uses modern subplots / graph_objs APIs (#968 / #1210)."""
+        plotly = pytest.importorskip("plotly")
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            change_plotting_library("plotly_offline")
+            lib = plotting_library()
+            canvas, _ = lib.new_canvas()
+            traces = lib.scatter(canvas, [[0.0], [1.0]], [[0.0], [1.0]], label="t")
+            lib.add_to_canvas(canvas, traces)
+        assert plotly.__version__  # installed
+        self.teardown_method()
+
 
 @pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
 class TestShowAcceptsPlotDict:

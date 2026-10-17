@@ -299,3 +299,20 @@ class TestStandardize:
         covariance = np.random.rand(100, 100)
         output = self.normalizer.inverse_covariance(covariance)
         assert output.shape == (100, 100, 2)
+
+
+class TestInitializeLatent:
+    def test_rand_alias_for_random(self):
+        """'rand' is accepted as an alias for 'random' without DeprecationWarning (#1210)."""
+        import warnings
+
+        from GPy.util.initialization import initialize_latent
+
+        Y = np.random.randn(15, 4)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            X_rand, _ = initialize_latent("rand", 2, Y)
+            X_random, _ = initialize_latent("random", 2, Y)
+        assert X_rand.shape == (15, 2)
+        assert X_random.shape == (15, 2)
+        assert not any(issubclass(w.category, DeprecationWarning) for w in caught)

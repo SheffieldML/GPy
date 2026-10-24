@@ -1,6 +1,4 @@
-# Dependabot on the default integration branch (`devel`).
-# CIP-0008: switch target-branch to main after that rename
-# (backlog 2026-10-24_cip0008-rename-default-main).
+# Dependabot on the default integration branch (`main`).
 # Security updates already opened #1232; this config also covers
 # weekly version bumps for pip (Poetry) and GitHub Actions.
 version: 2

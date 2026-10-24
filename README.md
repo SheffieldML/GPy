@@ -4,9 +4,9 @@ The Gaussian processes framework in Python.
 
 * GPy [homepage](http://sheffieldml.github.io/GPy/)
 * Tutorial [notebooks](http://nbviewer.ipython.org/github/SheffieldML/notebook/blob/master/GPy/index.ipynb)
-* Multi-output / coregionalized regression notes: [`doc/source/tuto_coregionalized.rst`](doc/source/tuto_coregionalized.rst) (also on [Read the Docs](https://gpy.readthedocs.io/en/devel/tuto_coregionalized.html) after the next docs build)
+* Multi-output / coregionalized regression notes: [`doc/source/tuto_coregionalized.rst`](doc/source/tuto_coregionalized.rst) (also on [Read the Docs](https://gpy.readthedocs.io/en/latest/tuto_coregionalized.html))
 * Community Q&A: [GitHub Discussions](https://github.com/SheffieldML/GPy/discussions)
-* Developer [documentation](http://gpy.readthedocs.io/) [documentation (devel branch)](https://gpy.readthedocs.io/en/devel/)
+* Developer [documentation](https://gpy.readthedocs.io/en/latest/)
 * [![licence](https://img.shields.io/badge/licence-BSD-blue.svg)](http://opensource.org/licenses/BSD-3-Clause)
   [![Research software impact](http://depsy.org/api/package/pypi/GPy/badge.svg)](http://depsy.org/package/python/GPy)
 
@@ -14,7 +14,7 @@ The Gaussian processes framework in Python.
 
 | Branch | GitHub Actions | Codecov |
 | --- | --- | --- |
-| Default branch (`devel`; CIP-0008 renames to `main`) | [![gha-devel](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=devel)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adevel) | [![codecov-devel](https://codecov.io/gh/SheffieldML/GPy/branch/devel/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/devel) |
+| `main` | [![gha-main](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=main)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Amain) | [![codecov-main](https://codecov.io/gh/SheffieldML/GPy/branch/main/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/main) |
 
 ## What's new:
 
@@ -39,7 +39,7 @@ For an in depth description of pull requests, please visit https://help.github.c
  3. Make sure the [guidelines](#gl) are met.
  4. Set up tests to test your code. We are using unittests in the testing subfolder of GPy. There is a good chance 
     that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
- 5. Create a pull request against the **default branch** (`devel`; CIP-0008 renames this to `main`).
+ 5. Create a pull request against **`main`**.
  6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
  7. The pull request gets accepted and your awesome new feature will be in the next GPy release :)
 
@@ -168,7 +168,7 @@ If you're having trouble installing GPy via `pip install gpy` here is a probable
 
     git clone https://github.com/SheffieldML/GPy.git
     cd GPy
-    git checkout devel   # default branch; CIP-0008 renames this to main
+    git checkout main
     poetry install --with dev
     pytest .
 
@@ -257,16 +257,15 @@ The HTML files are then stored in doc/build/html
 
 ### Merging to the default branch
 
-Open a pull request against the default branch (`devel`; CIP-0008 renames it
-to `main`). CI (`Test Python Lib`) runs tests and lint on the PR. Do not open
-a `devel` → `deploy` PR: that branch is stale and is not part of publishing.
+Open a pull request against **`main`**. CI (`Test Python Lib`) runs tests and
+lint on the PR. The old `deploy` branch is stale and is not part of publishing.
 
 Bump the Poetry version in `pyproject.toml` / `GPy/__version__.py` when cutting
 a release, and add a CHANGELOG section.
 
 ### Deploying GPy (CIP-0008)
 
-1. Merge the version bump to the default branch.
+1. Merge the version bump to `main`.
 2. On GitHub: **Releases → Draft a new release**.
 3. Create tag `vX.Y.Z` on that commit (must match `poetry version -s`).
 4. **Publish** the release (a draft does not upload).

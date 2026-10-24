@@ -26,7 +26,7 @@ script = "build_extension.py"
 generate-setup-file = true  # required for Cython build script / ext_modules
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4"
+python = ">=3.9,<4"
 numpy = ">=2"
 six = "*"
 paramz = ">=0.9.6"
@@ -81,7 +81,7 @@ extend-exclude = [
 
 [tool.ruff.lint]
 # CIP-0005: pyflakes + bugbear + full SIM + pyupgrade (partial) + safe pycodestyle.
-# Format enforced in CI. Deferred: UP008 (paramz).
+# Format enforced in CI. Deferred: UP008 (paramz), UP038 (needs Python >=3.10).
 select = [
     "E9",
     "F",

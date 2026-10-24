@@ -135,7 +135,7 @@ jobs:
         run: ls -R dist
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-artifacts-${{ matrix.os }}-${{ matrix.python }}
           path: dist
@@ -187,7 +187,7 @@ jobs:
         run: ls -R dist
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-artifacts-manylinux-${{ matrix.platform.arch }}-${{ matrix.python }}
           path: dist

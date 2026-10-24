@@ -1,0 +1,21 @@
+# Dependabot on the default integration branch (`devel`).
+# Security updates already opened #1232; this config also covers
+# weekly version bumps for pip (Poetry) and GitHub Actions.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    target-branch: devel
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: devel
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* packaging: require Python >=3.11 (matches CI; 3.9/3.10 are EOL) so the lockfile can drop unpatched 3.9-only pins (Discussion #1207)
 
 ## v1.15.0 (2026-10-24)
 * Last release that **declares Python 3.9 and 3.10**. Binary wheels remain 3.11–3.14. The next minor will require Python >=3.11 ([Discussion #1207](https://github.com/SheffieldML/GPy/discussions/1207)).

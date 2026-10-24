@@ -2,6 +2,9 @@
 
 ## Unreleased
 * packaging: require Python >=3.11 (matches CI; 3.9/3.10 are EOL) so the lockfile can drop unpatched 3.9-only pins (Discussion #1207)
+
+## v1.15.0 (2026-10-24)
+* Last release that **declares Python 3.9 and 3.10**. Binary wheels remain 3.11–3.14. The next minor will require Python >=3.11 ([Discussion #1207](https://github.com/SheffieldML/GPy/discussions/1207)).
 * security: refresh `poetry.lock` for Dependabot (Pillow 13 on Python 3.11+, nbconvert 7.17.2, certifi 2026.10.23); Python 3.9/3.10 pins stay where no patched wheel exists (Discussion #1207)
 * plotting: replace `pylab` with `matplotlib.pyplot`; modernize plotly (subplots, dict styles, add_trace) (#1210, #913, #968)
 * init: treat latent `init='rand'` as alias for `'random'` (no deprecation) (#1210)

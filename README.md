@@ -14,8 +14,7 @@ The Gaussian processes framework in Python.
 
 | Branch | GitHub Actions | Codecov |
 | --- | --- | --- |
-| Default branch (`devel`) | [![gha-devel](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=devel)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adevel) | [![codecov-devel](https://codecov.io/gh/SheffieldML/GPy/branch/devel/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/devel) |
-| Deployment branch (`deploy`) | [![gha-deploy](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=deploy)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adeploy) | [![codecov-deploy](https://codecov.io/gh/SheffieldML/GPy/branch/deploy/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/deploy) |
+| Default branch (`devel`; CIP-0008 renames to `main`) | [![gha-devel](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml/badge.svg?branch=devel)](https://github.com/SheffieldML/GPy/actions/workflows/test-and-deploy.yml?query=branch%3Adevel) | [![codecov-devel](https://codecov.io/gh/SheffieldML/GPy/branch/devel/graph/badge.svg)](https://codecov.io/gh/SheffieldML/GPy/branch/devel) |
 
 ## What's new:
 
@@ -40,7 +39,7 @@ For an in depth description of pull requests, please visit https://help.github.c
  3. Make sure the [guidelines](#gl) are met.
  4. Set up tests to test your code. We are using unittests in the testing subfolder of GPy. There is a good chance 
     that there is already a framework set up to test your new model in model_tests.py or kernel in kernel_tests.py. have a look at the source and you might be able to just add your model (or kernel or others) as an additional test in the appropriate file. There is more frameworks for testing the other bits and pieces, just head over to the testing folder and have a look.
- 5. Create a pull request to the devel branch in GPy, see above.
+ 5. Create a pull request against the **default branch** (`devel`; CIP-0008 renames this to `main`).
  6. The tests will be running on your pull request. In the comments section we will be able to discuss the changes and help you with any problems. Let us know if there are any in the comments, so we can help.
  7. The pull request gets accepted and your awesome new feature will be in the next GPy release :)
 
@@ -169,7 +168,7 @@ If you're having trouble installing GPy via `pip install gpy` here is a probable
 
     git clone https://github.com/SheffieldML/GPy.git
     cd GPy
-    git checkout devel
+    git checkout devel   # default branch; CIP-0008 renames this to main
     poetry install --with dev
     pytest .
 
@@ -256,49 +255,26 @@ sphinx-build -b html -d build/doctrees -D graphviz_dot='<path to dot>' source bu
 
 The HTML files are then stored in doc/build/html
 
-### Commit new patch to devel
+### Merging to the default branch
 
-If you want to merge a branch into devel make sure the following steps are met:
+Open a pull request against the default branch (`devel`; CIP-0008 renames it
+to `main`). CI (`Test Python Lib`) runs tests and lint on the PR. Do not open
+a `devel` → `deploy` PR: that branch is stale and is not part of publishing.
 
- - Create a local branch from the pull request and merge the current devel in.
- - Look through the changes on the pull request.
- - Check that tests are there and are checking code where applicable.
- - [optional] Make changes if necessary and commit and push to run tests.
- - [optional] Repeat the above until tests pass.
- - [optional] bump up the version of GPy using bumpversion. The configuration is done, so all you need is bumpversion [major|minor|patch].
- - Update the changelog using gitchangelog: `gitchangelog > CHANGELOG.md`
- - Commit the changes of the changelog as silent update: `git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
- - Push the changes into devel.
+Bump the Poetry version in `pyproject.toml` / `GPy/__version__.py` when cutting
+a release, and add a CHANGELOG section.
 
-A usual workflow should look like this:
+### Deploying GPy (CIP-0008)
 
-    $ git fetch origin
-    $ git checkout -b <pull-origin>-devel origin/<pull-origin>-devel
-    $ git merge devel
-    $ coverage run travis_tests.py
+1. Merge the version bump to the default branch.
+2. On GitHub: **Releases → Draft a new release**.
+3. Create tag `vX.Y.Z` on that commit (must match `poetry version -s`).
+4. **Publish** the release (a draft does not upload).
 
-**Make changes for tests to cover corner cases (if statements, None arguments etc.)**
-Then we are ready to make the last changes for the changelog and versioning:
-
-    $ git commit -am "fix: Fixed tests for <pull-origin>"
-    $ bumpversion patch # [optional]
-    $ gitchangelog > CHANGELOG.md
-    $ git commit -m "chg: pkg: CHANGELOG update" CHANGELOG.md
-
-Now we can merge the pull request into devel:
-
-    $ git checkout devel
-    $ git merge --no-ff <pull-origin>-devel
-    $ git push origin devel
-
-This will update the devel branch of GPy.
-
-### Deploying GPy
-
-Publishing is a GitHub **Release** on `devel` (tag `vX.Y.Z`). That event builds
-wheels (Linux x86_64 and aarch64, macOS, Windows; Python 3.11–3.14) and uploads
-them to PyPI via Trusted Publishing. CIP-0008 may replace this with a tag-driven
-pipeline after 1.15.0; do not change it for this cut.
+That `release` event (`types: [published]`) builds wheels (Linux x86_64 and
+aarch64, macOS, Windows; Python 3.11–3.14) and runs `twine upload` to PyPI.
+To build wheels **without** uploading, run **Actions → Test Python Lib →
+Run workflow** (`workflow_dispatch`).
 
 ## Funding Acknowledgements
 

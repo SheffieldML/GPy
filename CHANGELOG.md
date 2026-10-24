@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* packaging: require Python >=3.11 (matches CI; 3.9/3.10 are EOL) so the lockfile can take Pillow 13 and drop unpatched 3.9-only pins
+* security: refresh `poetry.lock` for Dependabot (Pillow 13, nbconvert 7.17.2, certifi 2026.10.23, and related transitive pins)
 * plotting: replace `pylab` with `matplotlib.pyplot`; modernize plotly (subplots, dict styles, add_trace) (#1210, #913, #968)
 * init: treat latent `init='rand'` as alias for `'random'` (no deprecation) (#1210)
 * packaging: missing matplotlib/plotly no longer breaks `import GPy`; use `pip install gpy[plotting]` for plots (#1209, #873)

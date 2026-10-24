@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gpy"
-version = "1.14.2"
+version = "1.15.0"
 description = "The Gaussian Process Toolbox"
 authors = ["GPy Authors <gpy.authors@gmail.com>"]
 license = "BSD-3-Clause"

@@ -75,7 +75,7 @@ For a developmental install from a clone, use Poetry (see below).
 [<img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/OS_X-Logo.svg" height=40px>](http://www.apple.com/osx/)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" height=40px>](https://en.wikipedia.org/wiki/List_of_Linux_distributions)
 
-Python 3.9 and higher
+Python 3.9 and higher (binary wheels for 3.11–3.14; 1.15.0 is the last release that declares 3.9/3.10)
 
 ## Citation
 
@@ -295,10 +295,10 @@ This will update the devel branch of GPy.
 
 ### Deploying GPy
 
-We have set up all deployment automatic.
-Thus, all you need to do is create a pull request from devel to deploy.
-Wait for the tests to finish (successfully!) and merge the pull request.
-This will update the package on pypi for all platforms fully automatically.
+Publishing is a GitHub **Release** on `devel` (tag `vX.Y.Z`). That event builds
+wheels (Linux x86_64 and aarch64, macOS, Windows; Python 3.11–3.14) and uploads
+them to PyPI via Trusted Publishing. CIP-0008 may replace this with a tag-driven
+pipeline after 1.15.0; do not change it for this cut.
 
 ## Funding Acknowledgements
 

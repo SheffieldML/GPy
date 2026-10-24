@@ -1,7 +1,7 @@
 ---
 id: 2026-10-24_cip0008-ci-main-release
 title: CIP-0008 CI — published-only release, wheel dry-run, drop deploy trigger
-status: In Progress
+status: Completed
 priority: High
 created: "2026-10-24"
 last_updated: "2026-10-24"
@@ -56,3 +56,7 @@ Do not change Poetry/Cython build mechanics. Keep `twine` + `id-token`
 
 Task created In Progress. 1.15.0 is on PyPI (`requires_python >=3.9,<4`,
 aarch64 wheels present).
+
+Landed in [#1244](https://github.com/SheffieldML/GPy/pull/1244). Default
+branch is now `main`; a `workflow_dispatch` dry-run was queued on that
+branch.

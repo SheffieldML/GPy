@@ -1,7 +1,7 @@
 ---
 id: 2026-10-24_cip0008-rename-default-main
 title: CIP-0008 — rename default branch devel to main
-status: Ready
+status: In Progress
 priority: High
 created: "2026-10-24"
 last_updated: "2026-10-24"
@@ -32,11 +32,11 @@ delete the stale `deploy` branch (last commit July 2024).
 
 ## Acceptance Criteria
 
-- [ ] Repository default branch is `main`
-- [ ] Dependabot PRs open against `main`
-- [ ] CI `push` triggers are `main` only (no `deploy`, no leftover `devel`
+- [x] Repository default branch is `main`
+- [x] Dependabot PRs open against `main`
+- [x] CI `push` triggers are `main` only (no `deploy`, no leftover `devel`
       unless a redirect branch remains)
-- [ ] README contributor/release instructions say `main`
+- [x] README contributor/release instructions say `main`
 - [ ] `deploy` removed from CI; branch deleted or clearly archived
 
 ## Related
@@ -50,3 +50,7 @@ delete the stale `deploy` branch (last commit July 2024).
 
 Task created Ready. Do this after the CI PR merges so `devel` still receives
 the workflow that knows about `main`.
+
+GitHub default branch renamed `devel` → `main`. Follow-up PR retargets
+Dependabot, drops leftover `devel` from `push:`, and updates README/RTD
+links. The stale `deploy` branch is left in place (not a CI trigger).

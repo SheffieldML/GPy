@@ -1,7 +1,7 @@
 ---
 id: 2026-10-24_cip0008-readme-releasing
 title: CIP-0008 — README releasing instructions
-status: In Progress
+status: Completed
 priority: Medium
 created: "2026-10-24"
 last_updated: "2026-10-24"
@@ -40,3 +40,7 @@ publish a GitHub Release `vX.Y.Z`, watch `Test Python Lib` deploy.
 ### 2026-10-24
 
 Task created In Progress with the CI change.
+
+README releasing steps now say merge to `main` and publish a GitHub
+Release. Contributor/clone/badge/RTD links follow the default-branch
+rename.

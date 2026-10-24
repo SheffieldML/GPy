@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-      - devel
   pull_request:
   release:
     types: [published]

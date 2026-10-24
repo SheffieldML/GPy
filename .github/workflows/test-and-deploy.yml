@@ -1,12 +1,15 @@
 name: "Test Python Lib"
+# CIP-0008: tests on the default line; wheels on Release published or
+# workflow_dispatch (dry-run, no PyPI). `on: release` without types queued
+# three copies of this workflow for v1.15.0.
 on:
   push:
     branches:
       - main
       - devel
-      - deploy
   pull_request:
   release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -105,7 +108,7 @@ jobs:
         run: ruff format --check GPy
 
   build:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         os: [windows-latest, macos-latest]
@@ -141,7 +144,7 @@ jobs:
           path: dist
 
   build-linux:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         python: ['cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
@@ -208,6 +211,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Check Release tag matches Poetry version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PY=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['poetry']['version'])")
+          echo "tag=${TAG} poetry=${PY}"
+          test "${TAG}" = "${PY}"
+
       - name: Install twine
         run: |
           pip install --upgrade pip
@@ -219,24 +229,19 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: List and verify artifact integrity
+      - name: Keep only wheels and sdists
         run: |
+          find dist -type f ! -name '*.whl' ! -name '*.tar.gz' -delete
           echo "Contents of dist directory:"
           ls -lhR dist
-
           for file in dist/*.tar.gz; do
             if [ -f "$file" ]; then
-              echo "Verifying $file..."
-              tar -tzf "$file" > /dev/null && echo "✓ $file is valid" || echo "✗ $file is corrupted"
+              tar -tzf "$file" > /dev/null && echo "ok $file" || (echo "bad $file" && exit 1)
             fi
           done
 
-      - name: Inspect wheel files
-        run: |
-          ls -R dist
-
       - name: Verify distributions
-        run: twine check dist/*
+        run: twine check dist/*.whl dist/*.tar.gz
 
       - name: Upload to PyPI using twine
-        run: twine upload dist/*
+        run: twine upload --skip-existing dist/*.whl dist/*.tar.gz

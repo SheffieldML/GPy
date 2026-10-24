@@ -99,7 +99,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install ruff
-        run: pip install 'ruff==0.9.10'
+        run: pip install 'ruff==0.17.1'
 
       - name: Ruff check (select from pyproject.toml)
         run: ruff check GPy --exclude GPy/old_tests --exclude GPy/testing/mpi_test__.py

@@ -107,6 +107,52 @@ class TestConfig:
         self.teardown_method()
 
 
+class TestPlotly7:
+    """#1243: the plotly backends must work with current plotly (no Chart Studio, numeric marker sizes)."""
+
+    def setup_method(self):
+        pytest.importorskip("plotly")
+        np.random.seed(1243)
+
+    def teardown_method(self):
+        if matplotlib is not None:
+            change_plotting_library("matplotlib")
+        else:
+            change_plotting_library("none")
+
+    def test_online_show_names_offline_alternatives(self):
+        change_plotting_library("plotly")
+        lib = plotting_library()
+        canvas, _ = lib.new_canvas()
+        with pytest.raises(RuntimeError, match="plotly_offline") as err:
+            lib.show_canvas(canvas)
+        assert "matplotlib" in str(err.value)
+
+    @pytest.mark.parametrize("projection", ["2d", "3d"])
+    def test_offline_inducing_marker_size(self, projection):
+        change_plotting_library("plotly_offline")
+        m = GPy.models.SparseGPRegression(np.random.rand(20, 2), np.random.rand(20, 1), num_inducing=5)
+        figure, _, _ = m.plot_inducing(projection=projection)
+        assert figure.data[0].marker.size == 5
+
+    def test_offline_latent_scatter_marker_size(self):
+        change_plotting_library("plotly_offline")
+        m = GPy.models.GPLVM(np.random.rand(15, 4), 2)
+        figure, _, _ = m.plot_latent()
+        assert [t.marker.size for t in figure.data if t.type == "scatter"] == [5]
+
+    @pytest.mark.parametrize("which", ["xerrorbar", "yerrorbar"])
+    @pytest.mark.parametrize("projection", ["2d", "3d"])
+    def test_offline_errorbar_marker_size(self, which, projection):
+        change_plotting_library("plotly_offline")
+        lib = plotting_library()
+        canvas, _ = lib.new_canvas(projection=projection)
+        X, Y, error = np.random.rand(5, 1), np.random.rand(5, 1), np.random.rand(5)
+        Z = np.random.rand(5, 1) if projection == "3d" else None
+        trace = getattr(lib, which)(canvas, X, Y, error, Z=Z)
+        assert trace.marker.size == 0
+
+
 @pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
 class TestShowAcceptsPlotDict:
     """#920: model.plot() returns a plots dict; show() must accept it (and Axes)."""

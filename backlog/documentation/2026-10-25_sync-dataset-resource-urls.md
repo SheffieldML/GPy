@@ -54,7 +54,7 @@ branch.
 
 ## Implementation Notes
 
-Copy URL fields from
+Copy URL fields (consider automatic copy too) from
 [pods `data_resources.json`](https://github.com/lawrennd/ods/blob/main/pods/data_resources.json)
 for the overlapping keys. Keep GPy's file-name lists; only the hosts change.
 

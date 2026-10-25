@@ -6,7 +6,7 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Ready
 
-*No tasks currently ready.*
+- [Sync GPy dataset resource URLs with pods / datasets_mirror](documentation/2026-10-25_sync-dataset-resource-urls.md)
 
 
 ### In Progress
@@ -15,8 +15,6 @@ This file provides an overview of all current backlog items organized by categor
 
 
 ### Proposed
-
-- [Fix or soft-fail example dataset downloads](documentation/2026-10-11_example-datasets-links.md)
 
 - [Optional demos for the October 2026 maintenance batch](documentation/2026-10-07_october-2026-demos.md)
 

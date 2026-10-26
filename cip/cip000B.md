@@ -3,7 +3,7 @@ author: Neil Lawrence
 created: "2026-10-26"
 id: "000B"
 last_updated: "2026-10-26"
-status: Proposed
+status: Accepted
 compressed: false
 related_requirements: []
 related_cips:
@@ -24,7 +24,7 @@ title: Modern latent-space explorer to replace matplotlib visualize
 ## Status
 
 - [x] Proposed - Initial idea documented
-- [ ] Accepted - Approved, ready to start work
+- [x] Accepted - Approved, ready to start work
 - [ ] In Progress - Actively being implemented
 - [ ] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
@@ -196,12 +196,13 @@ None yet (requirements extraction still outstanding).
 ## Implementation Status
 
 - [x] Write CIP (Proposed)
-- [ ] Accept CIP after review
-- [ ] Spike: Panel stick explorer on macOS
-- [ ] Public `explore` module + optional extra
-- [ ] Port stick / oil / faces demos
-- [ ] Plotly skeleton view; remove VPython path
-- [ ] Deprecate `visualize.py`
+- [x] Accept CIP after review
+- [ ] Spike: Panel stick explorer on macOS ([2026-10-26_panel-stick-explorer-spike](../backlog/features/2026-10-26_panel-stick-explorer-spike.md))
+- [ ] Public `explore` module + optional extra ([2026-10-26_explore-module-optional-extra](../backlog/features/2026-10-26_explore-module-optional-extra.md))
+- [ ] Port stick / oil / faces demos ([2026-10-26_port-lvm-demos-to-explore](../backlog/features/2026-10-26_port-lvm-demos-to-explore.md))
+- [ ] Plotly skeleton view; remove VPython path ([2026-10-26_plotly-skeleton-drop-vpython](../backlog/features/2026-10-26_plotly-skeleton-drop-vpython.md))
+- [ ] Deprecate `visualize.py` ([2026-10-26_deprecate-matplotlib-visualize](../backlog/infrastructure/2026-10-26_deprecate-matplotlib-visualize.md))
+- [ ] Example docs ([2026-10-26_latent-explorer-example-docs](../backlog/documentation/2026-10-26_latent-explorer-example-docs.md))
 - [ ] Close CIP
 
 ## References

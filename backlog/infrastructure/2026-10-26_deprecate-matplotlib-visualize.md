@@ -1,10 +1,10 @@
 ---
 id: 2026-10-26_deprecate-matplotlib-visualize
 title: Deprecate matplotlib visualize LVM callbacks
-status: Ready
+status: In Progress
 priority: Medium
 created: "2026-10-26"
-last_updated: "2026-10-26"
+last_updated: "2026-10-27"
 category: infrastructure
 related_cips:
 - "000B"
@@ -26,15 +26,15 @@ tags:
 
 Once demos no longer import `lvm` / `lvm_dimselect` / VPython, deprecate
 `GPy.plotting.matplot_dep.visualize` and point callers at
-`GPy.plotting.explore`. Leave geometry helpers only if stick/skeleton views
-still share them; otherwise remove the file after a warning cycle.
+[vidden](https://github.com/lawrennd/vidden). Leave geometry helpers only if
+stick/skeleton views still share them; otherwise remove the file after a
+warning cycle.
 
 Do not touch static matplotlib plotting (`plot_latent`, `plot_confidence`).
 
 ## Acceptance Criteria
 
-- [ ] Importing or constructing `lvm` / `lvm_dimselect` emits a DeprecationWarning
-      with the new entry point
+- [x] Importing `visualize` emits a DeprecationWarning pointing at vidden
 - [ ] GPy examples no longer import the old interactive classes
 - [ ] VPython path gone (or already removed by the skeleton task)
 - [ ] Static `GPy.plotting` matplotlib/plotly backends unchanged
@@ -56,3 +56,9 @@ Do not touch static matplotlib plotting (`plot_latent`, `plot_confidence`).
 ### 2026-10-26
 
 Task created when CIP-000B was Accepted.
+
+### 2026-10-27
+
+Explorer moved to vidden. `visualize` import now warns and points at
+https://github.com/lawrennd/vidden. Examples still call `lvm` /
+`lvm_dimselect` until those demos are ported there.

@@ -1,6 +1,17 @@
-import numpy as np
 import time
+import warnings
+
+import numpy as np
+
 from ...core.parameterization.variational import VariationalPosterior
+
+warnings.warn(
+    "GPy.plotting.matplot_dep.visualize is deprecated and will be removed. "
+    "Use the vidden package for latent-space explorers: "
+    "https://github.com/lawrennd/vidden",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 try:
     import matplotlib.pyplot as plt

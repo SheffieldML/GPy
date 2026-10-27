@@ -1,10 +1,10 @@
 ---
 id: 2026-10-26_explore-module-optional-extra
 title: Add GPy.plotting.explore module and optional extra
-status: Ready
+status: Abandoned
 priority: High
 created: "2026-10-26"
-last_updated: "2026-10-26"
+last_updated: "2026-10-27"
 category: features
 related_cips:
 - "000B"
@@ -60,3 +60,8 @@ Add a Poetry extra (e.g. `gpy[explore]`) for HoloViews and Panel. Default
 ### 2026-10-26
 
 Task created when CIP-000B was Accepted.
+
+### 2026-10-27
+
+Abandoned. The explorer is not a GPy extra. It lives in
+https://github.com/lawrennd/vidden (vidden CIP-0001).

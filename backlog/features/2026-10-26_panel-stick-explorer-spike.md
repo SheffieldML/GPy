@@ -1,10 +1,10 @@
 ---
 id: 2026-10-26_panel-stick-explorer-spike
 title: Panel spike for stick_bgplvm latent explorer
-status: In Progress
+status: Completed
 priority: High
 created: "2026-10-26"
-last_updated: "2026-10-26"
+last_updated: "2026-10-27"
 category: features
 related_cips:
 - "000B"
@@ -68,3 +68,8 @@ y-axis from 1 to 2 updates the scatter. Pointer position is written into
 from GPy.examples.stick_explorer_spike import stick_explorer
 stick_explorer()
 ```
+
+### 2026-10-27
+
+Completed by moving the spike to vidden (`vidden.explore`,
+`examples/stick.py`). GPy's file is a deprecation stub.

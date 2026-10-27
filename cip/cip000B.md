@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-10-26"
 id: "000B"
-last_updated: "2026-10-26"
+last_updated: "2026-10-27"
 status: In Progress
 compressed: false
 related_requirements: []
@@ -37,6 +37,10 @@ Replace `GPy.plotting.matplot_dep.visualize` — the 2012–2015 latent-space
 mouse explorer (`lvm`, `lvm_dimselect`, `image_show`, `vector_show`, stick
 and skeleton viewers) — with a browser-based explorer whose pointer events
 call `model.predict` in Python.
+
+**The explorer itself lives in [vidden](https://github.com/lawrennd/vidden),
+not in GPy.** GPy's remaining work in this CIP is to deprecate `visualize.py`
+and point demos at that package. See vidden CIP-0001.
 
 This is **not** a rewrite of GPy's static plotting (`plot`, `plot_latent`,
 `plot_confidence`). CIP-0009 already treats that stack as out of scope for a
@@ -119,15 +123,13 @@ def reconstruct(x, y):
     return view(mu)                 # Image, curve, or stick
 ```
 
-Public entry points (names provisional, decide at Accept):
+Public entry points live in vidden:
 
-- `GPy.plotting.explore.latent_explorer(model, view, ...)`
-- `image_view`, `vector_view`, `stick_view`, `skeleton_view`
-- Optional `panel serve` apps wrapping the stick and oil demos
+- `vidden.explore.stick_explorer(model, ...)`
+- `panel serve examples/stick.py --show` from the vidden repository
 
-Do **not** add HoloViews / Panel to the core GPy install. New extra, e.g.
-`gpy[explore]`, or examples that `pytest.importorskip`. Core `predict` must
-keep working without those packages.
+Do **not** add HoloViews / Panel to GPy. Core `predict` must keep working
+without those packages.
 
 ### Relation to the doodle notebook
 
@@ -164,7 +166,7 @@ patches. Default extra stays light; people who want the explorer opt in.
    - Drop `visual` import path.
 
 5. **Deprecate `visualize.py`**
-   - Import warning pointing at the new explorer.
+   - Import warning pointing at vidden (`https://github.com/lawrennd/vidden`).
    - Leave the file until the demos above no longer import it, then remove
      or shrink to geometry helpers if any remain useful.
 
@@ -197,11 +199,12 @@ None yet (requirements extraction still outstanding).
 
 - [x] Write CIP (Proposed)
 - [x] Accept CIP after review
-- [ ] Spike: Panel stick explorer on macOS ([2026-10-26_panel-stick-explorer-spike](../backlog/features/2026-10-26_panel-stick-explorer-spike.md))
-- [ ] Public `explore` module + optional extra ([2026-10-26_explore-module-optional-extra](../backlog/features/2026-10-26_explore-module-optional-extra.md))
-- [ ] Port stick / oil / faces demos ([2026-10-26_port-lvm-demos-to-explore](../backlog/features/2026-10-26_port-lvm-demos-to-explore.md))
+- [x] Spike: Panel stick explorer on macOS (moved to vidden)
+- [x] Explorer package is vidden, not `GPy.plotting.explore`
+- [ ] Port stick / oil / faces demos in vidden ([2026-10-26_port-lvm-demos-to-explore](../backlog/features/2026-10-26_port-lvm-demos-to-explore.md))
 - [ ] Plotly skeleton view; remove VPython path ([2026-10-26_plotly-skeleton-drop-vpython](../backlog/features/2026-10-26_plotly-skeleton-drop-vpython.md))
-- [ ] Deprecate `visualize.py` ([2026-10-26_deprecate-matplotlib-visualize](../backlog/infrastructure/2026-10-26_deprecate-matplotlib-visualize.md))
+- [x] Deprecate `visualize.py` import (warning points at vidden)
+- [ ] Stop GPy examples importing `visualize` once vidden demos cover them
 - [ ] Example docs ([2026-10-26_latent-explorer-example-docs](../backlog/documentation/2026-10-26_latent-explorer-example-docs.md))
 - [ ] Close CIP
 
@@ -216,3 +219,4 @@ None yet (requirements extraction still outstanding).
 - CIP-0007 / #1210 — deprecation/plotting modernization
 - CIP-0009 — coverage for plotting; explicitly not a full plotting rewrite
 - HoloViews streams: `PointerXY`, `Tap`; Panel `servable()` / `panel serve`
+- vidden: https://github.com/lawrennd/vidden (CIP-0001)

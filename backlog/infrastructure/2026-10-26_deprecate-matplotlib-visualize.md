@@ -4,7 +4,7 @@ title: Deprecate matplotlib visualize LVM callbacks
 status: In Progress
 priority: Medium
 created: "2026-10-26"
-last_updated: "2026-10-27"
+last_updated: "2026-10-28"
 category: infrastructure
 related_cips:
 - "000B"
@@ -35,6 +35,7 @@ Do not touch static matplotlib plotting (`plot_latent`, `plot_confidence`).
 ## Acceptance Criteria
 
 - [x] Importing `visualize` emits a DeprecationWarning pointing at vidden
+- [x] Warning names the interactive classes, notes macOS/Jupyter matplotlib callbacks and visualisation-out-of-core, and points at [discussion #1252](https://github.com/SheffieldML/GPy/discussions/1252)
 - [ ] GPy examples no longer import the old interactive classes
 - [ ] VPython path gone (or already removed by the skeleton task)
 - [ ] Static `GPy.plotting` matplotlib/plotly backends unchanged
@@ -62,3 +63,11 @@ Task created when CIP-000B was Accepted.
 Explorer moved to vidden. `visualize` import now warns and points at
 https://github.com/lawrennd/vidden. Examples still call `lvm` /
 `lvm_dimselect` until those demos are ported there.
+
+### 2026-10-28
+
+Warning text now inventories the interactive classes, states the two
+reasons (macOS/Jupyter matplotlib callbacks; visualisation should not
+live in the core library), and invites comment on
+[discussion #1252](https://github.com/SheffieldML/GPy/discussions/1252).
+Constructors of `data_show` subclasses and `data_play` warn as well.

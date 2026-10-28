@@ -1,3 +1,18 @@
+"""Deprecated interactive latent-space viewers (matplotlib / VPython).
+
+This module is the 2012–2015 mouse explorer for GPLVM reconstructions
+(``lvm``, ``lvm_dimselect``, ``image_show``, ``vector_show``,
+``stick_show``, ``skeleton_show``, ``data_play``). It is deprecated.
+
+Matplotlib GUI callbacks do not work reliably on macOS or Jupyter, and
+interactive visualisation does not belong in the core inference library.
+Use `vidden <https://github.com/lawrennd/vidden>`_ instead.
+
+Static GPy plots (``plot``, ``plot_latent``, ``plot_confidence``) are
+unchanged. Comments welcome on the deprecation discussion:
+https://github.com/SheffieldML/GPy/discussions/1252
+"""
+
 import time
 import warnings
 
@@ -5,13 +20,23 @@ import numpy as np
 
 from ...core.parameterization.variational import VariationalPosterior
 
-warnings.warn(
+_VISUALIZE_DEPRECATED = (
     "GPy.plotting.matplot_dep.visualize is deprecated and will be removed. "
-    "Use the vidden package for latent-space explorers: "
-    "https://github.com/lawrennd/vidden",
-    DeprecationWarning,
-    stacklevel=2,
+    "Interactive latent-space viewers (lvm, lvm_dimselect, image_show, "
+    "vector_show, stick_show, skeleton_show, data_play) rely on matplotlib "
+    "GUI callbacks that do not work reliably on macOS or Jupyter, and "
+    "interactive visualisation does not belong in the core inference library. "
+    "Use vidden: https://github.com/lawrennd/vidden "
+    "Static GPy plots (plot, plot_latent, plot_confidence) are unchanged. "
+    "Comments welcome: https://github.com/SheffieldML/GPy/discussions/1252"
 )
+
+
+def _warn_visualize_deprecated(stacklevel=2):
+    warnings.warn(_VISUALIZE_DEPRECATED, DeprecationWarning, stacklevel=stacklevel)
+
+
+_warn_visualize_deprecated(stacklevel=2)
 
 try:
     import matplotlib.pyplot as plt
@@ -34,6 +59,7 @@ class data_show:
     """
 
     def __init__(self, vals):
+        _warn_visualize_deprecated(stacklevel=3)
         self.vals = vals.copy()
         # If no axes are defined, create some.
 
@@ -620,6 +646,9 @@ class skeleton_show(mocap_data_show):
 def data_play(Y, visualizer, frame_rate=30):
     """Play a data set using the data_show object given.
 
+    Deprecated. See the module docstring and
+    https://github.com/SheffieldML/GPy/discussions/1252
+
     :Y: the data set to be visualized.
     :param visualizer: the data show objectwhether to display during optimisation
     :type visualizer: data_show
@@ -637,6 +666,7 @@ def data_play(Y, visualizer, frame_rate=30):
        GPy.util.visualize.data_play(Y, visualize)
 
     """
+    _warn_visualize_deprecated(stacklevel=2)
 
     for y in Y:
         visualizer.modify(y[None, :])

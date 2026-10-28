@@ -2,9 +2,10 @@
 author: Neil Lawrence
 created: "2026-10-26"
 id: "000B"
-last_updated: "2026-10-27"
+last_updated: "2026-10-28"
 status: In Progress
 compressed: false
+implementation_branch: "cip000B-modern-latent-visualize"
 related_requirements: []
 related_cips:
 - "0007"
@@ -30,6 +31,8 @@ title: Modern latent-space explorer to replace matplotlib visualize
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
 - [ ] Deferred - Postponed
+
+**Implementation branch:** [`cip000B-modern-latent-visualize`](https://github.com/SheffieldML/GPy/tree/cip000B-modern-latent-visualize)
 
 ## Summary
 
@@ -166,7 +169,9 @@ patches. Default extra stays light; people who want the explorer opt in.
    - Drop `visual` import path.
 
 5. **Deprecate `visualize.py`**
-   - Import warning pointing at vidden (`https://github.com/lawrennd/vidden`).
+   - Import and constructor warning pointing at vidden
+     (`https://github.com/lawrennd/vidden`) and the inventory discussion
+     ([#1252](https://github.com/SheffieldML/GPy/discussions/1252)).
    - Leave the file until the demos above no longer import it, then remove
      or shrink to geometry helpers if any remain useful.
 
@@ -203,7 +208,8 @@ None yet (requirements extraction still outstanding).
 - [x] Explorer package is vidden, not `GPy.plotting.explore`
 - [ ] Port stick / oil / faces demos in vidden ([2026-10-26_port-lvm-demos-to-explore](../backlog/features/2026-10-26_port-lvm-demos-to-explore.md))
 - [ ] Plotly skeleton view; remove VPython path ([2026-10-26_plotly-skeleton-drop-vpython](../backlog/features/2026-10-26_plotly-skeleton-drop-vpython.md))
-- [x] Deprecate `visualize.py` import (warning points at vidden)
+- [x] Deprecate `visualize.py` import (warning points at vidden and [discussion #1252](https://github.com/SheffieldML/GPy/discussions/1252))
+- [x] Open discussion on what is in `visualize` and why it leaves GPy ([#1252](https://github.com/SheffieldML/GPy/discussions/1252); comments welcome)
 - [ ] Stop GPy examples importing `visualize` once vidden demos cover them
 - [ ] Example docs ([2026-10-26_latent-explorer-example-docs](../backlog/documentation/2026-10-26_latent-explorer-example-docs.md))
 - [ ] Close CIP
@@ -220,3 +226,4 @@ None yet (requirements extraction still outstanding).
 - CIP-0009 — coverage for plotting; explicitly not a full plotting rewrite
 - HoloViews streams: `PointerXY`, `Tap`; Panel `servable()` / `panel serve`
 - vidden: https://github.com/lawrennd/vidden (CIP-0001)
+- Discussion [#1252](https://github.com/SheffieldML/GPy/discussions/1252): inventory of `visualize`, rationale (macOS/matplotlib; visualisation out of core), comments welcome

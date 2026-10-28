@@ -42,7 +42,4 @@ def test_stick_explorer_spike_warns_and_points_at_vidden():
         except ImportError as exc:
             assert "vidden" in str(exc)
             return
-    assert any(
-        issubclass(item.category, DeprecationWarning) and "vidden" in str(item.message)
-        for item in caught
-    )
+    assert any(issubclass(item.category, DeprecationWarning) and "vidden" in str(item.message) for item in caught)

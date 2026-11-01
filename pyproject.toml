@@ -20,6 +20,12 @@ include = [
     "LICENSE.txt",
     "AUTHORS.txt",
 ]
+# Dead Python 2 trees must not ship in the wheel (#1251). Runtime is already >=3.11.
+exclude = [
+    "GPy/old_tests",
+    "GPy/kern/src/todo",
+    "GPy/testing/mpi_test__.py",
+]
 
 [tool.poetry.build]
 script = "build_extension.py"
@@ -74,9 +80,6 @@ extend-exclude = [
     "build",
     "dist",
     ".eggs",
-    "GPy/kern/src/todo",
-    "GPy/old_tests",
-    "GPy/testing/mpi_test__.py",
 ]
 
 [tool.ruff.lint]

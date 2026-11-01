@@ -101,10 +101,14 @@ jobs:
         run: pip install 'ruff==0.17.1'
 
       - name: Ruff check (select from pyproject.toml)
-        run: ruff check GPy --exclude GPy/old_tests --exclude GPy/testing/mpi_test__.py
+        run: ruff check GPy
 
       - name: Ruff format
         run: ruff format --check GPy
+
+      # Distro installers byte-compile every .py in the wheel (#1251).
+      - name: Byte-compile GPy (no Python 2 leftovers)
+        run: python -m compileall -q GPy
 
   build:
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'

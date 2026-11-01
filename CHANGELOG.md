@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* docs: point the plotting tutorial and `defaults.cfg` at `'plotly_offline'`; `'plotly'` / `'plotly_online'` still construct figures but `show()` no longer uses Chart Studio (#1255, #1249)
 * plotting: make the plotly backends work with Plotly 7: marker sizes are numbers instead of strings (`plotly_offline` latent, inducing and error-bar plots raised `ValueError`), and showing a figure with the `'plotly'` / `'plotly_online'` library now raises a clear error pointing at `'plotly_offline'` or `'matplotlib'` instead of failing on the removed `plotly.plotly` Chart Studio API (#1243)
 * packaging: require Python >=3.11 (matches CI; 3.9/3.10 are EOL) so the lockfile can drop unpatched 3.9-only pins (Discussion #1207)
 

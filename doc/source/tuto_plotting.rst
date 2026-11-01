@@ -122,9 +122,9 @@ works smoothly. Thus, in :py:mod:`GPy.plotting.__init__` we add the line::
     from ..kern import Kern
     Kern.plot_covariance = gpy_plot.kernel_plots.plot_covariance
 
-And that's it. The plot can be shown in plotly by calling::
+And that's it. The plot can be shown with Plotly's offline backend by calling::
 
-    GPy.plotting.change_plotting_library('plotly')
+    GPy.plotting.change_plotting_library('plotly_offline')
 
     k = GPy.kern.RBF(1) + GPy.kern.Matern32(1)
     k.randomize()

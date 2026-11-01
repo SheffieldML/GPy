@@ -3,8 +3,10 @@
 
 :py:class:`GPy.plotting` effectively extends models based on
 :py:class:`GPy.core.gp.GP` (and other classes) by adding methods to
-plot useful charts. 'matplotlib', 'plotly' (online) and 'plotly'
-(offline) are supported. The methods in :py:class:`GPy.plotting` (and
+plot useful charts. ``matplotlib`` and ``plotly_offline`` are the working
+backends. ``plotly`` / ``plotly_online`` still construct figures, but
+:py:func:`show` no longer uploads to Chart Studio (see #1243).
+The methods in :py:class:`GPy.plotting` (and
 child classes :py:class:`GPy.plotting.gpy_plot` and
 :py:class:`GPy.plotting.matplot_dep`) are not intended to be called
 directly, but rather are 'injected' into other classes (notably

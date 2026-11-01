@@ -46,13 +46,13 @@ data_1d = dict(marker_kwargs=dict(), marker="x", color="black")
 data_2d = dict(marker="o", cmap="Hot", marker_kwargs=dict(opacity=1.0, size=5, line=dict(width=0.5, color="black")))
 inducing_1d = dict(color=Tango.colorsHex["darkRed"])
 inducing_2d = dict(
-    marker_kwargs=dict(size="5", opacity=0.7, line=dict(width=0.5, color="black")),
+    marker_kwargs=dict(size=5, opacity=0.7, line=dict(width=0.5, color="black")),
     opacity=0.7,
     color="white",
     marker="star-triangle-up",
 )
 inducing_3d = dict(
-    marker_kwargs=dict(symbol="diamond", size="5", opacity=0.7, line=dict(width=0.1, color="black")), color="#F5F5F5"
+    marker_kwargs=dict(symbol="diamond", size=5, opacity=0.7, line=dict(width=0.1, color="black")), color="#F5F5F5"
 )
 xerrorbar = dict(color="black", error_kwargs=dict(thickness=0.5), opacity=0.5)
 yerrorbar = dict(color=Tango.colorsHex["darkRed"], error_kwargs=dict(thickness=0.5), opacity=0.5)
@@ -82,5 +82,5 @@ ard = dict(linewidth=1.2, barmode="stack")
 latent = dict(colorscale="Greys", reversescale=True, zsmooth="best")
 gradient = dict(colorscale="RdBu", opacity=0.7)
 magnification = dict(colorscale="Greys", zsmooth="best", reversescale=True)
-latent_scatter = dict(marker_kwargs=dict(size="5", opacity=0.7))
+latent_scatter = dict(marker_kwargs=dict(size=5, opacity=0.7))
 # annotation = dict(fontdict=dict(family='sans-serif', weight='light', fontsize=9), zorder=.3, alpha=.7)

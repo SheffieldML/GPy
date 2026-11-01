@@ -283,7 +283,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=Z,
                 mode="markers",
                 error_x=ErrorX(color=color, **error_kwargs or {}),
-                marker=dict(size="0"),
+                marker=dict(size=0),
                 name=label,
                 showlegend=label is not None,
                 **kwargs,
@@ -293,7 +293,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             y=Y,
             mode="markers",
             error_x=ErrorX(color=color, **error_kwargs or {}),
-            marker=dict(size="0"),
+            marker=dict(size=0),
             name=label,
             showlegend=label is not None,
             **kwargs,
@@ -316,7 +316,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                 z=Z,
                 mode="markers",
                 error_y=ErrorY(color=color, **error_kwargs or {}),
-                marker=dict(size="0"),
+                marker=dict(size=0),
                 name=label,
                 showlegend=label is not None,
                 **kwargs,
@@ -326,7 +326,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
             y=Y,
             mode="markers",
             error_y=ErrorY(color=color, **error_kwargs or {}),
-            marker=dict(size="0"),
+            marker=dict(size=0),
             name=label,
             showlegend=label is not None,
             **kwargs,
@@ -499,18 +499,13 @@ class PlotlyPlotsOnline(PlotlyPlotsBase):
         super(PlotlyPlotsOnline, self).__init__()
 
     def show_canvas(self, canvas, filename=None, **kwargs):
-        figure, _, _ = canvas
-        if len(figure.data) == 0:
-            # add mock data
-            figure.add_trace(Scatter(x=[], y=[], name="", showlegend=False), row=1, col=1)
-        from ..gpy_plot.plot_util import in_ipynb
-
-        if in_ipynb():
-            return plotly.plotly.iplot(figure, filename=filename, **kwargs)
-        else:
-            return plotly.plotly.plot(
-                figure, filename=filename, **kwargs
-            )  # self.current_states[hex(id(figure))]['filename'])
+        # plotly.plotly (Chart Studio upload) is no longer part of plotly (#1243).
+        raise RuntimeError(
+            "The 'plotly' (online) plotting library relied on plotly.plotly (Chart Studio), "
+            "which is not part of current plotly releases. Use "
+            "GPy.plotting.change_plotting_library('plotly_offline') or "
+            "GPy.plotting.change_plotting_library('matplotlib') instead."
+        )
 
 
 class PlotlyPlotsOffline(PlotlyPlotsBase):

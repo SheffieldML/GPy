@@ -202,6 +202,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, build-linux, build]
     if: github.event_name == 'release'
+    # CIP-0008: unused `release` environment; restrict to v* tags via
+    # environment deployment policy. Name this environment on the PyPI
+    # trusted publisher only *after* this lands (workflow first).
+    environment: release
     permissions:
       contents: read
       id-token: write

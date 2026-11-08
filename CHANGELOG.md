@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* hygiene: replace user-input `assert` with `ValueError` in `GP` construction and `block_matrices` (#922, #1213)
+* packaging: remove unused sympy symbolic-AD stack (`util/functions.py`, `util/ln_diff_erfs.py`, `core/symbolic.py`, `kern/src/symbolic.py`); `util/symbolic.py` was already gone (#930, #1213)
 * docs: point the plotting tutorial and `defaults.cfg` at `'plotly_offline'`; `'plotly'` / `'plotly_online'` still construct figures but `show()` no longer uses Chart Studio (#1255, #1249)
 * packaging: do not ship dead Python 2 source (`old_tests`, `kern/src/todo`, `mpi_test__.py`) in the wheel; GPy already requires Python >=3.11 (#1251, #1213)
 * plotting: make the plotly backends work with Plotly 7: marker sizes are numbers instead of strings (`plotly_offline` latent, inducing and error-bar plots raised `ValueError`), and showing a figure with the `'plotly'` / `'plotly_online'` library now raises a clear error pointing at `'plotly_offline'` or `'matplotlib'` instead of failing on the removed `plotly.plotly` Chart Studio API (#1243)

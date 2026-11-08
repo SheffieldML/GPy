@@ -8,11 +8,11 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
     Given a 3d matrix, make a block matrix, where the first and second dimensions are blocked according
     to blocksizes, and the pages are blocked using pagesizes
     """
-    assert (A.shape[0] == A.shape[1]) and len(A.shape) == 3, (
-        "can't blockify this non-square matrix, may need to use 2d version"
-    )
+    if not ((A.shape[0] == A.shape[1]) and len(A.shape) == 3):
+        raise ValueError("can't blockify this non-square matrix, may need to use 2d version")
     N = np.sum(blocksizes)
-    assert A.shape[0] == N, "bad blocksizes"
+    if A.shape[0] != N:
+        raise ValueError("bad blocksizes")
     num_blocks = len(blocksizes)
     if pagesizes is None:
         # Assume each page of A should be its own dimension
@@ -34,9 +34,11 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
 
 
 def get_blocks(A, blocksizes):
-    assert (A.shape[0] == A.shape[1]) and len(A.shape) == 2, "can't blockify this non-square matrix"
+    if not ((A.shape[0] == A.shape[1]) and len(A.shape) == 2):
+        raise ValueError("can't blockify this non-square matrix")
     N = np.sum(blocksizes)
-    assert A.shape[0] == N, "bad blocksizes"
+    if A.shape[0] != N:
+        raise ValueError("bad blocksizes")
     num_blocks = len(blocksizes)
     B = np.empty(shape=(num_blocks, num_blocks), dtype=object)
     count_i = 0
@@ -50,18 +52,21 @@ def get_blocks(A, blocksizes):
 
 
 def get_block_shapes_3d(B):
-    assert B.dtype is np.dtype("object"), "Must be a block matrix"
+    if B.dtype is not np.dtype("object"):
+        raise ValueError("Must be a block matrix")
     # FIXME: This isn't general AT ALL...
     return get_block_shapes(B[:, :, 0]), B.shape[2]
 
 
 def get_block_shapes(B):
-    assert B.dtype is np.dtype("object"), "Must be a block matrix"
+    if B.dtype is not np.dtype("object"):
+        raise ValueError("Must be a block matrix")
     return [B[b, b].shape[0] for b in range(0, B.shape[0])]
 
 
 def unblock(B):
-    assert B.dtype is np.dtype("object"), "Must be a block matrix"
+    if B.dtype is not np.dtype("object"):
+        raise ValueError("Must be a block matrix")
     block_shapes = get_block_shapes(B)
     num_elements = np.sum(block_shapes)
     A = np.empty(shape=(num_elements, num_elements))
@@ -96,9 +101,12 @@ def block_dot(A, B, diagonal=False):
         efficient dot product using numpy broadcasting will be used, i.e. A11*B11
     """
     # Must have same number of blocks and be a block matrix
-    assert A.dtype is np.dtype("object"), "Must be a block matrix"
-    assert B.dtype is np.dtype("object"), "Must be a block matrix"
-    assert A.shape == B.shape
+    if A.dtype is not np.dtype("object"):
+        raise ValueError("Must be a block matrix")
+    if B.dtype is not np.dtype("object"):
+        raise ValueError("Must be a block matrix")
+    if A.shape != B.shape:
+        raise ValueError(f"Block matrices must have the same shape (got A.shape={A.shape}, B.shape={B.shape})")
 
     def f(C, D):
         """
@@ -123,4 +131,5 @@ if __name__ == "__main__":
     B[0, 0] += 7
     print(B)
 
-    assert np.all(unblock(B) == A)
+    if not np.all(unblock(B) == A):
+        raise ValueError("unblock(get_blocks(A)) did not recover A")

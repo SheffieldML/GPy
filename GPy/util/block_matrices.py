@@ -9,9 +9,7 @@ def get_blocks_3d(A, blocksizes, pagesizes=None):
     to blocksizes, and the pages are blocked using pagesizes
     """
     if not ((A.shape[0] == A.shape[1]) and len(A.shape) == 3):
-        raise ValueError(
-            "can't blockify this non-square matrix, may need to use 2d version"
-        )
+        raise ValueError("can't blockify this non-square matrix, may need to use 2d version")
     N = np.sum(blocksizes)
     if A.shape[0] != N:
         raise ValueError("bad blocksizes")
@@ -108,9 +106,7 @@ def block_dot(A, B, diagonal=False):
     if B.dtype is not np.dtype("object"):
         raise ValueError("Must be a block matrix")
     if A.shape != B.shape:
-        raise ValueError(
-            f"Block matrices must have the same shape (got A.shape={A.shape}, B.shape={B.shape})"
-        )
+        raise ValueError(f"Block matrices must have the same shape (got A.shape={A.shape}, B.shape={B.shape})")
 
     def f(C, D):
         """

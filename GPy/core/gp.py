@@ -52,15 +52,17 @@ class GP(Model):
     ):
         super(GP, self).__init__(name)
 
-        if np.asarray(X).ndim != 2:
-            raise ValueError(f"X must be 2-dimensional (got ndim={np.asarray(X).ndim})")
+        # Use X.ndim (not np.asarray(X).ndim): VariationalPosterior / ObsAr are
+        # 2-d objects, but np.asarray wraps them as 0-d object arrays.
+        if X.ndim != 2:
+            raise ValueError(f"X must be 2-dimensional (got ndim={X.ndim})")
         if isinstance(X, (ObsAr, VariationalPosterior)):
             self.X = X.copy()
         else:
             self.X = ObsAr(X)
 
-        if np.asarray(Y).ndim != 2:
-            raise ValueError(f"Y must be 2-dimensional (got ndim={np.asarray(Y).ndim})")
+        if Y.ndim != 2:
+            raise ValueError(f"Y must be 2-dimensional (got ndim={Y.ndim})")
         logger.info("initializing Y")
 
         if normalizer is True:
@@ -89,15 +91,11 @@ class GP(Model):
         _, self.output_dim = self.Y.shape
 
         if Y_metadata is not None and not isinstance(Y_metadata, dict):
-            raise ValueError(
-                f"Y_metadata must be None or a dict (got {type(Y_metadata).__name__})"
-            )
+            raise ValueError(f"Y_metadata must be None or a dict (got {type(Y_metadata).__name__})")
         self.Y_metadata = Y_metadata
 
         if not isinstance(kernel, kern.Kern):
-            raise ValueError(
-                f"kernel must be a GPy.kern.Kern instance (got {type(kernel).__name__})"
-            )
+            raise ValueError(f"kernel must be a GPy.kern.Kern instance (got {type(kernel).__name__})")
         # assert self.input_dim == kernel.input_dim
         self.kern = kernel
 
@@ -117,9 +115,7 @@ class GP(Model):
         self.mean_function = mean_function
         if mean_function is not None:
             if not isinstance(self.mean_function, Mapping):
-                raise ValueError(
-                    f"mean_function must be a GPy Mapping (got {type(mean_function).__name__})"
-                )
+                raise ValueError(f"mean_function must be a GPy Mapping (got {type(mean_function).__name__})")
             if mean_function.input_dim != self.input_dim:
                 raise ValueError(
                     f"mean_function.input_dim ({mean_function.input_dim}) must match X input dim ({self.input_dim})"
@@ -187,9 +183,7 @@ class GP(Model):
 
         if (input_dict["X"] is None) or (input_dict["Y"] is None):
             if data is None:
-                raise ValueError(
-                    "data must be provided when the serialized model has no X or Y"
-                )
+                raise ValueError("data must be provided when the serialized model has no X or Y")
             input_dict["X"], input_dict["Y"] = np.array(data[0]), np.array(data[1])
         elif data is not None:
             warnings.warn(
@@ -283,9 +277,7 @@ class GP(Model):
                 # LVM models
                 if isinstance(self.X, VariationalPosterior):
                     if not isinstance(X, type(self.X)):
-                        raise ValueError(
-                            "The given X must have the same type as the X in the model!"
-                        )
+                        raise ValueError("The given X must have the same type as the X in the model!")
                     index = self.X._parent_index_
                     self.unlink_parameter(self.X)
                     self.X = X

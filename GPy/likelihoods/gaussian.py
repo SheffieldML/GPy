@@ -325,8 +325,27 @@ class Gaussian(Likelihood):
         gp = gp.flatten()
         # orig_shape = gp.shape
         gp = gp.flatten()
+        scale = None
+        if (
+            type(self) is Gaussian
+            and type(self.gp_link) is link_functions.Identity
+            and "transf" not in self.gp_link.__dict__
+            and type(gp) is np.ndarray
+            and gp.dtype.kind in "biuf"
+            and gp.size
+        ):
+            scale = np.sqrt(self.variance)
+            if scale.size == 1:
+                scale = scale.item()
         Ysim = np.array(
-            [np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp]
+            [
+                np.random.normal(
+                    self.gp_link.transf(gpj),
+                    scale=np.sqrt(self.variance) if scale is None else scale,
+                    size=1,
+                )
+                for gpj in gp
+            ]
         )
         return Ysim.reshape(orig_shape)
 

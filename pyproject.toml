@@ -34,7 +34,7 @@ notebook = [
     "jupyter_client>=8.10.0",
     "ipywidgets>=4.0.3",
     "ipykernel>=4.1.0",
-    "notebook>=4.0.5",
+    "notebook>=7.6.5",
 ]
 tables = ["tables>=3.9.0"]
 

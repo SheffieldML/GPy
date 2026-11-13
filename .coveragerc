@@ -6,7 +6,15 @@
 [run]
 branch = True
 source = GPy
-omit = ./GPy/examples/*.py, ./GPy/testing/*.py, travis_tests.py, setup.py, ./GPy/__version__.py
+# CIP-000D K4: omit GPU psi paths (no GPU in CI) and dead lfm1 (superseded by EQ_ODE* / CIP-0001).
+omit =
+    ./GPy/examples/*.py
+    ./GPy/testing/*.py
+    travis_tests.py
+    setup.py
+    ./GPy/__version__.py
+    ./GPy/kern/src/psi_comp/*gpucomp.py
+    ./GPy/kern/src/lfm1.py
 
 [report]
 # Regexes for lines to exclude from consideration

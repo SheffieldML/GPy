@@ -3,8 +3,9 @@ author: Neil Lawrence
 created: '2026-11-13'
 id: '000D'
 last_updated: '2026-11-13'
-status: Proposed
+status: Implemented
 compressed: false
+
 related_requirements: []
 related_cips:
 - '0001'
@@ -23,9 +24,9 @@ title: Kernel package coverage (GPy.kern) follow-on to CIP-0009
 ## Status
 
 - [x] Proposed - Initial idea documented
-- [ ] Accepted - Approved, ready to start work
-- [ ] In Progress - Actively being implemented
-- [ ] Implemented - Work complete, awaiting verification
+- [x] Accepted - Approved, ready to start work
+- [x] In Progress - Actively being implemented
+- [x] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
 - [ ] Deferred - Postponed
@@ -152,13 +153,18 @@ None yet.
 ## Implementation Status
 
 - [x] Baseline inventory (2026-11-13)
-- [ ] Accept CIP after review
-- [ ] K1: EQ_ODE1 / EQ_ODE2 deep tests
-- [ ] K2: legacy Periodic* cover or deprecate+omit
-- [ ] K3: legacy ODE_* cover or defer/omit
-- [ ] K4: GPU psi / `lfm1` coverage policy in `.coveragerc`
-- [ ] K5 (optional): Spline / misc
-- [ ] Close CIP
+- [x] Accept CIP after review (2026-11-13)
+- [x] K1: EQ_ODE1 / EQ_ODE2 deep tests (`TestEQODECoverageCIP000D`)
+- [x] K2: legacy Periodic* gradient coverage
+- [x] K3: legacy ODE_UYC / ODE_st / ODE_t gradient smokes
+- [x] K4: GPU psi / `lfm1` omitted in `.coveragerc`
+- [x] K5: Spline gradient smoke
+- [ ] Close CIP (after merge / validation)
+
+**Post-slice baseline (2026-11-13):** `GPy/kern` ~**80%** (was ~66%);
+`periodic.py` ~99%; `ODE_*` ~87–88%; `eq_ode1` ~65%; `eq_ode2` ~38%
+(remaining miss is largely unimplemented `Kff` full and deep analytic
+branches — deferred with CIP-0001).
 
 ## References
 

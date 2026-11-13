@@ -24,7 +24,7 @@ dependencies = [
 docs = ["sphinx"]
 optional = [
     "mpi4py",
-    "ipython>=4.0.0",
+    "ipython>=9.18.1",
 ]
 plotting = [
     "matplotlib>=3.4",

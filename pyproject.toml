@@ -34,7 +34,7 @@ notebook = [
     "ipykernel>=4.1.0",
     "notebook>=4.0.5",
 ]
-tables = ["tables>=3.9.0"]
+tables = ["tables>=3.11.1"]
 
 [project.urls]
 Homepage = "https://sheffieldml.github.io/GPy/"

@@ -76,7 +76,7 @@ JAX), without committing GPy 1.x to that backend.
 
 ## Detailed Description
 
-### Current paramz surface (2026-11-13, `devel`)
+### Current paramz surface (2026-11-13, `main`)
 
 | paramz symbol | GPy usage |
 |---|---|

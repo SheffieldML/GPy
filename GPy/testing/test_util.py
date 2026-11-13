@@ -57,7 +57,9 @@ def test_block_matrices_use_object_dtype():
     np.testing.assert_array_equal(product[0, 0], matrix[:2, :2].dot(matrix[:2, :2]))
 
 
-class UtilTest:
+class TestUtil:
+    """CIP-0009 Slice B: rename UtilTest → TestUtil so pytest collects these cases."""
+
     def test_checkFinite(self):
         from GPy.util.debug import checkFinite
 
@@ -76,6 +78,12 @@ class UtilTest:
 
         array = np.random.normal(0, 1, (25, 25))
         assert checkFullRank(tdot(array))
+
+        singular = np.ones((3, 3))
+        assert not checkFullRank(singular, name="ones")
+
+        with np.testing.assert_raises(AssertionError):
+            checkFullRank(np.ones((2, 3)))
 
     def test_fixed_inputs_median(self):
         """test fixed_inputs convenience function"""
@@ -152,6 +160,10 @@ class UtilTest:
         assert d[tuple(X[:, 4])] == d[tuple(X[:, 0])] == [0, 4, 5]
         assert d[tuple(X[:, 1])] == [1]
 
+        d_rows = GPy.util.subarray_and_sorting.common_subarrays(X, axis=0)
+        assert len(d_rows) == 3
+        assert d_rows[tuple(X[0])] == [0]
+
     def test_offset_cluster(self):
         # Tests the GPy.util.cluster_with_offset.cluster utility with a small
         # test data set. Not using random noise just in case it occasionally
@@ -206,6 +218,23 @@ class UtilTest:
         clusters = set([frozenset(cluster) for cluster in active])
         assert set([1, 2]) in clusters, "Offset Clustering algorithm failed"
         assert set([0, 3]) in clusters, "Offset Clustering algoirthm failed"
+
+
+class TestSquashers:
+    """CIP-0009 Slice B: util.squashers (previously untested)."""
+
+    def test_sigmoid_softmax(self):
+        from GPy.util.squashers import sigmoid, single_softmax, softmax
+
+        x = np.array([-2.0, 0.0, 2.0])
+        s = sigmoid(x)
+        np.testing.assert_allclose(s, 1.0 / (1.0 + np.exp(-x)))
+        np.testing.assert_allclose(s + sigmoid(-x), 1.0)
+
+        logits = np.array([[1.0, 2.0, 3.0], [0.0, 0.0, 0.0]])
+        sm = softmax(logits)
+        np.testing.assert_allclose(sm.sum(axis=1), np.ones(2))
+        np.testing.assert_allclose(single_softmax(np.array([1.0, 1.0, 1.0])), np.full(3, 1.0 / 3.0))
 
 
 class TestUnivariateGaussian:

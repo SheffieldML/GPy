@@ -152,6 +152,101 @@ class TestPlotly7:
         trace = getattr(lib, which)(canvas, X, Y, error, Z=Z)
         assert trace.marker.size == 0
 
+    def test_offline_fill_between(self):
+        """CIP-0009 Slice A: exercise plotly_dep.fill_between."""
+        change_plotting_library("plotly_offline")
+        lib = plotting_library()
+        canvas, _ = lib.new_canvas()
+        X = np.linspace(0, 1, 8)
+        lower, upper = X - 0.1, X + 0.1
+        lower_trace, upper_trace = lib.fill_between(canvas, X, lower, upper, label="band", color="#3465a4")
+        lib.add_to_canvas(canvas, (lower_trace, upper_trace))
+        figure, _, _ = canvas
+        assert len(figure.data) == 2
+        assert figure.data[1].fill == "tonextx"
+
+    def test_offline_barplot(self):
+        """CIP-0009 Slice A: exercise plotly_dep.barplot."""
+        change_plotting_library("plotly_offline")
+        lib = plotting_library()
+        canvas, _ = lib.new_canvas()
+        x = np.arange(3)
+        height = np.array([0.2, 0.5, 0.3])
+        bar = lib.barplot(canvas, x, height, label="pc", barmode="group")
+        lib.add_to_canvas(canvas, bar)
+        figure, _, _ = canvas
+        assert figure.data[0].type == "bar"
+        assert list(figure.data[0].y) == list(height)
+
+    def test_offline_annotation_heatmap(self):
+        """CIP-0009 Slice A: exercise plotly_dep.annotation_heatmap."""
+        change_plotting_library("plotly_offline")
+        lib = plotting_library()
+        canvas, _ = lib.new_canvas()
+        Z = np.arange(9, dtype=float).reshape(3, 3)
+        annotation = np.array([["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]])
+        heat, annotations = lib.annotation_heatmap(
+            canvas, Z, annotation, extent=(0, 1, 0, 1), imshow_kwargs={}
+        )
+        lib.add_to_canvas(canvas, (heat, annotations))
+        figure, _, _ = canvas
+        assert figure.data[0].type == "heatmap"
+        assert len(figure.layout.annotations) == 9
+
+
+@pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
+class TestPCAPlotSmokes:
+    """CIP-0009 Slice A: PCA.plot_fracs / plot_2d (matplotlib helpers)."""
+
+    def setup_method(self):
+        np.random.seed(9)
+        change_plotting_library("matplotlib")
+        plt.close("all")
+
+    def teardown_method(self):
+        plt.close("all")
+        change_plotting_library("matplotlib")
+
+    def test_plot_fracs(self):
+        from GPy.util.pca import PCA
+
+        X = np.random.randn(30, 4)
+        pca = PCA(X)
+        bars = pca.plot_fracs(Q=3)
+        assert len(bars) == 3
+
+    def test_plot_2d(self):
+        from GPy.util.pca import PCA
+
+        X = np.random.randn(40, 5)
+        labels = np.array([0, 1] * 20)
+        pca = PCA(X)
+        plots = pca.plot_2d(X, labels=labels)
+        assert len(plots) == 2
+
+
+@pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
+class TestStateSpacePlotSmoke:
+    """CIP-0009 Slice A: modern StateSpace.plot via plotting attachment."""
+
+    def setup_method(self):
+        np.random.seed(13)
+        change_plotting_library("matplotlib")
+        plt.close("all")
+
+    def teardown_method(self):
+        plt.close("all")
+        change_plotting_library("matplotlib")
+
+    def test_statespace_plot(self):
+        X = np.linspace(0, 4, 12)[:, None]
+        Y = np.sin(X) + 0.05 * np.random.randn(12, 1)
+        k = GPy.kern.sde_Matern32(1)
+        m = GPy.models.StateSpace(X, Y, k)
+        m.likelihood[:] = Y.var() / 100.0
+        plots = m.plot()
+        assert plots is not None
+
 
 @pytest.mark.skipif(matplotlib is None, reason="Matplotlib not installed")
 class TestShowAcceptsPlotDict:

@@ -14,7 +14,7 @@ keywords = [
     "kernels",
 ]
 dependencies = [
-    "numpy>=2",
+    "numpy>=2.4.6",
     "six",
     "paramz>=0.9.6",
     "scipy>=1.3.0",

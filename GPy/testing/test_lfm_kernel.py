@@ -438,3 +438,61 @@ class TestEQODEKernelGradients:
         # This is a limitation of the existing EQ_ODE2 kernel that would need
         # to be fixed in a future update.
         # For now, we just verify that the kernel can compute covariance correctly.
+
+
+class TestEQODECoverageCIP000D:
+    """CIP-000D K1: exercise EQ_ODE Kuu / Kfu / Kuf paths and latent theta gradients."""
+
+    def setup_method(self):
+        np.random.seed(13)
+        self.W = np.array([[1.0, 0.5], [0.5, 1.0]])
+        self.decay = np.array([0.5, 1.0])
+        self.C = np.array([0.5, 1.0])
+        self.B = np.array([2.0, 1.0])
+        # Homogeneous blocks: first index decides latent vs output branch.
+        self.X_out = np.c_[np.linspace(0.0, 1.5, 8), np.array([0, 0, 0, 0, 1, 1, 1, 1], dtype=float)]
+        self.X_lat = np.c_[np.linspace(0.0, 1.5, 8), np.array([2, 2, 2, 2, 3, 3, 3, 3], dtype=float)]
+
+    def _eq_ode1(self):
+        return GPy.kern.EQ_ODE1(input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, decay=self.decay)
+
+    def _eq_ode2(self):
+        return GPy.kern.EQ_ODE2(input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, C=self.C, B=self.B)
+
+    @pytest.mark.parametrize("factory", ["_eq_ode1", "_eq_ode2"])
+    def test_latent_kuu_and_theta_gradients(self, factory):
+        from GPy.testing.test_kernel import Kern_check_dK_dtheta
+
+        k = getattr(self, factory)()
+        K = k.K(self.X_lat)
+        assert K.shape == (8, 8)
+        assert np.all(np.isfinite(K))
+        assert Kern_check_dK_dtheta(k, X=self.X_lat).checkgrad()
+
+    @pytest.mark.parametrize("factory", ["_eq_ode1", "_eq_ode2"])
+    def test_cross_kfu_kuf_and_gradients(self, factory):
+        k = getattr(self, factory)()
+        Kfu = k.K(self.X_out, self.X_lat)
+        Kuf = k.K(self.X_lat, self.X_out)
+        assert Kfu.shape == (8, 8)
+        assert np.all(np.isfinite(Kfu))
+        np.testing.assert_allclose(Kfu, Kuf.T, rtol=1e-6, atol=1e-6)
+
+        dL = np.random.randn(8, 8)
+        k.update_gradients_full(dL, self.X_out, self.X_lat)
+        assert np.all(np.isfinite(k.gradient))
+        grad_fu = k.gradient.copy()
+        k.update_gradients_full(dL.T, self.X_lat, self.X_out)
+        assert np.all(np.isfinite(k.gradient))
+        # Both directions must populate finite parameter gradients.
+        assert np.abs(grad_fu).sum() > 0
+        assert np.abs(k.gradient).sum() > 0
+
+    @pytest.mark.parametrize("factory", ["_eq_ode1", "_eq_ode2"])
+    def test_output_kdiag_path(self, factory):
+        k = getattr(self, factory)()
+        Kd = k.Kdiag(self.X_out)
+        assert Kd.shape == (8,)
+        # EQ_ODE1 Kdiag can be slightly negative from analytic erfcx cancellation;
+        # require finite values on the output-index branch.
+        assert np.all(np.isfinite(Kd))

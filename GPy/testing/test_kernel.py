@@ -577,6 +577,28 @@ class TestKernelGradientContinuous:
         k.randomize()
         assert check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose)
 
+    @pytest.mark.parametrize(
+        "kernel_class",
+        [GPy.kern.PeriodicExponential, GPy.kern.PeriodicMatern32, GPy.kern.PeriodicMatern52],
+    )
+    def test_legacy_periodic_family(self, kernel_class):
+        """CIP-000D K2: legacy Periodic* APIs (distinct from StdPeriodic)."""
+        self.setup_method()
+        X = np.random.rand(10, 1) * 2.0
+        X2 = np.random.rand(7, 1) * 2.0
+        k = kernel_class(1, n_freq=5)
+        k.randomize()
+        assert check_kernel_gradient_functions(k, X=X, X2=X2, verbose=verbose)
+
+    def test_Spline(self):
+        """CIP-000D K5: Spline kernel gradient smoke."""
+        self.setup_method()
+        X = np.random.rand(10, 1)
+        X2 = np.random.rand(8, 1)
+        k = GPy.kern.Spline(1)
+        k.randomize()
+        assert check_kernel_gradient_functions(k, X=X, X2=X2, verbose=verbose)
+
     def test_WienerVelocity(self):
         self.setup_method()
         k = GPy.kern.WienerVelocity(1)
@@ -796,6 +818,36 @@ class TestKernelNonContinuous:
         X = self.X[self.X[:, -1] != 2]
         X2 = self.X2[self.X2[:, -1] != 2]
         assert check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1)
+
+    def test_ODE_UYC(self):
+        """CIP-000D K3: ODE_UYC needs equal-length X/X2 for gradient checks."""
+        self.setup_method()
+        kern = GPy.kern.ODE_UYC(2, active_dims=[0, self.D])
+        X = self.X[self.X[:, -1] != 2].copy()
+        X2 = self.X2[self.X2[:, -1] != 2].copy()
+        n = min(len(X), len(X2))
+        X, X2 = X[:n], X2[:n]
+        assert check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=-1)
+
+    def test_ODE_st(self):
+        """CIP-000D K3: spatiotemporal ODE kernel (input_dim=3, index in last col)."""
+        np.random.seed(17)
+        X = np.random.randn(12, 3)
+        X[:, 2] = np.random.randint(0, 2, size=12)
+        X2 = np.random.randn(12, 3)
+        X2[:, 2] = np.random.randint(0, 2, size=12)
+        kern = GPy.kern.ODE_st(3)
+        assert check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=2)
+
+    def test_ODE_t(self):
+        """CIP-000D K3: temporal ODE kernel (input_dim=2, index in last col)."""
+        np.random.seed(19)
+        X = np.random.randn(12, 2)
+        X[:, 1] = np.random.randint(0, 2, size=12)
+        X2 = np.random.randn(12, 2)
+        X2[:, 1] = np.random.randint(0, 2, size=12)
+        kern = GPy.kern.ODE_t(2)
+        assert check_kernel_gradient_functions(kern, X=X, X2=X2, verbose=verbose, fixed_X_dims=1)
 
     def test_Coregionalize(self):
         self.setup_method()

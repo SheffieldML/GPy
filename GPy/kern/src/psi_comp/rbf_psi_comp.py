@@ -2,23 +2,58 @@
 The module for psi-statistics for RBF kernel
 """
 
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 from paramz.caching import Cacher
 
 
-def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False):
+def _row_slices(N, chunk_size):
+    """Yield contiguous row index slices covering ``0..N-1``.
+
+    Callers must pass a positive ``chunk_size`` strictly less than ``N``.
+    """
+    for start in range(0, N, int(chunk_size)):
+        yield slice(start, min(start + int(chunk_size), N))
+
+
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False, chunk_size=None, n_threads=1):
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
     mu = variational_posterior.mean
     S = variational_posterior.variance
+    N = mu.shape[0]
 
-    psi0 = np.empty(mu.shape[0])
+    if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
+        psi0 = np.empty(N)
+        psi0[:] = variance
+        psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
+        psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
+        if not return_psi2_n:
+            psi2 = psi2.sum(axis=0)
+        return psi0, psi1, psi2
+
+    slices = list(_row_slices(N, chunk_size))
+
+    def work(sl):
+        # Pure functions only — safe under a thread pool (CIP-0001 R12).
+        psi1_c = __psi1computations(variance, lengthscale, Z, mu[sl], S[sl])
+        psi2_c = __psi2computations(variance, lengthscale, Z, mu[sl], S[sl])
+        if return_psi2_n:
+            return psi1_c, psi2_c
+        return psi1_c, psi2_c.sum(axis=0)
+
+    if n_threads is not None and int(n_threads) > 1 and len(slices) > 1:
+        with ThreadPoolExecutor(max_workers=int(n_threads)) as pool:
+            results = list(pool.map(work, slices))
+    else:
+        results = [work(sl) for sl in slices]
+
+    psi0 = np.empty(N)
     psi0[:] = variance
-    psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
-    psi2 = _psi2computations(variance, lengthscale, Z, mu, S)
-    if not return_psi2_n:
-        psi2 = psi2.sum(axis=0)
+    psi1 = np.vstack([r[0] for r in results])
+    psi2 = np.concatenate([r[1] for r in results], axis=0) if return_psi2_n else sum(r[1] for r in results)
     return psi0, psi1, psi2
 
 
@@ -59,15 +94,46 @@ def __psi2computations(variance, lengthscale, Z, mu, S):
     return _psi2
 
 
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior):
+def psiDerivativecomputations(
+    dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior, chunk_size=None, n_threads=1
+):
     ARD = len(lengthscale) != 1
+    mu = variational_posterior.mean
+    S = variational_posterior.variance
+    N = mu.shape[0]
 
-    dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(
-        dL_dpsi1, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance
-    )
-    dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(
-        dL_dpsi2, variance, lengthscale, Z, variational_posterior.mean, variational_posterior.variance
-    )
+    if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
+        dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S)
+        dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S)
+    else:
+        slices = list(_row_slices(N, chunk_size))
+        d2_per_n = dL_dpsi2.ndim == 3
+
+        def work(sl):
+            # Reuse per-chunk psi for derivatives (CIP-0001 R13).
+            psi1_c = __psi1computations(variance, lengthscale, Z, mu[sl], S[sl])
+            psi2_c = __psi2computations(variance, lengthscale, Z, mu[sl], S[sl])
+            a = _psi1compDer(dL_dpsi1[sl], variance, lengthscale, Z, mu[sl], S[sl], psi1=psi1_c)
+            d2 = dL_dpsi2[sl] if d2_per_n else dL_dpsi2
+            b = _psi2compDer(d2, variance, lengthscale, Z, mu[sl], S[sl], psi2=psi2_c)
+            return a, b
+
+        if n_threads is not None and int(n_threads) > 1 and len(slices) > 1:
+            with ThreadPoolExecutor(max_workers=int(n_threads)) as pool:
+                results = list(pool.map(work, slices))
+        else:
+            results = [work(sl) for sl in slices]
+
+        dvar_psi1 = sum(a[0] for a, _ in results)
+        dl_psi1 = sum(a[1] for a, _ in results)
+        dZ_psi1 = sum(a[2] for a, _ in results)
+        dmu_psi1 = np.vstack([a[3] for a, _ in results])
+        dS_psi1 = np.vstack([a[4] for a, _ in results])
+        dvar_psi2 = sum(b[0] for _, b in results)
+        dl_psi2 = sum(b[1] for _, b in results)
+        dZ_psi2 = sum(b[2] for _, b in results)
+        dmu_psi2 = np.vstack([b[3] for _, b in results])
+        dS_psi2 = np.vstack([b[4] for _, b in results])
 
     dL_dvar = np.sum(dL_dpsi0) + dvar_psi1 + dvar_psi2
 
@@ -82,7 +148,7 @@ def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscal
     return dL_dvar, dL_dlengscale, dL_dZ, dL_dmu, dL_dS
 
 
-def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
+def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S, psi1=None):
     # here are the "statistics" for psi1
     # Produced intermediate results: dL_dparams w.r.t. psi1
     # _dL_dvariance     1
@@ -94,7 +160,7 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
 
     lengthscale2 = np.square(lengthscale)
 
-    _psi1 = _psi1computations(variance, lengthscale, Z, mu, S)
+    _psi1 = _psi1computations(variance, lengthscale, Z, mu, S) if psi1 is None else psi1
     Lpsi1 = dL_dpsi1 * _psi1
     Zmu = Z[None, :, :] - mu[:, None, :]  # NxMxQ
     denom = 1.0 / (S + lengthscale2)
@@ -108,7 +174,7 @@ def _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S):
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
 
-def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
+def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S, psi2=None):
     # here are the "statistics" for psi2
     # Produced the derivatives w.r.t. psi2:
     # _dL_dvariance      1
@@ -123,7 +189,7 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     denom2 = np.square(denom)
 
     dL_dpsi2 = (dL_dpsi2 + dL_dpsi2.T) / 2 if len(dL_dpsi2.shape) == 2 else (dL_dpsi2 + np.swapaxes(dL_dpsi2, 1, 2)) / 2
-    _psi2 = _psi2computations(variance, lengthscale, Z, mu, S)  # NxMxM
+    _psi2 = _psi2computations(variance, lengthscale, Z, mu, S) if psi2 is None else psi2  # NxMxM
     Lpsi2 = dL_dpsi2 * _psi2  # dL_dpsi2 is MxM, using broadcast to multiply N out
     Lpsi2sum = Lpsi2.reshape(N, M * M).sum(1)  # N
     tmp = Lpsi2.reshape(N * M, M).dot(Z).reshape(N, M, Q)
@@ -140,8 +206,6 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
     _dL_dS = (2 * np.square(denom)) * (
         np.square(mu) * Lpsi2sum[:, None] - 2 * mu * Lpsi2Zhat + Lpsi2Zhat2
     ) - denom * Lpsi2sum[:, None]
-    #     _dL_dZ = -np.einsum('nmo,oq->oq',Lpsi2,Z)/lengthscale2+np.einsum('nmo,oq->mq',Lpsi2,Z)/lengthscale2+ \
-    #              2*np.einsum('nmo,nq,nq->mq',Lpsi2,mu,denom) - np.einsum('nmo,nq,mq->mq',Lpsi2,denom,Z) - np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
     Lpsi2_N = Lpsi2.sum(0)
     Lpsi2_M = Lpsi2.sum(2)
     _dL_dZ = (

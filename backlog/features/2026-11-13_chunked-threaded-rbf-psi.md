@@ -1,7 +1,7 @@
 ---
 id: "2026-11-13_chunked-threaded-rbf-psi"
 title: "Optional chunked / threaded RBF (and linear) psi-statistics"
-status: "Proposed"
+status: "In Progress"
 priority: "Medium"
 created: "2026-11-13"
 last_updated: "2026-11-13"
@@ -40,25 +40,25 @@ keeping peak RSS roughly constant in N.
 
 ## Acceptance Criteria
 
-- [ ] `psicomputations` / `psiDerivativecomputations` in
+- [x] `psicomputations` / `psiDerivativecomputations` in
       `kern/src/psi_comp/rbf_psi_comp.py` (and `linear_psi_comp.py`) accept
       optional `chunk_size=None` and `n_threads=1` (or equivalent); defaults
       preserve today's behaviour and numerical results.
-- [ ] Implementation calls the existing pure `__psi*` / `_psi*compDer`
+- [x] Implementation calls the existing pure `__psi*` / `_psi*compDer`
       functions per row slice; reduces by sum (psi2, parameter grads) or
       concatenate (psi1, `dL_dmu`, `dL_dS`).
-- [ ] Kernel-level `Cache_this` / in-place `.gradient` are not touched from
+- [x] Kernel-level `Cache_this` / in-place `.gradient` are not touched from
       multiple threads; threads run only inside the pure psi functions.
-- [ ] Psi1/psi2 caching across forward and derivative for the same chunk
+- [x] Psi1/psi2 caching across forward and derivative for the same chunk
       avoids the prototype's ~35% single-thread overhead at small N where
       possible (R13).
-- [ ] Tests: chunked vs unchunked equality for objective-relevant outputs
+- [x] Tests: chunked vs unchunked equality for objective-relevant outputs
       and gradients (several chunk sizes, including sizes that do not divide
       N); `checkgrad` on a small Bayesian GPLVM (or equivalent) with
       chunking on.
-- [ ] Docs: short note in kernel / variational docs or changelog; defaults
+- [x] Docs: short note in kernel / variational docs or changelog; defaults
       remain off until many-core benchmarks justify otherwise.
-- [ ] No new hard dependency (stdlib `concurrent.futures` is enough).
+- [x] No new hard dependency (stdlib `concurrent.futures` is enough).
 
 ## Implementation Notes
 
@@ -86,3 +86,11 @@ keeping peak RSS roughly constant in N.
 Task sketched from PyDeepGP CIP-0001 Accept-path planning. Status Proposed
 until CIP-0010 / maintainers confirm this is the preferred GPy home for
 chunking (vs only PyDeepGP-side serial chunking).
+
+### 2026-11-13 (implementation)
+
+Implemented on branch `cip0010-chunked-rbf-psi`: optional `chunk_size` /
+`n_threads` on RBF and linear psi wrappers; `PSICOMP_RBF` /
+`PSICOMP_Linear` expose the same knobs; per-chunk psi reused in
+derivatives (R13). Tests in `GPy/testing/test_psi_chunking.py` (34 passed).
+Status → In Progress pending docs note and PR review.

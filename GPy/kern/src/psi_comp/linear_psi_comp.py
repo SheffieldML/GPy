@@ -5,11 +5,14 @@
 The package for the Psi statistics computation of the linear kernel for Bayesian GPLVM
 """
 
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 from ....util.linalg import tdot
+from .rbf_psi_comp import _row_slices
 
 
-def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
+def psicomputations(variance, Z, variational_posterior, return_psi2_n=False, chunk_size=None, n_threads=1):
     """
     Compute psi-statistics for ss-linear kernel
     """
@@ -20,7 +23,29 @@ def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
     # psi2    MxM
     mu = variational_posterior.mean
     S = variational_posterior.variance
+    N = mu.shape[0]
 
+    if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
+        return _psicomputations_block(variance, Z, mu, S, return_psi2_n)
+
+    slices = list(_row_slices(N, chunk_size))
+
+    def work(sl):
+        return _psicomputations_block(variance, Z, mu[sl], S[sl], return_psi2_n)
+
+    if n_threads is not None and int(n_threads) > 1 and len(slices) > 1:
+        with ThreadPoolExecutor(max_workers=int(n_threads)) as pool:
+            results = list(pool.map(work, slices))
+    else:
+        results = [work(sl) for sl in slices]
+
+    psi0 = np.concatenate([r[0] for r in results], axis=0)
+    psi1 = np.vstack([r[1] for r in results])
+    psi2 = np.concatenate([r[2] for r in results], axis=0) if return_psi2_n else sum(r[2] for r in results)
+    return psi0, psi1, psi2
+
+
+def _psicomputations_block(variance, Z, mu, S, return_psi2_n):
     psi0 = (variance * (np.square(mu) + S)).sum(axis=1)
     Zv = variance * Z
     psi1 = np.dot(mu, Zv.T)
@@ -28,14 +53,42 @@ def psicomputations(variance, Z, variational_posterior, return_psi2_n=False):
         psi2 = psi1[:, :, None] * psi1[:, None, :] + np.dot(S[:, None, :] * Zv[None, :, :], Zv.T)
     else:
         psi2 = np.dot(S.sum(axis=0) * Zv, Zv.T) + tdot(psi1.T)
-
     return psi0, psi1, psi2
 
 
-def psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior):
+def psiDerivativecomputations(
+    dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, variational_posterior, chunk_size=None, n_threads=1
+):
     mu = variational_posterior.mean
     S = variational_posterior.variance
+    N = mu.shape[0]
 
+    if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
+        return _psiDerivativecomputations_block(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, mu, S)
+
+    slices = list(_row_slices(N, chunk_size))
+    d2_per_n = dL_dpsi2.ndim == 3
+
+    def work(sl):
+        d2 = dL_dpsi2[sl] if d2_per_n else dL_dpsi2
+        return _psiDerivativecomputations_block(dL_dpsi0[sl], dL_dpsi1[sl], d2, variance, Z, mu[sl], S[sl])
+
+    if n_threads is not None and int(n_threads) > 1 and len(slices) > 1:
+        with ThreadPoolExecutor(max_workers=int(n_threads)) as pool:
+            results = list(pool.map(work, slices))
+    else:
+        results = [work(sl) for sl in slices]
+
+    # For MxM dL_dpsi2, each chunk's _psi2computations uses the full dL_dpsi2 with
+    # local S/mu; summing chunk contributions recovers the global gradient.
+    dL_dvar = sum(r[0] for r in results)
+    dL_dZ = sum(r[1] for r in results)
+    dL_dmu = np.vstack([r[2] for r in results])
+    dL_dS = np.vstack([r[3] for r in results])
+    return dL_dvar, dL_dZ, dL_dmu, dL_dS
+
+
+def _psiDerivativecomputations_block(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, Z, mu, S):
     dL_dvar, dL_dmu, dL_dS, dL_dZ = _psi2computations(dL_dpsi2, variance, Z, mu, S)
 
     # Compute for psi0 and psi1

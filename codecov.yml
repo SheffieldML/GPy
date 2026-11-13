@@ -1,5 +1,6 @@
 codecov:
-  branch: devel
+  # Default branch for the badge / compare baseline (CIP-0008 rename).
+  branch: main
 
 coverage:
   precision: 2
@@ -7,15 +8,19 @@ coverage:
   range: "40...100"
 
   status:
-    # Informational until a post-GHA baseline is trusted; do not block merges on %.
+    # Project: track relative to auto baseline; do not block merges.
     project:
       default:
         target: auto
         informational: true
         if_no_uploads: success
 
+    # Patch: soft 50% target after CIP-0009 Slice A/B (plotting + util).
+    # informational: true keeps GitHub checks green while Codecov still
+    # flags thin patches (the #1229 ~4% hole) in the PR comment.
     patch:
       default:
+        target: 50%
         informational: true
         if_no_uploads: success
 

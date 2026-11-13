@@ -9,10 +9,10 @@ from paramz.caching import Cacher
 
 
 def _row_slices(N, chunk_size):
-    """Yield contiguous row index slices covering ``0..N-1``."""
-    if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
-        yield slice(0, N)
-        return
+    """Yield contiguous row index slices covering ``0..N-1``.
+
+    Callers must pass a positive ``chunk_size`` strictly less than ``N``.
+    """
     for start in range(0, N, int(chunk_size)):
         yield slice(start, min(start + int(chunk_size), N))
 

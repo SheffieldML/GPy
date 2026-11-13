@@ -3,7 +3,9 @@ name = "gpy"
 version = "1.15.0"
 description = "The Gaussian Process Toolbox"
 authors = [{ name = "GPy Authors", email = "gpy.authors@gmail.com" }]
-requires-python = ">=3.11,<4"
+# soupsieve 4.x (GHSA-mmhr-3c5m-f64f) requires Python >=3.11.5. Older 3.11
+# patches can only resolve the vulnerable 2.10 pin via nbconvert.
+requires-python = ">=3.11.5,<4"
 readme = "README.md"
 license = "BSD-3-Clause"
 keywords = [

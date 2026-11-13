@@ -38,7 +38,7 @@ def test_rbf_chunked_matches_unchunked(chunk_size, n_threads, return_psi2_n):
         chunk_size=chunk_size,
         n_threads=n_threads,
     )
-    for a, b in zip(ref, got):
+    for a, b in zip(ref, got, strict=True):
         np.testing.assert_allclose(a, b, rtol=1e-10, atol=1e-10)
 
     d0 = rng.randn(vp.mean.shape[0])
@@ -54,7 +54,7 @@ def test_rbf_chunked_matches_unchunked(chunk_size, n_threads, return_psi2_n):
     got_g = rbf_psi_comp.psiDerivativecomputations(
         d0, d1, d2, variance, lengthscale, Z, vp, chunk_size=chunk_size, n_threads=n_threads
     )
-    for a, b in zip(ref_g, got_g):
+    for a, b in zip(ref_g, got_g, strict=True):
         np.testing.assert_allclose(a, b, rtol=1e-9, atol=1e-9)
 
 
@@ -70,7 +70,7 @@ def test_linear_chunked_matches_unchunked(chunk_size, n_threads, return_psi2_n):
     got = linear_psi_comp.psicomputations(
         variance, Z, vp, return_psi2_n=return_psi2_n, chunk_size=chunk_size, n_threads=n_threads
     )
-    for a, b in zip(ref, got):
+    for a, b in zip(ref, got, strict=True):
         np.testing.assert_allclose(a, b, rtol=1e-10, atol=1e-10)
 
     d0 = rng.randn(vp.mean.shape[0])
@@ -86,7 +86,7 @@ def test_linear_chunked_matches_unchunked(chunk_size, n_threads, return_psi2_n):
     got_g = linear_psi_comp.psiDerivativecomputations(
         d0, d1, d2, variance, Z, vp, chunk_size=chunk_size, n_threads=n_threads
     )
-    for a, b in zip(ref_g, got_g):
+    for a, b in zip(ref_g, got_g, strict=True):
         np.testing.assert_allclose(a, b, rtol=1e-9, atol=1e-9)
 
 

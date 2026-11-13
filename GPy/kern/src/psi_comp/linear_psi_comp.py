@@ -41,10 +41,7 @@ def psicomputations(variance, Z, variational_posterior, return_psi2_n=False, chu
 
     psi0 = np.concatenate([r[0] for r in results], axis=0)
     psi1 = np.vstack([r[1] for r in results])
-    if return_psi2_n:
-        psi2 = np.concatenate([r[2] for r in results], axis=0)
-    else:
-        psi2 = sum(r[2] for r in results)
+    psi2 = np.concatenate([r[2] for r in results], axis=0) if return_psi2_n else sum(r[2] for r in results)
     return psi0, psi1, psi2
 
 

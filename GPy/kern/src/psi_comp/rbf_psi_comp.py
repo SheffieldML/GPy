@@ -17,9 +17,7 @@ def _row_slices(N, chunk_size):
         yield slice(start, min(start + int(chunk_size), N))
 
 
-def psicomputations(
-    variance, lengthscale, Z, variational_posterior, return_psi2_n=False, chunk_size=None, n_threads=1
-):
+def psicomputations(variance, lengthscale, Z, variational_posterior, return_psi2_n=False, chunk_size=None, n_threads=1):
     # here are the "statistics" for psi0, psi1 and psi2
     # Produced intermediate results:
     # _psi1                NxM
@@ -55,10 +53,7 @@ def psicomputations(
     psi0 = np.empty(N)
     psi0[:] = variance
     psi1 = np.vstack([r[0] for r in results])
-    if return_psi2_n:
-        psi2 = np.concatenate([r[1] for r in results], axis=0)
-    else:
-        psi2 = sum(r[1] for r in results)
+    psi2 = np.concatenate([r[1] for r in results], axis=0) if return_psi2_n else sum(r[1] for r in results)
     return psi0, psi1, psi2
 
 
@@ -108,12 +103,8 @@ def psiDerivativecomputations(
     N = mu.shape[0]
 
     if chunk_size is None or chunk_size <= 0 or chunk_size >= N:
-        dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(
-            dL_dpsi1, variance, lengthscale, Z, mu, S
-        )
-        dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(
-            dL_dpsi2, variance, lengthscale, Z, mu, S
-        )
+        dvar_psi1, dl_psi1, dZ_psi1, dmu_psi1, dS_psi1 = _psi1compDer(dL_dpsi1, variance, lengthscale, Z, mu, S)
+        dvar_psi2, dl_psi2, dZ_psi2, dmu_psi2, dS_psi2 = _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S)
     else:
         slices = list(_row_slices(N, chunk_size))
         d2_per_n = dL_dpsi2.ndim == 3

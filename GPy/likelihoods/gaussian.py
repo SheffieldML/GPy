@@ -332,7 +332,7 @@ class Gaussian(Likelihood):
         elif scale.size == mean.size:
             Ysim = np.random.normal(mean, scale=scale)
         else:
-            Ysim = np.array([np.random.normal(m, scale=scale, size=1) for m in mean])
+            raise ValueError(f"Gaussian noise length ({scale.size}) does not match latent length ({mean.size})")
         return Ysim.reshape(orig_shape)
 
     def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):

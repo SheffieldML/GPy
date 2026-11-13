@@ -185,9 +185,7 @@ class TestPlotly7:
         canvas, _ = lib.new_canvas()
         Z = np.arange(9, dtype=float).reshape(3, 3)
         annotation = np.array([["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]])
-        heat, annotations = lib.annotation_heatmap(
-            canvas, Z, annotation, extent=(0, 1, 0, 1), imshow_kwargs={}
-        )
+        heat, annotations = lib.annotation_heatmap(canvas, Z, annotation, extent=(0, 1, 0, 1), imshow_kwargs={})
         lib.add_to_canvas(canvas, (heat, annotations))
         figure, _, _ = canvas
         assert figure.data[0].type == "heatmap"

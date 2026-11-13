@@ -22,9 +22,9 @@ From now on we keep track of changes in the CHANGELOG.md.
 If you want your changes to show up there follow the [guidelines](#gl).
 In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
-Packaging uses [Poetry](https://python-poetry.org/) (CIP-0003). **End users**
-still install with `pip install gpy` from PyPI wheels. **Contributors** should
-use Poetry for editable installs and a locked environment (`poetry.lock`).
+Packaging for **contributors** uses [uv](https://docs.astral.sh/uv/) (CIP-000C;
+Poetry was CIP-0003). **End users** still install with `pip install gpy` from
+PyPI wheels. Contributors use `uv sync` and a committed `uv.lock`.
 
 ## Contributing to GPy
 
@@ -65,7 +65,7 @@ If you installed GPy with pip, just upgrade the package using:
 
     $ pip install --upgrade gpy
 
-For a developmental install from a clone, use Poetry (see below).
+For a developmental install from a clone, use uv (see below).
 
 ## Supported Platforms:
 
@@ -116,24 +116,25 @@ We've also had luck with [enthought](http://www.enthought.com). Install scipy 1.
 
 If you'd like to install from source, or want to contribute to the project (i.e. by sending pull requests via github), read on.
 
-### Contributor install (Poetry)
+### Contributor install (uv)
 
-Requires [Poetry](https://python-poetry.org/docs/#installation) 1.8+ (2.x recommended).
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
 git clone https://github.com/SheffieldML/GPy.git
 cd GPy
-poetry install --with dev
-poetry run pytest GPy/testing
+uv sync
+uv run pytest GPy/testing
 ```
 
-`poetry.lock` pins the contributor environment for reproducibility. PyPI /
-`pip install gpy` installs do **not** use the lockfile.
+`uv.lock` pins the contributor environment for reproducibility. PyPI /
+`pip install gpy` installs do **not** use the lockfile. If you already use uv
+as an end user, `uv pip install gpy` is a faster alternative to plain `pip`.
 
-You can also build and install a local wheel without Poetry at runtime:
+You can also build and install a local wheel:
 
 ```bash
-poetry build
+uv build
 pip install dist/gpy-*.whl
 ```
 
@@ -158,7 +159,7 @@ Release CI publishes:
 - **Windows** wheels
 
 If no wheel matches your platform, `pip` builds from the sdist (needs a C
-compiler and Cython). Contributor installs via Poetry compile extensions locally
+compiler and Cython). Contributor installs via uv compile extensions locally
 on any architecture CI already tests (`ubuntu`, `windows`, `macos` including
 arm64).
 
@@ -169,8 +170,8 @@ If you're having trouble installing GPy via `pip install gpy` here is a probable
     git clone https://github.com/SheffieldML/GPy.git
     cd GPy
     git checkout main
-    poetry install --with dev
-    pytest .
+    uv sync
+    uv run pytest GPy/testing
 
 ### Direct downloads
 
@@ -210,20 +211,20 @@ print(m_load)
 
 ### Running unit tests:
 
-With Poetry (recommended for contributors):
+With uv (recommended for contributors):
 
-    poetry install --with dev
-    poetry run pytest GPy/testing
+    uv sync
+    uv run pytest GPy/testing
 
 Coverage (uses `.coveragerc`; also uploaded from CI on Ubuntu / Python 3.12):
 
-    poetry install --with dev --extras plotting
-    poetry run pytest GPy/testing --cov=GPy --cov-report=html --cov-report=term
+    uv sync --extra plotting
+    uv run pytest GPy/testing --cov=GPy --cov-report=html --cov-report=term
     # open htmlcov/index.html
 
 List uncovered lines in thin modules:
 
-    poetry run pytest GPy/testing --cov=GPy --cov-report=term-missing:skip-covered
+    uv run pytest GPy/testing --cov=GPy --cov-report=term-missing:skip-covered
 
 **What “good” coverage means on a PR (CIP-0009):** project coverage is roughly
 mid-50%s and we do not chase 90%+. For changes under `GPy/plotting/`
@@ -232,11 +233,6 @@ mid-50%s and we do not chase 90%+. For changes under `GPy/plotting/`
 ~4% hole from [#1229](https://github.com/SheffieldML/GPy/pull/1229). Soft patch
 target is 50% in `codecov.yml` (informational: reports the gap, does not block
 merges). Plotly cases use `pytest.importorskip("plotly")`.
-
-or using setuptools
-
-    poetry run pytest GPy/testing
-
 
 ### Compiling documentation:
 
@@ -273,14 +269,14 @@ The HTML files are then stored in doc/build/html
 Open a pull request against **`main`**. CI (`Test Python Lib`) runs tests and
 lint on the PR. The old `deploy` branch is stale and is not part of publishing.
 
-Bump the Poetry version in `pyproject.toml` / `GPy/__version__.py` when cutting
+Bump `[project].version` in `pyproject.toml` / `GPy/__version__.py` when cutting
 a release, and add a CHANGELOG section.
 
 ### Deploying GPy (CIP-0008)
 
 1. Merge the version bump to `main`.
 2. On GitHub: **Releases → Draft a new release**.
-3. Create tag `vX.Y.Z` on that commit (must match `poetry version -s`).
+3. Create tag `vX.Y.Z` on that commit (must match `[project].version`).
 4. **Publish** the release (a draft does not upload).
 
 That `release` event (`types: [published]`) builds wheels (Linux x86_64 and

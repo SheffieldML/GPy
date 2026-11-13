@@ -1,10 +1,11 @@
 # Copyright (c) 2012-2024, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 """
-Poetry build hook for GPy Cython extensions.
+Poetry-core build hook for GPy Cython extensions (CIP-000C retains this path).
 
 Extracted from setup.py (idea from #1080 / @MartinBubel); kept out of a file
-named ``build.py`` to avoid macOS module-name clashes.
+named ``build.py`` to avoid macOS module-name clashes. Contributor installs use
+uv; the build backend remains ``poetry-core`` until a follow-on cutover.
 """
 
 import sys

@@ -217,8 +217,21 @@ With Poetry (recommended for contributors):
 
 Coverage (uses `.coveragerc`; also uploaded from CI on Ubuntu / Python 3.12):
 
+    poetry install --with dev --extras plotting
     poetry run pytest GPy/testing --cov=GPy --cov-report=html --cov-report=term
     # open htmlcov/index.html
+
+List uncovered lines in thin modules:
+
+    poetry run pytest GPy/testing --cov=GPy --cov-report=term-missing:skip-covered
+
+**What “good” coverage means on a PR (CIP-0009):** project coverage is roughly
+mid-50%s and we do not chase 90%+. For changes under `GPy/plotting/`
+(especially `plotly_dep/`), exercise each changed branch in a test — not only
+`import plotly` — so Codecov **patch** coverage stays well above the historical
+~4% hole from [#1229](https://github.com/SheffieldML/GPy/pull/1229). Soft patch
+target is 50% in `codecov.yml` (informational: reports the gap, does not block
+merges). Plotly cases use `pytest.importorskip("plotly")`.
 
 or using setuptools
 

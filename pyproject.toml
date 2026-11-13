@@ -32,7 +32,7 @@ plotting = [
 ]
 notebook = [
     "jupyter_client>=8.10.0",
-    "ipywidgets>=4.0.3",
+    "ipywidgets>=8.1.9",
     "ipykernel>=4.1.0",
     "notebook>=7.6.5",
 ]

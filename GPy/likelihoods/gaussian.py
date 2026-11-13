@@ -322,12 +322,17 @@ class Gaussian(Likelihood):
         :param gp: latent variable
         """
         orig_shape = gp.shape
-        gp = gp.flatten()
-        # orig_shape = gp.shape
-        gp = gp.flatten()
-        Ysim = np.array(
-            [np.random.normal(self.gp_link.transf(gpj), scale=np.sqrt(self.variance), size=1) for gpj in gp]
-        )
+        gp = np.asarray(gp).ravel()
+        mean = np.asarray(self.gp_link.transf(gp), dtype=float).ravel()
+        # Paramz Param makes repeated np.sqrt(self.variance) expensive; pull the
+        # noise scale out once and draw in one vectorised NumPy call (#1272).
+        scale = np.sqrt(np.asarray(self.variance, dtype=float)).ravel()
+        if scale.size == 1:
+            Ysim = np.random.normal(mean, scale=float(scale.item()))
+        elif scale.size == mean.size:
+            Ysim = np.random.normal(mean, scale=scale)
+        else:
+            raise ValueError(f"Gaussian noise length ({scale.size}) does not match latent length ({mean.size})")
         return Ysim.reshape(orig_shape)
 
     def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):

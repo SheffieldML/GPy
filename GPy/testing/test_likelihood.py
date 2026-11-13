@@ -1188,3 +1188,29 @@ class TestStudentTPredictive:
         np.testing.assert_allclose(cov, cov_f + np.eye(8) * noise, rtol=1e-6)
         eigs = np.linalg.eigvalsh(0.5 * (cov + cov.T))
         assert eigs.min() > -1e-10
+
+
+class TestGaussianSamples:
+    """Cover the vectorised branches in Gaussian.samples (#1272)."""
+
+    def test_scalar_noise_preserves_shape(self):
+        np.random.seed(fixed_seed)
+        lik = GPy.likelihoods.Gaussian(variance=0.25)
+        gp = np.linspace(-1.0, 1.0, 6).reshape(2, 3)
+        samples = lik.samples(gp)
+        assert samples.shape == gp.shape
+        assert np.all(np.isfinite(samples))
+
+    def test_matching_length_noise(self):
+        np.random.seed(fixed_seed)
+        lik = GPy.likelihoods.Gaussian(variance=np.array([0.25, 1.0, 4.0]))
+        gp = np.array([0.0, 1.0, -1.0])
+        samples = lik.samples(gp)
+        assert samples.shape == gp.shape
+        assert np.all(np.isfinite(samples))
+
+    def test_mismatched_length_noise_raises(self):
+        lik = GPy.likelihoods.Gaussian(variance=np.array([0.25, 1.0]))
+        gp = np.array([0.0, 1.0, -1.0])
+        with pytest.raises(ValueError, match="does not match latent length"):
+            lik.samples(gp)

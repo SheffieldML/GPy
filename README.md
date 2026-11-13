@@ -89,32 +89,39 @@ Python 3.11.5 and higher
 
 We like to pronounce it 'g-pie'.
 
-## Getting started: installing with pip
+## Getting started: installing GPy
 
-We are requiring a recent version (1.3.0 or later) of
-[scipy](http://www.scipy.org/) and thus, we strongly recommend using
-the  [anaconda python distribution](http://continuum.io/downloads).
-With anaconda you can install GPy by the following:
+GPy needs Python 3.11.5 or later. Install the current release from PyPI:
 
-    conda update scipy
-    
-Then potentially try,
+```bash
+pip install gpy
+```
 
-    sudo apt-get update
-    sudo apt-get install python3-dev
-    sudo apt-get install build-essential   
-    conda update anaconda
-    
-And finally,
+That installs NumPy (2 or later), SciPy, and [paramz](https://github.com/sods/paramz) alongside GPy. Release wheels already include the compiled extensions for Linux (x86_64 and aarch64), macOS (Apple Silicon), and Windows.
 
-    pip install gpy
+The same release is on [conda-forge](https://anaconda.org/conda-forge/gpy). That build also installs Matplotlib:
 
-We've also had luck with [enthought](http://www.enthought.com). Install scipy 1.3.0 (or later)
- and then pip install GPy:
+```bash
+conda install -c conda-forge gpy
+```
 
-    pip install gpy
+A virtual environment keeps the install off the system Python:
 
-If you'd like to install from source, or want to contribute to the project (i.e. by sending pull requests via github), read on.
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install gpy
+```
+
+If pip has no wheel for your platform it builds from the source distribution. That needs a C compiler, Python headers, and Cython. On Debian or Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install build-essential python3-dev
+pip install gpy
+```
+
+To work from a clone, or to send pull requests, use the contributor install below.
 
 ### Contributor install (uv)
 
@@ -150,28 +157,13 @@ pip install 'gpy[plotting]'
 If the configured library is missing, GPy imports successfully and continues
 without plotting (see [#1209](https://github.com/SheffieldML/GPy/issues/1209)).
 
-### Wheels and Apple Silicon / Linux aarch64
+### Wheels
 
-Release CI publishes:
-
-- **manylinux** wheels for **x86_64** and **aarch64** (Cython extensions built in)
-- **macOS** wheels from `macos-latest` (Apple Silicon)
-- **Windows** wheels
-
-If no wheel matches your platform, `pip` builds from the sdist (needs a C
-compiler and Cython). Contributor installs via uv compile extensions locally
-on any architecture CI already tests (`ubuntu`, `windows`, `macos` including
-arm64).
+Release CI publishes manylinux wheels for x86_64 and aarch64, macOS wheels from `macos-latest` (Apple Silicon), and Windows wheels, for Python 3.11–3.14. Contributor installs via uv compile the extensions locally on the architectures CI already tests (`ubuntu`, `windows`, `macos` including arm64).
 
 ### Troubleshooting installation problems
 
-If you're having trouble installing GPy via `pip install gpy` here is a probable solution:
-
-    git clone https://github.com/SheffieldML/GPy.git
-    cd GPy
-    git checkout main
-    uv sync
-    uv run pytest GPy/testing
+Check that `python` is 3.11.5 or newer (`python --version`). On a platform with a published wheel, `pip install gpy` should finish without a compiler. If pip falls back to building from source, install the compiler and headers in the section above and retry. Contributors working from a clone should use `uv sync` (see above), which compiles the extensions in the development environment.
 
 ### Direct downloads
 
@@ -242,27 +234,23 @@ The Sphinx documentation is available here: http://sphinx-doc.org/latest/content
 
 **Installing dependencies:**
 
-To compile the documentation, first ensure that Sphinx is installed. On Debian-based systems, this can be achieved as follows:
+Sphinx is an optional extra. From a clone:
 
-    sudo apt-get install python-pip
-    sudo pip install sphinx
+    uv sync --extra docs
+
+Or, once GPy is installed:
+
+    pip install 'gpy[docs]'
+
+Inheritance diagrams need Graphviz (`dot`) on `PATH`.
 
 **Compiling documentation:**
 
-The documentation can be compiled as follows:
-
     cd doc
     sphinx-apidoc -o source/ ../GPy/
-    make html
+    sphinx-build -b html source build/html
 
-alternatively:
-
-```{shell}
-cd doc
-sphinx-build -b html -d build/doctrees -D graphviz_dot='<path to dot>' source build/html
-```
-
-The HTML files are then stored in doc/build/html
+With uv, prefix the Sphinx commands with `uv run`. The HTML files are then stored in `doc/build/html`.
 
 ### Merging to the default branch
 

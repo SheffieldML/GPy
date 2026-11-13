@@ -166,6 +166,10 @@ None yet.
 (remaining miss is largely unimplemented `Kff` full and deep analytic
 branches — deferred with CIP-0001).
 
+**Follow-on backlog:** deprecate orphaned `LFM1` and schedule removal
+(`backlog/infrastructure/2026-11-13_cip000D-deprecate-lfm1.md`). GPU
+`*gpucomp.py` stays omit-only (optional path; not a deprecation).
+
 ## References
 
 - CIP-0009 — incremental coverage / soft Codecov patch 50%

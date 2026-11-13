@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* packaging: contributor/CI install moves from Poetry to uv (CIP-000C); commit `uv.lock`, keep `poetry-core` + `build_extension.py` for Cython; end users still `pip install gpy` (Discussion #1268)
 * hygiene: replace user-input `assert` with `ValueError` in `GP` construction and `block_matrices` (#922, #1213)
 * packaging: remove unused sympy symbolic-AD stack (`util/functions.py`, `util/ln_diff_erfs.py`, `core/symbolic.py`, `kern/src/symbolic.py`); `util/symbolic.py` was already gone (#930, #1213)
 * docs: point the plotting tutorial and `defaults.cfg` at `'plotly_offline'`; `'plotly'` / `'plotly_online'` still construct figures but `show()` no longer uses Chart Studio (#1255, #1249)

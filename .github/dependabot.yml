@@ -1,6 +1,6 @@
 # Dependabot on the default integration branch (`main`).
 # Security updates already opened #1232; this config also covers
-# weekly version bumps for pip (Poetry) and GitHub Actions.
+# weekly version bumps for pip (pyproject / uv.lock) and GitHub Actions.
 version: 2
 updates:
   - package-ecosystem: pip

@@ -2,8 +2,8 @@
 author: Neil Lawrence
 created: "2026-11-10"
 id: "000C"
-last_updated: "2026-11-10"
-status: Proposed
+last_updated: "2026-11-13"
+status: In Progress
 compressed: false
 related_requirements: []
 related_cips:
@@ -26,8 +26,8 @@ title: Contributor packaging via uv (succeed Poetry)
 ## Status
 
 - [x] Proposed - Initial idea documented (open for Discussion feedback)
-- [ ] Accepted - Approved, ready to start work
-- [ ] In Progress - Actively being implemented
+- [x] Accepted - Approved, ready to start work (Accept decisions below)
+- [x] In Progress - Actively being implemented
 - [ ] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
@@ -183,27 +183,36 @@ None yet. Candidates after Accept:
 - CI install time bounded relative to test time
 - Single lockfile SoT for development environments
 
+## Accept decisions (2026-11-13)
+
+Resolved with no Discussion replies after three days; proceed with the
+preferred phased cutover.
+
+1. **Build backend:** keep `poetry-core` + `build_extension.py` for this
+   cutover (`migrate-to-uv --keep-current-build-backend`). Move Cython off
+   Poetry’s `build()` hook in a follow-on PR after CI is green on `uv.lock`.
+2. **Dependency groups:** Poetry `group.dev` → PEP 735 `[dependency-groups]
+   dev`; Poetry extras → `[project.optional-dependencies]`. Contributor
+   default remains `uv sync` with `dev` (uv’s default group).
+3. **Dependabot:** keep `package-ecosystem: pip` on `/` for now (reads
+   `pyproject.toml` / lock); verify PRs still refresh after `uv.lock` lands.
+   If Dependabot cannot update `uv.lock`, add a scheduled `uv lock --upgrade`
+   workflow in closeout.
+4. **Version SoT:** single PEP 621 `[project].version`; CIP-0008 tag check
+   reads that field (not `tool.poetry.version`).
+
+Command map for docs/CI: `poetry install --with dev` → `uv sync`;
+`poetry run …` → `uv run …`; `poetry build` → `uv build`.
+
 ## Implementation Status
 
 - [x] Draft CIP-000C (Proposed)
 - [x] Ideas Discussion opened: [#1268](https://github.com/SheffieldML/GPy/discussions/1268)
-- [ ] Accept decisions: build backend, command map, Dependabot
-- [ ] Spike: uv sync + Cython + pytest green
-- [ ] Backlog tasks created (only after Accept)
-- [ ] CI and README cut over; `poetry.lock` removed
+- [x] Accept decisions: build backend, command map, Dependabot
+- [x] Spike: uv sync + Cython + pytest green (410 passed, 21 skipped; wheel import ok)
+- [x] Backlog tasks created (only after Accept)
+- [x] CI and README cut over; `poetry.lock` removed
 - [ ] First release built with uv-based CI verified; CIP Closed
-
-## Open questions (resolve at Accept)
-
-1. **Build backend:** keep `poetry-core` temporarily, or move Cython to
-   setuptools/`python -m build` in the same PR as the lock cutover?
-2. **Dependency groups:** map Poetry `group.dev` + extras to PEP 735
-   `[dependency-groups]` and/or `[project.optional-dependencies]` how?
-3. **Dependabot:** switch `package-ecosystem` from `pip`/Poetry lock to
-   whatever GitHub supports for `uv.lock` at Accept time (or a scheduled
-   `uv lock --upgrade` workflow).
-4. **Version SoT:** PEP 621 `[project].version` only, or keep a single field
-   that CIP-0008's tag check already understands?
 
 ## References
 

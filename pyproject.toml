@@ -26,7 +26,7 @@ optional = [
 ]
 plotting = [
     "matplotlib>=3.4",
-    "plotly>=1.8.6",
+    "plotly>=7.1.0",
 ]
 notebook = [
     "jupyter_client>=4.0.6",

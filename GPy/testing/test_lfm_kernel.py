@@ -454,14 +454,10 @@ class TestEQODECoverageCIP000D:
         self.X_lat = np.c_[np.linspace(0.0, 1.5, 8), np.array([2, 2, 2, 2, 3, 3, 3, 3], dtype=float)]
 
     def _eq_ode1(self):
-        return GPy.kern.EQ_ODE1(
-            input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, decay=self.decay
-        )
+        return GPy.kern.EQ_ODE1(input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, decay=self.decay)
 
     def _eq_ode2(self):
-        return GPy.kern.EQ_ODE2(
-            input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, C=self.C, B=self.B
-        )
+        return GPy.kern.EQ_ODE2(input_dim=2, output_dim=2, rank=2, W=self.W, lengthscale=1.0, C=self.C, B=self.B)
 
     @pytest.mark.parametrize("factory", ["_eq_ode1", "_eq_ode2"])
     def test_latent_kuu_and_theta_gradients(self, factory):

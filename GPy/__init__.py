@@ -1,8 +1,10 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+# Do not filter DeprecationWarning process-wide here (CIP-0010 / REQ-0003).
+# A global ignore hid GPy's own deprecations and silenced third-party
+# warnings for every process that imports GPy. User-facing GPy
+# deprecations should use FutureWarning (visible by default); see
+# Discussion #1297.
 
 from . import core
 from . import models

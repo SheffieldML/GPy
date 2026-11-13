@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* warnings: stop re-silencing ``DeprecationWarning`` on ``import GPy`` (CIP-0010 / REQ-0003, Discussion #1297); the old process-wide ``filterwarnings`` undid ``python -Wd`` / ``PYTHONWARNINGS=default`` for the whole process
 * security: require Python >=3.11.5 so `uv.lock` drops soupsieve 2.10 (GHSA-mmhr-3c5m-f64f). soupsieve 4.x does not support 3.11.0–3.11.4; CI already runs 3.11.18. The transitive pin comes from the notebook extra (`nbconvert` → `beautifulsoup4`)
 * packaging: contributor/CI install moves from Poetry to uv (CIP-000C); commit `uv.lock`, keep `poetry-core` + `build_extension.py` for Cython; end users still `pip install gpy` (Discussion #1268)
 * hygiene: replace user-input `assert` with `ValueError` in `GP` construction and `block_matrices` (#922, #1213)

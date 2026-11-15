@@ -320,8 +320,9 @@ def tdot_blas(mat, out=None):
     if (mat.dtype != "float64") or (len(mat.shape) != 2):
         return np.dot(mat, mat.T)
     nn = mat.shape[0]
+    allocated = out is None
     if out is None:
-        out = np.zeros((nn, nn))
+        out = np.empty((nn, nn), order="F")
     else:
         assert out.dtype == "float64"
         assert out.shape == (nn, nn)
@@ -331,11 +332,10 @@ def tdot_blas(mat, out=None):
         out[:] = 0.0
 
     # # Call to DSYRK from BLAS
-    mat = np.asfortranarray(mat)
     out = blas.dsyrk(alpha=1.0, a=mat, beta=0.0, c=out, overwrite_c=1, trans=0, lower=0)
 
     symmetrify(out, upper=True)
-    return np.ascontiguousarray(out)
+    return out.T if allocated else np.ascontiguousarray(out)
 
 
 def tdot(*args, **kwargs):

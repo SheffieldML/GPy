@@ -67,6 +67,8 @@ def _backprop_gradient_pure(dL, L):
         K = LL^T
 
     where L was obtained by Cholesky decomposition
+
+    Slow triple-loop reference (CIP-000E oracle). Prefer :func:`cholesky_vjp`.
     """
     dL_dK = np.tril(dL).copy()
     N = L.shape[0]
@@ -80,6 +82,57 @@ def _backprop_gradient_pure(dL, L):
             dL_dK[k, k] -= L[j, k] * dL_dK[j, k]
         dL_dK[k, k] /= 2 * L[k, k]
     return dL_dK
+
+
+def cholesky_vjp(dL, L):
+    """Reverse-mode derivative through ``K = L @ L.T`` (pure NumPy/BLAS).
+
+    Pure numerical primitive (CIP-000E / CIP-000F Stage 2): explicit array
+    inputs and output, no ``paramz`` / model / observer coupling, no mutation
+    of caller-owned buffers.
+
+    Parameters
+    ----------
+    dL : array_like, shape (N, N)
+        Cotangent with respect to the lower-triangular Cholesky factor ``L``.
+        Only the lower triangle is used.
+    L : array_like, shape (N, N)
+        Lower-triangular Cholesky factor of ``K``.
+
+    Returns
+    -------
+    dK : ndarray, shape (N, N)
+        Cotangent with respect to ``K``, lower-triangular (same convention as
+        the historical GPy Cython / pure implementations).
+
+    Notes
+    -----
+    Implements the same recurrence as :func:`_backprop_gradient_pure` and the
+    Cython BLAS path, but uses matrix–vector products so work is done by the
+    linked BLAS without forming a dense ``Dk + Dk.T`` temporary.
+    """
+    d = np.tril(np.asarray(dL, dtype=np.float64)).copy()
+    L = np.asarray(L, dtype=np.float64)
+    if d.shape != L.shape or d.ndim != 2 or d.shape[0] != d.shape[1]:
+        raise ValueError("dL and L must be square arrays of the same shape")
+    N = L.shape[0]
+    for k in range(N - 1, -1, -1):
+        if k < N - 1:
+            Dk = d[k + 1 :, k + 1 :]
+            Lk = L[k + 1 :, k]
+            # (Dk + Dk.T) @ Lk without allocating Dk + Dk.T (double-counts diag,
+            # matching the pure triple loop / Cython dsymv + diag correction).
+            tmp = Dk @ Lk
+            tmp += Dk.T @ Lk
+            d[k + 1 :, k] -= tmp
+            d[k + 1 :, k] *= 1.0 / L[k, k]
+            d[k, k] -= d[k + 1 :, k] @ Lk
+        d[k, k] *= 0.5 / L[k, k]
+    return d
+
+
+# Historical alias used throughout GPy and tests.
+_backprop_gradient_blas = cholesky_vjp
 
 
 def triang_to_cov(L):
@@ -111,11 +164,12 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2 + size) / 2), keep)
 
 
+# CIP-000E Phase 1: Cholesky backprop defaults to the pure NumPy/BLAS primitive.
+# Flat/triang maps still use Cython when available (separate follow-on).
+backprop_gradient = cholesky_vjp
 if use_choleskies_cython:
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
-    backprop_gradient = choleskies_cython.backprop_gradient_par_c
 else:
-    backprop_gradient = _backprop_gradient_pure
     triang_to_flat = _triang_to_flat_pure
     flat_to_triang = _flat_to_triang_pure

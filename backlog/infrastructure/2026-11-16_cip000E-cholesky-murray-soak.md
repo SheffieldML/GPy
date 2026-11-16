@@ -54,10 +54,12 @@ named BLAS (Accelerate, OpenBLAS, or MKL), at N ∈ {1000, 2000}.
       wall times, ×cython, peak tracemalloc, BLAS name, and
       `OMP_NUM_THREADS` / `OPENBLAS_NUM_THREADS` / `MKL_NUM_THREADS`
       variants (1 and default) in CIP-000E or `benchmarks/cip000E/` notes
-- [ ] Confirm SVGP / Cholesky-parameterised variational path still passes
-      existing tests with the Murray default
-- [ ] Document escape hatch: `choleskies_cython.backprop_gradient_par_c`
-      remains importable during hybrid soak; not the wired default
+- [x] SVGP tests green with Murray default (`pytest GPy/testing/test_svgp.py`)
+- [x] Escape hatch documented: `choleskies_cython.backprop_gradient_par_c`
+      remains importable; not the wired default
+- [x] macOS threading spot-check (default threads vs
+      `OMP/OPENBLAS/VECLIB/MKL_NUM_THREADS=1` at N=1000): Murray stays ahead
+      (~0.33× / ~0.28×). Linux multicore row still required before soak-complete.
 - [ ] Explicit note in CIP-000E Implementation Status that Cholesky Phase 1
       item is soak-complete only after the Linux multicore row exists
 
@@ -88,3 +90,9 @@ Murray blocked landed and wired as default on
 `cip000E-numpy-blas-primitives`. macOS/Accelerate harness confirms win vs
 Cython. Linux multicore + threading matrix still outstanding before calling
 this hotspot soak-complete.
+
+### 2026-11-16 (continued)
+
+SVGP tests passed. macOS thread-env spot-check recorded. NB=128/256 both win
+at N=2000 when the machine is quiet (noisy outlier earlier); default NB remains
+128. Linux OpenBLAS/MKL matrix still open.

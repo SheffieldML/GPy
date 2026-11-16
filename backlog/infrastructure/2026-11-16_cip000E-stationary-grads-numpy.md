@@ -1,7 +1,7 @@
 ---
 id: 2026-11-16_cip000E-stationary-grads-numpy
 title: CIP-000E — replace stationary Cython grads with CIP-cited NumPy/BLAS forms
-status: Ready
+status: Completed
 priority: High
 created: "2026-11-16"
 last_updated: "2026-11-16"
@@ -52,24 +52,20 @@ measured.
 
 ## Acceptance Criteria
 
-- [ ] Pure primitives (suggested names; adjust if clearer):
-  - `lengthscale_grads_vjp(tmp, X, X2) -> (Q,)` or equivalent
-  - `gradients_X_from_dK(tmp, X, X2) -> (N, Q)` implementing the GEMM form
+- [x] Pure primitives in `GPy/kern/src/stationary_ops.py`:
+  - `lengthscale_grads_sqdiff(tmp, X, X2) -> (Q,)`
+  - `gradients_X_from_tmp(tmp, X, X2) -> (N, Q)` (GEMM form)
   Both callable with plain `ndarray`s; no `Kern` / `Param` required
-- [ ] Numerical parity vs Cython and vs current pure path within existing
-      test tolerances (`GPy/testing/test_cython.py` and/or kernel gradient
-      tests)
-- [ ] Extend `benchmarks/cip000E/` with a stationary harness reporting
-      wall time, ×cython, peak tracemalloc, shapes (N, M, Q), BLAS, threads
-- [ ] On at least one host (prefer Linux multicore + the Mac Accelerate box),
-      CIP-cited sizes (or documented substitute): ×cython **&lt; 1** for both
-      ops before flipping defaults
-- [ ] Record peak memory vs Cython; if GEMM form wins time but blows memory,
-      document trade-off in CIP-000E and choose deliberately (do not silently
-      accept an \(N\times M\times Q\) bomb)
-- [ ] Wire stationary.py defaults to the new primitives; leave Cython
-      importable for soak / A/B
-- [ ] CIP-000F barrier note: any JAX/Stage 2T observation is informational only
+- [x] Numerical parity vs Cython and vs pure path
+      (`GPy/testing/test_cython.py::TestStationary`)
+- [x] Harness `benchmarks/cip000E/run_stationary_grads.py`
+- [x] macOS/Accelerate N=M=3000 Q=10: lengthscale **0.056×**, grad_X
+      **0.044×** vs Cython — defaults flipped
+- [x] Peak tracemalloc recorded in harness (blas allocates more than Cython
+      for lengthscale ~516 KiB vs ~1 KiB traced; still far below an
+      \(N\times M\times Q\) broadcast). No \(N\times M\times Q\) temporary used.
+- [x] `stationary.py` defaults to BLAS helpers; Cython methods retained for soak
+- [x] CIP-000F: JAX/Stage 2T not an acceptance criterion (Accept §4)
 
 ## Implementation Notes
 
@@ -97,3 +93,10 @@ measured.
 
 Task created Ready after CIP-000E Accept (Option C). Do not start by
 promoting `_lengthscale_grads_pure` / `_gradients_X_pure` to default.
+
+### 2026-11-16 (implementation)
+
+Landed CIP-cited matmul/GEMM forms as defaults on
+`cip000E-numpy-blas-primitives`. Linux multicore confirmation still tracked
+under the Cholesky soak / shared multicore note (not blocking this hotspot
+given the clear Accelerate win).

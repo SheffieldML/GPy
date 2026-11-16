@@ -419,8 +419,9 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
       first; extend per hotspot)
 - [x] Accept decision: **Option C** (see Accept decisions above)
 - [x] Phase 0 hygiene (state-space import + tests; [#1302](https://github.com/SheffieldML/GPy/pull/1302))
-- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray default
-      on branch; backlog tracks soak + remaining hotspots (see Accept §5)
+- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray +
+      stationary grads defaults on branch; coregionalize / triang / symmetrify
+      + Linux multicore soak still open (see Accept §5)
 - [ ] Phase 2 remove Cython build surface (after soak; backlog Proposed)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /

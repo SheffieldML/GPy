@@ -57,6 +57,45 @@ class TestStationary:
         self.dKzz = np.random.randn(20, 20)
         self.dKxz = np.random.randn(300, 20)
 
+    def test_square_gradX_blas_matches_pure(self):
+        """CIP-000E: GEMM gradients_X matches the loop oracle."""
+        self.setup_method()
+        g_pure = self.k._gradients_X_pure(self.dKxx, self.X)
+        g_blas = self.k._gradients_X_blas(self.dKxx, self.X)
+        assert np.allclose(g_pure, g_blas), "BLAS/pure square gradX mismatch!"
+
+    def test_rect_gradX_blas_matches_pure(self):
+        self.setup_method()
+        g_pure = self.k._gradients_X_pure(self.dKxz, self.X, self.Z)
+        g_blas = self.k._gradients_X_blas(self.dKxz, self.X, self.Z)
+        assert np.allclose(g_pure, g_blas), "BLAS/pure rect gradX mismatch!"
+
+    def test_square_lengthscales_blas_matches_pure(self):
+        """CIP-000E: matmul lengthscale grads match the loop oracle."""
+        self.setup_method()
+        g_pure = self.k._lengthscale_grads_pure(self.dKxx, self.X, self.X)
+        g_blas = self.k._lengthscale_grads_blas(self.dKxx, self.X, self.X)
+        assert np.allclose(g_pure, g_blas), "BLAS/pure square lengthscale mismatch!"
+
+    def test_rect_lengthscales_blas_matches_pure(self):
+        self.setup_method()
+        g_pure = self.k._lengthscale_grads_pure(self.dKxz, self.X, self.Z)
+        g_blas = self.k._lengthscale_grads_blas(self.dKxz, self.X, self.Z)
+        assert np.allclose(g_pure, g_blas), "BLAS/pure rect lengthscale mismatch!"
+
+    def test_stationary_ops_no_kern_required(self):
+        """Primitives are callable without a Kern / paramz object."""
+        from GPy.kern.src import stationary_ops
+
+        rng = np.random.default_rng(0)
+        tmp = rng.normal(size=(8, 5))
+        X = rng.normal(size=(8, 3))
+        X2 = rng.normal(size=(5, 3))
+        g = stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2)
+        assert g.shape == (3,)
+        gx = stationary_ops.gradients_X_from_tmp(tmp, X, X2)
+        assert gx.shape == (8, 3)
+
     @pytest.mark.skipif(
         not stationary_cython_working,
         reason="Cython stationary module has not been built on this machine",
@@ -65,7 +104,9 @@ class TestStationary:
         self.setup_method()
         g1 = self.k._gradients_X_cython(self.dKxx, self.X)
         g2 = self.k._gradients_X_pure(self.dKxx, self.X)
+        g3 = self.k._gradients_X_blas(self.dKxx, self.X)
         assert np.allclose(g1, g2), "Gradient mismatch on square X!"
+        assert np.allclose(g1, g3), "BLAS/Cython square gradX mismatch!"
 
     @pytest.mark.skipif(
         not stationary_cython_working,
@@ -75,7 +116,9 @@ class TestStationary:
         self.setup_method()
         g1 = self.k._gradients_X_cython(self.dKxz, self.X, self.Z)
         g2 = self.k._gradients_X_pure(self.dKxz, self.X, self.Z)
+        g3 = self.k._gradients_X_blas(self.dKxz, self.X, self.Z)
         assert np.allclose(g1, g2), "Gradient mismatch on rect X!"
+        assert np.allclose(g1, g3), "BLAS/Cython rect gradX mismatch!"
 
     @pytest.mark.skipif(
         not stationary_cython_working,
@@ -85,7 +128,9 @@ class TestStationary:
         self.setup_method()
         g1 = self.k._lengthscale_grads_pure(self.dKxx, self.X, self.X)
         g2 = self.k._lengthscale_grads_cython(self.dKxx, self.X, self.X)
+        g3 = self.k._lengthscale_grads_blas(self.dKxx, self.X, self.X)
         assert np.allclose(g1, g2), "Gradient mismatch on square lengthscale!"
+        assert np.allclose(g1, g3), "BLAS/Cython square lengthscale mismatch!"
 
     @pytest.mark.skipif(
         not stationary_cython_working,
@@ -95,7 +140,9 @@ class TestStationary:
         self.setup_method()
         g1 = self.k._lengthscale_grads_pure(self.dKxz, self.X, self.Z)
         g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
+        g3 = self.k._lengthscale_grads_blas(self.dKxz, self.X, self.Z)
         assert np.allclose(g1, g2), "Gradient mismatch on rect lengthscale!"
+        assert np.allclose(g1, g3), "BLAS/Cython rect lengthscale mismatch!"
 
 
 class TestCholeskiesBackprop:

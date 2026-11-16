@@ -361,8 +361,11 @@ class Laplace(LatentFunctionInference):
         W_12 = np.sqrt(W)
         B = np.eye(K.shape[0]) + W_12 * K * W_12.T
         L = jitchol(B)
+        del B
+        logdet_I_KW = 2 * np.sum(np.log(np.diag(L)))
 
         LiW12, _ = dtrtrs(L, np.diagflat(W_12), lower=1, trans=0)
+        del L
         K_Wi_i = np.dot(LiW12.T, LiW12)  # R = W12BiW12, in R&W p 126, eq 5.25
 
         # here's a better way to compute the required matrix.
@@ -373,10 +376,14 @@ class Laplace(LatentFunctionInference):
 
         # compute vital matrices
         C = np.dot(LiW12, K)
-        Ki_W_i = K - C.T.dot(C)
+        del LiW12
+        Ki_W_i = C.T.dot(C)
+        del C
+        np.subtract(K, Ki_W_i, out=Ki_W_i)
 
-        I_KW_i = np.eye(K.shape[0]) - np.dot(K, K_Wi_i)
-        logdet_I_KW = 2 * np.sum(np.log(np.diag(L)))
+        I_KW_i = np.dot(K, K_Wi_i)
+        np.negative(I_KW_i, out=I_KW_i)
+        I_KW_i.flat[:: K.shape[0] + 1] += 1
 
         return K_Wi_i, logdet_I_KW, I_KW_i, Ki_W_i
 

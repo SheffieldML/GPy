@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000F"
-last_updated: "2026-11-13"
+last_updated: "2026-11-16"
 status: Proposed
 compressed: false
 related_requirements: []
@@ -12,6 +12,7 @@ related_cips:
 - "0006"
 - "000C"
 - "000E"
+- "0010"
 tags:
 - cip
 - paramz
@@ -19,6 +20,7 @@ tags:
 - architecture
 - caching
 - serialization
+- transformation-readiness
 title: Staged reduction of the paramz dependency
 ---
 
@@ -47,9 +49,15 @@ Later stages separate numerical code from `Param` objects, replace the
 the paramz core or replace it with a GPy-owned parameter tree.
 
 CIP-0002 listed "replace paramz" as a very-high-effort option for parameter
-tying. This CIP proposes a staged route that makes that option tractable, and
-that also prepares the numerical core for a future autodiff backend (GPy2 /
-JAX), without committing GPy 1.x to that backend.
+tying. This CIP proposes a staged route that makes that option tractable.
+
+**Central principle for Stage 2 / 2T:** GPy 1 remains a NumPy/SciPy library,
+but its numerical core is progressively refactored to support functional
+program transformations. JAX is used as a **diagnostic and experimental
+target** — a test of GPy's architectural assumptions — not adopted
+prematurely as the successor's backend. That preparation improves GPy 1
+independently of whether GPy 2 ultimately adopts JAX; backend selection
+remains open and is informed by evidence under [CIP-0010](cip0010.md).
 
 ## Motivation
 
@@ -118,6 +126,121 @@ may be re-scoped at their own Accept point.
 - Kernel by kernel, with current outputs as golden values. No gradient code is
   removed in GPy 1.x.
 
+**Design principle (Stage 2) — Transformation readiness where practical.**
+
+Numerical functions extracted from GPy's parameterisation framework should be
+designed, where practical, to support functional program transformations.
+
+These functions must continue to operate using NumPy/SciPy in GPy 1. They
+should not introduce a runtime dependency on JAX or alter the existing public
+API.
+
+Transformation readiness means:
+
+- Explicit numerical inputs, parameters and outputs.
+- No observable mutation of model state within numerical calculations.
+- No implicit dependence on parameter observers, global random state or
+  hidden caches.
+- A clear distinction between static model structure and dynamic numerical
+  parameter values.
+- Explicit treatment of randomness where applicable.
+- Avoidance of unnecessary value-dependent Python control flow and
+  dynamically sized intermediates in selected numerical paths.
+- Explicit identification of numerical operations requiring backend-specific
+  implementations or derivative rules.
+
+This is a design direction, not an absolute restriction. Existing NumPy
+implementations should not be made less efficient or less readable merely to
+satisfy JAX constraints. Every production change must still have an
+independent justification in correctness, testability, maintainability,
+performance or clarity (see [Shared implementation guidance](#shared-implementation-guidance)
+below).
+
+**Stage 2 acceptance criteria (production GPy 1):**
+
+- At least one representative GP objective is implemented as a pure
+  NumPy/SciPy numerical function.
+- Existing GPy numerical outputs and gradients remain within documented
+  tolerances.
+- The extracted function can be evaluated without creating a GPy model or
+  `paramz` parameter object.
+- GPy 1 retains its existing public API and NumPy/SciPy runtime.
+
+**Non-goal:** Making the entire GPy 1 codebase JAX-compatible.
+
+**Stage 2T — Transformation-readiness experiments (extends Stage 2; does not
+compete with it).**
+
+Stage 2 already extracts pure numerical functions. Stage 2T does **not**
+start a parallel refactoring programme: it adds explicit
+transformation-readiness objectives and out-of-package experiments to the
+same Stage 2 extractions.
+
+After extracting representative pure numerical functions, implement
+experimental JAX equivalents *outside* the GPy 1 runtime dependency graph.
+
+**Important distinction:** running a function on JAX arrays ("JAX-compatible
+NumPy code") is not the same as an algorithm that transforms efficiently
+under differentiation, JIT or vectorisation ("JAX-compatible algorithms").
+Some GP procedures will need genuinely different formulations to become
+efficiently compilable or differentiable. That is precisely what the
+experiments should reveal — not something Stage 2 is expected to solve
+up front.
+
+Use these experiments to test:
+
+1. Numerical agreement with GPy 1 reference values.
+2. Agreement between automatic and existing analytical gradients.
+3. Compatibility with `jax.jit`.
+4. Compatibility with `jax.vmap` where batching is meaningful.
+5. Behaviour under explicit floating-point precision settings.
+6. Differences in runtime, memory requirements and numerical stability.
+
+A function successfully evaluated using JAX arrays should not automatically
+be described as transformation-compatible. Compatibility must be demonstrated
+under the relevant transformations. Where an algorithm fails under `jit` /
+`grad` / `vmap`, classify the barrier (below) and record whether a different
+*formulation* (not merely a different array library) would be required.
+
+**Initial test cases** (incremental; not a prerequisite for completing all of
+Stage 2):
+
+- RBF kernel and exact GP log marginal likelihood.
+- Exact GP predictions and their derivatives.
+- Sparse variational GP inference with inducing inputs.
+- RBF psi-statistics and their derivatives.
+- Bayesian GPLVM objective and gradients.
+
+**Suggested first experiment:** extract the exact GP regression log marginal
+likelihood into a pure NumPy/SciPy function, retaining the existing GPy
+interface as a wrapper; verify likelihood and gradient parity against existing
+fixtures; implement a separate JAX equivalent and test numerical equivalence,
+`jax.grad`, `jax.jit` and handling of static model structure. Completion means
+producing useful evidence, not achieving perfect JAX compatibility.
+
+**Record transformation barriers.** Each experiment should document any
+encountered limitation and classify it as one of:
+
+| Class | Meaning |
+|---|---|
+| **Incidental implementation coupling** | Mutable state, implicit caching, parameter-object dependencies or hidden side effects. |
+| **Control-flow or shape limitation** | Operations requiring changes for tracing or compilation. |
+| **Numerical limitation** | Conditioning, precision, factorisation or differentiation behaviour. |
+| **Backend-specific optimisation** | An operation better implemented differently for NumPy and JAX. |
+| **Fundamental modelling constraint** | A difficulty intrinsic to the algorithm rather than its current implementation. |
+
+For each barrier, record whether it can be addressed in GPy 1 without
+compromising existing behaviour. Findings feed
+[CIP-0010](cip0010.md) Workstream G (transformation-readiness report).
+
+**Stage 2T acceptance criteria (experiments):**
+
+- A separate experimental JAX implementation has been assessed for
+  differentiation and JIT compatibility for at least one representative
+  objective.
+- Findings, including unsuccessful transformations, are documented.
+- Experimental code does not become a GPy package runtime dependency.
+
 **Stage 3 — Replace `Cache_this` and `ObsAr` together.**
 - They are coupled: `Cache_this` invalidates by observing `ObsAr`/`Param` inputs.
 - Replace with an explicit version-counter cache (model bumps a counter in
@@ -140,8 +263,45 @@ may be re-scoped at their own Accept point.
 - Changing the user-facing model API (`m.kern.lengthscale = …`, `m.optimize()`,
   `print(m)`, `m['.*lengthscale']`).
 - Removing hand-written gradients in GPy 1.x.
-- Introducing JAX or any autodiff dependency into GPy 1.x.
+- Introducing JAX or any autodiff dependency into the GPy 1 *runtime* (Stage 2T
+  experiments may use JAX outside the package dependency graph).
+- Making the entire GPy 1 codebase JAX-compatible.
+- Deciding that GPy 2 must use JAX or support multiple numerical backends
+  (that decision belongs to a successor architecture CIP, informed by
+  CIP-0010).
 - Cython changes (see Open questions).
+
+### Shared implementation guidance
+
+These principles govern Stage 2 / 2T and are shared with
+[CIP-0010](cip0010.md):
+
+1. **Improve GPy 1 first.** Every change to production GPy 1 should have an
+   independent justification in correctness, testability, maintainability,
+   performance or clarity. Future JAX compatibility is a desirable secondary
+   consequence, not a sufficient reason to regress the existing
+   implementation.
+2. **Preserve analytical gradients.** Hand-derived derivatives remain available
+   as numerical references and potentially as sources for custom
+   differentiation rules. Autodifferentiation is evaluated against them rather
+   than assumed to supersede them.
+3. **Do not introduce a universal array abstraction prematurely.** Simple
+   numerical functions may be portable between NumPy and JAX, but inference
+   algorithms often require backend-specific control flow, linear algebra,
+   precision handling and differentiation. The experiments determine which
+   abstractions are genuinely reusable.
+4. **Separate the production and experimental environments.** GPy 1 should not
+   acquire a JAX runtime dependency. Experimental JAX implementations may live
+   in a separate test or research environment and need not be distributed with
+   the GPy package.
+5. **Treat incompatibilities as findings.** Failure to compile or differentiate
+   an algorithm is useful information. Do not modify production algorithms
+   merely to make every transformation test pass. Document the obstacle, its
+   implications and the available alternatives.
+6. **Keep GPy 2's architectural choice open.** The programme provides evidence
+   about the costs and benefits of different execution models. It should not
+   establish a de facto JAX commitment before the successor architecture has
+   been reviewed.
 
 ### Alternatives considered
 
@@ -159,10 +319,16 @@ may be re-scoped at their own Accept point.
 2. **Stage 0** after Accept: one PR; Ruff rule enabled in the same PR.
 3. **Stage 1:** domains + optimisation; GPy-owned `optimize` dispatch.
 4. **Stage 2:** kernel-by-kernel PRs (stationary family first), then
-   likelihoods. Backlog task per family.
-5. **Stage 3:** caching replacement behind benchmarks; record numbers in this
+   likelihoods. Backlog task per family. Prefer transformation-ready
+   signatures where practical (see Stage 2 design principle).
+5. **Stage 2T (incremental):** after the first pure LML (or similar)
+   extraction, add an out-of-package JAX experiment; record barrier
+   classifications and feed CIP-0010's transformation-readiness report.
+   Further cases follow as Stage 2 coverage grows — not as a gate on Stage 2
+   completion.
+6. **Stage 3:** caching replacement behind benchmarks; record numbers in this
    CIP.
-6. **Stage 4:** separate Accept decision with a short design note (may become
+7. **Stage 4:** separate Accept decision with a short design note (may become
    its own CIP if Option B).
 
 ## Backward Compatibility
@@ -183,6 +349,12 @@ may be re-scoped at their own Accept point.
 - Full `GPy/testing` suite unchanged and green at every stage.
 - Golden-value tests for Stage 2: K, Kdiag, logpdf, log-likelihood and gradients
   of representative models recorded before refactoring.
+- Stage 2 purity checks: extracted numerical functions callable without a GPy
+  model or `paramz` parameter object.
+- Stage 2T (optional CI / research env): numerical and gradient parity of
+  experimental JAX equivalents; `jax.jit` / `jax.vmap` probes where
+  meaningful; barrier notes checked into CIP notes or a linked report (not a
+  package dependency).
 - Pickle round-trip and "load previous-release pickle" fixtures before Stage 3.
 - Wall-clock benchmarks for Stage 3 caching changes (record in this CIP).
 - Ruff `TID251` in CI enforces the Stage 0 boundary.
@@ -193,7 +365,8 @@ None yet. Candidates after Accept:
 
 - Parameter tying across kernel components (CIP-0002)
 - Pickleable models and kernels (backlog `pickle-live-kernels`)
-- Numerical core reusable by an autodiff backend
+- Numerical core reusable under functional transformations (Stage 2 / 2T;
+  evidence for CIP-0010 / GPy 2 architecture)
 
 ## Implementation Status
 
@@ -202,7 +375,10 @@ None yet. Candidates after Accept:
 - [ ] Accept: stage boundaries; pickle-compatibility policy
 - [ ] Stage 0: single import boundary + Ruff rule
 - [ ] Stage 1: domains, optimisation vendored
-- [ ] Stage 2: pure numerical functions (kernels, likelihoods)
+- [ ] Stage 2: pure numerical functions (kernels, likelihoods);
+      transformation-readiness design principle applied where practical
+- [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
+      barriers classified and documented for CIP-0010
 - [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
 - [ ] Stage 4: core decision recorded
 - [ ] Backlog tasks created (only after Accept)
@@ -228,6 +404,8 @@ None yet. Candidates after Accept:
 - [CIP-0006](cip0006.md) — Serialization maintenance
 - [CIP-000C](cip000C.md) — uv packaging (Cython build-hook constraint)
 - [CIP-000E](cip000E.md) — Cython hygiene and direction
+- [CIP-0010](cip0010.md) — GPy2 readiness (transformation-readiness report;
+  evidence before backend selection)
 - Backlog: `bugs/2026-10-10_pickle-live-kernels.md`,
   `infrastructure/2025-08-15_parameter-tying-framework.md`
 - Tenet: [Community-Driven Development](../tenets/community-driven-development.md)

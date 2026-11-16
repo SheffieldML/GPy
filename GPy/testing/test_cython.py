@@ -77,6 +77,40 @@ class TestStationary:
         gx = stationary_ops.gradients_X_from_tmp(tmp, X, X2)
         assert gx.shape == (8, 3)
 
+    def test_stationary_ops_stable_under_large_shared_offset(self):
+        """Expanded BLAS forms must match direct (x-y) loops after mean-shift.
+
+        Without centring, offsets like Unix timestamps (~1e9) destroy accuracy
+        of ``x^2+y^2-2xy`` / ``X·rowsum - tmp@X2`` (CIP-000E follow-up).
+        """
+        from GPy.kern.src import stationary_ops
+
+        rng = np.random.default_rng(0)
+        N, M, Q = 40, 25, 3
+        tmp = rng.normal(size=(N, M))
+        X0 = rng.normal(size=(N, Q))
+        X20 = rng.normal(size=(M, Q))
+        offset = 1e9
+        X, X2 = X0 + offset, X20 + offset
+
+        def loop_len():
+            return np.array(
+                [np.sum(tmp * np.square(X[:, q : q + 1] - X2[:, q : q + 1].T)) for q in range(Q)]
+            )
+
+        def loop_gx():
+            g = np.empty((N, Q))
+            for q in range(Q):
+                g[:, q] = np.sum(tmp * (X[:, q][:, None] - X2[:, q][None, :]), axis=1)
+            return g
+
+        assert np.allclose(
+            stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2), loop_len(), rtol=0, atol=1e-8
+        )
+        assert np.allclose(
+            stationary_ops.gradients_X_from_tmp(tmp, X, X2), loop_gx(), rtol=0, atol=1e-8
+        )
+
 
 class TestCholeskiesBackprop:
     def setup_method(self):
@@ -113,6 +147,22 @@ class TestCholeskiesBackprop:
 
     def test_default_backprop_is_murray_blocked(self):
         assert choleskies.backprop_gradient is choleskies.cholesky_vjp_blocked
+
+    def test_blocked_matches_pure_on_illconditioned_rbf(self):
+        """Multi-block Murray path must track the pure recurrence on stiff K.
+
+        Well-conditioned random SPD tests miss the updated-diagonal symbolic
+        instability; RBF + tiny jitter exposes it (CIP-000E follow-up).
+        """
+        rng = np.random.default_rng(0)
+        X = rng.normal(size=(80, 2))
+        d2 = np.sum((X[:, None, :] - X[None, :, :]) ** 2, axis=-1)
+        K = np.exp(-0.5 * d2) + 1e-8 * np.eye(80)
+        L = np.linalg.cholesky(K)
+        dL = rng.normal(size=(80, 80))
+        pure = choleskies._backprop_gradient_pure(dL, L)
+        blocked = choleskies.cholesky_vjp_blocked(dL, L, block_size=16)
+        assert np.allclose(pure, blocked, rtol=0, atol=1e-5)
 
 
 class TestSymmetrify:

@@ -5,10 +5,12 @@
 # Iain Murray, April 2013. iain contactable via iainmurray.net
 # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
+from functools import lru_cache
+import logging
+
 import numpy as np
 from scipy import linalg
 from scipy.linalg import lapack, blas
-import logging
 
 # CIP-000E Phase 2: Cython extensions removed; flag retained for call-site guards.
 use_linalg_cython = False
@@ -393,26 +395,40 @@ def _symmetrify_numpy(A, upper=False):
         A[triu] = A.T[triu]
 
 
-def _symmetrify_blocked(A, upper=False, block_size=256):
-    """Blocked in-place triangular copy (CIP-000E Phase 1 candidate/default)."""
+@lru_cache(maxsize=64)
+def _triu_idx(n: int):
+    return np.triu_indices(n, 1)
+
+
+@lru_cache(maxsize=64)
+def _tril_idx_strict(n: int):
+    return np.tril_indices(n, -1)
+
+
+def _symmetrify_blocked(A, upper=False, block_size=64):
+    """Blocked in-place triangular copy with cached triangle indices.
+
+    Default ``block_size=64`` (CIP-000E follow-up): cuts end-to-end GPRegression
+    cost vs the previous uncached ``block_size=256`` path on mid-sized N.
+    """
     n = A.shape[0]
     if A.shape[0] != A.shape[1]:
         raise ValueError("A must be square")
     for i0 in range(0, n, block_size):
         i1 = min(n, i0 + block_size)
+        b = i1 - i0
         blk = A[i0:i1, i0:i1]
         if upper:
-            tril = np.tril_indices_from(blk, k=-1)
-            blk[tril] = blk.T[tril]
+            r, c = _tril_idx_strict(b)
+            blk[r, c] = blk[c, r]
         else:
-            triu = np.triu_indices_from(blk, k=1)
-            blk[triu] = blk.T[triu]
-        for j0 in range(i1, n, block_size):
-            j1 = min(n, j0 + block_size)
+            r, c = _triu_idx(b)
+            blk[r, c] = blk[c, r]
+        if i1 < n:
             if upper:
-                A[j0:j1, i0:i1] = A[i0:i1, j0:j1].T
+                A[i1:, i0:i1] = A[i0:i1, i1:].T
             else:
-                A[i0:i1, j0:j1] = A[j0:j1, i0:i1].T
+                A[i0:i1, i1:] = A[i1:, i0:i1].T
 
 
 def backsub_both_sides(L, X, transpose="left"):

@@ -1,6 +1,8 @@
 # Copyright James Hensman and Max Zwiessele 2014, 2015
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
+from functools import lru_cache
+
 import numpy as np
 from scipy.linalg import solve_triangular
 
@@ -33,13 +35,20 @@ def _flat_to_triang_pure(flat_mat):
     return ret
 
 
+@lru_cache(maxsize=128)
+def _tril_lin_idx(M: int):
+    """Cached lower-triangle linear indices into an ``(M, M)`` row-major matrix."""
+    rows, cols = np.tril_indices(M)
+    return rows, cols, (rows * M + cols).astype(np.intp)
+
+
 def _flat_to_triang_idx(flat_mat):
-    """CIP-000E default: ``np.tril_indices`` scatter (matches Cython packing)."""
+    """CIP-000E default: cached tril scatter (matches Cython packing)."""
     flat_mat = np.asarray(flat_mat)
     N, D = flat_mat.shape
     M = (-1 + safe_root(8 * N + 1)) // 2
+    rows, cols, _ = _tril_lin_idx(M)
     out = np.zeros((D, M, M), dtype=flat_mat.dtype)
-    rows, cols = np.tril_indices(M)
     out[:, rows, cols] = flat_mat.T
     return out
 
@@ -64,11 +73,11 @@ def _triang_to_flat_pure(L):
 
 
 def _triang_to_flat_idx(L):
-    """CIP-000E default: ``np.tril_indices`` gather (matches Cython packing)."""
+    """CIP-000E default: cached ``np.take`` gather (matches Cython packing)."""
     L = np.asarray(L)
     D, M, _ = L.shape
-    rows, cols = np.tril_indices(M)
-    return L[:, rows, cols].T.copy()
+    _, _, lin = _tril_lin_idx(M)
+    return np.take(L.reshape(D, M * M), lin, axis=1).T.copy()
 
 
 def _triang_to_flat_cython(L):
@@ -180,6 +189,11 @@ def cholesky_vjp_blocked(dL, L, block_size=128):
     Murray (2016), *Differentiation of the Cholesky decomposition*
     (arXiv:1602.07527), using triangular solves and matrix–matrix products.
 
+    When ``N <= block_size`` the whole factor is handled by the symbolic
+    reverse (most accurate). Multi-block diagonals use :func:`cholesky_vjp`
+    after the ``Dbar -= tril(Cbar.T @ C)`` update — applying the symbolic
+    reverse to that updated block is less stable on ill-conditioned ``K``.
+
     Parameters
     ----------
     dL, L : array_like, shape (N, N)
@@ -200,6 +214,9 @@ def cholesky_vjp_blocked(dL, L, block_size=128):
     if block_size < 1:
         raise ValueError("block_size must be >= 1")
     N = L.shape[0]
+    if N <= block_size:
+        d[:] = _chol_symbolic_rev(L, d)
+        return d
     for k in range(N, -1, -block_size):
         j = max(0, k - block_size)
         R = L[j:k, :j]
@@ -213,8 +230,8 @@ def cholesky_vjp_blocked(dL, L, block_size=128):
         Cbar[:] = _solve_tril(D, Cbar.T, trans=True).T
         Bbar -= Cbar @ R
         Dbar[:] = np.tril(Dbar) - np.tril(Cbar.T @ C)
-        # Symbolic reverse on the small diagonal block (avoids Python unblocked).
-        Dbar[:] = _chol_symbolic_rev(D, Dbar)
+        # Unblocked recurrence on the updated diagonal block (CIP-000E numerics).
+        Dbar[:] = cholesky_vjp(Dbar, D)
         Rbar -= Cbar.T @ B + (Dbar + Dbar.T) @ R
     return d
 

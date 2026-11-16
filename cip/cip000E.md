@@ -143,6 +143,26 @@ indexing (`coregionalize.K`) that packaging removal accepted; end-to-end
 SparseGP is parity-or-better. Re-run with
 `benchmarks/cip000E/run_main_vs_branch.py` (artefacts under
 `benchmarks/cip000E/results/`). Linux multicore soak still welcome.
+
+### Follow-up from independent review (2026-11-16)
+
+External review of the Mac main-vs-branch table flagged two **numerical**
+issues and two micro-opts (landed on this branch):
+
+1. **Stationary expanded forms + shared offset.**
+   ``lengthscale_grads_sqdiff`` / ``gradients_X_from_tmp`` lose precision when
+   ``X`` and ``X2`` share a large common offset (timestamps). Fix: subtract a
+   shared column mean before the expanded identities (translation-invariant;
+   ~2% cost). Regression test uses offset ``1e9``.
+2. **Blocked Cholesky diagonal.** After ``Dbar -= tril(Cbar.T @ C)``, apply
+   the unblocked ``cholesky_vjp`` on the diagonal block rather than the
+   symbolic reverse (keep symbolic when ``N <= block_size``). Ill-conditioned
+   RBF+jitter test added.
+3. **`symmetrify`:** cache triangle indices; default block size 64 (dominates
+   dense ``GPRegression`` slowdown vs Cython).
+4. **Triang maps:** cache linear tril indices + ``np.take``.
+5. **`coregionalize_K`:** Mac ~3× slowdown not reproduced on Linux/OpenBLAS in
+   that review — re-check on Linux before further work.
 - **Cost is packaging, not speed.** Cython drives per-platform wheels, OpenMP
   flags, sdist compile failures, and CIP-000A's expensive PR matrix. If NumPy
   rewrites are faster, the build surface is paying for the wrong default.

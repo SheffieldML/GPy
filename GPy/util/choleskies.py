@@ -234,15 +234,14 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2 + size) / 2), keep)
 
 
-# CIP-000E Phase 1: cholesky_vjp is the pure NumPy/BLAS primitive and the
-# fallback when Cython is unavailable. Keep Cython as the default backprop
-# when built until Accept + reproduced harness evidence justifies flipping
-# the default (performance remains the primary replacement criterion).
+# CIP-000E Accept (Option C): Murray blocked is the default Cholesky backprop.
+# Flat/triang maps still use Cython when available. Cython backprop remains
+# importable as choleskies_cython.backprop_gradient_par_c for escape-hatch
+# comparisons during the hybrid soak.
+backprop_gradient = cholesky_vjp_blocked
 if use_choleskies_cython:
     triang_to_flat = _triang_to_flat_cython
     flat_to_triang = _flat_to_triang_cython
-    backprop_gradient = choleskies_cython.backprop_gradient_par_c
 else:
     triang_to_flat = _triang_to_flat_pure
     flat_to_triang = _flat_to_triang_pure
-    backprop_gradient = cholesky_vjp

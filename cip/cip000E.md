@@ -3,7 +3,7 @@ author: Neil Lawrence
 created: "2026-11-13"
 id: "000E"
 last_updated: "2026-11-16"
-status: Proposed
+status: In Progress
 compressed: false
 related_requirements: []
 related_cips:
@@ -29,8 +29,8 @@ title: Cython hygiene and direction (NumPy/BLAS vs compiled extensions)
 ## Status
 
 - [x] Proposed - Initial idea documented (open for Discussion feedback)
-- [ ] Accepted - Approved, ready to start work (Accept decisions below)
-- [ ] In Progress - Actively being implemented
+- [x] Accepted - Approved, ready to start work (Accept decisions below)
+- [x] In Progress - Actively being implemented
 - [ ] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
@@ -367,18 +367,46 @@ None yet. Candidates after Accept:
   practical (feeds CIP-000F / CIP-0010 evidence, without JAX as a runtime
   requirement).
 
+
+## Accept decisions (2026-11-16)
+
+Accepted on worktree `cip000E-numpy-blas-primitives` after in-repo harness
+evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.com/SheffieldML/GPy/discussions/1279).
+
+1. **Option C — Hybrid.** NumPy/BLAS rewrites become the default path;
+   Cython remains available for one soak window as an escape hatch / residual
+   accelerator, then Phase 2 removes the build surface (toward Option A).
+2. **Phase 0** is already done on `main` (state-space relative import + smoke
+   test; [#1302](https://github.com/SheffieldML/GPy/pull/1302)).
+3. **Phase 1 starts with Cholesky backprop:** default
+   `GPy.util.choleskies.backprop_gradient` is Murray blocked
+   (`cholesky_vjp_blocked`, arXiv:1602.07527). Column-matvec `cholesky_vjp`
+   stays as a simpler primitive/reference. Cython
+   `backprop_gradient_par_c` remains importable for A/B timing, not the
+   wired default. Flat/triang maps and other Cython modules stay on their
+   current defaults until measured replacements land.
+4. **CIP-000F Stage 2:** Phase 1 replacements are pure numerical primitives
+   (array in / array out; no `paramz` coupling). Successful JAX transformation
+   is **not** an acceptance criterion for Cython removal.
+5. **Remaining Phase 1 order:** stationary grads → coregionalize reduce →
+   triang maps → `symmetrify`, each with harness evidence before flipping
+   that default. Multicore Linux + BLAS-threading confirmation before Phase 2.
+6. **Option D** deferred: state-space functional redesign only if still needed
+   after Phase 0 evidence (Cython ≈ Python there).
+
 ## Implementation Status
 
 - [x] Document strategy options and hygiene scope (this CIP)
 - [x] Open GitHub Discussion; link from Summary ([#1279](https://github.com/SheffieldML/GPy/discussions/1279))
 - [x] Align with CIP-000F / CIP-0010 (pure-primitive replacements; JAX not an
       acceptance criterion for Cython removal)
-- [ ] Publish reproducible benchmark harness (runtime + peak memory + BLAS
-      threading) before Accept closes A vs B
-- [ ] Accept decision (A / B / C / D notes; Stage 2 conventions for Phase 1)
-- [ ] Phase 0 hygiene (state-space import + tests + docs)
-- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers (if A or C)
-- [ ] Phase 2 remove Cython build surface (if A or C soak done)
+- [x] Publish reproducible benchmark harness (`benchmarks/cip000E/`; Cholesky
+      first; extend per hotspot)
+- [x] Accept decision: **Option C** (see Accept decisions above)
+- [x] Phase 0 hygiene (state-space import + tests; [#1302](https://github.com/SheffieldML/GPy/pull/1302))
+- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky default flipped;
+      stationary / coregionalize / triang / symmetrify still pending
+- [ ] Phase 2 remove Cython build surface (after soak)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /
       Option D — separately measured

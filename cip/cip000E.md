@@ -90,10 +90,25 @@ initial NumPy/BLAS implementation.
   | `symmetrify` | N=1000 / 3000 | 7–9× | 2–3× / ~0.6× |
   | Kalman (state-space, import fixed locally) | N=2000 | — | Cython ≈ Python (~765 vs 759 ms) |
 
-  Caveat: preliminary results from a limited 2-core machine; scripts are not
-  yet in-repo. Multithreaded BLAS may change absolute times and, for some
-  small-matrix workloads, rankings — **test threading, do not assume it**.
-  See [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
+  Caveat: preliminary results from a limited 2-core machine; the original
+  scripts were out-of-repo. An in-repo harness now lives at
+  `benchmarks/cip000E/`. **Reproduced 2026-11-16 on macOS arm64 / Apple
+  Accelerate (8 cores):** Murray blocked (`cholesky_vjp_blocked`,
+  $N_b{=}128$) vs Cython `backprop_gradient_par_c` — × relative to Cython:
+
+  | N | Murray ×cython | column-`vjp` ×cython |
+  |---|---|---|
+  | 500 | **0.46×** | 3.9× |
+  | 1000 | **0.26×** | 4.1× |
+  | 2000 | **0.23×** | 1.7× |
+
+  So the win is **not** an artefact of a weak BLAS: Accelerate is strong on
+  this host, and the Level-3 blocked form beats Cython here too (less
+  dramatic than the early Linux 0.15×/0.07× table, but clearly faster). The
+  column-matvec `cholesky_vjp` does *not* beat Cython on this Mac — do not
+  confuse the two primitives. Multithreaded BLAS / OpenMP rankings can still
+  shift; **test threading, do not assume it**. See
+  [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
   before Accept closes Option A vs B.
 - **Cost is packaging, not speed.** Cython drives per-platform wheels, OpenMP
   flags, sdist compile failures, and CIP-000A's expensive PR matrix. If NumPy

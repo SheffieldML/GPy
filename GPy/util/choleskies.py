@@ -2,6 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
+from scipy.linalg import solve_triangular
+
 from . import linalg
 from .config import config
 
@@ -133,6 +135,74 @@ def cholesky_vjp(dL, L):
 
 # Historical alias used throughout GPy and tests.
 _backprop_gradient_blas = cholesky_vjp
+
+
+def _phi_tril_halfdiag(A):
+    """Lower triangle with diagonal halved (Murray Φ)."""
+    out = np.tril(A)
+    diag = np.einsum("ii->i", out)
+    diag *= 0.5
+    return out
+
+
+def _solve_tril(A, B, trans=False):
+    """Solve ``tril(A) @ X = B`` (or with ``A.T`` if ``trans``). Empty-safe."""
+    if B.size == 0:
+        return B
+    return solve_triangular(A, B, lower=True, trans=trans)
+
+
+def _chol_symbolic_rev(L, Lbar):
+    """Murray symbolic reverse: ``tril(dK)`` from ``tril(dL)``."""
+    P = _phi_tril_halfdiag(L.T @ Lbar)
+    return _phi_tril_halfdiag(_solve_tril(L, _solve_tril(L, P + P.T, trans=True).T, trans=True))
+
+
+def cholesky_vjp_blocked(dL, L, block_size=128):
+    """Murray blocked reverse-mode Cholesky VJP (Level-3 BLAS friendly).
+
+    Same contract as :func:`cholesky_vjp`: ``dL, L → tril(dK)`` for ``K = L @ L.T``,
+    pure arrays, no model coupling. Implements the blocked algorithm from
+    Murray (2016), *Differentiation of the Cholesky decomposition*
+    (arXiv:1602.07527), using triangular solves and matrix–matrix products.
+
+    Parameters
+    ----------
+    dL, L : array_like, shape (N, N)
+        As in :func:`cholesky_vjp`.
+    block_size : int, optional
+        Diagonal block width ``N_b``. Optimal value is machine- and ``N``-
+        dependent; ``128`` is a reasonable default on current hosts.
+
+    Returns
+    -------
+    dK : ndarray, shape (N, N)
+        Lower-triangular cotangent w.r.t. ``K``.
+    """
+    d = np.tril(np.asarray(dL, dtype=np.float64)).copy()
+    L = np.asarray(L, dtype=np.float64)
+    if d.shape != L.shape or d.ndim != 2 or d.shape[0] != d.shape[1]:
+        raise ValueError("dL and L must be square arrays of the same shape")
+    if block_size < 1:
+        raise ValueError("block_size must be >= 1")
+    N = L.shape[0]
+    for k in range(N, -1, -block_size):
+        j = max(0, k - block_size)
+        R = L[j:k, :j]
+        D = L[j:k, j:k]
+        B = L[k:, :j]
+        C = L[k:, j:k]
+        Rbar = d[j:k, :j]
+        Dbar = d[j:k, j:k]
+        Bbar = d[k:, :j]
+        Cbar = d[k:, j:k]
+        Cbar[:] = _solve_tril(D, Cbar.T, trans=True).T
+        Bbar -= Cbar @ R
+        Dbar[:] = np.tril(Dbar) - np.tril(Cbar.T @ C)
+        # Symbolic reverse on the small diagonal block (avoids Python unblocked).
+        Dbar[:] = _chol_symbolic_rev(D, Dbar)
+        Rbar -= Cbar.T @ B + (Dbar + Dbar.T) @ R
+    return d
 
 
 def triang_to_cov(L):

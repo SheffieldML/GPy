@@ -2,9 +2,10 @@
 """CIP-000E: Cholesky backprop runtime / memory / parity harness.
 
 Compares:
-  - pure:   GPy.util.choleskies._backprop_gradient_pure (oracle)
-  - blas:   GPy.util.choleskies.cholesky_vjp (NumPy/BLAS primitive)
-  - cython: choleskies_cython.backprop_gradient_par_c (if built)
+  - pure:    GPy.util.choleskies._backprop_gradient_pure (oracle; small N only)
+  - vjp:     GPy.util.choleskies.cholesky_vjp (column BLAS matvecs)
+  - murray:  GPy.util.choleskies.cholesky_vjp_blocked (Murray Level-3 blocked)
+  - cython:  choleskies_cython.backprop_gradient_par_c (if built)
 
 Does not import JAX. Peak memory is tracemalloc (Python allocations), not RSS.
 """
@@ -28,8 +29,9 @@ class Result:
     N: int
     seconds: float
     peak_kib: float
-    max_abs_err_vs_pure: float
+    max_abs_err_vs_ref: float
     reps: int
+    rel_to_cython: float | None
 
 
 def _make_problem(N: int, seed: int):
@@ -42,7 +44,6 @@ def _make_problem(N: int, seed: int):
 
 
 def _time_and_memory(fn, L, dL, reps: int) -> tuple[float, float, np.ndarray]:
-    # Warmup (not traced).
     out = fn(dL, L)
     tracemalloc.start()
     t0 = time.perf_counter()
@@ -62,7 +63,6 @@ def _env_metadata() -> dict:
     try:
         blas = numpy.show_config(mode="dicts").get("Build Dependencies", {}).get("blas", {})
     except TypeError:
-        # Older NumPy
         blas = {"name": "unknown"}
 
     return {
@@ -85,11 +85,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--sizes",
-        default="200,500,1000",
-        help="Comma-separated matrix sizes N (default: 200,500,1000)",
+        default="200,500,1000,2000",
+        help="Comma-separated matrix sizes N (default: 200,500,1000,2000)",
     )
     parser.add_argument("--reps", type=int, default=5, help="Timed repetitions per size")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--block-size", type=int, default=128, help="Murray block size N_b")
     parser.add_argument("--json", action="store_true", help="Emit JSON summary on stdout")
     args = parser.parse_args(argv)
 
@@ -97,7 +98,8 @@ def main(argv: list[str] | None = None) -> int:
 
     impls = {
         "pure": choleskies._backprop_gradient_pure,
-        "blas": choleskies.cholesky_vjp,
+        "vjp": choleskies.cholesky_vjp,
+        "murray": lambda dL, L: choleskies.cholesky_vjp_blocked(dL, L, block_size=args.block_size),
     }
     try:
         from GPy.util import choleskies_cython
@@ -111,37 +113,35 @@ def main(argv: list[str] | None = None) -> int:
 
     for N in sizes:
         L, dL = _make_problem(N, args.seed + N)
-        # Skip pure at large N (cubic Python loops).
-        active = dict(impls)
-        if N > 400 and "pure" in active:
-            # Still compute one pure reference at small interior size for docs;
-            # for large N use blas as reference only if pure omitted.
-            pass
-        ref_name = "pure" if "pure" in active and N <= 400 else "blas"
-        # Always get a pure reference for N <= 400; for larger, trust blas vs cython.
         if N <= 400:
             ref = choleskies._backprop_gradient_pure(dL, L)
         else:
-            ref = choleskies.cholesky_vjp(dL, L)
+            ref = choleskies.cholesky_vjp_blocked(dL, L, block_size=args.block_size)
 
-        for name, fn in active.items():
+        timed: dict[str, float] = {}
+        for name, fn in impls.items():
             if name == "pure" and N > 400:
                 continue
             seconds, peak_kib, out = _time_and_memory(fn, L, dL, args.reps)
-            err = float(np.max(np.abs(out - ref))) if name != ref_name else 0.0
-            # When ref is blas and name is cython, still report error vs blas.
-            if N > 400 and name == "cython":
-                err = float(np.max(np.abs(out - ref)))
+            timed[name] = seconds
+            err = float(np.max(np.abs(out - ref)))
             results.append(
                 Result(
                     name=name,
                     N=N,
                     seconds=seconds,
                     peak_kib=peak_kib,
-                    max_abs_err_vs_pure=err,
+                    max_abs_err_vs_ref=err,
                     reps=args.reps,
+                    rel_to_cython=None,
                 )
             )
+
+        cy_t = timed.get("cython")
+        if cy_t:
+            for r in results:
+                if r.N == N and r.name in timed:
+                    r.rel_to_cython = timed[r.name] / cy_t
 
     meta = _env_metadata()
     if args.json:
@@ -151,16 +151,22 @@ def main(argv: list[str] | None = None) -> int:
         print("Environment:")
         for k, v in meta.items():
             print(f"  {k}: {v}")
+        print(f"  murray_block_size: {args.block_size}")
         print()
-        print(f"{'impl':<8} {'N':>6} {'seconds':>10} {'peak_KiB':>10} {'max_abs_err':>12}")
+        print(
+            f"{'impl':<8} {'N':>6} {'seconds':>10} {'×cython':>10} "
+            f"{'peak_KiB':>10} {'max_abs_err':>12}"
+        )
         for r in results:
+            rel = f"{r.rel_to_cython:>10.3f}" if r.rel_to_cython is not None else f"{'—':>10}"
             print(
-                f"{r.name:<8} {r.N:>6d} {r.seconds:>10.4f} {r.peak_kib:>10.1f} {r.max_abs_err_vs_pure:>12.3e}"
+                f"{r.name:<8} {r.N:>6d} {r.seconds:>10.4f} {rel} "
+                f"{r.peak_kib:>10.1f} {r.max_abs_err_vs_ref:>12.3e}"
             )
         print()
         print(
-            "Barrier note (CIP-000F): cholesky_vjp is a pure numerical primitive; "
-            "a future JAX custom VJP may wrap the same recurrence."
+            "×cython < 1 means faster than Cython. Murray = Level-3 blocked "
+            "(arXiv:1602.07527); vjp = column BLAS matvecs."
         )
     return 0
 

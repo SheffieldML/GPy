@@ -112,6 +112,13 @@ class TestCholeskiesBackprop:
         r_blas = choleskies.cholesky_vjp(self.dL, self.L)
         assert np.allclose(r_pure, r_blas), "BLAS/pure gradient mismatch!"
 
+    def test_backprop_murray_blocked_matches_pure(self):
+        """CIP-000E: Murray blocked VJP matches the triple-loop oracle."""
+        self.setup_method()
+        r_pure = choleskies._backprop_gradient_pure(self.dL, self.L)
+        r_blocked = choleskies.cholesky_vjp_blocked(self.dL, self.L, block_size=4)
+        assert np.allclose(r_pure, r_blocked), "Murray blocked/pure gradient mismatch!"
+
     def test_cholesky_vjp_no_model_required(self):
         """Primitive is callable without a GPy model or paramz object."""
         L = np.tril(np.eye(4) + 0.1 * np.arange(16).reshape(4, 4))
@@ -122,6 +129,8 @@ class TestCholeskiesBackprop:
         dK = choleskies.cholesky_vjp(dL, L)
         assert dK.shape == (4, 4)
         assert np.allclose(dK, np.tril(dK))
+        dK_b = choleskies.cholesky_vjp_blocked(dL, L, block_size=2)
+        assert np.allclose(dK, dK_b)
 
     @pytest.mark.skipif(
         not choleskies_cython_working,
@@ -133,9 +142,11 @@ class TestCholeskiesBackprop:
         r2 = choleskies_cython.backprop_gradient(self.dL, self.L)
         r3 = choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
         r4 = choleskies.cholesky_vjp(self.dL, self.L)
+        r5 = choleskies.cholesky_vjp_blocked(self.dL, self.L, block_size=4)
         assert np.allclose(r1, r2), "Gradient mismatch!"
         assert np.allclose(r1, r3), "Gradient mismatch!"
         assert np.allclose(r1, r4), "BLAS/Cython gradient mismatch!"
+        assert np.allclose(r1, r5), "Murray blocked/Cython gradient mismatch!"
 
 
 def test_state_space_cython_available_when_built():

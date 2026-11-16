@@ -456,9 +456,12 @@ None yet. Candidates after Accept:
    make it depend on this CIP?
 2. **Cython:** already [CIP-000E](cip000E.md)
    ([Discussion #1279](https://github.com/SheffieldML/GPy/discussions/1279)).
-   This CIP does not decide it. Stages 0–3 do not depend on that outcome. If
-   CIP-000E removes the Cython build hook, packaging gets simpler and the
-   paramz stages stay the same.
+   This CIP does not decide keep vs remove. CIP-000E Phase 1 replacements
+   should follow Stage 2 pure-function conventions where practical so the
+   same hot paths are not refactored twice; successful JAX transformation is
+   **not** an acceptance criterion for Cython removal. Stages 0–3 of this CIP
+   do not depend on CIP-000E's Accept outcome. If CIP-000E removes the Cython
+   build hook, packaging gets simpler and the paramz stages stay the same.
 3. **Caching policy:** prefer posterior-scoped `ConditionedState` (Stage 2N)
    over long-lived observer caches where possible; keep a thin
    version-counter interim for GPy 1 if needed. Confirm at Accept.

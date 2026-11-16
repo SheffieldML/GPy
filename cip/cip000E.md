@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000E"
-last_updated: "2026-11-13"
+last_updated: "2026-11-16"
 status: Proposed
 compressed: false
 related_requirements: []
@@ -11,6 +11,8 @@ related_cips:
 - "0008"
 - "000A"
 - "000C"
+- "000F"
+- "0010"
 tags:
 - cip
 - cython
@@ -18,6 +20,7 @@ tags:
 - packaging
 - hygiene
 - state-space
+- transformation-readiness
 title: Cython hygiene and direction (NumPy/BLAS vs compiled extensions)
 ---
 
@@ -55,6 +58,15 @@ This CIP has two layers:
    the config/`use_cython` split, retire dead helpers, and land numerical
    parity tests for fallback vs fast paths.
 
+**Driving priority:** Cython replacement is justified by **immediate
+performance, correctness and maintenance** benefits. Where practical,
+replacements should also be extracted as **clean numerical primitives**
+(CIP-000F Stage 2 conventions) so they do not recreate architectural barriers
+that GPy 2 work would later have to remove. Making every replacement
+JAX-compatible is **not** required — JAX may later probe those primitives
+under CIP-000F Stage 2T / CIP-0010 Workstream G; it must not dictate the
+initial NumPy/BLAS implementation.
+
 ## Motivation
 
 - **Dead state-space Cython.** `GPy/models/state_space_main.py` uses
@@ -78,11 +90,20 @@ This CIP has two layers:
   | `symmetrify` | N=1000 / 3000 | 7–9× | 2–3× / ~0.6× |
   | Kalman (state-space, import fixed locally) | N=2000 | — | Cython ≈ Python (~765 vs 759 ms) |
 
-  Caveat: 2 cores limit OpenMP headroom; multithreaded BLAS would also scale
-  on larger machines, so the ranking is expected to hold.
+  Caveat: preliminary results from a limited 2-core machine; scripts are not
+  yet in-repo. Multithreaded BLAS may change absolute times and, for some
+  small-matrix workloads, rankings — **test threading, do not assume it**.
+  See [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
+  before Accept closes Option A vs B.
 - **Cost is packaging, not speed.** Cython drives per-platform wheels, OpenMP
   flags, sdist compile failures, and CIP-000A's expensive PR matrix. If NumPy
   rewrites are faster, the build surface is paying for the wrong default.
+- **These hotspots sit on the model–derivative boundary.** Cholesky
+  backpropagation, stationary kernel gradients, coregionalisation reductions
+  and triangular parameter maps are not arbitrary loops — they are exactly
+  the primitives CIP-000F Stage 2 / 2T cares about. Replacing them is an
+  opportunity to establish cleaner numerical boundaries, not only to win
+  wall-clock.
 - **Hygiene debt regardless of strategy.** Unused `cholupdate` in
   `linalg_cython.pyx`; unused `prange` / OpenMP helpers beside the live
   stationary call path; two enable mechanisms (`[cython] working` vs
@@ -111,14 +132,71 @@ Linux `-fopenmp -O3` + `-lgomp`; macOS `-O3` only; Cython ≥ 0.29 build-only
 | **A — NumPy/BLAS default; drop Cython** | Preferred candidate from benchmarks. Replace hot paths with vectorised/BLAS code; remove `.pyx` / Extension build; pure-Python (plus NumPy/SciPy) package. Biggest win for CIP-0008/000A/000C complexity. |
 | **B — Keep Cython; fix hygiene only** | Minimal change. Fix state-space import; parity tests; document config. Keeps wheel/OpenMP cost; does not capture rewrite speedups. |
 | **C — Hybrid** | Land NumPy/BLAS rewrites as the default path; keep Cython behind config for one release as escape hatch; delete Cython in a follow-on CIP once telemetry/tests are green. |
-| **D — New compilers for state-space only** | Numba / JAX `lax.scan` (or similar) for Kalman loops where Cython gave no speedup after the import fix. Orthogonal to A–C for the other four modules; call out as follow-on if Accept picks A or C. |
+| **D — New compilers for state-space only** | Numba / JAX `lax.scan` (or similar) for Kalman loops where Cython gave no speedup after the import fix. Orthogonal to A–C for the other four modules; call out as follow-on if Accept picks A or C. Do **not** couple Option D into Phase 1 Cython removal — treat functional state-transition redesign as a separately measured task. |
 
-**Non-goals for this CIP (unless Accept expands them)**
+### Per-area treatment (do not force one transformation strategy)
 
-- Rewriting inference algorithms beyond the five Cython-touched helpers.
-- Mandating GPU / JAX as a runtime dependency of core GPy.
-- Changing CIP-000C's uv cutover except to *relax* Cython build constraints
-  if Option A lands.
+| Existing Cython area | Immediate priority | Future architectural relevance |
+|---|---|---|
+| Cholesky derivatives | Fast, stable NumPy/BLAS replacement; prefer an explicit derivative primitive (e.g. conceptual `cholesky_vjp(L, cotangent)`) over embedding in parameter-update machinery | Very high — derivative rules and factorisation |
+| Stationary kernel derivatives | Vectorise / BLAS; watch peak memory of \(N \times M \times Q\) intermediates | High — pure kernels, broadcasting, autodiff parity |
+| Coregionalisation | Efficient array operations | High — multi-output shape semantics |
+| Triangular matrix helpers | Simplify implementation and packaging | Moderate — parameter transforms and memory layout |
+| State-space Kalman routines | Fix broken import; establish reliable baseline; drop Cython if no measured benefit | Very high — sequential computation; future `lax.scan`-style form is a *separate* redesign |
+
+**Vectorisation warning:** eliminating Python loops via NumPy broadcasting is
+not automatically transformation-ready. Large temporaries can win runtime and
+still hurt memory (and later JAX). Prefer formulations based on established
+linear algebra operations where those are demonstrably efficient.
+
+### Design principle — Replace Cython with reusable numerical primitives
+
+Cython replacement is primarily justified by measured performance, numerical
+correctness, maintainability and reduced packaging complexity.
+
+However, the replacement should also support the architectural direction
+established by [CIP-000F](cip000F.md) Stage 2 and [CIP-0010](cip0010.md).
+
+Where practical, NumPy/BLAS replacements should:
+
+- Expose pure numerical functions with explicit array and parameter inputs
+  and explicit outputs.
+- Avoid coupling numerical primitives to `paramz`, model observers or
+  implicit cache invalidation.
+- Avoid mutation of externally owned arrays, while permitting local mutation
+  where justified by performance.
+- Prefer efficient linear algebra formulations over unnecessary
+  high-dimensional broadcasting.
+- Preserve existing analytical derivatives and numerical parity tests.
+- Document shape, dtype, memory-layout and precision assumptions.
+- Record operations that would require a different formulation or custom
+  differentiation rule under JAX.
+
+These requirements should be applied **proportionately**. They must not
+introduce a JAX runtime dependency or compromise GPy 1 performance merely to
+achieve compatibility with future program transformations.
+
+### Coordination with CIP-000F
+
+| CIP | Owns |
+|---|---|
+| **CIP-000E** | Replacement, performance validation and retirement of existing Cython extensions |
+| **CIP-000F** | Broader numerical architecture, parameter decoupling and transformation-readiness experiments |
+
+When replacing a Cython operation, CIP-000E should adopt the pure numerical
+function conventions of CIP-000F Stage 2 where practical, **avoiding a second
+refactoring of the same operation** (Cython → stateful NumPy inside GPy
+objects → pure functions later). Prefer:
+
+**Cython → pure, efficient NumPy/BLAS primitive**; existing GPy API delegates
+to the primitive; experimental JAX code (Stage 2T) can assess it independently.
+
+The resulting numerical primitives may be used by CIP-000F Stage 2T as
+reference implementations for experimental JAX differentiation, compilation
+or vectorisation tests.
+
+**Successful JAX transformation is not an acceptance criterion for Cython
+removal.**
 
 ### Hygiene work (valid under B, and as Phase 0 under A/C)
 
@@ -136,7 +214,12 @@ Linux `-fopenmp -O3` + `-lgomp`; macOS `-O3` only; Cython ≥ 0.29 build-only
 ### If Accept chooses A or C (rewrite / remove)
 
 - Port Cholesky backprop (largest win), stationary grads, coregionalize
-  reduce, and triang maps to the benchmarked NumPy/BLAS forms.
+  reduce, and triang maps to NumPy/BLAS forms that follow the pure-function
+  conventions above (Stage 2 where practical).
+- For Cholesky backpropagation, investigate an explicitly defined derivative
+  primitive rather than embedding the replacement in parameter-update
+  machinery; keep it independent of GPy model objects / `paramz` / mutation
+  of externally owned gradient buffers.
 - Keep GPy's old loop fallbacks only as long as needed for parity tests, then
   delete.
 - Remove Extension list from `build_extension.py` (or delete the hook once
@@ -146,28 +229,85 @@ Linux `-fopenmp -O3` + `-lgomp`; macOS `-O3` only; Cython ≥ 0.29 build-only
   (platform tags simplify); PR Cython compile cost disappears.
 - Coordinate with CIP-000C so uv/Poetry build-backend work does not invest in
   a Cython hook we are about to delete.
+- For state-space: distinguish **immediate Cython removal / import hygiene**
+  from any subsequent redesign around explicit functional state transitions
+  \((s_{t+1},\ell_t)=f(s_t,y_t,\theta)\). The latter is independently
+  justified and measured (Option D / follow-on), not forced into the first
+  removal PR.
+
+### Additional performance and verification requirements
+
+For each replacement:
+
+1. Benchmark runtime across representative small, medium and large input sizes.
+2. Measure **peak memory** and significant intermediate allocations
+   (especially stationary-kernel gradients and Cholesky derivatives).
+3. Verify outputs and gradients against the existing implementation and
+   independent numerical or finite-difference references.
+4. Confirm performance under representative **BLAS threading** configurations.
+5. Document numerical tolerances and precision assumptions.
+6. Record whether the replacement has introduced or eliminated architectural
+   barriers relevant to CIP-000F (mutation, layout, dynamically sized arrays,
+   custom-derivative needs).
+
+### Reproducible benchmark requirement
+
+Before selecting Option A, B or C, commit or otherwise publish the benchmark
+scripts, input generators, dependency versions, hardware details and
+correctness checks (e.g. under `cip/cip000E/` or `benchmarks/`).
+
+The existing preliminary results are promising but should **not** be the sole
+evidence for irreversible removal decisions. In particular, the claim that
+multithreaded BLAS preserves the observed speed advantage must be tested.
 
 ### Alternatives already rejected as defaults
 
 - Leaving state-space Cython broken while advertising `use_cython=True`.
 - Treating Cython as the performance story without comparing to BLAS-backed
   NumPy on current NumPy ≥ 2.
+- Cython → fast NumPy code still tightly coupled to stateful GPy / `paramz`
+  objects, then a second CIP-000F refactor of the same hot path.
+
+### Non-goals
+
+- Requiring every NumPy replacement to compile under `jax.jit`.
+- Introducing JAX, Numba or another compiler into GPy 1 as a consequence of
+  Cython removal (Option D remains a separate, measured follow-on).
+- Creating a generic numerical backend abstraction.
+- Rewriting full inference algorithms beyond the existing Cython replacement
+  scope.
+- Delaying demonstrated GPy 1 performance improvements until GPy 2
+  architecture decisions are complete.
+- Changing CIP-000C's uv cutover except to *relax* Cython build constraints
+  if Option A lands.
+
+### Outcome
+
+CIP-000E should deliver faster, simpler and more maintainable GPy 1 numerical
+code while producing reusable numerical primitives and evidence that informs,
+but does not constrain, future GPy 2 architecture decisions.
 
 ## Implementation Plan
 
 1. **Proposed (this phase):** publish this CIP; open an Ideas Discussion with
    the benchmark table and options A–D; solicit maintainer/user input on
-   multicore machines and SVGP / coregionalize workloads.
-2. **Accept:** record chosen option and any Phase-0 vs rewrite sequencing in
-   an Accept decisions section (CIP-000C style).
-3. **Phase 0 (hygiene):** import fix + availability assertion + parity tests;
+   multicore machines and SVGP / coregionalize workloads. Align wording with
+   CIP-000F / CIP-0010 (this amendment).
+2. **Reproduce benchmarks in-tree** (or publish harness) before Accept closes
+   A vs B; include peak memory and BLAS-threading variants.
+3. **Accept:** record chosen option and any Phase-0 vs rewrite sequencing in
+   an Accept decisions section (CIP-000C style); note CIP-000F Stage 2
+   conventions for Phase 1 primitives.
+4. **Phase 0 (hygiene):** import fix + availability assertion + parity tests;
    optional under B as the whole CIP.
-4. **Phase 1 (if A or C):** land NumPy/BLAS rewrites behind the existing
-   dispatch (or as the only path); prove parity; bench on ≥1 multicore host.
-5. **Phase 2 (if A, or C after soak):** remove Cython modules and build hook
+5. **Phase 1 (if A or C):** land pure NumPy/BLAS primitives; GPy wrappers
+   delegate; prove parity; bench runtime + peak memory on ≥1 multicore host;
+   record CIP-000F barrier notes for each replaced op.
+6. **Phase 2 (if A, or C after soak):** remove Cython modules and build hook
    surface; update packaging CIPs' docs; pure-Python wheel story.
-6. **Follow-on (optional D):** state-space acceleration exploration only if
-   users still care after Phase 0 shows Cython ≈ Python there.
+7. **Follow-on (optional D / state-space redesign):** only if users still care
+   after Phase 0 shows Cython ≈ Python; explicit state-transition form
+   measured separately from Cython removal.
 
 ## Backward Compatibility
 
@@ -185,13 +325,18 @@ Linux `-fopenmp -O3` + `-lgomp`; macOS `-O3` only; Cython ≥ 0.29 build-only
 - Unit parity: Cython vs NumPy (and rewrite vs both) for choleskies,
   stationary grads, coregionalize, symmetrify; finite-difference checks where
   already used in the benchmark work.
+- Purity checks (Phase 1): replaced primitives callable without a GPy model
+  or `paramz` parameter object where Stage 2 conventions apply.
 - Import smoke: all five extensions when built; state-space
   `cython_code_available is True` after the relative-import fix.
 - Integration: SVGP / variational models exercising Cholesky parameterisation;
   coregionalized regression; a state-space likelihood/gradient path with
   `use_cython` True and False.
-- Benchmarks: re-run the Claude suite (or a slimmed `GPy/testing` benchmark
-  script) on a multicore Linux host before Accept closes Option A vs B.
+- Benchmarks: published harness; runtime across sizes; peak memory;
+  representative BLAS threading; multicore host before Accept closes
+  Option A vs B.
+- Optional (not acceptance): CIP-000F Stage 2T may probe selected primitives
+  under JAX; failures are findings, not CIP-000E blockers.
 - Packaging: if Cython removed, confirm pure-Python (or abi3) wheels and that
   CIP-0008 publish still works; if kept, keep current Cython smoke imports.
 
@@ -203,16 +348,25 @@ None yet. Candidates after Accept:
 - Hot paths should not be slower than idiomatic NumPy/BLAS on supported
   NumPy ≥ 2.
 - Packaging cost of accelerators should be justified by measured speedups.
+- Numerical hot-path replacements should be reusable primitives where
+  practical (feeds CIP-000F / CIP-0010 evidence, without JAX as a runtime
+  requirement).
 
 ## Implementation Status
 
 - [x] Document strategy options and hygiene scope (this CIP)
 - [x] Open GitHub Discussion; link from Summary ([#1279](https://github.com/SheffieldML/GPy/discussions/1279))
-- [ ] Accept decision (A / B / C / D notes)
+- [x] Align with CIP-000F / CIP-0010 (pure-primitive replacements; JAX not an
+      acceptance criterion for Cython removal)
+- [ ] Publish reproducible benchmark harness (runtime + peak memory + BLAS
+      threading) before Accept closes A vs B
+- [ ] Accept decision (A / B / C / D notes; Stage 2 conventions for Phase 1)
 - [ ] Phase 0 hygiene (state-space import + tests + docs)
-- [ ] Phase 1 rewrites (if A or C)
+- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers (if A or C)
 - [ ] Phase 2 remove Cython build surface (if A or C soak done)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
+- [ ] (Optional follow-on) State-space functional state-transition redesign /
+      Option D — separately measured
 
 ## References
 
@@ -224,8 +378,11 @@ None yet. Candidates after Accept:
 - Build: `build_extension.py`, `pyproject.toml` `[tool.poetry.build]`
 - Config: `GPy/defaults.cfg` `[cython] working`
 - Related CIPs: [0003](./cip0003.md), [0008](./cip0008.md),
-  [000A](./cip000A.md), [000C](./cip000C.md)
+  [000A](./cip000A.md), [000C](./cip000C.md),
+  [000F](./cip000F.md) (Stage 2 pure functions / 2T experiments),
+  [0010](./cip0010.md) (GPy2 readiness; transformation-readiness report)
 - Precedent Discussion: [#1268](https://github.com/SheffieldML/GPy/discussions/1268) (uv packaging)
+- Discussion: [#1279](https://github.com/SheffieldML/GPy/discussions/1279)
 - Benchmark source: Claude agent run (2026-11); scripts held outside the repo
-  for now — attach or vendor under `cip/cip000E/` after Accept if we want them
-  reproducible in-tree
+  for now — **must** be committed or published before Accept closes Option A
+  vs B (see Reproducible benchmark requirement)

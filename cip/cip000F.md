@@ -51,11 +51,14 @@ the paramz core or replace it with a GPy-owned parameter tree.
 CIP-0002 listed "replace paramz" as a very-high-effort option for parameter
 tying. This CIP proposes a staged route that makes that option tractable.
 
-**Central principle for Stage 2 / 2T:** GPy 1 remains a NumPy/SciPy library,
-but its numerical core is progressively refactored to support functional
-program transformations. JAX is used as a **diagnostic and experimental
-target** — a test of GPy's architectural assumptions — not adopted
-prematurely as the successor's backend. That preparation improves GPy 1
+**Central principle for Stage 2 / 2T / 2N:** GPy 1 remains a NumPy/SciPy
+library, but its numerical core is progressively refactored to support
+functional program transformations and to expose the smallest useful
+covariance / posterior / parameter protocols. JAX is used as a
+**diagnostic and experimental target** — a test of GPy's architectural
+assumptions — not adopted prematurely as the successor's backend. The aim
+is not to imitate GPyTorch, GPflow or GPJax, but to discover which
+abstractions existing GPy algorithms need. That improves GPy 1
 independently of whether GPy 2 ultimately adopts JAX; backend selection
 remains open and is informed by evidence under [CIP-0010](cip0010.md).
 
@@ -215,8 +218,46 @@ Stage 2):
 likelihood into a pure NumPy/SciPy function, retaining the existing GPy
 interface as a wrapper; verify likelihood and gradient parity against existing
 fixtures; implement a separate JAX equivalent and test numerical equivalence,
-`jax.grad`, `jax.jit` and handling of static model structure. Completion means
-producing useful evidence, not achieving perfect JAX compatibility.
+`jax.grad`, `jax.jit` and handling of static model structure. Prefer returning
+an explicit **conditioned numerical state** (factorisation / solver artefacts)
+that a second pure function uses for repeated prediction, so the experiment
+also probes the `ConditionedState` idea below. Completion means producing
+useful evidence, not achieving perfect JAX compatibility.
+
+**Stage 2N — Numerical architecture investigation (conceptual; light-touch).**
+
+GPyTorch, GPflow and GPJax made different architectural choices; GPy 2 should
+learn from all three and imitate none wholesale. Alongside Stage 2 / 2T, the
+pure-function extraction should investigate three *conceptual* interfaces —
+not mandatory class names, and **not** a large hierarchy introduced into
+production GPy 1:
+
+| Interface (conceptual) | Purpose | Inspired by |
+|---|---|---|
+| `CovarianceOperator` | Kernel / diagonal evaluation; apply covariance to a vector or matrix; structured solves; log-determinant (exact or approximate) without assuming every \(K\) is a dense NumPy array | GPyTorch |
+| `ConditionedState` | Explicit factorisations and reusable posterior calculations for repeated prediction | GPJax |
+| `ParameterSpec` | Distinguish static model structure, free numerical parameters, transformations and constraints | GPJax, GPflow |
+
+Distinguish mathematical operations early, even when the only production
+implementation remains dense Cholesky:
+
+- Evaluate a kernel or kernel diagonal.
+- Apply a covariance operator to a vector or matrix.
+- Solve a linear system.
+- Compute or approximate a log determinant.
+- Construct a Gaussian posterior using the resulting factorisation or solver
+  state.
+
+**Caveat:** do **not** immediately introduce GPyTorch-scale `LinearOperator`
+class hierarchies into GPy 1 — that would create enormous churn. Identify the
+smallest useful numerical protocol and exercise it in experimental
+implementations. Traditional dense Cholesky paths remain supported.
+Flexibility in mathematical operations matters more than copying any one
+library's implementation architecture.
+
+**Acceptance for Stage 2N:** a minimal working experiment (e.g. exact GP
+conditions once and predicts repeatedly via pure numerical state) with
+outputs unchanged from GPy 1 — not a comprehensive abstraction layer.
 
 **Record transformation barriers.** Each experiment should document any
 encountered limitation and classify it as one of:
@@ -250,6 +291,21 @@ compromising existing behaviour. Findings feed
   `BayesianGPLVM` optimisation wall-clock); remove caches that do not pay for
   themselves.
 
+**Caching reframed (lesson from GPJax):** functional numerical cores do not
+mean "no caching". GPJax 1.0's `condition` returns a posterior that caches the
+factorisation needed for repeated predictions — but that cache belongs to an
+*explicit* posterior for specific data and parameters, not to mutable
+observers. Before (or while) replacing `Cache_this`, ask:
+
+> Which intermediate numerical results are logically part of the conditioned
+> posterior, and which are merely temporary implementation details?
+
+That question is mathematical, not merely mechanical. Stage 2N's
+`ConditionedState` experiment should inform whether GPy's observer caches are
+largely compensating for a missing explicit posterior-state abstraction.
+Stage 3 may still ship a version-counter interim; the successor can then own
+posterior-scoped caches.
+
 **Stage 4 — Core decision (separate Accept).**
 
 | Option | Notes |
@@ -269,6 +325,8 @@ compromising existing behaviour. Findings feed
 - Deciding that GPy 2 must use JAX or support multiple numerical backends
   (that decision belongs to a successor architecture CIP, informed by
   CIP-0010).
+- Adopting GPyTorch's full linear-operator architecture, or any JAX module
+  ecosystem (Flax / Equinox / paramax / …), into GPy 1 production code.
 - Cython changes (see Open questions).
 
 ### Shared implementation guidance
@@ -285,11 +343,13 @@ These principles govern Stage 2 / 2T and are shared with
    as numerical references and potentially as sources for custom
    differentiation rules. Autodifferentiation is evaluated against them rather
    than assumed to supersede them.
-3. **Do not introduce a universal array abstraction prematurely.** Simple
-   numerical functions may be portable between NumPy and JAX, but inference
-   algorithms often require backend-specific control flow, linear algebra,
-   precision handling and differentiation. The experiments determine which
-   abstractions are genuinely reusable.
+3. **Do not introduce a universal array (or operator) abstraction
+   prematurely.** Simple numerical functions may be portable between NumPy
+   and JAX, but inference algorithms often require backend-specific control
+   flow, linear algebra, precision handling and differentiation. Stage 2N
+   investigates the smallest useful covariance / posterior / parameter
+   protocols experimentally — it does not mandate a production operator
+   hierarchy.
 4. **Separate the production and experimental environments.** GPy 1 should not
    acquire a JAX runtime dependency. Experimental JAX implementations may live
    in a separate test or research environment and need not be distributed with
@@ -326,9 +386,14 @@ These principles govern Stage 2 / 2T and are shared with
    classifications and feed CIP-0010's transformation-readiness report.
    Further cases follow as Stage 2 coverage grows — not as a gate on Stage 2
    completion.
-6. **Stage 3:** caching replacement behind benchmarks; record numbers in this
-   CIP.
-7. **Stage 4:** separate Accept decision with a short design note (may become
+6. **Stage 2N (light-touch):** with the first exact-GP extraction, sketch the
+   conceptual `CovarianceOperator` / `ConditionedState` / `ParameterSpec`
+   boundaries and demonstrate condition-once / predict-many via pure state.
+   Do not merge a large operator hierarchy into GPy 1.
+7. **Stage 3:** caching replacement behind benchmarks; use Stage 2N findings
+   to separate posterior-scoped state from temporary caches; record numbers
+   in this CIP.
+8. **Stage 4:** separate Accept decision with a short design note (may become
    its own CIP if Option B).
 
 ## Backward Compatibility
@@ -379,6 +444,8 @@ None yet. Candidates after Accept:
       transformation-readiness design principle applied where practical
 - [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
       barriers classified and documented for CIP-0010
+- [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP
+      condition-once / predict-many via pure state demonstrated
 - [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
 - [ ] Stage 4: core decision recorded
 - [ ] Backlog tasks created (only after Accept)
@@ -392,10 +459,14 @@ None yet. Candidates after Accept:
    This CIP does not decide it. Stages 0–3 do not depend on that outcome. If
    CIP-000E removes the Cython build hook, packaging gets simpler and the
    paramz stages stay the same.
-3. **Caching policy:** keep any automatic caching, or only explicit
-   model-level caches?
+3. **Caching policy:** prefer posterior-scoped `ConditionedState` (Stage 2N)
+   over long-lived observer caches where possible; keep a thin
+   version-counter interim for GPy 1 if needed. Confirm at Accept.
 4. **Stage 4 default:** A (vendor) as an interim step before B, or go to B
    directly?
+5. **Operator protocol depth in GPy 1:** stop at documenting the conceptual
+   boundary + dense reference implementation, or also ship a minimal
+   matvec-based experimental path in-tree (still without a full hierarchy)?
 
 ## References
 

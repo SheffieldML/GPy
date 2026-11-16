@@ -1,7 +1,7 @@
 ---
 id: 2026-11-16_cip000E-coregionalize-reduce-numpy
 title: CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form
-status: Ready
+status: Completed
 priority: High
 created: "2026-11-16"
 last_updated: "2026-11-16"
@@ -43,39 +43,32 @@ double-index reduction used in `update_gradients_full`.
 
 ## Acceptance Criteria
 
-- [ ] Pure primitive, e.g.
-      `gradient_reduce(dL_dK, index, index2, output_dim) -> (D, D)`,
-      array inputs only; no `Coregionalize` instance required
-- [ ] Parity vs Cython and vs `_gradient_reduce_numpy` at representative
-      index patterns (repeated outputs, asymmetric X/X2, D&gt;2)
-- [ ] Harness entry under `benchmarks/cip000E/` (N, D, index entropy,
-      wall time, ×cython, peak memory, BLAS/threads)
-- [ ] ×cython **&lt; 1** (or documented tie within noise) on CIP-like size
-      (N≈5000, D≈5) before flipping the default in
-      `Coregionalize.update_gradients_full`
-- [ ] Cython path remains importable for hybrid soak
-- [ ] Integration: existing coregionalized regression / multioutput tests green
+- [x] Pure primitive `coregionalize_ops.gradient_reduce(dL_dK, index, index2, output_dim) -> (D, D)`
+- [x] Parity vs Cython and nested-loop oracle (`TestCoregionalizeReduce`)
+- [x] Harness `benchmarks/cip000E/run_coregionalize_reduce.py`
+- [x] macOS/Accelerate N=5000 D=5: one-hot **~0.33×** Cython; defaults flipped
+- [x] Cython path retained for soak; `K` left on existing NumPy/Cython dispatch
+- [x] `pytest … -k coreg` green
 
 ## Implementation Notes
 
-- Preferred construction: build sparse or dense indicator `O` (N×D) with
-  one-hot rows from `index`, then `O.T @ dL_dK @ O` (or an equivalent
-  `np.add.at` / bincount reduction that matches that algebra and wins the
-  harness). Prove equivalence to the nested-loop reduce.
-- Watch dtype: Cython uses `int64` indices; keep that contract at the
-  wrapper boundary.
-- `K_symmetric` / `K_asymmetric` Cython can stay as-is for this task.
+- GPy stores `out[j, i] = sum` over `index==i`, `index2==j`, so the primitive
+  returns `(O.T @ dL @ O2).T` to match Cython/loop layout (not the untransposed
+  `O.T @ dL @ O2`).
+- `np.add.at` matched numerically but was **slower** than Cython on this host;
+  one-hot GEMM is the winning form.
 
 ## Related
 
 - CIP: 000E table row `coregionalize gradient_reduce`
-- Files: `GPy/kern/src/coregionalize.py`, `coregionalize_cython.pyx`
-- Docs touchpoint: coregionalized regression examples (no behaviour change
-  expected)
+- Files: `GPy/kern/src/coregionalize.py`, `coregionalize_ops.py`, `coregionalize_cython.pyx`
 
 ## Progress Updates
 
 ### 2026-11-16
 
-Task created Ready after CIP-000E Accept. Ordered after stationary grads
-per Accept decisions.
+Task created Ready after CIP-000E Accept.
+
+### 2026-11-16 (implementation)
+
+Landed one-hot BLAS default on `cip000E-numpy-blas-primitives`.

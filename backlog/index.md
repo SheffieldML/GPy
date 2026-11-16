@@ -23,8 +23,6 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Ready
 
-- [CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form](infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
-
 - [CIP-000E — replace flat/triang Cholesky maps with tril_indices NumPy](infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
 
 - [CIP-000E — decide symmetrify default (blocked NumPy vs Cython)](infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
@@ -85,6 +83,8 @@ This file provides an overview of all current backlog items organized by categor
 ---
 
 ## Recently Completed Tasks
+
+- [CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form](infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
 
 - [CIP-000E — replace stationary Cython grads with CIP-cited NumPy/BLAS forms](infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
 

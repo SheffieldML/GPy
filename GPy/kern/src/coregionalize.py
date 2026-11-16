@@ -6,6 +6,7 @@ import numpy as np
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 from ...util.config import config  # for assesing whether to use cython
+from . import coregionalize_ops
 
 try:
     from . import coregionalize_cython
@@ -105,11 +106,9 @@ class Coregionalize(Kern):
         index = np.asarray(X, dtype=int)
         index2 = index if X2 is None else np.asarray(X2, dtype=int)
 
-        # attempt to use cython for a nasty double indexing loop: fall back to numpy
-        if use_coregionalize_cython:
-            dL_dK_small = self._gradient_reduce_cython(dL_dK, index, index2)
-        else:
-            dL_dK_small = self._gradient_reduce_numpy(dL_dK, index, index2)
+        # CIP-000E Option C: one-hot BLAS reduce is the default.
+        # Cython / nested-loop paths remain for soak and parity tests.
+        dL_dK_small = self._gradient_reduce_blas(dL_dK, index, index2)
 
         dkappa = np.diag(dL_dK_small).copy()
         dL_dK_small += dL_dK_small.T
@@ -119,6 +118,7 @@ class Coregionalize(Kern):
         self.kappa.gradient = dkappa
 
     def _gradient_reduce_numpy(self, dL_dK, index, index2):
+        """Historical nested Python loops (slow CIP baseline)."""
         index, index2 = index[:, 0], index2[:, 0]
         dL_dK_small = np.zeros_like(self.B)
         for i in range(self.output_dim):
@@ -126,6 +126,12 @@ class Coregionalize(Kern):
             for j in range(self.output_dim):
                 dL_dK_small[j, i] = tmp1[:, index2 == j].sum()
         return dL_dK_small
+
+    def _gradient_reduce_blas(self, dL_dK, index, index2):
+        """CIP-000E default: one-hot ``(O.T @ dL @ O2).T``."""
+        return coregionalize_ops.gradient_reduce(
+            dL_dK, index[:, 0], index2[:, 0], self.output_dim
+        )
 
     def _gradient_reduce_cython(self, dL_dK, index, index2):
         index, index2 = np.int64(index[:, 0]), np.int64(index2[:, 0])

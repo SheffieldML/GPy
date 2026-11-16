@@ -19,6 +19,13 @@ try:
 except ImportError:
     stationary_cython_working = False
 
+try:
+    from ..kern.src import coregionalize_cython as coregionalize_cython
+
+    coregionalize_cython_working = config.getboolean("cython", "working")
+except ImportError:
+    coregionalize_cython_working = False
+
 """
 These tests make sure that the pure python and cython codes work the same
 """
@@ -194,6 +201,42 @@ class TestCholeskiesBackprop:
         assert np.allclose(r1, r3), "Gradient mismatch!"
         assert np.allclose(r1, r4), "BLAS/Cython gradient mismatch!"
         assert np.allclose(r1, r5), "Murray blocked/Cython gradient mismatch!"
+
+
+class TestCoregionalizeReduce:
+    def setup_method(self):
+        rng = np.random.default_rng(0)
+        self.D = 4
+        self.N = 80
+        self.index = rng.integers(0, self.D, size=(self.N, 1))
+        self.index2 = rng.integers(0, self.D, size=(self.N, 1))
+        self.dL = rng.normal(size=(self.N, self.N))
+        self.k = GPy.kern.Coregionalize(1, output_dim=self.D)
+
+    def test_blas_matches_numpy_loops(self):
+        """CIP-000E: one-hot reduce matches nested-loop oracle."""
+        self.setup_method()
+        a = self.k._gradient_reduce_numpy(self.dL, self.index, self.index2)
+        b = self.k._gradient_reduce_blas(self.dL, self.index, self.index2)
+        assert np.allclose(a, b), "BLAS/loop gradient_reduce mismatch!"
+
+    def test_ops_no_kern_required(self):
+        from GPy.kern.src import coregionalize_ops
+
+        out = coregionalize_ops.gradient_reduce(
+            self.dL, self.index[:, 0], self.index2[:, 0], self.D
+        )
+        assert out.shape == (self.D, self.D)
+
+    @pytest.mark.skipif(
+        not coregionalize_cython_working,
+        reason="Cython coregionalize module has not been built on this machine",
+    )
+    def test_blas_matches_cython(self):
+        self.setup_method()
+        a = self.k._gradient_reduce_cython(self.dL, self.index, self.index2)
+        b = self.k._gradient_reduce_blas(self.dL, self.index, self.index2)
+        assert np.allclose(a, b), "BLAS/Cython gradient_reduce mismatch!"
 
 
 def test_state_space_cython_available_when_built():

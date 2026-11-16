@@ -10,6 +10,7 @@ Reproducible harness for Cython → NumPy/BLAS replacement decisions
 python benchmarks/cip000E/run_cholesky_backprop.py
 python benchmarks/cip000E/run_cholesky_backprop.py --sizes 500,1000,2000 --reps 5
 python benchmarks/cip000E/run_stationary_grads.py --N 3000 --Q 10
+python benchmarks/cip000E/run_coregionalize_reduce.py --N 5000 --D 5
 ```
 
 Reports for each implementation:

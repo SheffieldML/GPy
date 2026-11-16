@@ -3,7 +3,23 @@
 Reproducible harness for Cython → NumPy/BLAS replacement decisions
 ([CIP-000E](../../cip/cip000E.md)).
 
-## Cholesky backpropagation
+## Main vs branch (shipped defaults)
+
+Compares the **wired public entry points** on a `main` checkout (Cython when
+built) against this branch (NumPy/BLAS after Phase 1–2):
+
+```bash
+# from the cip000E branch worktree; --main-root points at a synced main tree
+env -u PYTHONPATH python benchmarks/cip000E/run_main_vs_branch.py \
+  --main-root /path/to/GPy-on-main \
+  --reps 5 \
+  --out-dir benchmarks/cip000E/results
+```
+
+Writes `results/main_vs_branch.md` and `results/main_vs_branch.json`.
+Clears `PYTHONPATH` so a multi-root workspace cannot pollute imports.
+
+## Per-hotspot harnesses (single tree)
 
 ```bash
 # from repo root, with the project env active
@@ -11,18 +27,15 @@ python benchmarks/cip000E/run_cholesky_backprop.py
 python benchmarks/cip000E/run_cholesky_backprop.py --sizes 500,1000,2000 --reps 5
 python benchmarks/cip000E/run_stationary_grads.py --N 3000 --Q 10
 python benchmarks/cip000E/run_coregionalize_reduce.py --N 5000 --D 5
+python benchmarks/cip000E/bench_suite.py --label local --reps 5
 ```
 
-Reports for each implementation:
+Single-tree harnesses report implementations available in *this* install
+(`pure` / `blas` / `murray` / `cython` where present).
 
-- `pure` — triple-loop oracle (small ``N`` only)
-- `vjp` — column BLAS matvecs (`cholesky_vjp`)
-- `murray` — Murray Level-3 blocked (`cholesky_vjp_blocked`, arXiv:1602.07527)
-- `cython` — `backprop_gradient_par_c` if built
+Metrics: wall-clock (mean), relative time vs Cython or vs main, peak traced
+Python allocations (`tracemalloc`), plus NumPy/SciPy / BLAS / thread-env
+metadata. Model benches bust the paramz cache each call.
 
-Metrics: wall-clock (mean), relative time vs Cython, peak traced Python
-allocations (`tracemalloc`), max abs error vs reference, plus NumPy/SciPy /
-BLAS / thread-env metadata.
-
-**Successful JAX transformation is not required** for Cython removal; this
-harness only records NumPy/Cython evidence for Accept.
+**Successful JAX transformation is not required** for Cython removal; these
+harnesses only record NumPy/Cython evidence for Accept / Phase 2.

@@ -110,6 +110,39 @@ initial NumPy/BLAS implementation.
   shift; **test threading, do not assume it**. See
   [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
   before Accept closes Option A vs B.
+
+### Main vs branch — shipped defaults (2026-11-16)
+
+Fair comparison of **wired public defaults** on the same host (macOS arm64 /
+Apple Accelerate, Python 3.11.7, NumPy 2.4.6, SciPy 1.17.1, 5 reps, cache-bust
+on model benches):
+
+| Tree | Ref | Cholesky backprop | Flat/triang | Cython flags |
+|---|---|---|---|---|
+| `main` | `6f1f31bc` | Cython `backprop_gradient_par_c` | Cython | all True |
+| branch `cip000E-numpy-blas-primitives` | `87ccbfb7` | Murray `cholesky_vjp_blocked` | `tril_indices` | all False |
+
+**× = branch / main** (lower means the NumPy/BLAS branch is faster):
+
+| Hotspot | Shape | × |
+|---|---|---|
+| Cholesky backprop | N=500 / 1000 / 2000 | **0.46 / 0.28 / 0.23** |
+| `lengthscale_grads` | N=1000,Q=5 / N=3000,Q=10 | **0.11 / 0.06** |
+| `gradients_X` | N=1000 / 3000 | **0.78 / 0.62** |
+| coregionalize `gradient_reduce` | N=2000 / 5000 | **0.21 / 0.31** |
+| SparseGP obj / grads | N=2000, M=100 | **0.98 / 0.93** |
+| Dense GP obj / grads | N=400 | 1.39 / 1.47 |
+| `flat_to_triang` / `triang_to_flat` | M=50…400 | 2–12× slower (µs–ms absolute) |
+| `symmetrify` | N=500 / 1000 / 3000 | 5.6 / 1.9 / 1.4× slower |
+| coregionalize `K` | N=2000 / 5000 | 3.4 / 3.0× slower |
+
+Interpretation for Option C → A: the **dominant** hotspots (Cholesky VJP,
+stationary grads, coregionalize reduce) are clearly faster without Cython.
+The regressions are small absolute helpers (`symmetrify`, triang maps) or
+indexing (`coregionalize.K`) that packaging removal accepted; end-to-end
+SparseGP is parity-or-better. Re-run with
+`benchmarks/cip000E/run_main_vs_branch.py` (artefacts under
+`benchmarks/cip000E/results/`). Linux multicore soak still welcome.
 - **Cost is packaging, not speed.** Cython drives per-platform wheels, OpenMP
   flags, sdist compile failures, and CIP-000A's expensive PR matrix. If NumPy
   rewrites are faster, the build surface is paying for the wrong default.

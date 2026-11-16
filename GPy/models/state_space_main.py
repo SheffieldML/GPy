@@ -21,24 +21,13 @@ except ImportError:
 
 print_verbose = False
 
-try:
-    # Relative import so the extension loads from the installed/package tree.
-    # Absolute `import state_space_cython` fails once GPy is installed as a
-    # package (CIP-000E Phase 0).
-    from . import state_space_cython
-
-    cython_code_available = True
-    if print_verbose:
-        print("state_space: cython is available")
-except ImportError:
-    state_space_cython = None
-    cython_code_available = False
-
-# cython_code_available = False
-# Use cython by default
+# CIP-000E Phase 2: state_space_cython removed (Phase 0 showed Cython ≈ Python).
+state_space_cython = None
+cython_code_available = False
 use_cython = False
 if setup_available:
-    use_cython = state_space_setup.use_cython
+    # Honour setup flag only when an extension exists; Phase 2 always uses Python.
+    use_cython = False
 
 if print_verbose:
     if use_cython:

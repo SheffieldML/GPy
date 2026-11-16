@@ -5,15 +5,10 @@ import numpy as np
 from scipy.linalg import solve_triangular
 
 from . import linalg
-from .config import config
 
-try:
-    from . import choleskies_cython
-
-    use_choleskies_cython = config.getboolean("cython", "working")
-except ImportError:
-    print("warning in choleskies: failed to import cython module: falling back to numpy")
-    use_choleskies_cython = False
+# CIP-000E Phase 2: Cython extensions removed; flag retained for call-site guards.
+use_choleskies_cython = False
+choleskies_cython = None
 
 
 def safe_root(N):
@@ -25,6 +20,7 @@ def safe_root(N):
 
 
 def _flat_to_triang_pure(flat_mat):
+    """Historical Python loops (slow CIP baseline)."""
     N, D = flat_mat.shape
     M = (-1 + safe_root(8 * N + 1)) // 2
     ret = np.zeros((D, M, M))
@@ -37,13 +33,23 @@ def _flat_to_triang_pure(flat_mat):
     return ret
 
 
-def _flat_to_triang_cython(flat_mat):
+def _flat_to_triang_idx(flat_mat):
+    """CIP-000E default: ``np.tril_indices`` scatter (matches Cython packing)."""
+    flat_mat = np.asarray(flat_mat)
     N, D = flat_mat.shape
     M = (-1 + safe_root(8 * N + 1)) // 2
-    return choleskies_cython.flat_to_triang(flat_mat, M)
+    out = np.zeros((D, M, M), dtype=flat_mat.dtype)
+    rows, cols = np.tril_indices(M)
+    out[:, rows, cols] = flat_mat.T
+    return out
+
+
+def _flat_to_triang_cython(flat_mat):
+    raise ImportError("choleskies_cython removed in CIP-000E Phase 2")
 
 
 def _triang_to_flat_pure(L):
+    """Historical Python loops (slow CIP baseline)."""
     D, _, M = L.shape
 
     N = M * (M + 1) // 2
@@ -57,8 +63,16 @@ def _triang_to_flat_pure(L):
     return flat
 
 
+def _triang_to_flat_idx(L):
+    """CIP-000E default: ``np.tril_indices`` gather (matches Cython packing)."""
+    L = np.asarray(L)
+    D, M, _ = L.shape
+    rows, cols = np.tril_indices(M)
+    return L[:, rows, cols].T.copy()
+
+
 def _triang_to_flat_cython(L):
-    return choleskies_cython.triang_to_flat(L)
+    raise ImportError("choleskies_cython removed in CIP-000E Phase 2")
 
 
 def _backprop_gradient_pure(dL, L):
@@ -234,14 +248,8 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2 + size) / 2), keep)
 
 
-# CIP-000E Accept (Option C): Murray blocked is the default Cholesky backprop.
-# Flat/triang maps still use Cython when available. Cython backprop remains
-# importable as choleskies_cython.backprop_gradient_par_c for escape-hatch
-# comparisons during the hybrid soak.
+# CIP-000E: Murray blocked backprop + tril_indices maps are the defaults.
+# Cython helpers remain importable only while extensions still ship.
 backprop_gradient = cholesky_vjp_blocked
-if use_choleskies_cython:
-    triang_to_flat = _triang_to_flat_cython
-    flat_to_triang = _flat_to_triang_cython
-else:
-    triang_to_flat = _triang_to_flat_pure
-    flat_to_triang = _flat_to_triang_pure
+flat_to_triang = _flat_to_triang_idx
+triang_to_flat = _triang_to_flat_idx

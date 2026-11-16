@@ -419,23 +419,24 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
       first; extend per hotspot)
 - [x] Accept decision: **Option C** (see Accept decisions above)
 - [x] Phase 0 hygiene (state-space import + tests; [#1302](https://github.com/SheffieldML/GPy/pull/1302))
-- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray +
-      stationary grads + coregionalize reduce defaults on branch; triang /
-      symmetrify + Linux multicore soak still open (see Accept §5)
-- [ ] Phase 2 remove Cython build surface (after soak; backlog Proposed)
+- [x] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray,
+      stationary grads, coregionalize reduce, `tril_indices` maps, blocked
+      `symmetrify` defaults (Linux multicore soak still welcome as follow-up)
+- [x] Phase 2 remove Cython build surface (``.pyx`` / ``build_extension.py`` /
+      Cython build-system deps; CI pure-Python smoke)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /
       Option D — separately measured
 
 ## References
 
-- Modules: `GPy/kern/src/stationary_cython.pyx`, `stationary_utils.c`,
-  `GPy/util/choleskies_cython.pyx`, `GPy/util/linalg_cython.pyx`,
-  `GPy/kern/src/coregionalize_cython.pyx`,
-  `GPy/models/state_space_cython.pyx`, wrappers in matching `.py` files
-- Bug locus: `GPy/models/state_space_main.py` (`import state_space_cython`)
-- Build: `build_extension.py`, `pyproject.toml` `[tool.poetry.build]`
-- Config: `GPy/defaults.cfg` `[cython] working`
+- Former Cython modules (removed Phase 2): `stationary_cython`,
+  `choleskies_cython`, `linalg_cython`, `coregionalize_cython`,
+  `state_space_cython` (+ `stationary_utils.c`)
+- Primitives: `GPy/util/choleskies.py`, `GPy/util/linalg.py`,
+  `GPy/kern/src/stationary_ops.py`, `GPy/kern/src/coregionalize_ops.py`
+- Build: pure-Python `poetry-core` (no `[tool.poetry.build]` hook)
+- Config: `GPy/defaults.cfg` `[cython] working = False` (compat no-op)
 - Related CIPs: [0003](./cip0003.md), [0008](./cip0008.md),
   [000A](./cip000A.md), [000C](./cip000C.md),
   [000F](./cip000F.md) (Stage 2 pure functions / 2T experiments),

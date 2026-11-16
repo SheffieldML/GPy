@@ -49,9 +49,6 @@ include = [
     "GPy/**/*.json",
     "GPy/defaults.cfg",
     "GPy/installation.cfg",
-    "GPy/**/*.h",
-    "GPy/**/*.pyx",
-    "GPy/**/*.pxd",
     "LICENSE.txt",
     "AUTHORS.txt",
 ]
@@ -62,10 +59,7 @@ exclude = [
     "GPy/testing/mpi_test__.py",
 ]
 
-# CIP-000C: retain Poetry build hook for Cython until a follow-on backend cutover.
-[tool.poetry.build]
-script = "build_extension.py"
-generate-setup-file = true  # required for Cython build script / ext_modules
+# CIP-000E Phase 2: pure-Python package — Cython Extension build hook removed.
 
 [dependency-groups]
 dev = [
@@ -83,11 +77,6 @@ default-groups = ["dev"]
 [build-system]
 requires = [
     "poetry-core>=1.8.0",
-    "setuptools",
-    "wheel",
-    "numpy>=2",
-    "Cython>=0.29",
-    "scipy>=1.3.0",
 ]
 build-backend = "poetry.core.masonry.api"
 

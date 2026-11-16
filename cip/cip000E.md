@@ -115,39 +115,40 @@ initial NumPy/BLAS implementation.
 
 Fair comparison of **wired public defaults** on the same host (macOS arm64 /
 Apple Accelerate, Python 3.11.7, NumPy 2.4.6, SciPy 1.17.1, 5 reps, cache-bust
-on model benches):
+on model benches). Table below is the **post-fix** refresh (`c2188eac`
+artefacts; branch `4e990e11` after mean-shift / Cholesky-diag / index caches).
+Full rows: `benchmarks/cip000E/results/main_vs_branch.md`.
 
 | Tree | Ref | Cholesky backprop | Flat/triang | Cython flags |
 |---|---|---|---|---|
 | `main` | `6f1f31bc` | Cython `backprop_gradient_par_c` | Cython | all True |
-| branch `cip000E-numpy-blas-primitives` | `87ccbfb7` | Murray `cholesky_vjp_blocked` | `tril_indices` | all False |
+| branch `cip000E-numpy-blas-primitives` | `4e990e11` | Murray `cholesky_vjp_blocked` | cached `tril` / `take` | all False |
 
 **× = branch / main** (lower means the NumPy/BLAS branch is faster):
 
-| Hotspot | Shape | × |
-|---|---|---|
-| Cholesky backprop | N=500 / 1000 / 2000 | **0.46 / 0.28 / 0.23** |
-| `lengthscale_grads` | N=1000,Q=5 / N=3000,Q=10 | **0.11 / 0.06** |
-| `gradients_X` | N=1000 / 3000 | **0.78 / 0.62** |
-| coregionalize `gradient_reduce` | N=2000 / 5000 | **0.21 / 0.31** |
-| SparseGP obj / grads | N=2000, M=100 | **0.98 / 0.93** |
-| Dense GP obj / grads | N=400 | 1.39 / 1.47 |
-| `flat_to_triang` / `triang_to_flat` | M=50…400 | 2–12× slower (µs–ms absolute) |
-| `symmetrify` | N=500 / 1000 / 3000 | 5.6 / 1.9 / 1.4× slower |
-| coregionalize `K` | N=2000 / 5000 | 3.4 / 3.0× slower |
+| Hotspot | Shape | × (post-fix) | Notes vs pre-fix |
+|---|---|---|---|
+| Cholesky backprop | N=500 / 1000 / 2000 | **2.52 / 0.69 / 0.39** | N=500 slower (safer multi-block diag); N≥1000 still ahead |
+| `lengthscale_grads` | N=1000,Q=5 / N=3000,Q=10 | **0.16 / 0.06** | still a large win (mean-shift ~2% cost) |
+| `gradients_X` | N=1000 / 3000 | **0.81 / 0.61** | still ahead of Cython |
+| coregionalize `gradient_reduce` | N=2000 / 5000 | **0.22 / 0.30** | still ahead |
+| SparseGP obj / grads | N=2000, M=100 | **0.92 / 0.94** | parity-or-better |
+| Dense GP obj / grads | N=400 | 1.37 / **1.14** | improved (was 1.39 / 1.47) |
+| `flat_to_triang` / `triang_to_flat` | M=50…400 | ~1.3–6× slower | absolute still µs–ms; cache helped |
+| `symmetrify` | N=500 / 1000 / 3000 | **2.4 / 1.2 / 1.1×** | was 5.6 / 1.9 / 1.4× |
+| coregionalize `K` | N=2000 / 5000 | ~3.5–4× slower | Mac-specific?; re-check Linux |
 
-Interpretation for Option C → A: the **dominant** hotspots (Cholesky VJP,
-stationary grads, coregionalize reduce) are clearly faster without Cython.
-The regressions are small absolute helpers (`symmetrify`, triang maps) or
-indexing (`coregionalize.K`) that packaging removal accepted; end-to-end
-SparseGP is parity-or-better. Re-run with
-`benchmarks/cip000E/run_main_vs_branch.py` (artefacts under
-`benchmarks/cip000E/results/`). Linux multicore soak still welcome.
+Interpretation for Option C → A: dominant hotspots (stationary grads,
+coregionalize reduce, Cholesky at N≳1000) remain faster without Cython.
+The N=500 Cholesky regression is the accuracy/stability trade-off from the
+unblocked-diagonal hybrid. `symmetrify` / dense GP look much closer after
+index caching. Re-run:
+`benchmarks/cip000E/run_main_vs_branch.py`. Linux multicore soak still welcome.
 
 ### Follow-up from independent review (2026-11-16)
 
-External review of the Mac main-vs-branch table flagged two **numerical**
-issues and two micro-opts (landed on this branch):
+External review of the first Mac main-vs-branch table flagged two **numerical**
+issues and two micro-opts (landed; benches refreshed above):
 
 1. **Stationary expanded forms + shared offset.**
    ``lengthscale_grads_sqdiff`` / ``gradients_X_from_tmp`` lose precision when

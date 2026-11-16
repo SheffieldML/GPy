@@ -22,12 +22,16 @@ except ImportError:
 print_verbose = False
 
 try:
-    import state_space_cython
+    # Relative import so the extension loads from the installed/package tree.
+    # Absolute `import state_space_cython` fails once GPy is installed as a
+    # package (CIP-000E Phase 0).
+    from . import state_space_cython
 
     cython_code_available = True
     if print_verbose:
         print("state_space: cython is available")
 except ImportError:
+    state_space_cython = None
     cython_code_available = False
 
 # cython_code_available = False

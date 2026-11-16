@@ -116,3 +116,16 @@ class TestCholeskiesBackprop:
         r3 = choleskies_cython.backprop_gradient_par_c(self.dL, self.L)
         assert np.allclose(r1, r2), "Gradient mismatch!"
         assert np.allclose(r1, r3), "Gradient mismatch!"
+
+
+def test_state_space_cython_available_when_built():
+    """CIP-000E Phase 0: relative import must expose cython_code_available."""
+    try:
+        from GPy.models import state_space_cython as _ssc  # noqa: F401
+    except ImportError:
+        pytest.skip("state_space_cython extension has not been built")
+
+    # Fresh attribute check via package path (same as installed use).
+    from GPy.models import state_space_main as ssm
+
+    assert ssm.cython_code_available is True

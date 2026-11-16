@@ -388,10 +388,25 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
 4. **CIP-000F Stage 2:** Phase 1 replacements are pure numerical primitives
    (array in / array out; no `paramz` coupling). Successful JAX transformation
    is **not** an acceptance criterion for Cython removal.
-5. **Remaining Phase 1 order:** stationary grads → coregionalize reduce →
-   triang maps → `symmetrify`, each with harness evidence before flipping
-   that default. Multicore Linux + BLAS-threading confirmation before Phase 2.
-6. **Option D** deferred: state-space functional redesign only if still needed
+5. **Remaining Phase 1 order** (backlog; each flips default only after
+   harness ×cython &lt; 1, or a recorded tie/exception):
+   - [Cholesky Murray soak / Linux multicore](../backlog/infrastructure/2026-11-16_cip000E-cholesky-murray-soak.md)
+   - [Stationary grads](../backlog/infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
+     — CIP forms: **one matmul** / **`X*rowsum - tmp@X2`**; do **not**
+     promote the slow pure loops
+   - [Coregionalize `gradient_reduce`](../backlog/infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
+     — one-hot / `O.T @ dL @ O` style
+   - [Triang maps](../backlog/infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
+     — `tril_indices`, not the 80–90× Python loops
+   - [`symmetrify` decision](../backlog/infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
+     — blocked copy; Cython may still win at small N
+   - [Phase 2 Cython removal](../backlog/infrastructure/2026-11-16_cip000E-phase2-cython-removal.md)
+     (Proposed until soak done)
+6. **Process lesson:** column-matvec `cholesky_vjp` matched the oracle but
+   **lost to Cython** on Accelerate; only Murray blocked cleared the bar.
+   Future hotspots must implement the **CIP-cited winning algorithm**, not a
+   weaker “BLAS-shaped” substitute, before flipping defaults.
+7. **Option D** deferred: state-space functional redesign only if still needed
    after Phase 0 evidence (Cython ≈ Python there).
 
 ## Implementation Status
@@ -404,9 +419,9 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
       first; extend per hotspot)
 - [x] Accept decision: **Option C** (see Accept decisions above)
 - [x] Phase 0 hygiene (state-space import + tests; [#1302](https://github.com/SheffieldML/GPy/pull/1302))
-- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky default flipped;
-      stationary / coregionalize / triang / symmetrify still pending
-- [ ] Phase 2 remove Cython build surface (after soak)
+- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray default
+      on branch; backlog tracks soak + remaining hotspots (see Accept §5)
+- [ ] Phase 2 remove Cython build surface (after soak; backlog Proposed)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /
       Option D — separately measured

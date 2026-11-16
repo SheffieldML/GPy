@@ -23,15 +23,25 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Ready
 
+- [CIP-000E — replace stationary Cython grads with CIP-cited NumPy/BLAS forms](infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
+
+- [CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form](infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
+
+- [CIP-000E — replace flat/triang Cholesky maps with tril_indices NumPy](infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
+
+- [CIP-000E — decide symmetrify default (blocked NumPy vs Cython)](infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
+
 - [Design parameter tying framework for GPy multioutput kernels](infrastructure/2025-08-15_parameter-tying-framework.md)
 
 
 ### In Progress
 
-*No tasks currently in_progress.*
+- [CIP-000E — Cholesky Murray blocked soak and multicore confirmation](infrastructure/2026-11-16_cip000E-cholesky-murray-soak.md)
 
 
 ### Proposed
+
+- [CIP-000E Phase 2 — remove Cython build surface after hybrid soak](infrastructure/2026-11-16_cip000E-phase2-cython-removal.md)
 
 - [Deprecation warnings and plotting modernization](infrastructure/2026-10-11_deprecation-plotting-modernization.md)
 

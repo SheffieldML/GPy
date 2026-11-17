@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000E"
-last_updated: "2026-11-16"
+last_updated: "2026-11-17"
 status: In Progress
 compressed: false
 related_requirements: []
@@ -13,6 +13,8 @@ related_cips:
 - "000C"
 - "000F"
 - "0010"
+- "0011"
+- "0012"
 tags:
 - cip
 - cython
@@ -144,6 +146,29 @@ The N=500 Cholesky regression is the accuracy/stability trade-off from the
 unblocked-diagonal hybrid. `symmetrify` / dense GP look much closer after
 index caching. Re-run:
 `benchmarks/cip000E/run_main_vs_branch.py`. Linux multicore soak still welcome.
+
+### Numerical stability — main vs branch (2026-11-17)
+
+CIP-0011 outcome compare of **shipped code paths** (same suite, two installs),
+before CIP-0012 defect fixes. Full report:
+[`benchmarks/cip000E/results/numerical_stability_main_vs_branch.md`](../benchmarks/cip000E/results/numerical_stability_main_vs_branch.md)
+(summary JSON alongside).
+
+| | Ref | Suite |
+|---|---|---|
+| Baseline | `origin/main` @ `c8a095cd` | CIP-0011 suite from `cip0011-numerical-stability` @ `9739a6b6` (`--suite-from`) |
+| Candidate | this branch @ `533a8e9f` | same |
+
+**Verdict: Pass — 0 outcome diffs** (408 tests). Both trees share the same
+**20 xfailed** catalogue entries (distance cancellation, Bernoulli/EP,
+softplus, cloglog, Gamma, Poisson, `jitchol`, bound gradients, debugger
+breakpoints).
+
+**Implication:** dropping Cython for NumPy/BLAS does **not** by itself change
+these adversarial numerical outcomes. Remediation is CIP-0012 (landed on
+`cip0011-numerical-stability` after this snapshot). After cherry-picking
+CIP-0012 onto this branch, re-run `numerical_stability/compare.py` against
+post-fix `main` to confirm xfails clear with no new regressions.
 
 ### Follow-up from independent review (2026-11-16)
 

@@ -1,0 +1,10 @@
+{
+  "baseline": "origin/main@c8a095cd",
+  "candidate": "origin/cip000E-numpy-blas-primitives@533a8e9f",
+  "suite": "cip0011-numerical-stability@9739a6b6 numerical_stability/",
+  "n_tests": 408,
+  "n_diffs": 0,
+  "baseline_xfailed": 20,
+  "candidate_xfailed": 20,
+  "verdict": "Pass: 0 improvements, 0 regressions (outcome-identical)"
+}

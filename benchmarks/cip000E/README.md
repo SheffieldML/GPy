@@ -19,6 +19,24 @@ env -u PYTHONPATH python benchmarks/cip000E/run_main_vs_branch.py \
 Writes `results/main_vs_branch.md` and `results/main_vs_branch.json`.
 Clears `PYTHONPATH` so a multi-root workspace cannot pollute imports.
 
+## Numerical stability (CIP-0011 compare)
+
+Adversarial outcome matrix (`pass` / `fail` / `xfail` / …), not wall-clock.
+Recorded snapshot (2026-11-17): `main` vs this branch were **outcome-identical**
+(0 diffs, 20 shared xfails) — see
+[`results/numerical_stability_main_vs_branch.md`](results/numerical_stability_main_vs_branch.md).
+
+```bash
+# needs a checkout that has numerical_stability/ (CIP-0011 branch or merged main)
+uv run python numerical_stability/compare.py \
+  --baseline /path/to/GPy-on-main \
+  --candidate /path/to/GPy-cip000E \
+  --suite-from /path/to/checkout-with-suite \
+  --out /tmp/gpy-num-compare-main-vs-cythonless
+```
+
+Defect fixes that clear those xfails are CIP-0012, not this CIP.
+
 ## Per-hotspot harnesses (single tree)
 
 ```bash

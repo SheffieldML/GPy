@@ -127,22 +127,7 @@ class TestJitchol:
         with pytest.raises(np.linalg.LinAlgError):
             jitchol(A, maxtries=5)
 
-    @pytest.mark.parametrize(
-        "where",
-        [
-            "nan_offdiag",
-            "nan_diag",
-            pytest.param(
-                "inf_diag",
-                marks=pytest.mark.xfail(
-                    strict=True,
-                    reason="jitchol trusts LAPACK info==0 and returns a factor containing inf "
-                    "for +inf on the diagonal instead of raising; non-finite kernels then "
-                    "surface as a NaN likelihood far from the cause",
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("where", ["nan_offdiag", "nan_diag", "inf_diag"])
     def test_nonfinite_input_raises(self, where):
         A = np.eye(3)
         if where == "nan_offdiag":
@@ -319,11 +304,6 @@ def test_probit_tail_matches_scipy():
     np.testing.assert_allclose(lf.Probit().transf(f), sps.ndtr(f), rtol=1e-12)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Log_ex_1.transf = log1p(safe_exp(f)); safe_exp clips at log(DBL_MAX) so softplus saturates "
-    "at 709.78 for f > 709 instead of returning ~f (use np.logaddexp(0, f))",
-)
 def test_softplus_asymptote_for_large_f():
     f = np.array([30.0, 710.0, 1000.0, 1e4])
     np.testing.assert_allclose(lf.Log_ex_1().transf(f), np.logaddexp(0, f), rtol=1e-12)
@@ -334,11 +314,6 @@ def test_softplus_small_f_is_accurate():
     np.testing.assert_allclose(lf.Log_ex_1().transf(f), np.logaddexp(0, f), rtol=1e-12)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Cloglog.transf = 1 - exp(-exp(f)) cancels catastrophically for f < ~-20 "
-    "(returns 0 at f=-40 instead of 4.2e-18); use -expm1(-exp(f))",
-)
 def test_cloglog_relative_accuracy_in_lower_tail():
     f = np.array([-40.0, -20.0, -5.0, 0.0])
     np.testing.assert_allclose(lf.Cloglog().transf(f), -np.expm1(-np.exp(f)), rtol=1e-10)
@@ -366,32 +341,17 @@ class TestBernoulli:
         # y=0 goes through 1 - Phi(f), which already sheds ~7 digits by f=5
         np.testing.assert_allclose(lik.logpdf(f, np.zeros_like(f)), sps.log_ndtr(-f), rtol=1e-8)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Bernoulli.logpdf_link clips p at 1e-9, so log p(y|f) is floored at -20.7 for misclassified "
-        "points beyond |f|~6 (exact value at f=-10 is -53.2); probit should use log_ndtr",
-    )
     def test_logpdf_tail_accuracy(self):
         f = np.array([-30.0, -10.0, -8.0])[:, None]
         lik = GPy.likelihoods.Bernoulli()
         np.testing.assert_allclose(lik.logpdf(f, np.ones_like(f)), sps.log_ndtr(f), rtol=1e-8)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Same 1e-9 clip makes dlogpdf_df vanish (7.7e-14 at f=-10, exact 10.1) for confidently "
-        "misclassified points, so Laplace mode-finding gets no signal from them",
-    )
     def test_gradient_tail_is_inverse_mills_ratio(self):
         f = np.array([-10.0, -8.0])[:, None]
         lik = GPy.likelihoods.Bernoulli()
         exact = np.exp(-0.5 * f**2 - 0.5 * np.log(2 * np.pi) - sps.log_ndtr(f))
         np.testing.assert_allclose(lik.dlogpdf_df(f, np.ones_like(f)), exact, rtol=1e-6)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="d3logpdf_dlink3 divides by (1-p)**3 without the clip used by the first two derivatives; "
-        "-inf once Phi(f) rounds to 1 (f > ~8.3, y=0)",
-    )
     def test_all_derivatives_finite_for_confident_mislabels(self):
         f = np.array([[-40.0], [40.0]])
         y = np.array([[1.0], [0.0]])
@@ -424,11 +384,6 @@ class TestBernoulli:
         _, _, s2 = GPy.likelihoods.Bernoulli().moments_match_ep(np.array(0.0), tau, v)
         np.testing.assert_allclose(s2 * tau, 1 / z**2, rtol=5e-2)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="sigma2_hat = 1/tau - r/(tau^2+tau)*(z+r) cancels catastrophically for |z| >~ 3e3; "
-        "it turns negative by |z|=1e5 (vague cavity, far-away mean)",
-    )
     def test_ep_moment_match_extreme_cavity_keeps_positive_variance(self):
         tau = 1e-8
         v = 1e5 * np.sqrt(tau**2 + tau)
@@ -456,11 +411,6 @@ class TestCountAndPositiveLikelihoods:
         f = np.log(np.array([[1e6], [1e9]]))
         _assert_lik_finite(GPy.likelihoods.Poisson(), f, np.round(np.exp(f)))
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Poisson.logpdf_link computes y*log(exp(f)); exp underflows to 0 below f~-745 giving "
-        "0*-inf=NaN (y=0) or -inf (y>0). Working in f directly (y*f - exp(f)) avoids it",
-    )
     def test_poisson_deep_negative_latent(self):
         f = np.array([[-800.0], [-800.0]])
         y = np.array([[0.0], [1.0]])
@@ -474,11 +424,6 @@ class TestCountAndPositiveLikelihoods:
         alpha = np.exp(f) * beta
         np.testing.assert_allclose(lik.logpdf(f, y), stats.gamma.logpdf(y, alpha, scale=1 / beta), rtol=1e-10)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Gamma.logpdf_link uses log(special.gamma(alpha)) which overflows for alpha > 171.6 "
-        "(f > ~5.1 with beta=1, i.e. ordinary data y >~ 170); use special.gammaln",
-    )
     def test_gamma_logpdf_finite_for_large_shape(self):
         f = np.array([[5.2], [6.0], [10.0]])
         y = np.exp(f)
@@ -603,19 +548,7 @@ ROUGH_AT_ZERO = [GPy.kern.Exponential, GPy.kern.OU]
 
 @pytest.mark.parametrize(
     "kern_cls",
-    SMOOTH_AT_ZERO
-    + [
-        pytest.param(
-            c,
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="K(X, X2) has no r=0 fix-up: the expanded r^2 leaves ~1e-16 at coincident points, "
-                "sqrt turns it into r~1e-8, and kernels with a cusp at 0 pass that straight through "
-                "(k = 1 - 2e-8). Affects predictions at training inputs",
-            ),
-        )
-        for c in ROUGH_AT_ZERO
-    ],
+    SMOOTH_AT_ZERO + ROUGH_AT_ZERO,
     ids=lambda c: c.__name__,
 )
 def test_K_with_X2_equal_X_is_consistent(kern_cls):
@@ -632,12 +565,6 @@ def test_stationary_translation_invariance_modest_offset(kern_cls):
     np.testing.assert_allclose(k.K(x + 1e3), k.K(x), atol=1e-8)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Stationary._unscaled_dist uses |x|^2 + |x'|^2 - 2x.x', which cancels catastrophically when "
-    "inputs share a large offset (error ~1e-3 at 1e6, ~0.8 at 1e8; Unix timestamps are ~1.7e9). "
-    "Centering X or computing differences directly fixes it",
-)
 @pytest.mark.parametrize("kern_cls", [GPy.kern.RBF, GPy.kern.Matern32, GPy.kern.Exponential], ids=lambda c: c.__name__)
 @pytest.mark.parametrize("offset", [1e6, 1.7e9])
 def test_stationary_translation_invariance_large_offset(kern_cls, offset):
@@ -748,11 +675,6 @@ class TestExactGPRegression:
         m.optimizer_array = oa
         assert _all_finite(m)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="With every positive parameter at the Logexp floor (~5.6e-309) the objective is finite but "
-        "the lengthscale gradient is NaN (0*inf), which poisons quasi-Newton optimisers",
-    )
     def test_all_parameters_at_transform_floor(self):
         X, Y = _regression_data()
         m = GPy.models.GPRegression(X, Y)
@@ -859,11 +781,6 @@ class TestNonGaussianInference:
         m = GPy.core.GP(X, Y, GPy.kern.RBF(1), lik, inference_method=LaplaceInf())
         assert m.checkgrad()
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Gamma likelihood overflows log(Gamma(alpha)) for y >~ 170, the Laplace objective turns NaN, "
-        "and laplace.rasm_mode then hits a leftover `import ipdb; ipdb.set_trace()`",
-    )
     def test_gamma_laplace_on_ordinary_positive_data(self, monkeypatch):
         # Guard: if ipdb is installed, the leftover breakpoint would hang a non-interactive run.
         fake = types.ModuleType("ipdb")
@@ -916,10 +833,5 @@ def test_breakpoint_scanner_self_check():
     assert _breakpoint_lines(src) == [4, 5]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Debugger breakpoints remain on numerical error paths: laplace.py (NaN objective), "
-    "var_dtc.py (VVT_factor shape branch), state_space_main.py",
-)
 def test_no_live_debugger_breakpoints_in_package():
     assert _live_breakpoints() == []

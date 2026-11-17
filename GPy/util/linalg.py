@@ -59,6 +59,8 @@ def force_F_ordered(A):
 
 def jitchol(A, maxtries=5):
     A = np.ascontiguousarray(A)
+    if not np.all(np.isfinite(A)):
+        raise linalg.LinAlgError("not pd: non-finite entries in matrix")
     L, info = lapack.dpotrf(A, lower=1)
     if info == 0:
         return L

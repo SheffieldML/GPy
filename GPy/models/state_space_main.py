@@ -2250,9 +2250,9 @@ class DescreteStateSpace:
         P: Variances from the smoother
         G: Gains? from the smoother
         """
-        import pdb
-
-        pdb.set_trace()
+        raise NotImplementedError(
+            "state_space_main: derivative path is incomplete (CIP-0012 removed live pdb breakpoint)"
+        )
 
         param_number = dA.shape[-1]
         d_log_likelihood_update = np.empty((param_number, 1))

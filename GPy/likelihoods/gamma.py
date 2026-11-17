@@ -46,9 +46,8 @@ class Gamma(Likelihood):
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         # return stats.gamma.pdf(obs,a = self.gp_link.transf(gp)/self.variance,scale=self.variance)
-        alpha = link_f * self.beta
-        objective = (y ** (alpha - 1.0) * np.exp(-self.beta * y) * self.beta**alpha) / special.gamma(alpha)
-        return np.exp(np.sum(np.log(objective)))
+        # Evaluate in log space with gammaln to avoid overflow for alpha > ~171.
+        return np.exp(np.sum(self.logpdf_link(link_f, y, Y_metadata=Y_metadata)))
 
     def logpdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -68,10 +67,10 @@ class Gamma(Likelihood):
 
         """
         # alpha = self.gp_link.transf(gp)*self.beta
-        # return (1. - alpha)*np.log(obs) + self.beta*obs - alpha * np.log(self.beta) + np.log(special.gamma(alpha))
+        # Use gammaln: log(gamma(alpha)) overflows for alpha > ~171.6.
         alpha = link_f * self.beta
         log_objective = (
-            alpha * np.log(self.beta) - np.log(special.gamma(alpha)) + (alpha - 1) * np.log(y) - self.beta * y
+            alpha * np.log(self.beta) - special.gammaln(alpha) + (alpha - 1) * np.log(y) - self.beta * y
         )
         return log_objective
 

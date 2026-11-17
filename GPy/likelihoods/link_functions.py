@@ -195,8 +195,14 @@ class Cloglog(GPTransformation):
     """
 
     def transf(self, f):
-        ef = safe_exp(f)
-        return 1 - np.exp(-ef)
+        # 1 - exp(-exp(f)) cancels to 0 for f ≲ -20; -expm1(-exp(f)) keeps relative accuracy.
+        f = np.asarray(f, dtype=float)
+        out = np.empty(f.shape, dtype=float)
+        big = f > 20.0
+        out[big] = 1.0
+        if np.any(~big):
+            out[~big] = -np.expm1(-np.exp(f[~big]))
+        return out
 
     def dtransf_df(self, f):
         ef = safe_exp(f)
@@ -244,7 +250,8 @@ class Log_ex_1(GPTransformation):
     """
 
     def transf(self, f):
-        return scipy.special.log1p(safe_exp(f))
+        # Softplus: log(1+e^f). log1p(safe_exp(f)) saturates once safe_exp clips (~709).
+        return np.logaddexp(0.0, f)
 
     def dtransf_df(self, f):
         ef = safe_exp(f)

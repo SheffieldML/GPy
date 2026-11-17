@@ -252,10 +252,10 @@ class VarDTC(LatentFunctionInference):
         if VVT_factor.shape[1] == Y.shape[1]:
             woodbury_vector = Cpsi1Vf  # == Cpsi1V
         else:
-            print("foobar")
-            import ipdb
-
-            ipdb.set_trace()
+            raise ValueError(
+                "var_dtc expected VVT_factor.shape[1] == Y.shape[1]; "
+                f"got VVT_factor.shape={VVT_factor.shape}, Y.shape={Y.shape}"
+            )
             psi1V = np.dot(Y.T * precision, psi1).T
             tmp, _ = dtrtrs(Lm, psi1V, lower=1, trans=0)
             tmp, _ = dpotrs(LB, tmp, lower=1)

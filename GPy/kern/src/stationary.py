@@ -6,7 +6,6 @@ import numpy as np
 from scipy import integrate
 from .kern import Kern
 from ...core.parameterization import Param
-from ...util.linalg import tdot
 from ... import util
 from ...util.config import config  # for assesing whether to use cython
 from paramz.caching import Cache_this
@@ -138,21 +137,21 @@ class Stationary(Kern):
         """
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
+
+        Direct differences (not the expanded ``|x|^2+|x'|^2-2x·x'`` form) keep
+        translation invariance under large shared offsets and give exact ``r=0``
+        for coincident points — including off-diagonal duplicates when ``X2 is X``.
         """
         # X, = self._slice_X(X)
         if X2 is None:
-            Xsq = np.sum(np.square(X), 1)
-            r2 = -2.0 * tdot(X) + (Xsq[:, None] + Xsq[None, :])
+            X2 = X
+            r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
             util.diag.view(r2)[:,] = 0.0  # force diagnoal to be zero: sometime numerically a little negative
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
-        else:
-            # X2, = self._slice_X(X2)
-            X1sq = np.sum(np.square(X), 1)
-            X2sq = np.sum(np.square(X2), 1)
-            r2 = -2.0 * np.dot(X, X2.T) + (X1sq[:, None] + X2sq[None, :])
-            r2 = np.clip(r2, 0, np.inf)
-            return np.sqrt(r2)
+        r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
+        r2 = np.clip(r2, 0, np.inf)
+        return np.sqrt(r2)
 
     @Cache_this(limit=3, ignore_args=())
     def _scaled_dist(self, X, X2=None):
@@ -217,7 +216,11 @@ class Stationary(Kern):
                 self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
-            self.lengthscale.gradient = -np.sum(dL_dr * r) / self.lengthscale
+            with np.errstate(invalid="ignore", divide="ignore"):
+                grad = -np.sum(dL_dr * r) / self.lengthscale
+            # At the Logexp floor lengthscale→0 can yield 0*inf=NaN; a non-finite
+            # gradient poisons quasi-Newton steps even when the objective is finite.
+            self.lengthscale.gradient = np.where(np.isfinite(grad), grad, 0.0)
 
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """

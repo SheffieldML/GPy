@@ -79,7 +79,20 @@ class Bernoulli(Likelihood):
             log_Z_hat = logCdfNormal(z)
 
             mu_hat = v_i / tau_i + sign * phi_div_Phi / np.sqrt(tau_i**2 + tau_i)
-            sigma2_hat = 1.0 / tau_i - (phi_div_Phi / (tau_i**2 + tau_i)) * (z + phi_div_Phi)
+            # sigma2 = [(τ+1) - α(z+α)] / [τ(τ+1)]. For z≪0, α≈-z and α(z+α)
+            # cancels catastrophically; rewrite with the Seeger helper Q=α/(-z)^{-1}.
+            den = tau_i * (tau_i + 1.0)
+            if z < 0.0 and phi_div_Phi != 0.0:
+                Q = -z / phi_div_Phi
+                alpha_z_term = -(z * z) / Q * (1.0 - 1.0 / Q)
+            else:
+                alpha_z_term = phi_div_Phi * (z + phi_div_Phi)
+            sigma2_hat = ((tau_i + 1.0) - alpha_z_term) / den
+            # Guard residual roundoff into a tiny negative.
+            if not np.isfinite(sigma2_hat) or sigma2_hat <= 0.0:
+                sigma2_hat = np.finfo(float).tiny
+            elif sigma2_hat > 1.0 / tau_i:
+                sigma2_hat = 1.0 / tau_i
 
         elif isinstance(self.gp_link, link_functions.Heaviside):
             z = sign * v_i / np.sqrt(tau_i)
@@ -154,6 +167,52 @@ class Bernoulli(Likelihood):
         # objective = (inv_link_f**y) * ((1.-inv_link_f)**(1.-y))
         return np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
 
+    def logpdf(self, f, y, Y_metadata=None):
+        """Log likelihood in latent space (Probit: log Φ via log_ndtr)."""
+        if isinstance(self.gp_link, link_functions.Probit):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            z = np.where(y == 1, f, -f)
+            return special.log_ndtr(z)
+        return super(Bernoulli, self).logpdf(f, y, Y_metadata=Y_metadata)
+
+    def dlogpdf_df(self, f, y, Y_metadata=None):
+        """d/df log p(y|f). Probit: ±φ(z)/Φ(z) with z = ±f."""
+        if isinstance(self.gp_link, link_functions.Probit):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            sign = np.where(y == 1, 1.0, -1.0)
+            z = sign * f
+            # φ/Φ in log space: exp(log φ - log Φ)
+            alpha = np.exp(-0.5 * z**2 - 0.5 * np.log(2 * np.pi) - special.log_ndtr(z))
+            return sign * alpha
+        return super(Bernoulli, self).dlogpdf_df(f, y, Y_metadata=Y_metadata)
+
+    def d2logpdf_df2(self, f, y, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Probit):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            sign = np.where(y == 1, 1.0, -1.0)
+            z = sign * f
+            alpha = np.exp(-0.5 * z**2 - 0.5 * np.log(2 * np.pi) - special.log_ndtr(z))
+            # d²/df² log Φ(±f) = -α(z+α)
+            return -alpha * (z + alpha)
+        return super(Bernoulli, self).d2logpdf_df2(f, y, Y_metadata=Y_metadata)
+
+    def d3logpdf_df3(self, f, y, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Probit):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            sign = np.where(y == 1, 1.0, -1.0)
+            z = sign * f
+            alpha = np.exp(-0.5 * z**2 - 0.5 * np.log(2 * np.pi) - special.log_ndtr(z))
+            # d³/dz³ log Φ(z) = -α' (z+α) - α(1+α') with α'=-α(z+α)
+            # = α(z+α)(z+2α) - α = α[(z+α)(z+2α) - 1]
+            d3_dz3 = alpha * ((z + alpha) * (z + 2.0 * alpha) - 1.0)
+            # z = sign*f ⇒ d³/df³ = d³/dz³ * sign³ = d³/dz³ * sign
+            return sign * d3_dz3
+        return super(Bernoulli, self).d3logpdf_df3(f, y, Y_metadata=Y_metadata)
+
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
         Log Likelihood function given inverse link of f.
@@ -169,9 +228,11 @@ class Bernoulli(Likelihood):
         :returns: log likelihood evaluated at points inverse link of f.
         :rtype: float
         """
-        # objective = y*np.log(inv_link_f) + (1.-y)*np.log(inv_link_f)
+        # Prefer logpdf(f) for Probit; keep a stable link-space fallback for other links.
         p = np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
-        return np.log(np.clip(p, 1e-9, np.inf))
+        p = np.asarray(p, dtype=float)
+        with np.errstate(divide="ignore"):
+            return np.log(np.clip(p, 0.0, 1.0))
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
@@ -188,9 +249,7 @@ class Bernoulli(Likelihood):
         :returns: gradient of log likelihood evaluated at points inverse link of f.
         :rtype: Nx1 array
         """
-        # grad = (y/inv_link_f) - (1.-y)/(1-inv_link_f)
-        # grad = np.where(y, 1./inv_link_f, -1./(1-inv_link_f))
-        ff = np.clip(inv_link_f, 1e-9, 1 - 1e-9)
+        ff = np.clip(inv_link_f, 1e-300, 1 - 1e-300)
         denom = np.where(y == 1, ff, -(1 - ff))
         return 1.0 / denom
 
@@ -215,10 +274,8 @@ class Bernoulli(Likelihood):
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
         """
-        # d2logpdf_dlink2 = -y/(inv_link_f**2) - (1-y)/((1-inv_link_f)**2)
-        # d2logpdf_dlink2 = np.where(y, -1./np.square(inv_link_f), -1./np.square(1.-inv_link_f))
         arg = np.where(y == 1, inv_link_f, 1.0 - inv_link_f)
-        ret = -1.0 / np.square(np.clip(arg, 1e-9, 1e9))
+        ret = -1.0 / np.square(np.clip(arg, 1e-300, 1e300))
         if np.any(np.isinf(ret)):
             raise FloatingPointError("Inf values in Bernoulli d2log_pdf")
         return ret
@@ -239,12 +296,8 @@ class Bernoulli(Likelihood):
         :rtype: Nx1 array
         """
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
-        # d3logpdf_dlink3 = 2*(y/(inv_link_f**3) - (1-y)/((1-inv_link_f)**3))
-        state = np.seterr(divide="ignore")
-        # TODO check y \\in {0, 1} or {-1, 1}
-        d3logpdf_dlink3 = np.where(y == 1, 2.0 / (inv_link_f**3), -2.0 / ((1.0 - inv_link_f) ** 3))
-        np.seterr(**state)
-        return d3logpdf_dlink3
+        arg = np.clip(np.where(y == 1, inv_link_f, 1.0 - inv_link_f), 1e-300, 1e300)
+        return np.where(y == 1, 2.0 / (arg**3), -2.0 / (arg**3))
 
     def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
         """

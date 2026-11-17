@@ -27,7 +27,7 @@ optional = [
     "ipython>=9.18.1",
 ]
 plotting = [
-    "matplotlib>=3.4",
+    "matplotlib>=3.11.2",
     "plotly>=7.1.0",
 ]
 notebook = [
@@ -69,7 +69,7 @@ generate-setup-file = true  # required for Cython build script / ext_modules
 
 [dependency-groups]
 dev = [
-    "matplotlib>=3.4",
+    "matplotlib>=3.11.2",
     "pytest>=9.2.0",
     "pods>=0.1.19",
     "ruff==0.17.4",

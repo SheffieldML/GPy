@@ -73,7 +73,7 @@ dev = [
     "pytest>=9.2.0",
     "pods>=0.1.19",
     "ruff==0.17.4",
-    "pytest-cov>=5.0",
+    "pytest-cov>=7.1.0",
 ]
 
 # uv installs the `dev` group by default; extras stay opt-in via --extra.

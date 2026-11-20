@@ -493,6 +493,21 @@ class TestMisc:
         m.randomize()
         assert m.checkgrad()
 
+        X = np.random.normal(0, 1, size=(40, Q))
+        Z = np.random.normal(0, 1, size=(7, Q))
+        m = GPy.models.MRD(
+            dict(data1=Y1, data2=Y2, data3=Y3),
+            Q,
+            X=X,
+            Z=Z,
+            num_inducing=10,
+            kernel=GPy.kern.RBF(Q, ARD=1),
+        )
+        np.testing.assert_array_equal(np.asarray(m.Z), Z)
+        assert m.num_inducing == Z.shape[0]
+        m.randomize()
+        assert m.checkgrad()
+
     def test_model_set_params(self):
         self.setup_method()
 

@@ -108,7 +108,8 @@ class MRD(BayesianGPLVMMiniBatch):
         else:
             fracs = [X.var(0)] * len(Ylist)
 
-        Z = self._init_Z(initz, X, input_dim)
+        if Z is None:
+            Z = self._init_Z(initz, X, input_dim)
         self.Z = Param("inducing inputs", Z)
         self.num_inducing = self.Z.shape[0]  # ensure M==N if M>N
 

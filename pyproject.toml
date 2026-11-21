@@ -16,7 +16,7 @@ keywords = [
 dependencies = [
     "numpy>=2.4.6",
     "six",
-    "paramz>=0.10.0",
+    "decorator",
     "scipy>=1.17.1",
 ]
 

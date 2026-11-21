@@ -496,6 +496,9 @@ in this CIP; open questions resolved as follows:
    public constrain/fix/prior/indexing surface while dropping the external
    paramz package; B stays a separate Accept with a short design note (may
    become its own CIP).
+4a. **Stage 4 Accept (2026-11-21):** Option **A confirmed and implemented** —
+    see [`cip/cip000F/notes/stage4-core-decision.md`](cip000F/notes/stage4-core-decision.md).
+    Option B deferred (possible follow-on CIP; CIP-0002 not folded in).
 5. **Operator protocol depth in GPy 1:** **conceptual boundary + dense
    reference only**. No in-tree matvec operator hierarchy in GPy 1; Stage 2N
    documents the protocols and demonstrates condition-once / predict-many via
@@ -526,7 +529,10 @@ in this CIP; open questions resolved as follows:
       [`cip/cip000F/notes/stage2n-numerical-interfaces.md`](cip000F/notes/stage2n-numerical-interfaces.md)
 - [x] Stage 3: caching / `ObsAr` replaced, benchmarks recorded —
       [`cip/cip000F/notes/stage3-caching-obsar.md`](cip000F/notes/stage3-caching-obsar.md)
-- [ ] Stage 4: core decision recorded
+- [x] Stage 4: core decision recorded — **Accept A (vendor)**;
+      [`cip/cip000F/notes/stage4-core-decision.md`](cip000F/notes/stage4-core-decision.md);
+      paramz core vendored under `GPy.core.parameterization._paramz`,
+      external dependency dropped
 - [x] Backlog tasks created (only after Accept):
       [Stage 0](../backlog/infrastructure/2026-11-21_cip000F-stage0-import-boundary.md),
       [Stage 1](../backlog/infrastructure/2026-11-21_cip000F-stage1-domains-optimisation.md),

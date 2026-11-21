@@ -1,7 +1,7 @@
 ---
 id: 2026-11-21_cip000F-stage2t-jax-assessment
 title: CIP-000F Stage 2T — experimental JAX LML assessment (out of package)
-status: Ready
+status: Completed
 priority: Medium
 created: "2026-11-21"
 last_updated: "2026-11-21"
@@ -31,18 +31,25 @@ not a Stage 2 gate.
 
 ## Acceptance Criteria
 
-- [ ] At least one experimental JAX LML (exact GP / RBF) with numerical and
+- [x] At least one experimental JAX LML (exact GP / RBF) with numerical and
       gradient parity notes
-- [ ] Barriers classified and checked into CIP notes or a linked report
-- [ ] No JAX dependency added to GPy package metadata
-- [ ] Findings linked for CIP-0010 transformation-readiness report
+- [x] Barriers classified and checked into CIP notes or a linked report
+- [x] No JAX dependency added to GPy package metadata
+- [x] Findings linked for CIP-0010 transformation-readiness report
 
 ## Related
 
 - CIP: 000F, 0010
+- Notes: `cip/cip000F/notes/stage2t-jax-lml.md`
+- Experiment: `cip/cip000F/experiments/exact_gp_rbf_lml_jax.py`
 
 ## Progress Updates
 
 ### 2026-11-21
 
 Task created Ready after CIP-000F Accept.
+
+### 2026-11-21 (later)
+
+Completed: JAX RBF exact-LML with float64 parity (~1e-15), `jax.grad` vs FD
+(~1e-7), `jax.jit` on scalar LML. Barriers recorded. No package dependency.

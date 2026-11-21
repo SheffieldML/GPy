@@ -518,10 +518,12 @@ in this CIP; open questions resolved as follows:
       (CIP-000E seeded Cholesky / stationary / coregionalize primitives —
       see Stage 2 section) — representative RBF/stationary + Gaussian LML /
       logpdf; further kernel families optional follow-ups
-- [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
-      barriers classified and documented for CIP-0010
-- [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP
-      condition-once / predict-many via pure state demonstrated
+- [x] Stage 2T: at least one experimental JAX assessment (LML or similar);
+      barriers classified and documented for CIP-0010 —
+      [`cip/cip000F/notes/stage2t-jax-lml.md`](cip000F/notes/stage2t-jax-lml.md)
+- [x] Stage 2N: conceptual numerical interfaces sketched; exact-GP
+      condition-once / predict-many via pure state demonstrated —
+      [`cip/cip000F/notes/stage2n-numerical-interfaces.md`](cip000F/notes/stage2n-numerical-interfaces.md)
 - [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
 - [ ] Stage 4: core decision recorded
 - [x] Backlog tasks created (only after Accept):

@@ -118,9 +118,7 @@ class Coregionalize(Kern):
 
     def _gradient_reduce_blas(self, dL_dK, index, index2):
         """CIP-000E default: one-hot ``(O.T @ dL @ O2).T``."""
-        return coregionalize_ops.gradient_reduce(
-            dL_dK, index[:, 0], index2[:, 0], self.output_dim
-        )
+        return coregionalize_ops.gradient_reduce(dL_dK, index[:, 0], index2[:, 0], self.output_dim)
 
     def _gradient_reduce_cython(self, dL_dK, index, index2):
         raise ImportError("coregionalize_cython removed in CIP-000E Phase 2")

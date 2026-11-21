@@ -131,9 +131,7 @@ class Model(ParamzModel, Priorizable):
                     self.optimization_runs.append(jobs[i])
 
                 if verbose:
-                    print(
-                        f"Optimization restart {i + 1}/{num_restarts}, f = {self.optimization_runs[-1].f_opt}"
-                    )
+                    print(f"Optimization restart {i + 1}/{num_restarts}, f = {self.optimization_runs[-1].f_opt}")
             except Exception as e:
                 if robust:
                     print(f"Warning - optimization restart {i + 1}/{num_restarts} failed")

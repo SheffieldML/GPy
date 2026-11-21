@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 # Copyright (c) 1996-2014, I. Nabney, N.Lawrence and James Hensman (1996 - 2014)
 # Copyright (c) 2015, Max Zwiessele
 # All rights reserved.
@@ -27,17 +27,18 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
-'''
+"""
 Scaled Conjuagte Gradients, originally in Matlab as part of the
 Netlab toolbox by I. Nabney, converted to python N. Lawrence
 and given a pythonic interface by James Hensman.
 
 Edited by Max Zwiessele for efficiency and verbose optimization.
-'''
+"""
 
 import numpy as np
+
 
 def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, ftol=None, gtol=None):
     """
@@ -61,21 +62,21 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
         gtol = 1e-5
 
     sigma0 = 1.0e-7
-    fold = f(x, *optargs) # Initial function value.
+    fold = f(x, *optargs)  # Initial function value.
     function_eval = 1
     fnow = fold
-    gradnew = gradf(x, *optargs) # Initial gradient.
+    gradnew = gradf(x, *optargs)  # Initial gradient.
     function_eval += 1
-    #if any(np.isnan(gradnew)):
+    # if any(np.isnan(gradnew)):
     #    raise UnexpectedInfOrNan, "Gradient contribution resulted in a NaN value"
     current_grad = np.dot(gradnew, gradnew)
     gradold = gradnew.copy()
-    d = -gradnew # Initial search direction.
-    success = True # Force calculation of directional derivs.
-    nsuccess = 0 # nsuccess counts number of successes.
-    beta = 1.0 # Initial scale parameter.
-    betamin = 1.0e-15 # Lower bound on scale.
-    betamax = 1.0e15 # Upper bound on scale.
+    d = -gradnew  # Initial search direction.
+    success = True  # Force calculation of directional derivs.
+    nsuccess = 0  # nsuccess counts number of successes.
+    beta = 1.0  # Initial scale parameter.
+    betamin = 1.0e-15  # Lower bound on scale.
+    betamax = 1.0e15  # Upper bound on scale.
     status = "Not converged"
 
     flog = [fold]
@@ -84,7 +85,6 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
 
     # Main optimization loop.
     while iteration < maxiters:
-
         # Calculate first and second directional derivatives.
         if success:
             mu = np.dot(d, gradnew)
@@ -100,7 +100,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
 
         # Increase effective curvature and evaluate step size alpha.
         delta = theta + beta * kappa
-        if delta <= 0: # pragma: no cover
+        if delta <= 0:  # pragma: no cover
             delta = beta * kappa
             beta = beta - theta / kappa
 
@@ -111,8 +111,8 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
         fnew = f(xnew, *optargs)
         function_eval += 1
 
-        Delta = 2.*(fnew - fold) / (alpha * mu)
-        if Delta >= 0.:
+        Delta = 2.0 * (fnew - fold) / (alpha * mu)
+        if Delta >= 0.0:
             success = True
             nsuccess += 1
             x = xnew
@@ -122,19 +122,19 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
             fnow = fold
 
         # Store relevant variables
-        flog.append(fnow) # Current function value
+        flog.append(fnow)  # Current function value
 
         iteration += 1
 
         if success:
             # Test for termination
 
-            if (np.abs(fnew - fold) < ftol):
-                status = 'converged - relative reduction in objective'
+            if np.abs(fnew - fold) < ftol:
+                status = "converged - relative reduction in objective"
                 break
-#                 return x, flog, function_eval, status
-            elif (np.max(np.abs(alpha * d)) < xtol):
-                status = 'converged - relative stepsize'
+            #                 return x, flog, function_eval, status
+            elif np.max(np.abs(alpha * d)) < xtol:
+                status = "converged - relative stepsize"
                 break
             else:
                 # Update variables for new position
@@ -145,7 +145,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
                 fold = fnew
                 # If the gradient is zero then we are done.
                 if current_grad <= gtol:
-                    status = 'converged - relative reduction in gradient'
+                    status = "converged - relative reduction in gradient"
                     break
                     # return x, flog, function_eval, status
 
@@ -159,7 +159,7 @@ def SCG(f, gradf, x, optargs=(), maxiters=500, max_f_eval=np.inf, xtol=None, fto
         # in direction of negative gradient after nparams steps.
         if nsuccess == x.size:
             d = -gradnew
-            beta = 1. # This is not in the original paper
+            beta = 1.0  # This is not in the original paper
             nsuccess = 0
         elif success:
             Gamma = np.dot(gradold - gradnew, gradnew) / (mu)

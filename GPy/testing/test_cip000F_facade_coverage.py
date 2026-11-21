@@ -67,9 +67,7 @@ class TestStage1OptimizeCoverage:
         m = _toy_gp()
         m.optimize(optimizer="scg", max_iters=5, messages=False)
         assert m.optimization_runs
-        assert m.optimization_runs[-1].__class__.__module__.startswith(
-            "GPy.inference.optimization"
-        )
+        assert m.optimization_runs[-1].__class__.__module__.startswith("GPy.inference.optimization")
 
         from GPy.inference.optimization import opt_lbfgsb
 

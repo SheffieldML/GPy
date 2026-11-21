@@ -154,11 +154,16 @@ class TestPdinvAndSolves:
         np.testing.assert_allclose(Li @ L, np.eye(n), atol=100 * n * np.sqrt(cond) * EPS)
 
     def test_pdinv_hilbert(self):
-        """Hilbert(10) has cond ~1.6e13 - near the edge of what float64 can invert."""
+        """Hilbert(10) has cond ~1.6e13 - near the edge of what float64 can invert.
+
+        Log-det agreement vs ``slogdet`` is LAPACK/platform sensitive at this
+        condition number; keep the check but allow ~1e-5 relative slack so CI
+        (OpenBLAS on Linux) and local macOS builds do not flap.
+        """
         H = sla.hilbert(10)
         Ai, _, _, logdet = pdinv(H)
         assert np.all(np.isfinite(Ai))
-        np.testing.assert_allclose(logdet, np.linalg.slogdet(H)[1], rtol=1e-6)
+        np.testing.assert_allclose(logdet, np.linalg.slogdet(H)[1], rtol=1e-5)
 
     @pytest.mark.parametrize("scale", [1e-300, 1e-200, 1e200, 1e300])
     def test_logdet_at_extreme_scales(self, scale):

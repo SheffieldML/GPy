@@ -5,12 +5,13 @@ import datetime as dt
 from scipy import optimize
 from warnings import warn
 
-#try:
+# try:
 #    import rasmussens_minimize as rasm
 #    rasm_available = True
-#except ImportError:
+# except ImportError:
 #    rasm_available = False
 from .scg import SCG
+
 
 class Optimizer:
     """
@@ -27,12 +28,14 @@ class Optimizer:
     :rtype: optimizer object.
 
     """
-    def __init__(self, messages=False, max_f_eval=1e4, max_iters=1e3,
-                 ftol=None, gtol=None, xtol=None, bfgs_factor=None):
+
+    def __init__(
+        self, messages=False, max_f_eval=1e4, max_iters=1e3, ftol=None, gtol=None, xtol=None, bfgs_factor=None
+    ):
         self.opt_name = None
-        #x_init = x_init
+        # x_init = x_init
         # Turning messages off and using internal structure for print outs:
-        self.messages = False #messages
+        self.messages = False  # messages
         self.f_opt = None
         self.x_opt = None
         self.funct_eval = None
@@ -81,23 +84,23 @@ class opt_tnc(Optimizer):
 
         opt_dict = {}
         if self.xtol is not None:
-            opt_dict['xtol'] = self.xtol
+            opt_dict["xtol"] = self.xtol
         if self.ftol is not None:
-            opt_dict['ftol'] = self.ftol
+            opt_dict["ftol"] = self.ftol
         if self.gtol is not None:
-            opt_dict['pgtol'] = self.gtol
+            opt_dict["pgtol"] = self.gtol
 
-        opt_result = optimize.fmin_tnc(f_fp, x_init, messages=self.messages,
-                       maxfun=self.max_f_eval, **opt_dict)
+        opt_result = optimize.fmin_tnc(f_fp, x_init, messages=self.messages, maxfun=self.max_f_eval, **opt_dict)
         self.x_opt = opt_result[0]
         self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[1]
-        status_messages = getattr(optimize, 'RCSTRINGS', ())
+        status_messages = getattr(optimize, "RCSTRINGS", ())
         return_code = opt_result[2]
         if 0 <= return_code < len(status_messages):
             self.status = status_messages[return_code]
         else:
-            self.status = f'TNC return code {return_code}'
+            self.status = f"TNC return code {return_code}"
+
 
 class opt_lbfgsb(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -109,7 +112,7 @@ class opt_lbfgsb(Optimizer):
         Run the optimizer
 
         """
-        rcstrings = ['Converged', 'Maximum number of f evaluations reached', 'Error']
+        rcstrings = ["Converged", "Maximum number of f evaluations reached", "Error"]
 
         assert f_fp is not None, "BFGS requires f_fp"
 
@@ -119,19 +122,20 @@ class opt_lbfgsb(Optimizer):
         if self.ftol is not None:
             print("WARNING: l-bfgs-b doesn't have an ftol arg, so I'm going to ignore it")
         if self.gtol is not None:
-            opt_dict['pgtol'] = self.gtol
+            opt_dict["pgtol"] = self.gtol
         if self.bfgs_factor is not None:
-            opt_dict['factr'] = self.bfgs_factor
+            opt_dict["factr"] = self.bfgs_factor
 
         opt_result = optimize.fmin_l_bfgs_b(f_fp, x_init, maxfun=self.max_iters, maxiter=self.max_iters, **opt_dict)
         self.x_opt = opt_result[0]
         self.f_opt = f_fp(self.x_opt)[0]
-        self.funct_eval = opt_result[2]['funcalls']
-        self.status = rcstrings[opt_result[2]['warnflag']]
+        self.funct_eval = opt_result[2]["funcalls"]
+        self.status = rcstrings[opt_result[2]["warnflag"]]
 
-        #a more helpful error message is available in opt_result in the Error case
-        if opt_result[2]['warnflag']==2: # pragma: no coverage, this is not needed to be covered
-            self.status = 'Error' + str(opt_result[2]['task'])
+        # a more helpful error message is available in opt_result in the Error case
+        if opt_result[2]["warnflag"] == 2:  # pragma: no coverage, this is not needed to be covered
+            self.status = "Error" + str(opt_result[2]["task"])
+
 
 class opt_bfgs(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -143,7 +147,7 @@ class opt_bfgs(Optimizer):
         Run the optimizer
 
         """
-        rcstrings = ['','Maximum number of iterations exceeded', 'Gradient and/or function calls not changing']
+        rcstrings = ["", "Maximum number of iterations exceeded", "Gradient and/or function calls not changing"]
 
         opt_dict = {}
         if self.xtol is not None:
@@ -151,14 +155,16 @@ class opt_bfgs(Optimizer):
         if self.ftol is not None:
             print("WARNING: bfgs doesn't have an ftol arg, so I'm going to ignore it")
         if self.gtol is not None:
-            opt_dict['gtol'] = self.gtol
+            opt_dict["gtol"] = self.gtol
 
-        opt_result = optimize.fmin_bfgs(f, x_init, fp, disp=self.messages,
-                                            maxiter=self.max_iters, full_output=True, **opt_dict)
+        opt_result = optimize.fmin_bfgs(
+            f, x_init, fp, disp=self.messages, maxiter=self.max_iters, full_output=True, **opt_dict
+        )
         self.x_opt = opt_result[0]
         self.f_opt = f_fp(self.x_opt)[0]
         self.funct_eval = opt_result[4]
         self.status = rcstrings[opt_result[6]]
+
 
 class opt_simplex(Optimizer):
     def __init__(self, *args, **kwargs):
@@ -170,18 +176,19 @@ class opt_simplex(Optimizer):
         The simplex optimizer does not require gradients.
         """
 
-        statuses = ['Converged', 'Maximum number of function evaluations made', 'Maximum number of iterations reached']
+        statuses = ["Converged", "Maximum number of function evaluations made", "Maximum number of iterations reached"]
 
         opt_dict = {}
         if self.xtol is not None:
-            opt_dict['xtol'] = self.xtol
+            opt_dict["xtol"] = self.xtol
         if self.ftol is not None:
-            opt_dict['ftol'] = self.ftol
+            opt_dict["ftol"] = self.ftol
         if self.gtol is not None:
             print("WARNING: simplex doesn't have an gtol arg, so I'm going to ignore it")
 
-        opt_result = optimize.fmin(f, x_init, (), disp=self.messages,
-                   maxfun=self.max_f_eval, full_output=True, **opt_dict)
+        opt_result = optimize.fmin(
+            f, x_init, (), disp=self.messages, maxfun=self.max_f_eval, full_output=True, **opt_dict
+        )
 
         self.x_opt = opt_result[0]
         self.f_opt = opt_result[1]
@@ -221,10 +228,15 @@ class opt_simplex(Optimizer):
 #
 #         self.trace = opt_result[1]
 
+
 class opt_SCG(Optimizer):
     def __init__(self, *args, **kwargs):
-        if 'max_f_eval' in kwargs:
-            warn("max_f_eval deprecated for SCG optimizer: use max_iters instead!\nIgnoring max_f_eval!", FutureWarning, stacklevel=2)
+        if "max_f_eval" in kwargs:
+            warn(
+                "max_f_eval deprecated for SCG optimizer: use max_iters instead!\nIgnoring max_f_eval!",
+                FutureWarning,
+                stacklevel=2,
+            )
         Optimizer.__init__(self, *args, **kwargs)
 
         self.opt_name = "Scaled Conjugate Gradients"
@@ -233,17 +245,23 @@ class opt_SCG(Optimizer):
         assert f is not None
         assert fp is not None
 
-        opt_result = SCG(f, fp, x_init,
-                         maxiters=self.max_iters,
-                         max_f_eval=self.max_f_eval,
-                         xtol=self.xtol, ftol=self.ftol,
-                         gtol=self.gtol)
+        opt_result = SCG(
+            f,
+            fp,
+            x_init,
+            maxiters=self.max_iters,
+            max_f_eval=self.max_f_eval,
+            xtol=self.xtol,
+            ftol=self.ftol,
+            gtol=self.gtol,
+        )
 
         self.x_opt = opt_result[0]
         self.trace = opt_result[1]
         self.f_opt = self.trace[-1]
         self.funct_eval = opt_result[2]
         self.status = opt_result[3]
+
 
 def _check_for_climin():
     try:
@@ -252,20 +270,18 @@ def _check_for_climin():
         if importlib.util.find_spec("climin") is None:
             raise ImportError
     except ImportError as err:
-        raise ImportError(
-            "Need climin to run this optimizer. See https://github.com/BRML/climin."
-        ) from err
+        raise ImportError("Need climin to run this optimizer. See https://github.com/BRML/climin.") from err
+
 
 class Opt_Adadelta(Optimizer):
     def __init__(self, step_rate=0.1, decay=0.9, momentum=0, *args, **kwargs):
         Optimizer.__init__(self, *args, **kwargs)
         self.opt_name = "Adadelta (climin)"
-        self.step_rate=step_rate
+        self.step_rate = step_rate
         self.decay = decay
         self.momentum = momentum
 
         _check_for_climin()
-
 
     def opt(self, x_init, f_fp=None, f=None, fp=None):
         assert fp is not None
@@ -275,18 +291,19 @@ class Opt_Adadelta(Optimizer):
         opt = climin.adadelta.Adadelta(x_init, fp, step_rate=self.step_rate, decay=self.decay, momentum=self.momentum)
 
         for info in opt:
-            if info['n_iter']>=self.max_iters:
-                self.x_opt =  opt.wrt
-                self.status = 'maximum number of function evaluations exceeded '
+            if info["n_iter"] >= self.max_iters:
+                self.x_opt = opt.wrt
+                self.status = "maximum number of function evaluations exceeded "
                 break
-        else: # pragma: no cover
+        else:  # pragma: no cover
             pass
+
 
 class RProp(Optimizer):
     # We want the optimizer to know some things in the Optimizer implementation:
     def __init__(self, step_shrink=0.5, step_grow=1.2, min_step=1e-06, max_step=1, changes_max=0.1, *args, **kwargs):
         super(RProp, self).__init__(*args, **kwargs)
-        self.opt_name = 'RProp (climin)'
+        self.opt_name = "RProp (climin)"
         self.step_shrink = step_shrink
         self.step_grow = step_grow
         self.min_step = min_step
@@ -302,34 +319,37 @@ class RProp(Optimizer):
         import climin
 
         # Do the optimization, giving previously stored parameters
-        opt = climin.rprop.Rprop(x_init, fp,
-                                 step_shrink=self.step_shrink, step_grow=self.step_grow,
-                                 min_step=self.min_step, max_step=self.max_step,
-                                 changes_max=self.changes_max)
+        opt = climin.rprop.Rprop(
+            x_init,
+            fp,
+            step_shrink=self.step_shrink,
+            step_grow=self.step_grow,
+            min_step=self.min_step,
+            max_step=self.max_step,
+            changes_max=self.changes_max,
+        )
 
         # Get the optimized state and transform it into Paramz readable format by setting
         # values on this object:
         # Important ones are x_opt and status:
         for info in opt:
-            if info['n_iter']>=self.max_iters:
-                self.x_opt =  opt.wrt
-                self.status = 'maximum number of function evaluations exceeded'
+            if info["n_iter"] >= self.max_iters:
+                self.x_opt = opt.wrt
+                self.status = "maximum number of function evaluations exceeded"
                 break
-        else: # pragma: no cover
+        else:  # pragma: no cover
             pass
+
 
 class Adam(Optimizer):
     # We want the optimizer to know some things in the Optimizer implementation:
-    def __init__(self, step_rate=.0002,
-                                  decay=0,
-                                  decay_mom1=0.1,
-                                  decay_mom2=0.001,
-                                  momentum=0,
-                 offset=1e-8, *args, **kwargs):
+    def __init__(
+        self, step_rate=0.0002, decay=0, decay_mom1=0.1, decay_mom2=0.001, momentum=0, offset=1e-8, *args, **kwargs
+    ):
         super(Adam, self).__init__(*args, **kwargs)
-        self.opt_name = 'Adam (climin)'
+        self.opt_name = "Adam (climin)"
         self.step_rate = step_rate
-        self.decay = 1-1e-8
+        self.decay = 1 - 1e-8
         self.decay_mom1 = decay_mom1
         self.decay_mom2 = decay_mom2
         self.momentum = momentum
@@ -344,39 +364,47 @@ class Adam(Optimizer):
         import climin
 
         # Do the optimization, giving previously stored parameters
-        opt = climin.adam.Adam(x_init, fp,
-                               step_rate=self.step_rate, decay=self.decay,
-                               decay_mom1=self.decay_mom1, decay_mom2=self.decay_mom2,
-                               momentum=self.momentum,offset=self.offset)
+        opt = climin.adam.Adam(
+            x_init,
+            fp,
+            step_rate=self.step_rate,
+            decay=self.decay,
+            decay_mom1=self.decay_mom1,
+            decay_mom2=self.decay_mom2,
+            momentum=self.momentum,
+            offset=self.offset,
+        )
 
         # Get the optimized state and transform it into Paramz readable format by setting
         # values on this object:
         # Important ones are x_opt and status:
         for info in opt:
-            if info['n_iter']>=self.max_iters:
-                self.x_opt =  opt.wrt
-                self.status = 'maximum number of function evaluations exceeded'
+            if info["n_iter"] >= self.max_iters:
+                self.x_opt = opt.wrt
+                self.status = "maximum number of function evaluations exceeded"
                 break
-        else: # pragma: no cover
+        else:  # pragma: no cover
             pass
 
 
 def get_optimizer(f_min):
 
-    optimizers = {'fmin_tnc': opt_tnc,
-          'simplex': opt_simplex,
-          'lbfgsb': opt_lbfgsb,
-          'org-bfgs': opt_bfgs,
-          'scg': opt_SCG,
-          'adadelta':Opt_Adadelta,
-                  'rprop':RProp,
-                  'adam':Adam}
+    optimizers = {
+        "fmin_tnc": opt_tnc,
+        "simplex": opt_simplex,
+        "lbfgsb": opt_lbfgsb,
+        "org-bfgs": opt_bfgs,
+        "scg": opt_SCG,
+        "adadelta": Opt_Adadelta,
+        "rprop": RProp,
+        "adam": Adam,
+    }
 
-    #if rasm_available:
+    # if rasm_available:
     #    optimizers['rasmussen'] = opt_rasm
 
     for opt_name in sorted(optimizers.keys()):
         if opt_name.lower().find(f_min.lower()) != -1:
             return optimizers[opt_name]
 
-    raise KeyError(f'No optimizer was found matching the name: {f_min}')
+    raise KeyError(f"No optimizer was found matching the name: {f_min}")

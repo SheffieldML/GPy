@@ -32,6 +32,8 @@ This file provides an overview of all current backlog items organized by categor
 
 ### In Progress
 
+- [CIP-000E — Cholesky Murray blocked soak and multicore confirmation](infrastructure/2026-11-16_cip000E-cholesky-murray-soak.md)
+
 - [CIP-000C — migrate contributor packaging from Poetry to uv](infrastructure/2026-11-13_cip000C-uv-packaging-cutover.md)
 
 - [Deprecate matplotlib visualize LVM callbacks](infrastructure/2026-10-26_deprecate-matplotlib-visualize.md)
@@ -87,6 +89,16 @@ This file provides an overview of all current backlog items organized by categor
 ---
 
 ## Recently Completed Tasks
+
+- [CIP-000E Phase 2 — remove Cython build surface after hybrid soak](infrastructure/2026-11-16_cip000E-phase2-cython-removal.md)
+
+- [CIP-000E — decide symmetrify default (blocked NumPy vs Cython)](infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
+
+- [CIP-000E — replace flat/triang Cholesky maps with tril_indices NumPy](infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
+
+- [CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form](infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
+
+- [CIP-000E — replace stationary Cython grads with CIP-cited NumPy/BLAS forms](infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
 
 - [MRD constructor ignores user-supplied Z=](bugs/2026-11-20_mrd-ignores-constructor-z.md)
 

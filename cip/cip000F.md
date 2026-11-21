@@ -171,6 +171,35 @@ below).
 
 **Non-goal:** Making the entire GPy 1 codebase JAX-compatible.
 
+**Seed material from CIP-000E (2026-11-16).** Cython removal already extracted
+several hot-path primitives that match Stage 2 conventions (array in /
+array out; no `paramz` / model coupling). Treat them as examples and as
+inputs to Stage 2T, not as completion of Stage 2:
+
+| Primitive | Location | Notes for Stage 2 / 2T |
+|---|---|---|
+| `cholesky_vjp`, `cholesky_vjp_blocked` | `GPy/util/choleskies.py` | Murray blocked is the default backprop; hybrid uses unblocked VJP on *updated* diagonal blocks |
+| `lengthscale_grads_sqdiff`, `gradients_X_from_tmp` | `GPy/kern/src/stationary_ops.py` | Expanded BLAS forms; **mean-centre** shared ``X``/``X2`` offsets before expanding |
+| `gradient_reduce` | `GPy/kern/src/coregionalize_ops.py` | One-hot / ``O.T @ dL @ O`` style |
+| triang maps / blocked `symmetrify` | `choleskies.py` / `linalg.py` | Packaging win; still slower than former Cython at small sizes |
+
+**Lessons (do not rediscover in Stage 2):**
+
+1. **Cite the winning algorithm, then measure.** Column-matvec BLAS matched
+   the oracle but lost to Cython; Murray Level-3 blocked cleared the bar.
+2. **Expanded identities are not automatically numerically safe.**
+   ``(x-y)^2 = x^2+y^2-2xy`` and ``Σ tmp·(x-y) = X·rowsum − tmp@X2`` fail
+   under large shared offsets (e.g. Unix seconds). Shared mean-shift fixes
+   the common case; direct-difference forms remain safer when the *spread*
+   itself is huge vs the lengthscale.
+3. **Blocked factorisations need care on stiff ``K``.** Symbolic reverse on
+   a diagonal block *after* ``Dbar -= tril(Cbar.T @ C)`` is less stable than
+   the unblocked recurrence on that block; keep symbolic when the whole
+   factor fits in one block.
+4. **JAX transformation is still not a Stage 2 / Cython-removal gate.**
+   CIP-000E Accepted and removed Cython on performance, correctness and
+   packaging evidence alone.
+
 **Stage 2T — Transformation-readiness experiments (extends Stage 2; does not
 compete with it).**
 
@@ -442,6 +471,8 @@ None yet. Candidates after Accept:
 - [ ] Stage 1: domains, optimisation vendored
 - [ ] Stage 2: pure numerical functions (kernels, likelihoods);
       transformation-readiness design principle applied where practical
+      (CIP-000E seeded Cholesky / stationary / coregionalize primitives —
+      see Stage 2 section)
 - [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
       barriers classified and documented for CIP-0010
 - [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP
@@ -454,14 +485,12 @@ None yet. Candidates after Accept:
 
 1. **CIP-0002:** fold tying into Stage 4 Option B, or keep CIP-0002 separate and
    make it depend on this CIP?
-2. **Cython:** already [CIP-000E](cip000E.md)
-   ([Discussion #1279](https://github.com/SheffieldML/GPy/discussions/1279)).
-   This CIP does not decide keep vs remove. CIP-000E Phase 1 replacements
-   should follow Stage 2 pure-function conventions where practical so the
-   same hot paths are not refactored twice; successful JAX transformation is
-   **not** an acceptance criterion for Cython removal. Stages 0–3 of this CIP
-   do not depend on CIP-000E's Accept outcome. If CIP-000E removes the Cython
-   build hook, packaging gets simpler and the paramz stages stay the same.
+2. **Cython:** **resolved by CIP-000E** (Accept Option C → Phase 2 toward A;
+   [Discussion #1279](https://github.com/SheffieldML/GPy/discussions/1279)).
+   Branch `cip000E-numpy-blas-primitives` removes the five extensions and the
+   Poetry build hook; GPy 1 remains NumPy/SciPy. Stage 2 should **reuse** the
+   E primitives above rather than re-extracting the same hotspots. Packaging
+   (CIP-000C) no longer needs a Cython compile surface once E merges.
 3. **Caching policy:** prefer posterior-scoped `ConditionedState` (Stage 2N)
    over long-lived observer caches where possible; keep a thin
    version-counter interim for GPy 1 if needed. Confirm at Accept.
@@ -476,8 +505,9 @@ None yet. Candidates after Accept:
 - [CIP-0002](cip0002.md) — Parameter tying (Option 3: replace paramz)
 - [CIP-0005](cip0005.md) — Ruff adoption (`UP008` deferred for paramz)
 - [CIP-0006](cip0006.md) — Serialization maintenance
-- [CIP-000C](cip000C.md) — uv packaging (Cython build-hook constraint)
-- [CIP-000E](cip000E.md) — Cython hygiene and direction
+- [CIP-000C](cip000C.md) — uv packaging (Cython build hook removed by CIP-000E)
+- [CIP-000E](cip000E.md) — Cython hygiene and direction (Option C → A;
+  pure NumPy/BLAS primitives; numerics lessons above)
 - [CIP-0010](cip0010.md) — GPy2 readiness (transformation-readiness report;
   evidence before backend selection)
 - Backlog: `bugs/2026-10-10_pickle-live-kernels.md`,

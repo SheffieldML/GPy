@@ -33,12 +33,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install lib (uv, with Cython build)
+      - name: Install lib (uv; pure-Python after CIP-000E Phase 2)
         run: uv sync
 
-      - name: Smoke-import Cython extensions
+      - name: Smoke-import core package
         run: |
-          uv run python -c "from GPy.kern.src import stationary_cython; from GPy.util import choleskies_cython, linalg_cython; from GPy.kern.src import coregionalize_cython; from GPy.models import state_space_cython; print('cython ok')"
+          uv run python -c "import GPy; from GPy.util import choleskies, linalg; from GPy.kern.src import stationary_ops, coregionalize_ops; print('gpy ok', GPy.__version__)"
 
       - name: pytest
         run: uv run pytest GPy/testing
@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install lib (uv, with Cython build)
+      - name: Install lib (uv; pure-Python after CIP-000E Phase 2)
         run: uv sync --extra plotting
 
       - name: pytest with coverage

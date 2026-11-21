@@ -158,6 +158,13 @@ class TestCholeskiesBackprop:
         with pytest.raises(ValueError, match="block_size"):
             choleskies.cholesky_vjp_blocked(dL, L, block_size=0)
 
+    def test_blocked_single_block_matches_pure(self):
+        """``block_size >= N`` uses the Murray symbolic reverse."""
+        self.setup_method()
+        r_pure = choleskies._backprop_gradient_pure(self.dL, self.L)
+        r_one = choleskies.cholesky_vjp_blocked(self.dL, self.L, block_size=self.L.shape[0])
+        assert np.allclose(r_pure, r_one)
+
     def test_blocked_matches_pure_on_illconditioned_rbf(self):
         """Multi-block Murray path must track the pure recurrence on stiff K.
 
@@ -238,6 +245,20 @@ class TestCoregionalizeReduce:
             coregionalize_ops.gradient_reduce(self.dL, self.index[:2, 0], self.index2[:, 0], self.D)
         with pytest.raises(ValueError, match="output_dim"):
             coregionalize_ops.gradient_reduce(self.dL, self.index[:, 0], self.index2[:, 0], 0)
+        bad_index = self.index[:, 0].copy()
+        bad_index[0] = self.D
+        with pytest.raises(ValueError, match="index values"):
+            coregionalize_ops.gradient_reduce(self.dL, bad_index, self.index2[:, 0], self.D)
+        bad_index2 = self.index2[:, 0].copy()
+        bad_index2[0] = -1
+        with pytest.raises(ValueError, match="index2 values"):
+            coregionalize_ops.gradient_reduce(self.dL, self.index[:, 0], bad_index2, self.D)
+
+    def test_removed_cython_reduce_stubs_raise(self):
+        with pytest.raises(ImportError, match="Phase 2"):
+            self.k._K_cython(self.index)
+        with pytest.raises(ImportError, match="Phase 2"):
+            self.k._gradient_reduce_cython(self.dL, self.index, self.index2)
 
 
 def test_stationary_ops_reject_bad_shapes():
@@ -249,7 +270,21 @@ def test_stationary_ops_reject_bad_shapes():
     with pytest.raises(ValueError, match="2-D"):
         stationary_ops.lengthscale_grads_sqdiff(np.ones(3), X, X2)
     with pytest.raises(ValueError, match="incompatible"):
+        stationary_ops.lengthscale_grads_sqdiff(tmp, X, np.ones((2, 2)))
+    with pytest.raises(ValueError, match="2-D"):
+        stationary_ops.gradients_X_from_tmp(np.ones(3), X, X2)
+    with pytest.raises(ValueError, match="incompatible"):
         stationary_ops.gradients_X_from_tmp(tmp, X, np.ones((2, 2)))
+
+
+def test_removed_stationary_cython_stubs_raise():
+    k = GPy.kern.RBF(2)
+    X = np.random.randn(5, 2)
+    tmp = np.random.randn(5, 5)
+    with pytest.raises(ImportError, match="Phase 2"):
+        k._lengthscale_grads_cython(tmp, X, X)
+    with pytest.raises(ImportError, match="Phase 2"):
+        k._gradients_X_cython(tmp, X)
 
 
 def test_state_space_cython_removed():

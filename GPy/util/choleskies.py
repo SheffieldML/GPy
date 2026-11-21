@@ -214,7 +214,7 @@ def cholesky_vjp_blocked(dL, L, block_size=128):
     if block_size < 1:
         raise ValueError("block_size must be >= 1")
     N = L.shape[0]
-    if N <= block_size:
+    if block_size >= N:
         d[:] = _chol_symbolic_rev(L, d)
         return d
     for k in range(N, -1, -block_size):

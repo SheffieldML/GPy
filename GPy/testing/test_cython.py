@@ -28,6 +28,12 @@ class TestCholsMaps:
         flat2 = choleskies.triang_to_flat(L)
         assert np.allclose(self.flat, flat2)
 
+    def test_removed_cython_map_stubs_raise(self):
+        with pytest.raises(ImportError, match="Phase 2"):
+            choleskies._flat_to_triang_cython(self.flat)
+        with pytest.raises(ImportError, match="Phase 2"):
+            choleskies._triang_to_flat_cython(self.triang)
+
 
 class TestStationary:
     def setup_method(self):
@@ -94,9 +100,7 @@ class TestStationary:
         X, X2 = X0 + offset, X20 + offset
 
         def loop_len():
-            return np.array(
-                [np.sum(tmp * np.square(X[:, q : q + 1] - X2[:, q : q + 1].T)) for q in range(Q)]
-            )
+            return np.array([np.sum(tmp * np.square(X[:, q : q + 1] - X2[:, q : q + 1].T)) for q in range(Q)])
 
         def loop_gx():
             g = np.empty((N, Q))
@@ -104,12 +108,8 @@ class TestStationary:
                 g[:, q] = np.sum(tmp * (X[:, q][:, None] - X2[:, q][None, :]), axis=1)
             return g
 
-        assert np.allclose(
-            stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2), loop_len(), rtol=0, atol=1e-8
-        )
-        assert np.allclose(
-            stationary_ops.gradients_X_from_tmp(tmp, X, X2), loop_gx(), rtol=0, atol=1e-8
-        )
+        assert np.allclose(stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2), loop_len(), rtol=0, atol=1e-8)
+        assert np.allclose(stationary_ops.gradients_X_from_tmp(tmp, X, X2), loop_gx(), rtol=0, atol=1e-8)
 
 
 class TestCholeskiesBackprop:
@@ -147,6 +147,16 @@ class TestCholeskiesBackprop:
 
     def test_default_backprop_is_murray_blocked(self):
         assert choleskies.backprop_gradient is choleskies.cholesky_vjp_blocked
+
+    def test_cholesky_vjp_rejects_bad_shapes_and_block_size(self):
+        L = np.eye(3)
+        dL = np.eye(3)
+        with pytest.raises(ValueError, match="same shape"):
+            choleskies.cholesky_vjp(np.eye(2), L)
+        with pytest.raises(ValueError, match="same shape"):
+            choleskies.cholesky_vjp_blocked(np.eye(2), L)
+        with pytest.raises(ValueError, match="block_size"):
+            choleskies.cholesky_vjp_blocked(dL, L, block_size=0)
 
     def test_blocked_matches_pure_on_illconditioned_rbf(self):
         """Multi-block Murray path must track the pure recurrence on stiff K.
@@ -187,6 +197,14 @@ class TestSymmetrify:
         linalg._symmetrify_blocked(C, upper=True, block_size=16)
         assert np.allclose(B, C)
 
+    def test_removed_cython_symmetrify_stub_raises(self):
+        with pytest.raises(ImportError, match="Phase 2"):
+            linalg._symmetrify_cython(np.eye(3))
+
+    def test_blocked_rejects_non_square(self):
+        with pytest.raises(ValueError, match="square"):
+            linalg._symmetrify_blocked(np.zeros((3, 2)))
+
 
 class TestCoregionalizeReduce:
     def setup_method(self):
@@ -208,10 +226,30 @@ class TestCoregionalizeReduce:
     def test_ops_no_kern_required(self):
         from GPy.kern.src import coregionalize_ops
 
-        out = coregionalize_ops.gradient_reduce(
-            self.dL, self.index[:, 0], self.index2[:, 0], self.D
-        )
+        out = coregionalize_ops.gradient_reduce(self.dL, self.index[:, 0], self.index2[:, 0], self.D)
         assert out.shape == (self.D, self.D)
+
+    def test_ops_reject_bad_inputs(self):
+        from GPy.kern.src import coregionalize_ops
+
+        with pytest.raises(ValueError, match="2-D"):
+            coregionalize_ops.gradient_reduce(np.ones(3), self.index[:, 0], self.index2[:, 0], self.D)
+        with pytest.raises(ValueError, match="length"):
+            coregionalize_ops.gradient_reduce(self.dL, self.index[:2, 0], self.index2[:, 0], self.D)
+        with pytest.raises(ValueError, match="output_dim"):
+            coregionalize_ops.gradient_reduce(self.dL, self.index[:, 0], self.index2[:, 0], 0)
+
+
+def test_stationary_ops_reject_bad_shapes():
+    from GPy.kern.src import stationary_ops
+
+    tmp = np.ones((4, 3))
+    X = np.ones((4, 2))
+    X2 = np.ones((3, 2))
+    with pytest.raises(ValueError, match="2-D"):
+        stationary_ops.lengthscale_grads_sqdiff(np.ones(3), X, X2)
+    with pytest.raises(ValueError, match="incompatible"):
+        stationary_ops.gradients_X_from_tmp(tmp, X, np.ones((2, 2)))
 
 
 def test_state_space_cython_removed():

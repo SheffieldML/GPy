@@ -15,6 +15,13 @@ class Model(ParamzModel, Priorizable):
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
 
+    def bump_cache_version(self):
+        """CIP-000F Stage 3: invalidate Cache_this entries for this model."""
+        self._cache_version = getattr(self, "_cache_version", 0) + 1
+        cache = getattr(self, "cache", None)
+        if cache is not None and hasattr(cache, "reset"):
+            cache.reset()
+
     def optimize(
         self,
         optimizer=None,

@@ -1,7 +1,7 @@
 ---
 id: 2026-11-21_cip000F-stage3-caching-obsar
 title: CIP-000F Stage 3 — replace Cache_this / ObsAr with version-counter cache
-status: Proposed
+status: Completed
 priority: Medium
 created: "2026-11-21"
 last_updated: "2026-11-21"
@@ -28,17 +28,23 @@ cache. Ship pickle alias for `ObsAr` and a load-previous-release test.
 
 ## Acceptance Criteria
 
-- [ ] Wall-clock benchmarks recorded in CIP-000F before cache removal
-- [ ] `ObsAr` move has `sys.modules` alias or custom unpickler + fixture
-- [ ] Posterior-scoped state preferred over long-lived observer caches
-- [ ] Tests green including pickle round-trip
+- [x] Wall-clock benchmarks recorded in CIP-000F before cache removal
+- [x] `ObsAr` move has `sys.modules` alias or custom unpickler + fixture
+- [x] Posterior-scoped state preferred over long-lived observer caches
+- [x] Tests green including pickle round-trip
 
 ## Related
 
 - CIP: 000F
+- Notes: [`cip/cip000F/notes/stage3-caching-obsar.md`](../../cip/cip000F/notes/stage3-caching-obsar.md)
 
 ## Progress Updates
 
 ### 2026-11-21
 
 Task created Proposed after CIP-000F Accept (starts after Stage 2 / 2N).
+
+### 2026-11-21 (later)
+
+Completed: GPy-owned caching with `_cache_version`, GP X/Y as ndarray,
+ObsAr module alias, benchmarks, tests in `test_stage3_caching_obsar.py`.

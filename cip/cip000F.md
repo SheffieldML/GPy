@@ -2,8 +2,8 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000F"
-last_updated: "2026-11-16"
-status: Proposed
+last_updated: "2026-11-21"
+status: In Progress
 compressed: false
 related_requirements: []
 related_cips:
@@ -29,14 +29,14 @@ title: Staged reduction of the paramz dependency
 ## Status
 
 - [x] Proposed - Initial idea documented (open for Discussion feedback)
-- [ ] Accepted - Approved, ready to start work
-- [ ] In Progress - Actively being implemented
+- [x] Accepted - Approved, ready to start work (Accept decisions below)
+- [x] In Progress - Actively being implemented
 - [ ] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
 - [ ] Deferred - Postponed
 
-Community review: [Discussion #1293](https://github.com/SheffieldML/GPy/discussions/1293) (Ideas; same pattern as CIP-000E / [#1279](https://github.com/SheffieldML/GPy/discussions/1279)).
+Community review: [Discussion #1293](https://github.com/SheffieldML/GPy/discussions/1293) (Ideas; same pattern as CIP-000E / [#1279](https://github.com/SheffieldML/GPy/discussions/1279)). Discussion had no replies by Accept; decisions below record the CIP defaults.
 
 ## Summary
 
@@ -403,8 +403,8 @@ These principles govern Stage 2 / 2T and are shared with
 
 ## Implementation Plan
 
-1. **Proposed (this phase):** open Ideas Discussion; gather feedback on stage
-   boundaries and Stage 4 options.
+1. **Proposed → Accepted:** Ideas Discussion opened; Accept decisions recorded
+   below (2026-11-21).
 2. **Stage 0** after Accept: one PR; Ruff rule enabled in the same PR.
 3. **Stage 1:** domains + optimisation; GPy-owned `optimize` dispatch.
 4. **Stage 2:** kernel-by-kernel PRs (stationary family first), then
@@ -462,11 +462,43 @@ None yet. Candidates after Accept:
 - Numerical core reusable under functional transformations (Stage 2 / 2T;
   evidence for CIP-0010 / GPy 2 architecture)
 
+## Accept decisions (2026-11-21)
+
+Accepted on branch/worktree `cip000F-paramz-reduction`
+after Discussion [#1293](https://github.com/SheffieldML/GPy/discussions/1293)
+(no community replies by Accept date). Stage boundaries and pickle policy as
+in this CIP; open questions resolved as follows:
+
+1. **CIP-0002:** keep **separate**. Parameter tying remains its own CIP and
+   **depends on** this one (Stage 4 Option B, if chosen, is the natural
+   enablement point — not a fold-in).
+2. **Cython:** already resolved by CIP-000E (Option C → Phase 2 toward A;
+   [Discussion #1279](https://github.com/SheffieldML/GPy/discussions/1279);
+   Phase 2 merged via [#1312](https://github.com/SheffieldML/GPy/pull/1312)).
+   Stage 2 **reuses** CIP-000E pure primitives (`stationary_ops`, Cholesky
+   Murray, `coregionalize_ops`, …) rather than re-extracting those hotspots.
+3. **Caching policy:** confirmed — prefer posterior-scoped `ConditionedState`
+   (Stage 2N) over long-lived observer caches; allow a thin version-counter
+   interim in GPy 1 if benchmarks require it before Stage 3 lands.
+4. **Stage 4 default:** **A (vendor) as interim**, then decide on B. Keeps the
+   public constrain/fix/prior/indexing surface while dropping the external
+   paramz package; B stays a separate Accept with a short design note (may
+   become its own CIP).
+5. **Operator protocol depth in GPy 1:** **conceptual boundary + dense
+   reference only**. No in-tree matvec operator hierarchy in GPy 1; Stage 2N
+   documents the protocols and demonstrates condition-once / predict-many via
+   pure state.
+6. **Pickle policy:** any stage that moves a pickled class (Stage 3 `ObsAr`;
+   Stage 4 core) ships a `sys.modules` alias or custom unpickler, plus a
+   load-previous-release pickle test, before merge.
+7. **Worktree:** implementation proceeds on `cip000F-paramz-reduction`
+   starting at Stage 0.
+
 ## Implementation Status
 
 - [x] Draft CIP-000F (Proposed)
 - [x] Ideas Discussion opened ([#1293](https://github.com/SheffieldML/GPy/discussions/1293))
-- [ ] Accept: stage boundaries; pickle-compatibility policy
+- [x] Accept: stage boundaries; pickle-compatibility policy (2026-11-21)
 - [ ] Stage 0: single import boundary + Ruff rule
 - [ ] Stage 1: domains, optimisation vendored
 - [ ] Stage 2: pure numerical functions (kernels, likelihoods);
@@ -479,26 +511,24 @@ None yet. Candidates after Accept:
       condition-once / predict-many via pure state demonstrated
 - [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
 - [ ] Stage 4: core decision recorded
-- [ ] Backlog tasks created (only after Accept)
+- [x] Backlog tasks created (only after Accept):
+      [Stage 0](../backlog/infrastructure/2026-11-21_cip000F-stage0-import-boundary.md),
+      [Stage 1](../backlog/infrastructure/2026-11-21_cip000F-stage1-domains-optimisation.md),
+      [Stage 2](../backlog/infrastructure/2026-11-21_cip000F-stage2-pure-numerical.md),
+      [Stage 2T](../backlog/infrastructure/2026-11-21_cip000F-stage2t-jax-assessment.md),
+      [Stage 2N](../backlog/infrastructure/2026-11-21_cip000F-stage2n-numerical-interfaces.md),
+      [Stage 3](../backlog/infrastructure/2026-11-21_cip000F-stage3-caching-obsar.md),
+      [Stage 4](../backlog/infrastructure/2026-11-21_cip000F-stage4-paramz-core-decision.md)
 
-## Open questions (resolve at Accept)
+## Open questions (resolved at Accept)
 
-1. **CIP-0002:** fold tying into Stage 4 Option B, or keep CIP-0002 separate and
-   make it depend on this CIP?
-2. **Cython:** **resolved by CIP-000E** (Accept Option C → Phase 2 toward A;
-   [Discussion #1279](https://github.com/SheffieldML/GPy/discussions/1279)).
-   Branch `cip000E-numpy-blas-primitives` removes the five extensions and the
-   Poetry build hook; GPy 1 remains NumPy/SciPy. Stage 2 should **reuse** the
-   E primitives above rather than re-extracting the same hotspots. Packaging
-   (CIP-000C) no longer needs a Cython compile surface once E merges.
-3. **Caching policy:** prefer posterior-scoped `ConditionedState` (Stage 2N)
-   over long-lived observer caches where possible; keep a thin
-   version-counter interim for GPy 1 if needed. Confirm at Accept.
-4. **Stage 4 default:** A (vendor) as an interim step before B, or go to B
-   directly?
-5. **Operator protocol depth in GPy 1:** stop at documenting the conceptual
-   boundary + dense reference implementation, or also ship a minimal
-   matvec-based experimental path in-tree (still without a full hierarchy)?
+See [Accept decisions](#accept-decisions-2026-11-21). Summaries:
+
+1. **CIP-0002:** keep separate; depends on this CIP.
+2. **Cython:** resolved by CIP-000E / [#1312](https://github.com/SheffieldML/GPy/pull/1312); reuse E primitives in Stage 2.
+3. **Caching policy:** `ConditionedState` preferred; thin version-counter interim OK.
+4. **Stage 4 default:** A (vendor) interim, then decide on B.
+5. **Operator protocol depth:** conceptual + dense reference only in GPy 1.
 
 ## References
 

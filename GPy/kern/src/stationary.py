@@ -6,7 +6,6 @@ import numpy as np
 from scipy import integrate
 from .kern import Kern
 from ...core.parameterization import Param
-from ...util.linalg import tdot
 from ... import util
 from paramz.caching import Cache_this
 from paramz.transformations import Logexp
@@ -135,21 +134,36 @@ class Stationary(Kern):
         """
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
+
+        Direct differences (not the expanded ``|x|^2+|x'|^2-2x·x'`` form) keep
+        translation invariance under large shared offsets and give exact ``r=0``
+        for coincident points — including off-diagonal duplicates when ``X2 is X``.
         """
         # X, = self._slice_X(X)
         if X2 is None:
-            Xsq = np.sum(np.square(X), 1)
-            r2 = -2.0 * tdot(X) + (Xsq[:, None] + Xsq[None, :])
+            X2 = X
+            r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
             util.diag.view(r2)[:,] = 0.0  # force diagnoal to be zero: sometime numerically a little negative
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
-        else:
-            # X2, = self._slice_X(X2)
-            X1sq = np.sum(np.square(X), 1)
-            X2sq = np.sum(np.square(X2), 1)
-            r2 = -2.0 * np.dot(X, X2.T) + (X1sq[:, None] + X2sq[None, :])
-            r2 = np.clip(r2, 0, np.inf)
-            return np.sqrt(r2)
+        r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
+        r2 = np.clip(r2, 0, np.inf)
+        return np.sqrt(r2)
+
+    # Beyond this, RBF-like kernels are numerically zero; clipping avoids
+    # overflow in r**2 and in 1/lengthscale**2 paths used by DiffKern.
+    _MAX_SCALED_R = 1e8
+    # Cap so products of up to three (dist/l**2) factors stay in float64
+    # (DiffKern uses up to third X-derivatives of RBF).
+    _MAX_INV_LENGTHSCALE = 1e50
+
+    def _safe_inv_lengthscale(self, X_input_dim=None):
+        """1/lengthscale clipped so inv**2 / inv**3 stay finite in float64."""
+        dim = self.input_dim if X_input_dim is None else X_input_dim
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            inv = np.ones(dim) / np.asarray(self.lengthscale, dtype=float)
+        inv = np.nan_to_num(inv, nan=0.0, posinf=self._MAX_INV_LENGTHSCALE, neginf=0.0)
+        return np.clip(inv, 0.0, self._MAX_INV_LENGTHSCALE)
 
     @Cache_this(limit=3, ignore_args=())
     def _scaled_dist(self, X, X2=None):
@@ -164,12 +178,15 @@ class Stationary(Kern):
         function for caching) and divide by lengthscale afterwards
 
         """
-        if self.ARD:
-            if X2 is not None:
-                X2 = X2 / self.lengthscale
-            return self._unscaled_dist(X / self.lengthscale, X2)
-        else:
-            return self._unscaled_dist(X, X2) / self.lengthscale
+        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+            if self.ARD:
+                if X2 is not None:
+                    X2 = X2 / self.lengthscale
+                r = self._unscaled_dist(X / self.lengthscale, X2)
+            else:
+                r = self._unscaled_dist(X, X2) / self.lengthscale
+        r = np.nan_to_num(r, nan=np.inf, posinf=np.inf, neginf=np.inf)
+        return np.minimum(r, self._MAX_SCALED_R)
 
     def Kdiag(self, X):
         ret = np.empty(X.shape[0])
@@ -213,7 +230,11 @@ class Stationary(Kern):
             self.lengthscale.gradient = self._lengthscale_grads_blas(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
-            self.lengthscale.gradient = -np.sum(dL_dr * r) / self.lengthscale
+            with np.errstate(invalid="ignore", divide="ignore"):
+                grad = -np.sum(dL_dr * r) / self.lengthscale
+            # At the Logexp floor lengthscale→0 can yield 0*inf=NaN; a non-finite
+            # gradient poisons quasi-Newton steps even when the objective is finite.
+            self.lengthscale.gradient = np.where(np.isfinite(grad), grad, 0.0)
 
     def update_gradients_direct(self, dL_dVar, dL_dLen):
         """

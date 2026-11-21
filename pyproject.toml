@@ -139,3 +139,6 @@ select = [
 filterwarnings = [
     "ignore:Passing unrecognized arguments to super\\(HTML\\):DeprecationWarning",
 ]
+markers = [
+    "numerical: adversarial / extreme-input numerical stability (CIP-0011)",
+]

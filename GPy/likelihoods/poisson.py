@@ -30,6 +30,39 @@ class Poisson(Likelihood):
         """
         return self.gp_link.transf(f)
 
+    def logpdf(self, f, y, Y_metadata=None):
+        # With the default Log link, λ=e^f. Work in f so deep-negative latents stay
+        # finite: -e^f + y f - gammaln(y+1) rather than y*log(e^f) after underflow.
+        if isinstance(self.gp_link, link_functions.Log):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            with np.errstate(over="ignore"):
+                rate = np.exp(f)
+            return -rate + y * f - special.gammaln(y + 1)
+        return super(Poisson, self).logpdf(f, y, Y_metadata=Y_metadata)
+
+    def dlogpdf_df(self, f, y, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Log):
+            f = np.asarray(f, dtype=float)
+            y = np.asarray(y, dtype=float)
+            with np.errstate(over="ignore"):
+                return y - np.exp(f)
+        return super(Poisson, self).dlogpdf_df(f, y, Y_metadata=Y_metadata)
+
+    def d2logpdf_df2(self, f, y, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Log):
+            f = np.asarray(f, dtype=float)
+            with np.errstate(over="ignore"):
+                return -np.exp(f)
+        return super(Poisson, self).d2logpdf_df2(f, y, Y_metadata=Y_metadata)
+
+    def d3logpdf_df3(self, f, y, Y_metadata=None):
+        if isinstance(self.gp_link, link_functions.Log):
+            f = np.asarray(f, dtype=float)
+            with np.errstate(over="ignore"):
+                return -np.exp(f)
+        return super(Poisson, self).d3logpdf_df3(f, y, Y_metadata=Y_metadata)
+
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
@@ -65,7 +98,13 @@ class Poisson(Likelihood):
         :rtype: float
 
         """
-        return -link_f + y * np.log(link_f) - special.gammaln(y + 1)
+        # y*log(λ) is 0*(-inf)=NaN when λ underflows and y=0; keep that case finite.
+        link_f = np.asarray(link_f, dtype=float)
+        y = np.asarray(y, dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            log_rate = np.log(link_f)
+        y_log_rate = np.where(y == 0, 0.0, y * log_rate)
+        return -link_f + y_log_rate - special.gammaln(y + 1)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -83,7 +122,12 @@ class Poisson(Likelihood):
         :rtype: Nx1 array
 
         """
-        return y / link_f - 1
+        link_f = np.asarray(link_f, dtype=float)
+        y = np.asarray(y, dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            grad = y / link_f - 1.0
+        # lim_{λ→0} (0/λ - 1) = -1
+        return np.where((y == 0) & (link_f == 0), -1.0, grad)
 
     def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """

@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
 import six

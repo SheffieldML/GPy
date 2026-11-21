@@ -5,7 +5,7 @@ The module for psi-statistics for RBF kernel
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
-from paramz.caching import Cacher
+from GPy.core.parameterization.caching import Cacher
 
 
 def _row_slices(N, chunk_size):

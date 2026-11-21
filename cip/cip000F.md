@@ -112,7 +112,10 @@ may be re-scoped at their own Accept point.
   `core/parameterization/` and `inference/optimization/` to GPy paths.
 - Add a Ruff `TID251` (`banned-api`) rule forbidding `paramz` imports outside
   those packages.
-- Exit: paramz imported in ≤ ~8 modules; full test suite unchanged.
+- Exit: **zero** direct `paramz` imports outside the two allowed packages
+  (façade modules inside the boundary may exceed the original ~8 estimate;
+  landed at 10 including new `caching` / `domains` re-export modules); full
+  test suite unchanged.
 
 **Stage 1 — Vendor loosely coupled pieces.**
 - `domains` (constants) and `optimization` (SCG / L-BFGS-B wrappers; requires a
@@ -499,7 +502,7 @@ in this CIP; open questions resolved as follows:
 - [x] Draft CIP-000F (Proposed)
 - [x] Ideas Discussion opened ([#1293](https://github.com/SheffieldML/GPy/discussions/1293))
 - [x] Accept: stage boundaries; pickle-compatibility policy (2026-11-21)
-- [ ] Stage 0: single import boundary + Ruff rule
+- [x] Stage 0: single import boundary + Ruff rule
 - [ ] Stage 1: domains, optimisation vendored
 - [ ] Stage 2: pure numerical functions (kernels, likelihoods);
       transformation-readiness design principle applied where practical

@@ -21,7 +21,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        from paramz.transformations import Logexp
+        from GPy.core.parameterization.transformations import Logexp
 
         super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
         self.sharedX = sharedX
@@ -65,7 +65,7 @@ class IBPPosterior(SpikeAndSlabPosterior):
 class IBPPrior(VariationalPrior):
     def __init__(self, input_dim, alpha=2.0, name="IBPPrior", **kw):
         super(IBPPrior, self).__init__(name=name, **kw)
-        from paramz.transformations import __fixed__
+        from GPy.core.parameterization.transformations import __fixed__
 
         self.input_dim = input_dim
         self.variance = 1.0
@@ -132,7 +132,7 @@ class SLVMPosterior(SpikeAndSlabPosterior):
         """
         binary_prob : the probability of the distribution on the slab part.
         """
-        from paramz.transformations import Logexp
+        from GPy.core.parameterization.transformations import Logexp
 
         super(SLVMPosterior, self).__init__(means, variances, binary_prob, group_spike=False, name=name)
         self.tau = Param("tau_", np.ones((self.gamma.shape[1], 2)), Logexp())

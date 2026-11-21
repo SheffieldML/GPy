@@ -3,7 +3,7 @@
 
 import numpy as np
 from ..core import Model
-from paramz import ObsAr
+from GPy.core.parameterization import ObsAr
 from .. import likelihoods
 
 

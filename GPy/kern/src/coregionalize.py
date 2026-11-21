@@ -4,7 +4,7 @@
 from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
-from paramz.transformations import Logexp
+from GPy.core.parameterization.transformations import Logexp
 from . import coregionalize_ops
 
 # CIP-000E Phase 2: Cython extensions removed.

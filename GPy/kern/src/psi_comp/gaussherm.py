@@ -8,7 +8,7 @@ An approximated psi-statistics implementation based on Gauss-Hermite Quadrature
 import numpy as np
 
 from ....core.parameterization import Param
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 from ....util.linalg import tdot
 from . import PSICOMP
 
@@ -28,7 +28,7 @@ class PSICOMP_GH(PSICOMP):
     @Cache_this(limit=3, ignore_args=(0,))
     def comp_K(self, Z, qX):
         if self.Xs is None or self.Xs.shape != qX.mean.shape:
-            from paramz import ObsAr
+            from GPy.core.parameterization import ObsAr
 
             self.Xs = ObsAr(np.empty((self.degree,) + qX.mean.shape))
         mu, S = qX.mean.values, qX.variance.values

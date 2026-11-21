@@ -7,8 +7,8 @@ from scipy import integrate
 from .kern import Kern
 from ...core.parameterization import Param
 from ... import util
-from paramz.caching import Cache_this
-from paramz.transformations import Logexp
+from GPy.core.parameterization.caching import Cache_this
+from GPy.core.parameterization.transformations import Logexp
 
 from . import stationary_ops
 

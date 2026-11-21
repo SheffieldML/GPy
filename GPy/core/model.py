@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .parameterization.priorizable import Priorizable
-from paramz import Model as ParamzModel
+from .parameterization import ParamzModel
 import numpy as np
 
 

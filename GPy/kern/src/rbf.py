@@ -6,8 +6,8 @@ import numpy as np
 from .stationary import Stationary
 from .psi_comp import PSICOMP_RBF, PSICOMP_RBF_GPU
 from ...core import Param
-from paramz.caching import Cache_this
-from paramz.transformations import Logexp
+from GPy.core.parameterization.caching import Cache_this
+from GPy.core.parameterization.transformations import Logexp
 from .grid_kerns import GridRBF
 
 

@@ -5,7 +5,7 @@ from .kern import Kern, CombinationKernel
 import itertools
 import numpy as np
 from ...util.multioutput import index_to_slices
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 
 
 class ZeroKern(Kern):

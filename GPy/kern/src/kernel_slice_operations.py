@@ -10,7 +10,7 @@ gets calls. The `_all_dims_active` of a kernel decide which dimensions the kerne
 
 import numpy as np
 from functools import wraps
-from paramz.parameterized import ParametersChangedMeta
+from GPy.core.parameterization import ParametersChangedMeta
 
 
 def put_clean(dct, name, func):

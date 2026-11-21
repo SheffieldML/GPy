@@ -10,8 +10,8 @@ from ..util.normalizer import Standardize
 
 import numpy as np
 from scipy import stats
-from paramz import ObsAr
-from paramz.transformations import Logexp
+from GPy.core.parameterization import ObsAr
+from GPy.core.parameterization.transformations import Logexp
 
 import warnings
 

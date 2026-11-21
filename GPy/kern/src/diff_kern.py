@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .kern import Kern
 import numpy as np
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 
 
 class DiffKern(Kern):

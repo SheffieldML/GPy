@@ -2,12 +2,9 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .posterior import PosteriorExact as Posterior
-from ...util.linalg import pdinv, dpotrs, tdot
-from ...util import diag
 import numpy as np
 from . import LatentFunctionInference
-
-log_2_pi = np.log(2 * np.pi)
+from . import exact_gp_ops
 
 
 class ExactGaussianInference(LatentFunctionInference):
@@ -54,22 +51,14 @@ class ExactGaussianInference(LatentFunctionInference):
         if K is None:
             K = kern.K(X)
 
-        Ky = K.copy()
-        diag.add(Ky, variance + 1e-8)
-
-        Wi, LW, LWi, W_logdet = pdinv(Ky)
-
-        alpha, _ = dpotrs(LW, YYT_factor, lower=1)
-
-        log_marginal = 0.5 * (-Y.size * log_2_pi - Y.shape[1] * W_logdet - np.sum(alpha * YYT_factor))
+        # CIP-000F Stage 2: pure ndarray LML / dL_dK path.
+        log_marginal, dL_dK, alpha, LW, _Wi = exact_gp_ops.log_marginal_and_gradients(K, YYT_factor, variance)
 
         if Z_tilde is not None:
             # This is a correction term for the log marginal likelihood
             # In EP this is log Z_tilde, which is the difference between the
             # Gaussian marginal and Z_EP
             log_marginal += Z_tilde
-
-        dL_dK = 0.5 * (tdot(alpha) - Y.shape[1] * Wi)
 
         dL_dthetaL = likelihood.exact_inference_gradients(np.diag(dL_dK), Y_metadata)
 

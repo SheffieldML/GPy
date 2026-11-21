@@ -14,6 +14,7 @@ James 11/12/13
 import numpy as np
 from scipy import stats
 from . import link_functions
+from . import gaussian_ops
 from .likelihood import Likelihood
 from ..core.parameterization import Param
 from GPy.core.parameterization.transformations import Logexp
@@ -153,8 +154,7 @@ class Gaussian(Likelihood):
         :returns: log likelihood evaluated for this point
         :rtype: float
         """
-        ln_det_cov = np.log(self.variance)
-        return -(1.0 / (2 * self.variance)) * ((y - link_f) ** 2) - 0.5 * ln_det_cov - 0.5 * np.log(2.0 * np.pi)
+        return gaussian_ops.logpdf_link(link_f, y, self.variance)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
@@ -171,9 +171,7 @@ class Gaussian(Likelihood):
         :returns: gradient of log likelihood evaluated at points link(f)
         :rtype: Nx1 array
         """
-        s2_i = 1.0 / self.variance
-        grad = s2_i * y - s2_i * link_f
-        return grad
+        return gaussian_ops.dlogpdf_dlink(link_f, y, self.variance)
 
     def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
         """

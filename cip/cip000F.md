@@ -127,13 +127,19 @@ may be re-scoped at their own Accept point.
   and compares `__fixed__` by identity, so these move only with the core
   (Stage 4).
 
-**Stage 2 — Pure numerical functions.**
+**Stage 2 — Pure numerical functions.** *(acceptance met 2026-11-21; further
+families may continue as follow-ups)*
 - Kernels: `K` / `Kdiag` (and, where present, psi-statistics forward passes)
   delegate to module-level functions of plain `ndarray`s; parameter values are
   unwrapped once at the method boundary.
 - Likelihoods: same for `logpdf` and moments.
 - Kernel by kernel, with current outputs as golden values. No gradient code is
   removed in GPy 1.x.
+- **Landed for acceptance:** `rbf_ops` + `stationary_ops` distances; Exponential /
+  OU / Matern32 / Matern52 via `stationary_cov_ops`; Gaussian `logpdf_link` /
+  `dlogpdf_dlink` via `gaussian_ops`; exact-GP LML via `exact_gp_ops` (wired
+  through `ExactGaussianInference`). Golden tests:
+  `test_cip000F_stage2_rbf_ops.py`, `test_cip000F_stage2_pure_numerical.py`.
 
 **Design principle (Stage 2) — Transformation readiness where practical.**
 
@@ -507,11 +513,11 @@ in this CIP; open questions resolved as follows:
 - [x] Accept: stage boundaries; pickle-compatibility policy (2026-11-21)
 - [x] Stage 0: single import boundary + Ruff rule
 - [x] Stage 1: domains, optimisation vendored; GPy-owned `Model.optimize`
-- [ ] Stage 2: pure numerical functions (kernels, likelihoods);
+- [x] Stage 2: pure numerical functions (kernels, likelihoods);
       transformation-readiness design principle applied where practical
       (CIP-000E seeded Cholesky / stationary / coregionalize primitives —
-      see Stage 2 section) — **in progress:** RBF `K`/`Kdiag`/`K_of_r`
-      via `rbf_ops` + `stationary_ops` distance helpers
+      see Stage 2 section) — representative RBF/stationary + Gaussian LML /
+      logpdf; further kernel families optional follow-ups
 - [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
       barriers classified and documented for CIP-0010
 - [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP

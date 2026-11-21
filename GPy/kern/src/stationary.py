@@ -386,10 +386,14 @@ class Exponential(Stationary):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -self.K_of_r(r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_dk_dr(r, self.variance)
 
     def to_dict(self):
         """
@@ -455,10 +459,14 @@ class OU(Stationary):
         return OU(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -1.0 * self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_dk_dr(r, self.variance)
 
 
 class Matern32(Stationary):
@@ -493,10 +501,14 @@ class Matern32(Stationary):
         return Matern32(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * (1.0 + np.sqrt(3.0) * r) * np.exp(-np.sqrt(3.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern32_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -3.0 * self.variance * r * np.exp(-np.sqrt(3.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern32_dk_dr(r, self.variance)
 
     def Gram_matrix(self, F, F1, F2, lower, upper):
         """
@@ -595,10 +607,14 @@ class Matern52(Stationary):
         return Matern52(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * (1 + np.sqrt(5.0) * r + 5.0 / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern52_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return self.variance * (10.0 / 3 * r - 5.0 * r - 5.0 * np.sqrt(5.0) / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern52_dk_dr(r, self.variance)
 
     def Gram_matrix(self, F, F1, F2, F3, lower, upper):
         """

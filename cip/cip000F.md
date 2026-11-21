@@ -524,7 +524,8 @@ in this CIP; open questions resolved as follows:
 - [x] Stage 2N: conceptual numerical interfaces sketched; exact-GP
       condition-once / predict-many via pure state demonstrated —
       [`cip/cip000F/notes/stage2n-numerical-interfaces.md`](cip000F/notes/stage2n-numerical-interfaces.md)
-- [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
+- [x] Stage 3: caching / `ObsAr` replaced, benchmarks recorded —
+      [`cip/cip000F/notes/stage3-caching-obsar.md`](cip000F/notes/stage3-caching-obsar.md)
 - [ ] Stage 4: core decision recorded
 - [x] Backlog tasks created (only after Accept):
       [Stage 0](../backlog/infrastructure/2026-11-21_cip000F-stage0-import-boundary.md),

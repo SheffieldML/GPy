@@ -201,12 +201,19 @@ class MultioutputGP(GP):
 
         self.update_model(False)
         if Y is not None:
-            self.Y = ObsAr(Y)
+            from GPy.core.gp import _as_data_array
+
+            self.Y = _as_data_array(Y)
             self.Y_normalized = self.Y
         if X is not None:
-            self.X = ObsAr(X)
+            from GPy.core.gp import _as_data_array
+
+            self.X = _as_data_array(X)
 
         self.Y_metadata = {"output_index": self.output_index, "trials": np.ones(self.output_index.shape)}
         if isinstance(self.inference_method, expectation_propagation.EP):
             self.inference_method.reset()
+        self.bump_cache_version()
+        if hasattr(self, "kern") and hasattr(self.kern, "bump_cache_version"):
+            self.kern.bump_cache_version()
         self.update_model(True)

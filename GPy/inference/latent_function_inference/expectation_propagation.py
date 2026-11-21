@@ -306,9 +306,8 @@ class EP(EPBase, ExactGaussianInference):
         num_data, data_dim = Y.shape
         assert data_dim == 1, "This EP methods only works for 1D outputs"
 
-        # Makes computing the sign quicker if we work with numpy arrays rather
-        # than ObsArrays
-        Y = Y.values.copy()
+        # Work with a plain ndarray (ObsAr also accepts this path).
+        Y = np.asarray(Y, dtype=float).copy()
 
         # Initial values - Marginal moments, cavity params, gaussian approximation params and posterior params
         marg_moments = marginalMoments(num_data)
@@ -557,9 +556,8 @@ class EPDTC(EPBase, VarDTC):
         num_data, output_dim = Y.shape
         assert output_dim == 1, "This EP methods only works for 1D outputs"
 
-        # Makes computing the sign quicker if we work with numpy arrays rather
-        # than ObsArrays
-        Y = Y.values.copy()
+        # Work with a plain ndarray (ObsAr also accepts this path).
+        Y = np.asarray(Y, dtype=float).copy()
 
         # Initial values - Marginal moments, cavity params, gaussian approximation params and posterior params
         marg_moments = marginalMoments(num_data)

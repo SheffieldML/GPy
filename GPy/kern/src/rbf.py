@@ -64,7 +64,15 @@ class RBF(Stationary):
         return input_dict
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-0.5 * r**2)
+        # Clip before exp so tiny lengthscales (r→∞) yield 0 instead of overflow.
+        with np.errstate(over="ignore", invalid="ignore"):
+            r2 = np.square(r)
+        r2 = np.minimum(np.nan_to_num(r2, nan=np.inf, posinf=np.inf), 746.0)
+        return self.variance * np.exp(-0.5 * r2)
+
+    @staticmethod
+    def _finite_or_zero(arr):
+        return np.where(np.isfinite(arr), arr, 0.0)
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dX(self, X, X2, dimX):
@@ -72,9 +80,11 @@ class RBF(Stationary):
         Compute the derivative of K with respect to:
             dimension dimX of set X.
         """
-        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX]
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])[dimX]
         dist = X[:, None, dimX] - X2[None, :, dimX]
-        return -dist * (lengthscaleinv**2) * self._clean_K(X, X2)
+        with np.errstate(over="ignore", invalid="ignore"):
+            out = -dist * (lengthscaleinv**2) * self._clean_K(X, X2)
+        return self._finite_or_zero(out)
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dXdiag(self, X, dimX):
@@ -111,14 +121,16 @@ class RBF(Stationary):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
         dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
 
-        term = dist[dimX] * (lengthscaleinv[dimX] ** 2)
-        term *= dist[dimX2] * (lengthscaleinv[dimX2] ** 2)
-        if dimX == dimX2:
-            term -= lengthscaleinv[dimX] ** 2
-        return -term * self._clean_K(X, X2)
+        with np.errstate(over="ignore", invalid="ignore"):
+            term = dist[dimX] * (lengthscaleinv[dimX] ** 2)
+            term = term * dist[dimX2] * (lengthscaleinv[dimX2] ** 2)
+            if dimX == dimX2:
+                term = term - lengthscaleinv[dimX] ** 2
+            out = -term * self._clean_K(X, X2)
+        return self._finite_or_zero(out)
 
     @Cache_this(limit=3, ignore_args=())
     def dK2_dXdX2diag(self, X, dimX, dimX2):
@@ -130,8 +142,8 @@ class RBF(Stationary):
         Returns only diagonal elements.
         """
         if dimX == dimX2:
-            lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
-            return np.ones(X.shape[0]) * (lengthscaleinv[dimX] ** 2) * self.variance
+            lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
+            return self._finite_or_zero(np.ones(X.shape[0]) * (lengthscaleinv[dimX] ** 2) * self.variance)
         else:
             return np.zeros(X.shape[0])
 
@@ -163,19 +175,21 @@ class RBF(Stationary):
             dimension dimX_1 of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
         dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
 
-        term = dist[dimX_0] * (lengthscaleinv[dimX_0] ** 2)
-        term *= dist[dimX_1] * (lengthscaleinv[dimX_1] ** 2)
-        term *= dist[dimX2] * (lengthscaleinv[dimX2] ** 2)
-        if dimX_0 == dimX_1:
-            term -= dist[dimX2] * (lengthscaleinv[dimX2] ** 2) * (lengthscaleinv[dimX_0] ** 2)
-        if dimX_0 == dimX2:
-            term -= dist[dimX_1] * (lengthscaleinv[dimX_1] ** 2) * (lengthscaleinv[dimX_0] ** 2)
-        if dimX_1 == dimX2:
-            term -= dist[dimX_0] * (lengthscaleinv[dimX_0] ** 2) * (lengthscaleinv[dimX_1] ** 2)
-        return term * self._clean_K(X, X2)
+        with np.errstate(over="ignore", invalid="ignore"):
+            term = dist[dimX_0] * (lengthscaleinv[dimX_0] ** 2)
+            term = term * dist[dimX_1] * (lengthscaleinv[dimX_1] ** 2)
+            term = term * dist[dimX2] * (lengthscaleinv[dimX2] ** 2)
+            if dimX_0 == dimX_1:
+                term = term - dist[dimX2] * (lengthscaleinv[dimX2] ** 2) * (lengthscaleinv[dimX_0] ** 2)
+            if dimX_0 == dimX2:
+                term = term - dist[dimX_1] * (lengthscaleinv[dimX_1] ** 2) * (lengthscaleinv[dimX_0] ** 2)
+            if dimX_1 == dimX2:
+                term = term - dist[dimX_0] * (lengthscaleinv[dimX_0] ** 2) * (lengthscaleinv[dimX_1] ** 2)
+            out = term * self._clean_K(X, X2)
+        return self._finite_or_zero(out)
 
     @Cache_this(limit=3, ignore_args=())
     def dK3_dXdXdX2diag(self, X, dimX_0, dimX_1, dimX2):
@@ -210,17 +224,18 @@ class RBF(Stationary):
         """
         Compute the derivative(s) of K with respect to lengthscale(s).
         """
-        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
         dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
 
         K = self._clean_K(X, X2)
 
-        if self.ARD:
-            g = []
-            for diml in range(self.input_dim):
-                g += [(dist[diml] ** 2) * (lengthscaleinv[diml] ** 3) * K]
-        else:
-            g = (lengthscaleinv[0] ** 3) * np.sum(dist**2, axis=0) * K
+        with np.errstate(over="ignore", invalid="ignore"):
+            if self.ARD:
+                g = []
+                for diml in range(self.input_dim):
+                    g += [self._finite_or_zero((dist[diml] ** 2) * (lengthscaleinv[diml] ** 3) * K)]
+            else:
+                g = self._finite_or_zero((lengthscaleinv[0] ** 3) * np.sum(dist**2, axis=0) * K)
         return g
 
     @Cache_this(limit=3, ignore_args=())
@@ -248,23 +263,24 @@ class RBF(Stationary):
             lengthscale(s), and
             dimension dimX of set X.
         """
-        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
         dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
 
         dK_dX = self._clean_dK_dX(X, X2, dimX)
         dK_dl = self.dK_dlengthscale(X, X2)
 
-        if self.ARD:
-            g = []
-            for diml in range(self.input_dim):
-                term = -dist[dimX] * (lengthscaleinv[dimX] ** 2) * dK_dl[diml]
-                if diml == dimX:
-                    term -= 2 * lengthscaleinv[dimX] * dK_dX
-                g += [term]
-        else:
-            term = -dist[dimX] * (lengthscaleinv[0] ** 2) * dK_dl
-            term -= 2 * lengthscaleinv[0] * dK_dX
-            g = term
+        with np.errstate(over="ignore", invalid="ignore"):
+            if self.ARD:
+                g = []
+                for diml in range(self.input_dim):
+                    term = -dist[dimX] * (lengthscaleinv[dimX] ** 2) * dK_dl[diml]
+                    if diml == dimX:
+                        term = term - 2 * lengthscaleinv[dimX] * dK_dX
+                    g += [self._finite_or_zero(term)]
+            else:
+                term = -dist[dimX] * (lengthscaleinv[0] ** 2) * dK_dl
+                term = term - 2 * lengthscaleinv[0] * dK_dX
+                g = self._finite_or_zero(term)
         return g
 
     @Cache_this(limit=3, ignore_args=())
@@ -298,7 +314,7 @@ class RBF(Stationary):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = np.ones(X.shape[1]) / (self.lengthscale)
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])
         dist = np.rollaxis(X[:, None, :] - X2[None, :, :], 2, 0)
 
         K = self._clean_K(X, X2)
@@ -306,23 +322,24 @@ class RBF(Stationary):
         dK_dX2 = self._clean_dK_dX(X, X2, dimX2)
         dK2_dXdX2 = self._clean_dK2_dXdX2(X, X2, dimX, dimX2)
 
-        if self.ARD:
-            g = []
-            for diml in range(self.input_dim):
-                term = (dist[diml] ** 2) * (lengthscaleinv[diml] ** 3) * dK2_dXdX2
-                if diml == dimX:
-                    term -= 2 * dist[dimX] * (lengthscaleinv[dimX] ** 3) * dK_dX2
-                if diml == dimX2:
-                    term -= 2 * dist[dimX2] * (lengthscaleinv[dimX2] ** 3) * dK_dX
-                if diml == dimX == dimX2:
-                    term -= 2 * (lengthscaleinv[dimX] ** 3) * K
-                g += [term]
-        else:
-            term = np.sum(dist**2, axis=0) * dK2_dXdX2
-            term -= 4 * dist[dimX2] * dK_dX
-            if dimX == dimX2:
-                term -= 2 * K
-            g = (lengthscaleinv[0] ** 3) * term
+        with np.errstate(over="ignore", invalid="ignore"):
+            if self.ARD:
+                g = []
+                for diml in range(self.input_dim):
+                    term = (dist[diml] ** 2) * (lengthscaleinv[diml] ** 3) * dK2_dXdX2
+                    if diml == dimX:
+                        term = term - 2 * dist[dimX] * (lengthscaleinv[dimX] ** 3) * dK_dX2
+                    if diml == dimX2:
+                        term = term - 2 * dist[dimX2] * (lengthscaleinv[dimX2] ** 3) * dK_dX
+                    if diml == dimX == dimX2:
+                        term = term - 2 * (lengthscaleinv[dimX] ** 3) * K
+                    g += [self._finite_or_zero(term)]
+            else:
+                term = np.sum(dist**2, axis=0) * dK2_dXdX2
+                term = term - 4 * dist[dimX2] * dK_dX
+                if dimX == dimX2:
+                    term = term - 2 * K
+                g = self._finite_or_zero((lengthscaleinv[0] ** 3) * term)
         return g
 
     def __getstate__(self):

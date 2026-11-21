@@ -575,6 +575,19 @@ def test_stationary_translation_invariance_large_offset(kern_cls, offset):
     np.testing.assert_allclose(np.diag(k.K(x + offset, x + offset)), k.variance.values[0], atol=1e-6)
 
 
+def test_rbf_diffkern_finite_at_subnormal_lengthscale():
+    """Logexp can drive lengthscale to ~1e-300; DiffKern X-derivatives must stay finite."""
+    X = _rng(4).standard_normal((8, 1))
+    k = GPy.kern.RBF(1)
+    k.lengthscale[:] = 1e-300
+    dk = GPy.kern.DiffKern(k, 0)
+    assert np.all(np.isfinite(k.K(X)))
+    assert np.all(np.isfinite(dk.K(X)))
+    assert np.all(np.isfinite(k.dK_dX(X, X, 0)))
+    assert np.all(np.isfinite(k.dK2_dXdX2(X, X, 0, 0)))
+    assert np.all(np.isfinite(k.dK_dlengthscale(X, X)))
+
+
 # =============================================================================
 # 6. Models and inference
 # =============================================================================

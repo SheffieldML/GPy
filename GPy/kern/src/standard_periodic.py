@@ -148,12 +148,25 @@ class StdPeriodic(Kern):
         ret[:] = self.variance
         return ret
 
+    _MAX_INV_LENGTHSCALE = 1e50
+
+    def _safe_inv_lengthscale(self, X_input_dim=None):
+        dim = self.input_dim if X_input_dim is None else X_input_dim
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            inv = np.ones(dim) / np.asarray(self.lengthscale, dtype=float)
+        inv = np.nan_to_num(inv, nan=0.0, posinf=self._MAX_INV_LENGTHSCALE, neginf=0.0)
+        return np.clip(inv, 0.0, self._MAX_INV_LENGTHSCALE)
+
+    @staticmethod
+    def _finite_or_zero(arr):
+        return np.where(np.isfinite(arr), arr, 0.0)
+
     def dK_dX(self, X, X2, dimX):
         """
         Compute the derivative of K with respect to:
             dimension dimX of set X.
         """
-        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX]
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])[dimX]
         periodinv = (np.ones(X.shape[1]) / (self.period))[dimX]
 
         F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
@@ -161,7 +174,9 @@ class StdPeriodic(Kern):
         dist = X[:, None, dimX] - X2[None, :, dimX]
         base = np.pi * periodinv * dist
 
-        return -F * np.sin(2 * base) * self._clean_K(X, X2)
+        with np.errstate(over="ignore", invalid="ignore"):
+            out = -F * np.sin(2 * base) * self._clean_K(X, X2)
+        return self._finite_or_zero(out)
 
     def dK_dXdiag(self, X, dimX):
         """
@@ -194,7 +209,7 @@ class StdPeriodic(Kern):
             dimension dimX of set X, and
             dimension dimX2 of set X2.
         """
-        lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+        lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])[dimX2]
         periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
 
         F = 0.5 * np.pi * (lengthscaleinv**2) * periodinv  # multiplicative factor
@@ -202,10 +217,12 @@ class StdPeriodic(Kern):
         dist = X[:, None, dimX2] - X2[None, :, dimX2]
         base = np.pi * periodinv * dist
 
-        term = np.sin(2 * base) * self._clean_dK_dX(X, X2, dimX)
-        if dimX == dimX2:
-            term += 2 * np.pi * periodinv * np.cos(2 * base) * self._clean_K(X, X2)
-        return F * term
+        with np.errstate(over="ignore", invalid="ignore"):
+            term = np.sin(2 * base) * self._clean_dK_dX(X, X2, dimX)
+            if dimX == dimX2:
+                term = term + 2 * np.pi * periodinv * np.cos(2 * base) * self._clean_K(X, X2)
+            out = F * term
+        return self._finite_or_zero(out)
 
     def dK2_dXdX2diag(self, X, dimX, dimX2):
         """
@@ -216,9 +233,11 @@ class StdPeriodic(Kern):
         Returns only diagonal elements.
         """
         if dimX == dimX2:
-            lengthscaleinv = (np.ones(X.shape[1]) / (self.lengthscale))[dimX2]
+            lengthscaleinv = self._safe_inv_lengthscale(X.shape[1])[dimX2]
             periodinv = (np.ones(X.shape[1]) / (self.period))[dimX2]
-            return (np.pi**2) * (lengthscaleinv**2) * (periodinv**2) * self.variance * np.ones(X.shape[0])
+            with np.errstate(over="ignore", invalid="ignore"):
+                out = (np.pi**2) * (lengthscaleinv**2) * (periodinv**2) * self.variance * np.ones(X.shape[0])
+            return self._finite_or_zero(out)
         else:
             return np.zeros(X.shape[0])
 

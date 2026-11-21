@@ -150,6 +150,21 @@ class Stationary(Kern):
         r2 = np.clip(r2, 0, np.inf)
         return np.sqrt(r2)
 
+    # Beyond this, RBF-like kernels are numerically zero; clipping avoids
+    # overflow in r**2 and in 1/lengthscale**2 paths used by DiffKern.
+    _MAX_SCALED_R = 1e8
+    # Cap so products of up to three (dist/l**2) factors stay in float64
+    # (DiffKern uses up to third X-derivatives of RBF).
+    _MAX_INV_LENGTHSCALE = 1e50
+
+    def _safe_inv_lengthscale(self, X_input_dim=None):
+        """1/lengthscale clipped so inv**2 / inv**3 stay finite in float64."""
+        dim = self.input_dim if X_input_dim is None else X_input_dim
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            inv = np.ones(dim) / np.asarray(self.lengthscale, dtype=float)
+        inv = np.nan_to_num(inv, nan=0.0, posinf=self._MAX_INV_LENGTHSCALE, neginf=0.0)
+        return np.clip(inv, 0.0, self._MAX_INV_LENGTHSCALE)
+
     @Cache_this(limit=3, ignore_args=())
     def _scaled_dist(self, X, X2=None):
         """
@@ -163,12 +178,15 @@ class Stationary(Kern):
         function for caching) and divide by lengthscale afterwards
 
         """
-        if self.ARD:
-            if X2 is not None:
-                X2 = X2 / self.lengthscale
-            return self._unscaled_dist(X / self.lengthscale, X2)
-        else:
-            return self._unscaled_dist(X, X2) / self.lengthscale
+        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+            if self.ARD:
+                if X2 is not None:
+                    X2 = X2 / self.lengthscale
+                r = self._unscaled_dist(X / self.lengthscale, X2)
+            else:
+                r = self._unscaled_dist(X, X2) / self.lengthscale
+        r = np.nan_to_num(r, nan=np.inf, posinf=np.inf, neginf=np.inf)
+        return np.minimum(r, self._MAX_SCALED_R)
 
     def Kdiag(self, X):
         ret = np.empty(X.shape[0])

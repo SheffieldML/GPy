@@ -187,7 +187,15 @@ class MRD(BayesianGPLVMMiniBatch):
                 stochastic=stochastic,
                 batchsize=bs,
             )
+            # Count the shared q(X) KL once across V views: each child
+            # contributes (1/V) of the KL so ∑_v L_v = ∑ VarDTC − KL.
             spgp.kl_factr = 1.0 / len(Ynames)
+            # Rebind children onto the parent's shared X/Z. Standalone
+            # BayesianGPLVMMiniBatch with kl_factr=1 matches BayesianGPLVM;
+            # after this unlink/del/rebind, each child's VarDTC term can sit
+            # slightly below a fresh MiniBatch with the same Y/kern/noise/
+            # latents (ELBO parity quirk — grads still train; see backlog
+            # 2026-11-20_mrd-shared-latent-elbo).
             spgp.unlink_parameter(spgp.Z)
             spgp.unlink_parameter(spgp.X)
             del spgp.Z

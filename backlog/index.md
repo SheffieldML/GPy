@@ -81,7 +81,7 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Proposed
 
-*No tasks currently proposed.*
+- [MRD shared-latent MiniBatch wiring ELBO slightly below fresh views](bugs/2026-11-20_mrd-shared-latent-elbo.md)
 
 
 ---

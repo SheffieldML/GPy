@@ -16,6 +16,7 @@ tags:
 - gplvm
 ---
 
+
 # Task: MRD ignores constructor `Z=`
 
 ## Description
@@ -47,6 +48,10 @@ before sampling inducing points from `X`. The bug is specific to `MRD`.
 - Files: `GPy/models/mrd.py`, `GPy/testing/test_model.py`
 - Confirmed OK: `GPy/models/bayesian_gplvm.py`,
   `GPy/models/bayesian_gplvm_minibatch.py`
+- Follow-up (separate): `2026-11-20_mrd-shared-latent-elbo` — after
+  share-rebind of `X`/`Z`, each child’s VarDTC sits ~0.28 nats below a
+  fresh MiniBatch; `kl_factr=1/V` is intentional; not a reason to change
+  GPc `CMrd`. Low urgency.
 
 ## Progress Updates
 
@@ -55,3 +60,7 @@ before sampling inducing points from `X`. The bug is specific to `MRD`.
 Task created after confirming MRD overwrites `Z=` unconditionally while
 Bayesian GPLVM variants do not. Fix applied; `TestMisc::test_mrd` passes
 with a custom-`Z` assertion.
+
+Comments from the `CMrd` / CIP-0017 ELBO comparison filed as
+`2026-11-20_mrd-shared-latent-elbo` (shared-latent wiring quirk, not
+constructor `Z=`).

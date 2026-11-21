@@ -3,9 +3,9 @@
 
 from .kern import Kern
 from ...core.parameterization import Param
-from paramz.transformations import Logexp
+from GPy.core.parameterization.transformations import Logexp
 import numpy as np
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 
 four_over_tau = 2.0 / np.pi
 

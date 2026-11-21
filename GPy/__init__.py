@@ -54,6 +54,6 @@ def load(file_or_path):
         if not name.startswith("_"):
             sys.modules[f"GPy.kern._src.{name}"] = module
     sys.modules["GPy.inference.optimization"] = inference.optimization
-    import paramz
+    from GPy.core.parameterization import paramz_load
 
-    return paramz.load(file_or_path)
+    return paramz_load(file_or_path)

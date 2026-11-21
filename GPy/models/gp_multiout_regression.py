@@ -9,7 +9,7 @@ from .. import likelihoods
 from .. import kern
 from GPy.core.parameterization.variational import NormalPosterior, NormalPrior
 from ..core.parameterization.param import Param
-from paramz.transformations import Logexp
+from GPy.core.parameterization.transformations import Logexp
 from ..util.linalg import tdot
 
 

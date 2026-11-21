@@ -92,6 +92,7 @@ extend-exclude = [
 [tool.ruff.lint]
 # CIP-0005: pyflakes + bugbear + full SIM + pyupgrade (partial) + safe pycodestyle.
 # Format enforced in CI. Deferred: UP008 (paramz).
+# CIP-000F Stage 0: TID251 bans direct paramz imports outside the façade.
 select = [
     "E9",
     "F",
@@ -128,11 +129,24 @@ select = [
     "E714",
     "W291",
     "W293",
+    "TID251",
 ]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"paramz".msg = "Import paramz only via GPy.core.parameterization (CIP-000F Stage 0)"
+"paramz.caching".msg = "Import caching via GPy.core.parameterization.caching (CIP-000F Stage 0)"
+"paramz.transformations".msg = "Import transformations via GPy.core.parameterization.transformations (CIP-000F Stage 0)"
+"paramz.domains".msg = "Import domains via GPy.core.parameterization.domains (CIP-000F Stage 0)"
+"paramz.core".msg = "Import paramz.core only inside GPy.core.parameterization (CIP-000F Stage 0)"
+"paramz.parameterized".msg = "Import via GPy.core.parameterization (CIP-000F Stage 0)"
+"paramz.optimization".msg = "Import via GPy.inference.optimization (CIP-000F Stage 0)"
 
 [tool.ruff.lint.per-file-ignores]
 # Public API re-exports (from .foo import Bar) are intentional in package inits.
 "**/__init__.py" = ["F401"]
+# CIP-000F Stage 0: only these packages may import paramz directly.
+"GPy/core/parameterization/**" = ["TID251"]
+"GPy/inference/optimization/**" = ["TID251"]
 
 [tool.pytest.ini_options]
 # #1210: keep suite readable; silence known third-party noise only.

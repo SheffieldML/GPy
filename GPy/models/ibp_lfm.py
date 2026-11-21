@@ -13,7 +13,7 @@ from ..inference.latent_function_inference.var_dtc_parallel import VarDTC_miniba
 from ..inference.latent_function_inference.posterior import Posterior
 from GPy.core.parameterization.variational import VariationalPrior
 from ..core.parameterization.parameterized import Parameterized
-from paramz.transformations import Logexp, Logistic, __fixed__
+from GPy.core.parameterization.transformations import Logexp, Logistic, __fixed__
 
 log_2_pi = np.log(2 * np.pi)
 

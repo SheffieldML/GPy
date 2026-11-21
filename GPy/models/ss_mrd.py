@@ -272,7 +272,7 @@ class SpikeAndSlabPrior_SSMRD(SpikeAndSlabPrior):
 class IBPPrior_SSMRD(VariationalPrior):
     def __init__(self, nModels, input_dim, alpha=2.0, tau=None, name="IBPPrior", **kw):
         super(IBPPrior_SSMRD, self).__init__(name=name, **kw)
-        from paramz.transformations import __fixed__
+        from GPy.core.parameterization.transformations import __fixed__
 
         self.nModels = nModels
         self._b_prob_all = 0.5

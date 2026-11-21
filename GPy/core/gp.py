@@ -9,7 +9,7 @@ from .. import likelihoods
 from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from ..util.normalizer import Standardize
-from paramz import ObsAr
+from GPy.core.parameterization import ObsAr
 
 import logging
 import warnings

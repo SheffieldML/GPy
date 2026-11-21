@@ -3,7 +3,7 @@ The module for psi-statistics for RBF kernel for Spike-and-Slab GPLVM
 """
 
 import numpy as np
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 from . import PSICOMP_RBF
 
 gpu_code = """

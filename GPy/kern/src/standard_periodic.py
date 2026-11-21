@@ -13,7 +13,7 @@ Neural Networks and Machine Learning, pages 133-165. Springer, 1998.
 
 from .kern import Kern
 from ...core.parameterization import Param
-from paramz.transformations import Logexp
+from GPy.core.parameterization.transformations import Logexp
 
 import numpy as np
 

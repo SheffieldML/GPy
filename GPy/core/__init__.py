@@ -82,7 +82,7 @@ def randomize(self, rand_gen=None, *args, **kwargs):
     x = self.param_array.copy()
     [np.put(x, ind, p.rvs(ind.size)) for p, ind in self.priors.items() if p is not None]
     unfixlist = np.ones((self.size,), dtype=bool)
-    from paramz.transformations import __fixed__
+    from GPy.core.parameterization.transformations import __fixed__
 
     unfixlist[self.constraints[__fixed__]] = False
     self.param_array.flat[unfixlist] = x.view(np.ndarray).ravel()[unfixlist]

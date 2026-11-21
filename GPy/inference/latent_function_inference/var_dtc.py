@@ -28,7 +28,7 @@ class VarDTC(LatentFunctionInference):
     const_jitter = 1e-8
 
     def __init__(self, limit=1):
-        from paramz.caching import Cacher
+        from GPy.core.parameterization.caching import Cacher
 
         self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
@@ -61,7 +61,7 @@ class VarDTC(LatentFunctionInference):
     def __setstate__(self, state):
         # has to be overridden, as Cacher objects cannot be pickled.
         self.limit = state
-        from paramz.caching import Cacher
+        from GPy.core.parameterization.caching import Cacher
 
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, self.limit)

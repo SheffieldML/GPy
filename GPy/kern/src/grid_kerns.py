@@ -5,7 +5,7 @@
 
 import numpy as np
 from .stationary import Stationary
-from paramz.caching import Cache_this
+from GPy.core.parameterization.caching import Cache_this
 
 
 class GridKern(Stationary):

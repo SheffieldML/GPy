@@ -78,7 +78,7 @@ class TestInferenceGPEP:
         return X, Y, Y_extra_noisy
 
     def test_inference_EP(self):
-        from paramz import ObsAr
+        from GPy.core.parameterization import ObsAr
 
         X, Y = self.get_data()
         lik = GPy.likelihoods.Bernoulli()
@@ -166,7 +166,7 @@ class TestInferenceGPEP:
     # calculate moments analytically, but for other likelihoods, we will need to use numerical quadrature techniques,
     # and it is possible that any error might creep up because of quadrature implementation.
     def test_inference_EP_non_classification(self):
-        from paramz import ObsAr
+        from GPy.core.parameterization import ObsAr
 
         X, _Y, Y_extra_noisy = self.get_noisy_data()
         deg_freedom = 5.0

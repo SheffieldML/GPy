@@ -3,8 +3,8 @@
 import numpy as np
 from .kern import Kern
 from ...core.parameterization.param import Param
-from paramz.transformations import Logexp
-from paramz.caching import Cache_this
+from GPy.core.parameterization.transformations import Logexp
+from GPy.core.parameterization.caching import Cache_this
 from ...util.linalg import tdot, mdot
 
 

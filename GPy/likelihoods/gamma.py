@@ -69,9 +69,7 @@ class Gamma(Likelihood):
         # alpha = self.gp_link.transf(gp)*self.beta
         # Use gammaln: log(gamma(alpha)) overflows for alpha > ~171.6.
         alpha = link_f * self.beta
-        log_objective = (
-            alpha * np.log(self.beta) - special.gammaln(alpha) + (alpha - 1) * np.log(y) - self.beta * y
-        )
+        log_objective = alpha * np.log(self.beta) - special.gammaln(alpha) + (alpha - 1) * np.log(y) - self.beta * y
         return log_objective
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):

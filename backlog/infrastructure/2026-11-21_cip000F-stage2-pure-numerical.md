@@ -1,7 +1,7 @@
 ---
 id: 2026-11-21_cip000F-stage2-pure-numerical
 title: CIP-000F Stage 2 — pure numerical functions (kernels, likelihoods)
-status: Ready
+status: In Progress
 priority: High
 created: "2026-11-21"
 last_updated: "2026-11-21"
@@ -47,3 +47,10 @@ per-family PRs as needed (stationary first).
 ### 2026-11-21
 
 Task created Ready after CIP-000F Accept.
+
+### 2026-11-21 (later)
+
+Started stationary / RBF slice: `rbf_ops` (`k_of_r`, `dk_dr`, `K`,
+`kdiag`) and `stationary_ops` distance helpers; RBF / Stationary wrappers
+delegate; golden tests in `test_cip000F_stage2_rbf_ops.py`. Next: more
+stationary kernels, then a pure LML objective, then likelihoods.

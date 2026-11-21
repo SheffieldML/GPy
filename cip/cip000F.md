@@ -510,7 +510,8 @@ in this CIP; open questions resolved as follows:
 - [ ] Stage 2: pure numerical functions (kernels, likelihoods);
       transformation-readiness design principle applied where practical
       (CIP-000E seeded Cholesky / stationary / coregionalize primitives —
-      see Stage 2 section)
+      see Stage 2 section) — **in progress:** RBF `K`/`Kdiag`/`K_of_r`
+      via `rbf_ops` + `stationary_ops` distance helpers
 - [ ] Stage 2T: at least one experimental JAX assessment (LML or similar);
       barriers classified and documented for CIP-0010
 - [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP

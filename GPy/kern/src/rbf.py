@@ -9,6 +9,7 @@ from ...core import Param
 from GPy.core.parameterization.caching import Cache_this
 from GPy.core.parameterization.transformations import Logexp
 from .grid_kerns import GridRBF
+from . import rbf_ops
 
 
 class RBF(Stationary):
@@ -64,11 +65,8 @@ class RBF(Stationary):
         return input_dict
 
     def K_of_r(self, r):
-        # Clip before exp so tiny lengthscales (r→∞) yield 0 instead of overflow.
-        with np.errstate(over="ignore", invalid="ignore"):
-            r2 = np.square(r)
-        r2 = np.minimum(np.nan_to_num(r2, nan=np.inf, posinf=np.inf), 746.0)
-        return self.variance * np.exp(-0.5 * r2)
+        # CIP-000F Stage 2: pure ndarray primitive (unwrap variance once).
+        return rbf_ops.k_of_r(r, self.variance)
 
     @staticmethod
     def _finite_or_zero(arr):
@@ -204,13 +202,13 @@ class RBF(Stationary):
         return np.zeros(X.shape[0])
 
     def dK_dr(self, r):
-        return -r * self.K_of_r(r)
+        return rbf_ops.dk_dr(r, self.variance)
 
     def dK2_drdr(self, r):
-        return (r**2 - 1) * self.K_of_r(r)
+        return rbf_ops.dk2_drdr(r, self.variance)
 
     def dK2_drdr_diag(self):
-        return -self.variance  # as the diagonal of r is always filled with zeros
+        return -float(np.asarray(self.variance).reshape(-1)[0])
 
     @Cache_this(limit=3, ignore_args=())
     def dK_dvariance(self, X, X2):

@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
-from paramz.domains import _REAL, _POSITIVE, _NEGATIVE
+from .domains import _REAL, _POSITIVE, _NEGATIVE
 import warnings
 import weakref
 

@@ -32,7 +32,7 @@ class Priorizable(Parameterizable):
         repriorized = self.unset_priors()
         self._add_to_index_operations(self.priors, repriorized, prior, warning)
 
-        from paramz.domains import _REAL, _POSITIVE, _NEGATIVE
+        from .domains import _REAL, _POSITIVE, _NEGATIVE
 
         if prior.domain is _POSITIVE:
             self.constrain_positive(warning)

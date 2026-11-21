@@ -1,7 +1,7 @@
 ---
 id: 2026-11-21_cip000F-stage1-domains-optimisation
 title: CIP-000F Stage 1 — vendor domains and optimisation wrappers
-status: Ready
+status: Completed
 priority: Medium
 created: "2026-11-21"
 last_updated: "2026-11-21"
@@ -28,10 +28,10 @@ with a GPy-owned `Model.optimize` dispatch. Leave `transformations` in paramz
 
 ## Acceptance Criteria
 
-- [ ] `domains` no longer imported from paramz outside the façade
-- [ ] Optimisation wrappers owned by GPy; `Model.optimize` dispatch works
-- [ ] Transformations still come from paramz
-- [ ] Tests green; pickle / `to_dict` paths unchanged
+- [x] `domains` no longer imported from paramz outside the façade
+- [x] Optimisation wrappers owned by GPy; `Model.optimize` dispatch works
+- [x] Transformations still come from paramz
+- [x] Tests green; pickle / `to_dict` paths unchanged
 
 ## Related
 
@@ -42,3 +42,10 @@ with a GPy-owned `Model.optimize` dispatch. Leave `transformations` in paramz
 ### 2026-11-21
 
 Task created Ready after CIP-000F Accept.
+
+### 2026-11-21 (later)
+
+Stage 1 implemented: local `domains` constants; vendored
+`GPy/inference/optimization/{optimization,scg,verbose_optimization}.py`;
+`GPy.core.model.Model.optimize` / `optimize_restarts` dispatch to GPy
+wrappers; TID251 ignore dropped for the optimisation package.

@@ -144,9 +144,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # Public API re-exports (from .foo import Bar) are intentional in package inits.
 "**/__init__.py" = ["F401"]
-# CIP-000F Stage 0: only these packages may import paramz directly.
+# CIP-000F: only the parameterization façade may import paramz directly
+# (optimisation was vendored in Stage 1).
 "GPy/core/parameterization/**" = ["TID251"]
-"GPy/inference/optimization/**" = ["TID251"]
 
 [tool.pytest.ini_options]
 # #1210: keep suite readable; silence known third-party noise only.

@@ -117,9 +117,12 @@ may be re-scoped at their own Accept point.
   landed at 10 including new `caching` / `domains` re-export modules); full
   test suite unchanged.
 
-**Stage 1 — Vendor loosely coupled pieces.**
+**Stage 1 — Vendor loosely coupled pieces.** *(done 2026-11-21)*
 - `domains` (constants) and `optimization` (SCG / L-BFGS-B wrappers; requires a
-  GPy-owned `Model.optimize` dispatch).
+  GPy-owned `Model.optimize` dispatch). Landed: local domain constants;
+  vendored optimiser modules under `GPy.inference.optimization`;
+  `GPy.core.model.Model.optimize` / `optimize_restarts` dispatch to those
+  wrappers.
 - **Not** `transformations`: paramz core checks `isinstance(…, Transformation)`
   and compares `__fixed__` by identity, so these move only with the core
   (Stage 4).
@@ -503,7 +506,7 @@ in this CIP; open questions resolved as follows:
 - [x] Ideas Discussion opened ([#1293](https://github.com/SheffieldML/GPy/discussions/1293))
 - [x] Accept: stage boundaries; pickle-compatibility policy (2026-11-21)
 - [x] Stage 0: single import boundary + Ruff rule
-- [ ] Stage 1: domains, optimisation vendored
+- [x] Stage 1: domains, optimisation vendored; GPy-owned `Model.optimize`
 - [ ] Stage 2: pure numerical functions (kernels, likelihoods);
       transformation-readiness design principle applied where practical
       (CIP-000E seeded Cholesky / stationary / coregionalize primitives —

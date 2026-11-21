@@ -2,8 +2,8 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000E"
-last_updated: "2026-11-16"
-status: Proposed
+last_updated: "2026-11-17"
+status: In Progress
 compressed: false
 related_requirements: []
 related_cips:
@@ -13,6 +13,8 @@ related_cips:
 - "000C"
 - "000F"
 - "0010"
+- "0011"
+- "0012"
 tags:
 - cip
 - cython
@@ -29,8 +31,8 @@ title: Cython hygiene and direction (NumPy/BLAS vs compiled extensions)
 ## Status
 
 - [x] Proposed - Initial idea documented (open for Discussion feedback)
-- [ ] Accepted - Approved, ready to start work (Accept decisions below)
-- [ ] In Progress - Actively being implemented
+- [x] Accepted - Approved, ready to start work (Accept decisions below)
+- [x] In Progress - Actively being implemented
 - [ ] Implemented - Work complete, awaiting verification
 - [ ] Closed - Verified and complete
 - [ ] Rejected - Will not be implemented
@@ -90,11 +92,103 @@ initial NumPy/BLAS implementation.
   | `symmetrify` | N=1000 / 3000 | 7–9× | 2–3× / ~0.6× |
   | Kalman (state-space, import fixed locally) | N=2000 | — | Cython ≈ Python (~765 vs 759 ms) |
 
-  Caveat: preliminary results from a limited 2-core machine; scripts are not
-  yet in-repo. Multithreaded BLAS may change absolute times and, for some
-  small-matrix workloads, rankings — **test threading, do not assume it**.
-  See [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
+  Caveat: preliminary results from a limited 2-core machine; the original
+  scripts were out-of-repo. An in-repo harness now lives at
+  `benchmarks/cip000E/`. **Reproduced 2026-11-16 on macOS arm64 / Apple
+  Accelerate (8 cores):** Murray blocked (`cholesky_vjp_blocked`,
+  $N_b{=}128$) vs Cython `backprop_gradient_par_c` — × relative to Cython:
+
+  | N | Murray ×cython | column-`vjp` ×cython |
+  |---|---|---|
+  | 500 | **0.46×** | 3.9× |
+  | 1000 | **0.26×** | 4.1× |
+  | 2000 | **0.23×** | 1.7× |
+
+  So the win is **not** an artefact of a weak BLAS: Accelerate is strong on
+  this host, and the Level-3 blocked form beats Cython here too (less
+  dramatic than the early Linux 0.15×/0.07× table, but clearly faster). The
+  column-matvec `cholesky_vjp` does *not* beat Cython on this Mac — do not
+  confuse the two primitives. Multithreaded BLAS / OpenMP rankings can still
+  shift; **test threading, do not assume it**. See
+  [Reproducible benchmark requirement](#reproducible-benchmark-requirement)
   before Accept closes Option A vs B.
+
+### Main vs branch — shipped defaults (2026-11-16)
+
+Fair comparison of **wired public defaults** on the same host (macOS arm64 /
+Apple Accelerate, Python 3.11.7, NumPy 2.4.6, SciPy 1.17.1, 5 reps, cache-bust
+on model benches). Table below is the **post-fix** refresh (`c2188eac`
+artefacts; branch `4e990e11` after mean-shift / Cholesky-diag / index caches).
+Full rows: `benchmarks/cip000E/results/main_vs_branch.md`.
+
+| Tree | Ref | Cholesky backprop | Flat/triang | Cython flags |
+|---|---|---|---|---|
+| `main` | `6f1f31bc` | Cython `backprop_gradient_par_c` | Cython | all True |
+| branch `cip000E-numpy-blas-primitives` | `4e990e11` | Murray `cholesky_vjp_blocked` | cached `tril` / `take` | all False |
+
+**× = branch / main** (lower means the NumPy/BLAS branch is faster):
+
+| Hotspot | Shape | × (post-fix) | Notes vs pre-fix |
+|---|---|---|---|
+| Cholesky backprop | N=500 / 1000 / 2000 | **2.52 / 0.69 / 0.39** | N=500 slower (safer multi-block diag); N≥1000 still ahead |
+| `lengthscale_grads` | N=1000,Q=5 / N=3000,Q=10 | **0.16 / 0.06** | still a large win (mean-shift ~2% cost) |
+| `gradients_X` | N=1000 / 3000 | **0.81 / 0.61** | still ahead of Cython |
+| coregionalize `gradient_reduce` | N=2000 / 5000 | **0.22 / 0.30** | still ahead |
+| SparseGP obj / grads | N=2000, M=100 | **0.92 / 0.94** | parity-or-better |
+| Dense GP obj / grads | N=400 | 1.37 / **1.14** | improved (was 1.39 / 1.47) |
+| `flat_to_triang` / `triang_to_flat` | M=50…400 | ~1.3–6× slower | absolute still µs–ms; cache helped |
+| `symmetrify` | N=500 / 1000 / 3000 | **2.4 / 1.2 / 1.1×** | was 5.6 / 1.9 / 1.4× |
+| coregionalize `K` | N=2000 / 5000 | ~3.5–4× slower | Mac-specific?; re-check Linux |
+
+Interpretation for Option C → A: dominant hotspots (stationary grads,
+coregionalize reduce, Cholesky at N≳1000) remain faster without Cython.
+The N=500 Cholesky regression is the accuracy/stability trade-off from the
+unblocked-diagonal hybrid. `symmetrify` / dense GP look much closer after
+index caching. Re-run:
+`benchmarks/cip000E/run_main_vs_branch.py`. Linux multicore soak still welcome.
+
+### Numerical stability — main vs branch (2026-11-17)
+
+CIP-0011 outcome compare of **shipped code paths** (same suite, two installs),
+before CIP-0012 defect fixes. Full report:
+[`benchmarks/cip000E/results/numerical_stability_main_vs_branch.md`](../benchmarks/cip000E/results/numerical_stability_main_vs_branch.md)
+(summary JSON alongside).
+
+| | Ref | Suite |
+|---|---|---|
+| Baseline | `origin/main` @ `c8a095cd` | CIP-0011 suite from `cip0011-numerical-stability` @ `9739a6b6` (`--suite-from`) |
+| Candidate | this branch @ `533a8e9f` | same |
+
+**Verdict: Pass — 0 outcome diffs** (408 tests). Both trees share the same
+**20 xfailed** catalogue entries (distance cancellation, Bernoulli/EP,
+softplus, cloglog, Gamma, Poisson, `jitchol`, bound gradients, debugger
+breakpoints).
+
+**Implication:** dropping Cython for NumPy/BLAS does **not** by itself change
+these adversarial numerical outcomes. Remediation is CIP-0012 (landed on
+`cip0011-numerical-stability` after this snapshot). After cherry-picking
+CIP-0012 onto this branch, re-run `numerical_stability/compare.py` against
+post-fix `main` to confirm xfails clear with no new regressions.
+
+### Follow-up from independent review (2026-11-16)
+
+External review of the first Mac main-vs-branch table flagged two **numerical**
+issues and two micro-opts (landed; benches refreshed above):
+
+1. **Stationary expanded forms + shared offset.**
+   ``lengthscale_grads_sqdiff`` / ``gradients_X_from_tmp`` lose precision when
+   ``X`` and ``X2`` share a large common offset (timestamps). Fix: subtract a
+   shared column mean before the expanded identities (translation-invariant;
+   ~2% cost). Regression test uses offset ``1e9``.
+2. **Blocked Cholesky diagonal.** After ``Dbar -= tril(Cbar.T @ C)``, apply
+   the unblocked ``cholesky_vjp`` on the diagonal block rather than the
+   symbolic reverse (keep symbolic when ``N <= block_size``). Ill-conditioned
+   RBF+jitter test added.
+3. **`symmetrify`:** cache triangle indices; default block size 64 (dominates
+   dense ``GPRegression`` slowdown vs Cython).
+4. **Triang maps:** cache linear tril indices + ``np.take``.
+5. **`coregionalize_K`:** Mac ~3× slowdown not reproduced on Linux/OpenBLAS in
+   that review — re-check on Linux before further work.
 - **Cost is packaging, not speed.** Cython drives per-platform wheels, OpenMP
   flags, sdist compile failures, and CIP-000A's expensive PR matrix. If NumPy
   rewrites are faster, the build surface is paying for the wrong default.
@@ -352,31 +446,76 @@ None yet. Candidates after Accept:
   practical (feeds CIP-000F / CIP-0010 evidence, without JAX as a runtime
   requirement).
 
+
+## Accept decisions (2026-11-16)
+
+Accepted on worktree `cip000E-numpy-blas-primitives` after in-repo harness
+evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.com/SheffieldML/GPy/discussions/1279).
+
+1. **Option C — Hybrid.** NumPy/BLAS rewrites become the default path;
+   Cython remains available for one soak window as an escape hatch / residual
+   accelerator, then Phase 2 removes the build surface (toward Option A).
+2. **Phase 0** is already done on `main` (state-space relative import + smoke
+   test; [#1302](https://github.com/SheffieldML/GPy/pull/1302)).
+3. **Phase 1 starts with Cholesky backprop:** default
+   `GPy.util.choleskies.backprop_gradient` is Murray blocked
+   (`cholesky_vjp_blocked`, arXiv:1602.07527). Column-matvec `cholesky_vjp`
+   stays as a simpler primitive/reference. Cython
+   `backprop_gradient_par_c` remains importable for A/B timing, not the
+   wired default. Flat/triang maps and other Cython modules stay on their
+   current defaults until measured replacements land.
+4. **CIP-000F Stage 2:** Phase 1 replacements are pure numerical primitives
+   (array in / array out; no `paramz` coupling). Successful JAX transformation
+   is **not** an acceptance criterion for Cython removal.
+5. **Remaining Phase 1 order** (backlog; each flips default only after
+   harness ×cython &lt; 1, or a recorded tie/exception):
+   - [Cholesky Murray soak / Linux multicore](../backlog/infrastructure/2026-11-16_cip000E-cholesky-murray-soak.md)
+   - [Stationary grads](../backlog/infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
+     — CIP forms: **one matmul** / **`X*rowsum - tmp@X2`**; do **not**
+     promote the slow pure loops
+   - [Coregionalize `gradient_reduce`](../backlog/infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
+     — one-hot / `O.T @ dL @ O` style
+   - [Triang maps](../backlog/infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
+     — `tril_indices`, not the 80–90× Python loops
+   - [`symmetrify` decision](../backlog/infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
+     — blocked copy; Cython may still win at small N
+   - [Phase 2 Cython removal](../backlog/infrastructure/2026-11-16_cip000E-phase2-cython-removal.md)
+     (Proposed until soak done)
+6. **Process lesson:** column-matvec `cholesky_vjp` matched the oracle but
+   **lost to Cython** on Accelerate; only Murray blocked cleared the bar.
+   Future hotspots must implement the **CIP-cited winning algorithm**, not a
+   weaker “BLAS-shaped” substitute, before flipping defaults.
+7. **Option D** deferred: state-space functional redesign only if still needed
+   after Phase 0 evidence (Cython ≈ Python there).
+
 ## Implementation Status
 
 - [x] Document strategy options and hygiene scope (this CIP)
 - [x] Open GitHub Discussion; link from Summary ([#1279](https://github.com/SheffieldML/GPy/discussions/1279))
 - [x] Align with CIP-000F / CIP-0010 (pure-primitive replacements; JAX not an
       acceptance criterion for Cython removal)
-- [ ] Publish reproducible benchmark harness (runtime + peak memory + BLAS
-      threading) before Accept closes A vs B
-- [ ] Accept decision (A / B / C / D notes; Stage 2 conventions for Phase 1)
-- [ ] Phase 0 hygiene (state-space import + tests + docs)
-- [ ] Phase 1 pure NumPy/BLAS primitives + wrappers (if A or C)
-- [ ] Phase 2 remove Cython build surface (if A or C soak done)
+- [x] Publish reproducible benchmark harness (`benchmarks/cip000E/`; Cholesky
+      first; extend per hotspot)
+- [x] Accept decision: **Option C** (see Accept decisions above)
+- [x] Phase 0 hygiene (state-space import + tests; [#1302](https://github.com/SheffieldML/GPy/pull/1302))
+- [x] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray,
+      stationary grads, coregionalize reduce, `tril_indices` maps, blocked
+      `symmetrify` defaults (Linux multicore soak still welcome as follow-up)
+- [x] Phase 2 remove Cython build surface (``.pyx`` / ``build_extension.py`` /
+      Cython build-system deps; CI pure-Python smoke)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /
       Option D — separately measured
 
 ## References
 
-- Modules: `GPy/kern/src/stationary_cython.pyx`, `stationary_utils.c`,
-  `GPy/util/choleskies_cython.pyx`, `GPy/util/linalg_cython.pyx`,
-  `GPy/kern/src/coregionalize_cython.pyx`,
-  `GPy/models/state_space_cython.pyx`, wrappers in matching `.py` files
-- Bug locus: `GPy/models/state_space_main.py` (`import state_space_cython`)
-- Build: `build_extension.py`, `pyproject.toml` `[tool.poetry.build]`
-- Config: `GPy/defaults.cfg` `[cython] working`
+- Former Cython modules (removed Phase 2): `stationary_cython`,
+  `choleskies_cython`, `linalg_cython`, `coregionalize_cython`,
+  `state_space_cython` (+ `stationary_utils.c`)
+- Primitives: `GPy/util/choleskies.py`, `GPy/util/linalg.py`,
+  `GPy/kern/src/stationary_ops.py`, `GPy/kern/src/coregionalize_ops.py`
+- Build: pure-Python `poetry-core` (no `[tool.poetry.build]` hook)
+- Config: `GPy/defaults.cfg` `[cython] working = False` (compat no-op)
 - Related CIPs: [0003](./cip0003.md), [0008](./cip0008.md),
   [000A](./cip000A.md), [000C](./cip000C.md),
   [000F](./cip000F.md) (Stage 2 pure functions / 2T experiments),

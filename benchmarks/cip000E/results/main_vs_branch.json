@@ -1,0 +1,474 @@
+{
+  "main": {
+    "label": "main",
+    "gpy_version": "1.15.0",
+    "git": {
+      "branch": "main",
+      "commit": "6f1f31bc",
+      "describe": "0.2-5906-g6f1f31bc-dirty"
+    },
+    "defaults": {
+      "use_choleskies_cython": true,
+      "use_linalg_cython": true,
+      "use_stationary_cython": true,
+      "use_coregionalize_cython": true,
+      "backprop_gradient": "backprop_gradient_par_c",
+      "flat_to_triang": "_flat_to_triang_cython",
+      "triang_to_flat": "_triang_to_flat_cython"
+    },
+    "env": {
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "processor": "arm",
+      "python": "3.11.7",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "blas": {
+        "name": "accelerate",
+        "found": true,
+        "version": "unknown",
+        "detection method": "system",
+        "include directory": "unknown",
+        "lib directory": "unknown",
+        "openblas configuration": "unknown",
+        "pc file directory": "unknown"
+      },
+      "cpu_count": 8,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null
+    },
+    "reps": 5,
+    "rows": [
+      {
+        "bench": "cholesky_backprop",
+        "N": 500,
+        "seconds": 0.012408250011503696,
+        "peak_kib": 4154.4765625,
+        "impl": "backprop_gradient_par_c"
+      },
+      {
+        "bench": "cholesky_backprop",
+        "N": 1000,
+        "seconds": 0.10175279178656638,
+        "peak_kib": 16605.6484375,
+        "impl": "backprop_gradient_par_c"
+      },
+      {
+        "bench": "cholesky_backprop",
+        "N": 2000,
+        "seconds": 0.5231874918099493,
+        "peak_kib": 66410.2734375,
+        "impl": "backprop_gradient_par_c"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 50,
+        "D": 5,
+        "seconds": 5.201683379709721e-05,
+        "peak_kib": 197.140625,
+        "impl": "_flat_to_triang_cython"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 50,
+        "D": 5,
+        "seconds": 1.1891778558492661e-05,
+        "peak_kib": 101.15625,
+        "impl": "_triang_to_flat_cython"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 200,
+        "D": 5,
+        "seconds": 0.00024910001084208486,
+        "peak_kib": 3126.828125,
+        "impl": "_flat_to_triang_cython"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 200,
+        "D": 5,
+        "seconds": 0.00012218337506055831,
+        "peak_kib": 1571.859375,
+        "impl": "_triang_to_flat_cython"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 400,
+        "D": 8,
+        "seconds": 0.00228667501360178,
+        "peak_kib": 20001.8125,
+        "impl": "_flat_to_triang_cython"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 400,
+        "D": 8,
+        "seconds": 0.00203339159488678,
+        "peak_kib": 10026.546875,
+        "impl": "_triang_to_flat_cython"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 500,
+        "seconds": 0.0002868582028895617,
+        "peak_kib": 3906.65625,
+        "impl": "cython"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 1000,
+        "seconds": 0.002407158212736249,
+        "peak_kib": 15625.40625,
+        "impl": "cython"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 3000,
+        "seconds": 0.016852083383128047,
+        "peak_kib": 140625.40625,
+        "impl": "cython"
+      },
+      {
+        "bench": "gradients_X",
+        "N": 1000,
+        "M": 500,
+        "Q": 5,
+        "seconds": 0.018062658421695233,
+        "peak_kib": 19634.298828125,
+        "impl": "cython"
+      },
+      {
+        "bench": "lengthscale_grads",
+        "N": 1000,
+        "M": 500,
+        "Q": 5,
+        "seconds": 0.005151408398523927,
+        "peak_kib": 1.171875,
+        "impl": "cython"
+      },
+      {
+        "bench": "gradients_X",
+        "N": 3000,
+        "M": 1500,
+        "Q": 10,
+        "seconds": 0.21006766660138965,
+        "peak_kib": 176372.525390625,
+        "impl": "cython"
+      },
+      {
+        "bench": "lengthscale_grads",
+        "N": 3000,
+        "M": 1500,
+        "Q": 10,
+        "seconds": 0.09333088342100382,
+        "peak_kib": 1.25,
+        "impl": "cython"
+      },
+      {
+        "bench": "coregionalize_reduce",
+        "N": 2000,
+        "D": 5,
+        "seconds": 0.007188725005835295,
+        "peak_kib": 1.15625,
+        "impl": "cython"
+      },
+      {
+        "bench": "coregionalize_K",
+        "N": 2000,
+        "D": 5,
+        "seconds": 0.005488649988546967,
+        "peak_kib": 62564.5234375,
+        "impl": "cython"
+      },
+      {
+        "bench": "coregionalize_reduce",
+        "N": 5000,
+        "D": 5,
+        "seconds": 0.04489691657945514,
+        "peak_kib": 1.125,
+        "impl": "cython"
+      },
+      {
+        "bench": "coregionalize_K",
+        "N": 5000,
+        "D": 5,
+        "seconds": 0.03985802498646081,
+        "peak_kib": 390783.234375,
+        "impl": "cython"
+      },
+      {
+        "bench": "gp_objective",
+        "N": 400,
+        "Q": 3,
+        "seconds": 0.009149391623213887,
+        "peak_kib": 22626.544921875,
+        "impl": "GPRegression"
+      },
+      {
+        "bench": "gp_gradients",
+        "N": 400,
+        "Q": 3,
+        "seconds": 0.008196600014343858,
+        "peak_kib": 22621.794921875,
+        "impl": "GPRegression"
+      },
+      {
+        "bench": "sparse_gp_objective",
+        "N": 2000,
+        "M": 100,
+        "Q": 4,
+        "seconds": 0.021487146033905447,
+        "peak_kib": 17921.4150390625,
+        "impl": "SparseGPRegression"
+      },
+      {
+        "bench": "sparse_gp_gradients",
+        "N": 2000,
+        "M": 100,
+        "Q": 4,
+        "seconds": 0.02103156258817762,
+        "peak_kib": 17921.5224609375,
+        "impl": "SparseGPRegression"
+      }
+    ]
+  },
+  "branch": {
+    "label": "branch",
+    "gpy_version": "1.15.0",
+    "git": {
+      "branch": "cip000E-numpy-blas-primitives",
+      "commit": "4e990e11",
+      "describe": "0.2-5919-g4e990e11"
+    },
+    "defaults": {
+      "use_choleskies_cython": false,
+      "use_linalg_cython": false,
+      "use_stationary_cython": false,
+      "use_coregionalize_cython": false,
+      "backprop_gradient": "cholesky_vjp_blocked",
+      "flat_to_triang": "_flat_to_triang_idx",
+      "triang_to_flat": "_triang_to_flat_idx"
+    },
+    "env": {
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "processor": "arm",
+      "python": "3.11.7",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "blas": {
+        "name": "accelerate",
+        "found": true,
+        "version": "unknown",
+        "detection method": "system",
+        "include directory": "unknown",
+        "lib directory": "unknown",
+        "openblas configuration": "unknown",
+        "pc file directory": "unknown"
+      },
+      "cpu_count": 8,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null
+    },
+    "reps": 5,
+    "rows": [
+      {
+        "bench": "cholesky_backprop",
+        "N": 500,
+        "seconds": 0.031267874967306854,
+        "peak_kib": 5863.283203125,
+        "impl": "cholesky_vjp_blocked"
+      },
+      {
+        "bench": "cholesky_backprop",
+        "N": 1000,
+        "seconds": 0.0705696583725512,
+        "peak_kib": 23445.8046875,
+        "impl": "cholesky_vjp_blocked"
+      },
+      {
+        "bench": "cholesky_backprop",
+        "N": 2000,
+        "seconds": 0.20395370838232338,
+        "peak_kib": 93753.6875,
+        "impl": "cholesky_vjp_blocked"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 50,
+        "D": 5,
+        "seconds": 6.645000539720058e-05,
+        "peak_kib": 199.1875,
+        "impl": "_flat_to_triang_idx"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 50,
+        "D": 5,
+        "seconds": 7.371683605015278e-05,
+        "peak_kib": 149.953125,
+        "impl": "_triang_to_flat_idx"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 200,
+        "D": 5,
+        "seconds": 0.0011147584300488234,
+        "peak_kib": 3128.875,
+        "impl": "_flat_to_triang_idx"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 200,
+        "D": 5,
+        "seconds": 0.0005713831633329391,
+        "peak_kib": 2356.0078125,
+        "impl": "_triang_to_flat_idx"
+      },
+      {
+        "bench": "flat_to_triang",
+        "M": 400,
+        "D": 8,
+        "seconds": 0.003812025021761656,
+        "peak_kib": 20003.859375,
+        "impl": "_flat_to_triang_idx"
+      },
+      {
+        "bench": "triang_to_flat",
+        "M": 400,
+        "D": 8,
+        "seconds": 0.004644941817969084,
+        "peak_kib": 15038.0703125,
+        "impl": "_triang_to_flat_idx"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 500,
+        "seconds": 0.0006846250034868717,
+        "peak_kib": 3925.65625,
+        "impl": "blocked_or_numpy"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 1000,
+        "seconds": 0.002857683226466179,
+        "peak_kib": 15644.40625,
+        "impl": "blocked_or_numpy"
+      },
+      {
+        "bench": "symmetrify",
+        "N": 3000,
+        "seconds": 0.018816974991932512,
+        "peak_kib": 140644.40625,
+        "impl": "blocked_or_numpy"
+      },
+      {
+        "bench": "gradients_X",
+        "N": 1000,
+        "M": 500,
+        "Q": 5,
+        "seconds": 0.014687175024300813,
+        "peak_kib": 19633.392578125,
+        "impl": "blas"
+      },
+      {
+        "bench": "lengthscale_grads",
+        "N": 1000,
+        "M": 500,
+        "Q": 5,
+        "seconds": 0.0008141750004142523,
+        "peak_kib": 149.3515625,
+        "impl": "blas"
+      },
+      {
+        "bench": "gradients_X",
+        "N": 3000,
+        "M": 1500,
+        "Q": 10,
+        "seconds": 0.12830231660045682,
+        "peak_kib": 176371.619140625,
+        "impl": "blas"
+      },
+      {
+        "bench": "lengthscale_grads",
+        "N": 3000,
+        "M": 1500,
+        "Q": 10,
+        "seconds": 0.005339358374476433,
+        "peak_kib": 856.4609375,
+        "impl": "blas"
+      },
+      {
+        "bench": "coregionalize_reduce",
+        "N": 2000,
+        "D": 5,
+        "seconds": 0.0015717749949544669,
+        "peak_kib": 236.1640625,
+        "impl": "blas"
+      },
+      {
+        "bench": "coregionalize_K",
+        "N": 2000,
+        "D": 5,
+        "seconds": 0.02174998321570456,
+        "peak_kib": 62692.203125,
+        "impl": "numpy"
+      },
+      {
+        "bench": "coregionalize_reduce",
+        "N": 5000,
+        "D": 5,
+        "seconds": 0.013621466793119907,
+        "peak_kib": 587.7265625,
+        "impl": "blas"
+      },
+      {
+        "bench": "coregionalize_K",
+        "N": 5000,
+        "D": 5,
+        "seconds": 0.13727612500078976,
+        "peak_kib": 390785.9140625,
+        "impl": "numpy"
+      },
+      {
+        "bench": "gp_objective",
+        "N": 400,
+        "Q": 3,
+        "seconds": 0.012505491822957992,
+        "peak_kib": 22626.248046875,
+        "impl": "GPRegression"
+      },
+      {
+        "bench": "gp_gradients",
+        "N": 400,
+        "Q": 3,
+        "seconds": 0.009365575015544891,
+        "peak_kib": 22621.232421875,
+        "impl": "GPRegression"
+      },
+      {
+        "bench": "sparse_gp_objective",
+        "N": 2000,
+        "M": 100,
+        "Q": 4,
+        "seconds": 0.01966495846863836,
+        "peak_kib": 17921.607421875,
+        "impl": "SparseGPRegression"
+      },
+      {
+        "bench": "sparse_gp_gradients",
+        "N": 2000,
+        "M": 100,
+        "Q": 4,
+        "seconds": 0.01968889601994306,
+        "peak_kib": 17921.4765625,
+        "impl": "SparseGPRegression"
+      }
+    ]
+  }
+}

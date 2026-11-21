@@ -7,17 +7,14 @@ from scipy import integrate
 from .kern import Kern
 from ...core.parameterization import Param
 from ... import util
-from ...util.config import config  # for assesing whether to use cython
 from paramz.caching import Cache_this
 from paramz.transformations import Logexp
 
-try:
-    from . import stationary_cython
+from . import stationary_ops
 
-    use_stationary_cython = config.getboolean("cython", "working")
-except ImportError:
-    print("warning in stationary: failed to import cython module: falling back to numpy")
-    use_stationary_cython = False
+# CIP-000E Phase 2: Cython extensions removed.
+use_stationary_cython = False
+stationary_cython = None
 
 
 class Stationary(Kern):
@@ -210,10 +207,9 @@ class Stationary(Kern):
             tmp = dL_dr * self._inv_dist(X, X2)
             if X2 is None:
                 X2 = X
-            if use_stationary_cython:
-                self.lengthscale.gradient = self._lengthscale_grads_cython(tmp, X, X2)
-            else:
-                self.lengthscale.gradient = self._lengthscale_grads_pure(tmp, X, X2)
+            # CIP-000E Option C: NumPy/BLAS matmul form is the default.
+            # Cython remains available via _lengthscale_grads_cython for soak.
+            self.lengthscale.gradient = self._lengthscale_grads_blas(tmp, X, X2)
         else:
             r = self._scaled_dist(X, X2)
             with np.errstate(invalid="ignore", divide="ignore"):
@@ -242,27 +238,25 @@ class Stationary(Kern):
         return 1.0 / np.where(dist != 0.0, dist, np.inf)
 
     def _lengthscale_grads_pure(self, tmp, X, X2):
+        """Historical per-dimension Python loops (slow CIP baseline)."""
         return (
             -np.array([np.sum(tmp * np.square(X[:, q : q + 1] - X2[:, q : q + 1].T)) for q in range(self.input_dim)])
             / self.lengthscale**3
         )
 
+    def _lengthscale_grads_blas(self, tmp, X, X2):
+        """CIP-000E default: matmul/reduction form of lengthscale grads."""
+        return -stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2) / self.lengthscale**3
+
     def _lengthscale_grads_cython(self, tmp, X, X2):
-        N, M = tmp.shape
-        Q = self.input_dim
-        X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
-        grads = np.zeros(self.input_dim)
-        stationary_cython.lengthscale_grads(N, M, Q, tmp, X, X2, grads)
-        return -grads / self.lengthscale**3
+        raise ImportError("stationary_cython removed in CIP-000E Phase 2")
 
     def gradients_X(self, dL_dK, X, X2=None):
         """
         Given the derivative of the objective wrt K (dL_dK), compute the derivative wrt X
         """
-        if use_stationary_cython:
-            return self._gradients_X_cython(dL_dK, X, X2)
-        else:
-            return self._gradients_X_pure(dL_dK, X, X2)
+        # CIP-000E Option C: GEMM form is the default; Cython kept for soak/A-B.
+        return self._gradients_X_blas(dL_dK, X, X2)
 
     def gradients_XX(self, dL_dK, X, X2=None):
         """
@@ -346,35 +340,31 @@ class Stationary(Kern):
         g2 = self.dK3_dlengthscaledXdX2(X, X2, dimX, dimX2)
         return [g1, g2]
 
-    def _gradients_X_pure(self, dL_dK, X, X2=None):
+    def _gradients_X_tmp(self, dL_dK, X, X2=None):
+        """Build the ``tmp`` matrix shared by pure / BLAS / Cython ``gradients_X``."""
         invdist = self._inv_dist(X, X2)
         dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
         tmp = invdist * dL_dr
         if X2 is None:
             tmp = tmp + tmp.T
             X2 = X
+        return tmp, X2
 
-        # The high-memory numpy way:
-        # d =  X[:, None, :] - X2[None, :, :]
-        # grad = np.sum(tmp[:,:,None]*d,1)/self.lengthscale**2
-
-        # the lower memory way with a loop
+    def _gradients_X_pure(self, dL_dK, X, X2=None):
+        """Historical per-dimension Python loops (slow CIP baseline)."""
+        tmp, X2 = self._gradients_X_tmp(dL_dK, X, X2)
         grad = np.empty(X.shape, dtype=np.float64)
         for q in range(self.input_dim):
             np.sum(tmp * (X[:, q][:, None] - X2[:, q][None, :]), axis=1, out=grad[:, q])
         return grad / self.lengthscale**2
 
+    def _gradients_X_blas(self, dL_dK, X, X2=None):
+        """CIP-000E default: ``X * rowsum - tmp @ X2``."""
+        tmp, X2 = self._gradients_X_tmp(dL_dK, X, X2)
+        return stationary_ops.gradients_X_from_tmp(tmp, X, X2) / self.lengthscale**2
+
     def _gradients_X_cython(self, dL_dK, X, X2=None):
-        invdist = self._inv_dist(X, X2)
-        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
-        tmp = invdist * dL_dr
-        if X2 is None:
-            tmp = tmp + tmp.T
-            X2 = X
-        X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
-        grad = np.zeros(X.shape)
-        stationary_cython.grad_X(X.shape[0], X.shape[1], X2.shape[0], X, X2, tmp, grad)
-        return grad / self.lengthscale**2
+        raise ImportError("stationary_cython removed in CIP-000E Phase 2")
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)

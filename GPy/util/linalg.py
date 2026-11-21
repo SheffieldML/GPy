@@ -5,18 +5,16 @@
 # Iain Murray, April 2013. iain contactable via iainmurray.net
 # http://homepages.inf.ed.ac.uk/imurray2/code/tdot/tdot.py
 
+from functools import lru_cache
+import logging
+
 import numpy as np
 from scipy import linalg
 from scipy.linalg import lapack, blas
-from .config import config
-import logging
 
-try:
-    from . import linalg_cython
-
-    use_linalg_cython = config.getboolean("cython", "working")
-except ImportError:
-    use_linalg_cython = False
+# CIP-000E Phase 2: Cython extensions removed; flag retained for call-site guards.
+use_linalg_cython = False
+linalg_cython = None
 
 
 def force_F_ordered_symmetric(A):
@@ -378,29 +376,61 @@ def DSYR(*args, **kwargs):
 
 def symmetrify(A, upper=False):
     """
-    Take the square matrix A and make it symmetrical by copting elements from
-    the lower half to the upper
+    Take the square matrix A and make it symmetrical by copying elements from
+    the lower half to the upper (or the reverse if ``upper`` is True).
 
-    works IN PLACE.
-
-    note: tries to use cython, falls back to a slower numpy version
+    Works IN PLACE. CIP-000E default is the blocked NumPy form.
     """
-    if use_linalg_cython:
-        _symmetrify_cython(A, upper)
-    else:
-        _symmetrify_numpy(A, upper)
+    _symmetrify_blocked(A, upper)
 
 
 def _symmetrify_cython(A, upper=False):
-    return linalg_cython.symmetrify(A, upper)
+    raise ImportError("linalg_cython removed in CIP-000E Phase 2")
 
 
 def _symmetrify_numpy(A, upper=False):
+    """Historical single-pass ``triu_indices`` copy (slower CIP baseline)."""
     triu = np.triu_indices_from(A, k=1)
     if upper:
         A.T[triu] = A[triu]
     else:
         A[triu] = A.T[triu]
+
+
+@lru_cache(maxsize=64)
+def _triu_idx(n: int):
+    return np.triu_indices(n, 1)
+
+
+@lru_cache(maxsize=64)
+def _tril_idx_strict(n: int):
+    return np.tril_indices(n, -1)
+
+
+def _symmetrify_blocked(A, upper=False, block_size=64):
+    """Blocked in-place triangular copy with cached triangle indices.
+
+    Default ``block_size=64`` (CIP-000E follow-up): cuts end-to-end GPRegression
+    cost vs the previous uncached ``block_size=256`` path on mid-sized N.
+    """
+    n = A.shape[0]
+    if A.shape[0] != A.shape[1]:
+        raise ValueError("A must be square")
+    for i0 in range(0, n, block_size):
+        i1 = min(n, i0 + block_size)
+        b = i1 - i0
+        blk = A[i0:i1, i0:i1]
+        if upper:
+            r, c = _tril_idx_strict(b)
+            blk[r, c] = blk[c, r]
+        else:
+            r, c = _triu_idx(b)
+            blk[r, c] = blk[c, r]
+        if i1 < n:
+            if upper:
+                A[i1:, i0:i1] = A[i0:i1, i1:].T
+            else:
+                A[i0:i1, i1:] = A[i1:, i0:i1].T
 
 
 def backsub_both_sides(L, X, transpose="left"):

@@ -6,7 +6,6 @@ import numpy as np
 from scipy import integrate
 from .kern import Kern
 from ...core.parameterization import Param
-from ... import util
 from GPy.core.parameterization.caching import Cache_this
 from GPy.core.parameterization.transformations import Logexp
 
@@ -135,20 +134,9 @@ class Stationary(Kern):
         Compute the Euclidean distance between each row of X and X2, or between
         each pair of rows of X if X2 is None.
 
-        Direct differences (not the expanded ``|x|^2+|x'|^2-2x·x'`` form) keep
-        translation invariance under large shared offsets and give exact ``r=0``
-        for coincident points — including off-diagonal duplicates when ``X2 is X``.
+        CIP-000F Stage 2: delegates to ``stationary_ops.unscaled_dist``.
         """
-        # X, = self._slice_X(X)
-        if X2 is None:
-            X2 = X
-            r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
-            util.diag.view(r2)[:,] = 0.0  # force diagnoal to be zero: sometime numerically a little negative
-            r2 = np.clip(r2, 0, np.inf)
-            return np.sqrt(r2)
-        r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
-        r2 = np.clip(r2, 0, np.inf)
-        return np.sqrt(r2)
+        return stationary_ops.unscaled_dist(X, X2)
 
     # Beyond this, RBF-like kernels are numerically zero; clipping avoids
     # overflow in r**2 and in 1/lengthscale**2 paths used by DiffKern.
@@ -170,28 +158,21 @@ class Stationary(Kern):
         """
         Efficiently compute the scaled distance, r.
 
-        ..math::
-            r = \\sqrt( \\sum_{q=1}^Q (x_q - x'q)^2/l_q^2 )
-
-        Note that if thre is only one lengthscale, l comes outside the sum. In
-        this case we compute the unscaled distance first (in a separate
-        function for caching) and divide by lengthscale afterwards
-
+        CIP-000F Stage 2: unwraps lengthscale / ARD once and delegates to
+        ``stationary_ops.scaled_dist``.
         """
-        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
-            if self.ARD:
-                if X2 is not None:
-                    X2 = X2 / self.lengthscale
-                r = self._unscaled_dist(X / self.lengthscale, X2)
-            else:
-                r = self._unscaled_dist(X, X2) / self.lengthscale
-        r = np.nan_to_num(r, nan=np.inf, posinf=np.inf, neginf=np.inf)
-        return np.minimum(r, self._MAX_SCALED_R)
+        return stationary_ops.scaled_dist(
+            X,
+            np.asarray(self.lengthscale, dtype=float),
+            X2=X2,
+            ARD=bool(self.ARD),
+            max_scaled_r=self._MAX_SCALED_R,
+        )
 
     def Kdiag(self, X):
-        ret = np.empty(X.shape[0])
-        ret[:] = self.variance
-        return ret
+        from . import rbf_ops
+
+        return rbf_ops.kdiag(X.shape[0], self.variance)
 
     def reset_gradients(self):
         self.variance.gradient = 0.0
@@ -405,10 +386,14 @@ class Exponential(Stationary):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -self.K_of_r(r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_dk_dr(r, self.variance)
 
     def to_dict(self):
         """
@@ -474,10 +459,14 @@ class OU(Stationary):
         return OU(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -1.0 * self.variance * np.exp(-r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.exponential_dk_dr(r, self.variance)
 
 
 class Matern32(Stationary):
@@ -512,10 +501,14 @@ class Matern32(Stationary):
         return Matern32(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * (1.0 + np.sqrt(3.0) * r) * np.exp(-np.sqrt(3.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern32_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return -3.0 * self.variance * r * np.exp(-np.sqrt(3.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern32_dk_dr(r, self.variance)
 
     def Gram_matrix(self, F, F1, F2, lower, upper):
         """
@@ -614,10 +607,14 @@ class Matern52(Stationary):
         return Matern52(**input_dict)
 
     def K_of_r(self, r):
-        return self.variance * (1 + np.sqrt(5.0) * r + 5.0 / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern52_k_of_r(r, self.variance)
 
     def dK_dr(self, r):
-        return self.variance * (10.0 / 3 * r - 5.0 * r - 5.0 * np.sqrt(5.0) / 3 * r**2) * np.exp(-np.sqrt(5.0) * r)
+        from . import stationary_cov_ops
+
+        return stationary_cov_ops.matern52_dk_dr(r, self.variance)
 
     def Gram_matrix(self, F, F1, F2, F3, lower, upper):
         """

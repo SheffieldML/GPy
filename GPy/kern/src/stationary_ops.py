@@ -89,3 +89,37 @@ def gradients_X_from_tmp(tmp, X, X2):
         raise ValueError("incompatible shapes for tmp, X, X2")
     X, X2 = _center_pair(X, X2)
     return X * tmp.sum(axis=1)[:, None] - tmp @ X2
+
+
+def unscaled_dist(X, X2=None):
+    """Euclidean distances between rows of ``X`` and ``X2`` (CIP-000F Stage 2).
+
+    Direct differences keep translation invariance under large shared offsets
+    and give exact ``r=0`` for coincident points.
+    """
+    X = np.asarray(X, dtype=np.float64)
+    if X2 is None:
+        X2 = X
+        r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
+        np.fill_diagonal(r2, 0.0)
+        r2 = np.clip(r2, 0.0, np.inf)
+        return np.sqrt(r2)
+    X2 = np.asarray(X2, dtype=np.float64)
+    r2 = np.sum((X[:, None, :] - X2[None, :, :]) ** 2, axis=-1)
+    r2 = np.clip(r2, 0.0, np.inf)
+    return np.sqrt(r2)
+
+
+def scaled_dist(X, lengthscale, X2=None, ARD=False, max_scaled_r=1e8):
+    """Lengthscale-scaled distances used by stationary kernels."""
+    X = np.asarray(X, dtype=np.float64)
+    lengthscale = np.asarray(lengthscale, dtype=np.float64)
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        if ARD:
+            X_sc = X / lengthscale
+            X2_sc = None if X2 is None else np.asarray(X2, dtype=np.float64) / lengthscale
+            r = unscaled_dist(X_sc, X2_sc)
+        else:
+            r = unscaled_dist(X, X2) / lengthscale
+    r = np.nan_to_num(r, nan=np.inf, posinf=np.inf, neginf=np.inf)
+    return np.minimum(r, max_scaled_r)

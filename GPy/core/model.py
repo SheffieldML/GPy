@@ -2,12 +2,150 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 from .parameterization.priorizable import Priorizable
 from .parameterization import ParamzModel
+import multiprocessing as mp
 import numpy as np
+
+
+def _opt_wrapper(args):
+    model, kwargs = args
+    return model.optimize(**kwargs)
 
 
 class Model(ParamzModel, Priorizable):
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
+
+    def optimize(
+        self,
+        optimizer=None,
+        start=None,
+        messages=False,
+        max_iters=1000,
+        ipython_notebook=True,
+        clear_after_finish=False,
+        **kwargs,
+    ):
+        """
+        Optimize the model using self.log_likelihood and self.log_likelihood_gradient,
+        as well as self.priors.
+
+        CIP-000F Stage 1: dispatch uses GPy-owned ``GPy.inference.optimization``
+        wrappers rather than ``paramz.optimization``.
+
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
+        :param messages: whether to display during optimisation
+        :type messages: bool
+        :param optimizer: which optimizer to use (defaults to self.preferred_optimizer)
+        :type optimizer: string
+        """
+        from GPy.inference import optimization
+        from GPy.inference.optimization.verbose_optimization import VerboseOptimization
+
+        if self.is_fixed or self.size == 0:
+            print("nothing to optimize")
+            return
+
+        if not self.update_model():
+            print("updates were off, setting updates on again")
+            self.update_model(True)
+
+        if start is None:
+            start = self.optimizer_array
+
+        if optimizer is None:
+            optimizer = self.preferred_optimizer
+
+        if isinstance(optimizer, optimization.Optimizer):
+            opt = optimizer
+            opt.model = self
+        else:
+            optimizer = optimization.get_optimizer(optimizer)
+            opt = optimizer(max_iters=max_iters, **kwargs)
+
+        with VerboseOptimization(
+            self,
+            opt,
+            maxiters=max_iters,
+            verbose=messages,
+            ipython_notebook=ipython_notebook,
+            clear_after_finish=clear_after_finish,
+        ):
+            opt.run(start, f_fp=self._objective_grads, f=self._objective, fp=self._grads)
+
+        self.optimizer_array = opt.x_opt
+        self.optimization_runs.append(opt)
+        return opt
+
+    def optimize_restarts(
+        self,
+        num_restarts=10,
+        robust=False,
+        verbose=True,
+        parallel=False,
+        num_processes=None,
+        **kwargs,
+    ):
+        r"""
+        Perform random restarts of the model, and set the model to the best
+        seen solution.
+
+        If the robust flag is set, exceptions raised during optimizations will
+        be handled silently.  If _all_ runs fail, the model is reset to the
+        existing parameter values.
+
+        \*\*kwargs are passed to the optimizer.
+
+        :param num_restarts: number of restarts to use (default 10)
+        :type num_restarts: int
+        :param robust: whether to handle exceptions silently or not (default False)
+        :type robust: bool
+        :param parallel: whether to run each restart as a separate process
+        :type parallel: bool
+        :param num_processes: number of workers in the multiprocessing pool
+        :type num_processes: int
+        """
+        initial_length = len(self.optimization_runs)
+        initial_parameters = self.optimizer_array.copy()
+
+        if parallel:  # pragma: no cover
+            try:
+                pool = mp.Pool(processes=num_processes)
+                obs = [self.copy() for i in range(num_restarts)]
+                [obs[i].randomize() for i in range(num_restarts - 1)]
+                jobs = pool.map(_opt_wrapper, [(o, kwargs) for o in obs])
+                pool.close()
+                pool.join()
+            except KeyboardInterrupt:
+                print("Ctrl+c received, terminating and joining pool.")
+                pool.terminate()
+                pool.join()
+
+        for i in range(num_restarts):
+            try:
+                if not parallel:
+                    if i > 0:
+                        self.randomize()
+                    self.optimize(**kwargs)
+                else:  # pragma: no cover
+                    self.optimization_runs.append(jobs[i])
+
+                if verbose:
+                    print(
+                        f"Optimization restart {i + 1}/{num_restarts}, f = {self.optimization_runs[-1].f_opt}"
+                    )
+            except Exception as e:
+                if robust:
+                    print(f"Warning - optimization restart {i + 1}/{num_restarts} failed")
+                else:
+                    raise e
+
+        if len(self.optimization_runs) > initial_length:
+            i = np.argmin([o.f_opt for o in self.optimization_runs[initial_length:]])
+            self.optimizer_array = self.optimization_runs[initial_length + i].x_opt
+        else:
+            self.optimizer_array = initial_parameters
+        return self.optimization_runs
 
     def _save_to_input_dict(self):
         """

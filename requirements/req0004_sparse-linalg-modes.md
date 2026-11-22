@@ -56,9 +56,11 @@ modes without rewriting models.
 - [ ] Canonical tokens are `lq` | `stable` | `legacy` (case-insensitive
       read; write canonical). Read aliases: `stablefactor`/`chol` → `stable`;
       `gram` → `legacy`
-- [ ] Default is **`lq`** once the LQ path is implemented and gated;
-      until then default may remain today's arithmetic labelled as
-      `stable` only if the CIP documents a dated cutover
+- [ ] Default is **`lq`** once the LQ path is gated and shipped on the
+      cutover release (CIP-0013 release ladder: ~1.16 keeps `stable` +
+      Cython; later 1.2x / GPy2-prep line flips to `lq` and may drop
+      Cython). Until that cutover, default remains today's arithmetic
+      labelled `stable`
 - [ ] No `VarDTC_LQ` / `FITC_LQ` subclasses — approximation stays the
       inference class
 - [ ] On well-conditioned toys, `lq` and `stable` agree on log-likelihood

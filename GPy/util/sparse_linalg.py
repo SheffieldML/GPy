@@ -30,10 +30,7 @@ def parse_sparse_linalg(mode: str) -> str:
     key = mode.strip().lower()
     key = _ALIASES.get(key, key)
     if key not in _CANONICAL:
-        raise ValueError(
-            f"sparse_linalg={mode!r} is not supported. "
-            "Use 'lq', 'stable', or 'legacy'."
-        )
+        raise ValueError(f"sparse_linalg={mode!r} is not supported. Use 'lq', 'stable', or 'legacy'.")
     return key
 
 
@@ -111,6 +108,5 @@ def factor_I_plus_AA(features: np.ndarray, mode: str):
         L, Q = lq_factor(W)
         return L, A, Q
     raise NotImplementedError(
-        "sparse_linalg='legacy' is not implemented in GPy yet "
-        "(CIP-0013 Phase B). Use 'lq' or 'stable'."
+        "sparse_linalg='legacy' is not implemented in GPy yet (CIP-0013 Phase B). Use 'lq' or 'stable'."
     )

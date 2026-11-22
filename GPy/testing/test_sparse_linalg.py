@@ -64,10 +64,9 @@ def test_lq_adjoint_finite_difference():
             Wm = W.copy()
             Wp[i, j] += eps
             Wm[i, j] -= eps
-            num[i, j] = (
-                phi(*lq_factor(Wp, normalize_signs=False))
-                - phi(*lq_factor(Wm, normalize_signs=False))
-            ) / (2 * eps)
+            num[i, j] = (phi(*lq_factor(Wp, normalize_signs=False)) - phi(*lq_factor(Wm, normalize_signs=False))) / (
+                2 * eps
+            )
     assert np.allclose(Wbar, num, rtol=1e-4, atol=1e-5)
 
 
@@ -126,9 +125,7 @@ def test_sparse_linalg_property_aliases():
 def test_vardtc_to_dict_and_pickle_roundtrip():
     import pickle
 
-    inf = GPy.inference.latent_function_inference.VarDTC(
-        limit=2, sparse_linalg="lq"
-    )
+    inf = GPy.inference.latent_function_inference.VarDTC(limit=2, sparse_linalg="lq")
     d = inf.to_dict()
     assert d["sparse_linalg"] == "lq"
     assert d["limit"] == 2
@@ -154,13 +151,9 @@ def test_vardtc_lq_uncertain_inputs_falls_back_to_stable(caplog):
     Z = X[:M].copy()
     X_var = 0.05 * rng.random(size=X.shape) + 1e-3
     k = GPy.kern.RBF(Q, lengthscale=1.0)
-    m = GPy.models.SparseGPRegression(
-        X, Y, kernel=k, Z=Z, X_variance=X_var
-    )
+    m = GPy.models.SparseGPRegression(X, Y, kernel=k, Z=Z, X_variance=X_var)
     inf = GPy.inference.latent_function_inference.VarDTC(sparse_linalg="lq")
     with caplog.at_level(logging.INFO, logger="vardtc"):
-        _post, log_marginal, _grad = inf.inference(
-            m.kern, m.X, m.Z, m.likelihood, m.Y
-        )
+        _post, log_marginal, _grad = inf.inference(m.kern, m.X, m.Z, m.likelihood, m.Y)
     assert np.isfinite(np.asarray(log_marginal)).all()
     assert any("uncertain inputs" in r.getMessage() for r in caplog.records)

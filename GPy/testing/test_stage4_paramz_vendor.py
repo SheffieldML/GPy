@@ -24,6 +24,33 @@ def test_paramz_core_aliases_registered():
     assert a.shape == (1, 2)
 
 
+def test_paramz_top_level_aliases_registered():
+    for name in (
+        "paramz.caching",
+        "paramz.domains",
+        "paramz.transformations",
+        "paramz.parameterized",
+        "paramz.param",
+        "paramz.model",
+        "paramz.util",
+        "paramz.optimization",
+        "paramz.core",
+    ):
+        assert name in sys.modules, name
+        assert "GPy/core/parameterization/_paramz" in sys.modules[name].__file__.replace(
+            "\\", "/"
+        )
+
+
+def test_install_paramz_aliases_is_idempotent():
+    from GPy.core.parameterization._paramz_bootstrap import install_paramz_aliases
+
+    first = sys.modules["paramz"]
+    second = install_paramz_aliases()
+    assert second is sys.modules["paramz"]
+    assert first is second
+
+
 def test_gp_pickle_roundtrip_with_vendored_paramz(tmp_path):
     np.random.seed(0)
     X = np.random.randn(12, 1)

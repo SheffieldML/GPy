@@ -2,6 +2,10 @@ codecov:
   # Default branch for the badge / compare baseline (CIP-0008 rename).
   branch: main
 
+# CIP-000F Stage 4: do not score vendored paramz as GPy patch coverage.
+ignore:
+  - "GPy/core/parameterization/_paramz/**"
+
 coverage:
   precision: 2
   round: down

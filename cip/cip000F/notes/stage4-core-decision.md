@@ -26,5 +26,6 @@ keep `sys.modules` aliases so historical pickle paths resolve.
 
 - Tree: `GPy/core/parameterization/_paramz/` (paramz 0.10.0 sources, no examples)
 - Bootstrap imported first from `GPy.core.parameterization`
+- Coverage / ruff omit the vendored tree; score bootstrap and façades instead
 - GPy-owned `caching.py` / `domains.py` / `observable_array.py` remain the
   public Stage 1–3 surfaces; they import Observable / ObsAr through aliases

@@ -8,7 +8,6 @@ import logging
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPrior
 from ..core.parameterization import Param
-from GPy.core.parameterization import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTC
 from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian

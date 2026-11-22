@@ -7,12 +7,11 @@ import pickle
 import sys
 
 import numpy as np
-import pytest
 
 import GPy
 from GPy.core.gp import _as_data_array
 from GPy.core.parameterization import ObsAr
-from GPy.core.parameterization.caching import Cache_this, Cacher, FunctionCache
+from GPy.core.parameterization.caching import Cache_this, FunctionCache
 
 
 def test_gp_xy_are_plain_ndarray_not_obsar():
@@ -51,7 +50,7 @@ def test_kernel_cache_invalidates_on_lengthscale_change():
 
 
 def test_cacher_accepts_ndarray_inputs():
-    class Holder(object):
+    class Holder:
         def __init__(self):
             self._cache_version = 0
             self.cache = FunctionCache()
@@ -95,11 +94,10 @@ def test_load_previous_release_obsar_pickle_fixture():
     buf = io.BytesIO()
     pickle.dump({"X": X, "Y": Y, "cls": ObsAr}, buf, protocol=pickle.HIGHEST_PROTOCOL)
     buf.seek(0)
-    # Ensure paramz path still resolves (Accept alias / installed paramz)
-    import paramz.core.observable_array as oa
-
     data = pickle.load(buf)
-    assert isinstance(data["X"], oa.ObsAr)
+    # ObsAr is still the paramz class re-exported via the GPy façade (Stage 0/3).
+    assert isinstance(data["X"], ObsAr)
+    assert data["X"].__class__.__module__ == "paramz.core.observable_array"
     assert np.allclose(np.asarray(data["X"]), np.asarray(X))
 
 

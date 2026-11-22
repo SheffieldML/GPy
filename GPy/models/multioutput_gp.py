@@ -8,7 +8,6 @@ from .. import kern
 from ..kern import DiffKern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from .. import util
-from GPy.core.parameterization import ObsAr
 from ..core.gp import GP
 
 from ..util.multioutput import index_to_slices

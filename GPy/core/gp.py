@@ -10,6 +10,7 @@ from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from ..util.normalizer import Standardize
 from GPy.core.parameterization import ObsAr
+from GPy.core.parameterization.param import Param
 
 import logging
 import warnings
@@ -59,12 +60,16 @@ class GP(Model):
     ):
         super(GP, self).__init__(name)
 
-        # Use X.ndim (not np.asarray(X).ndim): VariationalPosterior / ObsAr are
-        # 2-d objects, but np.asarray wraps them as 0-d object arrays.
+        # Use X.ndim (not np.asarray(X).ndim): VariationalPosterior / ObsAr / Param
+        # are 2-d objects, but np.asarray wraps them as 0-d object arrays.
         if X.ndim != 2:
             raise ValueError(f"X must be 2-dimensional (got ndim={X.ndim})")
         if isinstance(X, VariationalPosterior):
             self.X = X.copy()
+        elif isinstance(X, Param):
+            # LVM models (e.g. SparseGPLVM) pass a Param and link it after init.
+            # Stage 3 ndarray conversion applies to data arrays, not parameters.
+            self.X = X
         else:
             self.X = _as_data_array(X)
 

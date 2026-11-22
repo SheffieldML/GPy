@@ -9,11 +9,17 @@ from ...core.parameterization import Param
 from GPy.core.parameterization.caching import Cache_this
 from GPy.core.parameterization.transformations import Logexp
 
+from ...util.config import config
 from . import stationary_ops
 
-# CIP-000E Phase 2: Cython extensions removed.
-use_stationary_cython = False
-stationary_cython = None
+try:
+    from . import stationary_cython
+
+    use_stationary_cython = config.getboolean("cython", "working")
+except ImportError:
+    print("warning in stationary: failed to import cython module: falling back to numpy")
+    use_stationary_cython = False
+    stationary_cython = None
 
 
 class Stationary(Kern):
@@ -248,7 +254,12 @@ class Stationary(Kern):
         return -stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2) / self.lengthscale**3
 
     def _lengthscale_grads_cython(self, tmp, X, X2):
-        raise ImportError("stationary_cython removed in CIP-000E Phase 2")
+        N, M = tmp.shape
+        Q = self.input_dim
+        X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
+        grads = np.zeros(self.input_dim)
+        stationary_cython.lengthscale_grads(N, M, Q, tmp, X, X2, grads)
+        return -grads / self.lengthscale**3
 
     def gradients_X(self, dL_dK, X, X2=None):
         """
@@ -363,7 +374,11 @@ class Stationary(Kern):
         return stationary_ops.gradients_X_from_tmp(tmp, X, X2) / self.lengthscale**2
 
     def _gradients_X_cython(self, dL_dK, X, X2=None):
-        raise ImportError("stationary_cython removed in CIP-000E Phase 2")
+        tmp, X2 = self._gradients_X_tmp(dL_dK, X, X2)
+        X, X2 = np.ascontiguousarray(X), np.ascontiguousarray(X2)
+        grad = np.zeros(X.shape)
+        stationary_cython.grad_X(X.shape[0], X.shape[1], X2.shape[0], X, X2, tmp, grad)
+        return grad / self.lengthscale**2
 
     def gradients_X_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)

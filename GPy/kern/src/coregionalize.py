@@ -5,11 +5,17 @@ from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from GPy.core.parameterization.transformations import Logexp
+from ...util.config import config
 from . import coregionalize_ops
 
-# CIP-000E Phase 2: Cython extensions removed.
-use_coregionalize_cython = False
-coregionalize_cython = None
+try:
+    from . import coregionalize_cython
+
+    use_coregionalize_cython = config.getboolean("cython", "working")
+except ImportError:
+    print("warning in coregionalize: failed to import cython module: falling back to numpy")
+    use_coregionalize_cython = False
+    coregionalize_cython = None
 
 
 class Coregionalize(Kern):
@@ -86,7 +92,13 @@ class Coregionalize(Kern):
             return self.B[index, index2.T]
 
     def _K_cython(self, X, X2=None):
-        raise ImportError("coregionalize_cython removed in CIP-000E Phase 2")
+        if X2 is None:
+            return coregionalize_cython.K_symmetric(self.B, np.asarray(X, dtype=np.int64)[:, 0])
+        return coregionalize_cython.K_asymmetric(
+            self.B,
+            np.asarray(X, dtype=np.int64)[:, 0],
+            np.asarray(X2, dtype=np.int64)[:, 0],
+        )
 
     def Kdiag(self, X):
         return np.diag(self.B)[np.asarray(X, dtype=int).flatten()]
@@ -121,7 +133,8 @@ class Coregionalize(Kern):
         return coregionalize_ops.gradient_reduce(dL_dK, index[:, 0], index2[:, 0], self.output_dim)
 
     def _gradient_reduce_cython(self, dL_dK, index, index2):
-        raise ImportError("coregionalize_cython removed in CIP-000E Phase 2")
+        index, index2 = np.int64(index[:, 0]), np.int64(index2[:, 0])
+        return coregionalize_cython.gradient_reduce(self.B.shape[0], dL_dK, index, index2)
 
     def update_gradients_diag(self, dL_dKdiag, X):
         index = np.asarray(X, dtype=int).flatten()

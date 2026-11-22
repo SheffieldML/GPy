@@ -1,9 +1,39 @@
-"""CIP-000E: NumPy/BLAS path parity (Cython extensions removed in Phase 2)."""
+"""CIP-000E Option C on release/1.16: NumPy/BLAS defaults + optional Cython soak."""
 
 import numpy as np
 from GPy.util import choleskies, linalg
 import GPy
 import pytest
+
+from ..util.config import config
+
+try:
+    from ..util import choleskies_cython
+
+    choleskies_cython_working = config.getboolean("cython", "working")
+except ImportError:
+    choleskies_cython_working = False
+
+try:
+    from ..kern.src import stationary_cython as stationary_cython  # noqa: F401
+
+    stationary_cython_working = config.getboolean("cython", "working")
+except ImportError:
+    stationary_cython_working = False
+
+try:
+    from ..kern.src import coregionalize_cython as coregionalize_cython  # noqa: F401
+
+    coregionalize_cython_working = config.getboolean("cython", "working")
+except ImportError:
+    coregionalize_cython_working = False
+
+try:
+    from ..util import linalg_cython  # noqa: F401
+
+    linalg_cython_working = config.getboolean("cython", "working")
+except ImportError:
+    linalg_cython_working = False
 
 
 class TestCholsMaps:
@@ -28,11 +58,23 @@ class TestCholsMaps:
         flat2 = choleskies.triang_to_flat(L)
         assert np.allclose(self.flat, flat2)
 
-    def test_removed_cython_map_stubs_raise(self):
-        with pytest.raises(ImportError, match="Phase 2"):
-            choleskies._flat_to_triang_cython(self.flat)
-        with pytest.raises(ImportError, match="Phase 2"):
-            choleskies._triang_to_flat_cython(self.triang)
+    @pytest.mark.skipif(
+        not choleskies_cython_working,
+        reason="Cython cholesky module has not been built on this machine",
+    )
+    def test_flat_to_triang_cython_matches_idx(self):
+        L1 = choleskies._flat_to_triang_idx(self.flat)
+        L2 = choleskies._flat_to_triang_cython(self.flat)
+        assert np.allclose(L1, L2), "Cython/idx triang mismatch!"
+
+    @pytest.mark.skipif(
+        not choleskies_cython_working,
+        reason="Cython cholesky module has not been built on this machine",
+    )
+    def test_triang_to_flat_cython_matches_idx(self):
+        A1 = choleskies._triang_to_flat_idx(self.triang)
+        A2 = choleskies._triang_to_flat_cython(self.triang)
+        assert np.allclose(A1, A2), "Cython/idx flat mismatch!"
 
 
 class TestStationary:
@@ -111,6 +153,46 @@ class TestStationary:
         assert np.allclose(stationary_ops.lengthscale_grads_sqdiff(tmp, X, X2), loop_len(), rtol=0, atol=1e-8)
         assert np.allclose(stationary_ops.gradients_X_from_tmp(tmp, X, X2), loop_gx(), rtol=0, atol=1e-8)
 
+    @pytest.mark.skipif(
+        not stationary_cython_working,
+        reason="Cython stationary module has not been built on this machine",
+    )
+    def test_square_gradX_cython_matches_blas(self):
+        self.setup_method()
+        g1 = self.k._gradients_X_cython(self.dKxx, self.X)
+        g3 = self.k._gradients_X_blas(self.dKxx, self.X)
+        assert np.allclose(g1, g3), "BLAS/Cython square gradX mismatch!"
+
+    @pytest.mark.skipif(
+        not stationary_cython_working,
+        reason="Cython stationary module has not been built on this machine",
+    )
+    def test_rect_gradX_cython_matches_blas(self):
+        self.setup_method()
+        g1 = self.k._gradients_X_cython(self.dKxz, self.X, self.Z)
+        g3 = self.k._gradients_X_blas(self.dKxz, self.X, self.Z)
+        assert np.allclose(g1, g3), "BLAS/Cython rect gradX mismatch!"
+
+    @pytest.mark.skipif(
+        not stationary_cython_working,
+        reason="Cython stationary module has not been built on this machine",
+    )
+    def test_square_lengthscales_cython_matches_blas(self):
+        self.setup_method()
+        g2 = self.k._lengthscale_grads_cython(self.dKxx, self.X, self.X)
+        g3 = self.k._lengthscale_grads_blas(self.dKxx, self.X, self.X)
+        assert np.allclose(g2, g3), "BLAS/Cython square lengthscale mismatch!"
+
+    @pytest.mark.skipif(
+        not stationary_cython_working,
+        reason="Cython stationary module has not been built on this machine",
+    )
+    def test_rect_lengthscales_cython_matches_blas(self):
+        self.setup_method()
+        g2 = self.k._lengthscale_grads_cython(self.dKxz, self.X, self.Z)
+        g3 = self.k._lengthscale_grads_blas(self.dKxz, self.X, self.Z)
+        assert np.allclose(g2, g3), "BLAS/Cython rect lengthscale mismatch!"
+
 
 class TestCholeskiesBackprop:
     def setup_method(self):
@@ -181,6 +263,16 @@ class TestCholeskiesBackprop:
         blocked = choleskies.cholesky_vjp_blocked(dL, L, block_size=16)
         assert np.allclose(pure, blocked, rtol=0, atol=1e-5)
 
+    @pytest.mark.skipif(
+        not choleskies_cython_working,
+        reason="Cython cholesky module has not been built on this machine",
+    )
+    def test_backprop_cython_matches_pure(self):
+        self.setup_method()
+        r1 = choleskies._backprop_gradient_pure(self.dL, self.L)
+        r2 = choleskies_cython.backprop_gradient(self.dL, self.L)
+        assert np.allclose(r1, r2), "Cython/pure gradient mismatch!"
+
 
 class TestSymmetrify:
     def test_blocked_matches_numpy_lower(self):
@@ -204,9 +296,18 @@ class TestSymmetrify:
         linalg._symmetrify_blocked(C, upper=True, block_size=16)
         assert np.allclose(B, C)
 
-    def test_removed_cython_symmetrify_stub_raises(self):
-        with pytest.raises(ImportError, match="Phase 2"):
-            linalg._symmetrify_cython(np.eye(3))
+    @pytest.mark.skipif(
+        not linalg_cython_working,
+        reason="Cython linalg module has not been built on this machine",
+    )
+    def test_cython_matches_blocked(self):
+        rng = np.random.default_rng(2)
+        A = rng.normal(size=(48, 48))
+        B = A.copy()
+        C = A.copy()
+        linalg._symmetrify_blocked(B, upper=False)
+        linalg._symmetrify_cython(C, upper=False)
+        assert np.allclose(B, C)
 
     def test_blocked_rejects_non_square(self):
         with pytest.raises(ValueError, match="square"):
@@ -254,11 +355,23 @@ class TestCoregionalizeReduce:
         with pytest.raises(ValueError, match="index2 values"):
             coregionalize_ops.gradient_reduce(self.dL, self.index[:, 0], bad_index2, self.D)
 
-    def test_removed_cython_reduce_stubs_raise(self):
-        with pytest.raises(ImportError, match="Phase 2"):
-            self.k._K_cython(self.index)
-        with pytest.raises(ImportError, match="Phase 2"):
-            self.k._gradient_reduce_cython(self.dL, self.index, self.index2)
+    @pytest.mark.skipif(
+        not coregionalize_cython_working,
+        reason="Cython coregionalize module has not been built on this machine",
+    )
+    def test_blas_matches_cython(self):
+        self.setup_method()
+        a = self.k._gradient_reduce_cython(self.dL, self.index, self.index2)
+        b = self.k._gradient_reduce_blas(self.dL, self.index, self.index2)
+        assert np.allclose(a, b), "BLAS/Cython gradient_reduce mismatch!"
+
+    @pytest.mark.skipif(
+        not coregionalize_cython_working,
+        reason="Cython coregionalize module has not been built on this machine",
+    )
+    def test_K_cython_matches_numpy(self):
+        self.setup_method()
+        assert np.allclose(self.k._K_numpy(self.index), self.k._K_cython(self.index))
 
 
 def test_stationary_ops_reject_bad_shapes():
@@ -277,21 +390,13 @@ def test_stationary_ops_reject_bad_shapes():
         stationary_ops.gradients_X_from_tmp(tmp, X, np.ones((2, 2)))
 
 
-def test_removed_stationary_cython_stubs_raise():
-    k = GPy.kern.RBF(2)
-    X = np.random.randn(5, 2)
-    tmp = np.random.randn(5, 5)
-    with pytest.raises(ImportError, match="Phase 2"):
-        k._lengthscale_grads_cython(tmp, X, X)
-    with pytest.raises(ImportError, match="Phase 2"):
-        k._gradients_X_cython(tmp, X)
+def test_state_space_cython_available_when_built():
+    """CIP-000E Phase 0: relative import must expose cython_code_available."""
+    try:
+        from GPy.models import state_space_cython as _ssc  # noqa: F401
+    except ImportError:
+        pytest.skip("state_space_cython extension has not been built")
 
-
-def test_state_space_cython_removed():
-    """CIP-000E Phase 2: Cython state-space path is gone; Python remains."""
     from GPy.models import state_space_main as ssm
 
-    assert ssm.cython_code_available is False
-    assert ssm.use_cython is False
-    with pytest.raises(ImportError):
-        from GPy.models import state_space_cython  # noqa: F401
+    assert ssm.cython_code_available is True

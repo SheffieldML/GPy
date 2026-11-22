@@ -7,10 +7,16 @@ import numpy as np
 from scipy.linalg import solve_triangular
 
 from . import linalg
+from .config import config
 
-# CIP-000E Phase 2: Cython extensions removed; flag retained for call-site guards.
-use_choleskies_cython = False
-choleskies_cython = None
+try:
+    from . import choleskies_cython
+
+    use_choleskies_cython = config.getboolean("cython", "working")
+except ImportError:
+    print("warning in choleskies: failed to import cython module: falling back to numpy")
+    use_choleskies_cython = False
+    choleskies_cython = None
 
 
 def safe_root(N):
@@ -54,7 +60,9 @@ def _flat_to_triang_idx(flat_mat):
 
 
 def _flat_to_triang_cython(flat_mat):
-    raise ImportError("choleskies_cython removed in CIP-000E Phase 2")
+    N, D = flat_mat.shape
+    M = (-1 + safe_root(8 * N + 1)) // 2
+    return choleskies_cython.flat_to_triang(flat_mat, M)
 
 
 def _triang_to_flat_pure(L):
@@ -81,7 +89,7 @@ def _triang_to_flat_idx(L):
 
 
 def _triang_to_flat_cython(L):
-    raise ImportError("choleskies_cython removed in CIP-000E Phase 2")
+    return choleskies_cython.triang_to_flat(L)
 
 
 def _backprop_gradient_pure(dL, L):
@@ -265,8 +273,8 @@ def indexes_to_fix_for_low_rank(rank, size):
     return np.setdiff1d(np.arange((size**2 + size) / 2), keep)
 
 
-# CIP-000E: Murray blocked backprop + tril_indices maps are the defaults.
-# Cython helpers remain importable only while extensions still ship.
+# CIP-000E Option C on release/1.16: Murray blocked + tril_indices are defaults.
+# Cython helpers stay importable for soak / A-B (Phase 2 removal is main→1.20).
 backprop_gradient = cholesky_vjp_blocked
 flat_to_triang = _flat_to_triang_idx
 triang_to_flat = _triang_to_flat_idx

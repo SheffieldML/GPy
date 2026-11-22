@@ -11,16 +11,38 @@ import scipy as sp
 import scipy.linalg as linalg
 from collections.abc import Iterable
 
+try:
+    from . import state_space_setup
+
+    setup_available = True
+except ImportError:
+    setup_available = False
+
 print_verbose = False
 
-# CIP-000E Phase 2: state_space_cython removed (Phase 0 showed Cython ≈ Python).
-# ``state_space_setup.use_cython`` is ignored; the Python path is always used.
-state_space_cython = None
-cython_code_available = False
+try:
+    # Relative import so the extension loads from the installed/package tree.
+    # Absolute `import state_space_cython` fails once GPy is installed as a
+    # package (CIP-000E Phase 0).
+    from . import state_space_cython
+
+    cython_code_available = True
+    if print_verbose:
+        print("state_space: cython is available")
+except ImportError:
+    state_space_cython = None
+    cython_code_available = False
+
+# Use cython only when setup requests it (default False; Phase 0: Cython ≈ Python).
 use_cython = False
+if setup_available:
+    use_cython = state_space_setup.use_cython
 
 if print_verbose:
-    print("state_space: cython is NOT used")
+    if use_cython:
+        print("state_space: cython is used")
+    else:
+        print("state_space: cython is NOT used")
 
 # When debugging external module can set some value to this variable (e.g.)
 # 'model' and in this module this variable can be seen.s

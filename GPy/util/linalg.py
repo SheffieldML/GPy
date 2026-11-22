@@ -12,9 +12,15 @@ import numpy as np
 from scipy import linalg
 from scipy.linalg import lapack, blas
 
-# CIP-000E Phase 2: Cython extensions removed; flag retained for call-site guards.
-use_linalg_cython = False
-linalg_cython = None
+from .config import config
+
+try:
+    from . import linalg_cython
+
+    use_linalg_cython = config.getboolean("cython", "working")
+except ImportError:
+    use_linalg_cython = False
+    linalg_cython = None
 
 
 def force_F_ordered_symmetric(A):
@@ -379,13 +385,14 @@ def symmetrify(A, upper=False):
     Take the square matrix A and make it symmetrical by copying elements from
     the lower half to the upper (or the reverse if ``upper`` is True).
 
-    Works IN PLACE. CIP-000E default is the blocked NumPy form.
+    Works IN PLACE. CIP-000E default on release/1.16 is the blocked NumPy form;
+    Cython remains available via ``_symmetrify_cython`` for soak / A-B.
     """
     _symmetrify_blocked(A, upper)
 
 
 def _symmetrify_cython(A, upper=False):
-    raise ImportError("linalg_cython removed in CIP-000E Phase 2")
+    return linalg_cython.symmetrify(A, upper)
 
 
 def _symmetrify_numpy(A, upper=False):

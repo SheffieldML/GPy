@@ -3,7 +3,6 @@
 """Tests for shared Gaussian special functions (Mills + SciPy Faddeeva)."""
 
 import numpy as np
-import pytest
 from scipy.special import erfcx as scipy_erfcx
 from scipy.special import log_ndtr
 from scipy.special import wofz as scipy_wofz
@@ -28,6 +27,9 @@ def test_d_inv_mills_finite_difference():
     eps = 1e-6
     fd = (inv_mills_ratio(z + eps) - inv_mills_ratio(z - eps)) / (2 * eps)
     np.testing.assert_allclose(d_inv_mills_ratio(z), fd, rtol=1e-5, atol=1e-6)
+    # Explicit lam=None vs precomputed lam paths
+    lam = inv_mills_ratio(z)
+    np.testing.assert_allclose(d_inv_mills_ratio(z, lam), d_inv_mills_ratio(z), rtol=1e-15)
 
 
 def test_d2_inv_mills_finite_difference():
@@ -35,6 +37,8 @@ def test_d2_inv_mills_finite_difference():
     eps = 1e-6
     fd = (d_inv_mills_ratio(z + eps) - d_inv_mills_ratio(z - eps)) / (2 * eps)
     np.testing.assert_allclose(d2_inv_mills_ratio(z), fd, rtol=1e-5, atol=1e-6)
+    lam = inv_mills_ratio(z)
+    np.testing.assert_allclose(d2_inv_mills_ratio(z, lam), d2_inv_mills_ratio(z), rtol=1e-15)
 
 
 def test_wofz_erfcx_are_scipy():

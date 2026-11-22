@@ -2,7 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
-from scipy.special import erf, erfcx
+from scipy.special import erf
+from ...util.gaussian_special import erfcx
 from .kern import Kern
 from ...core.parameterization import Param
 from GPy.core.parameterization.transformations import Logexp

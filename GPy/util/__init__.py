@@ -22,3 +22,4 @@ from . import multioutput
 from . import parallel
 from . import cluster_with_offset
 from . import input_warping_functions
+from . import gaussian_special

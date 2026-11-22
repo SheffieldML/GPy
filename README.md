@@ -22,9 +22,11 @@ From now on we keep track of changes in the CHANGELOG.md.
 If you want your changes to show up there follow the [guidelines](#gl).
 In particular tag your commits by the [gitchangelog](https://github.com/vaab/gitchangelog) commit message format.
 
-Packaging for **contributors** uses [uv](https://docs.astral.sh/uv/) (CIP-000C;
-Poetry was CIP-0003). **End users** still install with `pip install gpy` from
-PyPI wheels. Contributors use `uv sync` and a committed `uv.lock`.
+Packaging for **contributors** uses [uv](https://docs.astral.sh/uv/)
+([CIP-000C](cip/cip000C.md) / [#1278](https://github.com/SheffieldML/GPy/pull/1278);
+Poetry was [CIP-0003](cip/cip0003.md)). **End users** still install with
+`pip install gpy` from PyPI wheels. Contributors use `uv sync` and a committed
+`uv.lock`.
 
 ## Contributing to GPy
 

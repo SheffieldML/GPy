@@ -1,10 +1,10 @@
 ---
 id: 2026-11-13_cip000C-uv-packaging-cutover
 title: CIP-000C — migrate contributor packaging from Poetry to uv
-status: In Progress
+status: Completed
 priority: High
 created: '2026-11-13'
-last_updated: '2026-11-13'
+last_updated: '2026-11-22'
 category: infrastructure
 related_cips:
 - '000C'
@@ -36,12 +36,13 @@ Replace Poetry as the contributor/CI install and lock tool with uv, keeping
 - [x] CI workflows use uv (`astral-sh/setup-uv` or equivalent); no `poetry install`
 - [x] README contributor path documents `uv sync` / `uv run`
 - [x] CIP-0008 tag check reads PEP 621 `[project].version`
-- [ ] Dependabot still viable for the lockfile (or scheduled `uv lock --upgrade`)
+- [x] Dependabot still viable for the lockfile (or scheduled `uv lock --upgrade`)
 
 ## Related
 
 - CIP: 000C
 - Discussion: [#1268](https://github.com/SheffieldML/GPy/discussions/1268)
+- PR: [#1278](https://github.com/SheffieldML/GPy/pull/1278) (merged)
 - Branch: `cip000C-uv-packaging`
 
 ## Progress Updates
@@ -54,3 +55,9 @@ CIP Accepted with phased decisions. Worktree on `cip000C-uv-packaging`.
 manual restore of `[tool.poetry.build]` (tool dropped the Cython hook). Local
 spike green: Cython smoke, `uv build` wheel import, 410 pytest passed / 21
 skipped. CI + README cut over; awaiting PR CI and Dependabot check.
+
+### 2026-11-22
+
+Cutover merged as [#1278](https://github.com/SheffieldML/GPy/pull/1278). Dependabot
+has continued to open and merge pip PRs post-cutover (#1282–#1290 and later).
+Task Completed; CIP-000C Closed and compressed into README / CHANGELOG.

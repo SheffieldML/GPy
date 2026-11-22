@@ -25,6 +25,10 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Ready
 
+- [CIP-000F Stage 2T — experimental JAX LML assessment (out of package)](infrastructure/2026-11-21_cip000F-stage2t-jax-assessment.md)
+
+- [CIP-000F Stage 2N — conceptual CovarianceOperator / ConditionedState sketch](infrastructure/2026-11-21_cip000F-stage2n-numerical-interfaces.md)
+
 - [CIP-000D — deprecate orphaned LFM1 kernel and schedule removal](infrastructure/2026-11-13_cip000D-deprecate-lfm1.md)
 
 - [Design parameter tying framework for GPy multioutput kernels](infrastructure/2025-08-15_parameter-tying-framework.md)
@@ -33,8 +37,6 @@ This file provides an overview of all current backlog items organized by categor
 ### In Progress
 
 - [CIP-000E — Cholesky Murray blocked soak and multicore confirmation](infrastructure/2026-11-16_cip000E-cholesky-murray-soak.md)
-
-- [CIP-000C — migrate contributor packaging from Poetry to uv](infrastructure/2026-11-13_cip000C-uv-packaging-cutover.md)
 
 - [Deprecate matplotlib visualize LVM callbacks](infrastructure/2026-10-26_deprecate-matplotlib-visualize.md)
 
@@ -45,7 +47,9 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Proposed
 
-*No tasks currently proposed.*
+- [CIP-000F Stage 3 — replace Cache_this / ObsAr with version-counter cache](infrastructure/2026-11-21_cip000F-stage3-caching-obsar.md)
+
+- [CIP-000F Stage 4 — paramz core decision (vendor A interim, then B?)](infrastructure/2026-11-21_cip000F-stage4-paramz-core-decision.md)
 
 
 ## Features
@@ -90,25 +94,15 @@ This file provides an overview of all current backlog items organized by categor
 
 ## Recently Completed Tasks
 
-- [CIP-000E Phase 2 — remove Cython build surface after hybrid soak](infrastructure/2026-11-16_cip000E-phase2-cython-removal.md)
+- [CIP-000C — migrate contributor packaging from Poetry to uv](infrastructure/2026-11-13_cip000C-uv-packaging-cutover.md)
 
-- [CIP-000E — decide symmetrify default (blocked NumPy vs Cython)](infrastructure/2026-11-16_cip000E-symmetrify-numpy.md)
+- [CIP-000F Stage 0 — single paramz import boundary + Ruff TID251](infrastructure/2026-11-21_cip000F-stage0-import-boundary.md)
 
-- [CIP-000E — replace flat/triang Cholesky maps with tril_indices NumPy](infrastructure/2026-11-16_cip000E-triang-maps-numpy.md)
+- [CIP-000F Stage 1 — vendor domains and optimisation wrappers](infrastructure/2026-11-21_cip000F-stage1-domains-optimisation.md)
 
-- [CIP-000E — replace coregionalize gradient_reduce with one-hot BLAS form](infrastructure/2026-11-16_cip000E-coregionalize-reduce-numpy.md)
-
-- [CIP-000E — replace stationary Cython grads with CIP-cited NumPy/BLAS forms](infrastructure/2026-11-16_cip000E-stationary-grads-numpy.md)
+- [CIP-000F Stage 2 — pure numerical functions (kernels, likelihoods)](infrastructure/2026-11-21_cip000F-stage2-pure-numerical.md)
 
 - [MRD constructor ignores user-supplied Z=](bugs/2026-11-20_mrd-ignores-constructor-z.md)
-
-- [CIP-000D — implement kern coverage slices K1–K5](infrastructure/2026-11-13_cip000D-kern-coverage-slices.md)
-
-- [CIP-0009 Slice B — next coverage hotspots after plotting](infrastructure/2026-11-13_cip0009-slice-b-hotspots.md)
-
-- [CIP-0009 Slice A — plotly fill/bar/annotation and PCA / StateSpace plot smokes](infrastructure/2026-11-13_cip0009-slice-a-plotting-coverage.md)
-
-- [Repo hygiene — asserts, dead util modules, old tests](infrastructure/2026-10-11_repo-hygiene-asserts-util-tests.md)
 
 
 ## Recently Abandoned Tasks

@@ -26,6 +26,13 @@ backwards_compatibility = ["lists_and_dicts", "observable_array", "index_operati
 for bc in backwards_compatibility:
     sys.modules[f"GPy.core.parameterization.{bc!s}"] = getattr(core.parameterization, bc)
 
+# CIP-000F Stage 3: real module for ObsAr aliases (Accept pickle policy).
+# Previous-release pickles resolve ``paramz.core.observable_array.ObsAr`` while
+# paramz remains installed; GPy path is registered for new references / Stage 4.
+from .core.parameterization import observable_array as _gpy_observable_array
+
+sys.modules["GPy.core.parameterization.observable_array"] = _gpy_observable_array
+
 # Direct imports for convenience:
 from .core import Model
 from .core.parameterization import priors

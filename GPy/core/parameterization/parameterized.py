@@ -13,6 +13,10 @@ class Parameterized(Parameterized, Priorizable):
     """
     Parameterized class
 
+    CIP-000F Stage 3: ``_cache_version`` is bumped when parameters change so
+    :class:`~GPy.core.parameterization.caching.Cache_this` entries miss without
+    requiring ``ObsAr`` observers on data arrays.
+
     Say m is a handle to a parameterized class.
 
     Printing parameters:
@@ -51,6 +55,17 @@ class Parameterized(Parameterized, Priorizable):
         If you want to operate on all parameters use m[''] to wildcard select all paramters
         and concatenate them. Printing m[''] will result in printing of all parameters in detail.
     """
+
+    def bump_cache_version(self):
+        """Invalidate ``Cache_this`` entries keyed on this object's version."""
+        self._cache_version = getattr(self, "_cache_version", 0) + 1
+        cache = getattr(self, "cache", None)
+        if cache is not None and hasattr(cache, "reset"):
+            cache.reset()
+
+    def parameters_changed(self):
+        """Default hook: bump cache version. Subclasses may override without ``super``."""
+        self.bump_cache_version()
 
     def __getstate__(self):
         state = super(Parameterized, self).__getstate__()

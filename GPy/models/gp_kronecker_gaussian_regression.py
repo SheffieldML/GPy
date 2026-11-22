@@ -3,7 +3,6 @@
 
 import numpy as np
 from ..core import Model
-from GPy.core.parameterization import ObsAr
 from .. import likelihoods
 
 
@@ -30,9 +29,11 @@ class GPKroneckerGaussianRegression(Model):
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1.0, name="KGPR"):
         super(GPKroneckerGaussianRegression, self).__init__(name=name)
 
-        # accept the construction arguments
-        self.X1 = ObsAr(X1)
-        self.X2 = ObsAr(X2)
+        # accept the construction arguments (CIP-000F Stage 3: plain ndarray)
+        from GPy.core.gp import _as_data_array
+
+        self.X1 = _as_data_array(X1)
+        self.X2 = _as_data_array(X2)
         self.Y = Y
         self.kern1, self.kern2 = kern1, kern2
         self.link_parameter(self.kern1)

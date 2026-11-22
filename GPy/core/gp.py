@@ -10,11 +10,19 @@ from .. import kern
 from ..inference.latent_function_inference import exact_gaussian_inference, expectation_propagation
 from ..util.normalizer import Standardize
 from GPy.core.parameterization import ObsAr
+from GPy.core.parameterization.param import Param
 
 import logging
 import warnings
 
 logger = logging.getLogger("GP")
+
+
+def _as_data_array(A):
+    """CIP-000F Stage 3: store model data as plain ndarray (not ObsAr)."""
+    if isinstance(A, ObsAr):
+        return np.asarray(A, dtype=np.float64).copy()
+    return np.require(np.asarray(A, dtype=np.float64), requirements=["C"])
 
 
 class GP(Model):
@@ -52,14 +60,18 @@ class GP(Model):
     ):
         super(GP, self).__init__(name)
 
-        # Use X.ndim (not np.asarray(X).ndim): VariationalPosterior / ObsAr are
-        # 2-d objects, but np.asarray wraps them as 0-d object arrays.
+        # Use X.ndim (not np.asarray(X).ndim): VariationalPosterior / ObsAr / Param
+        # are 2-d objects, but np.asarray wraps them as 0-d object arrays.
         if X.ndim != 2:
             raise ValueError(f"X must be 2-dimensional (got ndim={X.ndim})")
-        if isinstance(X, (ObsAr, VariationalPosterior)):
+        if isinstance(X, VariationalPosterior):
             self.X = X.copy()
+        elif isinstance(X, Param):
+            # LVM models (e.g. SparseGPLVM) pass a Param and link it after init.
+            # Stage 3 ndarray conversion applies to data arrays, not parameters.
+            self.X = X
         else:
-            self.X = ObsAr(X)
+            self.X = _as_data_array(X)
 
         if Y.ndim != 2:
             raise ValueError(f"Y must be 2-dimensional (got ndim={Y.ndim})")
@@ -74,10 +86,10 @@ class GP(Model):
 
         if self.normalizer is not None:
             self.normalizer.scale_by(Y)
-            self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
-            self.Y = Y
-        elif isinstance(Y, np.ndarray):
-            self.Y = ObsAr(Y)
+            self.Y_normalized = _as_data_array(self.normalizer.normalize(Y))
+            self.Y = _as_data_array(Y) if isinstance(Y, (np.ndarray, ObsAr)) else Y
+        elif isinstance(Y, (np.ndarray, ObsAr)):
+            self.Y = _as_data_array(Y)
             self.Y_normalized = self.Y
         else:
             self.Y = Y
@@ -155,14 +167,8 @@ class GP(Model):
             input_dict["X"] = None
             input_dict["Y"] = None
         else:
-            try:
-                input_dict["X"] = self.X.values.tolist()
-            except:
-                input_dict["X"] = self.X.tolist()
-            try:
-                input_dict["Y"] = self.Y.values.tolist()
-            except:
-                input_dict["Y"] = self.Y.tolist()
+            input_dict["X"] = np.asarray(self.X).tolist()
+            input_dict["Y"] = np.asarray(self.Y).tolist()
         input_dict["kernel"] = self.kern.to_dict()
         input_dict["likelihood"] = self.likelihood.to_dict()
         if self.mean_function is not None:
@@ -267,10 +273,10 @@ class GP(Model):
         if Y is not None:
             if self.normalizer is not None:
                 self.normalizer.scale_by(Y)
-                self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
-                self.Y = Y
+                self.Y_normalized = _as_data_array(self.normalizer.normalize(Y))
+                self.Y = _as_data_array(Y) if isinstance(Y, (np.ndarray, ObsAr)) else Y
             else:
-                self.Y = ObsAr(Y)
+                self.Y = _as_data_array(Y)
                 self.Y_normalized = self.Y
         if X is not None:
             if self.X in self.parameters:
@@ -290,11 +296,15 @@ class GP(Model):
                     self.X = Param("latent mean", X)
                     self.link_parameter(self.X, index=index)
             else:
-                self.X = ObsAr(X)
+                self.X = _as_data_array(X)
 
         if Y_metadata is not None:
             self.Y_metadata = Y_metadata
         self._sync_heteroscedastic_noise()
+        # Stage 3: bump version counters so Cache_this misses on new X/Y ids
+        self.bump_cache_version()
+        if hasattr(self, "kern") and hasattr(self.kern, "bump_cache_version"):
+            self.kern.bump_cache_version()
 
         self.update_model(True)
 
@@ -340,6 +350,7 @@ class GP(Model):
             This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
             this method yourself, there may be unexpected consequences.
         """
+        self.bump_cache_version()
         self.posterior, self._log_marginal_likelihood, self.grad_dict = self.inference_method.inference(
             self.kern, self.X, self.likelihood, self.Y_normalized, self.mean_function, self.Y_metadata
         )

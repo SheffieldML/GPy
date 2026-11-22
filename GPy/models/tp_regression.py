@@ -126,9 +126,14 @@ class TPRegression(Model):
         :type X: np.ndarray
         """
         assert isinstance(X, np.ndarray)
+        from GPy.core.gp import _as_data_array
+
         state = self.update_model()
         self.update_model(False)
-        self.X = ObsAr(X)
+        self.X = _as_data_array(X)
+        self.bump_cache_version()
+        if hasattr(self, "kern") and hasattr(self.kern, "bump_cache_version"):
+            self.kern.bump_cache_version()
         self.update_model(state)
 
     def set_Y(self, Y):
@@ -139,15 +144,20 @@ class TPRegression(Model):
         :type Y: np.ndarray or ObsArray
         """
         assert isinstance(Y, (np.ndarray, ObsAr))
+        from GPy.core.gp import _as_data_array
+
         state = self.update_model()
         self.update_model(False)
         if self.normalizer is not None:
             self.normalizer.scale_by(Y)
-            self.Y_normalized = ObsAr(self.normalizer.normalize(Y))
-            self.Y = Y
+            self.Y_normalized = _as_data_array(self.normalizer.normalize(Y))
+            self.Y = _as_data_array(Y) if isinstance(Y, (np.ndarray, ObsAr)) else Y
         else:
-            self.Y = ObsAr(Y) if isinstance(Y, np.ndarray) else Y
+            self.Y = _as_data_array(Y)
             self.Y_normalized = self.Y
+        self.bump_cache_version()
+        if hasattr(self, "kern") and hasattr(self.kern, "bump_cache_version"):
+            self.kern.bump_cache_version()
         self.update_model(state)
 
     def parameters_changed(self):

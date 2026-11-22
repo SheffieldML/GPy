@@ -15,6 +15,9 @@ omit =
     ./GPy/__version__.py
     ./GPy/kern/src/psi_comp/*gpucomp.py
     ./GPy/kern/src/lfm1.py
+    # CIP-000F Stage 4: vendored paramz 0.10.0 (third-party). Cover the
+    # bootstrap / façade instead of the upstream tree itself.
+    ./GPy/core/parameterization/_paramz/**
 
 [report]
 # Regexes for lines to exclude from consideration

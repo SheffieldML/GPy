@@ -3,7 +3,6 @@ scipy
 six
 decorator
 matplotlib
-paramz
 cython
 mock
 sympy

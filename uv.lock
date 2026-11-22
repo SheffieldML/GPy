@@ -1011,9 +1011,9 @@ name = "gpy"
 version = "1.15.0"
 source = { editable = "." }
 dependencies = [
+    { name = "decorator" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "paramz" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "six" },
@@ -1054,6 +1054,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "decorator" },
     { name = "ipykernel", marker = "extra == 'notebook'", specifier = ">=7.4.0" },
     { name = "ipython", marker = "extra == 'optional'", specifier = ">=9.18.1" },
     { name = "ipywidgets", marker = "extra == 'notebook'", specifier = ">=8.1.9" },
@@ -1062,7 +1063,6 @@ requires-dist = [
     { name = "mpi4py", marker = "extra == 'optional'" },
     { name = "notebook", marker = "extra == 'notebook'", specifier = ">=7.6.5" },
     { name = "numpy", specifier = ">=2.4.6" },
-    { name = "paramz", specifier = ">=0.10.0" },
     { name = "plotly", marker = "extra == 'plotting'", specifier = ">=7.1.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "six" },
@@ -2520,23 +2520,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/70/6f/3dd4940bbe001c06a65f88e36bad298bc7a0de5036115639926b0c5c0458/pandocfilters-1.5.1.tar.gz", hash = "sha256:002b4a555ee4ebc03f8b66307e287fa492e4a77b4ea14d3f934328297bb4939e", size = 8454, upload-time = "2024-01-18T20:08:13.726Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/af/4fbc8cab944db5d21b7e2a5b8e9211a03a79852b1157e2c102fcc61ac440/pandocfilters-1.5.1-py2.py3-none-any.whl", hash = "sha256:93be382804a9cdb0a7267585f157e5d1731bbe5545a85b268d6f5fe6232de2bc", size = 8663, upload-time = "2024-01-18T20:08:11.28Z" },
-]
-
-[[package]]
-name = "paramz"
-version = "0.10.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "decorator" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/72/99645d8c3c9a55b555abaf9964f5508ae81db35311922dce46b982bb5800/paramz-0.10.0.tar.gz", hash = "sha256:08c34dc30feb7120a97c7b35db5bb3242a13850563355b4780ebc9f2d780aa86", size = 74611, upload-time = "2026-07-29T21:16:34.776Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/6b/083feebc934aa130474c9d4df2366b8a1f32a758f0790c3cb053e9d5a845/paramz-0.10.0-py3-none-any.whl", hash = "sha256:a4b8fd73ebd54a42ad6767520347230114a33d6d07b2e85a4e25fdc259babc99", size = 104630, upload-time = "2026-07-29T21:16:33.779Z" },
 ]
 
 [[package]]

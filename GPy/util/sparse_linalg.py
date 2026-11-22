@@ -76,7 +76,6 @@ def lq_adjoint(L: np.ndarray, Q: np.ndarray, Lbar: np.ndarray, Qbar: np.ndarray)
     Q = np.ascontiguousarray(Q, dtype=float)
     Lbar = np.ascontiguousarray(Lbar, dtype=float)
     Qbar = np.ascontiguousarray(Qbar, dtype=float)
-    m = L.shape[0]
     # M = L.T @ Lbar - Qbar @ Q.T
     M = L.T @ Lbar - Qbar @ Q.T
     # copyltu(M): keep lower incl. diag, mirror to upper

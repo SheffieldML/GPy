@@ -2,7 +2,7 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .posterior import Posterior
-from ...util.linalg import jitchol, tdot, dtrtrs, pdinv
+from ...util.linalg import tdot, dtrtrs, pdinv
 from ...util.sparse_linalg import parse_sparse_linalg, factor_I_plus_AA
 from ...util import diag
 import numpy as np

@@ -22,6 +22,13 @@ def test_parse_sparse_linalg_canonical_and_aliases():
     assert parse_sparse_linalg("gram") == "legacy"
     with pytest.raises(ValueError, match="sparse_linalg"):
         parse_sparse_linalg("bogus")
+    with pytest.raises(TypeError, match="sparse_linalg must be a string"):
+        parse_sparse_linalg(1)  # type: ignore[arg-type]
+
+
+def test_lq_factor_rejects_tall_matrix():
+    with pytest.raises(ValueError, match="wide matrix"):
+        lq_factor(np.eye(5, 3))
 
 
 def test_lq_factor_matches_gram_chol():
@@ -107,3 +114,53 @@ def test_sparse_linalg_property_aliases():
     assert inf.sparse_linalg == "lq"
     inf.sparse_linalg = "chol"
     assert inf.sparse_linalg == "stable"
+
+    fitc = GPy.inference.latent_function_inference.FITC()
+    assert fitc.sparse_linalg == "stable"
+    fitc.sparse_linalg = "LQ"
+    assert fitc.sparse_linalg == "lq"
+    fitc.sparse_linalg = "chol"
+    assert fitc.sparse_linalg == "stable"
+
+
+def test_vardtc_to_dict_and_pickle_roundtrip():
+    import pickle
+
+    inf = GPy.inference.latent_function_inference.VarDTC(
+        limit=2, sparse_linalg="lq"
+    )
+    d = inf.to_dict()
+    assert d["sparse_linalg"] == "lq"
+    assert d["limit"] == 2
+
+    restored = pickle.loads(pickle.dumps(inf))
+    assert restored.sparse_linalg == "lq"
+    assert restored.limit == 2
+
+    # Older pickles stored only ``limit``.
+    legacy = GPy.inference.latent_function_inference.VarDTC()
+    legacy.__setstate__(3)
+    assert legacy.limit == 3
+    assert legacy.sparse_linalg == "stable"
+
+
+def test_vardtc_lq_uncertain_inputs_falls_back_to_stable(caplog):
+    import logging
+
+    rng = np.random.default_rng(4)
+    N, M, Q = 30, 6, 2
+    X = rng.uniform(-1, 1, size=(N, Q))
+    Y = np.sin(X[:, :1]) + 0.05 * rng.normal(size=(N, 1))
+    Z = X[:M].copy()
+    X_var = 0.05 * rng.random(size=X.shape) + 1e-3
+    k = GPy.kern.RBF(Q, lengthscale=1.0)
+    m = GPy.models.SparseGPRegression(
+        X, Y, kernel=k, Z=Z, X_variance=X_var
+    )
+    inf = GPy.inference.latent_function_inference.VarDTC(sparse_linalg="lq")
+    with caplog.at_level(logging.INFO, logger="vardtc"):
+        _post, log_marginal, _grad = inf.inference(
+            m.kern, m.X, m.Z, m.likelihood, m.Y
+        )
+    assert np.isfinite(np.asarray(log_marginal)).all()
+    assert any("uncertain inputs" in r.getMessage() for r in caplog.records)

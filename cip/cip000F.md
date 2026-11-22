@@ -576,7 +576,8 @@ Refines Accept item 4 without reopening Stages 0–3:
       barriers classified and documented for CIP-0010
 - [ ] Stage 2N: conceptual numerical interfaces sketched; exact-GP
       condition-once / predict-many via pure state demonstrated
-- [ ] Stage 3: caching / `ObsAr` replaced, benchmarks recorded
+- [x] Stage 3: caching / `ObsAr` replaced, benchmarks recorded —
+      [`cip/cip000F/notes/stage3-caching-obsar.md`](cip000F/notes/stage3-caching-obsar.md)
 - [ ] Stage 4: core decision recorded (**1.20**; includes B1 vs B2)
 - [x] Release mapping recorded: tidy → **1.16**; dependency removal → **1.20**
 - [x] Backlog tasks created (only after Accept):

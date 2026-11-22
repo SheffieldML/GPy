@@ -8,7 +8,6 @@ import logging
 from ..kern import Kern
 from ..core.parameterization.variational import NormalPrior
 from ..core.parameterization import Param
-from GPy.core.parameterization import ObsAr
 from ..inference.latent_function_inference.var_dtc import VarDTC
 from ..inference.latent_function_inference import InferenceMethodList
 from ..likelihoods import Gaussian
@@ -84,8 +83,10 @@ class MRD(BayesianGPLVMMiniBatch):
         if isinstance(Ylist, dict):
             Ynames, Ylist = zip(*Ylist.items(), strict=False)
 
-        self.logger.debug("creating observable arrays")
-        self.Ylist = [ObsAr(Y) for Y in Ylist]
+        self.logger.debug("creating data arrays")
+        from GPy.core.gp import _as_data_array
+
+        self.Ylist = [_as_data_array(Y) for Y in Ylist]
         # The next line is a fix for Python 3. It replicates the python 2 behaviour from the above comprehension
         Y = Ylist[-1]
 

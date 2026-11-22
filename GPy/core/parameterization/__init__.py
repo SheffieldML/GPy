@@ -20,11 +20,13 @@ from . import domains
 from .caching import Cache_this, Cacher
 from .domains import _NEGATIVE, _POSITIVE, _REAL
 
-# CIP-000F Stage 0: paramz symbols re-exported for callers outside this package.
-from paramz.core import lists_and_dicts, index_operations, observable_array, observable
+# CIP-000F Stage 0/3: paramz symbols re-exported; observable_array is GPy-owned
+# module path (Stage 3) re-exporting ObsAr for pickle aliases.
+from paramz.core import lists_and_dicts, index_operations, observable
+from . import observable_array
 from paramz.core.pickleable import Pickleable
 from paramz.parameterized import ParametersChangedMeta
-from paramz import ObsAr
+from .observable_array import ObsAr
 from paramz import Model as ParamzModel
 from paramz import load as paramz_load
 

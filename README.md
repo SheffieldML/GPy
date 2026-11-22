@@ -87,7 +87,7 @@ Python 3.11.5 and higher
       year = {since 2012}
     }
 
-### Pronounciation:
+### Pronunciation:
 
 We like to pronounce it 'g-pie'.
 

@@ -4,7 +4,7 @@
 Parameterization handling
 *******************
 
-Parameterization in GPy is done through so called parameter handles. The parameter handles are handles to parameters of a model of any kind. A parameter handle can be constrained, fixed, randomized and others. All parameters in GPy have a name, with which they can be accessed in the model. The most common way of accesssing a parameter programmatically though, is by variable name. 
+Parameterization in GPy is done through so called parameter handles. The parameter handles are handles to parameters of a model of any kind. A parameter handle can be constrained, fixed, randomized and others. All parameters in GPy have a name, with which they can be accessed in the model. The most common way of accessing a parameter programmatically though, is by variable name. 
 
 Parameter handles
 ==============
@@ -15,7 +15,7 @@ In the following we will introduce and elucidate the different parameter handles
 :py:class:`~GPy.core.parameterization.parameterized.Parameterized`
 ==========
 
-A parameterized object itself holds parameter handles and is just a summarization of the parameters below. It can use those parameters to change the internal state of the model and GPy ensures those parameters to allways hold the right value when in an optimization routine or any other update.
+A parameterized object itself holds parameter handles and is just a summarization of the parameters below. It can use those parameters to change the internal state of the model and GPy ensures those parameters to always hold the right value when in an optimization routine or any other update.
 
 :py:class:`~GPy.core.parameterization.param.Param`
 ===========

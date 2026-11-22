@@ -16,7 +16,7 @@ will implement an example of a plotting function, which plots the covariance of 
 
 Write your plotting function into a module under :py:mod:`GPy.plotting.gpy_plot` ``.<module_name>``
 using the plotting routines provided in :py:func:`GPy.plotting.plotting_library`.
-I like to ``from . import plotting_library as pl`` and the allways use ``pl().`` to access functionality of
+I like to ``from . import plotting_library as pl`` and the always use ``pl().`` to access functionality of
 the plotting library.
 
 For the covariance plot we define the function in :py:mod:`GPy.plotting.kernel_plots`.
@@ -64,7 +64,7 @@ from the visible_dims, ``Xgrid`` is the grid for the covariance,
 all positions between ``Xgrid`` and ``x``.
 
 Then we need a canvas to plot on. Always push the keyword arguments
-of the specifig library through :py:func:`GPy.plotting.abstract_plotting_library.AbstractPlottingLibrary.new_canvas`::
+of the specific library through :py:func:`GPy.plotting.abstract_plotting_library.AbstractPlottingLibrary.new_canvas`::
 
     if projection == '3d':
         zlabel = "k(X, {!s})" % (np.asanyarray(x).tolist())

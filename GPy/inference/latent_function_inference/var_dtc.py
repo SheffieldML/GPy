@@ -3,6 +3,7 @@
 
 from .posterior import Posterior
 from ...util.linalg import mdot, jitchol, backsub_both_sides, tdot, dtrtrs, dtrtri, dpotri, dpotrs, symmetrify
+from ...util.sparse_linalg import parse_sparse_linalg, factor_I_plus_AA
 from ...util import diag
 from GPy.core.parameterization.variational import VariationalPosterior
 import numpy as np
@@ -23,16 +24,29 @@ class VarDTC(LatentFunctionInference):
 
     For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
 
+    :param sparse_linalg: Inducing-side factor of ``I+A`` (CIP-0013). One of
+        ``'stable'`` (default until LQ cutover; whitened Gram+chol), ``'lq'``
+        (Seeger LQ of ``[I, F]``), or ``'legacy'`` (not yet implemented).
+        Orthogonal to the choice of inference class.
     """
 
     const_jitter = 1e-8
 
-    def __init__(self, limit=1):
+    def __init__(self, limit=1, sparse_linalg="stable"):
         from GPy.core.parameterization.caching import Cacher
 
         self.limit = limit
+        self._sparse_linalg = parse_sparse_linalg(sparse_linalg)
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
+
+    @property
+    def sparse_linalg(self):
+        return self._sparse_linalg
+
+    @sparse_linalg.setter
+    def sparse_linalg(self, mode):
+        self._sparse_linalg = parse_sparse_linalg(mode)
 
     def to_dict(self):
         """
@@ -43,7 +57,12 @@ class VarDTC(LatentFunctionInference):
         input_dict = super(VarDTC, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.var_dtc.VarDTC"
         input_dict["limit"] = self.limit
+        input_dict["sparse_linalg"] = self._sparse_linalg
         return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(inference_class, input_dict):
+        return inference_class(**input_dict)
 
     def set_limit(self, limit):
         self.get_trYYT.limit = limit
@@ -56,11 +75,17 @@ class VarDTC(LatentFunctionInference):
 
     def __getstate__(self):
         # has to be overridden, as Cacher objects cannot be pickled.
-        return self.limit
+        return self.limit, self._sparse_linalg
 
     def __setstate__(self, state):
         # has to be overridden, as Cacher objects cannot be pickled.
-        self.limit = state
+        if isinstance(state, tuple):
+            self.limit, sparse_linalg = state
+        else:
+            # Older pickles stored only limit.
+            self.limit = state
+            sparse_linalg = "stable"
+        self._sparse_linalg = parse_sparse_linalg(sparse_linalg)
         from GPy.core.parameterization.caching import Cacher
 
         self.get_trYYT = Cacher(self._get_trYYT, self.limit)
@@ -147,6 +172,15 @@ class VarDTC(LatentFunctionInference):
                     psi2_beta = psi2 * precision
             LmInv = dtrtri(Lm)
             A = LmInv.dot(psi2_beta.dot(LmInv.T))
+            # ψ₂ path already yields the Gram; LQ needs an explicit feature
+            # factor (CIP-0013 v1). Fall back to StableFactor chol(I+A).
+            if self._sparse_linalg == "lq":
+                logger.info(
+                    "VarDTC sparse_linalg='lq' with uncertain inputs uses "
+                    "stable chol(I+A) for now (no tall feature factor)."
+                )
+            B = np.eye(num_inducing) + A
+            LB = jitchol(B)
         else:
             if psi0 is None:
                 psi0 = kern.Kdiag(X)
@@ -154,11 +188,9 @@ class VarDTC(LatentFunctionInference):
                 psi1 = kern.K(X, Z)
             tmp = psi1 * np.sqrt(precision) if het_noise else psi1 * np.sqrt(precision)
             tmp, _ = dtrtrs(Lm, tmp.T, lower=1)
-            A = tdot(tmp)  # print A.sum()
-
-        # factor B
-        B = np.eye(num_inducing) + A
-        LB = jitchol(B)
+            # tmp is M×N whitened features F; A = F F.T; factor I+A via mode.
+            LB, A, _Q = factor_I_plus_AA(tmp, self._sparse_linalg)
+            B = np.eye(num_inducing) + A
 
         # back substutue C into psi1Vf
         tmp, _ = dtrtrs(Lm, psi1.T, lower=1, trans=0)

@@ -34,3 +34,4 @@ from .binomial import Binomial
 from .weibull import Weibull
 from .loglogistic import LogLogistic
 from .multioutput_likelihood import MultioutputLikelihood
+from .skewed import SkewGaussian, SkewExponential

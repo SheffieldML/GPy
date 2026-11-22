@@ -93,13 +93,7 @@ class SkewGaussian(Likelihood):
         sigma = self._sigma()
         z = e / sigma
         delta = self._alpha() * z
-        return (
-            np.log(2.0)
-            - np.log(sigma)
-            - 0.5 * np.log(2.0 * np.pi)
-            - 0.5 * z**2
-            + special.log_ndtr(delta)
-        )
+        return np.log(2.0) - np.log(sigma) - 0.5 * np.log(2.0 * np.pi) - 0.5 * z**2 + special.log_ndtr(delta)
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         e = self._residual(link_f, y)
@@ -123,7 +117,8 @@ class SkewGaussian(Likelihood):
         alpha = self._alpha()
         delta = alpha * e / sigma
         lam = inv_mills_ratio(delta)
-        return (alpha / sigma) ** 3 * d2_inv_mills_ratio(delta, lam)
+        # dδ/dlink = -(α/σ); d³ℓ/dlink³ = (α/σ)² λ''(δ) · dδ/dlink
+        return -((alpha / sigma) ** 3) * d2_inv_mills_ratio(delta, lam)
 
     def dlogpdf_link_dvar(self, link_f, y, Y_metadata=None):
         e = self._residual(link_f, y)
@@ -340,7 +335,8 @@ class SkewExponential(Likelihood):
         e = self._residual(link_f, y)
         alpha = self._alpha()
         delta = alpha * e
-        return (alpha**3) * d2_inv_mills_ratio(delta)
+        # dδ/dlink = -α; d³ℓ/dlink³ = α² λ''(δ) · dδ/dlink
+        return -(alpha**3) * d2_inv_mills_ratio(delta)
 
     def dlogpdf_link_drate(self, link_f, y, Y_metadata=None):
         e = self._residual(link_f, y)

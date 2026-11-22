@@ -224,3 +224,105 @@ class TestSkewSamples:
         # Positive skew → mean above location for f=0
         many = lik.samples(np.zeros((5000, 1)))
         assert many.mean() > 0.0
+
+
+class TestSkewExtras:
+    """Cover remaining public methods for high line coverage (CIP-0014)."""
+
+    def test_pdf_link_matches_exp_logpdf(self):
+        f = np.array([[0.1], [-0.4]])
+        y = np.array([[0.3], [0.0]])
+        for lik in (
+            GPy.likelihoods.SkewGaussian(variance=0.9, alpha=1.5),
+            GPy.likelihoods.SkewExponential(rate=1.2, alpha=-0.5),
+        ):
+            np.testing.assert_allclose(lik.pdf_link(f, y), np.exp(lik.logpdf_link(f, y)), rtol=1e-12)
+            np.testing.assert_allclose(lik.pdf(f, y), np.exp(lik.logpdf(f, y)), rtol=1e-12)
+
+    def test_skew_gaussian_moments(self):
+        alpha = 2.0
+        var = 1.21
+        lik = GPy.likelihoods.SkewGaussian(variance=var, alpha=alpha)
+        gp = np.array([[0.0], [1.0], [-0.5]])
+        delta = alpha / np.sqrt(1.0 + alpha**2)
+        scale = np.sqrt(var)
+        expected_mean = gp + scale * delta * np.sqrt(2.0 / np.pi)
+        expected_cvar = np.ones_like(gp) * (var * (1.0 - 2.0 * delta**2 / np.pi))
+        np.testing.assert_allclose(lik.conditional_mean(gp), expected_mean)
+        np.testing.assert_allclose(lik.conditional_variance(gp), expected_cvar)
+        np.testing.assert_allclose(lik.predictive_mean(gp, np.ones_like(gp)), expected_mean)
+        np.testing.assert_allclose(
+            lik.predictive_variance(gp, np.full_like(gp, 0.3)),
+            0.3 + expected_cvar,
+        )
+
+    def test_non_identity_link_warns(self, capsys):
+        GPy.likelihoods.SkewGaussian(gp_link=GPy.likelihoods.link_functions.Probit(), variance=1.0, alpha=1.0)
+        GPy.likelihoods.SkewExponential(gp_link=GPy.likelihoods.link_functions.Probit(), rate=1.0, alpha=1.0)
+        out = capsys.readouterr().out
+        assert out.count("Warning, Exact inference is not implemented") == 2
+
+    def test_update_gradients(self):
+        g = GPy.likelihoods.SkewGaussian(variance=1.0, alpha=0.5)
+        g.update_gradients(np.array([0.2, -0.1]))
+        np.testing.assert_allclose(g.variance.gradient, 0.2)
+        np.testing.assert_allclose(g.alpha.gradient, -0.1)
+        e = GPy.likelihoods.SkewExponential(rate=1.0, alpha=0.5)
+        e.update_gradients(np.array([0.3, 0.4]))
+        np.testing.assert_allclose(e.rate.gradient, 0.3)
+        np.testing.assert_allclose(e.alpha.gradient, 0.4)
+
+    def test_d3logpdf_df3(self):
+        np.random.seed(fixed_seed)
+        for lik in (
+            GPy.likelihoods.SkewGaussian(variance=0.7, alpha=1.2),
+            GPy.likelihoods.SkewExponential(rate=1.1, alpha=-0.8),
+        ):
+            f = np.random.randn(8, 1)
+            y = f + 0.3 * np.random.randn(8, 1)
+            checker = GradientChecker(
+                lambda ff, lik=lik, y=y: lik.d2logpdf_df2(ff, y),
+                lambda ff, lik=lik, y=y: lik.d3logpdf_df3(ff, y),
+                f.copy(),
+            )
+            assert checker.checkgrad(verbose=False)
+
+    def test_mixed_param_second_derivatives(self):
+        """d²ℓ/df² w.r.t. hyperparameters (used by Laplace hyperparameter gradients)."""
+        np.random.seed(fixed_seed)
+        f = np.random.randn(6, 1)
+        y = f + 0.2 * np.random.randn(6, 1)
+
+        lik = GPy.likelihoods.SkewGaussian(variance=0.5, alpha=0.9)
+
+        def d2_var(v):
+            lik["variance"] = np.asarray(v).item()
+            return lik.d2logpdf_df2(f, y).sum()
+
+        def dd2_var(v):
+            lik["variance"] = np.asarray(v).item()
+            return lik.d2logpdf_df2_dtheta(f, y)[0].sum()
+
+        assert GradientChecker(d2_var, dd2_var, np.array([0.5])).checkgrad(verbose=False)
+
+        def d2_alpha(a):
+            lik["alpha"] = np.asarray(a).item()
+            return lik.d2logpdf_df2(f, y).sum()
+
+        def dd2_alpha(a):
+            lik["alpha"] = np.asarray(a).item()
+            return lik.d2logpdf_df2_dtheta(f, y)[1].sum()
+
+        assert GradientChecker(d2_alpha, dd2_alpha, np.array([0.9])).checkgrad(verbose=False)
+
+        lik_e = GPy.likelihoods.SkewExponential(rate=1.3, alpha=0.7)
+
+        def d2_rate(r):
+            lik_e["rate"] = np.asarray(r).item()
+            return lik_e.d2logpdf_df2(f, y).sum()
+
+        def dd2_rate(r):
+            lik_e["rate"] = np.asarray(r).item()
+            return lik_e.d2logpdf_df2_dtheta(f, y)[0].sum()
+
+        assert GradientChecker(d2_rate, dd2_rate, np.array([1.3])).checkgrad(verbose=False)

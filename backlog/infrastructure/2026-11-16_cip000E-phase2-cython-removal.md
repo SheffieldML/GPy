@@ -1,16 +1,17 @@
 ---
 id: 2026-11-16_cip000E-phase2-cython-removal
-title: CIP-000E Phase 2 — remove Cython build surface after hybrid soak
+title: CIP-000E Phase 2 — remove Cython build surface (main → 1.20 only)
 status: Completed
 priority: Medium
 created: "2026-11-16"
-last_updated: "2026-11-16"
+last_updated: "2026-11-22"
 category: infrastructure
 related_cips:
 - "000E"
 - "0008"
 - "000A"
 - "000C"
+- "0013"
 owner: Neil Lawrence
 dependencies:
 - 2026-11-16_cip000E-cholesky-murray-soak
@@ -30,7 +31,9 @@ tags:
 
 ## Description
 
-Remove the five Cython extension modules and packaging/CI cost (Option C → A).
+Remove the five Cython extension modules and packaging/CI cost (Option C → A)
+on the **GPy2-prep / 1.20 line (`main`) only**. Classic **1.16** keeps the
+Option C hybrid build surface (CIP-0013 release ladder; restored 2026-11-22).
 
 ## Acceptance Criteria
 
@@ -59,3 +62,9 @@ Task created Proposed.
 Completed on `cip000E-numpy-blas-primitives`: pure-Python package; Cython
 surface removed. Linux multicore soak and packaging CIP cross-refs remain
 as CIP-000E checklist items.
+
+### 2026-11-22
+
+Release ladder (CIP-0013): Phase 2 stays on `main` → 1.20. `release/1.16`
+restored Option C hybrid (`.pyx` / `build_extension.py` / Cython CI smoke)
+while keeping NumPy/BLAS as wired defaults.

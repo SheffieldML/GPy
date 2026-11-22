@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000E"
-last_updated: "2026-11-17"
+last_updated: "2026-11-22"
 status: In Progress
 compressed: false
 related_requirements: []
@@ -15,6 +15,7 @@ related_cips:
 - "0010"
 - "0011"
 - "0012"
+- "0013"
 tags:
 - cip
 - cython
@@ -488,6 +489,19 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
 7. **Option D** deferred: state-space functional redesign only if still needed
    after Phase 0 evidence (Cython ≈ Python there).
 
+### Release-ladder addendum (2026-11-22)
+
+Aligned with CIP-0013 two-line branching:
+
+| Line | Branch | Cython |
+|------|--------|--------|
+| **1.16.x** classic | `release/1.16` | **Option C hybrid retained** — NumPy/BLAS defaults; `.pyx` / `build_extension.py` / Cython CI smoke restored |
+| **1.20.x** GPy2-prep | `main` | **Phase 2 pure-Python** — build surface removed (toward Option A) |
+
+Phase 2 landed on `main` before the ladder was written; `release/1.16` had
+inherited it. Restore on `cip000E-restore-cython-1.16` unpicks that for the
+classic line only. Do **not** merge the restore into `main`.
+
 ## Implementation Status
 
 - [x] Document strategy options and hygiene scope (this CIP)
@@ -501,21 +515,23 @@ evidence (macOS arm64 / Apple Accelerate) and Discussion [#1279](https://github.
 - [x] Phase 1 pure NumPy/BLAS primitives + wrappers — Cholesky Murray,
       stationary grads, coregionalize reduce, `tril_indices` maps, blocked
       `symmetrify` defaults (Linux multicore soak still welcome as follow-up)
-- [x] Phase 2 remove Cython build surface (``.pyx`` / ``build_extension.py`` /
-      Cython build-system deps; CI pure-Python smoke)
+- [x] Phase 2 remove Cython build surface on **`main` → 1.20** (``.pyx`` /
+      ``build_extension.py`` / Cython build-system deps; CI pure-Python smoke)
+- [x] Restore Option C hybrid build surface on **`release/1.16`** (2026-11-22)
 - [ ] Update CIP-0008 / 000A / 000C cross-references if build surface changes
 - [ ] (Optional follow-on) State-space functional state-transition redesign /
       Option D — separately measured
 
 ## References
 
-- Former Cython modules (removed Phase 2): `stationary_cython`,
+- Cython modules (retained on 1.16; removed on main→1.20): `stationary_cython`,
   `choleskies_cython`, `linalg_cython`, `coregionalize_cython`,
   `state_space_cython` (+ `stationary_utils.c`)
 - Primitives: `GPy/util/choleskies.py`, `GPy/util/linalg.py`,
   `GPy/kern/src/stationary_ops.py`, `GPy/kern/src/coregionalize_ops.py`
-- Build: pure-Python `poetry-core` (no `[tool.poetry.build]` hook)
-- Config: `GPy/defaults.cfg` `[cython] working = False` (compat no-op)
+- Build (1.16): Poetry `[tool.poetry.build]` → `build_extension.py` + Cython
+  in build-system requires. Build (1.20 / main): pure-Python `poetry-core`.
+- Config (1.16): `[cython] working = True` (import hatch). Main→1.20: `False`.
 - Related CIPs: [0003](./cip0003.md), [0008](./cip0008.md),
   [000A](./cip000A.md), [000C](./cip000C.md),
   [000F](./cip000F.md) (Stage 2 pure functions / 2T experiments),

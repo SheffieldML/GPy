@@ -10,17 +10,18 @@
 # - Observable inputs still receive observer hooks when present
 
 import collections
+import contextlib
 import weakref
 from functools import reduce
-from pickle import PickleError
 from numbers import Number
+from pickle import PickleError
 
 from decorator import decorate
 
 from paramz.core.observable import Observable
 
 
-class Cacher(object):
+class Cacher:
     def __init__(
         self,
         operation,
@@ -69,16 +70,16 @@ class Cacher(object):
         if owner is not None:
             ver = getattr(owner, "_cache_version", None)
             if ver is not None:
-                parts.append("v{}".format(ver))
+                parts.append(f"v{ver}")
         for a in combined_args_kw:
             av = getattr(a, "_cache_version", None)
             if av is not None:
-                parts.append("a{}".format(av))
+                parts.append(f"a{av}")
         return "".join(parts)
 
     @staticmethod
     def _is_cacheable(b):
-        if b is None or isinstance(b, Number) or isinstance(b, str):
+        if b is None or isinstance(b, (Number, str)):
             return True
         if isinstance(b, Observable):
             return True
@@ -114,10 +115,8 @@ class Cacher(object):
                 self.inputs_changed,
                 self.cached_inputs,
             ):
-                try:
+                with contextlib.suppress(KeyError):
                     del store[cache_id]
-                except KeyError:
-                    pass
 
     def add_to_cache(self, cache_id, inputs, output):
         self.inputs_changed[cache_id] = False
@@ -191,16 +190,12 @@ class Cacher(object):
 
     def __getstate__(self, memo=None):
         raise PickleError(
-            "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(
-                str(self.operation)
-            )
+            f"Trying to pickle Cacher object with function {str(self.operation)}, pickling functions not possible."
         )
 
     def __setstate__(self, memo=None):
         raise PickleError(
-            "Trying to pickle Cacher object with function {}, pickling functions not possible.".format(
-                str(self.operation)
-            )
+            f"Trying to pickle Cacher object with function {str(self.operation)}, pickling functions not possible."
         )
 
     @property
@@ -208,9 +203,7 @@ class Cacher(object):
         return self.operation.__name__
 
     def __str__(self, *args, **kwargs):
-        return "Cacher({})\n  limit={}\n  \\#cached={}".format(
-            self.__name__, self.limit, len(self.cached_input_ids)
-        )
+        return f"Cacher({self.__name__})\n  limit={self.limit}\n  \\#cached={len(self.cached_input_ids)}"
 
 
 class FunctionCache(dict):
@@ -233,7 +226,7 @@ class FunctionCache(dict):
             c.reset()
 
 
-class Cache_this(object):
+class Cache_this:
     """Decorator for caching bound methods with version-counter invalidation."""
 
     def __init__(self, limit=5, ignore_args=(), force_kwargs=()):

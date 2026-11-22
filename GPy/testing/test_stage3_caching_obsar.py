@@ -98,9 +98,10 @@ def test_load_previous_release_obsar_pickle_fixture():
     pickle.dump({"X": X, "Y": Y, "cls": ObsAr}, buf, protocol=pickle.HIGHEST_PROTOCOL)
     buf.seek(0)
     data = pickle.load(buf)
-    # ObsAr is still the paramz class re-exported via the GPy façade (Stage 0/3).
+    # ObsAr stays reachable via the GPy façade; Stage 4 vendors the class under
+    # ``_paramz`` while keeping the historical ``paramz.*`` sys.modules alias.
     assert isinstance(data["X"], ObsAr)
-    assert data["X"].__class__.__module__ == "paramz.core.observable_array"
+    assert "paramz.core.observable_array" in sys.modules
     assert np.allclose(np.asarray(data["X"]), np.asarray(X))
 
 

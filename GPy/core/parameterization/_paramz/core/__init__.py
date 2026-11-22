@@ -44,6 +44,8 @@ class HierarchyError(Exception):
     pass
 
 from . import index_operations, lists_and_dicts, observable, observable_array, parameter_core, updateable
-from paramz import domains
-from paramz import transformations
+# CIP-000F Stage 4: relative imports so package load does not require
+# ``paramz`` on sys.modules before ``_paramz_bootstrap`` finishes aliasing.
+from .. import domains
+from .. import transformations
 

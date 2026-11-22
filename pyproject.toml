@@ -87,6 +87,8 @@ extend-exclude = [
     "build",
     "dist",
     ".eggs",
+    # CIP-000F Stage 4: vendored paramz 0.10.0 tree (third-party style).
+    "GPy/core/parameterization/_paramz",
 ]
 
 [tool.ruff.lint]
@@ -147,6 +149,9 @@ select = [
 # CIP-000F: only the parameterization façade may import paramz directly
 # (optimisation was vendored in Stage 1).
 "GPy/core/parameterization/**" = ["TID251"]
+# Stage 3/4 tests intentionally assert historical ``paramz.*`` alias paths.
+"GPy/testing/test_stage3_caching_obsar.py" = ["TID251"]
+"GPy/testing/test_stage4_paramz_vendor.py" = ["TID251"]
 
 [tool.pytest.ini_options]
 # #1210: keep suite readable; silence known third-party noise only.

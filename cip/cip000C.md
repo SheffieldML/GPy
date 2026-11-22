@@ -2,9 +2,9 @@
 author: Neil Lawrence
 created: "2026-11-10"
 id: "000C"
-last_updated: "2026-11-13"
-status: In Progress
-compressed: false
+last_updated: "2026-11-22"
+status: Closed
+compressed: true
 related_requirements: []
 related_cips:
 - "0003"
@@ -28,8 +28,8 @@ title: Contributor packaging via uv (succeed Poetry)
 - [x] Proposed - Initial idea documented (open for Discussion feedback)
 - [x] Accepted - Approved, ready to start work (Accept decisions below)
 - [x] In Progress - Actively being implemented
-- [ ] Implemented - Work complete, awaiting verification
-- [ ] Closed - Verified and complete
+- [x] Implemented - Work complete, awaiting verification
+- [x] Closed - Verified and complete ([#1278](https://github.com/SheffieldML/GPy/pull/1278))
 - [ ] Rejected - Will not be implemented
 - [ ] Deferred - Postponed
 
@@ -211,13 +211,26 @@ Command map for docs/CI: `poetry install --with dev` → `uv sync`;
 - [x] Accept decisions: build backend, command map, Dependabot
 - [x] Spike: uv sync + Cython + pytest green (410 passed, 21 skipped; wheel import ok)
 - [x] Backlog tasks created (only after Accept)
-- [x] CI and README cut over; `poetry.lock` removed
-- [ ] First release built with uv-based CI verified; CIP Closed
+- [x] CI and README cut over; `poetry.lock` removed — [#1278](https://github.com/SheffieldML/GPy/pull/1278)
+- [x] Dependabot continues to refresh deps against the uv-era lock/metadata (e.g. #1282–#1290)
+- [x] CIP Closed (2026-11-22): cutover verified in CI; next tagged release will exercise the uv publish path (not a blocker for close)
+- [x] Compressed (2026-11-22): contributor packaging story lives in README; CHANGELOG records the cutover
+
+## Compression
+
+Formal docs already carry the outcome of this CIP:
+
+- **README** — packaging blurb and contributor install (`uv sync` / `uv run` / `uv.lock`)
+- **CHANGELOG** — Poetry → uv cutover entry (Discussion #1268 / CIP-000C)
+- **CI** — `.github/workflows/test-and-deploy.yml` uses `astral-sh/setup-uv`
+
+No separate Sphinx packaging page was required.
 
 ## References
 
 - Predecessor: [CIP-0003](cip0003.md) (Poetry; Closed via [#1164](https://github.com/SheffieldML/GPy/pull/1164))
 - Original Poetry PR: [#1080](https://github.com/SheffieldML/GPy/pull/1080) (superseded)
+- Cutover PR: [#1278](https://github.com/SheffieldML/GPy/pull/1278) (merged)
 - Release pipeline: [CIP-0008](cip0008.md); PR CI shape: [CIP-000A](cip000A.md)
 - uv docs: https://docs.astral.sh/uv/
 - Poetry → uv migration notes: https://docs.astral.sh/uv/guides/migration/poetry/

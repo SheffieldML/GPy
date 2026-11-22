@@ -2,7 +2,7 @@
 author: Neil Lawrence
 created: "2026-11-13"
 id: "000F"
-last_updated: "2026-11-21"
+last_updated: "2026-11-22"
 status: In Progress
 compressed: false
 related_requirements: []
@@ -10,6 +10,7 @@ related_cips:
 - "0002"
 - "0005"
 - "0006"
+- "0008"
 - "000C"
 - "000E"
 - "0010"
@@ -45,8 +46,15 @@ each of which is independently useful and leaves `pip install gpy` and the
 public model API unchanged. The first stage is mechanical: route every paramz
 import through `GPy.core.parameterization` and forbid direct imports elsewhere.
 Later stages separate numerical code from `Param` objects, replace the
-`Cache_this`/`ObsAr` observer-caching pair, and finally decide whether to vendor
-the paramz core or replace it with a GPy-owned parameter tree.
+`Cache_this`/`ObsAr` observer-caching pair, and finally decide how to drop the
+external paramz dependency (vendor vs GPy-owned tree, and how pytree-shaped
+that representation should be).
+
+**Release split (2026-11-22):** tidy / confinement work ships in **GPy 1.16**;
+**dependency removal** waits until **GPy 1.20**. See
+[Release mapping](#release-mapping-gpy-116--120) below. That keeps 1.16
+installable with the familiar paramz stack while giving time for a Stage 4
+Accept on representation shape.
 
 CIP-0002 listed "replace paramz" as a very-high-effort option for parameter
 tying. This CIP proposes a staged route that makes that option tractable.
@@ -347,13 +355,39 @@ largely compensating for a missing explicit posterior-state abstraction.
 Stage 3 may still ship a version-counter interim; the successor can then own
 posterior-scoped caches.
 
-**Stage 4 — Core decision (separate Accept).**
+**Stage 4 — Core decision (separate Accept; targets GPy 1.20).**
+
+Dependency removal is **out of scope for 1.16**. Through Stages 0–3 (and any
+further 1.16 tidy-ups) paramz remains a declared runtime dependency; the win
+is confinement, pure numerical surfaces, and caching clarity.
 
 | Option | Notes |
 |---|---|
-| A — Vendor paramz core into `GPy.core.parameterization` | Removes the external dependency quickly; keeps the design. |
-| B — GPy-owned parameter tree (NumPy backend) | Designed with tying (CIP-0002), static/dynamic split and future pytree compatibility; more work. |
-| C — Stop after Stage 3 | paramz confined to one package; acceptable steady state. |
+| A — Vendor paramz core into `GPy.core.parameterization` | Drops the external package quickly; keeps the existing object model. Interim only if B is still undecided at 1.20. |
+| B — GPy-owned parameter tree (NumPy backend) | Designed with tying (CIP-0002), static/dynamic split, and an explicit stance on pytrees (see below). |
+| C — Stop after Stage 3 | paramz confined but still required; acceptable if 1.20 slips, not the preferred 1.20 outcome. |
+
+**Stage 4 representation choice (open until 1.20 Accept):** if Option B (or a
+B-shaped successor after a short A interim) is chosen, decide *how* the tree
+is shaped before writing the replacement:
+
+| Choice | Meaning |
+|---|---|
+| **B1 — Adopt a pytree discipline early** | Parameters are registered / flattened with an explicit pytree (or pytree-like) contract from day one — e.g. a small GPy-owned registry compatible with JAX pytrees, or an established library if CIP-0010 evidence justifies a runtime dependency. Favours transformation experiments (Stage 2T) and a clearer GPy 2 hand-off. |
+| **B2 — Pytree-compatible representation first** | Ship a NumPy-native tree (dict/tuple/`dataclass`-style leaves, stable flatten/unflatten API) that *could* grow a JAX pytree registration later, without taking a pytree/JAX dependency in GPy 1. Preferable if 1.20 must stay a pure NumPy/SciPy install and evidence for B1 is still thin. |
+
+Do **not** treat “use Equinox / Flax / paramax in GPy 1” as the default; those
+remain CIP-0010 / GPy 2 inputs unless Stage 2T + Accept explicitly pull one in.
+
+### Release mapping (GPy 1.16 / 1.20)
+
+| Release | In scope for CIP-000F | Out of scope |
+|---|---|---|
+| **1.16** | Stages 0–3 as landed or finishing; further tidy that does **not** drop `paramz` from `pyproject.toml` (import boundary hygiene, pure numerical extractions, caching/`ObsAr` clarity, pickle aliases that still round-trip through paramz class paths, docs that say “paramz still required”) | Removing the `paramz` dependency; swapping the public parameter object model; committing to B1 vs B2 |
+| **1.20** | Stage 4 Accept + implementation: drop external paramz (A and/or B); record B1 vs B2; pickle/`to_dict` migration notes; CIP-0002 enablement path if B | Reworking the whole model API; mandating JAX as a GPy 1 runtime dependency |
+
+Announce the split in 1.16 release notes (“paramz still required; removal
+targeted for 1.20”) so installers and downstream forks are not surprised.
 
 ### Non-goals
 
@@ -434,13 +468,16 @@ These principles govern Stage 2 / 2T and are shared with
 7. **Stage 3:** caching replacement behind benchmarks; use Stage 2N findings
    to separate posterior-scoped state from temporary caches; record numbers
    in this CIP.
-8. **Stage 4:** separate Accept decision with a short design note (may become
-   its own CIP if Option B).
+8. **Stage 4 (GPy 1.20):** separate Accept with a short design note covering
+   A / B / C **and** B1 vs B2 (pytree discipline vs pytree-compatible first).
+   May become its own CIP if Option B is large. Do **not** merge dependency
+   removal into a 1.16 cut.
 
 ## Backward Compatibility
 
-- **Public API:** unchanged through Stage 3. Stage 4 must preserve the
-  documented constrain / fix / prior / indexing API.
+- **Public API:** unchanged through Stage 3 and through the **1.16** release
+  (paramz remains installed). Stage 4 / **1.20** must preserve the documented
+  constrain / fix / prior / indexing API.
 - **Pickles:** saved models reference paramz class paths. Any stage that moves
   a pickled class (Stage 3 `ObsAr`; Stage 4 core) must ship a `sys.modules`
   alias or custom unpickler, and a test that loads pickles produced by the last
@@ -509,6 +546,23 @@ in this CIP; open questions resolved as follows:
 7. **Worktree:** implementation proceeds on `cip000F-paramz-reduction`
    starting at Stage 0.
 
+### Release-split addendum (2026-11-22)
+
+Refines Accept item 4 without reopening Stages 0–3:
+
+8. **1.16 vs 1.20:** any further *tidy* (confinement, pure numerical work,
+   caching/`ObsAr`, docs) may ship in **1.16** with **paramz still required**.
+   **Dependency removal** (Stage 4 A/B) is deferred to **1.20**.
+9. **Stage 4 B shape (lean confirmed):** **B2** — pytree-compatible NumPy
+   representation first. B1 (explicit pytree discipline early) stays on the
+   table only if Stage 2T / CIP-0010 shows a clear win **without** a GPy 1
+   JAX/pytree runtime dependency.
+10. **Feed CIP-0010's GPy-1 compatibility pass:** B2 (and the 1.16/1.20
+    split) is **additional decision input** for CIP-0010 — not a parallel
+    track. Compatibility-pass findings may send further tidy improvements
+    into **1.16** (still with paramz required); they do **not** pull Stage 4
+    dependency removal forward of **1.20**.
+
 ## Implementation Status
 
 - [x] Draft CIP-000F (Proposed)
@@ -529,10 +583,12 @@ in this CIP; open questions resolved as follows:
       [`cip/cip000F/notes/stage2n-numerical-interfaces.md`](cip000F/notes/stage2n-numerical-interfaces.md)
 - [x] Stage 3: caching / `ObsAr` replaced, benchmarks recorded —
       [`cip/cip000F/notes/stage3-caching-obsar.md`](cip000F/notes/stage3-caching-obsar.md)
-- [x] Stage 4: core decision recorded — **Accept A (vendor)**;
+- [x] Stage 4: core decision recorded (**1.20** removal line) — **Accept A
+      (vendor)**;
       [`cip/cip000F/notes/stage4-core-decision.md`](cip000F/notes/stage4-core-decision.md);
       paramz core vendored under `GPy.core.parameterization._paramz`,
-      external dependency dropped
+      external dependency dropped; B1 vs B2 deferred with B2 lean
+- [x] Release mapping recorded: tidy → **1.16**; dependency removal → **1.20**
 - [x] Backlog tasks created (only after Accept):
       [Stage 0](../backlog/infrastructure/2026-11-21_cip000F-stage0-import-boundary.md),
       [Stage 1](../backlog/infrastructure/2026-11-21_cip000F-stage1-domains-optimisation.md),
@@ -544,13 +600,15 @@ in this CIP; open questions resolved as follows:
 
 ## Open questions (resolved at Accept)
 
-See [Accept decisions](#accept-decisions-2026-11-21). Summaries:
+See [Accept decisions](#accept-decisions-2026-11-21) and the
+[2026-11-22 addendum](#release-split-addendum-2026-11-22). Summaries:
 
 1. **CIP-0002:** keep separate; depends on this CIP.
 2. **Cython:** resolved by CIP-000E / [#1312](https://github.com/SheffieldML/GPy/pull/1312); reuse E primitives in Stage 2.
 3. **Caching policy:** `ConditionedState` preferred; thin version-counter interim OK.
-4. **Stage 4 default:** A (vendor) interim, then decide on B.
+4. **Stage 4 default:** A (vendor) interim still allowed, then decide on B; **removal ships in 1.20**, not 1.16.
 5. **Operator protocol depth:** conceptual + dense reference only in GPy 1.
+6. **B1 vs B2:** lean **B2** confirmed (2026-11-22); final 1.20 Accept may still pick B1 on evidence. B2 / release split feeds CIP-0010's GPy-1 compatibility pass; that pass may improve 1.16 without advancing paramz removal.
 
 ## References
 

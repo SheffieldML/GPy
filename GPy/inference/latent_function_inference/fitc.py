@@ -2,7 +2,8 @@
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 from .posterior import Posterior
-from ...util.linalg import jitchol, tdot, dtrtrs, pdinv
+from ...util.linalg import tdot, dtrtrs, pdinv
+from ...util.sparse_linalg import parse_sparse_linalg, factor_I_plus_AA
 from ...util import diag
 import numpy as np
 from . import LatentFunctionInference
@@ -17,9 +18,22 @@ class FITC(LatentFunctionInference):
     The function self.inference returns a Posterior object, which summarizes
     the posterior.
 
+    :param sparse_linalg: Inducing-side factor mode (CIP-0013): ``'stable'``
+        (default until LQ cutover), ``'lq'``, or ``'legacy'`` (not yet).
     """
 
     const_jitter = 1e-6
+
+    def __init__(self, sparse_linalg="stable"):
+        self._sparse_linalg = parse_sparse_linalg(sparse_linalg)
+
+    @property
+    def sparse_linalg(self):
+        return self._sparse_linalg
+
+    @sparse_linalg.setter
+    def sparse_linalg(self, mode):
+        self._sparse_linalg = parse_sparse_linalg(mode)
 
     def inference(self, kern, X, Z, likelihood, Y, mean_function=None, Y_metadata=None):
         assert mean_function is None, "inference with a mean function not implemented"
@@ -46,9 +60,9 @@ class FITC(LatentFunctionInference):
         sigma_star = Knn + sigma_n - np.sum(np.square(LiUT), 0)
         beta_star = 1.0 / sigma_star
 
-        # Compute and factor A
-        A = tdot(LiUT * np.sqrt(beta_star)) + np.eye(num_inducing)
-        LA = jitchol(A)
+        # Whitened features F; factor I + F F.T via sparse_linalg (CIP-0013).
+        F = LiUT * np.sqrt(beta_star)
+        LA, _Agram, _Q = factor_I_plus_AA(F, self._sparse_linalg)
 
         # back substutue to get b, P, v
         URiy = np.dot(U.T * beta_star, Y)

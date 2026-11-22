@@ -37,9 +37,7 @@ def test_paramz_top_level_aliases_registered():
         "paramz.core",
     ):
         assert name in sys.modules, name
-        assert "GPy/core/parameterization/_paramz" in sys.modules[name].__file__.replace(
-            "\\", "/"
-        )
+        assert "GPy/core/parameterization/_paramz" in sys.modules[name].__file__.replace("\\", "/")
 
 
 def test_install_paramz_aliases_is_idempotent():

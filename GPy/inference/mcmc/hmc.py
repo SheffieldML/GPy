@@ -3,12 +3,20 @@
 
 import numpy as np
 
+from .util import assert_mcmc_priors
+
 
 class HMC:
     """
-    An implementation of Hybrid Monte Carlo (HMC) for GPy models
+    Hybrid Monte Carlo (HMC) for GPy models.
 
-    Initialize an object for HMC sampling. Note that the status of the model (model parameters) will be changed during sampling.
+    Sampling is performed in unconstrained ``optimizer_array`` space. The
+    Hamiltonian uses :meth:`~GPy.core.model.Model.objective_function`, which
+    includes :meth:`~GPy.core.parameterization.priorizable.Priorizable.log_prior`.
+    For constrained parameters, ``log_prior`` adds the transform log-Jacobian
+    only when a prior is set. Set a prior on every unfixed parameter before
+    constructing this sampler (the default ``require_priors=True`` enforces
+    that). Note that sampling changes the model's parameter state.
 
     :param model: the GPy model that will be sampled
     :type model: GPy.core.Model
@@ -16,10 +24,15 @@ class HMC:
     :type M: numpy.ndarray
     :param stepsize: the step size for HMC sampling
     :type stepsize: float
+    :param require_priors: if True (default), require a prior on every unfixed
+        parameter so transform Jacobians enter the target density
+    :type require_priors: bool
     """
 
-    def __init__(self, model, M=None, stepsize=1e-1):
+    def __init__(self, model, M=None, stepsize=1e-1, require_priors=True):
+        assert_mcmc_priors(model, require_priors=require_priors)
         self.model = model
+        self.require_priors = require_priors
         self.stepsize = stepsize
         self.p = np.empty_like(model.optimizer_array.copy())
         if M is None:
@@ -39,6 +52,7 @@ class HMC:
         :return: the list of parameters samples with the size N x P (N - the number of samples, P - the number of parameters to sample)
         :rtype: numpy.ndarray
         """
+        assert_mcmc_priors(self.model, require_priors=self.require_priors)
         params = np.empty((num_samples, self.p.size))
         for i in range(num_samples):
             self.p[:] = np.random.multivariate_normal(np.zeros(self.p.size), self.M)
@@ -78,12 +92,20 @@ class HMC:
 
 
 class HMC_shortcut:
-    def __init__(self, model, M=None, stepsize_range=None, groupsize=5, Hstd_th=None):
+    """
+    HMC with randomised stepsize and trajectory reversal heuristics.
+
+    Same prior / Jacobian requirements as :class:`HMC`.
+    """
+
+    def __init__(self, model, M=None, stepsize_range=None, groupsize=5, Hstd_th=None, require_priors=True):
         if Hstd_th is None:
             Hstd_th = [1e-05, 3.0]
         if stepsize_range is None:
             stepsize_range = [1e-06, 0.1]
+        assert_mcmc_priors(model, require_priors=require_priors)
         self.model = model
+        self.require_priors = require_priors
         self.stepsize_range = np.log(stepsize_range)
         self.p = np.empty_like(model.optimizer_array.copy())
         self.groupsize = groupsize
@@ -95,6 +117,7 @@ class HMC_shortcut:
         self.Minv = np.linalg.inv(self.M)
 
     def sample(self, m_iters=1000, hmc_iters=20):
+        assert_mcmc_priors(self.model, require_priors=self.require_priors)
         params = np.empty((m_iters, self.p.size))
         for i in range(m_iters):
             # sample a stepsize from the uniform distribution

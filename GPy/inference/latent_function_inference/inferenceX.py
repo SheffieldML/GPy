@@ -122,7 +122,8 @@ class InferenceX(Model):
             else:
                 from ...core import Param
 
-                X = Param("latent mean", (model.X[idx].values).copy())
+                # model.X may be ObsAr (has .values) or a plain ndarray
+                X = Param("latent mean", np.asarray(model.X[idx], dtype=float).copy())
 
         return X
 

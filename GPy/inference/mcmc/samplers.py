@@ -4,11 +4,29 @@
 import numpy as np
 import sys
 
+from .util import assert_mcmc_priors
+
 
 class Metropolis_Hastings:
-    def __init__(self, model, cov=None):
+    """
+    Metropolis–Hastings sampling of unfixed model parameters.
+
+    Proposals are in unconstrained ``optimizer_array`` space. The acceptance
+    ratio uses ``log_likelihood() + log_prior()``; for constrained parameters
+    the prior term includes the transform Jacobian only when a prior is set.
+    By default a prior is required on every unfixed parameter.
+
+    :param model: the GPy model that will be sampled
+    :param cov: proposal covariance in unconstrained space (identity by default)
+    :param require_priors: if True (default), require a prior on every unfixed
+        parameter so transform Jacobians enter the target density
+    """
+
+    def __init__(self, model, cov=None, require_priors=True):
         """Metropolis Hastings, with tunings according to Gelman et al."""
+        assert_mcmc_priors(model, require_priors=require_priors)
         self.model = model
+        self.require_priors = require_priors
         current = self.model.optimizer_array
         self.D = current.size
         self.chains = []
@@ -27,6 +45,7 @@ class Metropolis_Hastings:
             self.model.optimizer_array = start
 
     def sample(self, Ntotal=10000, Nburn=1000, Nthin=10, tune=True, tune_throughout=False, tune_interval=400):
+        assert_mcmc_priors(self.model, require_priors=self.require_priors)
         current = self.model.optimizer_array
         fcurrent = self.model.log_likelihood() + self.model.log_prior()
         accepted = np.zeros(Ntotal, dtype=bool)

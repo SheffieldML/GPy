@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+* mcmc: document that HMC/MH sample in unconstrained space and that transform Jacobians enter only via ``log_prior``; by default require a prior on every unfixed parameter (``require_priors=True``, pass ``False`` to opt out)
+* tests: seed ``TestKernelNonContinuous.setup_method`` so IndependentOutputs gradient checks are immune to cross-module NumPy RNG leakage
 * psi-statistics: optional row-chunking and threading for RBF and linear ``NormalPosterior`` psi (`chunk_size` / `n_threads` on ``PSICOMP_RBF`` / ``PSICOMP_Linear`` and the underlying ``*_psi_comp`` wrappers); defaults unchanged (CIP-0010, PyDeepGP CIP-0001 R12–R13)
 * warnings: stop re-silencing ``DeprecationWarning`` on ``import GPy`` (CIP-0010 / REQ-0003, Discussion #1297); the old process-wide ``filterwarnings`` undid ``python -Wd`` / ``PYTHONWARNINGS=default`` for the whole process
 * security: require Python >=3.11.5 so `uv.lock` drops soupsieve 2.10 (GHSA-mmhr-3c5m-f64f). soupsieve 4.x does not support 3.11.0–3.11.4; CI already runs 3.11.18. The transitive pin comes from the notebook extra (`nbconvert` → `beautifulsoup4`)

@@ -8,6 +8,7 @@ The test cases for various inference algorithms
 import copy
 import pickle
 import numpy as np
+import pytest
 import GPy
 
 # np.seterr(invalid='raise')
@@ -245,31 +246,52 @@ class TestVarDtc:
         assert m.checkgrad()
 
 
+def _gp_regression_with_hyperpriors():
+    np.random.seed(1)
+    x = np.linspace(0.0, 2 * np.pi, 100)[:, None]
+    y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
+
+    m = GPy.models.GPRegression(x, y)
+    m.kern.lengthscale.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
+    m.kern.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
+    m.likelihood.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
+    return m
+
+
 class TestHMCSampler:
     def test_sampling(self):
-        np.random.seed(1)
-        x = np.linspace(0.0, 2 * np.pi, 100)[:, None]
-        y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
-
-        m = GPy.models.GPRegression(x, y)
-        m.kern.lengthscale.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-        m.kern.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-        m.likelihood.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-
+        m = _gp_regression_with_hyperpriors()
         hmc = GPy.inference.mcmc.HMC(m, stepsize=1e-2)
         _s = hmc.sample(num_samples=3)
+
+    def test_requires_priors_on_transformed_parameters(self):
+        np.random.seed(1)
+        x = np.linspace(0.0, 2 * np.pi, 20)[:, None]
+        y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
+        m = GPy.models.GPRegression(x, y)
+        # Positive constraints without priors: Jacobian would be omitted.
+        with pytest.raises(ValueError, match="Jacobian|prior"):
+            GPy.inference.mcmc.HMC(m, stepsize=1e-2)
+
+    def test_require_priors_false_allows_sampling_without_priors(self):
+        np.random.seed(1)
+        x = np.linspace(0.0, 2 * np.pi, 20)[:, None]
+        y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
+        m = GPy.models.GPRegression(x, y)
+        hmc = GPy.inference.mcmc.HMC(m, stepsize=1e-2, require_priors=False)
+        _s = hmc.sample(num_samples=2)
 
 
 class TestMCMCSampler:
     def test_sampling(self):
-        np.random.seed(1)
-        x = np.linspace(0.0, 2 * np.pi, 100)[:, None]
-        y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
-
-        m = GPy.models.GPRegression(x, y)
-        m.kern.lengthscale.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-        m.kern.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-        m.likelihood.variance.set_prior(GPy.priors.Gamma.from_EV(1.0, 10.0))
-
+        m = _gp_regression_with_hyperpriors()
         mcmc = GPy.inference.mcmc.Metropolis_Hastings(m)
         mcmc.sample(Ntotal=100, Nburn=10)
+
+    def test_requires_priors_on_transformed_parameters(self):
+        np.random.seed(1)
+        x = np.linspace(0.0, 2 * np.pi, 20)[:, None]
+        y = -np.cos(x) + np.random.randn(*x.shape) * 0.3 + 1
+        m = GPy.models.GPRegression(x, y)
+        with pytest.raises(ValueError, match="prior"):
+            GPy.inference.mcmc.Metropolis_Hastings(m)

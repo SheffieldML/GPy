@@ -754,6 +754,9 @@ class TestKernelMiscellaneous:
 
 class TestKernelNonContinuous:
     def setup_method(self):
+        # Seed locally: earlier test modules can leave the global NumPy RNG in a
+        # state that flips the IndependentOutputs finite-difference check.
+        np.random.seed(1234)
         N0 = 3
         N1 = 9
         N2 = 4

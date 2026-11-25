@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import numpy as np
-from paramz.transformations import Transformation, __fixed__
+from GPy.core.parameterization.transformations import Transformation, __fixed__
 
 
 def unfixed_indices_without_priors(model):
@@ -77,7 +77,7 @@ def assert_mcmc_priors(model, require_priors=True):
     transformed_missing = set(unfixed_transformed_indices_without_priors(model))
 
     detail_parts = []
-    for i, name in zip(missing, missing_names):
+    for i, name in zip(missing, missing_names, strict=True):
         if i in transformed_missing:
             detail_parts.append(f"{name} (transformed: Jacobian omitted without a prior)")
         else:

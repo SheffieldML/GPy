@@ -20,11 +20,17 @@ class FITC(LatentFunctionInference):
 
     :param sparse_linalg: Inducing-side factor mode (CIP-0013): ``'stable'``
         (default until LQ cutover), ``'lq'``, or ``'legacy'`` (not yet).
+    :param float const_jitter: constant added to the diagonal of ``Kuu`` (the covariance of the
+        inducing values) before it is factorised. The default is 1e-6. The sparse
+        approximations used to differ in this convention (VarDTC 1e-8, FITC 1e-6), and so do other
+        frameworks, so results agree across them only to about the jitter's relative effect
+        when ``Kuu`` is ill conditioned. Pass the same value to compare like with like.
     """
 
     const_jitter = 1e-6
 
-    def __init__(self, sparse_linalg="stable"):
+    def __init__(self, sparse_linalg="stable", const_jitter=const_jitter):
+        self.const_jitter = const_jitter
         self._sparse_linalg = parse_sparse_linalg(sparse_linalg)
 
     @property

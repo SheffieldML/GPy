@@ -28,14 +28,22 @@ class VarDTC(LatentFunctionInference):
         ``'stable'`` (default until LQ cutover; whitened Gram+chol), ``'lq'``
         (Seeger LQ of ``[I, F]``), or ``'legacy'`` (not yet implemented).
         Orthogonal to the choice of inference class.
+    :param float const_jitter: constant added to the diagonal of ``Kuu`` (the covariance of the
+        inducing values) before it is factorised. The default is 1e-8. The sparse
+        approximations used to differ in this convention (VarDTC 1e-8, FITC 1e-6), and so do other
+        frameworks, so results agree across them only to about the jitter's relative effect
+        when ``Kuu`` is ill conditioned. Pass the same value to compare like with like.
+        VarDTC also uses it as the floor on the Gaussian noise variance when forming the noise precision.
     """
 
-    const_jitter = 1e-8
+    DEFAULT_CONST_JITTER = 1e-8
+    const_jitter = DEFAULT_CONST_JITTER
 
-    def __init__(self, limit=1, sparse_linalg="stable"):
+    def __init__(self, limit=1, sparse_linalg="stable", const_jitter=DEFAULT_CONST_JITTER):
         from GPy.core.parameterization.caching import Cacher
 
         self.limit = limit
+        self.const_jitter = const_jitter
         self._sparse_linalg = parse_sparse_linalg(sparse_linalg)
         self.get_trYYT = Cacher(self._get_trYYT, limit)
         self.get_YYTfactor = Cacher(self._get_YYTfactor, limit)
@@ -58,6 +66,7 @@ class VarDTC(LatentFunctionInference):
         input_dict["class"] = "GPy.inference.latent_function_inference.var_dtc.VarDTC"
         input_dict["limit"] = self.limit
         input_dict["sparse_linalg"] = self._sparse_linalg
+        input_dict["const_jitter"] = self.const_jitter
         return input_dict
 
     @staticmethod

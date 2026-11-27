@@ -163,8 +163,13 @@ def test_importance_design_is_reproducible_and_antithetic():
     c = INLAHyperparameters(m, design="importance", n_samples=60, seed=8).fit()
     np.testing.assert_allclose(a.weights, b.weights)
     assert not np.allclose(a.Z, c.Z)
-    np.testing.assert_allclose(a.Z[:30], -a.Z[30:])
     assert len(a.weights) <= 60
+    # skew-aware draws mirror in sign; without skew they are exact negatives
+    assert len(a.Z) == 60
+    np.testing.assert_array_equal(np.sign(a.Z[:30]), -np.sign(a.Z[30:]))
+    sym = INLAHyperparameters(m, design="importance", n_samples=60, seed=7, skew=False).fit()
+    assert len(sym.Z) == 60
+    np.testing.assert_allclose(sym.Z[:30], -sym.Z[30:])
 
 
 def test_importance_effective_sample_size_warning(monkeypatch):
@@ -172,3 +177,42 @@ def test_importance_effective_sample_size_warning(monkeypatch):
     inla = INLAHyperparameters(m, design="importance", n_samples=10, proposal_scale=50.0)
     with pytest.warns(UserWarning, match="effective sample size"):
         inla.fit()
+
+
+def _concentrated_ard_model():
+    rng = np.random.default_rng(0)
+    X = rng.uniform(-1, 1, (30, 4))
+    Y = np.sin(X[:, :1]) + 0.1 * rng.standard_normal((30, 1))
+    k = GPy.kern.RBF(4, ARD=True)
+    k.lengthscale.set_prior(GPy.priors.LogGaussian(0.0, 1.0), warning=False)
+    k.variance.set_prior(GPy.priors.LogGaussian(0.0, 1.0), warning=False)
+    lik = GPy.likelihoods.Gaussian(variance=0.01)
+    lik.variance.fix()
+    return GPy.core.GP(X, Y, kernel=k, likelihood=lik)
+
+
+@pytest.mark.filterwarnings("ignore:Importance design has an effective sample size")
+def test_skew_proposal_raises_effective_sample_size_on_skewed_posterior():
+    m = _concentrated_ard_model()
+    sym = INLAHyperparameters(m, design="importance", n_samples=500, skew=False).fit()
+    skew = INLAHyperparameters(m, design="importance", n_samples=500, skew=True).fit()
+    assert skew.effective_sample_size > 2 * sym.effective_sample_size
+    plus, minus = skew.skew_scales
+    assert np.max(np.abs(np.log(plus / minus))) > 0.5  # at least one axis is clearly asymmetric
+
+
+def test_symmetric_importance_matches_dense_quadrature_in_one_dimension():
+    m = _regressor()
+    inla = INLAHyperparameters(m, design="importance", n_samples=300, skew=False).fit()
+    assert not hasattr(inla, "skew_scales")
+    Xs = np.linspace(-3, 3, 6)[:, None]
+    mu, _ = inla.predict_noiseless(Xs)
+    z = np.linspace(-6, 6, 241)
+    U = inla.u_star + z[:, None] @ inla.L.T
+    w = _normalised_weights([inla._log_post(u) for u in U])
+    mus = []
+    for u in U:
+        m.optimizer_array = u
+        mus.append(m.predict_noiseless(Xs)[0])
+    mu_ref = (w[:, None, None] * np.array(mus)).sum(0)
+    np.testing.assert_allclose(mu, mu_ref, atol=1e-1)

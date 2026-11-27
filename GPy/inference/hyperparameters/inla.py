@@ -51,6 +51,11 @@ class INLAHyperparameters:
     :param proposal_dof: degrees of freedom of the multivariate-t proposal in ``z`` space.
         Heavy tails guard against the weakly identified hyperparameters' long tails.
     :param proposal_scale: scale of the t proposal in ``z`` units.
+    :param skew: scale each standardised axis separately on its positive and negative
+        sides for the importance proposal, matched to the log-density drop at
+        ``skew_probe``. Real posteriors are often steep on one side and heavy-tailed on
+        the other; a symmetric proposal wastes draws on the steep side.
+    :param skew_probe: probe distance in ``z`` units for the one-sided scales.
     :param seed: seed for the importance draws, so fits are reproducible.
     :param hessian_step: finite-difference step in ``u`` for the Hessian.
 
@@ -72,6 +77,8 @@ class INLAHyperparameters:
         n_samples=500,
         proposal_dof=5,
         proposal_scale=1.2,
+        skew=True,
+        skew_probe=2.0,
         seed=0,
         hessian_step=1e-3,
     ):
@@ -85,6 +92,8 @@ class INLAHyperparameters:
         self.n_samples = n_samples
         self.proposal_dof = proposal_dof
         self.proposal_scale = proposal_scale
+        self.skew = skew
+        self.skew_probe = skew_probe
         self.seed = seed
         self.hessian_step = hessian_step
         self.fitted = False
@@ -198,17 +207,48 @@ class INLAHyperparameters:
                 stacklevel=3,
             )
 
+    def _skew_scales(self, d):
+        """One-sided scales (plus, minus) per standardised axis from the log-density drop at +-skew_probe.
+
+        A Gaussian with scale ``sigma`` loses ``t**2 / (2 sigma**2)`` nats at distance ``t``, so we
+        set ``sigma = t / sqrt(2 * drop)``. Scales are clipped to [0.25, 4] and fall back to 1 where
+        the probe cannot be evaluated or the density does not drop.
+        """
+        t = self.skew_probe
+        centre = self._log_post(self.u_star)
+        scales = np.ones((2, d))
+        for side, sign in enumerate((1.0, -1.0)):
+            for j in range(d):
+                z = np.zeros(d)
+                z[j] = sign * t
+                drop = centre - self._log_post(self.u_star + z @ self.L.T)
+                if np.isfinite(drop) and drop > 1e-8:
+                    scales[side, j] = np.clip(t / np.sqrt(2.0 * drop), 0.25, 4.0)
+                elif not np.isfinite(drop):
+                    scales[side, j] = 0.25  # density vanishes there: stay close to the mode
+        self.model.optimizer_array = self.u_star
+        return scales[0], scales[1]
+
     def _importance_design(self, d):
-        """Antithetic multivariate-t draws in z space, with the log proposal density (up to a constant)."""
+        """Antithetic multivariate-t draws, optionally skewed per axis, with log proposal density.
+
+        Draws are ``z = z0 * s`` with ``z0`` multivariate-t and ``s`` the plus or minus scale of
+        each coordinate's sign, so ``log q(z) = log t(z0) - sum(log s)``. Constants are dropped.
+        """
         rng = np.random.default_rng(self.seed)
         half = (self.n_samples + 1) // 2
         dof = self.proposal_dof
         g = rng.standard_normal((half, d))
         chi = rng.chisquare(dof, size=(half, 1))
         base = self.proposal_scale * g / np.sqrt(chi / dof)
-        Z = np.vstack([base, -base])
-        log_q = -0.5 * (dof + d) * np.log1p(np.sum((Z / self.proposal_scale) ** 2, axis=1) / dof)
-        return Z, log_q
+        Z0 = np.vstack([base, -base])
+        log_q = -0.5 * (dof + d) * np.log1p(np.sum((Z0 / self.proposal_scale) ** 2, axis=1) / dof)
+        if not self.skew:
+            return Z0, log_q
+        plus, minus = self._skew_scales(d)
+        self.skew_scales = (plus, minus)
+        scale = np.where(Z0 >= 0, plus, minus)
+        return Z0 * scale, log_q - np.sum(np.log(scale), axis=1)
 
     def _grid_design(self, d):
         """Explore a z-grid outward from the mode while the density stays within the cutoff."""

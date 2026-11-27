@@ -61,7 +61,7 @@ def importance_reference(inla, Xs, n_samples, rng, dof=5, scale=1.2):
     return mu, var, th_mean, th_sd, ess
 
 
-def run(n_inputs, n_samples=20000, designs=("ccd", "grid", "imp250", "imp1000", "imp4000")):
+def run(n_inputs, n_samples=20000, designs=("grid", "imp250", "imp250s", "imp1000", "imp1000s", "imp4000", "imp4000s")):
     m, rng = make_model(n_inputs)
     Xs = rng.uniform(-1, 1, (30, n_inputs))
     inla = INLAHyperparameters(m, design="ccd").fit()
@@ -80,7 +80,10 @@ def run(n_inputs, n_samples=20000, designs=("ccd", "grid", "imp250", "imp1000", 
     for design in designs:
         t = time.time()
         if design.startswith("imp"):
-            i = INLAHyperparameters(m, design="importance", n_samples=int(design[3:])).fit()
+            # "imp1000" is the symmetric proposal, "imp1000s" the skew-aware one
+            i = INLAHyperparameters(
+                m, design="importance", n_samples=int(design[3:].rstrip("s")), skew=design.endswith("s")
+            ).fit()
         else:
             i = INLAHyperparameters(m, design=design).fit()
         mu, var = i.predict_noiseless(Xs)
@@ -89,7 +92,7 @@ def run(n_inputs, n_samples=20000, designs=("ccd", "grid", "imp250", "imp1000", 
         th_sd = np.array([v[1] for v in s.values()])
         rows[design] = (th_m, th_sd)
         print(
-            f"{design:7s} n={len(i.weights):5d} ess={i.effective_sample_size:6.0f} ({time.time() - t:4.0f}s)  "
+            f"{design:8s} n={len(i.weights):5d} ess={i.effective_sample_size:6.0f} ({time.time() - t:4.0f}s)  "
             f"max|dmean|/sd={np.abs(mu - mu_r).max() / scale.mean():.3f}  "
             f"var ratio mean={np.mean(var / var_r):.3f} range=({(var / var_r).min():.2f}, {(var / var_r).max():.2f})  "
             f"theta mean rel.err={np.abs(th_m / th_m_r - 1).max():.3f}  theta sd rel.err={np.abs(th_sd / th_sd_r - 1).max():.3f}"

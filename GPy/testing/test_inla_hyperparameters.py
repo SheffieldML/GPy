@@ -61,10 +61,10 @@ def test_mixture_variance_covers_plugin_spread():
     assert var.mean() > var_map.mean()
 
 
-@pytest.mark.parametrize("design", ["grid", "ccd"])
+@pytest.mark.parametrize("design", ["grid", "ccd", "importance"])
 def test_matches_dense_quadrature_in_one_dimension(design):
     m = _regressor()
-    inla = INLAHyperparameters(m, design=design, grid_step=0.5, grid_cutoff=6.0).fit()
+    inla = INLAHyperparameters(m, design=design, grid_step=0.5, grid_cutoff=6.0, n_samples=300).fit()
     Xs = np.linspace(-3, 3, 6)[:, None]
     mu, var = inla.predict_noiseless(Xs)
 
@@ -81,7 +81,7 @@ def test_matches_dense_quadrature_in_one_dimension(design):
     W = w[:, None, None]
     mu_ref = (W * mus).sum(0)
     var_ref = (W * (vs + mus**2)).sum(0) - mu_ref**2
-    tol = 5e-2 if design == "grid" else 1.5e-1
+    tol = {"grid": 5e-2, "ccd": 1.5e-1, "importance": 1e-1}[design]
     np.testing.assert_allclose(mu, mu_ref, atol=tol)
     np.testing.assert_allclose(var, var_ref, atol=tol, rtol=tol)
 
@@ -128,7 +128,8 @@ def test_hyperparameter_summary_names_and_positivity():
     assert all(mean > 0 and sd > 0 for mean, sd in summary.values())
 
 
-def test_ccd_used_automatically_above_three_hyperparameters():
+@pytest.mark.filterwarnings("ignore:Importance design has an effective sample size")
+def test_importance_used_automatically_above_three_hyperparameters():
     rng = np.random.default_rng(0)
     X = rng.uniform(-1, 1, (30, 4))
     Y = np.sin(X[:, :1]) + 0.1 * rng.standard_normal((30, 1))
@@ -139,8 +140,9 @@ def test_ccd_used_automatically_above_three_hyperparameters():
     lik.variance.fix()
     m = GPy.core.GP(X, Y, kernel=k, likelihood=lik)
     inla = INLAHyperparameters(m).fit()
-    assert inla.design_used == "ccd"
+    assert inla.design_used == "importance"
     assert np.isclose(inla.weights.sum(), 1.0)
+    assert 1 < inla.effective_sample_size <= len(inla.weights)
 
 
 def test_invalid_design_rejected():
@@ -152,3 +154,21 @@ def test_hyperparameter_summary_with_fixed_parameters():
     m = _regressor()  # variance and noise are fixed, only the lengthscale is free
     summary = INLAHyperparameters(m).fit().hyperparameter_summary()
     assert list(summary) == ["gp.rbf.lengthscale"]
+
+
+def test_importance_design_is_reproducible_and_antithetic():
+    m = _regressor()
+    a = INLAHyperparameters(m, design="importance", n_samples=60, seed=7).fit()
+    b = INLAHyperparameters(m, design="importance", n_samples=60, seed=7).fit()
+    c = INLAHyperparameters(m, design="importance", n_samples=60, seed=8).fit()
+    np.testing.assert_allclose(a.weights, b.weights)
+    assert not np.allclose(a.Z, c.Z)
+    np.testing.assert_allclose(a.Z[:30], -a.Z[30:])
+    assert len(a.weights) <= 60
+
+
+def test_importance_effective_sample_size_warning(monkeypatch):
+    m = _regressor()
+    inla = INLAHyperparameters(m, design="importance", n_samples=10, proposal_scale=50.0)
+    with pytest.warns(UserWarning, match="effective sample size"):
+        inla.fit()

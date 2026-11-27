@@ -38,24 +38,54 @@ class INLAHyperparameters:
     model from other threads during :meth:`fit` or the ``predict*`` methods.
 
     :param model: a GPy ``GP`` model, typically with ``Laplace`` inference.
-    :param design: ``"grid"``, ``"ccd"`` (central composite design) or ``"auto"``
-        (grid for at most 3 hyperparameters, otherwise ccd).
+    :param design: ``"grid"``, ``"ccd"`` (central composite design), ``"importance"`` or
+        ``"auto"`` (grid for at most 3 hyperparameters, otherwise importance). The grid is
+        accurate but its size grows exponentially with the number of hyperparameters; ccd is
+        cheap but coarse; importance has a fixed budget of ``n_samples`` Laplace fits.
     :param grid_step: grid spacing in standardised ``z`` units.
     :param grid_cutoff: grid points more than this many nats below the maximum
         log density are dropped. Weakly identified hyperparameters have heavy tails in
         the constrained scale, so a tight cutoff (we tried 3) understates their spread.
     :param ccd_radius: radius of the ccd star points (default ``1.1 * sqrt(d)``).
+    :param n_samples: number of importance draws (antithetic pairs; rounded up to even).
+    :param proposal_dof: degrees of freedom of the multivariate-t proposal in ``z`` space.
+        Heavy tails guard against the weakly identified hyperparameters' long tails.
+    :param proposal_scale: scale of the t proposal in ``z`` units.
+    :param seed: seed for the importance draws, so fits are reproducible.
     :param hessian_step: finite-difference step in ``u`` for the Hessian.
+
+    After :meth:`fit`, ``effective_sample_size`` is ``1 / sum(weights**2)``. It is the
+    reliability diagnostic for the importance design (a warning is raised below 20). For
+    the grid and ccd designs it only describes how concentrated the weights are. The
+    importance proposal is symmetric in ``z`` while real posteriors can be strongly skewed
+    (steep on one side, heavy-tailed on the other), so check the effective sample size and
+    raise ``n_samples`` when it is small.
     """
 
-    def __init__(self, model, design="auto", grid_step=1.5, grid_cutoff=9.0, ccd_radius=None, hessian_step=1e-3):
-        if design not in ("auto", "grid", "ccd"):
-            raise ValueError(f"design must be 'auto', 'grid' or 'ccd', got {design!r}")
+    def __init__(
+        self,
+        model,
+        design="auto",
+        grid_step=1.5,
+        grid_cutoff=9.0,
+        ccd_radius=None,
+        n_samples=500,
+        proposal_dof=5,
+        proposal_scale=1.2,
+        seed=0,
+        hessian_step=1e-3,
+    ):
+        if design not in ("auto", "grid", "ccd", "importance"):
+            raise ValueError(f"design must be 'auto', 'grid', 'ccd' or 'importance', got {design!r}")
         self.model = model
         self.design = design
         self.grid_step = grid_step
         self.grid_cutoff = grid_cutoff
         self.ccd_radius = ccd_radius
+        self.n_samples = n_samples
+        self.proposal_dof = proposal_dof
+        self.proposal_scale = proposal_scale
+        self.seed = seed
         self.hessian_step = hessian_step
         self.fitted = False
 
@@ -142,8 +172,14 @@ class INLAHyperparameters:
     # ---- designs --------------------------------------------------------------------
 
     def _build_design(self, d):
-        design = self.design if self.design != "auto" else ("grid" if d <= 3 else "ccd")
-        Z = self._grid_design(d) if design == "grid" else self._ccd_design(d)
+        design = self.design if self.design != "auto" else ("grid" if d <= 3 else "importance")
+        log_q = None
+        if design == "grid":
+            Z = self._grid_design(d)
+        elif design == "ccd":
+            Z = self._ccd_design(d)
+        else:
+            Z, log_q = self._importance_design(d)
         U = self.u_star + Z @ self.L.T
         log_p = np.array([self._log_post(u) for u in U])
         keep = np.isfinite(log_p)
@@ -151,8 +187,28 @@ class INLAHyperparameters:
             keep &= log_p > log_p[keep].max() - self.grid_cutoff
         self.design_used = design
         self.Z, self.U, self.log_post = Z[keep], U[keep], log_p[keep]
-        self.weights = _normalised_weights(self.log_post)
+        log_w = self.log_post if log_q is None else self.log_post - log_q[keep]
+        self.weights = _normalised_weights(log_w)
+        self.effective_sample_size = float(1.0 / np.sum(self.weights**2))
         self.model.optimizer_array = self.u_star
+        if design == "importance" and self.effective_sample_size < 20:
+            warnings.warn(
+                f"Importance design has an effective sample size of only {self.effective_sample_size:.1f} "
+                f"from {len(self.weights)} points; increase n_samples or proposal_scale.",
+                stacklevel=3,
+            )
+
+    def _importance_design(self, d):
+        """Antithetic multivariate-t draws in z space, with the log proposal density (up to a constant)."""
+        rng = np.random.default_rng(self.seed)
+        half = (self.n_samples + 1) // 2
+        dof = self.proposal_dof
+        g = rng.standard_normal((half, d))
+        chi = rng.chisquare(dof, size=(half, 1))
+        base = self.proposal_scale * g / np.sqrt(chi / dof)
+        Z = np.vstack([base, -base])
+        log_q = -0.5 * (dof + d) * np.log1p(np.sum((Z / self.proposal_scale) ** 2, axis=1) / dof)
+        return Z, log_q
 
     def _grid_design(self, d):
         """Explore a z-grid outward from the mode while the density stays within the cutoff."""

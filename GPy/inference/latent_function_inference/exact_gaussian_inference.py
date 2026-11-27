@@ -16,10 +16,20 @@ class ExactGaussianInference(LatentFunctionInference):
 
     For efficiency, we sometimes work with the cholesky of Y*Y.T. To save repeatedly recomputing this, we cache it.
 
+    :param float jitter: constant added to the noise variance on the diagonal of
+        ``K + noise`` before it is factorised. The default, 1e-8, is the historical
+        GPy value. It makes the model GPy evaluates differ slightly from the one the
+        parameters describe: the effective noise variance is ``variance + jitter``,
+        a relative change of ``jitter / variance``, so it matters only when the noise
+        variance is small (about 1e-3 or below). Pass ``jitter=0`` to evaluate the
+        stated model exactly, at the cost of the extra numerical guard.
+
     """
 
-    def __init__(self):
-        pass  # self._YYTfactor_cache = caching.cache()
+    DEFAULT_JITTER = 1e-8
+
+    def __init__(self, jitter=DEFAULT_JITTER):
+        self.jitter = jitter  # self._YYTfactor_cache = caching.cache()
 
     def to_dict(self):
         """
@@ -32,6 +42,9 @@ class ExactGaussianInference(LatentFunctionInference):
 
         input_dict = super(ExactGaussianInference, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference"
+        jitter = getattr(self, "jitter", self.DEFAULT_JITTER)
+        if jitter != self.DEFAULT_JITTER:
+            input_dict["jitter"] = jitter  # omitted at the default so older readers still load the file
         return input_dict
 
     def inference(
@@ -52,7 +65,9 @@ class ExactGaussianInference(LatentFunctionInference):
             K = kern.K(X)
 
         # CIP-000F Stage 2: pure ndarray LML / dL_dK path.
-        log_marginal, dL_dK, alpha, LW, _Wi = exact_gp_ops.log_marginal_and_gradients(K, YYT_factor, variance)
+        log_marginal, dL_dK, alpha, LW, _Wi = exact_gp_ops.log_marginal_and_gradients(
+            K, YYT_factor, variance, jitter=getattr(self, "jitter", self.DEFAULT_JITTER)
+        )
 
         if Z_tilde is not None:
             # This is a correction term for the log marginal likelihood

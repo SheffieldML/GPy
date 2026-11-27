@@ -15,7 +15,7 @@ def _model(jitter=None, noise=1e-3):
 
 def _reference(X, Y, noise, variance=1.0, lengthscale=1.0):
     d2 = ((X[:, None, :] - X[None, :, :]) ** 2).sum(-1)
-    Ky = variance * np.exp(-0.5 * d2 / lengthscale ** 2) + noise * np.eye(len(X))
+    Ky = variance * np.exp(-0.5 * d2 / lengthscale**2) + noise * np.eye(len(X))
     _, logdet = np.linalg.slogdet(Ky)
     return -0.5 * (len(X) * np.log(2 * np.pi) + logdet + Y.T @ np.linalg.solve(Ky, Y)).item()
 

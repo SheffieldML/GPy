@@ -37,8 +37,8 @@ def test_gradient_follows_the_chosen_jitter():
     assert m.checkgrad()
 
 
-def test_serialization_omits_the_default_and_keeps_a_change():
-    assert "jitter" not in ExactGaussianInference().to_dict()
+def test_serialization_records_the_jitter_explicitly():
+    assert ExactGaussianInference().to_dict()["jitter"] == 1e-8
     d = ExactGaussianInference(jitter=0.0).to_dict()
     assert d["jitter"] == 0.0
     assert ExactGaussianInference.from_dict(d).jitter == 0.0

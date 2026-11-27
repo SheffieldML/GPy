@@ -42,9 +42,7 @@ class ExactGaussianInference(LatentFunctionInference):
 
         input_dict = super(ExactGaussianInference, self)._save_to_input_dict()
         input_dict["class"] = "GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference"
-        jitter = getattr(self, "jitter", self.DEFAULT_JITTER)
-        if jitter != self.DEFAULT_JITTER:
-            input_dict["jitter"] = jitter  # omitted at the default so older readers still load the file
+        input_dict["jitter"] = getattr(self, "jitter", self.DEFAULT_JITTER)
         return input_dict
 
     def inference(

@@ -33,7 +33,7 @@ warn about, or change, the default in future.
 - [x] `ExactGaussianInference(jitter=...)` passes the value to `exact_gp_ops.log_marginal_and_gradients`.
 - [x] Default behaviour is numerically unchanged.
 - [x] `jitter=0` matches an exact evaluation of the stated model.
-- [x] Serialization round-trips a non-default jitter and omits the default, so older readers still load files.
+- [x] Serialization always records the jitter explicitly and round-trips it.
 - [x] Docstring states that jitter is added to the noise variance.
 
 ## Implementation Notes

@@ -146,3 +146,9 @@ def test_ccd_used_automatically_above_three_hyperparameters():
 def test_invalid_design_rejected():
     with pytest.raises(ValueError):
         INLAHyperparameters(_classifier(), design="nope")
+
+
+def test_hyperparameter_summary_with_fixed_parameters():
+    m = _regressor()  # variance and noise are fixed, only the lengthscale is free
+    summary = INLAHyperparameters(m).fit().hyperparameter_summary()
+    assert list(summary) == ["gp.rbf.lengthscale"]

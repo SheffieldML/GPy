@@ -42,12 +42,13 @@ class INLAHyperparameters:
         (grid for at most 3 hyperparameters, otherwise ccd).
     :param grid_step: grid spacing in standardised ``z`` units.
     :param grid_cutoff: grid points more than this many nats below the maximum
-        log density are dropped.
+        log density are dropped. Weakly identified hyperparameters have heavy tails in
+        the constrained scale, so a tight cutoff (we tried 3) understates their spread.
     :param ccd_radius: radius of the ccd star points (default ``1.1 * sqrt(d)``).
     :param hessian_step: finite-difference step in ``u`` for the Hessian.
     """
 
-    def __init__(self, model, design="auto", grid_step=1.0, grid_cutoff=3.0, ccd_radius=None, hessian_step=1e-3):
+    def __init__(self, model, design="auto", grid_step=1.5, grid_cutoff=9.0, ccd_radius=None, hessian_step=1e-3):
         if design not in ("auto", "grid", "ccd"):
             raise ValueError(f"design must be 'auto', 'grid' or 'ccd', got {design!r}")
         self.model = model
@@ -229,7 +230,7 @@ class INLAHyperparameters:
         try:
             for u in self.U:
                 self.model.optimizer_array = u
-                values.append(np.array(self.model.param_array, dtype=float))
+                values.append(np.array(self.model.unfixed_param_array, dtype=float))
         finally:
             self.model.optimizer_array = self.u_star
         values = np.array(values)

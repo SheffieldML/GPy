@@ -46,9 +46,9 @@ The traceback goes `INLAHyperparameters.fit` -> `m.optimize` -> L-BFGS -> `Lapla
 
 - [x] A minimal script that reproduces the error and fails on `main`, captured as a test in `GPy/testing` (`test_laplace_line_search.py`)
 - [x] The failing hyperparameter values identified, and the cause established (flat objective at the line-search start)
-- [ ] `rasm_mode` handles a failed line search without aborting the outer optimiser, for example a bounded fallback step, or a clear signal that the point is infeasible
-- [ ] `INLAHyperparameters(m).fit()` succeeds on the reproduction model
-- [ ] Existing Laplace and INLA tests still pass
+- [x] `rasm_mode` handles a failed line search without aborting the outer optimiser, for example a bounded fallback step, or a clear signal that the point is infeasible
+- [x] `INLAHyperparameters(m).fit()` succeeds on the reproduction model
+- [x] Existing Laplace and INLA tests still pass
 
 ## Implementation Notes
 
@@ -72,3 +72,8 @@ Reproduced with a direct hyperparameter scan (no optimiser needed): the Binomial
 Cause: the Newton iteration has already converged when the line search starts, so the objective is flat in the step size. At the failing call `inner_obj` returns the identical value (408.26355383528335) at steps -1, 0, 1 and 2, and `brent` cannot bracket a minimum of a constant function. This is not a non-concave case. The same applies to the `new_obj < old_obj` check, which can fire on round-off.
 
 Tests in `GPy/testing/test_laplace_line_search.py` (variance 1e-8, two lengthscales) fail on `main`. Next: the fallback in `rasm_mode` and the second `brent` call.
+
+### 2026-11-28 (fix)
+Checked R-INLA (`gmrflib/approx-inference.c`, mode finder). It has no line search: each iteration takes the Newton step scaled by `min(1, (iter+1) * nr_step_factor)` (1 for Gaussian data) and converges when the RMS change in the mode is below `abserr_step` (0.0005). It stops on NaN, restarts if the error grows more than fourfold, and on non-convergence retries with `nr_step_factor` halved, twice the iterations and a trust region, giving up below a factor of 1e-3. So a flat objective is never a failure there: the step change is simply tiny.
+
+Fix: `_newton_step_size` in `laplace.py` takes the full step when the objective is flat at steps 0 and 1, and otherwise calls `brent`, falling back to the better of step 1 and step 0 if scipy cannot bracket. Both `brent` call sites use it, and the `new_obj < old_obj` check has a round-off tolerance. A scan over variance 1e-10 to 1e6 and lengthscale 1e-3 to 1e8 gives no failures (71 before). Not done: R-INLA's damped restart for genuinely hard modes.

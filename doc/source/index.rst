@@ -67,6 +67,7 @@ GPy is a big, powerful package, with many features. The concept of how to use GP
    :caption: For users
 
    tuto_coregionalized
+   tuto_hyperparameter_integration
 
 .. toctree::
    :maxdepth: 1

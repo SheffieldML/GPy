@@ -26,6 +26,25 @@ from . import LatentFunctionInference
 from scipy.integrate import quad
 
 
+def _newton_step_size(inner_obj, flat_rtol=1e-12):
+    """Step size along a Newton direction; ``inner_obj`` is minimised.
+
+    ``scipy.optimize.brent`` cannot bracket a minimum when the objective is flat
+    in the step size, which happens once the Newton iteration has converged
+    (for example a near-degenerate prior with tiny kernel variance). R-INLA
+    takes the full Newton step and tests convergence on the change in the
+    mode, not on a line search. We do the same in the flat case, and fall back
+    to the better of the full step and no step if ``brent`` still fails.
+    """
+    f0, f1 = inner_obj(0.0), inner_obj(1.0)
+    if np.isfinite(f0) and np.isfinite(f1) and abs(f1 - f0) <= flat_rtol * max(1.0, abs(f0)):
+        return 1.0
+    try:
+        return optimize.brent(inner_obj, tol=1e-4, maxiter=12)
+    except (RuntimeError, ValueError, FloatingPointError):  # scipy's BracketError is a RuntimeError
+        return 1.0 if f1 <= f0 else 0.0
+
+
 class Laplace(LatentFunctionInference):
     def __init__(self):
         """
@@ -217,13 +236,13 @@ class Laplace(LatentFunctionInference):
                 return -obj(Ki_f_trial, f_trial)
 
             # use scipy for the line search, the compute new values of f, Ki_f
-            step = optimize.brent(inner_obj, tol=1e-4, maxiter=12)
+            step = _newton_step_size(inner_obj)
             Ki_f_new = Ki_f + step * dKi_f
             f_new = np.dot(K, Ki_f_new)
             # print "new {} vs old {}".format(obj(Ki_f_new, f_new), obj(Ki_f, f))
             old_obj = obj(Ki_f, f)
             new_obj = obj(Ki_f_new, f_new)
-            if new_obj < old_obj:
+            if new_obj < old_obj - 1e-12 * max(1.0, abs(old_obj)):
                 raise ValueError("Shouldn't happen, brent optimization failing")
             difference = np.abs(new_obj - old_obj)
             # difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
@@ -425,7 +444,7 @@ class LaplaceBlock(Laplace):
                 return -obj(Ki_f_trial, f_trial)
 
             # use scipy for the line search, the compute new values of f, Ki_f
-            step = optimize.brent(inner_obj, tol=1e-4, maxiter=12)
+            step = _newton_step_size(inner_obj)
 
             Ki_f_new = Ki_f + step * dKi_f
             f_new = np.dot(K, Ki_f_new)

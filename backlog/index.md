@@ -25,10 +25,6 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Ready
 
-- [CIP-000F Stage 2T — experimental JAX LML assessment (out of package)](infrastructure/2026-11-21_cip000F-stage2t-jax-assessment.md)
-
-- [CIP-000F Stage 2N — conceptual CovarianceOperator / ConditionedState sketch](infrastructure/2026-11-21_cip000F-stage2n-numerical-interfaces.md)
-
 - [CIP-000D — deprecate orphaned LFM1 kernel and schedule removal](infrastructure/2026-11-13_cip000D-deprecate-lfm1.md)
 
 - [Design parameter tying framework for GPy multioutput kernels](infrastructure/2025-08-15_parameter-tying-framework.md)
@@ -47,9 +43,7 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Proposed
 
-- [CIP-000F Stage 3 — replace Cache_this / ObsAr with version-counter cache](infrastructure/2026-11-21_cip000F-stage3-caching-obsar.md)
-
-- [CIP-000F Stage 4 — paramz core decision (vendor A interim, then B?)](infrastructure/2026-11-21_cip000F-stage4-paramz-core-decision.md)
+*No tasks currently proposed.*
 
 
 ## Features
@@ -87,6 +81,8 @@ This file provides an overview of all current backlog items organized by categor
 
 ### Proposed
 
+- [Laplace mode finding fails with scipy BracketError during hyperparameter optimisation](bugs/2026-11-28_laplace-brent-bracket-failure.md)
+
 - [MRD shared-latent MiniBatch wiring ELBO slightly below fresh views](bugs/2026-11-20_mrd-shared-latent-elbo.md)
 
 
@@ -94,15 +90,15 @@ This file provides an overview of all current backlog items organized by categor
 
 ## Recently Completed Tasks
 
+- [Make the exact Gaussian inference noise jitter configurable](features/2026-11-27_exact-gaussian-jitter.md)
+
+- [Make the Kuu jitter of VarDTC and FITC a constructor option](features/2026-11-27_sparse-kuu-jitter.md)
+
 - [CIP-000C — migrate contributor packaging from Poetry to uv](infrastructure/2026-11-13_cip000C-uv-packaging-cutover.md)
 
-- [CIP-000F Stage 0 — single paramz import boundary + Ruff TID251](infrastructure/2026-11-21_cip000F-stage0-import-boundary.md)
+- [CIP-000F Stage 4 — paramz core decision (Accept A vendor; 1.20 line)](infrastructure/2026-11-21_cip000F-stage4-paramz-core-decision.md)
 
-- [CIP-000F Stage 1 — vendor domains and optimisation wrappers](infrastructure/2026-11-21_cip000F-stage1-domains-optimisation.md)
-
-- [CIP-000F Stage 2 — pure numerical functions (kernels, likelihoods)](infrastructure/2026-11-21_cip000F-stage2-pure-numerical.md)
-
-- [MRD constructor ignores user-supplied Z=](bugs/2026-11-20_mrd-ignores-constructor-z.md)
+- [CIP-000F Stage 2T — experimental JAX LML assessment (out of package)](infrastructure/2026-11-21_cip000F-stage2t-jax-assessment.md)
 
 
 ## Recently Abandoned Tasks

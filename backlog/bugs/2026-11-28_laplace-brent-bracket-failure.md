@@ -44,8 +44,8 @@ The traceback goes `INLAHyperparameters.fit` -> `m.optimize` -> L-BFGS -> `Lapla
 
 ## Acceptance Criteria
 
-- [ ] A minimal script that reproduces the error and fails on `main`, captured as a test in `GPy/testing`
-- [ ] The failing hyperparameter values identified, and the cause established (non-finite or flat objective at the line-search start, versus a genuinely non-concave case)
+- [x] A minimal script that reproduces the error and fails on `main`, captured as a test in `GPy/testing` (`test_laplace_line_search.py`)
+- [x] The failing hyperparameter values identified, and the cause established (flat objective at the line-search start)
 - [ ] `rasm_mode` handles a failed line search without aborting the outer optimiser, for example a bounded fallback step, or a clear signal that the point is infeasible
 - [ ] `INLAHyperparameters(m).fit()` succeeds on the reproduction model
 - [ ] Existing Laplace and INLA tests still pass
@@ -65,3 +65,10 @@ The traceback goes `INLAHyperparameters.fit` -> `m.optimize` -> L-BFGS -> `Lapla
 
 ### 2026-11-28
 Task created. Reproduced with the model above. Root cause not yet identified.
+
+### 2026-11-28 (reproduction and cause)
+Reproduced with a direct hyperparameter scan (no optimiser needed): the Binomial/`StdPeriodic` model raises `BracketError` whenever the kernel variance is very small (1e-8 always; 1e-6 for some data), for any lengthscale. The scanned values are exactly where the optimiser ends up after the failure. The INLA fit on the original simulation did not fail on its own here, so the optimiser path depends on the data.
+
+Cause: the Newton iteration has already converged when the line search starts, so the objective is flat in the step size. At the failing call `inner_obj` returns the identical value (408.26355383528335) at steps -1, 0, 1 and 2, and `brent` cannot bracket a minimum of a constant function. This is not a non-concave case. The same applies to the `new_obj < old_obj` check, which can fire on round-off.
+
+Tests in `GPy/testing/test_laplace_line_search.py` (variance 1e-8, two lengthscales) fail on `main`. Next: the fallback in `rasm_mode` and the second `brent` call.

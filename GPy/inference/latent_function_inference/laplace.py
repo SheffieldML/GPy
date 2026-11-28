@@ -26,7 +26,6 @@ from . import LatentFunctionInference
 from scipy.integrate import quad
 
 
-
 def _newton_step_size(inner_obj, flat_rtol=1e-12):
     """Step size along a Newton direction; ``inner_obj`` is minimised.
 
